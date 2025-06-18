@@ -10,12 +10,10 @@ namespace ColorVision.Engine.Services.Devices
     {
         public event DeviceStatusChangedHandler DeviceStatusChanged;
 
-
         public override DeviceStatusType DeviceStatus
         {
             get => _DeviceStatus; set
             {
-
                 if (value == DeviceStatusType.Unknown)
                 {
                     TryN++;
@@ -25,11 +23,13 @@ namespace ColorVision.Engine.Services.Devices
                         return;
                     }
                 }
+
+                if (value == DeviceStatus) return;
                 _DeviceStatus = value;
 
                 try
                 {
-                    Application.Current?.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value));
+                    Application.Current?.Dispatcher.BeginInvoke(() => DeviceStatusChanged?.Invoke(value));
                 }
                 catch (Exception ex)
                 {

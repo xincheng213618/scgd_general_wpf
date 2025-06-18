@@ -1,6 +1,7 @@
 ﻿#pragma warning disable
 using ColorVision.Common.Algorithms;
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
@@ -23,6 +24,7 @@ using ColorVision.Engine.Templates.POI.Image;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.SocketProtocol;
 using ColorVision.Themes;
+using ColorVision.UI;
 using ColorVision.UI.Extension;
 using CVCommCore.CVAlgorithm;
 using FlowEngineLib;
@@ -109,6 +111,8 @@ namespace ProjectARVR
 
         public string SN { get; set; }
 
+        public string Code { get; set; }
+
         public bool Result { get; set; } = true;
 
         public ARVRTestType TestType { get; set; }
@@ -185,8 +189,10 @@ namespace ProjectARVR
     }
 
 
-
-
+    public class ARVRWindowConfig : WindowConfig
+    {
+        public static ARVRWindowConfig Instance => ConfigService.Instance.GetRequiredService<ARVRWindowConfig>();
+    }
 
     public partial class ARVRWindow : Window, IDisposable
     {
@@ -317,7 +323,24 @@ namespace ProjectARVR
             };
             listView1.ItemsSource = ViewResluts;
 
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
         }
+
+        public void Delete()
+        {
+            if (listView1.SelectedIndex < 0) return;
+            var item = listView1.SelectedItem as ProjectARVRReuslt;
+            if (item == null) return;
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否删除 {item.SN} 测试结果？", "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            {
+                ViewResluts.Remove(item);
+                BatchResultMasterDao.Instance.DeleteById(item.Id);
+                log.Info($"删除测试结果 {item.SN}");
+            }
+        }
+
         private void ServicesChanged(object? sender, EventArgs e)
         {
             Application.Current.Dispatcher.BeginInvoke(() =>
@@ -336,10 +359,15 @@ namespace ProjectARVR
             {
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                     item.nodeRunEvent -= UpdateMsg;
-                flowEngine.LoadFromBase64(string.Empty);
 
                 flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
 
+                for (int i = 0; i < 20; i++)
+                {
+                    if (flowEngine.IsReady)
+                        break;
+                    Thread.Sleep(10);
+                }
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                     item.nodeRunEvent += UpdateMsg;
             }
@@ -359,6 +387,7 @@ namespace ProjectARVR
         IPendingHandler handler { get; set; }
 
         string Msg1;
+        private long LastFlowTime;
         private void UpdateMsg(object? sender)
         {
             Application.Current.Dispatcher.BeginInvoke(() =>
@@ -371,17 +400,17 @@ namespace ProjectARVR
                         TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
                         string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
                         string msg;
-                        if (ProjectARVRConfig.Instance.LastFlowTime == 0 || ProjectARVRConfig.Instance.LastFlowTime - elapsedMilliseconds < 0)
+                        if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
                         {
                             msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
                         }
                         else
                         {
-                            long remainingMilliseconds = ProjectARVRConfig.Instance.LastFlowTime - elapsedMilliseconds;
+                            long remainingMilliseconds = LastFlowTime - elapsedMilliseconds;
                             TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                             string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{ProjectARVRConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
+                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{LastFlowTime} ms, 预计还需要：{remainingTime}";
                         }
                         if (flowControl.IsFlowRun)
                             handler.UpdateMessage(msg);
@@ -410,77 +439,43 @@ namespace ProjectARVR
         {
             RunTemplate();
         }
-        private void LargeTest_Click(object sender, RoutedEventArgs e)
-        {
-            if (CBLargeTemplate.SelectedValue is TJLargeFlowParam jLargeFlowParam)
-            {
-                var ListFlows = jLargeFlowParam.GetFlows();
-                if (ListFlows.Count == 0)
-                {
-                    log.Info("大流程没有配置距离的模板");
-                }
-                foreach (var item in ListFlows.Reverse())
-                {
-                    LargetStack.Push(item);
-                }
-                if (LargetStack.Count != 0)
-                {
-                    FlowTemplate.SelectedValue = LargetStack.Pop().Value; ;
-                    RunTemplate();
-                }
 
-            }
-        }
 
-        Stack<TemplateModel<FlowParam>> LargetStack = new Stack<TemplateModel<FlowParam>>();
-
-        bool LastCompleted = true;
+        ProjectARVRReuslt CurrentFlowResult { get; set; }
+        int TryCount = 0;
         public void RunTemplate()
         {
             if (flowControl != null && flowControl.IsFlowRun) return;
-            if (FlowTemplate.SelectedValue is not FlowParam flowParam)
-            {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "流程为空，请选择流程运行", "ColorVision");
-                return;
-            }
-            ;
-            string startNode = flowEngine.GetStartNodeName();
-            if (string.IsNullOrWhiteSpace(startNode))
-            {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败", "ColorVision");
-                return;
-            }
-            ;
-            if (!LastCompleted)
+
+            TryCount++;
+            LastFlowTime = FlowConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
+
+            CurrentFlowResult = new ProjectARVRReuslt();
+            CurrentFlowResult.SN = SNtextBox.Name;
+            CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info( "找不到完整流程，运行失败");return; }
+
+            log.Info($"IsReady{flowEngine.IsReady}");
+            if (!flowEngine.IsReady)
             {
                 Refresh();
+                log.Info($"IsReady{flowEngine.IsReady}");
             }
-            LastCompleted = false;
+
+
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
 
-            handler = PendingBox.Show(this, "TTL:" + "0", "流程运行", true);
+            handler = PendingBox.Show(this, "流程", "流程启动", true);
             handler.Cancelling -= Handler_Cancelling;
             handler.Cancelling += Handler_Cancelling;
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
-            string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+
             stopwatch.Reset();
             stopwatch.Start();
-            flowControl.Start(sn);
+
+            BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
+            flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
-            string name = string.Empty;
-            try
-            {
-                BatchResultMasterModel batch = new BatchResultMasterModel();
-                batch.Name = string.IsNullOrEmpty(name) ? sn : name;
-                batch.Code = sn;
-                batch.CreateDate = DateTime.Now;
-                batch.TenantId = 0;
-                BatchResultMasterDao.Instance.Save(batch);
-            }
-            catch (Exception ex)
-            {
-                log.Info(ex);
-            }
         }
 
         private void Handler_Cancelling(object? sender, CancelEventArgs e)
@@ -488,72 +483,74 @@ namespace ProjectARVR
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
             flowControl.Stop();
-            LargetStack.Clear();
         }
 
-        private int id;
         private FlowControl flowControl;
 
-        private void FlowControl_FlowCompleted(object? sender, EventArgs e)
+        private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
         {
-            id++;
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             handler?.Close();
             handler = null;
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
-            ProjectARVRConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
+
+            FlowConfig.Instance.FlowRunTime[FlowTemplate.Text] = stopwatch.ElapsedMilliseconds;
+
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
 
-            if (sender is FlowControlData FlowControlData)
+            if (FlowControlData.EventName == "Completed")
             {
-                if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
+                try
                 {
-                    if (FlowControlData.EventName == "Completed")
+                    Application.Current.Dispatcher.BeginInvoke(() =>
                     {
-                        LastCompleted = true;
-                        try
+                        Processing(FlowControlData.SerialNumber);
+                    });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
+                }
+                TryCount = 0;
+            }
+            else if (FlowControlData.EventName == "OverTime")
+            {
+                log.Info("流程运行超时，正在重新尝试");
+                if (TryCount < ProjectARVRConfig.Instance.TryCountMax)
+                {
+                    Task.Delay(200).ContinueWith(t =>
+                    {
+                        log.Info("重新尝试运行流程");
+                        Application.Current.Dispatcher.BeginInvoke(() =>
                         {
-                            Application.Current.Dispatcher.BeginInvoke(() =>
-                            {
-                                Processing(FlowControlData.SerialNumber);
-                            });
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
-                        }
-                        Task.Run(async () =>
-                        {
-                            await Task.Delay(100);
-                            Application.Current.Dispatcher.BeginInvoke(() =>
-                            {
-                                if (LargetStack.Count != 0)
-                                {
-                                    FlowTemplate.SelectedValue = LargetStack.Pop().Value; ;
-                                    RunTemplate();
-                                }
-                            });
+                            RunTemplate();
                         });
-
-                    }
-                    else
-                    {
-                        LargetStack.Clear();
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
-                    }
+                    });
+                    return;
                 }
-                else
-                {
-                    LargetStack.Clear();
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
-                }
-
+                TryCount = 0;
             }
             else
             {
-                LargetStack.Clear();
-                MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行异常", "ColorVision");
+                log.Info("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
+                if (SocketManager.GetInstance().TcpClients.Count > 0 && SocketControl.Current.Stream != null)
+                {
+                    ObjectiveTestResult.TotalResult = false;
+                    var response = new SocketResponse
+                    {
+                        Version = "1.0",
+                        MsgID = "",
+                        EventName = "ProjectARVRResult",
+                        Code = -1,
+                        Msg = "ARVR Test Fail",
+                        Data = ObjectiveTestResult
+                    };
+                    string respString = JsonConvert.SerializeObject(response);
+                    log.Info(respString);
+                    SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+                }
+
             }
         }
 
@@ -609,8 +606,9 @@ namespace ProjectARVR
                                 {
                                     Name = "CenterCorrelatedColorTemperature",
                                     TestValue = poiResultCIExyuvData.CCT.ToString(),
-                                    LowLimit = SPECConfig.CenterCorrelatedColorTemperatureMin.ToString(),
-                                    UpLimit = SPECConfig.CenterCorrelatedColorTemperatureMax.ToString()
+                                    Value = poiResultCIExyuvData.CCT,
+                                    LowLimit = SPECConfig.CenterCorrelatedColorTemperatureMin,
+                                    UpLimit = SPECConfig.CenterCorrelatedColorTemperatureMax
                                 };
                             }
 
@@ -638,8 +636,9 @@ namespace ProjectARVR
                                 {
                                     Name = "Luminance_uniformity(%)",
                                     TestValue = (viewReslut.PoiAnalysisResult.result.Value * 100).ToString("F3") + "%",
-                                    LowLimit = SPECConfig.LuminanceUniformityMin.ToString(),
-                                    UpLimit = SPECConfig.LuminanceUniformityMax.ToString(),
+                                    Value = viewReslut.PoiAnalysisResult.result.Value,
+                                    LowLimit = SPECConfig.LuminanceUniformityMin,
+                                    UpLimit = SPECConfig.LuminanceUniformityMax,
                                 };
 
                             }
@@ -657,8 +656,9 @@ namespace ProjectARVR
                                 {
                                     Name = "Color_uniformity",
                                     TestValue = (viewReslut.PoiAnalysisResult.result.Value).ToString("F5"),
-                                    LowLimit = SPECConfig.ColorUniformityMin.ToString(),
-                                    UpLimit = SPECConfig.ColorUniformityMax.ToString()
+                                    Value= viewReslut.PoiAnalysisResult.result.Value,
+                                    LowLimit = SPECConfig.ColorUniformityMin,
+                                    UpLimit = SPECConfig.ColorUniformityMax
                                 };
                             }
                         }
@@ -675,23 +675,25 @@ namespace ProjectARVR
                             ObjectiveTestResult.DiagonalFieldOfViewAngle = new ObjectiveTestItem()
                             {
                                 Name = "DiagonalFieldOfViewAngle",
-                                LowLimit = SPECConfig.DiagonalFieldOfViewAngleMin.ToString(),
-                                UpLimit = SPECConfig.DiagonalFieldOfViewAngleMax.ToString(),
-
+                                LowLimit = SPECConfig.DiagonalFieldOfViewAngleMin,
+                                UpLimit = SPECConfig.DiagonalFieldOfViewAngleMax,
+                                Value = view1.Result.result.D_Fov,
                                 TestValue = view1.Result.result.D_Fov.ToString("F3")
                             };
                             ObjectiveTestResult.HorizontalFieldOfViewAngle = new ObjectiveTestItem()
                             {
                                 Name = "HorizontalFieldOfViewAngle",
-                                LowLimit = SPECConfig.HorizontalFieldOfViewAngleMin.ToString(),
-                                UpLimit = SPECConfig.HorizontalFieldOfViewAngleMax.ToString(),
+                                LowLimit = SPECConfig.HorizontalFieldOfViewAngleMin,
+                                UpLimit = SPECConfig.HorizontalFieldOfViewAngleMax,
+                                Value = view1.Result.result.ClolorVisionH_Fov,
                                 TestValue = view1.Result.result.ClolorVisionH_Fov.ToString("F3")
                             };
                             ObjectiveTestResult.VerticalFieldOfViewAngle = new ObjectiveTestItem()
                             {
                                 Name = "VerticalFieldOfViewAngle",
-                                LowLimit = SPECConfig.VerticalFieldOfViewAngleMin.ToString(),
-                                UpLimit = SPECConfig.VerticalFieldOfViewAngleMax.ToString(),
+                                LowLimit = SPECConfig.VerticalFieldOfViewAngleMin,
+                                UpLimit = SPECConfig.VerticalFieldOfViewAngleMax,
+                                Value = view1.Result.result.ClolorVisionV_Fov,
                                 TestValue = view1.Result.result.ClolorVisionV_Fov.ToString("F3")
                             };
 
@@ -735,8 +737,9 @@ namespace ProjectARVR
                                 ObjectiveTestResult.FOFOContrast = new ObjectiveTestItem()
                                 {
                                     Name = "FOFOContrast",
-                                    LowLimit = SPECConfig.FOFOContrastMin.ToString(),
-                                    UpLimit = SPECConfig.FOFOContrastMax.ToString(),
+                                    LowLimit = SPECConfig.FOFOContrastMin,
+                                    UpLimit = SPECConfig.FOFOContrastMax,
+                                    Value = result.ViewResultBlack.Contrast,
                                     TestValue = result.ViewResultBlack.Contrast.ToString("F2")
                                 };
                             }
@@ -797,8 +800,9 @@ namespace ProjectARVR
                                 ObjectiveTestResult.ChessboardContrast = new ObjectiveTestItem()
                                 {
                                     Name = "Chessboard_Contrast",
-                                    LowLimit = SPECConfig.ChessboardContrastMin.ToString(),
-                                    UpLimit = SPECConfig.ChessboardContrastMax.ToString(),
+                                    LowLimit = SPECConfig.ChessboardContrastMin,
+                                    UpLimit = SPECConfig.ChessboardContrastMax,
+                                    Value = viewReslut.PoiAnalysisResult.result.Value,
                                     TestValue = result.ViewReslutCheckerboard.Chessboard_Contrast.ToString("F2")
                                 };
                             }
@@ -834,8 +838,9 @@ namespace ProjectARVR
                                     ObjectiveTestResult.MTF_H_Center_0F = new ObjectiveTestItem()
                                     { 
                                         Name = "MTF_H_Center_0F", 
-                                        LowLimit = SPECConfig.MTF_H_Center_0FMin.ToString(),
-                                        UpLimit = SPECConfig.MTF_H_Center_0FMax.ToString(),
+                                        LowLimit = SPECConfig.MTF_H_Center_0FMin,
+                                        UpLimit = SPECConfig.MTF_H_Center_0FMax,
+                                        Value = mtf.mtfValue ??0,
                                         TestValue = mtf.mtfValue.ToString() 
                                     };
                                 }
@@ -845,8 +850,9 @@ namespace ProjectARVR
                                     ObjectiveTestResult.MTF_H_LeftUp_0_5F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_H_LeftUp_0_5F",
-                                        LowLimit = SPECConfig.MTF_H_LeftUp_0_5FMin.ToString(),
-                                        UpLimit = SPECConfig.MTF_H_LeftUp_0_5FMax.ToString(),
+                                        LowLimit = SPECConfig.MTF_H_LeftUp_0_5FMin,
+                                        UpLimit = SPECConfig.MTF_H_LeftUp_0_5FMax,
+                                        Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
                                 }
@@ -855,8 +861,9 @@ namespace ProjectARVR
                                     ObjectiveTestResult.MTF_H_RightUp_0_5F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_H_RightUp_0_5F",
-                                        LowLimit = SPECConfig.MTF_H_RightUp_0_5FMin.ToString(),
-                                        UpLimit = SPECConfig.MTF_H_RightUp_0_5FMax.ToString(),
+                                        LowLimit = SPECConfig.MTF_H_RightUp_0_5FMin,
+                                        UpLimit = SPECConfig.MTF_H_RightUp_0_5FMax,
+                                        Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
                                 }
@@ -865,8 +872,9 @@ namespace ProjectARVR
                                     ObjectiveTestResult.MTF_H_LeftDown_0_5F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_H_LeftDown_0_5F",
-                                        LowLimit = SPECConfig.MTF_H_LeftDown_0_5FMin.ToString(),
-                                        UpLimit = SPECConfig.MTF_H_LeftDown_0_5FMax.ToString(),
+                                        LowLimit = SPECConfig.MTF_H_LeftDown_0_5FMin,
+                                        UpLimit = SPECConfig.MTF_H_LeftDown_0_5FMax,
+                                        Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
                                 }
@@ -875,8 +883,9 @@ namespace ProjectARVR
                                     ObjectiveTestResult.MTF_H_RightDown_0_5F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_H_RightDown_0_5F",
-                                        LowLimit = SPECConfig.MTF_H_RightDown_0_5FMin.ToString(),
-                                        UpLimit = SPECConfig.MTF_H_RightDown_0_5FMax.ToString(),
+                                        LowLimit = SPECConfig.MTF_H_RightDown_0_5FMin,
+                                        UpLimit = SPECConfig.MTF_H_RightDown_0_5FMax,
+                                        Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
                                 }
@@ -886,8 +895,9 @@ namespace ProjectARVR
                                     ObjectiveTestResult.MTF_H_LeftUp_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_H_LeftUp_0_8F",
-                                        LowLimit = SPECConfig.MTF_H_LeftUp_0_8FMin.ToString(),
-                                        UpLimit = SPECConfig.MTF_H_LeftUp_0_8FMax.ToString(),
+                                        LowLimit = SPECConfig.MTF_H_LeftUp_0_8FMin,
+                                        UpLimit = SPECConfig.MTF_H_LeftUp_0_8FMax,
+                                        Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
                                 }
@@ -896,8 +906,9 @@ namespace ProjectARVR
                                     ObjectiveTestResult.MTF_H_RightUp_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_H_RightUp_0_8F",
-                                        LowLimit = SPECConfig.MTF_H_RightUp_0_8FMin.ToString(),
-                                        UpLimit = SPECConfig.MTF_H_RightUp_0_8FMax.ToString(),
+                                        LowLimit = SPECConfig.MTF_H_RightUp_0_8FMin,
+                                        UpLimit = SPECConfig.MTF_H_RightUp_0_8FMax,
+                                        Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
                                 }
@@ -906,8 +917,9 @@ namespace ProjectARVR
                                     ObjectiveTestResult.MTF_H_LeftDown_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_H_LeftDown_0_8F",
-                                        LowLimit = SPECConfig.MTF_H_LeftDown_0_8FMin.ToString(),
-                                        UpLimit = SPECConfig.MTF_H_LeftDown_0_8FMax.ToString(),
+                                        LowLimit = SPECConfig.MTF_H_LeftDown_0_8FMin,
+                                        UpLimit = SPECConfig.MTF_H_LeftDown_0_8FMax,
+                                        Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
                                 }
@@ -916,8 +928,9 @@ namespace ProjectARVR
                                     ObjectiveTestResult.MTF_H_RightDown_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_H_RightDown_0_8F",
-                                        LowLimit = SPECConfig.MTF_H_RightDown_0_8FMin.ToString(),
-                                        UpLimit = SPECConfig.MTF_H_RightDown_0_8FMax.ToString(),
+                                        LowLimit = SPECConfig.MTF_H_RightDown_0_8FMin,
+                                        UpLimit = SPECConfig.MTF_H_RightDown_0_8FMax,
+                                        Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
                                 }
@@ -959,8 +972,9 @@ namespace ProjectARVR
                                     ObjectiveTestResult.MTF_V_Center_0F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_V_Center_0F",
-                                        LowLimit = SPECConfig.MTF_V_Center_0FMin.ToString(),
-                                        UpLimit = SPECConfig.MTF_V_Center_0FMax.ToString(),
+                                        LowLimit = SPECConfig.MTF_V_Center_0FMin,
+                                        UpLimit = SPECConfig.MTF_V_Center_0FMax,
+                                        Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
                                 }
@@ -969,8 +983,9 @@ namespace ProjectARVR
                                     ObjectiveTestResult.MTF_V_LeftUp_0_5F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_V_LeftUp_0_5F",
-                                        LowLimit = SPECConfig.MTF_V_LeftUp_0_5FMin.ToString(),
-                                        UpLimit = SPECConfig.MTF_V_LeftUp_0_5FMax.ToString(),
+                                        LowLimit = SPECConfig.MTF_V_LeftUp_0_5FMin,
+                                        UpLimit = SPECConfig.MTF_V_LeftUp_0_5FMax   ,
+                                        Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
                                 }
@@ -979,8 +994,9 @@ namespace ProjectARVR
                                     ObjectiveTestResult.MTF_V_RightUp_0_5F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_V_RightUp_0_5F",
-                                        LowLimit = SPECConfig.MTF_V_RightUp_0_5FMin.ToString(),
-                                        UpLimit = SPECConfig.MTF_V_RightUp_0_5FMax.ToString(),
+                                        LowLimit = SPECConfig.MTF_V_RightUp_0_5FMin,
+                                        UpLimit = SPECConfig.MTF_V_RightUp_0_5FMax,
+                                        Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
                                 }
@@ -989,8 +1005,9 @@ namespace ProjectARVR
                                     ObjectiveTestResult.MTF_V_LeftDown_0_5F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_V_LeftDown_0_5F",
-                                        LowLimit = SPECConfig.MTF_V_LeftDown_0_5FMin.ToString(),
-                                        UpLimit = SPECConfig.MTF_V_LeftDown_0_5FMax.ToString(),
+                                        LowLimit = SPECConfig.MTF_V_LeftDown_0_5FMin,
+                                        UpLimit = SPECConfig.MTF_V_LeftDown_0_5FMax,
+                                        Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
                                 }
@@ -999,8 +1016,9 @@ namespace ProjectARVR
                                     ObjectiveTestResult.MTF_V_RightDown_0_5F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_V_RightDown_0_5F",
-                                        LowLimit = SPECConfig.MTF_V_RightDown_0_5FMin.ToString(),
-                                        UpLimit = SPECConfig.MTF_V_RightDown_0_5FMax.ToString(),
+                                        LowLimit = SPECConfig.MTF_V_RightDown_0_5FMin,
+                                        UpLimit = SPECConfig.MTF_V_RightDown_0_5FMax,
+                                        Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
                                 }
@@ -1009,8 +1027,9 @@ namespace ProjectARVR
                                     ObjectiveTestResult.MTF_V_LeftUp_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_V_LeftUp_0_8F",
-                                        LowLimit = SPECConfig.MTF_V_LeftUp_0_8FMin.ToString(),
-                                        UpLimit = SPECConfig.MTF_V_LeftUp_0_8FMax.ToString(),
+                                        LowLimit = SPECConfig.MTF_V_LeftUp_0_8FMin,
+                                        UpLimit = SPECConfig.MTF_V_LeftUp_0_8FMax,
+                                        Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
                                 }
@@ -1019,8 +1038,9 @@ namespace ProjectARVR
                                     ObjectiveTestResult.MTF_V_RightUp_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_V_RightUp_0_8F",
-                                        LowLimit = SPECConfig.MTF_V_RightUp_0_8FMin.ToString(),
-                                        UpLimit = SPECConfig.MTF_V_RightUp_0_8FMax.ToString(),
+                                        LowLimit = SPECConfig.MTF_V_RightUp_0_8FMin,
+                                        UpLimit = SPECConfig.MTF_V_RightUp_0_8FMax,
+                                        Value = mtf.mtfValue ?? 0,  
                                         TestValue = mtf.mtfValue.ToString()
                                     };
                                 }
@@ -1029,8 +1049,9 @@ namespace ProjectARVR
                                     ObjectiveTestResult.MTF_V_LeftDown_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_V_LeftDown_0_8F",
-                                        LowLimit = SPECConfig.MTF_V_LeftDown_0_8FMin.ToString(),
-                                        UpLimit = SPECConfig.MTF_V_LeftDown_0_8FMax.ToString(),
+                                        LowLimit = SPECConfig.MTF_V_LeftDown_0_8FMin,
+                                        UpLimit = SPECConfig.MTF_V_LeftDown_0_8FMax,
+                                        Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
                                 }
@@ -1039,8 +1060,9 @@ namespace ProjectARVR
                                     ObjectiveTestResult.MTF_V_RightDown_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_V_RightDown_0_8F",
-                                        LowLimit = SPECConfig.MTF_V_RightDown_0_8FMin.ToString(),
-                                        UpLimit = SPECConfig.MTF_V_RightDown_0_8FMax.ToString(),
+                                        LowLimit = SPECConfig.MTF_V_RightDown_0_8FMin,
+                                        UpLimit = SPECConfig.MTF_V_RightDown_0_8FMax,
+                                        Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
                                 }
@@ -1076,15 +1098,17 @@ namespace ProjectARVR
                             ObjectiveTestResult.HorizontalTVDistortion = new ObjectiveTestItem()
                             {
                                 Name = "HorizontalTVDistortion",
-                                LowLimit = SPECConfig.HorizontalTVDistortionMin.ToString(),
-                                UpLimit = SPECConfig.HorizontalTVDistortionMax.ToString(),
+                                LowLimit = SPECConfig.HorizontalTVDistortionMin,
+                                UpLimit = SPECConfig.HorizontalTVDistortionMax,
+                                Value = blackMuraView.DistortionReslut.TVDistortion.HorizontalRatio,
                                 TestValue = blackMuraView.DistortionReslut.TVDistortion.HorizontalRatio.ToString("F5")
                             };
                             ObjectiveTestResult.VerticalTVDistortion = new ObjectiveTestItem()
                             {
                                 Name = "VerticalTVDistortion",
-                                LowLimit = SPECConfig.VerticalTVDistortionMin.ToString(),
-                                UpLimit = SPECConfig.VerticalTVDistortionMax.ToString(),
+                                LowLimit = SPECConfig.VerticalTVDistortionMin,
+                                UpLimit = SPECConfig.VerticalTVDistortionMax,
+                                Value = blackMuraView.DistortionReslut.TVDistortion.VerticalRatio,
                                 TestValue = blackMuraView.DistortionReslut.TVDistortion.VerticalRatio.ToString("F5")
                             };
                         }
@@ -1117,22 +1141,25 @@ namespace ProjectARVR
                             ObjectiveTestResult.XTilt = new ObjectiveTestItem()
                             {
                                 Name = "XTilt",
-                                LowLimit = SPECConfig.XTiltMin.ToString(),
-                                UpLimit = SPECConfig.XTiltMax.ToString(),
+                                LowLimit = SPECConfig.XTiltMin,
+                                UpLimit = SPECConfig.XTiltMax,
+                                Value = result.ViewResultOpticCenter.BinocularFusionModel.XDegree,
                                 TestValue = result.ViewResultOpticCenter.BinocularFusionModel.XDegree.ToString("F4")
                             };
                             ObjectiveTestResult.YTilt = new ObjectiveTestItem()
                             {
                                 Name = "YTilt",
-                                LowLimit = SPECConfig.YTiltMin.ToString(),
-                                UpLimit = SPECConfig.YTiltMax.ToString(),
+                                LowLimit = SPECConfig.YTiltMin,
+                                UpLimit = SPECConfig.YTiltMax,
+                                Value = result.ViewResultOpticCenter.BinocularFusionModel.YDegree,
                                 TestValue = result.ViewResultOpticCenter.BinocularFusionModel.YDegree.ToString("F4")
                             };
                             ObjectiveTestResult.Rotation = new ObjectiveTestItem()
                             {
                                 Name = "Rotation",
-                                LowLimit = SPECConfig.RotationMin.ToString(),
-                                UpLimit = SPECConfig.RotationMax.ToString(),
+                                LowLimit = SPECConfig.RotationMin,
+                                UpLimit = SPECConfig.RotationMax,
+                                Value = result.ViewResultOpticCenter.BinocularFusionModel.ZDegree,
                                 TestValue = result.ViewResultOpticCenter.BinocularFusionModel.ZDegree.ToString("F4")
                             };
                         }
@@ -1154,7 +1181,7 @@ namespace ProjectARVR
             listView1.SelectedIndex = ViewResluts.Count - 1;
             if (SocketManager.GetInstance().TcpClients.Count > 0)
             {
-                log.Info("连接的Socket ");
+                log.Info("Socket已经链接 ");
                 if (SocketControl.Current.Stream != null)
                 {
                     var values = Enum.GetValues(typeof(ARVRTestType));
@@ -1170,12 +1197,16 @@ namespace ProjectARVR
                         log.Info("ARVR测试完成");
 
                         ObjectiveTestResult.TotalResult = true;
-                        ObjectiveTestResult.TotalResultString = ObjectiveTestResult.TotalResult ? "PASS" : "Fail";
+                        string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                        string filePath = Path.Combine(ProjectARVRConfig.Instance.ResultSavePath, $"ObjectiveTestResults_{timeStr}.csv");
 
+                        List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
+                        objectiveTestResults.Add(ObjectiveTestResult);
+                        ObjectiveTestResultCsvExporter.ExportToCsv(objectiveTestResults, filePath);
                         var response = new SocketResponse
                         {
                             Version = "1.0",
-                            MsgID = "",
+                            MsgID = string.Empty,
                             EventName = "ProjectARVRResult",
                             Code = 0,
                             Msg = "ARVR Test Completed",
@@ -1192,10 +1223,10 @@ namespace ProjectARVR
                         var response = new SocketResponse
                         {
                             Version = "1.0",
-                            MsgID = "",
+                            MsgID = string.Empty,
                             EventName = "SwitchPG",
                             Code = -1,
-                            Msg = "",
+                            Msg = "切换PG",
                             Data = new SwitchPG
                             {
                                 ARVRTestType = aRVRTestType

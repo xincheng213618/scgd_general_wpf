@@ -18,6 +18,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -88,6 +89,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
         }
 
         private void Delete()
@@ -135,6 +137,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             switch (arg.EventName)
             {
                 case MQTTCameraEventEnum.Event_GetData:
+                    if (arg.Data == null) return;
                     int masterId = Convert.ToInt32(arg.Data.MasterId);
                     List<MeasureImgResultModel> resultMaster = null;
                     if (masterId > 0)
@@ -227,10 +230,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         try
                         {
                             var fileInfo = new FileInfo(data.FileUrl);
-                            log.Warn($"fileInfo.Length{fileInfo.Length}");
                             using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
                             {
-                                log.Warn("文件可以读取，没有被占用。");
+                                log.Info("文件可以读取，没有被占用。");
                             }
                             if (fileInfo.Length > 0)
                             {
@@ -242,7 +244,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         }
                         catch
                         {
-                            log.Warn("文件还在写入");
+                            log.Info("文件还在写入");
                             await Task.Delay(Config.ViewImageReadDelay);
                             Application.Current.Dispatcher.Invoke(() =>
                             {
@@ -269,7 +271,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             ViewResultCamera result = new(model);
 
             ViewResults.AddUnique(result, Config.InsertAtBeginning);
-            if (Config.AutoRefreshView && (!FlowConfig.Instance.FlowRun || FlowConfig.Instance.AutoRefreshView))
+            if (Config.AutoRefreshView)
             {
                 if (listView1.Items.Count > 0) listView1.SelectedIndex = Config.InsertAtBeginning ? 0 : listView1.Items.Count - 1;
                 listView1.ScrollIntoView(listView1.SelectedItem);

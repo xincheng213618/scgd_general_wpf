@@ -6,7 +6,7 @@ namespace ProjectARVR.PluginConfig
 
 
 
-    public class KBMenu : MenuItemBase
+    public class ProjectARVRMenu : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
 

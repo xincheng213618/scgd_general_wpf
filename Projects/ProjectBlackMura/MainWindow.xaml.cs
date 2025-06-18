@@ -241,7 +241,7 @@ namespace ProjectBlackMura
             flowControl.Stop();
         }
         private FlowControl flowControl;
-        private void FlowControl_FlowCompleted(object? sender, EventArgs e)
+        private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             handler?.Close();
@@ -251,38 +251,30 @@ namespace ProjectBlackMura
             ProjectBlackMuraConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
 
-            if (sender is FlowControlData FlowControlData)
+            if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
             {
-                if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
+                if (FlowControlData.EventName == "Completed")
                 {
-                    if (FlowControlData.EventName == "Completed")
+                    LastCompleted = true;
+                    try
                     {
-                        LastCompleted = true;
-                        try
-                        {
-                            Processing(FlowControlData.SerialNumber);
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
-                        }
+                        Processing(FlowControlData.SerialNumber);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
+                    }
 
-                    }
-                    else
-                    {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
-                    }
                 }
                 else
                 {
-
                     MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
                 }
-
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行异常", "ColorVision");
+
+                MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
             }
         }
         #endregion
@@ -306,7 +298,7 @@ namespace ProjectBlackMura
 
             foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
             {
-                if(item.ImgFileType == AlgorithmResultType.BlackMura_Caculate)
+                if(item.ImgFileType == AlgorithmResultType.BlackMura_Calc)
                 {
                     List<BlackMuraModel> AlgResultModels = BlackMuraDao.Instance.GetAllByPid(item.Id);
                     if (AlgResultModels.Count > 0)

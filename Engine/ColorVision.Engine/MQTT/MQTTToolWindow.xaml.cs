@@ -52,7 +52,7 @@ namespace ColorVision.Engine.MQTT
                 {
 
                 }
-                if (MQTTSetting.Instance.ShowSelect && (TopicListView.SelectedIndex<0 ||(TopicListView.SelectedIndex >-1&&resultData_MQTT.Topic.ToString()!= MQTTControl.SubscribeTopic[TopicListView.SelectedIndex])))
+                if (MQTTSetting.Instance.ShowSelect && !resultData_MQTT.Topic.ToString().Contains(TextBoxSubscribe1.Text))
                 {
                     return;
                 }
@@ -90,7 +90,12 @@ namespace ColorVision.Engine.MQTT
                 {
                     textBox.ContextMenu = null;
                 }
-                StackPanelText.Children.Insert(0,textBox);
+                const int MaxLogs = 500;
+                StackPanelText.Children.Insert(0, textBox);
+                if (StackPanelText.Children.Count > MaxLogs)
+                {
+                    StackPanelText.Children.RemoveAt(StackPanelText.Children.Count - 1);
+                }
             }));
         }
 

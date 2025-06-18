@@ -6,16 +6,17 @@
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" 
              xmlns:hc ="https://handyorg.github.io/handycontrol"
              x:Class="ColorVision.Solution.Searches.SolutionView"
-             xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
-             xmlns:xcad="http://schemas.xceed.com/wpf/xaml/avalondock"
+             xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800" Background="{DynamicResource GlobalBackground}" Initialized="UserControl_Initialized" >
     <UserControl.Resources>
         <!--<Style TargetType="TextBlock" >
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
         </Style>-->
+        <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="#FFFFA500"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.ControlDarkBrushKey}" Color="#FF008000"/>
         <DataTemplate x:Key="DocumentHeaderTemplate">
-            <StackPanel Orientation="Horizontal" Background="{DynamicResource GlobalBackground}">
+            <StackPanel Orientation="Horizontal">
                 <TextBlock TextTrimming="CharacterEllipsis" Text="{Binding Title}" Foreground="{DynamicResource GlobalTextBrush}" />
             </StackPanel>
         </DataTemplate>
@@ -27,36 +28,15 @@
         </Style>
     </UserControl.Resources>
     <Grid>
-        <xcad:DockingManager BorderThickness="0" DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}" Background="Transparent" Theme="{Binding ElementName=_themeCombo, Path=SelectedItem.Tag}" Padding="0" Margin="0">
+        <xcad:DockingManager x:Name="DockingManager1" BorderThickness="0" Background="Transparent" Padding="0" Margin="0">
             <xcad:LayoutRoot x:Name="_layoutRoot" >
                 <xcad:LayoutPanel Orientation="Horizontal" >
                     <xcad:LayoutDocumentPaneGroup>
-                        <xcad:LayoutDocumentPane x:Name="LayoutDocumentPane">
+                        <xcad:LayoutDocumentPane x:Name="LayoutDocumentPane"  >
                         </xcad:LayoutDocumentPane>
                     </xcad:LayoutDocumentPaneGroup>
                 </xcad:LayoutPanel>
             </xcad:LayoutRoot>
         </xcad:DockingManager>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,2,45,0" >
-            <ComboBox x:Name="_themeCombo" SelectedIndex="0" Width="100" BorderThickness="0"   VerticalAlignment="Center">
-                <ComboBoxItem Content="Generic" />
-                <ComboBoxItem Content="Aero">
-                    <ComboBoxItem.Tag>
-                        <xcad:AeroTheme/>
-                    </ComboBoxItem.Tag>
-                </ComboBoxItem>
-                <ComboBoxItem Content="VS2010">
-                    <ComboBoxItem.Tag>
-                        <xcad:VS2010Theme />
-                    </ComboBoxItem.Tag>
-                </ComboBoxItem>
-                <ComboBoxItem Content="Metro">
-                    <ComboBoxItem.Tag>
-                        <xcad:MetroTheme />
-                    </ComboBoxItem.Tag>
-                </ComboBoxItem>
-            </ComboBox>
-        </StackPanel>
-
     </Grid>
 </UserControl>

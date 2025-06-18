@@ -266,7 +266,7 @@ namespace ProjectKB
             flowControl.Stop();
         }
         private FlowControl flowControl;
-        private void FlowControl_FlowCompleted(object? sender, EventArgs e)
+        private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             handler?.Close();
@@ -276,38 +276,24 @@ namespace ProjectKB
             ProjectKBConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
 
-            if (sender is FlowControlData FlowControlData)
+            if (FlowControlData.EventName == "Completed")
             {
-                if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
+                LastCompleted = true;
+                try
                 {
-                    if (FlowControlData.EventName == "Completed")
+                    Application.Current.Dispatcher.BeginInvoke(() =>
                     {
-                        LastCompleted = true;
-                        try
-                        {
-                            Processing(FlowControlData.SerialNumber);
-                        }
-                        catch(Exception ex)
-                        {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
-                        }
-
-                    }
-                    else
-                    {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
-                    }
+                        Processing(FlowControlData.SerialNumber);
+                    });
                 }
-                else
+                catch (Exception ex)
                 {
-
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
                 }
-
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行异常", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
             }
         }
         #endregion
