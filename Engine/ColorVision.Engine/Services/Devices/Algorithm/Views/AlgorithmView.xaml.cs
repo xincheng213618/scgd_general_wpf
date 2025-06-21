@@ -88,11 +88,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
 
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
-
-            listViewSide.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listViewSide.SelectedIndex > -1));
-            listViewSide.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listViewSide.SelectAll(), (s, e) => e.CanExecute = true));
-
-            listViewSide.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
         }
 
         private void Delete()
@@ -105,9 +100,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 foreach (var item in listView1.SelectedItems.Cast<AlgorithmResult>().ToList())
                     ViewResults.Remove(item);
             }
-
-
         }
+
+
         private void NetFileUtil_handler(object sender, NetFileEvent arg)
         {
             if (arg.Code == 0 && arg.FileData.data != null)
@@ -184,7 +179,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (result != null)
             {
                 AlgorithmResult algorithmResult = new AlgorithmResult(result);
-                var ResultHandle = ResultHandles.FirstOrDefault(a => a.CanHandle.Contains(algorithmResult.ResultType));
+
+                var ResultHandle = ResultHandles.FirstOrDefault(a => a.CanHandle1(algorithmResult));
                     ResultHandle?.Load(this,algorithmResult);
 
                 ViewResults.AddUnique(algorithmResult, Config.InsertAtBeginning);

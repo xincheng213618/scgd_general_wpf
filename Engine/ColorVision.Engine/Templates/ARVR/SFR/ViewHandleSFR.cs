@@ -141,12 +141,6 @@ namespace ColorVision.Engine.Templates.SFR
                 Rectangle.Render();
                 view.ImageView.AddVisual(Rectangle);
             }
-            if (result.ResultCode != 0)
-            {
-                if (File.Exists(result.FilePath))
-                    view.ImageView.OpenImage(result.FilePath);
-                return;
-            }
 
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);

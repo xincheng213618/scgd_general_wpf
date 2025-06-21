@@ -29,6 +29,7 @@ using ColorVision.UI.Extension;
 using CVCommCore.CVAlgorithm;
 using FlowEngineLib;
 using FlowEngineLib.Base;
+using LiveChartsCore.Kernel;
 using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -42,6 +43,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -137,11 +139,36 @@ namespace ProjectARVR
     public class ViewResultOpticCenter
     {
         public BinocularFusionModel BinocularFusionModel { get; set; }
+
+        /// <summary>
+        /// X轴倾斜角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem XTilt { get; set; }
+
+        /// <summary>
+        /// Y轴倾斜角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem YTilt { get; set; }
+
+        /// <summary>
+        /// 旋转角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem Rotation { get; set; }
     }
 
     public class ViewReslutDistortionGhost
     {
         public ColorVision.Engine.Templates.Jsons.Distortion2.Distortion2View Distortion2View { get; set; }
+
+        /// <summary>
+        /// 水平TV畸变(%) 测试项
+        /// </summary>
+        public ObjectiveTestItem HorizontalTVDistortion { get; set; }
+
+        /// <summary>
+        /// 垂直TV畸变(%) 测试项
+        /// </summary>
+        public ObjectiveTestItem VerticalTVDistortion { get; set; }
 
     }
 
@@ -160,7 +187,12 @@ namespace ProjectARVR
     {
         public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
 
-        public double Contrast { get; set; }
+        /// <summary>
+        /// FOFO对比度 测试项
+        /// </summary>
+        public ObjectiveTestItem FOFOContrast { get; set; }
+
+
     }
 
     public class ViewResultWhite
@@ -171,15 +203,47 @@ namespace ProjectARVR
 
         public DFovView DFovView { get; set; }
 
-        public double Luminance_uniformity { get; set; }
-        public double Color_uniformity { get; set; }
+        /// <summary>
+        /// 中心相关色温(K) 测试项
+        /// </summary>
+        public ObjectiveTestItem CenterCorrelatedColorTemperature { get; set; }
+
+        /// <summary>
+        /// 亮度均匀性(%) 测试项
+        /// </summary>
+        public ObjectiveTestItem LuminanceUniformity { get; set; }
+
+        /// <summary>
+        /// 色彩均匀性 测试项
+        /// </summary>
+        public ObjectiveTestItem ColorUniformity { get; set; }
+
+        /// <summary>
+        /// 水平视场角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem HorizontalFieldOfViewAngle { get; set; }
+
+        /// <summary>
+        /// 垂直视场角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem VerticalFieldOfViewAngle { get; set; }
+
+        /// <summary>
+        /// 对角线视场角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem DiagonalFieldOfViewAngle { get; set; }
+
+
     }
 
     public class ViewReslutCheckerboard
     {
         public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
 
-        public double Chessboard_Contrast { get; set; }
+        /// <summary>
+        /// 棋盘格对比度 测试项
+        /// </summary>
+        public ObjectiveTestItem ChessboardContrast { get; set; }
     }
 
 
@@ -362,7 +426,7 @@ namespace ProjectARVR
 
                 flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
 
-                for (int i = 0; i < 20; i++)
+                for (int i = 0; i < 200; i++)
                 {
                     if (flowEngine.IsReady)
                         break;
@@ -443,6 +507,7 @@ namespace ProjectARVR
 
         ProjectARVRReuslt CurrentFlowResult { get; set; }
         int TryCount = 0;
+
         public void RunTemplate()
         {
             if (flowControl != null && flowControl.IsFlowRun) return;
@@ -455,12 +520,31 @@ namespace ProjectARVR
             CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info( "找不到完整流程，运行失败");return; }
 
+
+            //多潘基次次
             log.Info($"IsReady{flowEngine.IsReady}");
             if (!flowEngine.IsReady)
             {
+                string base64 = string.Empty;
+                flowEngine.LoadFromBase64(base64);
                 Refresh();
                 log.Info($"IsReady{flowEngine.IsReady}");
+                if (!flowEngine.IsReady)
+                {
+                    flowEngine.LoadFromBase64(base64);
+                    Refresh();
+                    log.Info($"IsReady{flowEngine.IsReady}");
+                    if (!flowEngine.IsReady)
+                    {
+                        flowEngine.LoadFromBase64(base64);
+                        Refresh();
+                        log.Info($"IsReady{flowEngine.IsReady}");
+                    }
+
+                }
             }
+
+
 
 
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
@@ -469,11 +553,18 @@ namespace ProjectARVR
             handler.Cancelling -= Handler_Cancelling;
             handler.Cancelling += Handler_Cancelling;
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
-
             stopwatch.Reset();
             stopwatch.Start();
 
-            BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
+            try
+            {
+                BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
+            }
+            catch (Exception ex)
+            {
+                log.Info(ex);
+            }
+
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
         }
@@ -517,6 +608,8 @@ namespace ProjectARVR
             else if (FlowControlData.EventName == "OverTime")
             {
                 log.Info("流程运行超时，正在重新尝试");
+                flowEngine.LoadFromBase64(string.Empty);
+                Refresh();
                 if (TryCount < ProjectARVRConfig.Instance.TryCountMax)
                 {
                     Task.Delay(200).ContinueWith(t =>
@@ -550,7 +643,6 @@ namespace ProjectARVR
                     log.Info(respString);
                     SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
                 }
-
             }
         }
 
@@ -558,7 +650,21 @@ namespace ProjectARVR
         {
             string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             bool sucess = true;
-            var Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
+            BatchResultMasterModel Batch = null;
+            try
+            {
+                Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
+            }catch(Exception ex)
+            {
+                try
+                {
+                    Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
+                }
+                catch(Exception ex1)
+                {
+                    log.Error(ex1);
+                }
+            }
 
             if (Batch == null)
             {
@@ -575,7 +681,7 @@ namespace ProjectARVR
             result.Model = FlowTemplate.Text;
             result.Id = Batch.Id;
             result.SN = ProjectARVRConfig.Instance.SN;
-
+            result.Result = true;
             if (result.Model.Contains("White"))
             {
                 log.Info("正在解析白画面的流程");
@@ -601,8 +707,7 @@ namespace ProjectARVR
 
                             if (item.PoiName == "POI_5")
                             {
-
-                                ObjectiveTestResult.CenterCorrelatedColorTemperature = new ObjectiveTestItem()
+                                var objectiveTestItem = new ObjectiveTestItem()
                                 {
                                     Name = "CenterCorrelatedColorTemperature",
                                     TestValue = poiResultCIExyuvData.CCT.ToString(),
@@ -610,8 +715,10 @@ namespace ProjectARVR
                                     LowLimit = SPECConfig.CenterCorrelatedColorTemperatureMin,
                                     UpLimit = SPECConfig.CenterCorrelatedColorTemperatureMax
                                 };
+                                ObjectiveTestResult.CenterCorrelatedColorTemperature = objectiveTestItem;
+                                result.ViewResultWhite.CenterCorrelatedColorTemperature = objectiveTestItem;
+                                result.Result = result.Result && objectiveTestItem.TestResult;
                             }
-
                             result.ViewResultWhite.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                         }
                     }
@@ -629,10 +736,7 @@ namespace ProjectARVR
                             if (detailCommonModels.Count == 1)
                             {
                                 PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
-                                result.ViewResultWhite.Luminance_uniformity = viewReslut.PoiAnalysisResult.result.Value;
-
-
-                                ObjectiveTestResult.LuminanceUniformity = new ObjectiveTestItem()
+                                var LuminanceUniformity = new ObjectiveTestItem()
                                 {
                                     Name = "Luminance_uniformity(%)",
                                     TestValue = (viewReslut.PoiAnalysisResult.result.Value * 100).ToString("F3") + "%",
@@ -640,6 +744,10 @@ namespace ProjectARVR
                                     LowLimit = SPECConfig.LuminanceUniformityMin,
                                     UpLimit = SPECConfig.LuminanceUniformityMax,
                                 };
+                                ObjectiveTestResult.LuminanceUniformity = LuminanceUniformity;
+                                result.ViewResultWhite.LuminanceUniformity = LuminanceUniformity;
+
+                                result.Result = result.Result && LuminanceUniformity.TestResult;
 
                             }
 
@@ -650,16 +758,19 @@ namespace ProjectARVR
                             if (detailCommonModels.Count == 1)
                             {
                                 PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
-                                result.ViewResultWhite.Color_uniformity = viewReslut.PoiAnalysisResult.result.Value;
-
-                                ObjectiveTestResult.ColorUniformity = new ObjectiveTestItem()
+                                var ColorUniformity = new ObjectiveTestItem()
                                 {
                                     Name = "Color_uniformity",
                                     TestValue = (viewReslut.PoiAnalysisResult.result.Value).ToString("F5"),
-                                    Value= viewReslut.PoiAnalysisResult.result.Value,
+                                    Value = viewReslut.PoiAnalysisResult.result.Value,
                                     LowLimit = SPECConfig.ColorUniformityMin,
                                     UpLimit = SPECConfig.ColorUniformityMax
                                 };
+                                ObjectiveTestResult.ColorUniformity = ColorUniformity;
+                                result.ViewResultWhite.ColorUniformity = ColorUniformity;
+
+                                result.Result = result.Result && ColorUniformity.TestResult;
+
                             }
                         }
                     }
@@ -680,6 +791,7 @@ namespace ProjectARVR
                                 Value = view1.Result.result.D_Fov,
                                 TestValue = view1.Result.result.D_Fov.ToString("F3")
                             };
+
                             ObjectiveTestResult.HorizontalFieldOfViewAngle = new ObjectiveTestItem()
                             {
                                 Name = "HorizontalFieldOfViewAngle",
@@ -696,7 +808,14 @@ namespace ProjectARVR
                                 Value = view1.Result.result.ClolorVisionV_Fov,
                                 TestValue = view1.Result.result.ClolorVisionV_Fov.ToString("F3")
                             };
+                            result.ViewResultWhite.DiagonalFieldOfViewAngle = ObjectiveTestResult.DiagonalFieldOfViewAngle;
+                            result.ViewResultWhite.HorizontalFieldOfViewAngle = ObjectiveTestResult.HorizontalFieldOfViewAngle;
+                            result.ViewResultWhite.VerticalFieldOfViewAngle = ObjectiveTestResult.VerticalFieldOfViewAngle;
 
+
+                            result.Result = result.Result && ObjectiveTestResult.DiagonalFieldOfViewAngle.TestResult;
+                            result.Result = result.Result && ObjectiveTestResult.HorizontalFieldOfViewAngle.TestResult;
+                            result.Result = result.Result && ObjectiveTestResult.VerticalFieldOfViewAngle.TestResult;
                         }
 
                     }
@@ -732,16 +851,19 @@ namespace ProjectARVR
                         {
                             if (result.ViewResultWhite != null && result.ViewResultWhite.PoiResultCIExyuvDatas.Count == 9 && result.ViewResultBlack.PoiResultCIExyuvDatas.Count == 1)
                             {
-                                result.ViewResultBlack.Contrast = result.ViewResultWhite.PoiResultCIExyuvDatas[5].Y / result.ViewResultBlack.PoiResultCIExyuvDatas[0].Y;
-
-                                ObjectiveTestResult.FOFOContrast = new ObjectiveTestItem()
+                               var contrast1 = result.ViewResultWhite.PoiResultCIExyuvDatas[5].Y / result.ViewResultBlack.PoiResultCIExyuvDatas[0].Y;
+                                var FOFOContrast = new ObjectiveTestItem()
                                 {
                                     Name = "FOFOContrast",
                                     LowLimit = SPECConfig.FOFOContrastMin,
                                     UpLimit = SPECConfig.FOFOContrastMax,
-                                    Value = result.ViewResultBlack.Contrast,
-                                    TestValue = result.ViewResultBlack.Contrast.ToString("F2")
+                                    Value = contrast1,
+                                    TestValue = contrast1.ToString("F2")
                                 };
+
+                                ObjectiveTestResult.FOFOContrast = FOFOContrast;
+                                result.ViewResultBlack.FOFOContrast = FOFOContrast;
+                                result.Result = result.Result && FOFOContrast.TestResult;
                             }
                         }
                         catch (Exception ex)
@@ -794,8 +916,7 @@ namespace ProjectARVR
                                 PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
 
 
-                                result.ViewReslutCheckerboard.Chessboard_Contrast = viewReslut.PoiAnalysisResult.result.Value;
-
+                                var ChessboardContrast = viewReslut.PoiAnalysisResult.result.Value;
 
                                 ObjectiveTestResult.ChessboardContrast = new ObjectiveTestItem()
                                 {
@@ -803,8 +924,12 @@ namespace ProjectARVR
                                     LowLimit = SPECConfig.ChessboardContrastMin,
                                     UpLimit = SPECConfig.ChessboardContrastMax,
                                     Value = viewReslut.PoiAnalysisResult.result.Value,
-                                    TestValue = result.ViewReslutCheckerboard.Chessboard_Contrast.ToString("F2")
+                                    TestValue = ChessboardContrast.ToString("F2")
                                 };
+
+                                result.ViewReslutCheckerboard.ChessboardContrast = ObjectiveTestResult.ChessboardContrast;
+                                result.Result = result.Result && ObjectiveTestResult.ChessboardContrast.TestResult;
+
                             }
                         }
                     }
@@ -843,6 +968,8 @@ namespace ProjectARVR
                                         Value = mtf.mtfValue ??0,
                                         TestValue = mtf.mtfValue.ToString() 
                                     };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_H_Center_0F.TestResult;
+
                                 }
 
                                 if (mtf.name == "LeftUp_0.5F_H")
@@ -855,6 +982,7 @@ namespace ProjectARVR
                                         Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_H_LeftUp_0_5F.TestResult;
                                 }
                                 if (mtf.name == "RightUp_0.5F_H")
                                 {
@@ -866,6 +994,7 @@ namespace ProjectARVR
                                         Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_H_RightUp_0_5F.TestResult;
                                 }
                                 if (mtf.name == "LeftDown_0.5F_H")
                                 {
@@ -877,6 +1006,7 @@ namespace ProjectARVR
                                         Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_H_LeftDown_0_5F.TestResult;
                                 }
                                 if (mtf.name == "RightDown_0.5F_H")
                                 {
@@ -888,6 +1018,7 @@ namespace ProjectARVR
                                         Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_H_RightDown_0_5F.TestResult;
                                 }
 
                                 if (mtf.name == "LeftUp_0.8F_H")
@@ -900,6 +1031,7 @@ namespace ProjectARVR
                                         Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_H_LeftUp_0_8F.TestResult;
                                 }
                                 if (mtf.name == "RightUp_0.8F_H")
                                 {
@@ -911,6 +1043,7 @@ namespace ProjectARVR
                                         Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_H_RightUp_0_8F.TestResult;
                                 }
                                 if (mtf.name == "LeftDown_0.8F_H")
                                 {
@@ -922,6 +1055,7 @@ namespace ProjectARVR
                                         Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_H_LeftDown_0_8F.TestResult;
                                 }
                                 if (mtf.name == "RightDown_0.8F_H")
                                 {
@@ -933,6 +1067,7 @@ namespace ProjectARVR
                                         Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_H_RightDown_0_8F.TestResult;
                                 }
                             }
 
@@ -977,6 +1112,7 @@ namespace ProjectARVR
                                         Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_V_Center_0F.TestResult;
                                 }
                                 if (mtf.name == "LeftUp_0.5F_V")
                                 {
@@ -988,6 +1124,7 @@ namespace ProjectARVR
                                         Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_V_LeftUp_0_5F.TestResult;
                                 }
                                 if (mtf.name == "RightUp_0.5F_V")
                                 {
@@ -999,6 +1136,7 @@ namespace ProjectARVR
                                         Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_V_RightUp_0_5F.TestResult;
                                 }
                                 if (mtf.name == "LeftDown_0.5F_V")
                                 {
@@ -1010,6 +1148,7 @@ namespace ProjectARVR
                                         Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_V_LeftDown_0_5F.TestResult;
                                 }
                                 if (mtf.name == "RightDown_0.5F_V")
                                 {
@@ -1021,6 +1160,7 @@ namespace ProjectARVR
                                         Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_V_RightDown_0_5F.TestResult;
                                 }
                                 if (mtf.name == "LeftUp_0.8F_V")
                                 {
@@ -1032,6 +1172,7 @@ namespace ProjectARVR
                                         Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_V_LeftUp_0_8F.TestResult;
                                 }
                                 if (mtf.name == "RightUp_0.8F_V")
                                 {
@@ -1043,6 +1184,7 @@ namespace ProjectARVR
                                         Value = mtf.mtfValue ?? 0,  
                                         TestValue = mtf.mtfValue.ToString()
                                     };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_V_RightUp_0_8F.TestResult;
                                 }
                                 if (mtf.name == "LeftDown_0.8F_V")
                                 {
@@ -1054,6 +1196,7 @@ namespace ProjectARVR
                                         Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_V_LeftDown_0_8F.TestResult;
                                 }
                                 if (mtf.name == "RightDown_0.8F_V")
                                 {
@@ -1065,6 +1208,7 @@ namespace ProjectARVR
                                         Value = mtf.mtfValue ?? 0,
                                         TestValue = mtf.mtfValue.ToString()
                                     };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_V_RightDown_0_8F.TestResult;
                                 }
                             }
 
@@ -1103,6 +1247,7 @@ namespace ProjectARVR
                                 Value = blackMuraView.DistortionReslut.TVDistortion.HorizontalRatio,
                                 TestValue = blackMuraView.DistortionReslut.TVDistortion.HorizontalRatio.ToString("F5")
                             };
+
                             ObjectiveTestResult.VerticalTVDistortion = new ObjectiveTestItem()
                             {
                                 Name = "VerticalTVDistortion",
@@ -1111,6 +1256,13 @@ namespace ProjectARVR
                                 Value = blackMuraView.DistortionReslut.TVDistortion.VerticalRatio,
                                 TestValue = blackMuraView.DistortionReslut.TVDistortion.VerticalRatio.ToString("F5")
                             };
+                            result.ViewReslutDistortionGhost.HorizontalTVDistortion = ObjectiveTestResult.HorizontalTVDistortion;
+                            result.ViewReslutDistortionGhost.VerticalTVDistortion = ObjectiveTestResult.VerticalTVDistortion;
+
+                            result.Result = result.Result && ObjectiveTestResult.HorizontalTVDistortion.TestResult;
+                            result.Result = result.Result && ObjectiveTestResult.VerticalTVDistortion.TestResult;
+
+
                         }
 
                     }
@@ -1162,6 +1314,15 @@ namespace ProjectARVR
                                 Value = result.ViewResultOpticCenter.BinocularFusionModel.ZDegree,
                                 TestValue = result.ViewResultOpticCenter.BinocularFusionModel.ZDegree.ToString("F4")
                             };
+
+
+                            result.ViewResultOpticCenter.XTilt = ObjectiveTestResult.XTilt;
+                            result.ViewResultOpticCenter.YTilt = ObjectiveTestResult.YTilt;
+                            result.ViewResultOpticCenter.Rotation = ObjectiveTestResult.Rotation;
+
+                            result.Result = result.Result && ObjectiveTestResult.XTilt.TestResult;
+                            result.Result = result.Result && ObjectiveTestResult.YTilt.TestResult;
+                            result.Result = result.Result && ObjectiveTestResult.Rotation.TestResult;
                         }
 
                     }
@@ -1176,9 +1337,10 @@ namespace ProjectARVR
                     result.FileName = values[0].FileUrl;
                 }
             }
-            ViewResluts.Add(result);
 
-            listView1.SelectedIndex = ViewResluts.Count - 1;
+            ViewResluts.Insert(0,result); //倒序插入
+            listView1.SelectedIndex = 0;
+
             if (SocketManager.GetInstance().TcpClients.Count > 0)
             {
                 log.Info("Socket已经链接 ");
@@ -1197,10 +1359,12 @@ namespace ProjectARVR
                         log.Info("ARVR测试完成");
 
                         ObjectiveTestResult.TotalResult = true;
+
                         string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                         string filePath = Path.Combine(ProjectARVRConfig.Instance.ResultSavePath, $"ObjectiveTestResults_{timeStr}.csv");
 
                         List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
+                      
                         objectiveTestResults.Add(ObjectiveTestResult);
                         ObjectiveTestResultCsvExporter.ExportToCsv(objectiveTestResults, filePath);
                         var response = new SocketResponse
@@ -1225,8 +1389,8 @@ namespace ProjectARVR
                             Version = "1.0",
                             MsgID = string.Empty,
                             EventName = "SwitchPG",
-                            Code = -1,
-                            Msg = "切换PG",
+                            Code = 0,
+                            Msg = "Switch PG",
                             Data = new SwitchPG
                             {
                                 ARVRTestType = aRVRTestType
@@ -1553,33 +1717,17 @@ namespace ProjectARVR
                             outtext += $"X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
                         }
                     }
-                    outtext += $"Luminance_uniformity:{result.ViewResultWhite.Luminance_uniformity}" + Environment.NewLine;
-                    outtext += $"Color_uniformity:{result.ViewResultWhite.Color_uniformity}" + Environment.NewLine;
+                    outtext += $"CenterCorrelatedColorTemperature:{result.ViewResultWhite.CenterCorrelatedColorTemperature.TestValue}  LowLimit:{result.ViewResultWhite.CenterCorrelatedColorTemperature.LowLimit} UpLimit:{result.ViewResultWhite.CenterCorrelatedColorTemperature.UpLimit},Rsult{(result.ViewResultWhite.CenterCorrelatedColorTemperature.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    outtext += $"Luminance_uniformity:{result.ViewResultWhite.LuminanceUniformity.TestValue} LowLimit:{result.ViewResultWhite.LuminanceUniformity.LowLimit}  UpLimit:{result.ViewResultWhite.LuminanceUniformity.UpLimit},Rsult{(result.ViewResultWhite.LuminanceUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    outtext += $"Color_uniformity:{result.ViewResultWhite.ColorUniformity.TestValue} LowLimit:{result.ViewResultWhite.ColorUniformity.LowLimit} UpLimit:{result.ViewResultWhite.ColorUniformity.UpLimit},Rsult{(result.ViewResultWhite.ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    outtext += $"DiagonalFieldOfViewAngle:{result.ViewResultWhite.DiagonalFieldOfViewAngle.TestValue}  LowLimit:{result.ViewResultWhite.DiagonalFieldOfViewAngle.LowLimit} UpLimit:{result.ViewResultWhite.DiagonalFieldOfViewAngle.UpLimit},Rsult{(result.ViewResultWhite.DiagonalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    outtext += $"HorizontalFieldOfViewAngle:{result.ViewResultWhite.HorizontalFieldOfViewAngle.TestValue} LowLimit:{result.ViewResultWhite.HorizontalFieldOfViewAngle.LowLimit} UpLimit:{result.ViewResultWhite.HorizontalFieldOfViewAngle.UpLimit} ,Rsult{(result.ViewResultWhite.HorizontalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    outtext += $"VerticalFieldOfViewAngle:{result.ViewResultWhite.VerticalFieldOfViewAngle.TestValue} LowLimit:{result.ViewResultWhite.VerticalFieldOfViewAngle.LowLimit} UpLimit:{result.ViewResultWhite.VerticalFieldOfViewAngle.UpLimit},Rsult{(result.ViewResultWhite.VerticalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+
                     break;
                 case ARVRTestType.Black:
-                    outtext += $"白画面 测试项：自动AA区域定位算法+关注点算法+FOV算法+亮度均匀性+颜色均匀性算法+" + Environment.NewLine;
-
-                    if (result.ViewResultWhite.AlgResultLightAreaModels != null)
-                    {
-                        foreach (var item in result.ViewResultWhite.AlgResultLightAreaModels)
-                        {
-                            outtext += $"AlgResultLightAreaModel:{item.PosX},{item.PosY}" + Environment.NewLine;
-                        }
-                    }
-
-                    if (result.ViewResultWhite.PoiResultCIExyuvDatas != null)
-                    {
-                        foreach (var item in result.ViewResultWhite.PoiResultCIExyuvDatas)
-                        {
-                            outtext += $"X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
-                        }
-                    }
-                    outtext += $"Luminance_uniformity:{result.ViewResultWhite.Luminance_uniformity}" + Environment.NewLine;
-                    outtext += $"Color_uniformity:{result.ViewResultWhite.Color_uniformity}" + Environment.NewLine;
-
                     outtext += $"黑画面 测试项：自动AA区域定位算法+关注点算法+序列对比度算法(中心亮度比值)" + Environment.NewLine;
-
-                    outtext += $"Contrast:{result.ViewResultBlack.Contrast}" + Environment.NewLine;
+                    outtext += $"FOFOContrast:{result.ViewResultBlack.FOFOContrast.TestValue}  LowLimit:{result.ViewResultBlack.FOFOContrast.LowLimit} UpLimit:{result.ViewResultBlack.FOFOContrast.UpLimit},Rsult{(result.ViewResultBlack.FOFOContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     break;
                 case ARVRTestType.MTFH:
                     outtext += $"水平MTF 测试项：自动AA区域定位算法+关注点+MTF算法" + Environment.NewLine;
@@ -1609,31 +1757,29 @@ namespace ProjectARVR
                     {
                         outtext += $"id:{item.Id} X:{item.X} Y:{item.Y}" + Environment.NewLine;
                     }
-                    outtext += $"HorizontalRatio:{result.ViewReslutDistortionGhost.Distortion2View.DistortionReslut.TVDistortion.HorizontalRatio}" + Environment.NewLine;
-                    outtext += $"VerticalRatio:{result.ViewReslutDistortionGhost.Distortion2View.DistortionReslut.TVDistortion.VerticalRatio}" + Environment.NewLine;
-
+                    outtext += $"HorizontalTVDistortion:{result.ViewReslutDistortionGhost.HorizontalTVDistortion.TestValue} LowLimit:{result.ViewReslutDistortionGhost.HorizontalTVDistortion.LowLimit}  UpLimit:{result.ViewReslutDistortionGhost.HorizontalTVDistortion.UpLimit},Rsult{(result.ViewReslutDistortionGhost.HorizontalTVDistortion.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    outtext += $"VerticalTVDistortion:{result.ViewReslutDistortionGhost.VerticalTVDistortion.TestValue} LowLimit:{result.ViewReslutDistortionGhost.VerticalTVDistortion.LowLimit}  UpLimit:{result.ViewReslutDistortionGhost.VerticalTVDistortion.UpLimit},Rsult{(result.ViewReslutDistortionGhost.VerticalTVDistortion.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     break;
                 case ARVRTestType.Chessboard:
                     outtext += $"棋盘格 测试项：" + Environment.NewLine;
-                    outtext += $"Chessboard_Contrast:{result.ViewReslutCheckerboard.Chessboard_Contrast}" + Environment.NewLine;
+                    outtext += $"ChessboardContrast:{result.ViewReslutCheckerboard.ChessboardContrast.TestValue} LowLimit:{result.ViewReslutCheckerboard.ChessboardContrast.LowLimit}  UpLimit:{result.ViewReslutCheckerboard.ChessboardContrast.UpLimit},Rsult{(result.ViewReslutCheckerboard.ChessboardContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     break;
                 case ARVRTestType.OpticCenter:
                     outtext += $"OpticCenter 测试项：" + Environment.NewLine;
                     outtext += $"中心点x:{result.ViewResultOpticCenter.BinocularFusionModel.CrossMarkCenterX} 中心点y:{result.ViewResultOpticCenter.BinocularFusionModel.CrossMarkCenterY}" + Environment.NewLine;
-                    outtext += $"XDegree:{result.ViewResultOpticCenter.BinocularFusionModel.XDegree} YDegree:{result.ViewResultOpticCenter.BinocularFusionModel.YDegree} ZDegree:{result.ViewResultOpticCenter.BinocularFusionModel.ZDegree}" + Environment.NewLine;
+
+                    outtext += $"XTilt:{result.ViewResultOpticCenter.XTilt.TestValue} LowLimit:{result.ViewResultOpticCenter.XTilt.LowLimit}  UpLimit:{result.ViewResultOpticCenter.XTilt.UpLimit},Rsult{(result.ViewResultOpticCenter.XTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    outtext += $"YTilt:{result.ViewResultOpticCenter.YTilt.TestValue} LowLimit:{result.ViewResultOpticCenter.YTilt.LowLimit}  UpLimit:{result.ViewResultOpticCenter.YTilt.UpLimit},Rsult{(result.ViewResultOpticCenter.YTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    outtext += $"Rotation:{result.ViewResultOpticCenter.Rotation.TestValue} LowLimit:{result.ViewResultOpticCenter.Rotation.LowLimit}  UpLimit:{result.ViewResultOpticCenter.Rotation.UpLimit},Rsult{(result.ViewResultOpticCenter.Rotation.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+
                     break;
                 default:
                     break;
             }
 
-            //outtext += $"Min Lv= {result.MinLv:F2} cd/m2" + Environment.NewLine;
-            //outtext += $"Max Lv= {result.MaxLv:F2} cd/m2" + Environment.NewLine;
-            //outtext += $"Darkest Key= {result.DrakestKey}" + Environment.NewLine;
-            //outtext += $"Brightest Key= {result.BrightestKey}" + Environment.NewLine;
 
             outtext += Environment.NewLine;
             outtext += $"Pass/Fail Criteria:" + Environment.NewLine;
-
 
             outtext += result.Result ? "Pass" : "Fail" + Environment.NewLine;
 
@@ -1680,156 +1826,6 @@ namespace ProjectARVR
         {
             timer?.Dispose();
             GC.SuppressFinalize(this);
-        }
-
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            if (SocketManager.GetInstance().TcpClients.Count > 0)
-            {
-                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
-
-
-
-                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.White } };
-                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
-                tcpClient.GetStream().Write(response1, 0, response1.Length);
-            }
-            else
-            {
-                MessageBox.Show("找不到链接的客户端");
-            }
-        }
-
-        private void Button_Click_2(object sender, RoutedEventArgs e)
-        {
-            if (SocketManager.GetInstance().TcpClients.Count > 0)
-            {
-                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
-                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.Black } };
-                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
-                tcpClient.GetStream().Write(response1, 0, response1.Length);
-
-
-            }
-            else
-            {
-                MessageBox.Show("找不到链接的客户端");
-            }
-        }
-
-        private void Button_Click_3(object sender, RoutedEventArgs e)
-        {
-            if (SocketManager.GetInstance().TcpClients.Count > 0)
-            {
-                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
-                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.Distortion } };
-
-                //string value = request.ToJsonN();
-                //var response = JsonConvert.DeserializeObject<SocketResponse>(value);
-
-                //if (response.EventName == "SwitchPG")
-                //{
-                //    var switchPg = (response.Data as JObject)?.ToObject<SwitchPG>();
-
-                //}
-
-                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
-                tcpClient.GetStream().Write(response1, 0, response1.Length);
-            }
-            else
-            {
-                MessageBox.Show("找不到链接的客户端");
-            }
-        }
-
-        private void Button_Click_4(object sender, RoutedEventArgs e)
-        {
-            if (SocketManager.GetInstance().TcpClients.Count > 0)
-            {
-                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
-                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.Chessboard } };
-                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
-                tcpClient.GetStream().Write(response1, 0, response1.Length);
-            }
-            else
-            {
-                MessageBox.Show("找不到链接的客户端");
-            }
-        }
-
-        private void Button_Click_5(object sender, RoutedEventArgs e)
-        {
-            if (SocketManager.GetInstance().TcpClients.Count > 0)
-            {
-                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
-                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.MTFH } };
-                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
-                tcpClient.GetStream().Write(response1, 0, response1.Length);
-            }
-            else
-            {
-                MessageBox.Show("找不到链接的客户端");
-            }
-        }
-
-        private void Button_Click_6(object sender, RoutedEventArgs e)
-        {
-            if (SocketManager.GetInstance().TcpClients.Count > 0)
-            {
-                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
-                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.MTFV } };
-                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
-                tcpClient.GetStream().Write(response1, 0, response1.Length);
-            }
-            else
-            {
-                MessageBox.Show("找不到链接的客户端");
-            }
-        }
-
-        private void Button_Click_7(object sender, RoutedEventArgs e)
-        {
-            if (SocketManager.GetInstance().TcpClients.Count > 0)
-            {
-                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
-                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.BKscreeenDefectDetection } };
-                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
-                tcpClient.GetStream().Write(response1, 0, response1.Length);
-            }
-            else
-            {
-                MessageBox.Show("找不到链接的客户端");
-            }
-        }
-
-        private void Button_Click_8(object sender, RoutedEventArgs e)
-        {
-            if (SocketManager.GetInstance().TcpClients.Count > 0)
-            {
-                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
-                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.Chessboard } };
-                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
-                tcpClient.GetStream().Write(response1, 0, response1.Length);
-            }
-            else
-            {
-                MessageBox.Show("找不到链接的客户端");
-            }
-        }
-
-        private void Button_Click_9(object sender, RoutedEventArgs e)
-        {
-            if (SocketManager.GetInstance().TcpClients.Count > 0)
-            {
-                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
-                SocketResponse request = new SocketResponse() { EventName = "ProjectARVRResult", Data = new ProjectARVRReuslt() };
-                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
-                tcpClient.GetStream().Write(response1, 0, response1.Length);
-            }
-            else
-            {
-                MessageBox.Show("找不到链接的客户端");
-            }
         }
     }
 }

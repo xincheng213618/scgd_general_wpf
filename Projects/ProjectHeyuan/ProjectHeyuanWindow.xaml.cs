@@ -489,17 +489,6 @@ namespace ColorVision.Projects.ProjectHeyuan
                     
                     handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
 
-                    flowControl.FlowData += (s, e) =>
-                    {
-                        if (s is FlowControlData msg)
-                        {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
-                            });
-                        }
-                    };
-
                     flowControl.FlowCompleted += FlowControl_FlowCompleted;
                     string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
                     stopwatch.Reset();

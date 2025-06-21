@@ -280,6 +280,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private void Search_Click(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
+            for (int i = 0; i < 1000; i++)
+            {
+                Task.Run(() =>
+                {
+                    List<MeasureImgResultModel> algResults1 = MeasureImgResultDao.Instance.GetAll(Config.SearchLimit);
+                });
+            }
             List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.GetAll(Config.SearchLimit);
             if (!Config.InsertAtBeginning)
                 algResults.Reverse();

@@ -376,9 +376,18 @@ namespace ColorVision.Engine.Templates.Flow
             log.Info($"IsReady{View.FlowEngineControl.IsReady}");
             if (!View.FlowEngineControl.IsReady)
             {
+                View.FlowEngineControl.LoadFromBase64(string.Empty);
                 Refresh();
                 log.Info($"IsReady{View.FlowEngineControl.IsReady}");
+                log.Info($"IsReady{View.FlowEngineControl.IsReady}");
+                if (!View.FlowEngineControl.IsReady)
+                {
+                    View.FlowEngineControl.LoadFromBase64(string.Empty);
+                    Refresh();
+                    log.Info($"IsReady{View.FlowEngineControl.IsReady}");
+                }
             }
+
             CheckDiskSpace("C");
             CheckDiskSpace("D");
             LastFlowTime = FlowConfig.Instance.FlowRunTime.TryGetValue(ComboBoxFlow.Text, out long time) ? time : 0;

@@ -93,12 +93,6 @@ namespace ColorVision.Engine.Templates.Ghost
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();
-            if (result.ResultCode != 0)
-            {
-                if (File.Exists(result.FilePath))
-                    view.ImageView.OpenImage(result.FilePath);
-                return;
-            }
 
             if (result.ViewResults == null)
             {
