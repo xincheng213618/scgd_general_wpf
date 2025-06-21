@@ -1076,6 +1076,28 @@ namespace ProjectARVR
 
                         }
 
+                        try
+                        {
+                            string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                            string filePath = Path.Combine(ProjectARVRConfig.Instance.ResultSavePath, $"MTF_H_{timeStr}.csv");
+                            var csvBuilder = new StringBuilder();
+                            csvBuilder.AppendLine($"name,x,y,w,h,mtfValue");
+                            var mtfs = result.ViewRelsultMTFV.MTFDetailViewReslut.MTFResult?.result;
+                            if (mtfs != null)
+                            {
+                                foreach (var item in mtfs)
+                                {
+                                    csvBuilder.AppendLine($"{item.name},{item.x},{item.y},{item.w},{item.h},{item.mtfValue}");
+                                }
+                            }
+
+                            File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error(ex);
+                        }
+
                     }
                 }
 
@@ -1217,6 +1239,29 @@ namespace ProjectARVR
 
                     }
                 }
+
+                try
+                {
+                    string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                    string filePath = Path.Combine(ProjectARVRConfig.Instance.ResultSavePath, $"MTF_V_{timeStr}.csv");
+                    var csvBuilder = new StringBuilder();
+                    csvBuilder.AppendLine($"name,x,y,w,h,mtfValue");
+                    var mtfs = result.ViewRelsultMTFV.MTFDetailViewReslut.MTFResult?.result;
+                    if (mtfs != null)
+                    {
+                        foreach (var item in mtfs)
+                        {
+                            csvBuilder.AppendLine($"{item.name},{item.x},{item.y},{item.w},{item.h},{item.mtfValue}");
+                        }
+                    }
+
+                    File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
+                }catch(Exception ex)
+                {
+                    log.Error(ex);
+                }
+                
+
             }
             else if (result.Model.Contains("Distortion"))
             {
