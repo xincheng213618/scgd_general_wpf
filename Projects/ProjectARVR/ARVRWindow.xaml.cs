@@ -646,10 +646,13 @@ namespace ProjectARVR
             }
         }
 
+        private bool IsSavePicture = false;
+        
+
         private void Processing(string SerialNumber)
         {
-            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            bool sucess = true;
+            IsSavePicture = true;
+
             BatchResultMasterModel Batch = null;
             try
             {
@@ -1066,19 +1069,15 @@ namespace ProjectARVR
                                     result.Result = result.Result && ObjectiveTestResult.MTF_H_RightDown_0_8F.TestResult;
                                 }
                             }
-
-
                             result.ViewRelsultMTFH.MTFDetailViewReslut = mtfresults;
-
                         }
-
                         try
                         {
                             string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                             string filePath = Path.Combine(ProjectARVRConfig.Instance.ResultSavePath, $"MTF_H_{timeStr}.csv");
                             var csvBuilder = new StringBuilder();
                             csvBuilder.AppendLine($"name,x,y,w,h,mtfValue");
-                            var mtfs = result.ViewRelsultMTFV.MTFDetailViewReslut.MTFResult?.result;
+                            var mtfs = result.ViewRelsultMTFH.MTFDetailViewReslut.MTFResult?.result;
                             if (mtfs != null)
                             {
                                 foreach (var item in mtfs)
@@ -1086,8 +1085,11 @@ namespace ProjectARVR
                                     csvBuilder.AppendLine($"{item.name},{item.x},{item.y},{item.w},{item.h},{item.mtfValue}");
                                 }
                             }
-
                             File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
+
+
+
+
                         }
                         catch (Exception ex)
                         {
@@ -1701,9 +1703,24 @@ namespace ProjectARVR
                         }
                     }
                 }
+                Task.Run(async () =>
+                {
+                    await Task.Delay(200);
 
-
-
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        if (IsSavePicture)
+                        {
+                            IsSavePicture = false;
+                            string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                            if (Directory.Exists(ProjectARVRConfig.Instance.ResultSavePath))
+                            {
+                                string filePath = Path.Combine(ProjectARVRConfig.Instance.ResultSavePath, $"{result.TestType}_{timeStr}.png");
+                                ImageView.ImageViewModel.Save(filePath);
+                            }
+                        }
+                    });
+                });
 
             });
 
