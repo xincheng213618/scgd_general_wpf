@@ -211,6 +211,11 @@ namespace ColorVision.Common.MVVM
                                      .Where(p => p.CanRead && p.CanWrite);
                 foreach (var property in properties)
                 {
+                    if (typeof(ICommand).IsAssignableFrom(property.PropertyType))
+                    {
+                        // 不拷贝 Command
+                        continue;
+                    }
                     try
                     {
                         var propertyValue = property.GetValue(source);
