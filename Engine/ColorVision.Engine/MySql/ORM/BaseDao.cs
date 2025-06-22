@@ -17,6 +17,7 @@ namespace ColorVision.Engine.MySql.ORM
 
         public string TableName { get { return _TableName; } set { _TableName = value; } }
         private string _TableName;
+
         public string PKField { get { return _PKField; } set { _PKField = value; } }
         private string _PKField;
 

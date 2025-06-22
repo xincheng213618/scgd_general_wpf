@@ -8,9 +8,6 @@ using System.Linq;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
 {
-    using System;
-    using System.ComponentModel.DataAnnotations.Schema;
-
     [Table("t_scgd_measure_result_spectrometer")]
     public class SpectumResultModel : PKModel
     {
@@ -112,6 +109,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
     public class SpectumResultDao : BaseTableDao<SpectumResultModel>
     {
         public static SpectumResultDao Instance { get; set; } = new SpectumResultDao();
+
+
 
         public List<SpectumResultModel> selectBySN(string sn)
         {

@@ -45,6 +45,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
         public string WavelengthFile { get => _WavelengthFile; set { _WavelengthFile = value; NotifyPropertyChanged(); } }
         private string _WavelengthFile;
+
         public string MaguideFile { get => _MaguideFile; set { _MaguideFile = value; NotifyPropertyChanged(); } }
         private string _MaguideFile;
 

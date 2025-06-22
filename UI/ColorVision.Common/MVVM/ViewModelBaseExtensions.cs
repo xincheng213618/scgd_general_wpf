@@ -1,6 +1,8 @@
-﻿using System;
+﻿using IWshRuntimeLibrary;
+using System;
 using System.Linq;
 using System.Reflection;
+using System.Windows.Input;
 
 namespace ColorVision.Common.MVVM
 {
@@ -168,8 +170,14 @@ namespace ColorVision.Common.MVVM
             {
                 // Copy fields
                 var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
                 foreach (var field in fields)
                 {
+                    if (typeof(ICommand).IsAssignableFrom(field.FieldType))
+                    {
+                        // 不拷贝 Command
+                        continue;
+                    }
                     if (!field.IsInitOnly) // Ignore readonly fields
                     {
                         try
@@ -195,6 +203,8 @@ namespace ColorVision.Common.MVVM
                         }
                     }
                 }
+
+
 
                 // Copy properties
                 var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
