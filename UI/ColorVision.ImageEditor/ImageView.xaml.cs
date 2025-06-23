@@ -28,13 +28,12 @@ namespace ColorVision.ImageEditor
     /// <summary>
     /// ImageView.xaml 的交互逻辑
     /// </summary>
-    public partial class ImageView : UserControl, IView,IDisposable
+    public partial class ImageView : UserControl,IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
 
         public ImageViewModel ImageViewModel { get; set; }
 
-        public View View { get; set; }
 
         public ImageViewConfig Config { get => ImageViewModel.Config; set { ImageViewModel.Config = value;  } }
 
@@ -51,7 +50,6 @@ namespace ColorVision.ImageEditor
 
         public ImageView()
         {
-            View = new View();
             InitializeComponent();
             SetConfig(Config);
             foreach (var item in ComponentManager.GetInstance().IImageComponents)
