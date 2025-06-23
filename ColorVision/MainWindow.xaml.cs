@@ -106,12 +106,6 @@ namespace ColorVision
 
             this.DataContext = Config;
 
-            if (WindowIniSetting.IsExist)
-            {
-                if (WindowIniSetting.Icon != null)
-                    Icon = WindowIniSetting.Icon;
-                Title = WindowIniSetting.Title ?? Title;
-            }
             ViewGridManager SolutionViewGridManager = new();
             SolutionViewGridManager.MainView = SolutionGrid;
             SolutionView solutionView = new();
