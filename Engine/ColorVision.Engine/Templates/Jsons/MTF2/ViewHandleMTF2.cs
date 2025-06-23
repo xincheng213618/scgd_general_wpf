@@ -163,7 +163,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
                             view.ImageView.AddVisual(Rectangle);
                         }
                     }
-
+                    view.ImageView.SetRenderCompleted();
 
 
                     List<string> header = new() { "name", "x","y","w","h","mtfvalue" };

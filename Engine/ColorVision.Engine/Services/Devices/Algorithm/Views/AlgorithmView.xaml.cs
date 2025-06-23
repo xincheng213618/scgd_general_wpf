@@ -30,12 +30,10 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
-
-
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
-    public partial class AlgorithmView : UserControl,IView
+    public partial class AlgorithmView : UserControl,IView,IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AlgorithmView));
         public View View { get; set; }
@@ -64,7 +62,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
             this.DataContext = this;
 
-
             View = new View();
             ImageView.SetConfig(Config.ImageViewConfig);
             if (listView1.View is GridView gridView)
@@ -88,7 +85,28 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
 
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
+
+            ImageView.RenderCompleted += RenderCompleted;
         }
+
+        private void RenderCompleted(object? sender, EventArgs e)
+        {
+            if (!Config.AutoSaveRendering) return;
+            if (!Directory.Exists(Config.SaveSideDataDirPath)) return;
+
+            try
+            {
+                string fileNameWithoutExt = Path.GetFileNameWithoutExtension(ImageView.Config.FilePath);
+                string filePath = Path.Combine(Config.SaveSideDataDirPath, $"{fileNameWithoutExt}.png");
+                ImageView.ImageViewModel.Save(filePath);
+                log.Info($"渲染完成，已保存图片到 {filePath}");
+            }
+            catch (Exception ex)
+            {
+                log.Error($"渲染完成但保存图片失败: {ex.Message}", ex);
+            }
+        }
+
 
         private void Delete()
         {
@@ -498,6 +516,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     }
                 }
             }
+        }
+
+        public void Dispose()
+        {
+            ImageView.RenderCompleted -= RenderCompleted;
+            ImageView?.Dispose();
+
+            GC.SuppressFinalize(this);
         }
     }
 }

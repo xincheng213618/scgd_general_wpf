@@ -30,8 +30,6 @@ namespace ColorVision.ImageEditor
     /// </summary>
     public partial class ImageView : UserControl, IView,IDisposable
     {
-        public static List<ImageView> Views { get; set; } = new List<ImageView>();
-
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
 
         public ImageViewModel ImageViewModel { get; set; }
@@ -39,6 +37,17 @@ namespace ColorVision.ImageEditor
         public View View { get; set; }
 
         public ImageViewConfig Config { get => ImageViewModel.Config; set { ImageViewModel.Config = value;  } }
+
+        public event EventHandler RenderCompleted;
+        protected virtual void OnRenderCompleted()
+        {
+            RenderCompleted?.Invoke(this, EventArgs.Empty);
+        }
+
+        public void RaiseRenderCompleted()
+        {
+            OnRenderCompleted();
+        }
 
         public ImageView()
         {
