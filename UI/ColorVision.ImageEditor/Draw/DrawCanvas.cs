@@ -13,7 +13,7 @@ namespace ColorVision.ImageEditor.Draw
 
     public class DrawCanvas : Image
     {
-        private List<Visual> visuals = new();
+        private List<Visual> visuals = new List<Visual>();
 
         public DrawCanvas()
         {
@@ -94,7 +94,7 @@ namespace ColorVision.ImageEditor.Draw
 
         public event EventHandler? ImageInitialized;
 
-        public void ImageInitialize()
+        public void RaiseImageInitialized()
         {
             ImageInitialized?.Invoke(this, new EventArgs());
         }

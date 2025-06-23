@@ -856,7 +856,7 @@ namespace ColorVision.ImageEditor
             ViewBitmapSource = imageSource;
             ImageShow.Source = ViewBitmapSource;
 
-            ImageShow.ImageInitialize();
+            ImageShow.RaiseImageInitialized();
             ImageViewModel.Opened();
             ImageViewModel.ToolBarScaleRuler.IsShow = true;
 

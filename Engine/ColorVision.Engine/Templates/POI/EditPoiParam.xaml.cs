@@ -402,7 +402,7 @@ namespace ColorVision.Engine.Templates.POI
             PoiParam.Height = imageSource.PixelHeight;
             InitPoiConfigValue(imageSource.PixelWidth, imageSource.PixelHeight);
 
-            ImageShow.ImageInitialize();
+            ImageShow.RaiseImageInitialized();
             Zoombox1.ZoomUniform();
         }
 
@@ -476,7 +476,7 @@ namespace ColorVision.Engine.Templates.POI
                         WaitControlProgressBar.Visibility = Visibility.Collapsed;
                     }
                     Init = true;
-                    ImageShow.ImageInitialize();
+                    ImageShow.RaiseImageInitialized();
 
                 }));
             });
