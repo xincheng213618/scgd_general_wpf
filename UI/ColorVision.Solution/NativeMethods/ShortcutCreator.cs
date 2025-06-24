@@ -1,4 +1,5 @@
-﻿using IWshRuntimeLibrary;
+﻿
+using IWshRuntimeLibrary;
 using System.IO;
 
 namespace ColorVision.Common.NativeMethods
@@ -26,7 +27,7 @@ namespace ColorVision.Common.NativeMethods
         }
         public static string GetShortcutTargetFile(string shortcutFilename)
         {
-            WshShell shell = new WshShell();
+             WshShell shell = new WshShell();
             IWshShortcut link = (IWshShortcut)shell.CreateShortcut(shortcutFilename); // Load the shortcut
 
             // Return the target path
