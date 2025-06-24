@@ -253,7 +253,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             PoiResultData poiResult = new(item) { Id = id++ };
                             result.ViewResults.Add(poiResult);
                         }
-                        ;
                     }
 
                     header = new List<string> { "名称", "位置", "大小", "形状", "Validate" };
@@ -414,6 +413,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         break;
                 }
             }
+            ImageView.RaiseRenderCompleted();
         }
 
 

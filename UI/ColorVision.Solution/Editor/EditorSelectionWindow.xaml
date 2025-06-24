@@ -5,7 +5,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Solution.Editor"
         mc:Ignorable="d"
-        Title="打开方式" Height="250" Width="300">
+        Title="打开方式" Height="250" Width="300" Background="{DynamicResource GlobalBackground}">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+    </Window.Resources>
     <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -13,7 +21,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <TextBlock Text="选择要用来打开此文件的程序" Margin="10,0,0,10"/>
-        <ListView x:Name="ListEditorSelection" Grid.Row="1"  Background="Transparent">
+        <ListView x:Name="ListEditorSelection" Grid.Row="1"  Background="Transparent" MouseDoubleClick="ListEditorSelection_MouseDoubleClick">
             <ListView.ItemContainerStyle>
                 <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
                 </Style>
