@@ -18,7 +18,7 @@ namespace ColorVision.Engine.Services.Types
         Sensor = 5,
         FileServer = 6,
         Algorithm = 7,
-        CfwPort = 8,
+        FilterWheel = 8,
         Calibration = 9,
         Motor = 10,
         Flow = 12,

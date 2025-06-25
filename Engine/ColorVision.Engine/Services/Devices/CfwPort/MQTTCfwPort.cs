@@ -62,21 +62,27 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                         Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"未定义{msg.EventName}"));
                         break;
                 }
-
-
             }
+        }
 
+        public MsgRecord Clsoe()
+        {
 
+            MsgSend msg = new MsgSend()
+            {
+                EventName = "Clsoe",
+            };
+
+            return PublishAsyncClient(msg);
         }
 
 
         public MsgRecord Open()
         {
 
-            MsgSend msg = new()
+            MsgSend msg = new MsgSend()
             {
                 EventName = "Open",
-                //CIEParams = new Dictionary<string, object>() { {"CodeID", Config.Key }, { "szComName", Config.SzComName },{ "BaudRate", Config.BaudRate } }
             };
 
             return PublishAsyncClient(msg);
@@ -88,7 +94,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             MsgSend msg = new()
             {
                 EventName = "SetPort",
-                Params = new Dictionary<string, object>() { { "szComName", port } }
+                Params = new Dictionary<string, object>() { { "PortNum", port } }
             };
 
             return PublishAsyncClient(msg);
