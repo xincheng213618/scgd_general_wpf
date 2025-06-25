@@ -173,7 +173,7 @@ namespace ColorVision.Engine.Services
                         case ServiceTypes.Calibration:
                             deviceService = new DeviceCalibration(sysResourceModel);
                             break;
-                        case ServiceTypes.CfwPort:
+                        case ServiceTypes.FilterWheel:
                             deviceService = new DeviceCfwPort(sysResourceModel);
                             break;
                         case ServiceTypes.Motor:

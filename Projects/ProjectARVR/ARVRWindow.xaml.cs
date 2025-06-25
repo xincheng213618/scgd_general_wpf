@@ -238,7 +238,7 @@ namespace ProjectARVR
 
     public class ViewReslutCheckerboard
     {
-        public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
+        public ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
 
         /// <summary>
         /// 棋盘格对比度 测试项
@@ -894,7 +894,7 @@ namespace ProjectARVR
                 {
                     if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.POI_XYZ)
                     {
-                        result.ViewReslutCheckerboard.PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
+                        result.ViewReslutCheckerboard.PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
 
                         List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(AlgResultMaster.Id);
                         int id = 0;
@@ -931,6 +931,23 @@ namespace ProjectARVR
 
                             }
                         }
+                    }
+
+                    try
+                    {
+                        string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                        string filePath = Path.Combine(ProjectARVRConfig.Instance.ResultSavePath, $"Chessboard_{timeStr}.csv");
+                        PoiResultCIExyuvData.SaveCsv(result.ViewReslutCheckerboard.PoiResultCIExyuvDatas, filePath);
+
+                        var csvBuilder = new StringBuilder();
+                        csvBuilder.AppendLine();
+                        csvBuilder.AppendLine($"Chessboard");
+                        csvBuilder.AppendLine($"{result.ViewReslutCheckerboard.ChessboardContrast.Value}");
+                        File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error(ex);
                     }
                 }
             }
@@ -1086,10 +1103,6 @@ namespace ProjectARVR
                                 }
                             }
                             File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
-
-
-
-
                         }
                         catch (Exception ex)
                         {

@@ -279,6 +279,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         }
         private void Search_Click(object sender, RoutedEventArgs e)
         {
+            SearchAll();
+        }
+
+        public void SearchAll()
+        {
             ViewResults.Clear();
             List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.GetAll(Config.SearchLimit);
             if (!Config.InsertAtBeginning)
@@ -289,6 +294,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 ViewResults.AddUnique(algorithmResult);
             }
         }
+
+
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {

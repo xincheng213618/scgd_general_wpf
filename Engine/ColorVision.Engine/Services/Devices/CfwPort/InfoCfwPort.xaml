@@ -6,6 +6,7 @@
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.CfwPort"
              xmlns:resx="clr-namespace:ColorVision.Engine.Properties"
              xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceCfwPort}"
              d:DesignHeight="400" d:DesignWidth="600" Initialized="UserControl_Initialized">
@@ -71,51 +72,49 @@
             </Grid>
 
             <Border  Grid.Row="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
-                <Grid x:Name="MQTTShowContent" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}">
-                    <StackPanel  Margin="5,0">
-                        <GroupBox Header="基本信息" Margin="0,5">
-                            <StackPanel Margin="5">
-                                <DockPanel>
-                                    <TextBlock Text="设备Code:" Width="120"/>
-                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Code}"/>
-                                </DockPanel>
-                                <DockPanel>
-                                    <TextBlock Text="ID" Width="120"/>
-                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.Id}"/>
-                                </DockPanel>
-                                <DockPanel>
-                                    <TextBlock Text="发送信道" Width="120"/>
-                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SendTopic}"/>
-                                </DockPanel>
-                                <DockPanel>
-                                    <TextBlock Text="接收信道" Width="120"/>
-                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SubscribeTopic}"/>
-                                </DockPanel>
-                                <DockPanel>
-                                    <TextBlock Text="心跳时间(ms)"  Width="120"/>
-                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.HeartbeatTime}"/>
-                                </DockPanel>
-                                <DockPanel>
-                                    <TextBlock Text="Token"  Width="120"/>
-                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.ServiceToken}"/>
-                                </DockPanel>
-                            </StackPanel>
-                        </GroupBox>
-                        <GroupBox Header="串口配置" Margin="0,5">
-                            <StackPanel Margin="5">
-                                <DockPanel>
-                                    <TextBlock Text="串口:" Width="120"/>
-                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.SzComName}"/>
-                                </DockPanel>
-                                <DockPanel>
-                                    <TextBlock Text="波特率:" Width="120"/>
-                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.BaudRate}"/>
-                                </DockPanel>
-                            </StackPanel>
-                        </GroupBox>
-                    </StackPanel>
-                </Grid>
+                <TabControl  TabStripPlacement="Top" Background="Transparent" BorderThickness="0,2,0,0"  BorderBrush="{DynamicResource BorderBrush}" >
+                    <TabItem Header="{x:Static properties:Resources.Manager}">
+                        <ScrollViewer Margin="-1,0"  HorizontalScrollBarVisibility="Disabled">
+                            <UniformGrid x:Name="CommandGrid" Margin="5" VerticalAlignment="Top" >
+                            </UniformGrid>
+                        </ScrollViewer>
+                    </TabItem>
+                    <TabItem Header="基本信息">
+                        <StackPanel Margin="5">
+                            <Grid>
+                                <StackPanel Margin="5" >
+                                    <DockPanel>
+                                        <TextBlock Text="Code:" Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Code}"/>
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock Text="发送信道:" Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SendTopic}"/>
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock Text="接收信道:" Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SubscribeTopic}"/>
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock Text="心跳时间"  Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.HeartbeatTime}"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2" >
+                                        <TextBlock Text="Token"  Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.ServiceToken}"/>
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock Text="设备自连接"  Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.IsAutoOpen}"/>
+                                    </DockPanel>
+     
+                                </StackPanel>
+                            </Grid>
 
+                        </StackPanel>
+                    </TabItem>
+
+                </TabControl>
             </Border>
         </Grid>
     </Grid>
