@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CA1707
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.MySql;
@@ -317,6 +318,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 if (s == MsgRecordState.Timeout)
                 {
                     MessageBox1.Show("取图超时,请重设超时时间或者是否为物理相机配置校正");
+                }
+                if (s== MsgRecordState.Fail)
+                {
+                    View.SearchAll();
                 }
             };
         }

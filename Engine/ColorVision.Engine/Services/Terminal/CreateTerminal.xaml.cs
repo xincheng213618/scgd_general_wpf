@@ -188,7 +188,7 @@ namespace ColorVision.Engine.Services.Terminal
                         deviceService = new DeviceAlgorithm(sysDevModel);
                     }
                     break;
-                case ServiceTypes.CfwPort:
+                case ServiceTypes.FilterWheel:
                     deviceConfig = new ConfigCfwPort
                     {
                         Id = CreateCode.Text,

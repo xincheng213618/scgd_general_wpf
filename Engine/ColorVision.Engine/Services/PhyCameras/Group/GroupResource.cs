@@ -17,6 +17,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
     public class ConfigGroup : ViewModelBase
     {
+        public bool IsInit { get => _IsInit; set { _IsInit = value; NotifyPropertyChanged(); } }
+        private bool _IsInit;
+
         /// <summary>
         /// 增益
         /// </summary>
@@ -171,7 +174,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             }
             base.Save();
         }
-
         public void SetCalibrationResource()
         {
             foreach (var item in VisualChildren.OfType<CalibrationResource>())
@@ -219,6 +221,15 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 }
 
             }
+
+            if (!Config.IsInit)
+            {
+                Config.IsInit = true;
+                if (Uniformity != null)
+                {
+                    ParseFileName(Uniformity.Name);
+                }
+            }
         }
 
 
@@ -228,9 +239,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         private CalibrationResource _DefectPoint;
         public CalibrationResource DSNU { get => _DSNU; set { _DSNU = value; NotifyPropertyChanged(); } }
         private CalibrationResource _DSNU;
-        public CalibrationResource Uniformity { get => _Uniformity; set { _Uniformity = value; NotifyPropertyChanged(); ParseFileName(_Uniformity.Name);
-            }
-        }
+        public CalibrationResource Uniformity { get => _Uniformity; set { _Uniformity = value; NotifyPropertyChanged();  } }
         private CalibrationResource _Uniformity;
         public CalibrationResource Distortion { get => _Distortion; set { _Distortion = value; NotifyPropertyChanged(); } }
         private CalibrationResource _Distortion;

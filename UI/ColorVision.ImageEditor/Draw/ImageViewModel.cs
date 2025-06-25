@@ -48,6 +48,7 @@ namespace ColorVision.ImageEditor.Draw
         public RelayCommand ClearImageCommand { get; set; }
 
         public event EventHandler ClearImageEventHandler;
+
         public event EventHandler<string> OpenedImage;
         public event EventHandler<string> OpeningImage;
 
@@ -1074,30 +1075,14 @@ namespace ColorVision.ImageEditor.Draw
             }
         }
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: 释放托管状态(托管对象)
-                }
-                Parent = null;
-                ZoomboxSub = null;
-                Image = null;
-
-                // TODO: 释放未托管的资源(未托管的对象)并重写终结器
-                // TODO: 将大型字段设置为 null
-                disposedValue = true;
-            }
-        }
-
 
 
         public void Dispose()
         {
-            // 不要更改此代码。请将清理代码放入“Dispose(bool disposing)”方法中
-            Dispose(disposing: true);
+            Parent = null;
+            ZoomboxSub = null;
+            Image = null;
+
             GC.SuppressFinalize(this);
         }
     }

@@ -65,12 +65,7 @@ namespace ColorVision.Engine.Templates.JND
         {
             AlgorithmView = view;
             view.ImageView.ImageShow.Clear();
-            if (result.ResultCode != 0)
-            {
-                if (File.Exists(result.FilePath))
-                    view.ImageView.OpenImage(result.FilePath);
-                return;
-            }
+
 
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);

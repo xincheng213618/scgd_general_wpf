@@ -18,7 +18,6 @@ namespace ColorVision.Engine.Services.Devices.FileServer
         {
             DService = new MQTTFileServer(Config);
             View = new ImageView();
-            View.View.Title = $"文件服务 - {Config.Code}";
 
             EditCommand = new RelayCommand(a =>
             {

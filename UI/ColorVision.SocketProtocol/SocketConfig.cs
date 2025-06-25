@@ -19,7 +19,7 @@ namespace ColorVision.SocketProtocol
         /// </summary>
         [DisplayName("IP地址")]
         public string IPAddress { get => _IPAddress; set { _IPAddress = value; NotifyPropertyChanged(); } }
-        private string _IPAddress = "127.0.0.1";
+        private string _IPAddress = "0.0.0.0";
 
         /// <summary>
         /// 端口地址

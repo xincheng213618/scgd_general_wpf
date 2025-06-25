@@ -91,9 +91,6 @@ namespace ColorVision.Engine.Services.Devices.FileServer
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = DeviceFileServer;
-
-            this.AddViewConfig(View, ComboxView);
-
             Task.Run(() => { MQTTFileServer.GetAllFiles(); });
         }
 

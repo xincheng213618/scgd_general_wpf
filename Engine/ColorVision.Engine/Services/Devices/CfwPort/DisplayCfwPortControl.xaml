@@ -4,6 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.CfwPort"
+             xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceCfwPort}"
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
@@ -49,13 +51,25 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder"  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel   Margin="5" >
-                <Button Margin="0,2" Content="连接"  Click="Open_Click"/>
-                <DockPanel Margin="0,2">
-                    <Button DockPanel.Dock="Right" Content="SetPort"  Click="SetPort_Click" />
-                    <TextBlock Text="Port:" Width="40"/>
-                    <TextBox x:Name="TextPort" Text="" Margin="5,0" />
+                <DockPanel x:Name="TextBlockUnknow" Margin="0,0,0,3" >
+                    <TextBlock  Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
                 </DockPanel>
-                <Button Margin="0,2" Content="GetPort"  Click="GetPort_Click" />
+
+                <DockPanel x:Name="ButtonUnauthorized" Margin="0,0,0,3" >
+                    <Button Content="未授权或者许可证过期" Command="{Binding PhyCamera.UploadLicenseCommand}"  />
+                </DockPanel>
+                <DockPanel x:Name="ButtonInit" Margin="0,0,0,3" >
+                    <Button Content="请先配置SN" Command="{Binding EditCommand}"/>
+                </DockPanel>
+                <Button x:Name="ButtonOffline" Margin="0,0,0,3" Visibility="Collapsed" Content="设备离线" Foreground="White" Background="Red" Click="CameraOffline_Click"/>
+                <Button  x:Name="ButtonOpen" Margin="0,2" Content="连接"  Click="Open_Click"/>
+                <Button  x:Name="ButtonClose" Margin="0,2" Content="关闭"  Click="Close_Click" Visibility="Collapsed"/>
+                <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,3">
+                    <DockPanel Margin="0,2">
+                        <Button DockPanel.Dock="Right" Content="SetPort"  Click="SetPort_Click" />
+                        <hc:ComboBox  x:Name="TextPort"  Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}"  IsEditable="True" AutoComplete ="True" hc:InfoElement.ShowClearButton="True"/>
+                    </DockPanel>
+                </StackPanel>
 
             </StackPanel>
         </Border>

@@ -1,5 +1,6 @@
 ﻿using log4net;
 using MySql.Data.MySqlClient;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -16,6 +17,7 @@ namespace ColorVision.Engine.MySql.ORM
 
         public string TableName { get { return _TableName; } set { _TableName = value; } }
         private string _TableName;
+
         public string PKField { get { return _PKField; } set { _PKField = value; } }
         private string _PKField;
 
@@ -42,29 +44,51 @@ namespace ColorVision.Engine.MySql.ORM
         }
         public virtual MySqlConnection CreateConnection()
         {
-            // 假设 MySqlControl.ConnectionString 有连接串
-            var conn = new MySqlConnection(MySqlControl.GetConnectionString());
-            conn.Open();
-            return conn;
+            const int maxRetry = 2;
+            int attempt = 0;
+            Exception? lastException = null;
+            while (attempt < maxRetry)
+            {
+                try
+                {
+                    var conn = new MySqlConnection(MySqlControl.GetConnectionString());
+                    conn.Open();
+                    return conn;
+                }
+                catch (Exception ex)
+                {
+                    lastException = ex;
+                    log.Warn($"数据库连接第{attempt + 1}次失败: {ex.Message}");
+                    attempt++;
+                    if (attempt < maxRetry)
+                    {
+                        System.Threading.Thread.Sleep(100); // 间隔100ms再试
+                    }
+                }
+            }
+            log.Error("数据库连接重试2次均失败", lastException);
+            return null;
         }
 
-        public int ExecuteNonQuery(string sql, Dictionary<string, object> param)
+        public int ExecuteNonQuery(string sql, Dictionary<string, object>? param)
         {
             int count = -1;
             try
             {
                 using var conn = CreateConnection();
                 using MySqlCommand command = new MySqlCommand(sql, conn);
-                foreach (var item in param)
+                if (param != null)
                 {
-                    command.Parameters.AddWithValue(item.Key, item.Value);
+                    foreach (var item in param)
+                    {
+                        command.Parameters.AddWithValue(item.Key, item.Value);
+                    }
                 }
                 count = command.ExecuteNonQuery();
-
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                log.Error($"SQL: {sql}, Params: {(param == null ? "null" : JsonConvert.SerializeObject(param))}, Ex: {ex}");
             }
             return count;
         }

@@ -18,6 +18,11 @@ namespace ColorVision.Engine.Templates.Distortion
     {
         public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.Distortion };
 
+        public override bool CanHandle1(AlgorithmResult result)
+        {
+            return base.CanHandle1(result);
+        }
+
         public override void SideSave(AlgorithmResult result, string selectedPath)
         {
             string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
@@ -78,9 +83,6 @@ namespace ColorVision.Engine.Templates.Distortion
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
 
-            if (result.ResultCode != 0)
-                return;
-
             Load(view, result);
 
             int id = 0;
@@ -100,7 +102,6 @@ namespace ColorVision.Engine.Templates.Distortion
 
                 }
             }
-
 
             List<string> header = new() { "类型", "斜率", "布点", "角点", "畸变率" };
             List<string> bdHeader = new() { "DisTypeDesc", "SlopeTypeDesc", "LayoutTypeDesc", "CornerTypeDesc", "MaxRatio" };

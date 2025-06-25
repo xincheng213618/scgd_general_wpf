@@ -36,13 +36,12 @@ namespace ColorVision.Solution
                 }
                 else
                 {
-                    var HexEditor = new WpfHexaEditor.HexEditor();
-                    HexEditor.PreloadByteInEditorMode = PreloadByteInEditor.MaxVisibleLineExtended;
-                    HexEditor.FileName = filePath;
+                    HexEditorView hexEditorView = new HexEditorView();
+                    hexEditorView.HexEditor.FileName = filePath;
 
 
                     LayoutDocument layoutDocument = new LayoutDocument() { ContentId = GuidId, Title = Path.GetFileName(filePath) };
-                    layoutDocument.Content = HexEditor;
+                    layoutDocument.Content = hexEditorView;
                     SolutionViewExtensions.LayoutDocumentPane.Children.Add(layoutDocument);
                     SolutionViewExtensions.LayoutDocumentPane.SelectedContentIndex = SolutionViewExtensions.LayoutDocumentPane.IndexOf(layoutDocument);
                     layoutDocument.IsActiveChanged += (s, e) =>
@@ -54,8 +53,8 @@ namespace ColorVision.Solution
                     };
                     layoutDocument.Closing += (s, e) =>
                     {
-                        HexEditor.CloseProvider(true);
-                        HexEditor.Dispose();
+                        hexEditorView.HexEditor.CloseProvider(true);
+                        hexEditorView.HexEditor.Dispose();
                     };
                 }
             }

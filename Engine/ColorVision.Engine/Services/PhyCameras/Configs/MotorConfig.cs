@@ -1,10 +1,32 @@
-﻿using Newtonsoft.Json;
+﻿#pragma warning disable
+using Newtonsoft.Json;
 using cvColorVision;
 using ColorVision.Common.MVVM;
 using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.PhyCameras.Configs
 {
+    public enum GoHome_WAY : int
+    {
+        GoHome_Mode_1 = 1,
+        GoHome_Mode_2,
+        GoHome_Mode_3,
+        GoHome_Mode_4,
+        negative_limit = 17,
+        positive_limit = 18,
+        GoHome_limit_1,
+        GoHome_limit_2,
+        GoHome_limit_3,
+        GoHome_limit_4,
+        GoHome_positive_limit_1,
+        GoHome_positive_limit_2,
+        GoHome_positive_limit_3,
+        GoHome_positive_limit_4,
+        GoHome_negative_limit_1,
+        GoHome_negative_limit_2,
+        GoHome_negative_limit_3,
+        GoHome_negative_limit_4,
+    };
 
     public enum FindFuncModel
     {
@@ -70,6 +92,14 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         [DisplayName("回原点时的加速度")]
         public int HomeAcceleration { get => _HomeAcceleration; set { _HomeAcceleration = value; NotifyPropertyChanged(); } }
         private int _HomeAcceleration = 409600;
+
+        [DisplayName("回原点方式")]
+        public GoHome_WAY GoHomeWay { get => _GoHomeWay; set { _GoHomeWay = value; NotifyPropertyChanged(); } }
+        private GoHome_WAY _GoHomeWay = GoHome_WAY.negative_limit;
+
+        [DisplayName("回原点超时时间")]
+        public int HomeTimeout { get => _HomeTimeout; set { _HomeTimeout = value; NotifyPropertyChanged(); } }
+        private int _HomeTimeout = 5000;
 
         // 高速回原点
         [JsonProperty("Home_nHighSpeed")]

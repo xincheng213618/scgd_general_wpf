@@ -5,10 +5,12 @@ using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Engine.Templates.POI.POIOutput;
 using ColorVision.Engine.Templates.POI.POIRevise;
+using FlowEngineLib.Algorithm;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -112,8 +114,25 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
             if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
                 fileName = fullpath;
+            FileExtType fileExtType = FileExtType.CIE;
+            if (Path.GetExtension(fileName).Contains("cvraw"))
+            {
+                fileExtType = FileExtType.Raw;
+            }
+            else if (Path.GetExtension(fileName).Contains("cvcie"))
+            {
+                fileExtType = FileExtType.CIE;
+            }
+            else if (Path.GetExtension(fileName).Contains("tif"))
+            {
+                fileExtType = FileExtType.Tif;
+            }
+            else
+            {
+                fileExtType = FileExtType.Src;
+            }
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType},{ "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
 
             Params.Add("TemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
             if (filter.Id != -1)

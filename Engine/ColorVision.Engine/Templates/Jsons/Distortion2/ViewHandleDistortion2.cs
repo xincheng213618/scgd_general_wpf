@@ -27,16 +27,6 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
             return base.CanHandle1(result);
         }
 
-        private static string EscapeCsvField(string field)
-        {
-            if (field.Contains(',' ) || field.Contains('"') || field.Contains('\n'))
-            {
-                field = field.Replace("\"", "\"\"");
-                return $"\"{field}\"";
-            }
-            return field;
-        }
-
         public override void SideSave(AlgorithmResult result, string selectedPath)
         {
             var blackMuraViews = result.ViewResults.ToSpecificViewResults<Distortion2View>();
@@ -65,25 +55,14 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();
-            if (result.ResultCode != 0)
-            {
-                if (File.Exists(result.FilePath))
-                    view.ImageView.OpenImage(result.FilePath);
-                return;
-            }
+
 
             void OpenSource()
             {
                 view.ImageView.ImageShow.Clear();
-                foreach (var item in result.ViewResults)
-                {
-                    if (item is Distortion2View blackMuraModel)
-                    {
-                        if (File.Exists(result.FilePath))
-                            view.ImageView.OpenImage(result.FilePath);
-                        log.Info(result.FilePath);
-                    }
-                }
+                if (File.Exists(result.FilePath))
+                    view.ImageView.OpenImage(result.FilePath);
+                log.Info(result.FilePath);
             }
 
             Load(view, result);
