@@ -128,6 +128,13 @@ namespace ColorVision.UI
         {
             InitializeComponent();
             this.ApplyCaption();
+            this.SizeChanged += (s, e) =>
+            {
+                ButtonAutoScrollToEnd.Visibility = this.ActualWidth > 600 ? Visibility.Visible : Visibility.Collapsed;
+                ButtonAutoRefresh.Visibility = this.ActualWidth > 500 ? Visibility.Visible : Visibility.Collapsed;
+                cmlog.Visibility = this.ActualWidth > 400 ? Visibility.Visible : Visibility.Collapsed;
+                SearchBar1.Visibility = this.ActualWidth > 200 ? Visibility.Visible : Visibility.Collapsed;
+            };
         }
         TextBoxAppender TextBoxAppender { get; set; }
         Hierarchy Hierarchy { get; set; }

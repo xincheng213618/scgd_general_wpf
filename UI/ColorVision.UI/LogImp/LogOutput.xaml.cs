@@ -19,9 +19,19 @@ namespace ColorVision.UI.LogImp
     /// </summary>
     public partial class LogOutput : UserControl,IDisposable
     {
-        public LogOutput()
+        private string? Pattern;
+
+        public LogOutput(string? pattern = "%date [%thread] %-5level %logger %  %message%newline")
         {
+            Pattern = pattern;
             InitializeComponent();
+            this.SizeChanged += (s, e) =>
+            {
+                ButtonAutoScrollToEnd.Visibility = this.ActualWidth > 600 ? Visibility.Visible : Visibility.Collapsed;
+                ButtonAutoRefresh.Visibility = this.ActualWidth > 500 ? Visibility.Visible : Visibility.Collapsed;
+                cmlog.Visibility = this.ActualWidth > 400 ? Visibility.Visible : Visibility.Collapsed;
+                SearchBar1.Visibility = this.ActualWidth > 200 ? Visibility.Visible : Visibility.Collapsed;
+            };
         }
         TextBoxAppender TextBoxAppender { get; set; }
         Hierarchy Hierarchy { get; set; }
@@ -37,7 +47,7 @@ namespace ColorVision.UI.LogImp
         {
             Hierarchy = (Hierarchy)LogManager.GetRepository();
             TextBoxAppender = new TextBoxAppender(logTextBox);
-            TextBoxAppender.Layout = new PatternLayout("%date [%thread] %-5level %logger %  %message%newline");
+            TextBoxAppender.Layout = new PatternLayout(Pattern);
             Hierarchy.Root.AddAppender(TextBoxAppender);
             log4net.Config.BasicConfigurator.Configure(Hierarchy);
 
@@ -56,7 +66,6 @@ namespace ColorVision.UI.LogImp
             var fileAppender = hierarchy.Root.Appenders.OfType<RollingFileAppender>().FirstOrDefault();
             return fileAppender?.File;
         }
-
 
         private void LoadLogHistory()
         {
