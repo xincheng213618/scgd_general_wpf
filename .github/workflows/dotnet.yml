@@ -23,7 +23,7 @@ jobs:
         dotnet-version: 8.0.x
         
     - name: Restore dependencies
-      run: dotnet restore build.sln
+      run: dotnet restore build.sln /p:BuildWithNetFrameworkHostedCompiler=true
       
     - name: Setup MSBuild path
       uses: microsoft/setup-msbuild@v2
