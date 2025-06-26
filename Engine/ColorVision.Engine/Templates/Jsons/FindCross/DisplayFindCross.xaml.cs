@@ -29,9 +29,6 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
             ComboxTemplate.ItemsSource = TemplateFindCross.Params;
             ComboxTemplate.SelectedIndex = 0;
 
-            ComboxPoiTemplate2.ItemsSource = TemplatePoi.Params;
-            ComboxPoiTemplate2.SelectedIndex = 0;
-
             void UpdateCB_SourceImageFiles()
             {
                 CB_SourceImageFiles.ItemsSource = ServiceManager.GetInstance().GetImageSourceServices();

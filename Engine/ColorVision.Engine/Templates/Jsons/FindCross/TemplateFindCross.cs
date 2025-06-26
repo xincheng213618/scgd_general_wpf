@@ -30,10 +30,10 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
 
         public TemplateFindCross()
         {
-            Title = "MTFV2模板管理";
-            Code = "MTF";
-            Name = "MTF_V2";
-            TemplateDicId = 48;
+            Title = "十字计算模板管理";
+            Code = "FindCross";
+            Name = "Json";
+            TemplateDicId = 45;
             TemplateParams = Params;
             IsUserControl = true;
         }
@@ -51,7 +51,6 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
             return EditTemplateJson;
         }
         public string Description { get; set; } = "";
-
         public override UserControl CreateUserControl() => new EditTemplateJson(Description);
         public override IMysqlCommand? GetMysqlCommand() => new MysqlFindCross();
 
