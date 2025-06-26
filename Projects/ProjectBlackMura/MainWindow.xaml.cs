@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
@@ -7,15 +8,22 @@ using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
+using ColorVision.Themes;
+using ColorVision.UI;
+using ColorVision.UI.LogImp;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
+using log4net.Util;
+using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Ports;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -32,6 +40,7 @@ namespace ProjectBlackMura
 
         public string Model { get => _Model; set { _Model = value; NotifyPropertyChanged(); } }
         private string _Model = string.Empty;
+        public string Code { get; set; }
 
         public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }
         private string _SN;
@@ -46,6 +55,11 @@ namespace ProjectBlackMura
 
     }
 
+    public class BlackMuraWindowConfig : WindowConfig
+    {
+        public static BlackMuraWindowConfig Instance => ConfigService.Instance.GetRequiredService<BlackMuraWindowConfig>();
+    }
+
     /// <summary>
     /// Interaction logic for MarkdownViewWindow.xaml
     /// </summary>
@@ -58,13 +72,53 @@ namespace ProjectBlackMura
         public MainWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
+            BlackMuraWindowConfig.Instance.SetWindow(this);
+            this.SizeChanged += (s, e) => BlackMuraWindowConfig.Instance.SetConfig(this);
 
         }
+        private LogOutput? logOutput;
+
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = ProjectBlackMuraConfig.Instance;
             listView1.ItemsSource = ViewResluts;
             InitFlow();
+
+            ComboBoxSer.ItemsSource = SerialPort.GetPortNames();
+            ComboBoxSer.SelectedIndex = 0;
+            if (ProjectBlackMuraConfig.Instance.LogControlVisibility)
+            {
+                logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
+                LogGrid.Children.Add(logOutput);
+            }
+
+            this.Closed += (s, e) =>
+            {
+                timer.Change(Timeout.Infinite, 500); // 停止定时器
+                timer?.Dispose();
+
+                logOutput?.Dispose();
+            };
+
+            MesGrid.DataContext = HYMesManager.GetInstance();
+
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
+
+        }
+        public void Delete()
+        {
+            if (listView1.SelectedIndex < 0) return;
+            var item = listView1.SelectedItem as BlackMuraResult;
+            if (item == null) return;
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否删除 {item.SN} 测试结果？", "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            {
+                ViewResluts.Remove(item);
+                BatchResultMasterDao.Instance.DeleteById(item.Id);
+                log.Info($"删除测试结果 {item.SN}");
+            }
         }
 
         #region FlowRun
@@ -119,10 +173,15 @@ namespace ProjectBlackMura
             {
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                     item.nodeRunEvent -= UpdateMsg;
-                flowEngine.LoadFromBase64(string.Empty);
 
                 flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
 
+                for (int i = 0; i < 200; i++)
+                {
+                    if (flowEngine.IsReady)
+                        break;
+                    Thread.Sleep(10);
+                }
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                     item.nodeRunEvent += UpdateMsg;
             }
@@ -152,17 +211,17 @@ namespace ProjectBlackMura
                         TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
                         string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
                         string msg;
-                        if (ProjectBlackMuraConfig.Instance.LastFlowTime == 0 || ProjectBlackMuraConfig.Instance.LastFlowTime - elapsedMilliseconds < 0)
+                        if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
                         {
                             msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
                         }
                         else
                         {
-                            long remainingMilliseconds = ProjectBlackMuraConfig.Instance.LastFlowTime - elapsedMilliseconds;
+                            long remainingMilliseconds = LastFlowTime - elapsedMilliseconds;
                             TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                             string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{ProjectBlackMuraConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
+                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{LastFlowTime} ms, 预计还需要：{remainingTime}";
                         }
                         if (flowControl.IsFlowRun)
                             handler.UpdateMessage(msg);
@@ -191,47 +250,66 @@ namespace ProjectBlackMura
         }
         bool LastCompleted = true;
 
+        BlackMuraResult CurrentFlowResult;
+        long LastFlowTime;
+        int TryCount = 0;
+
         public void RunTemplate()
         {
             if (flowControl != null && flowControl.IsFlowRun) return;
-            if (FlowTemplate.SelectedValue is not FlowParam flowParam)
-            {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "流程为空，请选择流程运行", "ColorVision");
-                return;
-            }
-            ;
 
-            string startNode = flowEngine.GetStartNodeName();
-            if (string.IsNullOrWhiteSpace(startNode))
+            TryCount++;
+            LastFlowTime = FlowConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
+
+            CurrentFlowResult = new BlackMuraResult();
+            CurrentFlowResult.SN = SNtextBox.Name;
+            CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info("找不到完整流程，运行失败"); return; }
+
+            //多潘基次次
+            log.Info($"IsReady{flowEngine.IsReady}");
+            if (!flowEngine.IsReady)
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败", "ColorVision");
-                return;
-            }
-            ;
-            if (!LastCompleted)
-            {
+                string base64 = string.Empty;
+                flowEngine.LoadFromBase64(base64);
                 Refresh();
+                log.Info($"IsReady{flowEngine.IsReady}");
+                if (!flowEngine.IsReady)
+                {
+                    flowEngine.LoadFromBase64(base64);
+                    Refresh();
+                    log.Info($"IsReady{flowEngine.IsReady}");
+                    if (!flowEngine.IsReady)
+                    {
+                        flowEngine.LoadFromBase64(base64);
+                        Refresh();
+                        log.Info($"IsReady{flowEngine.IsReady}");
+                    }
+
+                }
             }
-            LastCompleted = false;
+
+
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
 
-            handler = PendingBox.Show(this, "TTL:" + "0", "流程运行", true);
+            handler = PendingBox.Show(this, "流程", "流程启动", true);
             handler.Cancelling -= Handler_Cancelling;
             handler.Cancelling += Handler_Cancelling;
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
-            string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             stopwatch.Reset();
             stopwatch.Start();
-            flowControl.Start(sn);
-            timer.Change(0, 500); // 启动定时器
-            string name = string.Empty;
 
-            BatchResultMasterModel batch = new();
-            batch.Name = string.IsNullOrEmpty(name) ? sn : name;
-            batch.Code = sn;
-            batch.CreateDate = DateTime.Now;
-            batch.TenantId = 0;
-            BatchResultMasterDao.Instance.Save(batch);
+            try
+            {
+                BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
+            }
+            catch (Exception ex)
+            {
+                log.Info(ex);
+            }
+
+            flowControl.Start(CurrentFlowResult.Code);
+            timer.Change(0, 500); // 启动定时器
         }
 
         private void Handler_Cancelling(object? sender, CancelEventArgs e)
@@ -248,35 +326,52 @@ namespace ProjectBlackMura
             handler = null;
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
-            ProjectBlackMuraConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
+
+            FlowConfig.Instance.FlowRunTime[FlowTemplate.Text] = stopwatch.ElapsedMilliseconds;
+
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
 
-            if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
+            if (FlowControlData.EventName == "Completed")
             {
-                if (FlowControlData.EventName == "Completed")
+                try
                 {
-                    LastCompleted = true;
-                    try
+                    Application.Current.Dispatcher.BeginInvoke(() =>
                     {
                         Processing(FlowControlData.SerialNumber);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
-                    }
-
+                    });
                 }
-                else
+                catch (Exception ex)
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
                 }
+                TryCount = 0;
+            }
+            else if (FlowControlData.EventName == "OverTime")
+            {
+                log.Info("流程运行超时，正在重新尝试");
+                flowEngine.LoadFromBase64(string.Empty);
+                Refresh();
+                if (TryCount < ProjectBlackMuraConfig.Instance.TryCountMax)
+                {
+                    Task.Delay(200).ContinueWith(t =>
+                    {
+                        log.Info("重新尝试运行流程");
+                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        {
+                            RunTemplate();
+                        });
+                    });
+                    return;
+                }
+                TryCount = 0;
             }
             else
             {
-
-                MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
+                log.Info("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
             }
         }
+
+
         #endregion
 
         private void Processing(string SerialNumber)
@@ -294,7 +389,6 @@ namespace ProjectBlackMura
             result.Model = FlowTemplate.Text;
             result.Id = Batch.Id;
             result.SN = SNtextBox.Text;
-
 
             foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
             {
@@ -315,9 +409,9 @@ namespace ProjectBlackMura
                     }
                 }
             }
-
             SNtextBox.Text = string.Empty;
-            ViewResluts.Add(result);
+            ViewResluts.Insert(0,result);
+            listView1.SelectedIndex = 0;
         }
 
 
@@ -474,6 +568,69 @@ namespace ProjectBlackMura
         public void Dispose()
         {
             GC.SuppressFinalize(this);
+        }
+
+        private void Test_Click(object sender, RoutedEventArgs e)
+        {
+            if (Directory.Exists(ProjectBlackMuraConfig.Instance.ResultSavePath))
+            {
+                ExcelReportGenerator.GenerateExcel( Path.Combine(ProjectBlackMuraConfig.Instance.ResultSavePath,"数据格式报告.xlsx"));
+            }
+        }
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            if (!HYMesManager.GetInstance().IsConnect)
+            {
+                int i = HYMesManager.GetInstance().OpenPort(ComboBoxSer.Text);
+            }
+            else
+            {
+                HYMesManager.GetInstance().Close();
+            }
+        }
+
+        private void PG_PowerOn_Click(object sender, RoutedEventArgs e)
+        {
+            HYMesManager.GetInstance().PGPowerOn();
+        }
+
+        private void PG_PowerOff_Click(object sender, RoutedEventArgs e)
+        {
+            HYMesManager.GetInstance().PGPowerOff();
+        }
+
+
+
+        private void PG_PowerSwitch1_Click(object sender, RoutedEventArgs e)
+        {
+            HYMesManager.GetInstance().PGSwitch(0);
+        }
+
+        private void PG_PowerSwitch2_Click(object sender, RoutedEventArgs e)
+        {
+            HYMesManager.GetInstance().PGSwitch(1);
+
+        }
+
+        private void PG_PowerSwitch3_Click(object sender, RoutedEventArgs e)
+        {
+            HYMesManager.GetInstance().PGSwitch(2);
+
+        }
+
+        private void PG_PowerSwitch4_Click(object sender, RoutedEventArgs e)
+        {
+            HYMesManager.GetInstance().PGSwitch(3);
+        }
+
+        private void PG_PowerSwitch5_Click(object sender, RoutedEventArgs e)
+        {
+            HYMesManager.GetInstance().PGSwitch(4);
+        }
+
+        private void PG_PowerSwitch6_Click(object sender, RoutedEventArgs e)
+        {
+            HYMesManager.GetInstance().PGSwitch(15);
         }
     }
 }

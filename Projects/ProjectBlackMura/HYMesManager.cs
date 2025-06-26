@@ -8,7 +8,7 @@ using System.IO.Ports;
 using System.Text;
 using System.Windows;
 
-namespace ColorVision.Projects.ProjectHeyuan
+namespace ProjectBlackMura
 {
     public class HYMesConfig: ViewModelBase, IConfig
     {
@@ -22,7 +22,6 @@ namespace ColorVision.Projects.ProjectHeyuan
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
         }
-
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplateSelectedIndex;
         public void OpenTemplate()
@@ -73,8 +72,6 @@ namespace ColorVision.Projects.ProjectHeyuan
             } 
         }
 
-        public ObservableCollection<SerialMsg> SerialMsgs { get; set; } = new ObservableCollection<SerialMsg>();
-
         private SerialPort serialPort { get; set; }
 
         public static HYMesConfig Config => HYMesConfig.Instance;
@@ -82,10 +79,6 @@ namespace ColorVision.Projects.ProjectHeyuan
         public HYMesManager()
         {
             serialPort = new SerialPort { };
-            if (Config.IsOpenConnect)
-            {
-                OpenPort(Config.PortName);
-            }
         }
 
         public bool IsConnect { get => _IsConnect; set { _IsConnect = value; NotifyPropertyChanged(); } }
@@ -120,6 +113,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                             if (buff.Length > 3 && buff[0] == 0x02)
                             {
                                 IsConnect = true;
+                                log.Info("serialPort Connect");
                                 serialPort.DataReceived += SerialPort_DataReceived;
                                 return 0;
                             }
@@ -152,13 +146,29 @@ namespace ColorVision.Projects.ProjectHeyuan
                         serialPort.Read(buffer, 0, bytesRead);
 
                         string Msg = Encoding.UTF8.GetString(buffer);
+                        log.Info(Msg);
 
-                        Application.Current.Dispatcher.Invoke(() =>
+                        Application.Current.Dispatcher.BeginInvoke(() =>
                         {
-                            SerialMsgs.Add(new SerialMsg() { SerialStatus = SerialStatus.Receive, Bytes = buffer });
-                        });
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
+                            if (Msg.Contains("CCPI,S"))
+                            {
+                                string[] parts = Msg.Split(',');
+                                CCPIResult = parts[^1].Contains('0');
+                                log.Info($"CCPIResult:{CCPIResult}");
+                            }
+                            if (Msg.Contains("CON,S"))
+                            {
+                                string[] parts = Msg.Split(',');
+                                CONResult = parts[^1].Contains('0');
+                                log.Info($"CONResult:{CONResult}");
+                            }
+                            if (Msg.Contains("COFF,S"))
+                            {
+                                string[] parts = Msg.Split(',');
+                                COFFResult = parts[^1].Contains('0');
+                                log.Info($"COFFResult:{COFFResult}");
+                            }
+
                             if (Msg.Contains("CSN,S"))
                             {
                                 string[] parts = Msg.Split(',');
@@ -178,7 +188,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                                 CGIResult = parts[^1].Contains('0');
                                 if (CGIResult == true)
                                 {
-                                    UploadMes(Results);
+                                    //UploadMes(Results);
                                 }
                             }
                             if (Msg.Contains("CMI,S"))
@@ -190,9 +200,9 @@ namespace ColorVision.Projects.ProjectHeyuan
                         });
                     }
                 }
-                catch 
+                catch (Exception ex)
                 {
-
+                    log.Error(ex);
                 }
             }
         }
@@ -210,6 +220,39 @@ namespace ColorVision.Projects.ProjectHeyuan
         public bool? CSNResult { get => _CSNResult; set { _CSNResult = value; NotifyPropertyChanged(); } }
         private bool? _CSNResult;
 
+
+        /// <summary>
+        /// 上电
+        /// </summary>
+        public event EventHandler<bool> CONCompleted;
+        /// <summary>
+        /// 上电结果
+        /// </summary>
+        public bool? CONResult { get => _CONResult; set { _CONResult = value; NotifyPropertyChanged(); CONCompleted?.Invoke(this, value == true); } } 
+        private bool? _CONResult;
+
+        /// <summary>
+        /// 下电
+        /// </summary>
+        public event EventHandler<bool> COFFCompleted;
+        /// <summary>
+        /// 上电结果
+        /// </summary>
+        public bool? COFFResult { get => _COFFResult; set { _COFFResult = value; NotifyPropertyChanged(); COFFCompleted?.Invoke(this, value == true); } }
+        private bool? _COFFResult;
+
+
+        /// <summary>
+        /// 切图
+        /// </summary>
+        public event EventHandler<bool> CCPICompleted;
+        /// <summary>
+        /// 切图结果
+        /// </summary>
+        public bool? CCPIResult { get => _CCPIResult; set { _CCPIResult = value; NotifyPropertyChanged(); CCPICompleted?.Invoke(this,value==true); } }
+        private bool? _CCPIResult;
+        
+
         public bool? CPTResult { get => _CPTResult; set { _CPTResult = value; NotifyPropertyChanged(); } }
         private bool? _CPTResult;
         public bool? CGIResult { get => _CGIResult; set { _CGIResult = value; NotifyPropertyChanged(); } }
@@ -219,6 +262,26 @@ namespace ColorVision.Projects.ProjectHeyuan
         private bool? _CMIResult;
         public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; NotifyPropertyChanged(); } }
         private long _LastFlowTime;
+
+        public void PGPowerOn()
+        {
+            string SendMsg = $"CON,C,{Config.DeviceId}";
+            log.Info("PG上电" + SendMsg);
+            Send(Encoding.UTF8.GetBytes(SendMsg));
+        }
+        public void PGPowerOff()
+        {
+            string SendMsg = $"COFF,C,{Config.DeviceId}";
+            log.Info("PG下电" + SendMsg);
+            Send(Encoding.UTF8.GetBytes(SendMsg));
+        }
+        public void PGSwitch(int id)
+        {
+            string SendMsg = $"CCPI,C,{Config.DeviceId},{id}";
+            log.Info("PG切图" + SendMsg);
+            Send(Encoding.UTF8.GetBytes(SendMsg));
+        }
+
 
         public void UploadSN()
         {
@@ -239,14 +302,14 @@ namespace ColorVision.Projects.ProjectHeyuan
             Send(Encoding.UTF8.GetBytes(SendMsg));
         }
 
-        public ObservableCollection<TempResult> Results { get; set; } =new ObservableCollection<TempResult>();
+        //public ObservableCollection<TempResult> Results { get; set; } =new ObservableCollection<TempResult>();
 
-        public void UploadMes(ObservableCollection<TempResult> Results)
-        {
-            string SendMsg = $"CMI,C,{Config.DeviceId},{Config.TestName},White,{Results[0].X.Value:F3}/{Results[0].Y.Value:F3}/{Results[0].Lv.Value:F3}/{Results[0].Dw.Value:F3}/{(Results[0].Result?"Pass":"Fail")},Blue,{Results[1].X.Value:F3}/{Results[1].Y.Value:F3}/{Results[1].Lv.Value:F3}/{Results[1].Dw.Value:F3}/{(Results[1].Result ? "Pass" : "Fail")},Red,{Results[2].X.Value:F3}/{Results[2].Y.Value:F3}/{Results[2].Lv.Value:F3}/{Results[2].Dw.Value:F3}/{(Results[2].Result ? "Pass" : "Fail")},Orange,{Results[3].X.Value:F3}/{Results[3].Y.Value:F3}/{Results[3].Lv.Value:F3}/{Results[3].Dw.Value:F3}/{(Results[3].Result ? "Pass" : "Fail")}";
-            log.Info("UploadMes" + SendMsg);
-            Send(Encoding.UTF8.GetBytes(SendMsg));
-        }
+        //public void UploadMes(ObservableCollection<TempResult> Results)
+        //{
+        //    string SendMsg = $"CMI,C,{Config.DeviceId},{Config.TestName},White,{Results[0].X.Value:F3}/{Results[0].Y.Value:F3}/{Results[0].Lv.Value:F3}/{Results[0].Dw.Value:F3}/{(Results[0].Result?"Pass":"Fail")},Blue,{Results[1].X.Value:F3}/{Results[1].Y.Value:F3}/{Results[1].Lv.Value:F3}/{Results[1].Dw.Value:F3}/{(Results[1].Result ? "Pass" : "Fail")},Red,{Results[2].X.Value:F3}/{Results[2].Y.Value:F3}/{Results[2].Lv.Value:F3}/{Results[2].Dw.Value:F3}/{(Results[2].Result ? "Pass" : "Fail")},Orange,{Results[3].X.Value:F3}/{Results[3].Y.Value:F3}/{Results[3].Lv.Value:F3}/{Results[3].Dw.Value:F3}/{(Results[3].Result ? "Pass" : "Fail")}";
+        //    log.Info("UploadMes" + SendMsg);
+        //    Send(Encoding.UTF8.GetBytes(SendMsg));
+        //}
         public void UploadNG(string Msg = "errorW") 
         {
             string SendMsg = $"CGI,C,{Config.DeviceId},Default,{Msg}";
@@ -261,7 +324,6 @@ namespace ColorVision.Projects.ProjectHeyuan
             msg.CopyTo(framedMsg, 1); // Copy original message into the new array starting at index 1
             framedMsg[framedMsg.Length - 1] = 0x03; // ETX (End of Text)
 
-              SerialMsgs.Add(new SerialMsg() { SerialStatus = SerialStatus.Send, Bytes = framedMsg });
             if (serialPort.IsOpen)
                 serialPort.Write(framedMsg, 0, framedMsg.Length);
         }
