@@ -65,7 +65,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                 return null;
             }
             SensorParam? param = AddParamMode();
-            if (ExportTemp != null) ExportTemp = null;
+            if (ImportTemp != null) ImportTemp = null;
             if (param != null)
             {
                 var a = new TemplateModel<SensorParam>(templateName, param);

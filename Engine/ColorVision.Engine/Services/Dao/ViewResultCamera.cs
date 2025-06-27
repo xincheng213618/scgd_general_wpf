@@ -56,10 +56,10 @@ namespace ColorVision.Engine.Services.Dao
         public void CreateToPoi()
         {
             TemplatePoi templatePoi = new TemplatePoi();
-            templatePoi.ExportTemp = new PoiParam() { Name = templatePoi.NewCreateFileName("poi") };
-            templatePoi.ExportTemp.Height = 400;
-            templatePoi.ExportTemp.Width = 300;
-            templatePoi.ExportTemp.PoiConfig.BackgroundFilePath = FileUrl;
+            templatePoi.ImportTemp = new PoiParam() { Name = templatePoi.NewCreateFileName("poi") };
+            templatePoi.ImportTemp.Height = 400;
+            templatePoi.ImportTemp.Width = 300;
+            templatePoi.ImportTemp.PoiConfig.BackgroundFilePath = FileUrl;
             templatePoi.OpenCreate();
         }
 

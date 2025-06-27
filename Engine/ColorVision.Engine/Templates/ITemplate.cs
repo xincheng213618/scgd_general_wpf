@@ -28,10 +28,10 @@ namespace ColorVision.Engine.Templates
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
                 Name = Name?? Code ?? this.GetType().ToString();
-
                 TemplateControl.AddITemplateInstance(Name, this);
             });
         }
+
         public int TemplateDicId { get; set; } = -1;
 
         public string Name { get ; set; }
@@ -99,6 +99,8 @@ namespace ColorVision.Engine.Templates
             }
             return FileName;
         }
+
+
 
         public virtual void Save()
         {
@@ -218,8 +220,8 @@ namespace ColorVision.Engine.Templates
             ModMasterModel modMaster = new ModMasterModel(TemplateDicId, "", UserConfig.Instance.TenantId);
             CreateTemp = (T)Activator.CreateInstance(typeof(T), new object[] { modMaster, list });
 
-            if (ExportTemp != null)
-                CreateTemp?.CopyFrom(ExportTemp);
+            if (ImportTemp != null)
+                CreateTemp?.CopyFrom(ImportTemp);
             return CreateTemp ?? new T();
         }
 
@@ -384,15 +386,16 @@ namespace ColorVision.Engine.Templates
         public override bool CopyTo(int index)
         {
             string fileContent = TemplateParams[index].Value.ToJsonN();
-            ExportTemp = JsonConvert.DeserializeObject<T>(fileContent);
-            if (ExportTemp != null)
+            ImportTemp = JsonConvert.DeserializeObject<T>(fileContent);
+            if (ImportTemp != null)
             {
-                ExportTemp.Id = -1;
+                ImportTemp.Id = -1;
             }
             return true;
         }
 
-        public T? ExportTemp { get; set; }
+        public T? ImportTemp { get; set; }
+
         public override bool Import()
         {
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
@@ -417,7 +420,7 @@ namespace ColorVision.Engine.Templates
                 {
                     CreateTemp.ModDetailModels.First(a => a.SysPid == item.SysPid).ValueA = item.ValueA;
                 }
-                ExportTemp = CreateTemp;
+                ImportTemp = CreateTemp;
                 return true;
             }
             catch (JsonException ex)
@@ -487,7 +490,7 @@ namespace ColorVision.Engine.Templates
                 return null;
             }
             T? param = AddParamMode();
-            if (ExportTemp != null) ExportTemp = null;
+            if (ImportTemp != null) ImportTemp = null;
             if (param != null)
             {
                 var a = new TemplateModel<T>(templateName, param);

@@ -36,10 +36,11 @@ namespace ColorVision.Engine.Templates.Flow
                     SysResourceModel res = VSysResourceDao.Instance.GetById(id);
                     if (res != null)
                     {
-                        res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
+                        res.Code = flowParam.Id + Cryptography.GetMd5Hash(flowParam.DataBase64);
                         res.Name = flowParam.Name;
                         res.Value = flowParam.DataBase64;
                         VSysResourceDao.Instance.Save(res);
+                        model.ValueA = res.Id.ToString();
                     }
                     else
                     {
