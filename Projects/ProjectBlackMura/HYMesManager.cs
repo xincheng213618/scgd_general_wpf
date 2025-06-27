@@ -153,20 +153,23 @@ namespace ProjectBlackMura
                             if (Msg.Contains("CCPI,S"))
                             {
                                 string[] parts = Msg.Split(',');
-                                CCPIResult = parts[^1].Contains('0');
-                                log.Info($"CCPIResult:{CCPIResult}");
+                                bool result = parts[^1].Contains('0');
+                                log.Info($"CCPIResult:{result}");
+                                CCPIResult = result;
                             }
                             if (Msg.Contains("CON,S"))
                             {
                                 string[] parts = Msg.Split(',');
-                                CONResult = parts[^1].Contains('0');
-                                log.Info($"CONResult:{CONResult}");
+                                bool result = parts[^1].Contains('0');
+                                log.Info($"CONResult:{result}");
+                                CONResult = result;
                             }
                             if (Msg.Contains("COFF,S"))
                             {
                                 string[] parts = Msg.Split(',');
-                                COFFResult = parts[^1].Contains('0');
-                                log.Info($"COFFResult:{COFFResult}");
+                                bool result = parts[^1].Contains('0');
+                                log.Info($"COFFResult:{result}");
+                                COFFResult = result;
                             }
 
                             if (Msg.Contains("CSN,S"))
@@ -206,16 +209,6 @@ namespace ProjectBlackMura
                 }
             }
         }
-
-        public string SN { get => _SN; set {
-                if (_SN == value) return;
-                _SN = value; 
-                NotifyPropertyChanged();
-                if (Config.IsAutoUploadSn)
-                    UploadSN();
-            }
-        }
-        private string _SN;
 
         public bool? CSNResult { get => _CSNResult; set { _CSNResult = value; NotifyPropertyChanged(); } }
         private bool? _CSNResult;
@@ -283,14 +276,14 @@ namespace ProjectBlackMura
         }
 
 
-        public void UploadSN()
+        public void UploadSN(string sn)
         {
-            if (string.IsNullOrWhiteSpace(SN))
+            if (string.IsNullOrWhiteSpace(sn))
             {
                 MessageBox.Show("产品编号为空");
                 return;
             }
-            string SendMsg = $"CSN,C,{Config.DeviceId},{SN}";
+            string SendMsg = $"CSN,C,{Config.DeviceId},{sn}";
             log.Info("UploadSN" + SendMsg);
             Send(Encoding.UTF8.GetBytes(SendMsg));
         }

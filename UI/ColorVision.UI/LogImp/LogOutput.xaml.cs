@@ -21,6 +21,20 @@ namespace ColorVision.UI.LogImp
     {
         private string? Pattern;
 
+        public LogOutput()
+        {
+            Pattern = "%date [%thread] %-5level %logger %  %message%newline";
+            InitializeComponent();
+            this.SizeChanged += (s, e) =>
+            {
+                ButtonAutoScrollToEnd.Visibility = this.ActualWidth > 600 ? Visibility.Visible : Visibility.Collapsed;
+                ButtonAutoRefresh.Visibility = this.ActualWidth > 500 ? Visibility.Visible : Visibility.Collapsed;
+                cmlog.Visibility = this.ActualWidth > 400 ? Visibility.Visible : Visibility.Collapsed;
+                SearchBar1.Visibility = this.ActualWidth > 200 ? Visibility.Visible : Visibility.Collapsed;
+            };
+        }
+
+
         public LogOutput(string? pattern = "%date [%thread] %-5level %logger %  %message%newline")
         {
             Pattern = pattern;

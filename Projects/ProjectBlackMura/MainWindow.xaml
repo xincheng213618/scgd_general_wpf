@@ -140,10 +140,10 @@
                                 <TextBlock Text="SN" Margin="0,0,5,0"/>
                                 <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
                             </DockPanel>
-                            <Button Content="ExcelText" Click="Test_Click" Background="#01FFFFFF" BorderThickness="0"/>
                         </DockPanel>
                         <Button Content="Test BlackMura"  DockPanel.Dock="Right" Background="Pink" Height="70" Click="TestClick" />
-                        
+                        <Button Content="Test All"  DockPanel.Dock="Right" Background="Pink"  Click="Test1_Click" />
+
                     </StackPanel>
                 </Grid>
                 <RichTextBox x:Name="outputText" Grid.Row="1" Margin="5,0"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
@@ -168,22 +168,21 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel >
                                     <StackPanel Margin="0,2" Orientation="Horizontal">
-                                        <DockPanel Margin="0,2" Width="200" HorizontalAlignment="Left">
-                                            <TextBlock Text="串口" Width="50"/>
+                                        <DockPanel Margin="0,2" Width="100" HorizontalAlignment="Left">
                                             <ComboBox x:Name="ComboBoxSer" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding Config.PortName}"  />
                                         </DockPanel>
                                         <Button  Content="连接MES" Style="{StaticResource ButtonDefault.Small}" Click="Button_Click_1" Margin="10,0,0,0"/>
-                                    </StackPanel>
-                                    <DockPanel Margin="2">
-                                        <DockPanel>
-                                            <TextBlock Text="连接情况:" Width="60"/>
-                                            <TextBlock Text="{Binding  IsConnect ,Converter={StaticResource ConnectConverter}}"/>
+                                        <DockPanel Margin="2">
+                                            <DockPanel>
+                                                <TextBlock Text="连接情况:" Width="60"/>
+                                                <TextBlock Text="{Binding  IsConnect ,Converter={StaticResource ConnectConverter}}"/>
+                                            </DockPanel>
                                         </DockPanel>
-                                    </DockPanel>
+                                    </StackPanel>
+      
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="0,2" VerticalAlignment="Top">
                                     <ui:ToggleSwitch Content="启动时尝试连接MES" IsChecked="{Binding Config.IsOpenConnect}" Margin="0,2"/>
-                                    <ui:ToggleSwitch Content="产品编号改变时自动上传MES" IsChecked="{Binding Config.IsAutoUploadSn}" Margin="0,2"/>
                                 </StackPanel>
 
                             </Grid>
