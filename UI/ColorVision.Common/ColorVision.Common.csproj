@@ -2,7 +2,6 @@
 
   <PropertyGroup>
 	  <TargetFrameworks>net8.0-windows;net6.0-windows</TargetFrameworks>
-	  <Nullable>enable</Nullable>
 	  <UseWPF>true</UseWPF>
 	  <UseWindowsForms>True</UseWindowsForms>
 	  <ImplicitUsings>disable</ImplicitUsings>
@@ -13,6 +12,7 @@
 	  <IncludeSymbols>True</IncludeSymbols>
 	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
 	  <PackageReadmeFile>README.md</PackageReadmeFile>
+	  <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

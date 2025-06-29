@@ -16,9 +16,6 @@ namespace ColorVision.Common.Utilities
         public const char LineFeed = '\n';
         public const char Tab = '\t';
 
-        public static bool IsNullOrEmpty([NotNullWhen(false)] this string? value) => string.IsNullOrEmpty(value);
-        public static bool IsNullOrWhiteSpace([NotNullWhen(false)] this string? value) => string.IsNullOrWhiteSpace(value);
-
 
         public static string RemoveEmptyLines(this string value)
         {
@@ -30,11 +27,6 @@ namespace ColorVision.Common.Utilities
             return result;
         }
 
-        public static bool BeginWithAny(this string s, IEnumerable<char> chars)
-        {
-            if (s.IsNullOrEmpty()) return false;
-            return chars.Contains(s[0]);
-        }
 
         private static char ToLower(char c)
         {
