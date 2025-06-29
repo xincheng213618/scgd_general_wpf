@@ -6,8 +6,8 @@
         xmlns:local="clr-namespace:WindowsServicePlugin.CVWinSMS"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance local:UpdateService1}"
-        Title="服务升级窗口" Height="450" Width="800" Initialized="Window_Initialized">
+        d:DataContext="{d:DesignInstance local:UpdateService}"
+        Title="服务升级窗口" Height="450" Width="800"  Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -25,6 +25,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="400"/>
         </Grid.RowDefinitions>
         <StackPanel>
             <StackPanel Orientation="Horizontal">
@@ -61,6 +62,9 @@
                 <Button Command="{Binding PrevCmd}" CommandParameter="{Binding ElementName=PanelMain}" Width="180" Content="上一步" Style="{StaticResource ButtonPrimary}"/>
                 <Button Command="{Binding NextCmd}" CommandParameter="{Binding ElementName=PanelMain}" Width="180" Margin="0,16,0,0" Content="下一步" Style="{StaticResource ButtonPrimary}"/>
             </StackPanel>
+
+        </Grid>
+        <Grid Grid.Row="2" x:Name="LogGrid" >
 
         </Grid>
     </Grid>
