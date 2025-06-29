@@ -1,72 +1,101 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <Nullable>enable</Nullable>
-    <UseWPF>true</UseWPF>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <SignAssembly>True</SignAssembly>
-    <AssemblyOriginatorKeyFile>$(SolutionDir)ColorVision.snk</AssemblyOriginatorKeyFile>
-	<VersionPrefix>1.3.3.1</VersionPrefix>
-  </PropertyGroup>
+	<PropertyGroup>
+		<UseWPF>true</UseWPF>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+		<SignAssembly>True</SignAssembly>
+		<AssemblyOriginatorKeyFile>$(SolutionDir)ColorVision.snk</AssemblyOriginatorKeyFile>
+		<VersionPrefix>1.3.4.1</VersionPrefix>
+		<TargetFrameworks>net8.0-windows;net6.0-windows;net48</TargetFrameworks>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<IncludeSymbols>True</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="OpenCvSharp4" Version="4.11.0.20250507" />
-    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.11.0.20250507" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="OpenCvSharp4" Version="4.11.0.20250507" />
+		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.11.0.20250507" />
+	</ItemGroup>
 
-  <ItemGroup>
-	  <None Include="..\..\DLL\scgd_internal_dll\cudart64_12.dll" Link="runtimes\win-x64\native\cudart64_12.dll">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
-	  <None Include="..\..\DLL\scgd_internal_dll\cvCamera.dll" Link="runtimes\win-x64\native\cvCamera.dll">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
-	  <None Include="..\..\DLL\scgd_internal_dll\cvoled.dll" Link="runtimes\win-x64\native\cvoled.dll">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
-	  <None Include="..\..\DLL\scgd_internal_dll\qhyccd.dll" Link="runtimes\win-x64\native\qhyccd.dll">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
-	  <Content Include="..\..\DLL\scgd_internal_dll\SCBase.dll" Link="runtimes\win-x64\native\SCBase.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
-	  <None Include="..\..\DLL\scgd_internal_dll\SCGDCamLayer.dll" Link="runtimes\win-x64\native\SCGDCamLayer.dll">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
-	  <Content Include="..\..\DLL\scgd_internal_dll\SCGDDataProcess.dll" Link="runtimes\win-x64\native\SCGDDataProcess.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <None Include="..\..\DLL\scgd_internal_dll\SCGDMilCam.dll" Link="runtimes\win-x64\native\SCGDMilCam.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-	  <None Include="..\..\DLL\scgd_internal_dll\CommLibrary.dll" Link="runtimes\win-x64\native\CommLibrary.dll">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
-	  <None Include="..\..\DLL\scgd_internal_dll\opencv_world401.dll" Link="runtimes\win-x64\native\opencv_world401.dll">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
-	  <Content Include="..\..\DLL\scgd_internal_dll\pthreadVC2.dll" Link="runtimes\win-x64\native\pthreadVC2.dll">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
-	  <Content Include="..\..\DLL\scgd_internal_dll\sqlite3.dll" Link="runtimes\win-x64\native\sqlite3.dll">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="..\..\DLL\scgd_internal_dll\cvCalibration.dll" Link="runtimes\win-x64\native\cvCalibration.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\DLL\scgd_internal_dll\cvTableList.dll" Link="runtimes\win-x64\native\cvTableList.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\DLL\scgd_internal_dll\msvcr100.dll" Link="runtimes\win-x64\native\msvcr100.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\DLL\scgd_internal_dll\toupcam.dll" Link="runtimes\win-x64\native\toupcam.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<None Include="..\..\DLL\scgd_internal_dll\cudart64_12.dll" Link="runtimes\win-x64\native\cudart64_12.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\cvCamera.dll" Link="runtimes\win-x64\native\cvCamera.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\cvoled.dll" Link="runtimes\win-x64\native\cvoled.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\qhyccd.dll" Link="runtimes\win-x64\native\qhyccd.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\SCBase.dll" Link="runtimes\win-x64\native\SCBase.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\SCGDCamLayer.dll" Link="runtimes\win-x64\native\SCGDCamLayer.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\SCGDDataProcess.dll" Link="runtimes\win-x64\native\SCGDDataProcess.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\SCGDMilCam.dll" Link="runtimes\win-x64\native\SCGDMilCam.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\CommLibrary.dll" Link="runtimes\win-x64\native\CommLibrary.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\opencv_world401.dll" Link="runtimes\win-x64\native\opencv_world401.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\pthreadVC2.dll" Link="runtimes\win-x64\native\pthreadVC2.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\sqlite3.dll" Link="runtimes\win-x64\native\sqlite3.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\cvCalibration.dll" Link="runtimes\win-x64\native\cvCalibration.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\cvTableList.dll" Link="runtimes\win-x64\native\cvTableList.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\msvcr100.dll" Link="runtimes\win-x64\native\msvcr100.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\toupcam.dll" Link="runtimes\win-x64\native\toupcam.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</None>
+	</ItemGroup>
 
 </Project>

@@ -2,7 +2,7 @@
 using System.IO;
 using System.Threading.Tasks;
 
-namespace ColorVision.Net
+namespace ColorVision.FileIO
 {
     public delegate void NetFileHandler(object sender, NetFileEvent arg);
     public class NetFileUtil

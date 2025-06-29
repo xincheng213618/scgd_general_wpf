@@ -546,7 +546,7 @@ namespace cvColorVision
 
         public static bool GetCameraID(CameraType eType, ref string szText)
         {
-            StringBuilder builder = new(256);
+            StringBuilder builder = new StringBuilder(256);
 
             if (GetCameraID(eType, builder, 256))
             {
@@ -560,7 +560,7 @@ namespace cvColorVision
         private unsafe static extern bool GetAllCameraID_Gen(CameraType eType, StringBuilder sn, int len);
         public static bool GetAllCameraID(CameraType eType, ref string szText)
         {
-            StringBuilder builder = new(256);
+            StringBuilder builder = new StringBuilder(256);
             if (GetAllCameraID_Gen(eType, builder, 256))
             {
                 szText = builder.ToString();
@@ -702,7 +702,7 @@ namespace cvColorVision
 
         public static string CM_GetSN(IntPtr handle)
         {
-            StringBuilder builder = new(50);
+            StringBuilder builder = new StringBuilder(50);
             CM_GetSN(handle, builder, 50);
             return builder.ToString();
         }
@@ -744,13 +744,13 @@ namespace cvColorVision
         public static void CM_GetFrame_TIFF(IntPtr handle, GetFrameParam param, bool isburst)
         {
             string json1 = JsonConvert.SerializeObject(param);
-            Thread thread = new(() => workTiffThread(handle, json1, isburst));
+            Thread thread = new Thread(() => workTiffThread(handle, json1, isburst));
             thread.Start();
         }
 
         private static void workTiffThread(IntPtr handle, object json1, bool isburst)
         {
-            StringBuilder json = new();
+            StringBuilder json = new StringBuilder();
             json.Append(json1);
             string tifjson = json.ToString();
             if (isburst)
@@ -776,7 +776,7 @@ namespace cvColorVision
 
         public static string GetSysCfgJson(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault)
         {
-            StringBuilder builder = new(10240);
+            StringBuilder builder = new StringBuilder(10240);
             GetSysCfgJson_Gen(handle, builder, 10240, bDefault);
             string json1 = builder.ToString();
             return UnicodeToGB(json1);
@@ -786,7 +786,7 @@ namespace cvColorVision
         private unsafe static extern void GetDefaultSysCfgJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
         public static string GetDefaultSysCfgJson(IntPtr handle, bool bDefault)
         {
-            StringBuilder builder = new(10240);
+            StringBuilder builder = new StringBuilder(10240);
             GetDefaultSysCfgJson_Gen(handle, builder, 10240, bDefault);
             string json1 = builder.ToString();
             return UnicodeToGB(json1);
@@ -796,7 +796,7 @@ namespace cvColorVision
         private unsafe static extern void GetDefaultCameraCfgToJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
         public static string GetDefaultCameraCfgToJson(IntPtr handle, bool bDefault)
         {
-            StringBuilder builder = new(10240);
+            StringBuilder builder = new StringBuilder(10240);
             CM_GetCfgToJson(handle, ConfigType.Cfg_Camera, builder, 10240, bDefault);
             string json1 = builder.ToString();
             return UnicodeToGB(json1);
@@ -806,7 +806,7 @@ namespace cvColorVision
         private unsafe static extern void GetDefaultExpTimeCfgToJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
         public static string GetDefaultExpTimeCfgToJson(IntPtr handle, bool bDefault)
         {
-            StringBuilder builder = new(10240);
+            StringBuilder builder = new StringBuilder(10240);
             CM_GetCfgToJson(handle, ConfigType.Cfg_ExpTime, builder, 10240, bDefault);
             string json1 = builder.ToString();
             return UnicodeToGB(json1);
@@ -816,7 +816,7 @@ namespace cvColorVision
         private unsafe static extern void GetDefaultCaliLibCfgToJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
         public static string GetDefaultCaliLibCfgToJson(IntPtr handle, bool bDefault)
         {
-            StringBuilder builder = new(10240);
+            StringBuilder builder = new StringBuilder(10240);
             CM_GetCfgToJson(handle, ConfigType.Cfg_Calibration, builder, 10240, bDefault);
             string json1 = builder.ToString();
             return UnicodeToGB(json1);
@@ -827,7 +827,7 @@ namespace cvColorVision
 
         public static string GetDefaultChannelsCfgToJson(IntPtr handle, bool bDefault)
         {
-            StringBuilder builder = new(10240);
+            StringBuilder builder = new StringBuilder(10240);
             GetDefaultChannelsCfgToJson_Gen(handle, builder, 10240, bDefault);
             string json1 = builder.ToString();
             return UnicodeToGB(json1);
@@ -1083,7 +1083,6 @@ namespace cvColorVision
 
     public struct IRECT
     {
-        public IRECT() { }
         public IRECT(int tx, int ty, int tcx, int tcy)
         {
             x = tx;
@@ -1091,10 +1090,10 @@ namespace cvColorVision
             cx = tcx;
             cy = tcy;
         }
-        public int x;
-        public int y;
-        public int cx;
-        public int cy;
+        public int x { get; set; }
+        public int y { get; set; }
+        public int cx { get; set; }
+        public int cy { get; set; }
     };
     public enum DistortionType //TV畸变H,V方向与光学畸变的检测方法
     {
