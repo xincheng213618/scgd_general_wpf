@@ -3,6 +3,7 @@ using OfficeOpenXml.Style;
 using System.IO;
 using System.Drawing;
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 
 namespace ProjectBlackMura
  {
@@ -33,6 +34,8 @@ namespace ProjectBlackMura
 
         public double ZaRelmax { get => _ZaRelmax; set { _ZaRelmax = value; NotifyPropertyChanged(); } }
         private double _ZaRelmax;
+
+        public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
     }
 
 
@@ -200,24 +203,45 @@ namespace ProjectBlackMura
                 // 7. 九宫格数据
                 double[,] nineGrid = new double[,]
                 {
-                {1,1041.004761, 0.62441444, 214.6376953, 747.2717896, 89.85207367, 0},
-                {2,1047.505249, 0.57731575, 215.9981384, 750.315979, 91.97728729, 0},
-                {3,1037.700439, 0.69402897, 213.9006598, 743.163208, 90.33718872, 0},
-                {4,1034.109741, 0.60744447, 211.7969513, 742.5627944, 89.55202484, 0},
-                {5,1082.60791,  0.58938539, 221.7706604, 776.0324986, 95.26428986, 0},
-                {6,1035.923828, 0.61586839, 211.269226, 739.8544912, 90.75215912, 0},
-                {7,1127.72998,  0.84371829, 229.008228, 812.3952026, 99.05169678, 0},
-                {8,1049.366943, 0.58044493, 211.8704529, 753.9787598, 93.85507202, 0},
-                {9,1103.226685, 0.77524012, 225.2050323, 791.1521606, 98.2789881, 0},
+                {1,1041.004761, 0.62441444, 214.6376953, 747.2717896, 89.85207367},
+                {2,1047.505249, 0.57731575, 215.9981384, 750.315979, 91.97728729},
+                {3,1037.700439, 0.69402897, 213.9006598, 743.163208, 90.33718872},
+                {4,1034.109741, 0.60744447, 211.7969513, 742.5627944, 89.55202484},
+                {5,1082.60791,  0.58938539, 221.7706604, 776.0324986, 95.26428986},
+                {6,1035.923828, 0.61586839, 211.269226, 739.8544912, 90.75215912},
+                {7,1127.72998,  0.84371829, 229.008228, 812.3952026, 99.05169678},
+                {8,1049.366943, 0.58044493, 211.8704529, 753.9787598, 93.85507202},
+                {9,1103.226685, 0.77524012, 225.2050323, 791.1521606, 98.2789881},
                 };
 
                 for (int i = 0; i < 9; i++)
                 {
-                    for (int j = 0; j < 7; j++)
+                    for (int j = 0; j < 6; j++)
                     {
                         ws.Cells[23 + i, 2 + j].Value = nineGrid[i, j];
                     }
                 }
+                for (int i = 0; i < blackMudraResult.WhiteImage.PoiResultCIExyuvDatas.Count; i++)
+                {
+                    ws.Cells[23 + i, 2 + 1].Value = blackMudraResult.WhiteImage.PoiResultCIExyuvDatas[i].CCT;
+                }
+                for (int i = 0; i < blackMudraResult.BlackImage.PoiResultCIExyuvDatas.Count; i++)
+                {
+                    ws.Cells[23 + i, 2 + 2].Value = blackMudraResult.BlackImage.PoiResultCIExyuvDatas[i].CCT;
+                }
+                for (int i = 0; i < blackMudraResult.RedImage.PoiResultCIExyuvDatas.Count; i++)
+                {
+                    ws.Cells[23 + i, 2 + 3].Value = blackMudraResult.RedImage.PoiResultCIExyuvDatas[i].CCT;
+                }
+                for (int i = 0; i < blackMudraResult.GreenImage.PoiResultCIExyuvDatas.Count; i++)
+                {
+                    ws.Cells[23 + i, 2 + 4].Value = blackMudraResult.GreenImage.PoiResultCIExyuvDatas[i].CCT;
+                }
+                for (int i = 0; i < blackMudraResult.BlueImage.PoiResultCIExyuvDatas.Count; i++)
+                {
+                    ws.Cells[23 + i, 2 + 5].Value = blackMudraResult.BlueImage.PoiResultCIExyuvDatas[i].CCT;
+                }
+
 
                 // 8. 九宫格统计数据
                 ws.Cells["B32"].Value = "Mean";

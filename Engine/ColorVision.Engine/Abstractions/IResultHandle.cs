@@ -61,6 +61,7 @@ namespace ColorVision.Engine.Abstractions
         ARVR_SFR_FindROI = 60,
         ARVR_AAFindPoints = 61,
         PoiAnalysis = 62,
+        FindCross = 63,
         Math_DataConvert = 70,
         BlackMura_Calc = 80
     }

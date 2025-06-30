@@ -312,13 +312,16 @@ namespace ProjectBlackMura
 
         public void Send(byte[] msg)
         {
+            if (!serialPort.IsOpen)
+                log.Info("serialPort Is Not Open");
+
+
             byte[] framedMsg = new byte[msg.Length + 2];
             framedMsg[0] = 0x02; // STX (Start of Text)
             msg.CopyTo(framedMsg, 1); // Copy original message into the new array starting at index 1
             framedMsg[framedMsg.Length - 1] = 0x03; // ETX (End of Text)
 
-            if (serialPort.IsOpen)
-                serialPort.Write(framedMsg, 0, framedMsg.Length);
+            serialPort.Write(framedMsg, 0, framedMsg.Length);
         }
 
         public void Close()

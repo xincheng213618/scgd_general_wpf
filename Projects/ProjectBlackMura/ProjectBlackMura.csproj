@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.1.2.30</VersionPrefix>
+		<VersionPrefix>1.1.2.47</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -32,6 +32,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Reference Include="CVCommCore">
+		  <HintPath>..\..\DLL\CVCommCore.dll</HintPath>
+		</Reference>
 		<Reference Include="FlowEngineLib">
 			<HintPath>..\..\DLL\FlowEngineLib.dll</HintPath>
 		</Reference>
