@@ -28,6 +28,7 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
             Group = "Json";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
+            OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
         }
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplateSelectedIndex;
@@ -35,6 +36,15 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
         public void OpenTemplate()
         {
             new TemplateEditorWindow(new TemplateFindCross(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+        }
+
+        public RelayCommand OpenTemplatePoiCommand { get; set; }
+        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; NotifyPropertyChanged(); } }
+        private int _TemplatePoiSelectedIndex;
+
+        public void OpenTemplatePoi()
+        {
+            new TemplateEditorWindow(new TemplatePoi(), _TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         }
 
         public override UserControl GetUserControl()
@@ -55,6 +65,11 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
 
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
+            if (TemplatePoiSelectedIndex > -1)
+            {
+                var poi_pm = TemplatePoi.Params[TemplatePoiSelectedIndex].Value;
+                Params.Add("POITemplateParam", new CVTemplateParam() { ID = poi_pm.Id, Name = poi_pm.Name });
+            }
             MsgSend msg = new()
             {
                 EventName = "FindCross",
