@@ -54,14 +54,18 @@ namespace cvColorVision
         EXINT_HIGH_LEVEL,       //高电平触发模式
         EXINT_LOW_LEVEL,        //低电平触发模式
     }
-
-
+    /// <summary>
+    /// 光谱仪相关操作
+    /// </summary>
     public static class Spectrometer
     {
         private const string LIBRARY_CVCAMERA = "cvCamera.dll";
 
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate int Emission_CallBack(IntPtr strText, int nLen);
+
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_CreateEmission", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public static extern IntPtr CM_CreateEmission(int nType);
+        public static extern IntPtr CM_CreateEmission(int nType, Emission_CallBack lpCallBack);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_ReleaseEmission", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_ReleaseEmission(IntPtr handle);
@@ -95,15 +99,22 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_DarkStorage", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_Emission_DarkStorage(IntPtr handle, float fIntTime, int iAveNum, int iFilterBW, float[] fDarkData);
 
+
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_GetData", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_Emission_GetData(IntPtr handle, TRIGGER_MODE TriggerMode, float fIntTime, int iAveNum, int iFilterBW, float[] fDarkData, float fDx, float fDy, float fSetWL1, float fSetWL2, ref COLOR_PARA dPara);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_GetDataSyncfreq", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern int CM_Emission_GetDataSyncfreq(IntPtr handle, TRIGGER_MODE TriggerMode, double Syncfreq, int m, ref float fIntTime, int iAveNum, int iFilterBW, float[] fDarkData, float fDx, float fDy, float fSetWL1, float fSetWL2, ref COLOR_PARA dPara);
+
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate int AutoTime_CallBack(int time, double spectum);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_GetAutoTime", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_Emission_GetAutoTime(IntPtr handle, ref float fIntTime, int iLimitTime, float fTimeB, int nSaturation);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_GetAutoTimeEx", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public static extern int CM_Emission_GetAutoTimeEx(IntPtr handle, ref float fIntTime, int iLimitTime, float fTimeB, float dMaxva1);
-
+        public static extern int CM_Emission_GetAutoTimeEx(IntPtr handle, ref float fIntTime, int iLimitTime, float fTimeB, float dMaxva1, AutoTime_CallBack autoTime_CallBack);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_Init_Auto_Dark", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_Emission_Init_Auto_Dark(IntPtr handle, float fTimeStart, int nStepTime, int nStepCount, int iAveNum);
