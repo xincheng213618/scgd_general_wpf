@@ -4,7 +4,7 @@
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>enable</ImplicitUsings>    
-		<VersionPrefix>1.3.1.2</VersionPrefix>
+		<VersionPrefix>1.3.1.4</VersionPrefix>
 	</PropertyGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
@@ -12,8 +12,16 @@
 	</Target>
 
 	<ItemGroup>
+	  <None Remove="Assets\activate.ps1" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
 		<ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Include="Assets\activate.ps1" />
 	</ItemGroup>
 
 	<ItemGroup>

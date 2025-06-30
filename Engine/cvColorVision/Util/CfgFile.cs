@@ -28,7 +28,7 @@ namespace cvColorVision.Util
         /// <typeparam name="T"></typeparam>
         /// <param name="cfgFile"></param>
         /// <returns></returns>
-        public static T? Load<T>(string cfgFile)
+        public static T Load<T>(string cfgFile)
         {
             if (File.Exists(cfgFile))
             {

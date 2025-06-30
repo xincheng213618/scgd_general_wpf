@@ -5,14 +5,14 @@ namespace ColorVision.UI
 {
     public interface IDisPlayControl
     {
-        public event RoutedEventHandler Selected;
+        event RoutedEventHandler Selected;
 
-        public event RoutedEventHandler Unselected;
+        event RoutedEventHandler Unselected;
 
-        public event EventHandler SelectChanged;
+        event EventHandler SelectChanged;
 
-        public bool IsSelected { get; set; }
+        bool IsSelected { get; set; }
 
-        public string DisPlayName { get; }
+        string DisPlayName { get; }
     }
 }

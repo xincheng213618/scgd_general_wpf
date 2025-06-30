@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.1.1.1</VersionPrefix>
+		<VersionPrefix>1.1.2.30</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -25,7 +25,10 @@
 
 	<ItemGroup>
 		<Folder Include="Assets\" />
-		<Folder Include="Config\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="EPPlus" Version="8.0.6" />
 	</ItemGroup>
 
 	<ItemGroup>

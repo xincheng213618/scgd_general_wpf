@@ -156,7 +156,7 @@ namespace ColorVision.Engine.Templates.Flow
             string base64 = Convert.ToBase64String(fileBytes);
             FlowParam param = new FlowParam();
             param.DataBase64 = base64;
-            ExportTemp = param;
+            ImportTemp = param;
             return true;
         }
 
@@ -167,10 +167,10 @@ namespace ColorVision.Engine.Templates.Flow
             if (index > -1 && index < TemplateParams.Count)
             {
                 string fileContent = TemplateParams[index].Value.ToJsonN();
-                ExportTemp = JsonConvert.DeserializeObject<FlowParam>(fileContent);
-                if (ExportTemp != null)
+                ImportTemp = JsonConvert.DeserializeObject<FlowParam>(fileContent);
+                if (ImportTemp != null)
                 {
-                    ExportTemp.Id = -1;
+                    ImportTemp.Id = -1;
                 }
                 return true;
             }
@@ -182,11 +182,11 @@ namespace ColorVision.Engine.Templates.Flow
             FlowParam? param = AddFlowParam(templateName);
             if (param != null)
             {
-                if (ExportTemp != null)
+                if (ImportTemp != null)
                 {
-                    param.DataBase64 = ExportTemp.DataBase64;
+                    param.DataBase64 = ImportTemp.DataBase64;
                     param.Save();
-                    ExportTemp = null;
+                    ImportTemp = null;
                 }
                 var a = new TemplateModel<FlowParam>(templateName, param);
                 TemplateParams.Add(a);

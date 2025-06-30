@@ -3,20 +3,24 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using log4net;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using WindowsServicePlugin.Tools;
 
 
 namespace WindowsServicePlugin.CVWinSMS
 {
-    public class UpdateService1 : ViewModelBase
+    public class UpdateService : ViewModelBase
     {
-        public static UpdateService1 Instance { get; set; } = new UpdateService1();
+        private static readonly ILog log = LogManager.GetLogger(typeof(UpdateService));
+
+        public static UpdateService Instance { get; set; } = new UpdateService();
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
 
-        public UpdateService1()
+        public UpdateService()
         {
             DownloadFile = new DownloadFile();
             DownloadFile.DownloadTile = "下载最新的服务压缩包";
@@ -66,7 +70,7 @@ namespace WindowsServicePlugin.CVWinSMS
                         // 处理环境变量
                         RegistrationCenterService = Environment.ExpandEnvironmentVariables(str);
                         InstallPath = Directory.GetParent(Directory.GetParent(RegistrationCenterService)?.FullName)?.FullName;
-
+                        log.Info(RegistrationCenterService);
                         if (File.Exists(RegistrationCenterService))
                         {
                             FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(RegistrationCenterService);
@@ -81,10 +85,7 @@ namespace WindowsServicePlugin.CVWinSMS
         public async Task Initialize()
         {
             Execute();
-
         }
-
-
 
         public async void Execute()
         {

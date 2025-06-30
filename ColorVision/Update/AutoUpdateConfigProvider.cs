@@ -9,7 +9,7 @@ namespace ColorVision.Update
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
             return new List<ConfigSettingMetadata>
-        {
+            {
             new ConfigSettingMetadata
             {
                 Name = Properties.Resources.CheckUpdatesOnStartup, // Assuming this is for IsAutoUpdate

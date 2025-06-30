@@ -1,5 +1,5 @@
 ﻿#pragma warning disable CA1051
-namespace ColorVision.Net
+namespace ColorVision.FileIO
 {
     public enum CVType
     {

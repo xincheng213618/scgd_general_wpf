@@ -2,11 +2,11 @@
 {
     public interface IProject
     {
-        public string? Header { get; }
-        public string? UpdateUrl { get; }
-        public string Description { get; }
+        string? Header { get; }
+        string? UpdateUrl { get; }
+        string Description { get; }
 
-        public void Execute();
+        void Execute();
     }
 
     public abstract class IProjectBase : IProject

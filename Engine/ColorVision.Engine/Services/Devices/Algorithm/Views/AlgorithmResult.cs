@@ -5,7 +5,7 @@ using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.Net;
+using ColorVision.FileIO;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
 using System;
@@ -72,10 +72,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                 int old1 = TemplatePoi.Params.Count;
                 TemplatePoi templatePoi1 = new TemplatePoi();
-                templatePoi1.ExportTemp = new PoiParam() { Name = templatePoi1.NewCreateFileName("poi") };
-                templatePoi1.ExportTemp.Height = 400;
-                templatePoi1.ExportTemp.Width = 300;
-                templatePoi1.ExportTemp.PoiConfig.BackgroundFilePath = FilePath;
+                templatePoi1.ImportTemp = new PoiParam() { Name = templatePoi1.NewCreateFileName("poi") };
+                templatePoi1.ImportTemp.Height = 400;
+                templatePoi1.ImportTemp.Width = 300;
+                templatePoi1.ImportTemp.PoiConfig.BackgroundFilePath = FilePath;
                 foreach (var item in list1)
                 {
                     PoiPoint poiPoint = new PoiPoint()
@@ -88,7 +88,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         PointType = (RiPointTypes)item.PoiType,
                         Id = -1
                     };
-                    templatePoi1.ExportTemp.PoiPoints.Add(poiPoint);
+                    templatePoi1.ImportTemp.PoiPoints.Add(poiPoint);
                 }
 
 
@@ -104,10 +104,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
             int old = TemplatePoi.Params.Count;
             TemplatePoi templatePoi = new TemplatePoi();
-            templatePoi.ExportTemp = new PoiParam() {  Name = templatePoi.NewCreateFileName("poi")};
-            templatePoi.ExportTemp.Height = 400;
-            templatePoi.ExportTemp.Width = 300;
-            templatePoi.ExportTemp.PoiConfig.BackgroundFilePath = FilePath;
+            templatePoi.ImportTemp = new PoiParam() {  Name = templatePoi.NewCreateFileName("poi")};
+            templatePoi.ImportTemp.Height = 400;
+            templatePoi.ImportTemp.Width = 300;
+            templatePoi.ImportTemp.PoiConfig.BackgroundFilePath = FilePath;
             foreach (var item in list)
             {
                 PoiPoint poiPoint = new PoiPoint() {
@@ -119,7 +119,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     PointType = (RiPointTypes)item.Point.PointType,
                     Id =-1
                 };
-                templatePoi.ExportTemp.PoiPoints.Add(poiPoint);
+                templatePoi.ImportTemp.PoiPoints.Add(poiPoint);
             }
 
 

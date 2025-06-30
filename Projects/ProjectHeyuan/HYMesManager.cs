@@ -12,7 +12,6 @@ namespace ColorVision.Projects.ProjectHeyuan
 {
     public class HYMesConfig: ViewModelBase, IConfig
     {
-
         public static HYMesConfig Instance => ConfigService.Instance.GetRequiredService<HYMesConfig>();
 
         public RelayCommand OpenTemplateCommand { get; set; }

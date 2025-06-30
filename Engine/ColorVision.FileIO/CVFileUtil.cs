@@ -5,7 +5,7 @@ using System.IO;
 using System.Text;
 
 
-namespace ColorVision.Net
+namespace ColorVision.FileIO
 {
 
     public enum CVImageChannelType
