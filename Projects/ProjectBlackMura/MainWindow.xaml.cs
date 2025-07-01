@@ -101,9 +101,11 @@ namespace ProjectBlackMura
 
             this.Closed += (s, e) =>
             {
+                HYMesManager.GetInstance().CCPICompleted -= MainWindow_CCPICompleted;
+                HYMesManager.GetInstance().CONCompleted -= MainWindow_CONCompleted;
+
                 timer.Change(Timeout.Infinite, 500); // 停止定时器
                 timer?.Dispose();
-
                 logOutput?.Dispose();
             };
 
@@ -113,7 +115,16 @@ namespace ProjectBlackMura
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
             HYMesManager.GetInstance().CCPICompleted += MainWindow_CCPICompleted;
+            HYMesManager.GetInstance().CONCompleted += MainWindow_CONCompleted;
+
         }
+
+        private void MainWindow_CONCompleted(object? sender, bool e)
+        {
+            if (HYMesConfig.Instance.IsSingleMes) return;
+            HYMesManager.GetInstance().PGSwitch(0);
+        }
+
         public void Delete()
         {
             if (listView1.SelectedIndex < 0) return;
@@ -957,13 +968,14 @@ namespace ProjectBlackMura
             BlackMudraResult.SN = SNtextBox.Text;
 
             CurrentTestType = BlackMuraTestType.None;
-            HYMesManager.GetInstance().PGSwitch(0);
+            HYMesManager.GetInstance().PGPowerOn();
         }
         public BlackMudraResult BlackMudraResult { get; set; }
         public BlackMuraTestType CurrentTestType { get; set; } = BlackMuraTestType.None;
 
         private void MainWindow_CCPICompleted(object? sender, bool e)
         {
+            if (HYMesConfig.Instance.IsSingleMes) return;
             var values = Enum.GetValues(typeof(BlackMuraTestType));
             int currentIndex = Array.IndexOf(values, CurrentTestType);
             int nextIndex = (currentIndex + 1) % values.Length;

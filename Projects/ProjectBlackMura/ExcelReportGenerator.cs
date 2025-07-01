@@ -54,6 +54,9 @@ namespace ProjectBlackMura
         public BlackMuraTestType BlackMuraTestType { get => _BlackMuraTestType; set { _BlackMuraTestType = value; NotifyPropertyChanged(); } }
         private BlackMuraTestType _BlackMuraTestType = BlackMuraTestType.None;
 
+        public double Contrast { get => _Contrast; set { _Contrast = value; NotifyPropertyChanged(); } }
+        private double _Contrast = 1;
+
         public Measurements WhiteImage { get; set; } = new Measurements();
         public Measurements BlackImage { get; set; } = new Measurements();
         public Measurements RedImage { get; set; } = new Measurements();
@@ -65,6 +68,8 @@ namespace ProjectBlackMura
     {
         public static void GenerateExcel(string filePath, BlackMudraResult blackMudraResult)
         {
+            blackMudraResult.Contrast = blackMudraResult.WhiteImage.Mean / blackMudraResult.BlackImage.Mean;
+
             ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
             using (var package = new ExcelPackage())
             {
@@ -119,6 +124,9 @@ namespace ProjectBlackMura
 
                 ws.Cells["E3"].Value = "Gradient B - %/Dpixel";
                 ws.Cells["E4"].Value = blackMudraResult.BlackImage.ZaRelmax;
+                ws.Cells["E5"].Value = "Contrast";
+                ws.Cells["E6"].Value = blackMudraResult.Contrast;
+
 
                 ws.Cells["F2"].Value = blackMudraResult.RedImage.Mean;
                 ws.Cells["F3"].Value = blackMudraResult.RedImage.Max;
@@ -128,6 +136,7 @@ namespace ProjectBlackMura
                 ws.Cells["F7"].Value = blackMudraResult.RedImage.Y;
                 ws.Cells["F8"].Value = blackMudraResult.RedImage.Wavelength;
                 ws.Cells["F9"].Value = blackMudraResult.RedImage.Saturation;
+
 
 
                 ws.Cells["G2"].Value = blackMudraResult.GreenImage.Mean;
@@ -189,6 +198,7 @@ namespace ProjectBlackMura
 
                 ws.Cells["A19"].Value = "Final Result";
                 ws.Cells["C19"].Value = "Pass";
+
                 ws.Cells["C19"].Style.Font.Color.SetColor(Color.Green);
 
                 // 6. 九宫格数据表头
@@ -250,7 +260,6 @@ namespace ProjectBlackMura
                 ws.Cells["E32"].Value = 217.2566071;
                 ws.Cells["F32"].Value = 761.8544992;
                 ws.Cells["G32"].Value = 93.21342468;
-                ws.Cells["H32"].Value = 0;
 
                 ws.Cells["B33"].Value = "Max";
                 ws.Cells["C33"].Value = 1127.72998;
@@ -258,7 +267,6 @@ namespace ProjectBlackMura
                 ws.Cells["E33"].Value = 229.008228;
                 ws.Cells["F33"].Value = 812.3952026;
                 ws.Cells["G33"].Value = 99.05169678;
-                ws.Cells["H33"].Value = 0;
 
                 ws.Cells["B34"].Value = "Min";
                 ws.Cells["C34"].Value = 1034.109741;
@@ -266,7 +274,6 @@ namespace ProjectBlackMura
                 ws.Cells["E34"].Value = 211.1269226;
                 ws.Cells["F34"].Value = 739.8544992;
                 ws.Cells["G34"].Value = 89.55202484;
-                ws.Cells["H34"].Value = 0;
 
                 ws.Cells["B35"].Value = "Unifor";
                 ws.Cells["C35"].Value = 91.69402313;
@@ -274,7 +281,6 @@ namespace ProjectBlackMura
                 ws.Cells["E35"].Value = 92.19402313;
                 ws.Cells["F35"].Value = 91.07076263;
                 ws.Cells["G35"].Value = 90.40937805;
-                ws.Cells["H35"].Value = 0;
 
                 ws.Cells["B36"].Value = "x";
                 ws.Cells["C36"].Value = 0.300512254;
@@ -282,7 +288,6 @@ namespace ProjectBlackMura
                 ws.Cells["E36"].Value = 0.680644899;
                 ws.Cells["F36"].Value = 0.276552618;
                 ws.Cells["G36"].Value = 0.15280357;
-                ws.Cells["H36"].Value = 0;
 
                 // 9. 美化样式和自动列宽
                 ws.Cells[1, 1, 36, 8].AutoFitColumns();
