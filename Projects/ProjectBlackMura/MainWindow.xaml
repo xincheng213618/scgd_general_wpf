@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
         xmlns:local="clr-namespace:ProjectBlackMura"
-        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" xmlns:hc="https://handyorg.github.io/handycontrol"
         d:DataContext="{d:DesignInstance local:ProjectBlackMuraConfig}"
         mc:Ignorable="d"
         Title="ProjectBlackMura" Height="720" Width="1280"  Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
@@ -122,6 +122,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="auto"/>
                     <RowDefinition Height="350"/>
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0" Margin="5">
@@ -153,7 +154,19 @@
                         </Paragraph>
                     </FlowDocument>
                 </RichTextBox>
-                <Grid x:Name="MesGrid" Grid.Row="2" d:DataContext="{d:DesignInstance local:HYMesManager}">
+
+                <hc:StepBar Grid.Row="2" StepIndex="{Binding StepIndex}">
+                    <hc:StepBarItem Content="上电"/>
+                    <hc:StepBarItem Content="白色"/>
+                    <hc:StepBarItem Content="黑色"/>
+                    <hc:StepBarItem Content="红色"/>
+                    <hc:StepBarItem Content="绿色"/>
+                    <hc:StepBarItem Content="蓝色"/>
+                    <hc:StepBarItem Content="下电"/>
+                    <hc:StepBarItem Content="上传"/>
+                </hc:StepBar>
+                
+                <Grid x:Name="MesGrid" Grid.Row="3" d:DataContext="{d:DesignInstance local:HYMesManager}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -174,15 +187,16 @@
                                         <Button  Content="连接MES" Style="{StaticResource ButtonDefault.Small}" Click="Button_Click_1" Margin="10,0,0,0"/>
                                         <DockPanel Margin="2">
                                             <DockPanel>
-                                                <TextBlock Text="连接情况:" Width="60"/>
+                                                <TextBlock Text="连接:" Width="60"/>
                                                 <TextBlock Text="{Binding  IsConnect ,Converter={StaticResource ConnectConverter}}"/>
                                             </DockPanel>
                                         </DockPanel>
                                     </StackPanel>
       
                                 </StackPanel>
-                                <StackPanel Grid.Column="1" Margin="0,2" VerticalAlignment="Top">
-                                    <ui:ToggleSwitch Content="启动时尝试连接MES" IsChecked="{Binding Config.IsOpenConnect}" Margin="0,2"/>
+                                <StackPanel Grid.Column="1" Margin="0,2" Orientation="Horizontal" VerticalAlignment="Top">
+                                    <ui:ToggleSwitch Content="启动时连接" IsChecked="{Binding Config.IsOpenConnect}" Margin="0,2"/>
+                                    <ui:ToggleSwitch Content="SingleMes" IsChecked="{Binding Config.IsSingleMes}" Margin="0,2"/>
                                 </StackPanel>
 
                             </Grid>

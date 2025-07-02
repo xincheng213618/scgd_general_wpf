@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -19,11 +20,13 @@ namespace ColorVision.Engine.MySql
         private static readonly object _locker = new();
         public static MySqlControl GetInstance() { lock (_locker) { return _instance ??= new MySqlControl(); } }
 
-        public MySqlConnection MySqlConnection { get; set; }
-
         public static MySqlConfig Config => MySqlSetting.Instance.MySqlConfig;
+        private volatile MySqlConnection _conn; // 用于切换
+        public MySqlConnection MySqlConnection => _conn;
+        private Timer timer;
         public MySqlControl()
         {
+            timer = new Timer(ReConnect, null, 0, 3600000);
             Task.Run(async () => 
             {
                 await Task.Delay(10000); // 等待配置加载完成
@@ -52,8 +55,23 @@ namespace ColorVision.Engine.MySql
                 try
                 {
                     IsConnect = false;
-                    MySqlConnection = new MySqlConnection() { ConnectionString = connStr };
-                    MySqlConnection.Open();
+                    MySqlConnection.Dispose();
+                    var newConn = new MySqlConnection() { ConnectionString = connStr };
+                    newConn.Open();
+                    var oldConn = Interlocked.Exchange(ref _conn, newConn); // 原子切换
+
+                    Task.Run(() =>
+                    {
+                        try 
+                        { 
+                            oldConn?.Dispose(); 
+                        } 
+                        catch(Exception ex)
+                        {
+                            log.Error(ex);
+                        }
+                    }); // 延后销毁，避免影响正在用的
+
                     IsConnect = true;
                     log.Info($"数据库连接成功:{connStr}");
                     return Task.FromResult(true);
@@ -75,8 +93,9 @@ namespace ColorVision.Engine.MySql
             try
             {
                 IsConnect = false;
-                MySqlConnection = new MySqlConnection() { ConnectionString = connStr  };
-                MySqlConnection.Open();
+                var newConn  = new MySqlConnection() { ConnectionString = connStr  };
+                newConn.Open();
+                var oldConn = Interlocked.Exchange(ref _conn, newConn ); // 原子切换
 
                 ///https://blog.csdn.net/a79412906/article/details/8971534
                 ///https://bugs.mysql.com/bug.php?Id=2400
@@ -86,7 +105,7 @@ namespace ColorVision.Engine.MySql
                 IsConnect = true;
                 if (ConnectionString != connStr)
                 {
-                    Application.Current.Dispatcher.BeginInvoke(() => MySqlConnectChanged?.Invoke(MySqlConnection, new EventArgs()));
+                    Application.Current.Dispatcher.BeginInvoke(() => MySqlConnectChanged?.Invoke(newConn , new EventArgs()));
                 }
                 ConnectionString = connStr;
                 log.Info($"数据库连接成功:{connStr}");
@@ -98,12 +117,6 @@ namespace ColorVision.Engine.MySql
                 log.Error(ex);
                 return Task.FromResult(false);
             }
-        }
-        public MySqlConnection GetMySqlConnection()
-        {
-            MySqlConnection = new MySqlConnection() { ConnectionString = ConnectionString };
-            MySqlConnection.Open();
-            return MySqlConnection;
         }
 
 
@@ -158,7 +171,7 @@ namespace ColorVision.Engine.MySql
                     }
                 }
             }
-            var prefixes = new[] { "t_scgd_sys_config", "t_scgd_sys_globle_cfg", "t_scgd_rc", "t_scgd_sys_dictionary", "t_scgd_sys_version" };
+            var prefixes = new[] { "t_scgd_sys_config", "t_scgd_sys_globle_cfg", "t_scgd_rc", "t_scgd_sys_version" };
 
             tableNames = tableNames
                 .Where(name => !prefixes.Any(prefix => name.StartsWith(prefix,StringComparison.CurrentCulture)))

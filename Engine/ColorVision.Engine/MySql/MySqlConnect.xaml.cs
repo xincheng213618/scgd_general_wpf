@@ -82,7 +82,6 @@ namespace ColorVision.Engine.MySql
             Close();
         }
 
-
         public MySqlConfig MySqlConfig { get;set;}
 
         private MySqlConfig MySqlConfigBackUp { get; set; }

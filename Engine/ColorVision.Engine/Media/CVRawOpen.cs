@@ -82,9 +82,9 @@ namespace ColorVision.Engine.Media
         bool ShowDateFilePath;
         public void CVCIESetBuffer(ImageView imageView,string filePath)
         {
-            log.Info("ShowDateFilePath:" + ViewAlgorithmConfig.Instance.ShowDateFilePath);
             if (File.Exists(ViewAlgorithmConfig.Instance.ShowDateFilePath))
             {
+                log.Info("ShowDateFilePath:" + ViewAlgorithmConfig.Instance.ShowDateFilePath);
                 string[] lines = File.ReadAllLines(ViewAlgorithmConfig.Instance.ShowDateFilePath);
                 string[] dates = lines[0].Split(',');
                 int rows = int.Parse(dates[0]);

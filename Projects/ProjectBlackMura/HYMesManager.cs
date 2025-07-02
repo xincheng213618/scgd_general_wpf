@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO.Ports;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ProjectBlackMura
@@ -34,6 +35,11 @@ namespace ProjectBlackMura
         {
             new FlowEngineToolWindow(TemplateFlow.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+        public bool IsOpenConnect { get => _IsOpenConnect; set { _IsOpenConnect = value; NotifyPropertyChanged(); } }
+        private bool _IsOpenConnect;
+
+        public string PortName { get => _PortName; set { _PortName = value; NotifyPropertyChanged(); } }
+        private string _PortName;
 
         public int DeviceId { get => _DeviceId; set { _DeviceId = value; NotifyPropertyChanged(); } }
         private int _DeviceId;
@@ -67,12 +73,16 @@ namespace ProjectBlackMura
         public HYMesManager()
         {
             serialPort = new SerialPort { };
+            if (HYMesConfig.Instance.IsOpenConnect)
+            {
+                Task.Run(Initialized);
+            }
         }
 
         public bool IsConnect { get => _IsConnect; set { _IsConnect = value; NotifyPropertyChanged(); } }
         private bool _IsConnect;
 
-        public int OpenPort(string portName)
+        public async Task<int> OpenPortAsync(string portName)
         {
             IsConnect = false;
             try
@@ -92,7 +102,7 @@ namespace ProjectBlackMura
 
                     for (int i = 0; i < 10; i++)
                     {
-                        Thread.Sleep(16);
+                        await Task.Delay(16);
                         int bytesread = serialPort.BytesToRead;
                         if (bytesread > 0)
                         {
@@ -321,13 +331,13 @@ namespace ProjectBlackMura
         }
 
 
-        public int Initialized()
+        public async Task<int> Initialized()
         {
             string[] TempPortNames = SerialPort.GetPortNames();
             //这种写法不允许有多个串口；
             for (int i = 0; i < TempPortNames.Length; i++)
             {
-                if (OpenPort(TempPortNames[i]) == 0)
+                if (await OpenPortAsync(TempPortNames[i]) == 0)
                 {
                     return 0;
                 }

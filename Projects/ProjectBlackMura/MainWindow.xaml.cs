@@ -27,6 +27,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Ports;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -122,6 +123,7 @@ namespace ProjectBlackMura
         private void MainWindow_CONCompleted(object? sender, bool e)
         {
             if (HYMesConfig.Instance.IsSingleMes) return;
+            ProjectBlackMuraConfig.Instance.StepIndex = 1;
             HYMesManager.GetInstance().PGSwitch(0);
         }
 
@@ -198,6 +200,33 @@ namespace ProjectBlackMura
                     if (flowEngine.IsReady)
                         break;
                     Thread.Sleep(10);
+                }
+                foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                    item.nodeRunEvent += UpdateMsg;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                flowEngine.LoadFromBase64(string.Empty);
+            }
+        }
+
+        public async Task RefreshAsync()
+        {
+            if (FlowTemplate.SelectedIndex < 0) return;
+
+            try
+            {
+                foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                    item.nodeRunEvent -= UpdateMsg;
+
+                flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+
+                for (int i = 0; i < 2000; i++)
+                {
+                    if (flowEngine.IsReady)
+                        break;
+                    await Task.Delay(10);
                 }
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                     item.nodeRunEvent += UpdateMsg;
@@ -287,15 +316,15 @@ namespace ProjectBlackMura
                 CurrentTestType = BlackMuraTestType.Blue;
             log.Info(CurrentTestType);
 
-            RunTemplate();
+            _= RunTemplate();
         }
         bool LastCompleted = true;
 
         BlackMuraResult CurrentFlowResult;
         long LastFlowTime;
-        int TryCount = 0;
+        int TryCount;
 
-        public void RunTemplate()
+        public async Task RunTemplate()
         {
             if (flowControl != null && flowControl.IsFlowRun) return;
 
@@ -313,21 +342,8 @@ namespace ProjectBlackMura
             {
                 string base64 = string.Empty;
                 flowEngine.LoadFromBase64(base64);
-                Refresh();
+                await RefreshAsync();
                 log.Info($"IsReady{flowEngine.IsReady}");
-                if (!flowEngine.IsReady)
-                {
-                    flowEngine.LoadFromBase64(base64);
-                    Refresh();
-                    log.Info($"IsReady{flowEngine.IsReady}");
-                    if (!flowEngine.IsReady)
-                    {
-                        flowEngine.LoadFromBase64(base64);
-                        Refresh();
-                        log.Info($"IsReady{flowEngine.IsReady}");
-                    }
-
-                }
             }
 
 
@@ -383,8 +399,7 @@ namespace ProjectBlackMura
             else if (FlowControlData.EventName == "OverTime")
             {
                 log.Info("流程运行超时，正在重新尝试");
-                flowEngine.LoadFromBase64(string.Empty);
-                Refresh();
+                log.Info($"IsReady{flowEngine.IsReady}");
                 if (TryCount < ProjectBlackMuraConfig.Instance.TryCountMax)
                 {
                     Task.Delay(200).ContinueWith(t =>
@@ -706,6 +721,7 @@ namespace ProjectBlackMura
                 {
                     log.Error(ex);
                 }
+                ProjectBlackMuraConfig.Instance.StepIndex = 6;
                 HYMesManager.GetInstance().PGPowerOff();
             }
 
@@ -905,7 +921,8 @@ namespace ProjectBlackMura
         {
             if (!HYMesManager.GetInstance().IsConnect)
             {
-                int i = HYMesManager.GetInstance().OpenPort(ComboBoxSer.Text);
+                _= HYMesManager.GetInstance().OpenPortAsync(ComboBoxSer.Text);
+
             }
             else
             {
@@ -955,8 +972,6 @@ namespace ProjectBlackMura
             HYMesManager.GetInstance().PGSwitch(15);
         }
 
-
-
         private void Test1_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(SNtextBox.Text))
@@ -968,6 +983,7 @@ namespace ProjectBlackMura
             BlackMudraResult.SN = SNtextBox.Text;
 
             CurrentTestType = BlackMuraTestType.None;
+            ProjectBlackMuraConfig.Instance.StepIndex = 0;
             HYMesManager.GetInstance().PGPowerOn();
         }
         public BlackMudraResult BlackMudraResult { get; set; }
@@ -975,7 +991,7 @@ namespace ProjectBlackMura
 
         private void MainWindow_CCPICompleted(object? sender, bool e)
         {
-            if (HYMesConfig.Instance.IsSingleMes) return;
+            if (HYMesConfig.Instance.IsSingleMes) ;
             var values = Enum.GetValues(typeof(BlackMuraTestType));
             int currentIndex = Array.IndexOf(values, CurrentTestType);
             int nextIndex = (currentIndex + 1) % values.Length;
@@ -987,30 +1003,37 @@ namespace ProjectBlackMura
             if (CurrentTestType == BlackMuraTestType.White)
             {
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White")).Value;
-                RunTemplate();
+                _= RunTemplate();
 
             }
             else if (CurrentTestType == BlackMuraTestType.Black)
             {
+                ProjectBlackMuraConfig.Instance.StepIndex = 2;
+
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Black")).Value;
-                RunTemplate();
+                _ = RunTemplate();
             }
             else if (CurrentTestType == BlackMuraTestType.Red)
             {
+                ProjectBlackMuraConfig.Instance.StepIndex = 3;
+
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Red")).Value;
-                RunTemplate();
+                _ = RunTemplate();
             }
             else if (CurrentTestType == BlackMuraTestType.Green)
             {
+                ProjectBlackMuraConfig.Instance.StepIndex = 4;
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Green")).Value;
-                RunTemplate();
+                _ = RunTemplate();
             }
             else if (CurrentTestType == BlackMuraTestType.Blue)
             {
+                ProjectBlackMuraConfig.Instance.StepIndex = 5;
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Blue")).Value;
-                RunTemplate();
+                _ = RunTemplate();
             }
         }
+
     }
 
     public enum BlackMuraTestType

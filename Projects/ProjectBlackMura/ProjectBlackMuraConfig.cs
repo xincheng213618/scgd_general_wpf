@@ -47,6 +47,9 @@ namespace ProjectBlackMura
             OpenHYMesConfigCommand = new RelayCommand(a => OpenHYMesConfig());
 
         }
+        public int StepIndex { get => _StepIndex; set { _StepIndex = value; NotifyPropertyChanged(); } }
+        private int _StepIndex;
+
         public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; NotifyPropertyChanged(); } }
         private bool _LogControlVisibility = true;
 
@@ -174,6 +177,8 @@ namespace ProjectBlackMura
         public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; NotifyPropertyChanged(); } }
         private string _ResultSavePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
+
+        
 
         public string ResultSavePath1 { get => _ResultSavePath1; set { _ResultSavePath1 = value; NotifyPropertyChanged(); } }
         private string _ResultSavePath1 = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);

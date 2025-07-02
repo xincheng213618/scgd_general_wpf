@@ -1,6 +1,6 @@
 #   CHANGELOAG
 
-## [1.3.5.9] 2025.07.02
+## [1.3.5.14] 2025.07.02
 
 1.FindCross 增加POI的输入参数
 
@@ -13,6 +13,17 @@
 5.添加FindCross的结果解析
 
 6.修复因为数据迁移时，没有迁移字典表，导致传感器初始化失败软件崩溃的问题，现在失败后会自动创建字典表到数据库中
+
+7.移除1.3.3.1的关于数据库方面的更新，现在还是采用单连接加定时重置的方案，这可能会影响归档的稳定性
+
+8.修复 Mysql GetData 中 https://stackoverflow.com/questions/5440168/exception-there-is-already-an-open-datareader-associated-with-this-connection-w 的问题，现在在GetData 是单线程锁的，避免多线程操作时的异常
+
+9.移除showDataResult
+
+10.现在等待修改成异步的方案需要多测试
+
+11.增加MTF2的解析逻辑
+
 
 ## [1.3.5.1] 2025.06.30
 
