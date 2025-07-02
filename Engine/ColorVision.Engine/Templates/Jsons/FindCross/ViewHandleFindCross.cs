@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8602
+﻿#pragma warning disable
 
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
@@ -29,12 +29,17 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
         public Center center { get; set; }
         public double rotationAngle { get; set; }
         public Tilt tilt { get; set; }
+
+        public string name { get; set; }
+
+        public double x { get; set; }
+        public double y { get; set; }
+        public double w { get; set; }
+        public double h { get; set; }
     }
 
     public class Center
     {
-        public double tilt_x { get; set; }
-        public double tilt_y { get; set; }
         public int x { get; set; }
         public int y { get; set; }
     }
@@ -110,10 +115,12 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
                 var findCross = MTFDetailViewResluts[0].FindCrossResult?.result;
                 if (findCross != null)
                 {
-                    csvBuilder.AppendLine($"center_tilt_x,center_tilt_y,center_x,center_y,rotationAngle,tilt_tilt_x,tilt_tilt_y");
+                    int id = 0;
+                    csvBuilder.AppendLine($"id,name,x,y,w,h,center_x,center_y,rotationAngle,tilt_tilt_x,tilt_tilt_y");
                     foreach (var item in findCross)
                     {
-                        csvBuilder.AppendLine($"{item.center.tilt_x},{item.center.tilt_y},{item.center.x},{item.center.y},{item.rotationAngle},{item.tilt.tilt_x},{item.tilt.tilt_y}");
+                        id++;
+                        csvBuilder.AppendLine($"{id},{item.name},{item.x},{item.y},{item.w},{item.h},{item.center.x},{item.center.y},{item.rotationAngle},{item.tilt.tilt_x},{item.tilt.tilt_y}");
                     }
                     File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
                     return;
@@ -166,7 +173,7 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
                     // Show FindCrossResult if available
                     if (mTFDetailViewReslut.FindCrossResult != null && mTFDetailViewReslut.FindCrossResult.result != null)
                     {
-                        var header = new List<string> { "center_tilt_x", "center_tilt_y", "center_x", "center_y", "rotationAngle", "tilt_tilt_x", "tilt_tilt_y" };
+                        var header = new List<string> { "id","name", "x", "y", "w", "h", "center_x", "center_y", "rotationAngle", "tilt_tilt_x", "tilt_tilt_y" };
                         // For binding, you may want to use a value converter or custom object, or expose computed properties
                         if (view.listViewSide.View is GridView gridView)
                         {
@@ -193,12 +200,18 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
 
                             // Prepare a flat list for binding
                             var flatList = new List<dynamic>();
+                            int id1 = 0;
                             foreach (var item in mTFDetailViewReslut.FindCrossResult.result)
                             {
+                                id1++;
                                 flatList.Add(new
                                 {
-                                    center_tilt_x = item.center.tilt_x,
-                                    center_tilt_y = item.center.tilt_y,
+                                    id =id1,
+                                    name =item.name,
+                                    x = item.x,
+                                    y = item.y,
+                                    w =item.w,
+                                    h =item.h,
                                     center_x = item.center.x,
                                     center_y = item.center.y,
                                     rotationAngle = item.rotationAngle,

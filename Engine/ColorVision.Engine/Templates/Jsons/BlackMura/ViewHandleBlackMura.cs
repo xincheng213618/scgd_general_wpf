@@ -162,7 +162,6 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
         {
             if (result.ViewResults == null)
             {
-
                 void OpenSource()
                 {
                     view.ImageView.ImageShow.Clear();
@@ -265,7 +264,6 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();
-
 
             void OpenSource()
             {

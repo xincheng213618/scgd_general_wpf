@@ -4,6 +4,8 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.SysDictionary;
+using log4net;
+using log4net.Util;
 using MQTTMessageLib.Sensor;
 using System;
 using System.Collections.Generic;
@@ -17,6 +19,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
     public class TemplateSensor : ITemplate<SensorParam>
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(TemplateSensor));
         public static Dictionary<string, ObservableCollection<TemplateModel<SensorParam>>> Params { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<SensorParam>>>();
 
         public static ObservableCollection<TemplateModel<SensorParam>> AllParams { get => new(Params.SelectMany(p => p.Value)); }
@@ -24,7 +27,28 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         public TemplateSensor(string code)
         {
             Code = code;
-            TemplateDicId = SysDictionaryModMasterDao.Instance.GetByCode(code, 0).Id;
+            try
+            {
+                var model = SysDictionaryModMasterDao.Instance.GetByCode(code, 0);
+                if (model != null && model.Id>=0)
+                {
+                    TemplateDicId = model.Id;
+
+                }
+                else
+                {
+                    log.Info("找不到传感器code 对应的字典，正在添加字典");
+                    SysDictionaryModModel sysDictionaryModModel = new SysDictionaryModModel() { Code = code, Name = code, ModType = 5 ,CreateDate =DateTime.Now};
+                    SysDictionaryModMasterDao.Instance.Save(sysDictionaryModModel);
+                    TemplateDicId = sysDictionaryModModel.Id;
+
+                }
+
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
             if (Params.TryGetValue(Code, out var templatesParams))
             {
                 TemplateParams = templatesParams;

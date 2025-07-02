@@ -233,23 +233,23 @@ namespace ProjectBlackMura
                 }
                 for (int i = 0; i < blackMudraResult.WhiteImage.PoiResultCIExyuvDatas.Count; i++)
                 {
-                    ws.Cells[23 + i, 2 + 1].Value = blackMudraResult.WhiteImage.PoiResultCIExyuvDatas[i].CCT;
+                    ws.Cells[23 + i, 2 + 1].Value = blackMudraResult.WhiteImage.PoiResultCIExyuvDatas[i].Y;
                 }
                 for (int i = 0; i < blackMudraResult.BlackImage.PoiResultCIExyuvDatas.Count; i++)
                 {
-                    ws.Cells[23 + i, 2 + 2].Value = blackMudraResult.BlackImage.PoiResultCIExyuvDatas[i].CCT;
+                    ws.Cells[23 + i, 2 + 2].Value = blackMudraResult.BlackImage.PoiResultCIExyuvDatas[i].Y;
                 }
                 for (int i = 0; i < blackMudraResult.RedImage.PoiResultCIExyuvDatas.Count; i++)
                 {
-                    ws.Cells[23 + i, 2 + 3].Value = blackMudraResult.RedImage.PoiResultCIExyuvDatas[i].CCT;
+                    ws.Cells[23 + i, 2 + 3].Value = blackMudraResult.RedImage.PoiResultCIExyuvDatas[i].Y;
                 }
                 for (int i = 0; i < blackMudraResult.GreenImage.PoiResultCIExyuvDatas.Count; i++)
                 {
-                    ws.Cells[23 + i, 2 + 4].Value = blackMudraResult.GreenImage.PoiResultCIExyuvDatas[i].CCT;
+                    ws.Cells[23 + i, 2 + 4].Value = blackMudraResult.GreenImage.PoiResultCIExyuvDatas[i].Y;
                 }
                 for (int i = 0; i < blackMudraResult.BlueImage.PoiResultCIExyuvDatas.Count; i++)
                 {
-                    ws.Cells[23 + i, 2 + 5].Value = blackMudraResult.BlueImage.PoiResultCIExyuvDatas[i].CCT;
+                    ws.Cells[23 + i, 2 + 5].Value = blackMudraResult.BlueImage.PoiResultCIExyuvDatas[i].Y;
                 }
 
 
