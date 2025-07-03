@@ -21,11 +21,6 @@ namespace ProjectBlackMura
         public double Uniformity { get => _Uniformity; set { _Uniformity = value; NotifyPropertyChanged(); } }
         private double _Uniformity;
 
-        public double? X { get => _X; set { _X = value; NotifyPropertyChanged(); } }
-        private double? _X;
-        public double? Y { get => _Y; set { _Y = value; NotifyPropertyChanged(); } }
-        private double? _Y;
-
         public double Wavelength { get => _Wavelength; set { _Wavelength = value; NotifyPropertyChanged(); } }
         private double _Wavelength;
 
@@ -34,6 +29,10 @@ namespace ProjectBlackMura
 
         public double ZaRelmax { get => _ZaRelmax; set { _ZaRelmax = value; NotifyPropertyChanged(); } }
         private double _ZaRelmax;
+
+        public double Bordersize { get => _Bordersize; set { _Bordersize = value; NotifyPropertyChanged(); } }
+        private double _Bordersize;
+
 
         public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
     }
@@ -68,7 +67,7 @@ namespace ProjectBlackMura
         public double BlackMaxLimit { get; set; }
         public double GradientMaxLimit { get; set; } = 0.005;
 
-        public bool Result { get; set; }
+        public bool Result { get; set; } = true;
     }
 
     public class ExcelReportGenerator
@@ -80,7 +79,7 @@ namespace ProjectBlackMura
             ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
             using (var package = new ExcelPackage())
             {
-                var ws = package.Workbook.Worksheets.Add("KernelData");
+                var ws = package.Workbook.Worksheets.Add("ColorVisionData");
 
                 // 1. 左上角信息
                 ws.Cells["A1"].Value = "Serial number:";
@@ -112,8 +111,8 @@ namespace ProjectBlackMura
                 ws.Cells["C3"].Value = blackMudraResult.WhiteImage.Max;
                 ws.Cells["C4"].Value = blackMudraResult.WhiteImage.Min;
                 ws.Cells["C5"].Value = blackMudraResult.WhiteImage.Uniformity;
-                ws.Cells["C6"].Value = blackMudraResult.WhiteImage.X;
-                ws.Cells["C7"].Value = blackMudraResult.WhiteImage.Y;
+                ws.Cells["C6"].Value = blackMudraResult.WhiteImage.PoiResultCIExyuvDatas.Average(x => x.x);
+                ws.Cells["C7"].Value = blackMudraResult.WhiteImage.PoiResultCIExyuvDatas.Average(x => x.y);
                 ws.Cells["C8"].Value = blackMudraResult.WhiteImage.Wavelength;
                 ws.Cells["C9"].Value = blackMudraResult.WhiteImage.Saturation;
 
@@ -124,8 +123,8 @@ namespace ProjectBlackMura
                 ws.Cells["D3"].Value = blackMudraResult.BlackImage.Max;
                 ws.Cells["D4"].Value = blackMudraResult.BlackImage.Min;
                 ws.Cells["D5"].Value = blackMudraResult.BlackImage.Uniformity;
-                ws.Cells["D6"].Value = blackMudraResult.BlackImage.X;
-                ws.Cells["D7"].Value = blackMudraResult.BlackImage.Y;
+                ws.Cells["D6"].Value = blackMudraResult.BlackImage.PoiResultCIExyuvDatas.Average(x => x.x);
+                ws.Cells["D7"].Value = blackMudraResult.BlackImage.PoiResultCIExyuvDatas.Average(x => x.y);
                 ws.Cells["D8"].Value = blackMudraResult.BlackImage.Wavelength;
                 ws.Cells["D9"].Value = blackMudraResult.BlackImage.Saturation;
 
@@ -139,8 +138,8 @@ namespace ProjectBlackMura
                 ws.Cells["F3"].Value = blackMudraResult.RedImage.Max;
                 ws.Cells["F4"].Value = blackMudraResult.RedImage.Min;
                 ws.Cells["F5"].Value = blackMudraResult.RedImage.Uniformity;
-                ws.Cells["F6"].Value = blackMudraResult.RedImage.X;
-                ws.Cells["F7"].Value = blackMudraResult.RedImage.Y;
+                ws.Cells["F6"].Value = blackMudraResult.RedImage.PoiResultCIExyuvDatas.Average(x => x.x);
+                ws.Cells["F7"].Value = blackMudraResult.RedImage.PoiResultCIExyuvDatas.Average(x => x.y);
                 ws.Cells["F8"].Value = blackMudraResult.RedImage.Wavelength;
                 ws.Cells["F9"].Value = blackMudraResult.RedImage.Saturation;
 
@@ -150,8 +149,8 @@ namespace ProjectBlackMura
                 ws.Cells["G3"].Value = blackMudraResult.GreenImage.Max;
                 ws.Cells["G4"].Value = blackMudraResult.GreenImage.Min;
                 ws.Cells["G5"].Value = blackMudraResult.GreenImage.Uniformity;
-                ws.Cells["G6"].Value = blackMudraResult.GreenImage.X;
-                ws.Cells["G7"].Value = blackMudraResult.GreenImage.Y;
+                ws.Cells["G6"].Value = blackMudraResult.GreenImage.PoiResultCIExyuvDatas.Average(x => x.x);
+                ws.Cells["G7"].Value = blackMudraResult.WhiteImage.PoiResultCIExyuvDatas.Average(x => x.y);
                 ws.Cells["G8"].Value = blackMudraResult.GreenImage.Wavelength;
                 ws.Cells["G9"].Value = blackMudraResult.GreenImage.Saturation;
 
@@ -160,8 +159,8 @@ namespace ProjectBlackMura
                 ws.Cells["H3"].Value = blackMudraResult.BlueImage.Max;
                 ws.Cells["H4"].Value = blackMudraResult.BlueImage.Min;
                 ws.Cells["H5"].Value = blackMudraResult.BlueImage.Uniformity;
-                ws.Cells["H6"].Value = blackMudraResult.BlueImage.X;
-                ws.Cells["H7"].Value = blackMudraResult.BlueImage.Y;
+                ws.Cells["H6"].Value = blackMudraResult.WhiteImage.PoiResultCIExyuvDatas.Average(x => x.x);
+                ws.Cells["H7"].Value = blackMudraResult.WhiteImage.PoiResultCIExyuvDatas.Average(x => x.y);
                 ws.Cells["H8"].Value = blackMudraResult.BlueImage.Wavelength;
                 ws.Cells["H9"].Value = blackMudraResult.BlueImage.Saturation;
 
@@ -170,7 +169,7 @@ namespace ProjectBlackMura
                 ws.Cells["B10"].Value = "Result";
                 ws.Cells["A11"].Value = "Filter size";
                 ws.Cells["B11"].Value = "Result";
-                ws.Cells["C10"].Value = "27";
+                ws.Cells["C10"].Value = blackMudraResult.WhiteImage.Bordersize;
                 ws.Cells["C11"].Value = "27";
                 ws.Cells["D10"].Value = "Max Coordinate";
                 ws.Cells["D11"].Value = "Mura Coordinate";
@@ -271,10 +270,10 @@ namespace ProjectBlackMura
 
                 ws.Cells["B33"].Value = "Max";
                 ws.Cells["C33"].Value = blackMudraResult.WhiteImage.PoiResultCIExyuvDatas.Max(x => x.Y);
-                ws.Cells["D33"].Value = blackMudraResult.BlackImage.PoiResultCIExyuvDatas.Min(x => x.Y);
-                ws.Cells["E33"].Value = blackMudraResult.RedImage.PoiResultCIExyuvDatas.Min(x => x.Y);
-                ws.Cells["F33"].Value = blackMudraResult.GreenImage.PoiResultCIExyuvDatas.Min(x => x.Y);
-                ws.Cells["G33"].Value = blackMudraResult.BlueImage.PoiResultCIExyuvDatas.Min(x => x.Y);
+                ws.Cells["D33"].Value = blackMudraResult.BlackImage.PoiResultCIExyuvDatas.Max(x => x.Y);
+                ws.Cells["E33"].Value = blackMudraResult.RedImage.PoiResultCIExyuvDatas.Max(x => x.Y);
+                ws.Cells["F33"].Value = blackMudraResult.GreenImage.PoiResultCIExyuvDatas.Max(x => x.Y);
+                ws.Cells["G33"].Value = blackMudraResult.BlueImage.PoiResultCIExyuvDatas.Max(x => x.Y);
 
                 ws.Cells["B34"].Value = "Min";
                 ws.Cells["C34"].Value = blackMudraResult.WhiteImage.PoiResultCIExyuvDatas.Min(x => x.Y);
@@ -284,11 +283,11 @@ namespace ProjectBlackMura
                 ws.Cells["G34"].Value = blackMudraResult.BlueImage.PoiResultCIExyuvDatas.Min(x => x.Y);
 
                 ws.Cells["B35"].Value = "Unifor";
-                ws.Cells["C35"].Value = blackMudraResult.WhiteImage.Uniformity;
-                ws.Cells["D35"].Value = blackMudraResult.BlackImage.Uniformity;
-                ws.Cells["E35"].Value = blackMudraResult.RedImage.Uniformity;
-                ws.Cells["F35"].Value = blackMudraResult.GreenImage.Uniformity;
-                ws.Cells["G35"].Value = blackMudraResult.BlueImage.Uniformity;
+                ws.Cells["C35"].Value = blackMudraResult.WhiteImage.PoiResultCIExyuvDatas.Min(x => x.Y) / blackMudraResult.WhiteImage.PoiResultCIExyuvDatas.Max(x => x.Y) *100;
+                ws.Cells["D35"].Value = blackMudraResult.BlackImage.PoiResultCIExyuvDatas.Min(x => x.Y) / blackMudraResult.BlackImage.PoiResultCIExyuvDatas.Max(x => x.Y) * 100;
+                ws.Cells["E35"].Value = blackMudraResult.RedImage.PoiResultCIExyuvDatas.Min(x => x.Y) / blackMudraResult.RedImage.PoiResultCIExyuvDatas.Max(x => x.Y) * 100;
+                ws.Cells["F35"].Value = blackMudraResult.GreenImage.PoiResultCIExyuvDatas.Min(x => x.Y) / blackMudraResult.GreenImage.PoiResultCIExyuvDatas.Max(x => x.Y) * 100;
+                ws.Cells["G35"].Value = blackMudraResult.BlueImage.PoiResultCIExyuvDatas.Min(x => x.Y) / blackMudraResult.BlueImage.PoiResultCIExyuvDatas.Max(x => x.Y) * 100;
 
                 ws.Cells["B36"].Value = "x";
                 ws.Cells["C36"].Value = blackMudraResult.WhiteImage.PoiResultCIExyuvDatas.Average(x => x.x);

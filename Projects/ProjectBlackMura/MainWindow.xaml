@@ -93,20 +93,14 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="White" Width="150">
+                                <GridViewColumn Header="White">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:BlackMuraResult}">
                                             <TextBlock Text="{Binding WhiteFilePath}" />
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="Black" Width="150">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:BlackMuraResult}">
-                                            <TextBlock Text="{Binding BlackFilePath}" />
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
+
 
 
                             </GridView>
@@ -142,9 +136,14 @@
                                 <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
                             </DockPanel>
                         </DockPanel>
-                        <Button Content="Single Test "  DockPanel.Dock="Right" Background="Pink" Click="TestClick" />
-                        <Button Content="Test All"  DockPanel.Dock="Right" Background="Pink"  Click="Test1_Click" />
-
+                        <Grid Height="50">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Content="测试"   DockPanel.Dock="Right" Background="Pink"  Click="Test1_Click" Margin="0,0,5,0" />
+                            <Button Grid.Column="1" Content="单画面测试 " Background="Pink" Click="TestClick" />
+                        </Grid>
                     </StackPanel>
                 </Grid>
                 <RichTextBox x:Name="outputText" Grid.Row="1" Margin="5,0"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
@@ -165,7 +164,7 @@
                     <hc:StepBarItem Content="下电"/>
                     <hc:StepBarItem Content="上传"/>
                 </hc:StepBar>
-                
+
                 <Grid x:Name="MesGrid" Grid.Row="3" d:DataContext="{d:DesignInstance local:HYMesManager}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -192,7 +191,7 @@
                                             </DockPanel>
                                         </DockPanel>
                                     </StackPanel>
-      
+
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="0,2" Orientation="Horizontal" VerticalAlignment="Top">
                                     <ui:ToggleSwitch Content="启动时连接" IsChecked="{Binding Config.IsOpenConnect}" Margin="0,2"/>

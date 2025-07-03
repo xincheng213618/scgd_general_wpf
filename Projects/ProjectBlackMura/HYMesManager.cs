@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
@@ -9,6 +10,7 @@ using System.IO.Ports;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Interop;
 
 namespace ProjectBlackMura
 {
@@ -112,7 +114,6 @@ namespace ProjectBlackMura
                             {
                                 IsConnect = true;
                                 log.Info("serialPort Connect");
-                                serialPort.DataReceived += SerialPort_DataReceived;
                                 return 0;
                             }
                         }
@@ -130,82 +131,106 @@ namespace ProjectBlackMura
                 return -2;
             }
         }
+        private static readonly object _dbLock = new object();
 
+        private List<byte> receiveBuffer = new List<byte>();
         private void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             if (sender is SerialPort serialPort)
             {
-                try
+                int bytesRead = serialPort.BytesToRead;
+                if (bytesRead > 0)
                 {
-                    int bytesRead = serialPort.BytesToRead;
-                    if (bytesRead > 0)
+                    byte[] buffer = new byte[bytesRead];
+                    serialPort.Read(buffer, 0, bytesRead);
+                    receiveBuffer.AddRange(buffer);
+                    Application.Current.Dispatcher.BeginInvoke(() =>
                     {
-                        byte[] buffer = new byte[bytesRead];
-                        serialPort.Read(buffer, 0, bytesRead);
+                        // 查找完整报文（以 0x02 开头，0x03 结尾）
+                        int stxIndex = receiveBuffer.IndexOf(0x02);
+                        int etxIndex = receiveBuffer.IndexOf(0x03, stxIndex + 1);
 
-                        string Msg = Encoding.UTF8.GetString(buffer);
-                        log.Info(Msg);
-
-                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        if (stxIndex >= 0 && etxIndex > stxIndex)
                         {
-                            if (Msg.Contains("CCPI,S"))
+                            // 提取完整数据（不含 STX/ETX）
+                            int dataLen = etxIndex - stxIndex - 1;
+                            if (dataLen > 0)
                             {
-                                string[] parts = Msg.Split(',');
-                                bool result = parts[^1].Contains('0');
-                                log.Info($"CCPIResult:{result}");
-                                CCPIResult = result;
+                                byte[] msgBytes = receiveBuffer.Skip(stxIndex + 1).Take(dataLen).ToArray();
+                                string msg = Encoding.UTF8.GetString(msgBytes);
+                                log.Info("正在处理：" + msg);
+                                ProcessSerialLine(msg);
                             }
-                            if (Msg.Contains("CON,S"))
-                            {
-                                string[] parts = Msg.Split(',');
-                                bool result = parts[^1].Contains('0');
-                                log.Info($"CONResult:{result}");
-                                CONResult = result;
-                            }
-                            if (Msg.Contains("COFF,S"))
-                            {
-                                string[] parts = Msg.Split(',');
-                                bool result = parts[^1].Contains('0');
-                                log.Info($"COFFResult:{result}");
-                                COFFResult = result;
-                            }
+                            // 移除已处理数据
+                            receiveBuffer.Clear();
+                        }
+                        else
+                        {
+                            log.Info("没有完整的数据" + Encoding.UTF8.GetString(buffer));
+                        }
 
-                            if (Msg.Contains("CSN,S"))
-                            {
-                                string[] parts = Msg.Split(',');
-                                CSNResult = parts[^1].Contains('0') || parts[^2].Contains('0');
-                                CPTResult = null;
-                                CGIResult = null;
-                                CMIResult = null;
-                            }
-                            if (Msg.Contains("CPT,S"))
-                            {
-                                string[] parts = Msg.Split(',');
-                                CPTResult = parts[^1].Contains('0'); 
-                            }
-                            if (Msg.Contains("CGI,S"))
-                            {
-                                string[] parts = Msg.Split(',');
-                                CGIResult = parts[^1].Contains('0');
-                                if (CGIResult == true)
-                                {
-                                    //UploadMes(Results);
-                                }
-                            }
-                            if (Msg.Contains("CMI,S"))
-                            {
-                                string[] parts = Msg.Split(',');
-                                CMIResult = parts[^1].Contains('0');    
-                                SendPost();
-                            }
-                        });
-                    }
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex);
+                    });
                 }
             }
+
+        }
+
+        private void ProcessSerialLine(string Msg)
+        {
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                if (Msg.Contains("CCPI,S"))
+                {
+                    string[] parts = Msg.Split(',');
+                    bool result = parts[^1].Contains('0');
+                    log.Info($"CCPIResult:{result}");
+                    CCPIResult = result;
+                }
+                if (Msg.Contains("CON,S"))
+                {
+                    string[] parts = Msg.Split(',');
+                    bool result = parts[^1].Contains('0');
+                    log.Info($"CONResult:{result}");
+                    CONResult = result;
+                }
+                if (Msg.Contains("COFF,S"))
+                {
+                    string[] parts = Msg.Split(',');
+                    bool result = parts[^1].Contains('0');
+                    log.Info($"COFFResult:{result}");
+                    COFFResult = result;
+                }
+
+                if (Msg.Contains("CSN,S"))
+                {
+                    string[] parts = Msg.Split(',');
+                    CSNResult = parts[^1].Contains('0') || parts[^2].Contains('0');
+                    CPTResult = null;
+                    CGIResult = null;
+                    CMIResult = null;
+                }
+                if (Msg.Contains("CPT,S"))
+                {
+                    string[] parts = Msg.Split(',');
+                    CPTResult = parts[^1].Contains('0');
+                }
+                if (Msg.Contains("CGI,S"))
+                {
+                    string[] parts = Msg.Split(',');
+                    CGIResult = parts[^1].Contains('0');
+                    if (CGIResult == true)
+                    {
+                        //UploadMes(Results);
+                    }
+                }
+                if (Msg.Contains("CMI,S"))
+                {
+                    string[] parts = Msg.Split(',');
+                    CMIResult = parts[^1].Contains('0');
+                    SendPost();
+                }
+            });
+
         }
 
         public bool? CSNResult { get => _CSNResult; set { _CSNResult = value; NotifyPropertyChanged(); } }
@@ -254,23 +279,82 @@ namespace ProjectBlackMura
         public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; NotifyPropertyChanged(); } }
         private long _LastFlowTime;
 
-        public void PGPowerOn()
+        public async Task PGPowerOn()
         {
             string SendMsg = $"CON,C,{Config.DeviceId}";
             log.Info("PG上电" + SendMsg);
             Send(Encoding.UTF8.GetBytes(SendMsg));
+            for (int i = 0; i < 1000; i++)
+            {
+                await Task.Delay(16);
+                int bytesread = serialPort.BytesToRead;
+                if (bytesread > 0)
+                {
+                    byte[] buff = new byte[bytesread];
+                    serialPort.Read(buff, 0, bytesread);
+                    string Msg = Encoding.UTF8.GetString(buff);
+                    if (Msg.Contains("CON,S"))
+                    {
+                        string[] parts = Msg.Split(',');
+                        bool result = parts[^1].Contains('0');
+                        log.Info($"CONResult:{result}");
+                        CONResult = result;
+                        return;
+                    }
+                    else
+                    {
+                        log.Info(Msg);
+                    }
+                }
+            }
+            log.Info("超时判定");
         }
-        public void PGPowerOff()
+        public async Task PGPowerOff()
         {
             string SendMsg = $"COFF,C,{Config.DeviceId}";
             log.Info("PG下电" + SendMsg);
             Send(Encoding.UTF8.GetBytes(SendMsg));
+            for (int i = 0; i < 50; i++)
+            {
+                await Task.Delay(16);
+                int bytesread = serialPort.BytesToRead;
+                if (bytesread > 0)
+                {
+                    byte[] buff = new byte[bytesread];
+                    serialPort.Read(buff, 0, bytesread);
+                    string Msg = Encoding.UTF8.GetString(buff);
+                    if (Msg.Contains("COFF,S"))
+                    {
+                        string[] parts = Msg.Split(',');
+                        bool result = parts[^1].Contains('0');
+                        log.Info($"COFFResult:{result}");
+                        COFFResult = result;
+                    }
+                    break;
+                }
+            }
         }
-        public void PGSwitch(int id)
+        public async Task PGSwitch(int id)
         {
             string SendMsg = $"CCPI,C,{Config.DeviceId},{id}";
             log.Info("PG切图" + SendMsg);
             Send(Encoding.UTF8.GetBytes(SendMsg));
+            for (int i = 0; i < 10; i++)
+            {
+                await Task.Delay(16);
+                int bytesread = serialPort.BytesToRead;
+                if (bytesread > 0)
+                {
+                    byte[] buff = new byte[bytesread];
+                    serialPort.Read(buff, 0, bytesread);
+                    string Msg = Encoding.UTF8.GetString(buff);
+                    string[] parts = Msg.Split(',');
+                    bool result = parts[^1].Contains('0');
+                    log.Info($"CCPIResult:{result}");
+                    CCPIResult = result;
+                    break;
+                }
+            }
         }
 
 
@@ -311,8 +395,10 @@ namespace ProjectBlackMura
         public void Send(byte[] msg)
         {
             if (!serialPort.IsOpen)
-                log.Info("serialPort Is Not Open");
-
+            {
+                log.Info("serialPort Is Not Open"); 
+                return;
+            }
 
             byte[] framedMsg = new byte[msg.Length + 2];
             framedMsg[0] = 0x02; // STX (Start of Text)
@@ -326,6 +412,7 @@ namespace ProjectBlackMura
         {
             if (serialPort.IsOpen)
                 serialPort.Close();
+            serialPort.DataReceived -= SerialPort_DataReceived;
             serialPort.Dispose();
             IsConnect = false;
         }

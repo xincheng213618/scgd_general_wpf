@@ -365,6 +365,7 @@ namespace ColorVision.Engine.Templates.Flow
             RunFlow();
         }
 
+
         public void RunFlow()
         {
 
@@ -378,7 +379,6 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
                 Refresh();
-                log.Info($"IsReady{View.FlowEngineControl.IsReady}");
                 log.Info($"IsReady{View.FlowEngineControl.IsReady}");
                 if (!View.FlowEngineControl.IsReady)
                 {

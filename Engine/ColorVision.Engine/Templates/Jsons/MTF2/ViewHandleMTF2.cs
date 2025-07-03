@@ -123,9 +123,10 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
                             }
                         }
                         // 如果你还需要写入平均值，可以单独加一行（如不需要可移除）
-                        csvBuilder.AppendLine($"{child.name},,,,,Average,{child.Average}");
-                        csvBuilder.AppendLine($"{child.name},,,,,HorizontalAverage,{child.horizontalAverage}");
-                        csvBuilder.AppendLine($"{child.name},,,,,,{child.verticalAverage}");
+                        csvBuilder.AppendLine($"{child.name},,,,HorizontalAverage,{child.horizontalAverage}");
+                        csvBuilder.AppendLine($"{child.name},,,,verticalAverage,{child.verticalAverage}");
+                        csvBuilder.AppendLine($"{child.name},,,,Average,{child.Average}");
+
                     }
                 }
                 else

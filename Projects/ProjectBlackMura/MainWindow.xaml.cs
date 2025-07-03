@@ -52,8 +52,6 @@ namespace ProjectBlackMura
         public string WhiteFilePath { get => _WhiteFilePath; set { _WhiteFilePath = value; NotifyPropertyChanged(); } }
         private string _WhiteFilePath = string.Empty;
 
-        public string BlackFilePath { get => _BlackFilePath; set { _BlackFilePath = value; NotifyPropertyChanged(); } }
-        private string _BlackFilePath = string.Empty;
 
         public bool Result { get => _Result; set { _Result = value; NotifyPropertyChanged(); } }
         private bool _Result = true;
@@ -170,9 +168,7 @@ namespace ProjectBlackMura
                         ProjectBlackMuraConfig.Instance.JudgeConfigs.TryAdd(Name, sPECConfig);
                         ProjectBlackMuraConfig.Instance.JudgeConfig = sPECConfig;
                     }
-
                 }
-                Refresh();
             };
             timer = new Timer(TimeRun, null, 0, 500);
             timer.Change(Timeout.Infinite, 500); // 停止定时器
@@ -194,13 +190,6 @@ namespace ProjectBlackMura
                     item.nodeRunEvent -= UpdateMsg;
 
                 flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
-
-                for (int i = 0; i < 200; i++)
-                {
-                    if (flowEngine.IsReady)
-                        break;
-                    Thread.Sleep(10);
-                }
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                     item.nodeRunEvent += UpdateMsg;
             }
@@ -334,8 +323,8 @@ namespace ProjectBlackMura
             CurrentFlowResult = new BlackMuraResult();
             CurrentFlowResult.SN = SNtextBox.Text;
             CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info("找不到完整流程，运行失败"); return; }
-
+            await RefreshAsync();
+            if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info("找不到完整流程，运行失败"); return; } 
             //多潘基次次
             log.Info($"IsReady{flowEngine.IsReady}");
             if (!flowEngine.IsReady)
@@ -343,7 +332,7 @@ namespace ProjectBlackMura
                 string base64 = string.Empty;
                 flowEngine.LoadFromBase64(base64);
                 await RefreshAsync();
-                log.Info($"IsReady{flowEngine.IsReady}");
+                log.Info($"IsReady1{flowEngine.IsReady}");
             }
 
 
@@ -447,9 +436,9 @@ namespace ProjectBlackMura
                             BlackMuraView blackMuraView = new BlackMuraView(AlgResultModels[0]);
 
                             blackMuraView.ResultJson.LvAvg = blackMuraView.ResultJson.LvAvg;
-                            blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.LvMaxScale;
-                            blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.LvMinScale;
-                            blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.ZaRelMaxScale;
+                            blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.WLvMaxScale;
+                            blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.WLvMinScale;
+                            blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.WZaRelMaxScale;
                             blackMuraView.ResultJson.Uniformity = blackMuraView.ResultJson.LvMin / blackMuraView.ResultJson.LvMax * 100;
 
                             result.WhiteFilePath = item.ImgFile;
@@ -459,6 +448,7 @@ namespace ProjectBlackMura
                             BlackMudraResult.WhiteImage.Min = blackMuraView.ResultJson.LvMin;
                             BlackMudraResult.WhiteImage.Uniformity = blackMuraView.ResultJson.Uniformity;
                             BlackMudraResult.WhiteImage.ZaRelmax = blackMuraView.ResultJson.ZaRelMax;
+                            BlackMudraResult.WhiteImage.Bordersize = blackMuraView.ResultJson.Nle;
 
                         }
                     }
@@ -496,11 +486,10 @@ namespace ProjectBlackMura
                         {
                             BlackMuraView blackMuraView = new BlackMuraView(AlgResultModels[0]);
 
-                            blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.LvMaxScale;
-                            blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.LvMinScale;
-                            blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.ZaRelMaxScale;
+                            blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.BLvMaxScale;
+                            blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.BLvMinScale;
+                            blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.BZaRelMaxScale;
                             blackMuraView.ResultJson.Uniformity = blackMuraView.ResultJson.LvMin / blackMuraView.ResultJson.LvMax * 100;
-
                             result.WhiteFilePath = item.ImgFile;
 
                             BlackMudraResult.BlackImage.Mean = blackMuraView.ResultJson.LvAvg;
@@ -508,6 +497,8 @@ namespace ProjectBlackMura
                             BlackMudraResult.BlackImage.Min = blackMuraView.ResultJson.LvMin;
                             BlackMudraResult.BlackImage.Uniformity = blackMuraView.ResultJson.Uniformity;
                             BlackMudraResult.BlackImage.ZaRelmax = blackMuraView.ResultJson.ZaRelMax;
+                            BlackMudraResult.BlackImage.Bordersize = blackMuraView.ResultJson.Nle;
+
                         }
                     }
                     if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
@@ -543,9 +534,9 @@ namespace ProjectBlackMura
                         {
                             BlackMuraView blackMuraView = new BlackMuraView(AlgResultModels[0]);
 
-                            blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.LvMaxScale;
-                            blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.LvMinScale;
-                            blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.ZaRelMaxScale;
+                            blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.WLvMaxScale;
+                            blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.WLvMinScale;
+                            blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.WZaRelMaxScale;
                             blackMuraView.ResultJson.Uniformity = blackMuraView.ResultJson.LvMin / blackMuraView.ResultJson.LvMax * 100;
 
                             result.WhiteFilePath = item.ImgFile;
@@ -555,6 +546,8 @@ namespace ProjectBlackMura
                             BlackMudraResult.RedImage.Min = blackMuraView.ResultJson.LvMin;
                             BlackMudraResult.RedImage.Uniformity = blackMuraView.ResultJson.Uniformity;
                             BlackMudraResult.RedImage.ZaRelmax = blackMuraView.ResultJson.ZaRelMax;
+                            BlackMudraResult.RedImage.Bordersize = blackMuraView.ResultJson.Nle;
+
                         }
                     }
                     if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
@@ -588,9 +581,9 @@ namespace ProjectBlackMura
                         {
                             BlackMuraView blackMuraView = new BlackMuraView(AlgResultModels[0]);
 
-                            blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.LvMaxScale;
-                            blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.LvMinScale;
-                            blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.ZaRelMaxScale;
+                            blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.WLvMaxScale;
+                            blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.WLvMinScale;
+                            blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.WZaRelMaxScale;
                             blackMuraView.ResultJson.Uniformity = blackMuraView.ResultJson.LvMin / blackMuraView.ResultJson.LvMax * 100;
 
                             result.WhiteFilePath = item.ImgFile;
@@ -600,6 +593,8 @@ namespace ProjectBlackMura
                             BlackMudraResult.GreenImage.Min = blackMuraView.ResultJson.LvMin;
                             BlackMudraResult.GreenImage.Uniformity = blackMuraView.ResultJson.Uniformity;
                             BlackMudraResult.GreenImage.ZaRelmax = blackMuraView.ResultJson.ZaRelMax;
+                            BlackMudraResult.GreenImage.Bordersize = blackMuraView.ResultJson.Nle;
+
                         }
                     }
                     if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
@@ -633,9 +628,9 @@ namespace ProjectBlackMura
                         {
                             BlackMuraView blackMuraView = new BlackMuraView(AlgResultModels[0]);
 
-                            blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.LvMaxScale;
-                            blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.LvMinScale;
-                            blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.ZaRelMaxScale;
+                            blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.WLvMaxScale;
+                            blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.WLvMinScale;
+                            blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.WZaRelMaxScale;
                             blackMuraView.ResultJson.Uniformity = blackMuraView.ResultJson.LvMin / blackMuraView.ResultJson.LvMax * 100;
 
                             result.WhiteFilePath = item.ImgFile;
@@ -645,6 +640,8 @@ namespace ProjectBlackMura
                             BlackMudraResult.BlueImage.Min = blackMuraView.ResultJson.LvMin;
                             BlackMudraResult.BlueImage.Uniformity = blackMuraView.ResultJson.Uniformity;
                             BlackMudraResult.BlueImage.ZaRelmax = blackMuraView.ResultJson.ZaRelMax;
+                            BlackMudraResult.BlueImage.Bordersize = blackMuraView.ResultJson.Nle;
+
                         }
                     }
                     if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
@@ -774,7 +771,7 @@ namespace ProjectBlackMura
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
                 var result = ViewResluts[listView.SelectedIndex];
-                GenoutputText(result);
+                GenoutputText();
 
                 Task.Run(async () =>
                 {
@@ -816,20 +813,17 @@ namespace ProjectBlackMura
 
         }
 
-        public void GenoutputText(BlackMuraResult kmitemmaster)
+        public void GenoutputText()
         {
-
-            outputText.Background = kmitemmaster.Result ? Brushes.Lime : Brushes.Red;
+            outputText.Background = BlackMudraResult.Result ? Brushes.Lime : Brushes.Red;
             outputText.Document.Blocks.Clear(); // 清除之前的内容
 
             string outtext = string.Empty;
-            outtext += $"Model:{kmitemmaster.Model}" + Environment.NewLine;
-            outtext += $"SN:{kmitemmaster.SN}" + Environment.NewLine;
-            outtext += $"Poiints of Interest: " + Environment.NewLine;
+            outtext += $"SN:{BlackMudraResult.SN}" + Environment.NewLine;
             outtext += $"{DateTime.Now:yyyy/MM//dd HH:mm:ss}" + Environment.NewLine;
 
             Run run = new Run(outtext);
-            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.Foreground = BlackMudraResult.Result ? Brushes.Black : Brushes.White;
             run.FontSize += 1;
 
             var paragraph = new Paragraph();
@@ -840,13 +834,13 @@ namespace ProjectBlackMura
 
             paragraph = new Paragraph();
 
-            string title1 = "PT";
-            string title2 = "Lv";
+            outtext += $"WhiteUniformity %  {BlackMudraResult.WhiteImage.Uniformity} Pass" + Environment.NewLine;
+            outtext += $"BlackUniformitylimit %  {BlackMudraResult.BlackImage.Uniformity} Pass" + Environment.NewLine;
+            outtext += $"Gradient W - %/Dpixel  {BlackMudraResult.WhiteImage.ZaRelmax} Pass" + Environment.NewLine;
+            outtext += $"Gradient B - %/Dpixel  {BlackMudraResult.BlackImage.ZaRelmax} Pass" + Environment.NewLine;
 
-            string title5 = "Lc";
-            outtext += $"{title1,-20}   {title2,-10} {title5,10}" + Environment.NewLine;
             run = new Run(outtext);
-            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.Foreground = BlackMudraResult.Result ? Brushes.Black : Brushes.White;
             run.FontSize += 1;
 
             paragraph.Inlines.Add(run);
@@ -854,21 +848,12 @@ namespace ProjectBlackMura
 
             outputText.Document.Blocks.Add(paragraph);
 
-            //outtext += $"Min Lv= {kmitemmaster.MinLv:F2} cd/m2" + Environment.NewLine;
-            //outtext += $"Max Lv= {kmitemmaster.MaxLv:F2} cd/m2" + Environment.NewLine;
-            //outtext += $"Darkest Key= {kmitemmaster.DrakestKey}" + Environment.NewLine;
-            //outtext += $"Brightest Key= {kmitemmaster.BrightestKey}" + Environment.NewLine;
-
             outtext += Environment.NewLine;
             outtext += $"Pass/Fail Criteria:" + Environment.NewLine;
-            //outtext += $"NbrFail Points={kmitemmaster.NbrFailPoints}" + Environment.NewLine;
-            //outtext += $"Avg Lv={kmitemmaster.AvgLv:F2}" + Environment.NewLine;
-            //outtext += $"Lv Uniformity={kmitemmaster.LvUniformity * 100:F2}%" + Environment.NewLine;
-
-            outtext += kmitemmaster.Result ? "Pass" : "Fail" + Environment.NewLine;
+            outtext += BlackMudraResult.Result ? "Pass" : "Fail" + Environment.NewLine;
 
             run = new Run(outtext);
-            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.Foreground = BlackMudraResult.Result ? Brushes.Black : Brushes.White;
             run.FontSize += 1;
             paragraph = new Paragraph(run);
             outtext = string.Empty;
@@ -914,6 +899,8 @@ namespace ProjectBlackMura
 
         public void Dispose()
         {
+            timer?.Dispose();
+            logOutput?.Dispose();
             GC.SuppressFinalize(this);
         }
 
@@ -986,12 +973,12 @@ namespace ProjectBlackMura
             ProjectBlackMuraConfig.Instance.StepIndex = 0;
             HYMesManager.GetInstance().PGPowerOn();
         }
-        public BlackMudraResult BlackMudraResult { get; set; }
+        public BlackMudraResult BlackMudraResult { get; set; } = new BlackMudraResult();
         public BlackMuraTestType CurrentTestType { get; set; } = BlackMuraTestType.None;
 
         private void MainWindow_CCPICompleted(object? sender, bool e)
         {
-            if (HYMesConfig.Instance.IsSingleMes) ;
+            if (HYMesConfig.Instance.IsSingleMes) return;
             var values = Enum.GetValues(typeof(BlackMuraTestType));
             int currentIndex = Array.IndexOf(values, CurrentTestType);
             int nextIndex = (currentIndex + 1) % values.Length;
