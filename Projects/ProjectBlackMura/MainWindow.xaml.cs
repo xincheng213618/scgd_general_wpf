@@ -834,10 +834,16 @@ namespace ProjectBlackMura
 
             paragraph = new Paragraph();
 
-            outtext += $"WhiteUniformity %  {BlackMudraResult.WhiteImage.Uniformity} Pass" + Environment.NewLine;
-            outtext += $"BlackUniformitylimit %  {BlackMudraResult.BlackImage.Uniformity} Pass" + Environment.NewLine;
-            outtext += $"Gradient W - %/Dpixel  {BlackMudraResult.WhiteImage.ZaRelmax} Pass" + Environment.NewLine;
-            outtext += $"Gradient B - %/Dpixel  {BlackMudraResult.BlackImage.ZaRelmax} Pass" + Environment.NewLine;
+            outtext += $"WhiteUniformity %  {BlackMudraResult.WhiteImage.Uniformity:F2} Pass" + Environment.NewLine;
+            outtext += $"BlackUniformity %  {BlackMudraResult.BlackImage.Uniformity:F2} Pass" + Environment.NewLine;
+            outtext += $"Gradient W - %/Dpixel  {BlackMudraResult.WhiteImage.ZaRelmax:F4} Pass" + Environment.NewLine;
+            outtext += $"Gradient B - %/Dpixel  {BlackMudraResult.BlackImage.ZaRelmax:F4} Pass" + Environment.NewLine;
+            outtext += Environment.NewLine; ;
+            outtext += $"      White        Black        Red       Green      Blue" + Environment.NewLine;
+            outtext += $"Lv {BlackMudraResult.WhiteImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.Y),10:F2} {BlackMudraResult.BlackImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.Y),10:F2} {BlackMudraResult.RedImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.Y),10:F2} {BlackMudraResult.GreenImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.Y),10:F2} {BlackMudraResult.BlueImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.Y),10:F2}" + Environment.NewLine;
+            outtext += $"x  {BlackMudraResult.WhiteImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.x),10:F4} {BlackMudraResult.BlackImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.x),10:F4} {BlackMudraResult.RedImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.x),10:F4} {BlackMudraResult.GreenImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.x),10:F4} {BlackMudraResult.BlueImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.x),10:F4}" + Environment.NewLine;
+            outtext += $"y  {BlackMudraResult.WhiteImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.y),10:F4} {BlackMudraResult.BlackImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.y),10:F4} {BlackMudraResult.RedImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.y),10:F4} {BlackMudraResult.GreenImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.y),10:F4} {BlackMudraResult.BlueImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.y),10:F4}" + Environment.NewLine;
+
 
             run = new Run(outtext);
             run.Foreground = BlackMudraResult.Result ? Brushes.Black : Brushes.White;
