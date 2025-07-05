@@ -45,6 +45,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -373,7 +374,6 @@ namespace ProjectARVR
                     }
 
                 }
-                Refresh();
             };
             timer = new Timer(TimeRun, null, 0, 500);
             timer.Change(Timeout.Infinite, 500); // 停止定时器
@@ -416,7 +416,7 @@ namespace ProjectARVR
         }
 
 
-        public void Refresh()
+        public  async Task Refresh()
         {
             if (FlowTemplate.SelectedIndex < 0) return;
 
@@ -431,14 +431,13 @@ namespace ProjectARVR
                 {
                     if (flowEngine.IsReady)
                         break;
-                    Thread.Sleep(10);
+                    await Task.Delay(10);
                 }
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                     item.nodeRunEvent += UpdateMsg;
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
                 flowEngine.LoadFromBase64(string.Empty);
             }
         }
@@ -509,7 +508,7 @@ namespace ProjectARVR
         ProjectARVRReuslt CurrentFlowResult { get; set; }
         int TryCount = 0;
 
-        public void RunTemplate()
+        public async Task RunTemplate()
         {
             if (flowControl != null && flowControl.IsFlowRun) return;
 
@@ -519,30 +518,19 @@ namespace ProjectARVR
             CurrentFlowResult = new ProjectARVRReuslt();
             CurrentFlowResult.SN = SNtextBox.Name;
             CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+
+            await Refresh();
+
             if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info( "找不到完整流程，运行失败");return; }
 
 
-            //多潘基次次
             log.Info($"IsReady{flowEngine.IsReady}");
             if (!flowEngine.IsReady)
             {
                 string base64 = string.Empty;
                 flowEngine.LoadFromBase64(base64);
-                Refresh();
+                await Refresh();
                 log.Info($"IsReady{flowEngine.IsReady}");
-                if (!flowEngine.IsReady)
-                {
-                    flowEngine.LoadFromBase64(base64);
-                    Refresh();
-                    log.Info($"IsReady{flowEngine.IsReady}");
-                    if (!flowEngine.IsReady)
-                    {
-                        flowEngine.LoadFromBase64(base64);
-                        Refresh();
-                        log.Info($"IsReady{flowEngine.IsReady}");
-                    }
-
-                }
             }
 
 
@@ -555,14 +543,7 @@ namespace ProjectARVR
             stopwatch.Reset();
             stopwatch.Start();
 
-            try
-            {
-                BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
-            }
-            catch (Exception ex)
-            {
-                log.Info(ex);
-            }
+            BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
 
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器

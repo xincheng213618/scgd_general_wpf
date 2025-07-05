@@ -15,6 +15,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.ServiceProcess;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,7 +26,7 @@ namespace ColorVision.Engine.Services.RC
     /// <summary>
     /// 注册服务
     /// </summary>
-    public class MqttRCService : MQTTServiceBase
+    public class MqttRCService : MQTTServiceBase,IDisposable
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(MqttRCService));
         private static MqttRCService _instance;
@@ -48,15 +49,14 @@ namespace ColorVision.Engine.Services.RC
         private NodeToken? Token;
         private bool TryTestRegist;
 
-        public ServiceNodeStatus RegStatus { get=> _RegStatus; set { if (_RegStatus == value) return; _RegStatus = value; NotifyPropertyChanged();NotifyPropertyChanged(nameof(IsConnect)); } }
-        private ServiceNodeStatus _RegStatus;
-        public bool IsConnect { get => RegStatus == ServiceNodeStatus.Registered; }
+        public bool IsConnect { get => _IsConnect; set { if (_IsConnect == value) return;  _IsConnect = value; if (value) initialized = false; NotifyPropertyChanged(); } }
+        private bool _IsConnect ;
 
         public List<MQTTServiceInfo> ServiceTokens { get; set; } = new List<MQTTServiceInfo>();
 
         private bool initialized;
         public event EventHandler ServiceTokensInitialized;
-
+        System.Threading.Timer Timer { get; set; }
 
         public MqttRCService()
         {
@@ -64,25 +64,20 @@ namespace ColorVision.Engine.Services.RC
             NodeName = MQTTRCServiceTypeConst.BuildNodeName(NodeType, null);
             DeviceCode = DevcieName = "dev." + NodeType + ".127.0.0.1";
             LoadCfg();
-            RegStatus = ServiceNodeStatus.Unregistered;
-
             ServiceName = Guid.NewGuid().ToString();
             MQTTControl.ApplicationMessageReceivedAsync -= MqttClient_ApplicationMessageReceivedAsync;
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
             MQTTControl.MQTTConnectChanged += (s,e) =>
             {
-                logger.InfoFormat("MQTTConnectChanged=>{0}", JsonConvert.SerializeObject(e));
-                Task.Run(() =>
+                Task.Run(async () =>
                 {
-                    Thread.Sleep(2000);
+                    await Task.Delay(1000);
                     GetInstance().ReRegist();
                 });
             };
             int heartbeatTime = 2 * 1000;
-            System.Timers.Timer hbTimer = new(heartbeatTime);
-            hbTimer.Elapsed += (s, e) => KeepLive(heartbeatTime);
-            hbTimer.Enabled = true;
-            GC.KeepAlive(hbTimer);
+
+            Timer = new Timer(e=> KeepLive(),null,1000,2000);
         }
 
         public void LoadCfg()
@@ -107,6 +102,8 @@ namespace ColorVision.Engine.Services.RC
         {
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
+                LastAliveTime = DateTime.Now; ;
+
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
                 try
                 {
@@ -123,31 +120,22 @@ namespace ColorVision.Engine.Services.RC
                             MQTTNodeServiceStartupRequest req = JsonConvert.DeserializeObject<MQTTNodeServiceStartupRequest>(Msg);
                             if (req != null)
                             {
-                                RegStatus = ServiceNodeStatus.Registered;
+                                IsConnect = true;
+                                Token = req.Data.Token;
+
                                 if (!TryTestRegist)
                                 {
-                                    Token = req.Data.Token;
                                     QueryServices();
                                 }
                             }
                             break;
                         case MQTTNodeServiceEventEnum.Event_QueryServices:
-                            log.Debug("Event_QueryServices：" + Msg);
-                            try
+                            MQTTRCServicesQueryResponse respQurey = JsonConvert.DeserializeObject<MQTTRCServicesQueryResponse>(Msg);
+                            if (respQurey != null)
                             {
-                                MQTTRCServicesQueryResponse respQurey = JsonConvert.DeserializeObject<MQTTRCServicesQueryResponse>(Msg);
-                                if (respQurey != null)
-                                {
-                                    Application.Current?.Dispatcher.BeginInvoke(()=> {
-                                        UpdateServices(respQurey.Data);
-                                    });
-                                }
-
-                            }
-                            catch(Exception ex)
-                            {
-                                log.Error(ex);
-                                MessageBox.Show("Event_QueryServices:" + ex.Message);
+                                Application.Current?.Dispatcher.BeginInvoke(() => {
+                                    UpdateServices(respQurey.Data);
+                                });
                             }
 
                             break;
@@ -231,7 +219,6 @@ namespace ColorVision.Engine.Services.RC
         }
         public void UpdateServices(Dictionary<CVServiceType, List<MQTTNodeService>> services)
         {
-            LastAliveTime = DateTime.Now; ;
             DoUpdateServiceTokens(services);
             DoUpdateServices(services);
         }
@@ -267,17 +254,13 @@ namespace ColorVision.Engine.Services.RC
             }
             initialized = true;
         }
-        private static TypeService GetTypeService(List<TypeService> svrs, CVServiceType serviceTypes)
-        {
-            ServiceTypes cvSType = EnumTool.ParseEnum<ServiceTypes>(serviceTypes.ToString());
-            return svrs.FirstOrDefault(serviceKind => cvSType == serviceKind.ServiceTypes);
-        }
+
         public static void DoUpdateServices(Dictionary<CVServiceType, List<MQTTNodeService>> data)
         {
-            List<TypeService> svrs = new(ServiceManager.GetInstance().TypeServices);
             foreach (var itemService in data)
             {
-                var serviceKind = GetTypeService(svrs, itemService.Key);
+                ServiceTypes cvSType = EnumTool.ParseEnum<ServiceTypes>(itemService.Key.ToString());
+                var serviceKind  = ServiceManager.GetInstance().TypeServices.FirstOrDefault(serviceKind => cvSType == serviceKind.ServiceTypes);
                 if (serviceKind == null) { continue; }
                 foreach (var baseObject in serviceKind.VisualChildren)
                 {
@@ -313,7 +296,9 @@ namespace ColorVision.Engine.Services.RC
         public bool Regist()
         {
             Token = null;
-            RegStatus = ServiceNodeStatus.Unregistered;
+            IsConnect = false;
+            ServiceTokens.Clear();
+
             MQTTNodeServiceRegist reg = new(NodeName, AppId, AppSecret, SubscribeTopic, NodeType);
             PublishAsyncClient(RCRegTopic, JsonConvert.SerializeObject(reg));
             return true;
@@ -349,22 +334,20 @@ namespace ColorVision.Engine.Services.RC
         }
 
 
-        public void KeepLive(int heartbeatTime)
+        public void KeepLive()
         {
             TimeSpan sp = DateTime.Now - LastAliveTime;
             if (sp.TotalMilliseconds > 10000)
             {
                 Regist();
-            }
-
-            if (Token == null)
-            {
-                ReRegist();
                 return;
             }
+            if (!IsConnect)
+                return;
+
             List<DeviceHeartbeat> deviceStatues = new();
             deviceStatues.Add(new DeviceHeartbeat(DevcieName, DeviceStatusType.Opened.ToString()));
-            string serviceHeartbeat = JsonConvert.SerializeObject(new MQTTServiceHeartbeat(NodeName, "", "", NodeType, ServiceName, deviceStatues, Token.AccessToken, (int)(heartbeatTime * 1.5f)));
+            string serviceHeartbeat = JsonConvert.SerializeObject(new MQTTServiceHeartbeat(NodeName, "", "", NodeType, ServiceName, deviceStatues, Token.AccessToken, (int)(2000 * 1.5f)));
             PublishAsyncClient(RCHeartbeatTopic, serviceHeartbeat);
             QueryServiceStatus();
         }
@@ -385,8 +368,8 @@ namespace ColorVision.Engine.Services.RC
                 MQTTRCServicesRestartRequest reg = new(AppId, NodeName, nodeType, Token.AccessToken, svrCode, devCode);
                 PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(reg));
             }
-            Task.Factory.StartNew(() => {
-                Thread.Sleep(2000);
+            Task.Factory.StartNew(async () => {
+                await Task.Delay(2000);
                 QueryServices();
             });
         }
@@ -397,12 +380,12 @@ namespace ColorVision.Engine.Services.RC
             string RegTopic = MQTTRCServiceTypeConst.BuildRegTopic(cfg.RCName);
             string appId = cfg.AppId;
             string appSecret = cfg.AppSecret;
-            RegStatus = ServiceNodeStatus.Unregistered;
+            IsConnect = false;
             MQTTNodeServiceRegist reg = new(NodeName, appId, appSecret, SubscribeTopic, NodeType);
             await PublishAsyncClient(RegTopic, JsonConvert.SerializeObject(reg));
-            for (int i = 0; i < 50; i++)
+            for (int i = 0; i < 30; i++)
             {
-                await Task.Delay(30);
+                await Task.Delay(10);
                 if (IsConnect)
                 {
                     TryTestRegist = false;
@@ -427,5 +410,11 @@ namespace ColorVision.Engine.Services.RC
 
         public Task PublishAsyncClient(string topic, string json) => MQTTControl.PublishAsyncClient(topic, json, false);
 
+        public override void Dispose()
+        {
+            Timer?.Dispose();
+            base.Dispose();
+            GC.SuppressFinalize(this);
+        }
     }
 }
