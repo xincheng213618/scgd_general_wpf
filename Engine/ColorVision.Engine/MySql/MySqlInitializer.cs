@@ -60,7 +60,7 @@ namespace ColorVision.Engine.MySql
                                 // 服务不存在
                                 if (File.Exists(MySqlLocalConfig.Instance.MysqldPath))
                                 {
-                                    _messageUpdater.Update("MySQL服务未安装，请手动安装MySQL服务。");
+                                    _messageUpdater.Update("MySQL服务未安装，正在尝试手动安装MySQL服务。");
 
                                     string cmd = $"{MySqlLocalConfig.Instance.MysqldPath} --install MySQL&&net start MySQL";
                                     if (Tool.ExecuteCommandAsAdmin(cmd))
