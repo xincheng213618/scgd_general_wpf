@@ -309,214 +309,201 @@ namespace ColorVision.Projects.ProjectShiYuan
 
         private IPendingHandler handler;
 
-        private void FlowControl_FlowCompleted(object? sender, EventArgs e)
+        private void FlowControl_FlowCompleted(object? sender, FlowControlData  flowControlData)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             handler?.Close();
-            if (sender is FlowControlData FlowControlData)
+            stopwatch.Stop();
+            timer.Change(Timeout.Infinite, 100); // 停止定时器
+
+
+            if (flowControlData.EventName == "Completed")
             {
-                if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
+                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
+                bool sucess = true;
+                ProjectShiYuanConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
+                log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
+                var Batch = BatchResultMasterDao.Instance.GetByCode(flowControlData.SerialNumber);
+                if (Batch != null)
                 {
-                    stopwatch.Stop();
-                    timer.Change(Timeout.Infinite, 100); // 停止定时器
-                    if (FlowControlData.EventName == "Completed")
+                    var resultMaster = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
+                    foreach (var item in resultMaster)
                     {
-                        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-
-                        bool sucess = true;
-                        ProjectShiYuanConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
-                        log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
-                        var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
-                        if (Batch != null)
+                        if (item.ImgFileType == AlgorithmResultType.Compliance_Math_JND)
                         {
-                            var resultMaster = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
-                            foreach (var item in resultMaster)
+                            var complianceJNDModels = ComplianceJNDDao.Instance.GetAllByPid(item.Id);
+                            log.Info($"获取JDN信息：  Id{item.Id},nums{complianceJNDModels.Count}");
+                            ListViewJNDresult.ItemsSource = complianceJNDModels;
+
+                            foreach (var item222 in complianceJNDModels)
                             {
-                                if (item.ImgFileType == AlgorithmResultType.Compliance_Math_JND)
-                                {
-                                    var complianceJNDModels = ComplianceJNDDao.Instance.GetAllByPid(item.Id);
-                                    log.Info($"获取JDN信息：  Id{item.Id},nums{complianceJNDModels.Count}");
-                                    ListViewJNDresult.ItemsSource = complianceJNDModels;
-
-                                    foreach (var item222 in complianceJNDModels)
-                                    {
-                                        sucess = sucess && item222.Validate;
-                                    }
-                                }
+                                sucess = sucess && item222.Validate;
                             }
+                        }
+                    }
 
-                            List<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
-                            foreach (var item in resultMaster)
+                    List<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
+                    foreach (var item in resultMaster)
+                    {
+                        if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
+                        {
+                            List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
+
+                            foreach (var pointResultModel in POIPointResultModels)
                             {
-                                if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
-                                {
-                                    List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
-
-                                    foreach (var pointResultModel in POIPointResultModels)
-                                    {
-                                        PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(pointResultModel);
-                                        PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
-                                    }
-
-                                }
-
-                                if (item.ImgFileType == AlgorithmResultType.OLED_JND_CalVas)
-                                {
-                                    ObservableCollection<ViewRsultJND> ViewRsultJNDs = new ObservableCollection<ViewRsultJND>();
-                                    foreach (var model in PoiPointResultDao.Instance.GetAllByPid(item.Id))
-                                    {
-                                        ViewRsultJNDs.Add(new ViewRsultJND(model));
-                                    }
-                                    if (Directory.Exists(ProjectShiYuanConfig.Instance.DataPath))
-                                    {
-                                        string FilePath = ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_JND"+ ".csv";
-                                        ViewRsultJND.SaveCsv(ViewRsultJNDs, FilePath);
-                                    }
-
-                                    if (Directory.Exists(ProjectShiYuanConfig.Instance.DataPath))
-                                    {
-                                        string sourceFile = item.ImgFile;
-                                        // 获取目标目录路径
-                                        string destinationDirectory = ProjectShiYuanConfig.Instance.DataPath;
-                                        // 获取源文件的文件名
-                                        string fileName = Path.GetFileName(sourceFile);
-                                        // 构造目标文件的完整路径
-                                        string destinationFile = Path.Combine(destinationDirectory, fileName);
-                                        try
-                                        {
-                                            // 复制文件到目标路径
-                                            File.Copy(sourceFile, destinationFile, true);
-                                            log.Info(sourceFile + "JND输入文件复制成功");
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            log.Info(sourceFile + "文件复制失败");
-                                        }
-                                    }
-                                }
+                                PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(pointResultModel);
+                                PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                             }
-
-                            ListViewResult.ItemsSource = PoiResultCIExyuvDatas;
-                          
-                            if (Directory.Exists(ProjectShiYuanConfig.Instance.DataPath))
-                            {
-                                foreach (var item in STNodeEditorMain.Nodes)
-                                {
-                                    if (item is FlowEngineLib.Node.Algorithm.TPAlgorithmNode tapnode)
-                                    {
-                                        if (File.Exists(tapnode.ImgFileName))
-                                        {
-                                            string sourceFile = tapnode.ImgFileName;
-                                            // 获取目标目录路径
-                                            string destinationDirectory = ProjectShiYuanConfig.Instance.DataPath;
-                                            // 获取源文件的文件名
-                                            string fileName = Path.GetFileNameWithoutExtension(sourceFile) + "_"+timestamp + Path.GetExtension(sourceFile);
-                                            // 构造目标文件的完整路径
-                                            string destinationFile = Path.Combine(destinationDirectory, fileName);
-                                            try
-                                            {
-                                                // 复制文件到目标路径
-                                                File.Copy(sourceFile, destinationFile, true);
-                                                log.Info(sourceFile + "JNDCAD文件复制成功");
-                                            }
-                                            catch (Exception ex)
-                                            {
-                                                log.Info(sourceFile + "文件复制失败");
-                                            }
-
-                                        }
-                                    }
-                                }
-
-                                string FilePath = ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_POI" + ".csv";
-                                PoiResultCIExyuvData.SaveCsv(new ObservableCollection<PoiResultCIExyuvData>(PoiResultCIExyuvDatas), FilePath);
-
-                            }
-
-                            if (sucess)
-                            {
-
-                                ResultText.Text = "OK";
-                                ResultText.Foreground = Brushes.Red;
-
-                                string h_gap = "C:\\Windows\\System32\\pic\\h_gap.tif";
-                                if (File.Exists(h_gap))
-                                {
-                                    File.Copy(h_gap, ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_h_gap_1" + ".tif", true);
-                                    BitmapImage bitmapImage = new BitmapImage(new Uri(h_gap));
-                                    HImage hImage = bitmapImage.ToHImage();
-
-                                    int ret = OpenCVMediaHelper.M_PseudoColor(hImage, out HImage hImageProcessed, 0, 65535, ColormapTypes.COLORMAP_JET, 1);
-                                    Application.Current.Dispatcher.Invoke(() =>
-                                    {
-                                        if (ret == 0)
-                                        {
-                                            var image = hImageProcessed.ToWriteableBitmap();
-                                            image.SaveImageSourceToFile(ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_h_gap" + ".tif");
-                                            OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                            hImageProcessed.pData = IntPtr.Zero;
-
-                                        }
-                                    });
-                                }
-
-                                string g_gap = "C:\\Windows\\System32\\pic\\v_gap.tif";
-                                if (File.Exists(g_gap))
-                                {
-                                    File.Copy(g_gap, ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_v_gap_1" + ".tif", true);
-                                    BitmapImage bitmapImage = new BitmapImage(new Uri(g_gap));
-                                    HImage hImage = bitmapImage.ToHImage();
-
-                                    int ret = OpenCVMediaHelper.M_PseudoColor(hImage, out HImage hImageProcessed, 0, 65535, ColormapTypes.COLORMAP_JET, 1);
-                                    Application.Current.Dispatcher.Invoke(() =>
-                                    {
-                                        if (ret == 0)
-                                        {
-                                            var image = hImageProcessed.ToWriteableBitmap();
-                                            image.SaveImageSourceToFile(ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_v_gap" + ".tif");
-                                            OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                            hImageProcessed.pData = IntPtr.Zero;
-
-                                        }
-                                    });
-                                }
-                                string luminance = "C:\\Windows\\System32\\pic\\luminance.tif";
-                                if (File.Exists(luminance))
-                                {
-                                    File.Copy(luminance, ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "luminance_1" + ".tif", true);
-                                }
-                            }
-                            else
-                            {
-
-                                ResultText.Text = "NG";
-                                ResultText.Foreground = Brushes.Blue;
-                            }
-
-
-
-
 
                         }
-                        else
+
+                        if (item.ImgFileType == AlgorithmResultType.OLED_JND_CalVas)
                         {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号", "ColorVision");
+                            ObservableCollection<ViewRsultJND> ViewRsultJNDs = new ObservableCollection<ViewRsultJND>();
+                            foreach (var model in PoiPointResultDao.Instance.GetAllByPid(item.Id))
+                            {
+                                ViewRsultJNDs.Add(new ViewRsultJND(model));
+                            }
+                            if (Directory.Exists(ProjectShiYuanConfig.Instance.DataPath))
+                            {
+                                string FilePath = ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_JND" + ".csv";
+                                ViewRsultJND.SaveCsv(ViewRsultJNDs, FilePath);
+                            }
+
+                            if (Directory.Exists(ProjectShiYuanConfig.Instance.DataPath))
+                            {
+                                string sourceFile = item.ImgFile;
+                                // 获取目标目录路径
+                                string destinationDirectory = ProjectShiYuanConfig.Instance.DataPath;
+                                // 获取源文件的文件名
+                                string fileName = Path.GetFileName(sourceFile);
+                                // 构造目标文件的完整路径
+                                string destinationFile = Path.Combine(destinationDirectory, fileName);
+                                try
+                                {
+                                    // 复制文件到目标路径
+                                    File.Copy(sourceFile, destinationFile, true);
+                                    log.Info(sourceFile + "JND输入文件复制成功");
+                                }
+                                catch (Exception ex)
+                                {
+                                    log.Info(sourceFile + "文件复制失败");
+                                }
+                            }
+                        }
+                    }
+
+                    ListViewResult.ItemsSource = PoiResultCIExyuvDatas;
+
+                    if (Directory.Exists(ProjectShiYuanConfig.Instance.DataPath))
+                    {
+                        foreach (var item in STNodeEditorMain.Nodes)
+                        {
+                            if (item is FlowEngineLib.Node.Algorithm.TPAlgorithmNode tapnode)
+                            {
+                                if (File.Exists(tapnode.ImgFileName))
+                                {
+                                    string sourceFile = tapnode.ImgFileName;
+                                    // 获取目标目录路径
+                                    string destinationDirectory = ProjectShiYuanConfig.Instance.DataPath;
+                                    // 获取源文件的文件名
+                                    string fileName = Path.GetFileNameWithoutExtension(sourceFile) + "_" + timestamp + Path.GetExtension(sourceFile);
+                                    // 构造目标文件的完整路径
+                                    string destinationFile = Path.Combine(destinationDirectory, fileName);
+                                    try
+                                    {
+                                        // 复制文件到目标路径
+                                        File.Copy(sourceFile, destinationFile, true);
+                                        log.Info(sourceFile + "JNDCAD文件复制成功");
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        log.Info(sourceFile + "文件复制失败");
+                                    }
+
+                                }
+                            }
+                        }
+
+                        string FilePath = ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_POI" + ".csv";
+                        PoiResultCIExyuvData.SaveCsv(new ObservableCollection<PoiResultCIExyuvData>(PoiResultCIExyuvDatas), FilePath);
+
+                    }
+
+                    if (sucess)
+                    {
+
+                        ResultText.Text = "OK";
+                        ResultText.Foreground = Brushes.Red;
+
+                        string h_gap = "C:\\Windows\\System32\\pic\\h_gap.tif";
+                        if (File.Exists(h_gap))
+                        {
+                            File.Copy(h_gap, ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_h_gap_1" + ".tif", true);
+                            BitmapImage bitmapImage = new BitmapImage(new Uri(h_gap));
+                            HImage hImage = bitmapImage.ToHImage();
+
+                            int ret = OpenCVMediaHelper.M_PseudoColor(hImage, out HImage hImageProcessed, 0, 65535, ColormapTypes.COLORMAP_JET, 1);
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                if (ret == 0)
+                                {
+                                    var image = hImageProcessed.ToWriteableBitmap();
+                                    image.SaveImageSourceToFile(ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_h_gap" + ".tif");
+                                    OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                    hImageProcessed.pData = IntPtr.Zero;
+
+                                }
+                            });
+                        }
+
+                        string g_gap = "C:\\Windows\\System32\\pic\\v_gap.tif";
+                        if (File.Exists(g_gap))
+                        {
+                            File.Copy(g_gap, ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_v_gap_1" + ".tif", true);
+                            BitmapImage bitmapImage = new BitmapImage(new Uri(g_gap));
+                            HImage hImage = bitmapImage.ToHImage();
+
+                            int ret = OpenCVMediaHelper.M_PseudoColor(hImage, out HImage hImageProcessed, 0, 65535, ColormapTypes.COLORMAP_JET, 1);
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                if (ret == 0)
+                                {
+                                    var image = hImageProcessed.ToWriteableBitmap();
+                                    image.SaveImageSourceToFile(ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_v_gap" + ".tif");
+                                    OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                    hImageProcessed.pData = IntPtr.Zero;
+
+                                }
+                            });
+                        }
+                        string luminance = "C:\\Windows\\System32\\pic\\luminance.tif";
+                        if (File.Exists(luminance))
+                        {
+                            File.Copy(luminance, ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "luminance_1" + ".tif", true);
                         }
                     }
                     else
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName, "ColorVision");
+
+                        ResultText.Text = "NG";
+                        ResultText.Foreground = Brushes.Blue;
                     }
+
+
+
+
+
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName, "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号", "ColorVision");
                 }
-
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行异常", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + flowControlData.EventName, "ColorVision");
             }
         }
         
@@ -531,16 +518,6 @@ namespace ColorVision.Projects.ProjectShiYuan
                     flowControl ??= new Engine.Templates.Flow.FlowControl(MQTTControl.GetInstance(), flowEngine);
 
                     handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
-                    flowControl.FlowData += (s, e) =>
-                    {
-                        if (s is FlowControlData msg)
-                        {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
-                            });
-                        }
-                    };
                     flowControl.FlowCompleted += FlowControl_FlowCompleted;
                     string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
                     stopwatch.Reset();

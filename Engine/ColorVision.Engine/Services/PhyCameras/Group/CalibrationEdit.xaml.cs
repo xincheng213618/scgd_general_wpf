@@ -50,6 +50,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         public void Init()
         {
+            groupResources.Clear();
             foreach (var item in PhyCamera.VisualChildren)
             {
                 if (item is GroupResource groupResource)
@@ -145,14 +146,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         {
             string calue = NewCreateFileName("title");
             var group = GroupResource.AddGroupResource(PhyCamera, calue);
-            if (group != null)
-            {
-                groupResources.Add(group);
-            }
-            else
+            if (group == null)
             {
                 MessageBox.Show("创建失败");
             }
+
         }
 
         public string NewCreateFileName(string FileName)

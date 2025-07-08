@@ -9,4 +9,15 @@
             Name = name;
         }
     }
+
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+    public class FolderEditorAttribute : Attribute
+    {
+        public string? Name { get; }
+        public FolderEditorAttribute(string? name = null)
+        {
+            Name = name;
+        }
+    }
+
 }

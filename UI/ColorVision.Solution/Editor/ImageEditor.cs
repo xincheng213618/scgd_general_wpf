@@ -1,9 +1,9 @@
-﻿using ColorVision.Common.Utilities;
+﻿using AvalonDock.Layout;
+using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor;
 using ColorVision.Solution.Searches;
 using System.IO;
 using System.Windows;
-using Xceed.Wpf.AvalonDock.Layout;
 
 
 namespace ColorVision.Solution.Editor
@@ -63,7 +63,7 @@ namespace ColorVision.Solution.Editor
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 imageView.Dispose();
-                                layoutDocument.Close();
+                                layoutDocument?.Close();
                             });
                         });
                     }

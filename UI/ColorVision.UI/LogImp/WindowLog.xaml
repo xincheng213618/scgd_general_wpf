@@ -24,12 +24,15 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <hc:SearchBar x:Name="SearchBar1"  Margin="0,0,5,0" TextChanged="SearchBar1_TextChanged" hc:InfoElement.Placeholder="{x:Static properties:Resources.FilterSupportsRegex}" hc:InfoElement.ShowClearButton="True" Style="{StaticResource SearchBarPlus}" IsRealTime="True"   />
-            <StackPanel Grid.Column="1"  Orientation="Horizontal">
-                <ToggleButton Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="{x:Static properties:Resources.AutoScrollToEnd}" IsChecked="{Binding AutoScrollToEnd}" Margin="5,0"/>
-                <ToggleButton Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="{x:Static properties:Resources.AutoRefresh}" IsChecked="{Binding AutoRefresh}" Margin="5,0"/>
+            <StackPanel Grid.Column="1"  Orientation="Horizontal" x:Name="QucikToolStackPanel">
+                <ToggleButton x:Name="ButtonAutoScrollToEnd" Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="{x:Static properties:Resources.AutoScrollToEnd}" IsChecked="{Binding AutoScrollToEnd}" Margin="5,0"/>
+                <ToggleButton  x:Name="ButtonAutoRefresh" Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="{x:Static properties:Resources.AutoRefresh}" IsChecked="{Binding AutoRefresh}" Margin="5,0"/>
                 <ComboBox Name="cmlog"  Width="100" SelectedValuePath="Key" DisplayMemberPath="Value" SelectedValue="{Binding LogLevel}" SelectionChanged="cmlog_SelectionChanged"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
                 <Button Content="{x:Static properties:Resources.Clear}" Click="Clear_Click" Margin="5,0,0,0"/>
                 <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="27" Width="27" >
                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}">
@@ -47,8 +50,8 @@
                         </EventTrigger>
                     </Button.Triggers>
                 </Button>
-
             </StackPanel>
+            
         </Grid>
         <RichTextBox x:Name="logRichTextBox" Grid.Row="1" Visibility="Collapsed" Margin="5,0"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <FlowDocument>

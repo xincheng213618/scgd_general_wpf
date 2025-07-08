@@ -59,6 +59,7 @@ using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
 using ColorVision.Engine.Templates.Jsons.BuildPOIAA;
 using System.IO;
+using ColorVision.Engine.Templates.Jsons.FindCross;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -339,6 +340,10 @@ namespace ColorVision.Engine.Templates.Flow
                         case FlowEngineLib.Algorithm.AlgorithmARVRType.双目融合:
                             AddStackPanel(name => algorithmNode1.TempName = name, algorithmNode1.TempName, "双目融合", new TemplateBinocularFusion());
                             break;
+                        case FlowEngineLib.Algorithm.AlgorithmARVRType.十字计算:
+                            AddStackPanel(name => algorithmNode1.TempName = name, algorithmNode1.TempName, "十字计算", new TemplateFindCross());
+                            AddStackPanel(name => algorithmNode1.POITempName = name, algorithmNode1.POITempName, "ROI", new TemplatePoi());
+                            break;
                         default:
                             break;
                     }
@@ -374,6 +379,9 @@ namespace ColorVision.Engine.Templates.Flow
                             break;
                         case FlowEngineLib.Algorithm.Algorithm2Type.SFR_FindROI:
                             AddStackPanel(name => algorithmNode2.TempName = name, algorithmNode2.TempName, "SFR_FindROI", new TemplateSFRFindROI());
+                            break;
+                        case FlowEngineLib.Algorithm.Algorithm2Type.十字计算:
+                            AddStackPanel(name => algorithmNode2.TempName = name, algorithmNode2.TempName, "十字计算", new TemplateFindCross());
                             break;
                         default:
                             break;

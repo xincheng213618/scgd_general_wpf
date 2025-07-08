@@ -38,7 +38,7 @@ namespace ColorVision.Solution
                 foreach (var kv in dict)
                 {
                     var extLower = kv.Key.ToLowerInvariant();
-                    var editorType = AppDomain.CurrentDomain.GetAssemblies()
+                    var editorType = AssemblyService.Instance.GetAssemblies()
                         .SelectMany(a => a.GetTypes())
                         .FirstOrDefault(t => t.FullName == kv.Value);
                     if (editorType != null)
@@ -49,7 +49,7 @@ namespace ColorVision.Solution
 
         private void RegisterEditors()
         {
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyService.Instance.GetAssemblies())
             {
                 foreach (var type in assembly.GetTypes())
                 {
@@ -132,16 +132,27 @@ namespace ColorVision.Solution
             }
         }
 
+        public IEditor? OpenFolder  (string folderPath)
+        {
+            if (Directory.Exists(folderPath))
+            {
+                var defaultType = typeof(ProjectEditor);
+                if (defaultType != null)
+                    return Activator.CreateInstance(defaultType) as IEditor;
+            }
+            return null;
+        }
+
         // 打开文件，返回编辑器实例或提示
         public IEditor? OpenFile(string filePath)
         {
+
             string extension = Path.GetExtension(filePath);
 
             // 1. 默认编辑器
             var defaultType = GetDefaultEditorType(extension);
             if (defaultType != null)
                 return Activator.CreateInstance(defaultType) as IEditor;
-
             // 2. 所有可选编辑器（包含通用编辑器）
             var allTypes = GetEditorsForExt(extension);
             if (allTypes.Count > 0)

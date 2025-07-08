@@ -46,6 +46,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public bool AutoSaveSideData { get => _AutoSaveSideData; set { _AutoSaveSideData = value; NotifyPropertyChanged(); } }
         private bool _AutoSaveSideData;
 
+        [DisplayName("自动保存渲染图")]
+        public bool AutoSaveRendering { get => _AutoSaveRendering; set { _AutoSaveRendering = value; NotifyPropertyChanged(); } }
+        private bool _AutoSaveRendering;
+
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;
 

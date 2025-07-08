@@ -75,10 +75,6 @@ namespace ColorVision.Engine.Services
             return new UserControl();
         }
 
-        public virtual View GetView()
-        {
-            throw new NotImplementedException();
-        }
 
         //继承Config
         public virtual object GetConfig()

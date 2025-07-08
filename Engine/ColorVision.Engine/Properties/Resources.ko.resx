@@ -861,4 +861,22 @@
   <data name="OpenInCalibTools" xml:space="preserve">
     <value>CalibTools에서 열기</value>
   </data>
+  <data name="ProjectManagerWindow" xml:space="preserve">
+    <value>프로젝트 관리자 창</value>
+  </data>
+  <data name="ReleaseDate" xml:space="preserve">
+    <value>출시일</value>
+  </data>
+  <data name="BuildDate" xml:space="preserve">
+    <value>빌드 날짜</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>버전</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>명령</value>
+  </data>
+  <data name="ProjectName" xml:space="preserve">
+    <value>프로젝트명</value>
+  </data>
 </root>

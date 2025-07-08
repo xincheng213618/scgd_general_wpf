@@ -77,6 +77,7 @@ namespace ColorVision.Solution
                         Directory.CreateDirectory(DefaultSolution);
                     var SolutionPath = CreateSolution(DefaultSolution);
                 }
+                SolutionViewExtensions.DealyLoad.Add(()=> SolutionExplorers[0].Open());
             });
 
             SettingCommand = SolutionSetting.Instance.EditCommand;

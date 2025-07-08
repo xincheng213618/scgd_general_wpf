@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8602,CS8604,CS4014
 using ColorVision.Common.MVVM;
 using ColorVision.Solution.Properties;
+using ColorVision.Solution.Searches;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
@@ -63,9 +64,6 @@ namespace ColorVision.Solution.V
                 Config.ToJsonNFile(ConfigFileInfo.FullName);
             });
 
-            DisableExpanded = true;
-            IsExpanded = true;
-
             InitializeSolution();
             InitializeFileSystemWatcher();
             DriveMonitor();
@@ -77,6 +75,9 @@ namespace ColorVision.Solution.V
 
             AppDomain.CurrentDomain.ProcessExit += (_, __) => SaveConfig();
         }
+
+
+        public override bool IsExpanded { get => true; set {} }
 
         /// <summary>
         /// 初始化解决方案配置及目录
@@ -155,6 +156,14 @@ namespace ColorVision.Solution.V
         {
             MenuItemMetadatas.Add(new MenuItemMetadata
             {
+                GuidId = "Open",
+                Order = 1,
+                Header = Resources.MenuOpen,
+                Command = OpenCommand
+            });
+
+            MenuItemMetadatas.Add(new MenuItemMetadata
+            {
                 GuidId = "Edit",
                 Order = 50,
                 Header = "编辑解决方案",
@@ -190,6 +199,12 @@ namespace ColorVision.Solution.V
                 Command = OpenFileInExplorerCommand,
                 Header = Resources.MenuOpenFileInExplorer
             });
+        }
+
+
+        public override void Open()
+        {
+            new SolutionEditor().Open(FullPath);
         }
 
         /// <summary>

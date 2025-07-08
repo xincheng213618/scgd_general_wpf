@@ -40,7 +40,7 @@ namespace ColorVision.Solution.V
 
             if (types.Count == 0) return;
 
-            var window = new EditorSelectionWindow(types, current) { Owner = Application.Current.GetActiveWindow() , WindowStartupLocation =WindowStartupLocation.CenterScreen};
+            var window = new EditorSelectionWindow(types, current, FullPath) { Owner = Application.Current.GetActiveWindow() , WindowStartupLocation =WindowStartupLocation.CenterScreen};
             if (window.ShowDialog() == true)
             {
                 var selectedType = window.SelectedEditorType;
@@ -58,6 +58,7 @@ namespace ColorVision.Solution.V
 
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = Resources.MenuCopyFullPath , Icon = MenuItemIcon.TryFindResource("DICopy") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenContainingFolder", Order = 200, Header = Resources.MenuOpenContainingFolder, Command = OpenContainingFolderCommand });
+
         }
         public override void ShowProperty()
         {

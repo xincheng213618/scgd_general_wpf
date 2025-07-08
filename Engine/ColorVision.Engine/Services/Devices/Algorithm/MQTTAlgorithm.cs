@@ -3,7 +3,7 @@ using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Net;
+using ColorVision.FileIO;
 using CVCommCore;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
@@ -95,10 +95,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     switch (msg.Code)
                     {
                         default:
-                            List<AlgResultMasterModel> resultMaster = null;
+                            List<AlgResultMasterModel> resultMaster = new List<AlgResultMasterModel>();
                             if (msg.Data.MasterId > 0)
                             {
-                                resultMaster = new List<AlgResultMasterModel>();
                                 int MasterId = msg.Data.MasterId;
                                 AlgResultMasterModel model = AlgResultMasterDao.Instance.GetById(MasterId);
                                 if (model != null)

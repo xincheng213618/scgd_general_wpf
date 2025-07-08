@@ -107,7 +107,15 @@ namespace ColorVision.Engine.MySql
                 bool result = FindMySQLPath("MySQL") || FindMySQLPath("MySQL57") || FindMySQLPath("MySQL80");
                 if (!result)
                 {
-                    MessageBox.Show("找不到本地的Mysql服务");
+                    log.Info("找不到本地的mysql 服务");
+                    if (File.Exists(MySqlLocalConfig.Instance.MysqldPath))
+                    {
+                        MessageBox.Show("系统更新，找不到本地的Mysql服务,请将数据库重新安装");
+                    }
+                    else
+                    {
+                        MessageBox.Show("找不到本地的Mysql服务");
+                    }
                 }
             }
             catch (Exception ex)
@@ -245,6 +253,7 @@ namespace ColorVision.Engine.MySql
             return null;
         }
 
+        //备份所有数据
         public void BackupAllMysql()
         {
             //备份的信息里应该只包含基础的信息不应该包含许多逻辑
@@ -258,13 +267,13 @@ namespace ColorVision.Engine.MySql
                 Backups.Add(new MysqlBack(BackUpSql));
             });
         }
-
+        //备份Mysql资源
         public void BackupMysqlResource()
         {
             //备份的信息里应该只包含基础的信息不应该包含许多逻辑
             string BackTable = string.Join(" ", MySqlControl.GetInstance().GetFilteredResourceTableNames());
             string BackUpSql = Path.Combine(BackupPath, $"Res_{DateTime.Now:yyyyMMddHHmmss}.sql");
-            string backCommnad = $"{Config.MysqldumpPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} > \"{BackUpSql}\"";
+            string backCommnad = $"{Config.MysqldumpPath} --replace -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} > \"{BackUpSql}\"";
             Common.Utilities.Tool.ExecuteCommandUI(backCommnad);
             Application.Current.Dispatcher.Invoke(() =>
             {

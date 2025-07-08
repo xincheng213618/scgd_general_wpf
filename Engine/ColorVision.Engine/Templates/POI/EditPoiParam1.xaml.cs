@@ -15,7 +15,7 @@ using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Tif;
-using ColorVision.Net;
+using ColorVision.FileIO;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
@@ -494,7 +494,7 @@ namespace ColorVision.Engine.Templates.POI
             KBJson.Height = imageSource.PixelHeight;
             InitPoiConfigValue(imageSource.PixelWidth, imageSource.PixelHeight);
 
-            ImageShow.ImageInitialize();
+            ImageShow.RaiseImageInitialized();
             Zoombox1.ZoomUniform();
         }
 
@@ -568,7 +568,7 @@ namespace ColorVision.Engine.Templates.POI
                         WaitControlProgressBar.Visibility = Visibility.Collapsed;
                     }
                     Init = true;
-                    ImageShow.ImageInitialize();
+                    ImageShow.RaiseImageInitialized();
 
                 }));
             });

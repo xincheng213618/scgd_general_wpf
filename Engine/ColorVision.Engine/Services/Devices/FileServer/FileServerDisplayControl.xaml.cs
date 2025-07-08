@@ -1,6 +1,6 @@
 ﻿using ColorVision.Engine.Media;
 using ColorVision.ImageEditor;
-using ColorVision.Net;
+using ColorVision.FileIO;
 using ColorVision.UI;
 using log4net;
 using MQTTMessageLib.FileServer;
@@ -91,9 +91,6 @@ namespace ColorVision.Engine.Services.Devices.FileServer
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = DeviceFileServer;
-
-            this.AddViewConfig(View, ComboxView);
-
             Task.Run(() => { MQTTFileServer.GetAllFiles(); });
         }
 

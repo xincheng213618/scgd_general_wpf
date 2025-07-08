@@ -66,14 +66,13 @@ namespace ColorVision.Solution
 
                 if (File.Exists(fn))
                 {
-                    if (fn.Contains(".gprj"))
-                    {
-                        SolutionManager.OpenSolution(fn);
-                    }
-                    else
-                    {
-                        MessageBox.Show("文件的格式不受支持");
-                    }
+                    var destDir = SolutionManager.SolutionExplorers[0].SolutionEnvironments.SolutionDir;
+                    if (!Directory.Exists(destDir))
+                        Directory.CreateDirectory(destDir);
+
+                    var destFile = Path.Combine(destDir, Path.GetFileName(fn));
+                    File.Copy(fn, destFile, overwrite: true);
+
                 }
                 else if (Directory.Exists(fn))
                 {

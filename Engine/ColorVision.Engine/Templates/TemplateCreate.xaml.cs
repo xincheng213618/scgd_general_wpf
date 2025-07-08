@@ -17,12 +17,15 @@ namespace ColorVision.Engine.Templates
 
     public partial class TemplateCreate : Window
     {
+        bool IsImport;
         public ITemplate ITemplate { get; set; }
 
-        public TemplateCreate(ITemplate template,bool IsImport =false)  
+        public TemplateCreate(ITemplate template,bool isImport =false)  
         {
             ITemplate = template;
+            IsImport = isImport;
             InitializeComponent();
+ 
         }
         private string TemplateFile { get; set;  }
         private void Window_Initialized(object sender, EventArgs e)
@@ -48,8 +51,16 @@ namespace ColorVision.Engine.Templates
                 radioButton1.Checked += (s, e) => TemplateFile = Path.GetFullPath(item);
                 TemplateStackPanels.Children.Add(radioButton1);
             }
+            if (IsImport)
+            {
+                TemplateStackPanels.Visibility = Visibility.Collapsed;
+                this.Title = $"{Properties.Resources.Import} {ITemplate.Title} 模板";
 
-            this.Title += ITemplate.Title + " "+"模板";
+            }
+            else
+            {
+                this.Title += ITemplate.Title + " " + "模板";
+            }
             List<string> list =
             [
                 ITemplate.NewCreateFileName(ITemplate.Code),

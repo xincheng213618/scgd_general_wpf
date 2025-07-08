@@ -39,12 +39,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         }
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
-            if (result.ResultCode != 0)
-            {
-                if (File.Exists(result.FilePath))
-                    view.ImageView.OpenImage(result.FilePath);
-                return;
-            }
+
 
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);

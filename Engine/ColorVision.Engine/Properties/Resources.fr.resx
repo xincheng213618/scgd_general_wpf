@@ -861,4 +861,22 @@
   <data name="OpenInCalibTools" xml:space="preserve">
     <value>Ouvrir dans CalibTools</value>
   </data>
+  <data name="ProjectManagerWindow" xml:space="preserve">
+    <value>FenêtreGestionProjet</value>
+  </data>
+  <data name="ReleaseDate" xml:space="preserve">
+    <value>date de publication</value>
+  </data>
+  <data name="BuildDate" xml:space="preserve">
+    <value>DateDeConstruction</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>Commande</value>
+  </data>
+  <data name="ProjectName" xml:space="preserve">
+    <value>NomDuProjet</value>
+  </data>
 </root>

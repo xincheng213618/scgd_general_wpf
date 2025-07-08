@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
         xmlns:local="clr-namespace:ProjectBlackMura"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" xmlns:hc="https://handyorg.github.io/handycontrol"
         d:DataContext="{d:DesignInstance local:ProjectBlackMuraConfig}"
         mc:Ignorable="d"
         Title="ProjectBlackMura" Height="720" Width="1280"  Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
@@ -92,20 +93,14 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="White" Width="150">
+                                <GridViewColumn Header="White">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:BlackMuraResult}">
                                             <TextBlock Text="{Binding WhiteFilePath}" />
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="Black" Width="150">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:BlackMuraResult}">
-                                            <TextBlock Text="{Binding BlackFilePath}" />
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
+
 
 
                             </GridView>
@@ -121,6 +116,8 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="350"/>
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0" Margin="5">
                     <StackPanel>
@@ -139,7 +136,14 @@
                                 <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
                             </DockPanel>
                         </DockPanel>
-                        <Button Content="Test BlackMura"  DockPanel.Dock="Right" Background="Pink" Height="70" Click="TestClick" />
+                        <Grid Height="50">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Content="测试"   DockPanel.Dock="Right" Background="Pink"  Click="Test1_Click" Margin="0,0,5,0" />
+                            <Button Grid.Column="1" Content="单画面测试 " Background="Pink" Click="TestClick" />
+                        </Grid>
                     </StackPanel>
                 </Grid>
                 <RichTextBox x:Name="outputText" Grid.Row="1" Margin="5,0"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
@@ -149,6 +153,68 @@
                         </Paragraph>
                     </FlowDocument>
                 </RichTextBox>
+
+                <hc:StepBar Grid.Row="2" StepIndex="{Binding StepIndex}">
+                    <hc:StepBarItem Content="上电"/>
+                    <hc:StepBarItem Content="白色"/>
+                    <hc:StepBarItem Content="黑色"/>
+                    <hc:StepBarItem Content="红色"/>
+                    <hc:StepBarItem Content="绿色"/>
+                    <hc:StepBarItem Content="蓝色"/>
+                    <hc:StepBarItem Content="下电"/>
+                    <hc:StepBarItem Content="上传"/>
+                </hc:StepBar>
+
+                <Grid x:Name="MesGrid" Grid.Row="3" d:DataContext="{d:DesignInstance local:HYMesManager}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <GroupBox Header="MES"  VerticalAlignment="Top" Margin="5,0">
+                        <StackPanel  Margin="5,3">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel >
+                                    <StackPanel Margin="0,2" Orientation="Horizontal">
+                                        <DockPanel Margin="0,2" Width="100" HorizontalAlignment="Left">
+                                            <ComboBox x:Name="ComboBoxSer" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding Config.PortName}"  />
+                                        </DockPanel>
+                                        <Button  Content="连接MES" Style="{StaticResource ButtonDefault.Small}" Click="Button_Click_1" Margin="10,0,0,0"/>
+                                        <DockPanel Margin="2">
+                                            <DockPanel>
+                                                <TextBlock Text="连接:" Width="60"/>
+                                                <TextBlock Text="{Binding  IsConnect ,Converter={StaticResource ConnectConverter}}"/>
+                                            </DockPanel>
+                                        </DockPanel>
+                                    </StackPanel>
+
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="0,2" Orientation="Horizontal" VerticalAlignment="Top">
+                                    <ui:ToggleSwitch Content="启动时连接" IsChecked="{Binding Config.IsOpenConnect}" Margin="0,2"/>
+                                    <ui:ToggleSwitch Content="SingleMes" IsChecked="{Binding Config.IsSingleMes}" Margin="0,2"/>
+                                </StackPanel>
+
+                            </Grid>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="PG上电" Click="PG_PowerOn_Click"/>
+                                <Button Content="PG下电" Click="PG_PowerOff_Click"/>
+                                <Button Content="White" Click="PG_PowerSwitch1_Click"/>
+                                <Button Content="Black" Click="PG_PowerSwitch2_Click"/>
+                                <Button Content="Red" Click="PG_PowerSwitch3_Click"/>
+                                <Button Content="Green" Click="PG_PowerSwitch4_Click"/>
+                                <Button Content="Blue" Click="PG_PowerSwitch5_Click"/>
+                                <Button Content="Optics" Click="PG_PowerSwitch6_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </GroupBox>
+                    <Grid Grid.Row="1" x:Name="LogGrid">
+
+                    </Grid>
+                </Grid>
             </Grid>
         </Grid>
         <StatusBar Grid.Row="2">
@@ -164,6 +230,9 @@
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="自述文件" Command="{Binding OpenReadMeCommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="MES设置" Command="{Binding OpenHYMesConfigCommand}"/>
             </StatusBarItem>
         </StatusBar>
 

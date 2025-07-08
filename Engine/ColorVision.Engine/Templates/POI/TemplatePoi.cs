@@ -79,11 +79,11 @@ namespace ColorVision.Engine.Templates.POI
         {
             PoiParam.LoadPoiDetailFromDB(TemplateParams[index].Value);
             string fileContent = TemplateParams[index].Value.ToJsonN();
-            ExportTemp = JsonConvert.DeserializeObject<PoiParam>(fileContent);
-            if (ExportTemp != null)
+            ImportTemp = JsonConvert.DeserializeObject<PoiParam>(fileContent);
+            if (ImportTemp != null)
             {
-                ExportTemp.Id = -1;
-                foreach (var item in ExportTemp.PoiPoints)
+                ImportTemp.Id = -1;
+                foreach (var item in ImportTemp.PoiPoints)
                 {
                     item.Id = -1;
                 }
@@ -95,20 +95,20 @@ namespace ColorVision.Engine.Templates.POI
         {
             PoiParam? AddPoiParam(string templateName)
             {
-                if(ExportTemp != null)
+                if(ImportTemp != null)
                 {
-                    ExportTemp.Name = templateName;
-                    PoiMasterModel poiMasterModel = new(ExportTemp);
+                    ImportTemp.Name = templateName;
+                    PoiMasterModel poiMasterModel = new(ImportTemp);
                     PoiMasterDao.Instance.Save(poiMasterModel);
-                    ExportTemp.Id = poiMasterModel.Id;
+                    ImportTemp.Id = poiMasterModel.Id;
                     List<PoiDetailModel> poiDetails = new();
-                    foreach (PoiPoint pt in ExportTemp.PoiPoints)
+                    foreach (PoiPoint pt in ImportTemp.PoiPoints)
                     {
-                        PoiDetailModel poiDetail = new PoiDetailModel(ExportTemp.Id, pt);
+                        PoiDetailModel poiDetail = new PoiDetailModel(ImportTemp.Id, pt);
                         poiDetails.Add(poiDetail);
                     }
-                    PoiDetailDao.Instance.SaveByPid(ExportTemp.Id, poiDetails);
-                    return ExportTemp;
+                    PoiDetailDao.Instance.SaveByPid(ImportTemp.Id, poiDetails);
+                    return ImportTemp;
                 }
                 else
                 {
@@ -164,11 +164,11 @@ namespace ColorVision.Engine.Templates.POI
             string fileContent = System.Text.Encoding.UTF8.GetString(fileBytes);
             try
             {
-                ExportTemp = JsonConvert.DeserializeObject<PoiParam>(fileContent);
-                if (ExportTemp !=null)
+                ImportTemp = JsonConvert.DeserializeObject<PoiParam>(fileContent);
+                if (ImportTemp !=null)
                 {
-                    ExportTemp.Id = -1;
-                    foreach (var item in ExportTemp.PoiPoints)
+                    ImportTemp.Id = -1;
+                    foreach (var item in ImportTemp.PoiPoints)
                     {
                         item.Id = -1;
                     }

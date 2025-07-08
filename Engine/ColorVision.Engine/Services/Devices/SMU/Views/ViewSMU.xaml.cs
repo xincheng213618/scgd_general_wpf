@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
@@ -72,6 +73,21 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 ViewSMUConfig.Instance.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
                 ViewSMUConfig.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
+            }
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
+
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
+        }
+        private void Delete()
+        {
+            if (listView1.SelectedItems.Count == listView1.Items.Count)
+                ViewResults.Clear();
+            else
+            {
+                listView1.SelectedIndex = -1;
+                foreach (var item in listView1.SelectedItems.Cast<ViewResultSMU>().ToList())
+                    ViewResults.Remove(item);
             }
         }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();

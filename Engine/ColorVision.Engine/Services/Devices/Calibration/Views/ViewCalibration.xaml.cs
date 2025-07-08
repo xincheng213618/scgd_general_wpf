@@ -6,7 +6,7 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Net;
+using ColorVision.FileIO;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
@@ -68,6 +68,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
         }
         private void Delete()
         {
@@ -85,6 +86,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             switch (arg.EventName)
             {
                 case MQTTCalibrationEventEnum.Event_GetData:
+                    if (arg.Data == null) return;
                     int masterId = Convert.ToInt32(arg.Data.MasterId);
                     List<MeasureImgResultModel> resultMaster = null;
                     if (masterId > 0)
@@ -114,7 +116,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         {
             ViewResultCamera result = new(model);
             ViewResults.AddUnique(result);
-            if (Config.AutoRefreshView && (!FlowConfig.Instance.FlowRun || FlowConfig.Instance.AutoRefreshView))
+            if (Config.AutoRefreshView)
             {
                 if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
                 listView1.ScrollIntoView(listView1.SelectedItem);

@@ -10,10 +10,11 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine.Templates.POI.POIGenCali;
+using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Tif;
-using ColorVision.Net;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
@@ -102,7 +103,6 @@ namespace ColorVision.Engine.Templates.POI
             ComboBoxBorderType2.SelectedIndex = 0;
 
             ImageViewModel = new ImageViewModel(ImageContentGrid, Zoombox1, ImageShow);
-
             ImageViewModel.ToolBarScaleRuler.IsShow = false;
             ToolBar1.DataContext = ImageViewModel;
             ToolBarRight.DataContext = ImageViewModel;
@@ -402,7 +402,7 @@ namespace ColorVision.Engine.Templates.POI
             PoiParam.Height = imageSource.PixelHeight;
             InitPoiConfigValue(imageSource.PixelWidth, imageSource.PixelHeight);
 
-            ImageShow.ImageInitialize();
+            ImageShow.RaiseImageInitialized();
             Zoombox1.ZoomUniform();
         }
 
@@ -476,7 +476,7 @@ namespace ColorVision.Engine.Templates.POI
                         WaitControlProgressBar.Visibility = Visibility.Collapsed;
                     }
                     Init = true;
-                    ImageShow.ImageInitialize();
+                    ImageShow.RaiseImageInitialized();
 
                 }));
             });
@@ -761,16 +761,16 @@ namespace ColorVision.Engine.Templates.POI
                                     case DrawingPOIPosition.LineOn:
                                         break;
                                     case DrawingPOIPosition.Internal:
-                                        startU += PoiConfig.DefaultRectWidth / 2;
-                                        startD += PoiConfig.DefaultRectWidth / 2;
-                                        startL += PoiConfig.DefaultRectHeight / 2;
-                                        startR += PoiConfig.DefaultRectHeight / 2;
+                                        startU += PoiConfig.DefaultRectHeight / 2;
+                                        startD += PoiConfig.DefaultRectHeight / 2;
+                                        startL += PoiConfig.DefaultRectWidth / 2;
+                                        startR += PoiConfig.DefaultRectWidth / 2;
                                         break;
                                     case DrawingPOIPosition.External:
-                                        startU -= PoiConfig.DefaultRectWidth / 2;
-                                        startD -= PoiConfig.DefaultRectWidth / 2;
-                                        startL -= PoiConfig.DefaultRectHeight / 2;
-                                        startR -= PoiConfig.DefaultRectHeight / 2;
+                                        startU -= PoiConfig.DefaultRectHeight / 2;
+                                        startD -= PoiConfig.DefaultRectHeight / 2;
+                                        startL -= PoiConfig.DefaultRectWidth / 2;
+                                        startR -= PoiConfig.DefaultRectWidth / 2;
                                         break;
                                     default:
                                         break;
@@ -1851,6 +1851,12 @@ namespace ColorVision.Engine.Templates.POI
                 };
 
             }
+        }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            PoiConfig.DefaultRectWidth = PoiConfig.AreaRectWidth / PoiConfig.AreaRectRow;
+            PoiConfig.DefaultRectHeight = PoiConfig.AreaRectHeight / PoiConfig.AreaRectCol;
         }
     }
 

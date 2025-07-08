@@ -5,7 +5,7 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
-using ColorVision.Net;
+using ColorVision.FileIO;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
@@ -30,12 +30,10 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
-
-
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
-    public partial class AlgorithmView : UserControl,IView
+    public partial class AlgorithmView : UserControl,IView,IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AlgorithmView));
         public View View { get; set; }
@@ -64,7 +62,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
             this.DataContext = this;
 
-
             View = new View();
             ImageView.SetConfig(Config.ImageViewConfig);
             if (listView1.View is GridView gridView)
@@ -86,7 +83,31 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
+
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
+
+            ImageView.RenderCompleted += RenderCompleted;
         }
+
+        private void RenderCompleted(object? sender, EventArgs e)
+        {
+            if (!Config.AutoSaveRendering) return;
+            if (!Directory.Exists(Config.SaveSideDataDirPath)) return;
+
+            try
+            {
+                string fileNameWithoutExt = Path.GetFileNameWithoutExtension(ImageView.Config.FilePath);
+                string filePath = Path.Combine(Config.SaveSideDataDirPath, $"{fileNameWithoutExt}.png");
+                ImageView.ImageViewModel.Save(filePath);
+                log.Info($"渲染完成，已保存图片到 {filePath}");
+            }
+            catch (Exception ex)
+            {
+                log.Error($"渲染完成但保存图片失败: {ex.Message}", ex);
+            }
+        }
+
+
         private void Delete()
         {
             if (listView1.SelectedItems.Count == listView1.Items.Count)
@@ -97,9 +118,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 foreach (var item in listView1.SelectedItems.Cast<AlgorithmResult>().ToList())
                     ViewResults.Remove(item);
             }
-
-
         }
+
+
         private void NetFileUtil_handler(object sender, NetFileEvent arg)
         {
             if (arg.Code == 0 && arg.FileData.data != null)
@@ -176,7 +197,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (result != null)
             {
                 AlgorithmResult algorithmResult = new AlgorithmResult(result);
-                var ResultHandle = ResultHandles.FirstOrDefault(a => a.CanHandle.Contains(algorithmResult.ResultType));
+
+                var ResultHandle = ResultHandles.FirstOrDefault(a => a.CanHandle1(algorithmResult));
                     ResultHandle?.Load(this,algorithmResult);
 
                 ViewResults.AddUnique(algorithmResult, Config.InsertAtBeginning);
@@ -231,7 +253,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             PoiResultData poiResult = new(item) { Id = id++ };
                             result.ViewResults.Add(poiResult);
                         }
-                        ;
                     }
 
                     header = new List<string> { "名称", "位置", "大小", "形状", "Validate" };
@@ -392,6 +413,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         break;
                 }
             }
+            ImageView.RaiseRenderCompleted();
         }
 
 
@@ -494,6 +516,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     }
                 }
             }
+        }
+
+        public void Dispose()
+        {
+            ImageView.RenderCompleted -= RenderCompleted;
+            ImageView?.Dispose();
+
+            GC.SuppressFinalize(this);
         }
     }
 }

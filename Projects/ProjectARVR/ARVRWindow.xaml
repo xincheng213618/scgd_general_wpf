@@ -1,11 +1,13 @@
-﻿<Window xmlns:LogImp="clr-namespace:ColorVision.UI.LogImp;assembly=ColorVision.UI"  x:Class="ProjectARVR.ARVRWindow"
+﻿<Window x:Class="ProjectARVR.ARVRWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
         xmlns:local="clr-namespace:ProjectARVR"
-        xmlns:properties ="clr-namespace:ProjectARVR.Properties" xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:properties ="clr-namespace:ProjectARVR.Properties" 
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:LogImp="clr-namespace:ColorVision.UI.LogImp;assembly=ColorVision.UI"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ProjectARVRConfig}"
         Title="ARVR检测" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" >
@@ -163,19 +165,6 @@
                                 </Button.Triggers>
                             </Button>
                             <Button Content="Test"  DockPanel.Dock="Right" Background="Pink"  Click="TestClick" />
-
-                        </DockPanel>
-                        <DockPanel  Margin="0,0,0,5" Visibility="Collapsed">
-                            <ComboBox x:Name="CBLargeTemplate"  Height="10" SelectedIndex="{Binding TemplateLargeSelectedIndex}" ItemsSource="{Binding TemplateLargeItemSource}" SelectedValuePath="Value" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
-                            <Grid Width="30" Margin="5,0"  HorizontalAlignment="Left">
-                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
-                                <Button  Width="30" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding  OpenTemplateLargeCommand}"/>
-                            </Grid>
-                            <Grid Width="30" >
-                                <Image Source="{StaticResource  DrawingImageEdit}" Width="15" Margin="0" />
-                                <Button Background="Transparent" BorderThickness="0" Command="{Binding OpenEditLargeCommand}"/>
-                            </Grid>
-                            <Button Content="大模板测试"  DockPanel.Dock="Right" Background="Pink" Click="LargeTest_Click" />
                         </DockPanel>
                     </StackPanel>
                 </Grid>
@@ -197,16 +186,6 @@
             </Grid>
         </Grid>
 
-        <Grid x:Name="DialogGrid" Grid.Row="1" Visibility="Collapsed"  >
-            <Border Background="{DynamicResource PrimaryTextBrush}" Opacity="0.2"/>
-            <Border CornerRadius="10" Background="{DynamicResource RegionBrush}" Height="247" Width="400">
-                <hc:SimplePanel>
-                    <TextBlock Style="{StaticResource TextBlockLargeBold}" Text="流程执行中"/>
-                    <Button Width="22" Height="22" Command="hc:ControlCommands.Close" Style="{StaticResource ButtonIcon}" Foreground="{DynamicResource PrimaryBrush}" hc:IconElement.Geometry="{StaticResource ErrorGeometry}" Padding="0" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,4,0"/>
-                </hc:SimplePanel>
-            </Border>
-            
-        </Grid>
         
         <StatusBar Grid.Row="2">
             <StatusBarItem>

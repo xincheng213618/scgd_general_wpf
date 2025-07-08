@@ -4,6 +4,7 @@ using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Windows;
@@ -25,7 +26,6 @@ namespace ProjectBlackMura
         public JudgeConfig JudgeConfig { get => _JudgeConfig; set { _JudgeConfig = value; NotifyPropertyChanged(); } }
         private JudgeConfig _JudgeConfig = new JudgeConfig();
 
-
         public RelayCommand OpenTemplateCommand { get; set; }
         public RelayCommand OpenFlowEngineToolCommand { get; set; }
         public RelayCommand OpenLogCommand { get; set; }
@@ -33,7 +33,7 @@ namespace ProjectBlackMura
 
         public RelayCommand OpenChangeLogCommand { get; set; }
         public RelayCommand OpenReadMeCommand { get; set; }
-
+        public RelayCommand OpenHYMesConfigCommand { get; set; }
 
         public ProjectBlackMuraConfig()
         {
@@ -44,10 +44,25 @@ namespace ProjectBlackMura
             OpenConfigCommand = new RelayCommand(a => OpenConfig());
             OpenChangeLogCommand = new RelayCommand(a => OpenChangeLog());
             OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
+            OpenHYMesConfigCommand = new RelayCommand(a => OpenHYMesConfig());
+
         }
+        public int StepIndex { get => _StepIndex; set { _StepIndex = value; NotifyPropertyChanged(); } }
+        private int _StepIndex;
+
+        public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; NotifyPropertyChanged(); } }
+        private bool _LogControlVisibility = true;
+
+        public void OpenHYMesConfig()
+        {
+            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(HYMesConfig.Instance, false) { Owner = Application.Current.GetActiveWindow() };
+            propertyEditorWindow.ShowDialog();
+        }
+
 
         public void OpenConfig()
         {
+            new EditBlackMuraConfig() { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
         }
 
         public static void OpenResourceName(string title, string resourceName)
@@ -158,12 +173,12 @@ namespace ProjectBlackMura
         public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; NotifyPropertyChanged(); } }
         private bool _IsAutoUploadSn;
 
-        public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; NotifyPropertyChanged(); } }
-        private long _LastFlowTime;
        
         public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; NotifyPropertyChanged(); } }
         private string _ResultSavePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
+
+        
 
         public string ResultSavePath1 { get => _ResultSavePath1; set { _ResultSavePath1 = value; NotifyPropertyChanged(); } }
         private string _ResultSavePath1 = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
@@ -171,12 +186,9 @@ namespace ProjectBlackMura
         public double Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
         private double _Height = 300;
 
-        public bool AutoModbusConnect { get => _AutoModbusConnect; set { _AutoModbusConnect = value; NotifyPropertyChanged(); } }
-        private bool _AutoModbusConnect = true;
-
-
-        public double KBLVSacle { get => _KBLVSacle; set { _KBLVSacle = value; NotifyPropertyChanged(); } }
-        private double _KBLVSacle = 0.006583904;
+        [DisplayName("重试次数")]
+        public int TryCountMax { get => _TryCountMax; set { _TryCountMax = value; NotifyPropertyChanged(); } }
+        private int _TryCountMax = 2;
 
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;

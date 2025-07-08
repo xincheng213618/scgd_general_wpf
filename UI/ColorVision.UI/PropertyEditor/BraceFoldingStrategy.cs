@@ -49,8 +49,9 @@ namespace ColorVision.UI
 		public IEnumerable<NewFolding> CreateNewFoldings(ITextSource document)
 		{
 			List<NewFolding> newFoldings = new List<NewFolding>();
-			
-			Stack<int> startOffsets = new Stack<int>();
+			if (document == null) return newFoldings;
+
+            Stack<int> startOffsets = new Stack<int>();
 			int lastNewLineOffset = 0;
 			char openingBrace = this.OpeningBrace;
 			char closingBrace = this.ClosingBrace;

@@ -43,11 +43,6 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
     }
 
 
-
-
-
-
-
     public class GhostView: IViewResult
     {
         public GhostView(DetailCommonModel detail)

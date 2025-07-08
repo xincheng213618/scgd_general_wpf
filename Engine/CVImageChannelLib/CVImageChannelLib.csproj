@@ -5,6 +5,7 @@
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<SignAssembly>True</SignAssembly>
 		<AssemblyOriginatorKeyFile>$(SolutionDir)ColorVision.snk</AssemblyOriginatorKeyFile>
+		<VersionPrefix>1.3.3.1</VersionPrefix>
 	</PropertyGroup>
   <PropertyGroup />
   <ItemGroup>

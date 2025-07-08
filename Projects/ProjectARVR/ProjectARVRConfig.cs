@@ -7,6 +7,7 @@ using ColorVision.UI;
 using Newtonsoft.Json;
 using ProjectARVR.Config;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Windows;
@@ -52,6 +53,11 @@ namespace ProjectARVR
 
             EditSPECConfigcommand = new RelayCommand(a => EditSPECConfig());
         }
+
+        [DisplayName("重试次数")]
+        public int TryCountMax { get => _TryCountMax; set { _TryCountMax = value; NotifyPropertyChanged(); } }
+        private int _TryCountMax = 2;
+
 
         public void EditSPECConfig()
         {
@@ -168,12 +174,8 @@ namespace ProjectARVR
         public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; NotifyPropertyChanged(); } }
         private bool _IsAutoUploadSn;
 
-        public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; NotifyPropertyChanged(); } }
-        private long _LastFlowTime;
-       
         public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; NotifyPropertyChanged(); } }
         private string _ResultSavePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-
 
 
         public string ResultSavePath1 { get => _ResultSavePath1; set { _ResultSavePath1 = value; NotifyPropertyChanged(); } }
@@ -183,10 +185,6 @@ namespace ProjectARVR
         private double _Height = 300;
         public bool AutoModbusConnect { get => _AutoModbusConnect; set { _AutoModbusConnect = value; NotifyPropertyChanged(); } }
         private bool _AutoModbusConnect = true;
-
-
-        public double KBLVSacle { get => _KBLVSacle; set { _KBLVSacle = value; NotifyPropertyChanged(); } }
-        private double _KBLVSacle = 0.006583904;
 
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;

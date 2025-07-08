@@ -68,8 +68,7 @@ namespace ColorVision.Engine.MySql
                     string trimmedSql = sql.Trim();
                     if (string.IsNullOrEmpty(trimmedSql))
                         continue;
-                    using var con = MySqlControl.GetMySqlConnection();
-                    using MySqlCommand command = new(trimmedSql, con);
+                    using MySqlCommand command = new MySqlCommand(trimmedSql, MySqlControl.MySqlConnection);
                     int count = command.ExecuteNonQuery();
                     totalCount += count;
                     SqlResultText.Text += $"SQL执行成功。\n受影响的行数: {count}\n执行的SQL语句: {trimmedSql}\n";

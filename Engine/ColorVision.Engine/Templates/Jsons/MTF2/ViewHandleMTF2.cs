@@ -8,10 +8,12 @@ using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using log4net;
+using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -27,12 +29,34 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
         public int y { get; set; }
         public int w { get; set; }
         public int h { get; set; }
+        public int id { get; set; } // 新增 id 字段
+    }
 
+    // 对应 resultChild.childRects
+    public class ChildRect
+    {
+        public int h { get; set; }
+        public int id { get; set; }
+        public double? mtfValue { get; set; }
+        public int w { get; set; }
+        public int x { get; set; }
+        public int y { get; set; }
+    }
+
+    // 对应 resultChild 每一项
+    public class ResultChildItem
+    {
+        public string name { get; set; }
+        public double Average { get; set; }
+        public double horizontalAverage { get; set; }
+        public double verticalAverage { get; set; }
+        public List<ChildRect> childRects { get; set; }
     }
 
     public class MTFResult
     {
         public List<MTFItem> result { get; set; }
+        public List<ResultChildItem> resultChild { get; set; }
     }
 
 
@@ -77,13 +101,48 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
 
         public override void SideSave(AlgorithmResult result, string selectedPath)
         {
-            //var blackMuraViews = mtfresult.ViewResults.ToSpecificViewResults<GhostView>();
-            //var csvBuilder = new StringBuilder();
-            //if (blackMuraViews.Count == 1)
-            //{
-            //    string filePath = selectedPath + "//" + mtfresult.Batch + mtfresult.ResultType + ".json";
-            //    File.AppendAllText(filePath, blackMuraViews[0].Result, Encoding.UTF8);
-            //}
+            string filePath = selectedPath + "//" + result.Batch + result.ResultType + ".csv";
+
+            var MTFDetailViewResluts = result.ViewResults.ToSpecificViewResults<MTFDetailViewReslut>();
+            var csvBuilder = new StringBuilder();
+            csvBuilder.AppendLine($"name,x,y,w,h,mtfValue");
+            if (MTFDetailViewResluts.Count == 1)
+            {
+                var resultChilds = MTFDetailViewResluts[0].MTFResult.resultChild;
+                if (resultChilds != null)
+                {
+
+                    foreach (var child in resultChilds)
+                    {
+                        // child.name 这一组的 name
+                        if (child.childRects != null && child.childRects.Count > 0)
+                        {
+                            foreach (var rect in child.childRects)
+                            {
+                                csvBuilder.AppendLine($"{child.name},{rect.x},{rect.y},{rect.w},{rect.h},{rect.mtfValue},{rect.id}");
+                            }
+                        }
+                        // 如果你还需要写入平均值，可以单独加一行（如不需要可移除）
+                        csvBuilder.AppendLine($"{child.name},,,,HorizontalAverage,{child.horizontalAverage}");
+                        csvBuilder.AppendLine($"{child.name},,,,verticalAverage,{child.verticalAverage}");
+                        csvBuilder.AppendLine($"{child.name},,,,Average,{child.Average}");
+
+                    }
+                }
+                else
+                {
+                    var mtfs = MTFDetailViewResluts[0].MTFResult?.result;
+                    if (mtfs != null)
+                    {
+                        foreach (var item in mtfs)
+                        {
+                            csvBuilder.AppendLine($"{item.name},{item.x},{item.y},{item.w},{item.h},{item.mtfValue}");
+                        }
+                    }
+                }
+
+                File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
+            }
         }
 
 
@@ -149,7 +208,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
                             view.ImageView.AddVisual(Rectangle);
                         }
                     }
-
+                    view.ImageView.RaiseRenderCompleted();
 
 
                     List<string> header = new() { "name", "x","y","w","h","mtfvalue" };

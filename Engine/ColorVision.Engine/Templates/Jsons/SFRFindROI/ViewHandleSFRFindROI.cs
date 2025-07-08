@@ -116,10 +116,10 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
                 {
                     int old1 = TemplatePoi.Params.Count;
                     TemplatePoi templatePoi1 = new TemplatePoi();
-                    templatePoi1.ExportTemp = new PoiParam() { Name = templatePoi1.NewCreateFileName("poi") };
-                    templatePoi1.ExportTemp.Height = 400;
-                    templatePoi1.ExportTemp.Width = 300;
-                    templatePoi1.ExportTemp.PoiConfig.BackgroundFilePath = result.FilePath;
+                    templatePoi1.ImportTemp = new PoiParam() { Name = templatePoi1.NewCreateFileName("poi") };
+                    templatePoi1.ImportTemp.Height = 400;
+                    templatePoi1.ImportTemp.Width = 300;
+                    templatePoi1.ImportTemp.PoiConfig.BackgroundFilePath = result.FilePath;
                     foreach (var item in result.ViewResults.ToSpecificViewResults<ViewSFRFindROI>())
                     {
                         PoiPoint poiPoint = new PoiPoint()
@@ -132,7 +132,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
                             PointType = (RiPointTypes)item.PoiType,
                             Id = -1
                         };
-                        templatePoi1.ExportTemp.PoiPoints.Add(poiPoint);
+                        templatePoi1.ImportTemp.PoiPoints.Add(poiPoint);
                     }
 
 
@@ -152,12 +152,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();
-            if (result.ResultCode != 0)
-            {
-                if (File.Exists(result.FilePath))
-                    view.ImageView.OpenImage(result.FilePath);
-                return;
-            }
+
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
 

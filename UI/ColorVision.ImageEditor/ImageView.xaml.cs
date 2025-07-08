@@ -28,21 +28,28 @@ namespace ColorVision.ImageEditor
     /// <summary>
     /// ImageView.xaml 的交互逻辑
     /// </summary>
-    public partial class ImageView : UserControl, IView,IDisposable
+    public partial class ImageView : UserControl,IDisposable
     {
-        public static List<ImageView> Views { get; set; } = new List<ImageView>();
-
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
 
         public ImageViewModel ImageViewModel { get; set; }
 
-        public View View { get; set; }
 
         public ImageViewConfig Config { get => ImageViewModel.Config; set { ImageViewModel.Config = value;  } }
 
+        public event EventHandler RenderCompleted;
+        protected virtual void OnRenderCompleted()
+        {
+            RenderCompleted?.Invoke(this, EventArgs.Empty);
+        }
+
+        public void RaiseRenderCompleted()
+        {
+            OnRenderCompleted();
+        }
+
         public ImageView()
         {
-            View = new View();
             InitializeComponent();
             SetConfig(Config);
             foreach (var item in ComponentManager.GetInstance().IImageComponents)
@@ -849,7 +856,7 @@ namespace ColorVision.ImageEditor
             ViewBitmapSource = imageSource;
             ImageShow.Source = ViewBitmapSource;
 
-            ImageShow.ImageInitialize();
+            ImageShow.RaiseImageInitialized();
             ImageViewModel.Opened();
             ImageViewModel.ToolBarScaleRuler.IsShow = true;
 

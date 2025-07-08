@@ -83,26 +83,26 @@
                                 </DockPanel>
                                 <DockPanel Margin="5" >
                                     <TextBlock DockPanel.Dock="Left" Text="增益"  Width="80" />
-                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.Gain}" IsReadOnly="True" Width="80" HorizontalAlignment="Left"/>
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.Gain}" Width="80" HorizontalAlignment="Left"/>
                                 </DockPanel>
                                 <DockPanel  Margin="5">
                                     <TextBlock DockPanel.Dock="Left" Text="ND Filter"  Width="80" />
-                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.NDShow}" IsReadOnly="True" Width="80" HorizontalAlignment="Left"/>
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.NDShow}"  Width="80" HorizontalAlignment="Left"/>
                                 </DockPanel>
                                 <DockPanel  Margin="5">
                                     <TextBlock DockPanel.Dock="Left" Text="光圈"  Width="80" />
-                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.ApertureShow}" IsReadOnly="True" Width="80" HorizontalAlignment="Left"/>
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.ApertureShow}"  Width="80" HorizontalAlignment="Left"/>
                                 </DockPanel>
                                 <DockPanel Margin="5" >
                                     <TextBlock DockPanel.Dock="Left" Text="焦距"  Width="80" />
-                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.FocalLengthShow}" IsReadOnly="True" Width="80" HorizontalAlignment="Left"/>
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.FocalLengthShow}" Width="80" HorizontalAlignment="Left"/>
                                 </DockPanel>
                                 <DockPanel Margin="5">
                                     <TextBlock DockPanel.Dock="Left" Text="对焦距离"  Width="80" />
-                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.FocusDistanceShow}" IsReadOnly="True" Width="80" HorizontalAlignment="Left"/>
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.FocusDistanceShow}" Width="80" HorizontalAlignment="Left"/>
                                 </DockPanel>
                             </UniformGrid>
-                            <TextBlock Text="*资源组参数绑定均匀场" Margin="0,0,10,5" HorizontalAlignment="Right" Foreground="Red"/>
+                            <TextBlock Text="*资源组参数在切换均匀场的时候会重置" Margin="0,0,10,5" HorizontalAlignment="Right" Foreground="Red"/>
                         </StackPanel>
                     </Border>
 

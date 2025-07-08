@@ -34,6 +34,7 @@ using Panuon.WPF.UI;
 using ProjectARVR.Config;
 using ProjectARVR.Services;
 using ST.Library.UI.NodeEditor;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -48,19 +49,86 @@ using System.Windows.Media;
 
 namespace ProjectARVR
 {
+    public static class ObjectiveTestResultCsvExporter
+    {
+        public static void ExportToCsv(List<ObjectiveTestResult> results, string filePath)
+        {
+            // 获取所有 ObjectiveTestItem 类型的属性
+            var itemProps = typeof(ObjectiveTestResult).GetProperties()
+                .Where(p => p.PropertyType == typeof(ObjectiveTestItem))
+                .ToList();
+
+            // CSV 列头（每项后缀可自定义，比如 TestValue/Name/LowLimit/UpLimit/TestResult 均输出）
+            var headers = new List<string>();
+            foreach (var prop in itemProps)
+            {
+                headers.Add($"{prop.Name}_TestValue");
+                headers.Add($"{prop.Name}_TestResult");
+                headers.Add($"{prop.Name}_LowLimit");
+                headers.Add($"{prop.Name}_UpLimit");
+            }
+            headers.Add("TotalResult");
+            headers.Add("TotalResultString");
+
+            var sb = new StringBuilder();
+            sb.AppendLine(string.Join(",", headers));
+
+            foreach (var result in results)
+            {
+                var row = new List<string>();
+                foreach (var prop in itemProps)
+                {
+                    var item = (ObjectiveTestItem)prop.GetValue(result);
+                    row.Add(item?.TestValue ?? "");
+                    row.Add(item?.TestResult.ToString() ?? "");
+                    row.Add(item?.LowLimit.ToString());
+                    row.Add(item?.UpLimit.ToString());
+                }
+                row.Add(result.TotalResult.ToString());
+                row.Add(result.TotalResultString);
+                sb.AppendLine(string.Join(",", row.Select(EscapeCsv)));
+            }
+            File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8);
+        }
+
+        // 防止逗号、引号等导致格式问题
+        private static string EscapeCsv(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            if (value.Contains(",") || value.Contains("\"") || value.Contains("\n"))
+                return $"\"{value.Replace("\"", "\"\"")}\"";
+            return value;
+        }
+    }
+
     public class ObjectiveTestItem
     {
         public string Name { get; set; }         // 项目名称
+
+        //这里有可能添加符号
         public string TestValue { get; set; }    // 测试值
-        public string LowLimit { get; set; }     // 下限
-        public string UpLimit { get; set; }      // 上限
-        public bool TestResult { get; set; } = true;   // 结果
+        public double Value { get; set; }    // 测试值
+
+        public double LowLimit { get; set; }     // 下限
+        public double UpLimit { get; set; }      // 上限
+
+        public bool TestResult {
+            get
+            {
+                // 判断是否低于下限
+                bool isAboveLowLimit = LowLimit == 0 || Value >= LowLimit;
+                // 判断是否高于上限
+                bool isBelowUpLimit = UpLimit == 0 || Value <= UpLimit;
+                // 只有同时满足上下限才返回 true
+                return isAboveLowLimit && isBelowUpLimit;
+            } 
+        }
     }
 
     /// <summary>
     /// 表示一组客观测试项的测试结果，每个属性对应一个具体的测试项目，包含测试值、上下限、结果等信息。
     /// </summary>
-    public class ObjectiveTestResult
+    public class ObjectiveTestResult:ViewModelBase
     {
         /// <summary>
         /// 亮度均匀性(%) 测试项
@@ -225,11 +293,12 @@ namespace ProjectARVR
         /// <summary>
         /// 总体测试结果（true表示通过，false表示不通过）
         /// </summary>
-        public bool TotalResult { get; set; } = true;
+        public bool TotalResult { get => _TotalResult; set { _TotalResult = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(TotalResultString)); } } 
+        private bool _TotalResult = false;
 
         /// <summary>
         /// 总体测试结果字符串（如“pass”或“fail”）
         /// </summary>
-        public string TotalResultString { get; set; } = "PASS";
+        public string TotalResultString => TotalResult?"PASS":"Fail";
     }
 }

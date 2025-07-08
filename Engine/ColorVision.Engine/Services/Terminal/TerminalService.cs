@@ -90,7 +90,7 @@ namespace ColorVision.Engine.Services.Terminal
                     this.SetIconResource("COMDrawingImage");
                     MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
-                case ServiceTypes.CfwPort:
+                case ServiceTypes.FilterWheel:
                     this.SetIconResource("CfwPortDrawingImage");
                     MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;

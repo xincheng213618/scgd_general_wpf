@@ -270,7 +270,7 @@ namespace ColorVision.Projects.ProjectHeyuan
 
         private IPendingHandler handler;
 
-        private void FlowControl_FlowCompleted(object? sender, EventArgs e)
+        private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             handler?.Close();
@@ -280,202 +280,184 @@ namespace ColorVision.Projects.ProjectHeyuan
             HYMesManager.GetInstance().LastFlowTime = stopwatch.ElapsedMilliseconds;
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
 
-            Application.Current.Dispatcher.Invoke((Action)(() =>
+            Application.Current.Dispatcher.Invoke((() =>
             {
-                if (sender is FlowControlData FlowControlData)
+                if (FlowControlData.EventName == "Completed")
                 {
-                    if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
+                    Results.Clear();
+                    var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
+                    if (Batch != null)
                     {
-
-                        if (FlowControlData.EventName == "Completed")
+                        var resultMaster = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
+                        List<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
+                        List<ComplianceXYZModel> complianceXYZModels = new List<ComplianceXYZModel>();
+                        foreach (var item in resultMaster)
                         {
-                            Results.Clear();
-                            var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
-                            if (Batch != null)
+                            if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
                             {
-                                var resultMaster = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
-                                List<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
-                                List<ComplianceXYZModel> complianceXYZModels = new List<ComplianceXYZModel>();
-                                foreach (var item in resultMaster)
+                                List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
+                                foreach (var pointResultModel in POIPointResultModels)
                                 {
-                                    if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
-                                    {
-                                        List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
-                                        foreach (var pointResultModel in POIPointResultModels)
-                                        {
-                                            PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(pointResultModel);
-                                            PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
-                                        }
-                                    }
-                                    if (item.ImgFileType == AlgorithmResultType.Compliance_Math_CIE_XYZ)
-                                    {
-                                        var lists = ComplianceXYZDao.Instance.GetAllByPid(item.Id);
-                                        complianceXYZModels.AddRange(lists);
-                                    }
-
+                                    PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(pointResultModel);
+                                    PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                                 }
+                            }
+                            if (item.ImgFileType == AlgorithmResultType.Compliance_Math_CIE_XYZ)
+                            {
+                                var lists = ComplianceXYZDao.Instance.GetAllByPid(item.Id);
+                                complianceXYZModels.AddRange(lists);
+                            }
 
-                                Results.Clear();
-                                if (PoiResultCIExyuvDatas.Count == 4)
+                        }
+
+                        Results.Clear();
+                        if (PoiResultCIExyuvDatas.Count == 4)
+                        {
+                            var record = new DataRecord
+                            {
+                                Model = HYMesManager.Config.TestName,
+                                ProductID = HYMesManager.GetInstance().SN,
+                                Date = DateTime.Now,
+                                Time = DateTime.Now.TimeOfDay,
+                            };
+
+
+                            List<string> strings = new List<string>() { "White", "Blue", "Red", "Orange" };
+                            for (int i = 0; i < PoiResultCIExyuvDatas.Count; i++)
+                            {
+                                var poiResultCIExyuvData1 = PoiResultCIExyuvDatas[i];
+
+                                var ValidateSinglesmodel = complianceXYZModels.FirstOrDefault(a => a.Name == poiResultCIExyuvData1.Name);
+
+                                poiResultCIExyuvData1.POIPointResultModel.Value = ValidateSinglesmodel?.ValidateResult;
+
+                                TempResult tempResult1 = new TempResult() { Name = poiResultCIExyuvData1.Name };
+                                tempResult1.X = new NumSet() { Value = (float)poiResultCIExyuvData1.x };
+                                tempResult1.Y = new NumSet() { Value = (float)poiResultCIExyuvData1.y };
+                                tempResult1.Lv = new NumSet() { Value = (float)poiResultCIExyuvData1.Y };
+                                tempResult1.Dw = new NumSet() { Value = (float)poiResultCIExyuvData1.Wave };
+
+                                //if (poiResultCIExyuvData1.ValidateSingles != null)
+                                //{
+                                //    foreach (var item in poiResultCIExyuvData1.ValidateSingles)
+                                //    {
+                                //        if (item.Rule.RType == ValidateRuleType.CIE_x)
+                                //        {
+                                //            tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
+                                //        }
+                                //        if (item.Rule.RType == ValidateRuleType.CIE_y)
+                                //        {
+                                //            tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
+                                //        }
+                                //        if (item.Rule.RType == ValidateRuleType.CIE_lv)
+                                //        {
+                                //            tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
+                                //        }
+                                //        if (item.Rule.RType == ValidateRuleType.Wave)
+                                //        {
+                                //            tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
+                                //        }
+                                //    }
+                                //}
+                                //else
+                                //{
+                                //    MessageBox.Show(Application.Current.GetActiveWindow(), $"{poiResultCIExyuvData1.Name}，没有配置校验模板", "ColorVision");
+                                //}
+
+                                Results.Add(tempResult1);
+                            }
+
+
+                            var sortedResults = Results.OrderBy(r => strings.IndexOf(r.Name)).ToList();
+                            Results.Clear();
+                            bool IsOK = true;
+                            List<string> ngstring = new List<string>();
+                            foreach (var result in sortedResults)
+                            {
+                                IsOK = IsOK && result.Result;
+
+                                if (!result.Result)
                                 {
-                                    var record = new DataRecord
-                                    {
-                                        Model = HYMesManager.Config.TestName,
-                                        ProductID = HYMesManager.GetInstance().SN,
-                                        Date = DateTime.Now,
-                                        Time = DateTime.Now.TimeOfDay,
-                                    };
-
-
-                                    List<string> strings = new List<string>() { "White", "Blue", "Red", "Orange" };
-                                    for (int i = 0; i < PoiResultCIExyuvDatas.Count; i++)
-                                    {
-                                        var poiResultCIExyuvData1 = PoiResultCIExyuvDatas[i];
-
-                                        var ValidateSinglesmodel = complianceXYZModels.FirstOrDefault(a => a.Name == poiResultCIExyuvData1.Name);
-
-                                        poiResultCIExyuvData1.POIPointResultModel.Value = ValidateSinglesmodel?.ValidateResult;
-
-                                        TempResult tempResult1 = new TempResult() { Name = poiResultCIExyuvData1.Name };
-                                        tempResult1.X = new NumSet() { Value = (float)poiResultCIExyuvData1.x };
-                                        tempResult1.Y = new NumSet() { Value = (float)poiResultCIExyuvData1.y };
-                                        tempResult1.Lv = new NumSet() { Value = (float)poiResultCIExyuvData1.Y };
-                                        tempResult1.Dw = new NumSet() { Value = (float)poiResultCIExyuvData1.Wave };
-
-                                        //if (poiResultCIExyuvData1.ValidateSingles != null)
-                                        //{
-                                        //    foreach (var item in poiResultCIExyuvData1.ValidateSingles)
-                                        //    {
-                                        //        if (item.Rule.RType == ValidateRuleType.CIE_x)
-                                        //        {
-                                        //            tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
-                                        //        }
-                                        //        if (item.Rule.RType == ValidateRuleType.CIE_y)
-                                        //        {
-                                        //            tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
-                                        //        }
-                                        //        if (item.Rule.RType == ValidateRuleType.CIE_lv)
-                                        //        {
-                                        //            tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
-                                        //        }
-                                        //        if (item.Rule.RType == ValidateRuleType.Wave)
-                                        //        {
-                                        //            tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
-                                        //        }
-                                        //    }
-                                        //}
-                                        //else
-                                        //{
-                                        //    MessageBox.Show(Application.Current.GetActiveWindow(), $"{poiResultCIExyuvData1.Name}，没有配置校验模板", "ColorVision");
-                                        //}
-
-                                        Results.Add(tempResult1);
-                                    }
-
-
-                                    var sortedResults = Results.OrderBy(r => strings.IndexOf(r.Name)).ToList();
-                                    Results.Clear();
-                                    bool IsOK = true;
-                                    List<string> ngstring = new List<string>();
-                                    foreach (var result in sortedResults)
-                                    {
-                                        IsOK = IsOK && result.Result;
-
-                                        if (!result.Result)
-                                        {
-                                            if (result.Name.Contains("White"))
-                                                ngstring.Add("errorW");
-                                            if (result.Name.Contains("Blue"))
-                                                ngstring.Add("errorB");
-                                            if (result.Name.Contains("Red"))
-                                                ngstring.Add("errorR");
-                                            if (result.Name.Contains("Orange"))
-                                                ngstring.Add("errorO");
-                                        }
-                                        log.Info(string.Join(",", ngstring));
-                                        Results.Add(result);
-                                    }
-                                    record.White_x = Results[0].X.Value;
-                                    record.White_y = Results[0].Y.Value;
-                                    record.White_lv = Results[0].Lv.Value;
-                                    record.White_wl = Results[0].Dw.Value;
-                                    record.White_Result = Results[0].Result ? "Pass" : "Fail";
-                                    record.Blue_x = Results[1].X.Value;
-                                    record.Blue_y = Results[1].Y.Value;
-                                    record.Blue_lv = Results[1].Lv.Value;
-                                    record.Blue_wl = Results[1].Dw.Value;
-                                    record.Blue_Result = Results[1].Result ? "Pass" : "Fail";
-                                    record.Red_x = Results[2].X.Value;
-                                    record.Red_y = Results[2].Y.Value;
-                                    record.Red_lv = Results[2].Lv.Value;
-                                    record.Red_wl = Results[2].Dw.Value;
-                                    record.Red_Result = Results[2].Result ? "Pass" : "Fail";
-                                    record.Orange_x = Results[3].X.Value;
-                                    record.Orange_y = Results[3].Y.Value;
-                                    record.Orange_lv = Results[3].Lv.Value;
-                                    record.Orange_wl = Results[3].Dw.Value;
-                                    record.Orange_Result = Results[3].Result ? "Pass" : "Fail";
-                                    record.Final_Result = IsOK ? "Pass" : "Fail";
-                                    if (IsOK)
-                                    {
-                                        ResultText.Text = "PASS";
-                                        ResultText.Foreground = Brushes.Blue;
-                                        HYMesManager.GetInstance().UploadMes(Results);
-                                    }
-                                    else
-                                    {
-                                        ResultText.Text = "Fail";
-                                        ResultText.Foreground = Brushes.Red;
-                                        HYMesManager.GetInstance().Results = Results;
-                                        if (MessageBox.Show(Application.Current.GetActiveWindow(), "是否NG过站", "Heyuan", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                                        {
-                                            log.Info("ng过站");
-                                            HYMesManager.GetInstance().UploadNG(string.Join(",", ngstring));
-                                        }
-                                    }
-
-                                    if (Directory.Exists(HYMesManager.Config.DataPath))
-                                    {
-                                        string FilePath = HYMesManager.Config.DataPath + "\\" + DateTime.Now.ToString("yyyy-MM-dd") + "_" + HYMesManager.Config.TestName + "_" + Environment.MachineName + ".csv";
-                                        CsvHandler csvHandler = new CsvHandler(FilePath);
-
-                                        csvHandler.SaveRecord(record);
-                                        // 清空产品编号
-                                        TextBoxSn.Text = string.Empty;
-                                        // 将焦点移动到产品编号输入框
-                                        TextBoxSn.Focus();
-                                    }
-                                    log.Debug("mes 已经上传");
+                                    if (result.Name.Contains("White"))
+                                        ngstring.Add("errorW");
+                                    if (result.Name.Contains("Blue"))
+                                        ngstring.Add("errorB");
+                                    if (result.Name.Contains("Red"))
+                                        ngstring.Add("errorR");
+                                    if (result.Name.Contains("Orange"))
+                                        ngstring.Add("errorO");
                                 }
-                                else
-                                {
-                                    HYMesManager.GetInstance().UploadNG("流程结果数据错误");
-                                    MessageBox.Show(Application.Current.GetActiveWindow(), "流程结果数据错误", "ColorVision");
-                                }
+                                log.Info(string.Join(",", ngstring));
+                                Results.Add(result);
+                            }
+                            record.White_x = Results[0].X.Value;
+                            record.White_y = Results[0].Y.Value;
+                            record.White_lv = Results[0].Lv.Value;
+                            record.White_wl = Results[0].Dw.Value;
+                            record.White_Result = Results[0].Result ? "Pass" : "Fail";
+                            record.Blue_x = Results[1].X.Value;
+                            record.Blue_y = Results[1].Y.Value;
+                            record.Blue_lv = Results[1].Lv.Value;
+                            record.Blue_wl = Results[1].Dw.Value;
+                            record.Blue_Result = Results[1].Result ? "Pass" : "Fail";
+                            record.Red_x = Results[2].X.Value;
+                            record.Red_y = Results[2].Y.Value;
+                            record.Red_lv = Results[2].Lv.Value;
+                            record.Red_wl = Results[2].Dw.Value;
+                            record.Red_Result = Results[2].Result ? "Pass" : "Fail";
+                            record.Orange_x = Results[3].X.Value;
+                            record.Orange_y = Results[3].Y.Value;
+                            record.Orange_lv = Results[3].Lv.Value;
+                            record.Orange_wl = Results[3].Dw.Value;
+                            record.Orange_Result = Results[3].Result ? "Pass" : "Fail";
+                            record.Final_Result = IsOK ? "Pass" : "Fail";
+                            if (IsOK)
+                            {
+                                ResultText.Text = "PASS";
+                                ResultText.Foreground = Brushes.Blue;
+                                HYMesManager.GetInstance().UploadMes(Results);
                             }
                             else
                             {
-                                HYMesManager.GetInstance().UploadNG("找不到批次号");
-                                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号", "ColorVision");
+                                ResultText.Text = "Fail";
+                                ResultText.Foreground = Brushes.Red;
+                                HYMesManager.GetInstance().Results = Results;
+                                if (MessageBox.Show(Application.Current.GetActiveWindow(), "是否NG过站", "Heyuan", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                                {
+                                    log.Info("ng过站");
+                                    HYMesManager.GetInstance().UploadNG(string.Join(",", ngstring));
+                                }
                             }
+
+                            if (Directory.Exists(HYMesManager.Config.DataPath))
+                            {
+                                string FilePath = HYMesManager.Config.DataPath + "\\" + DateTime.Now.ToString("yyyy-MM-dd") + "_" + HYMesManager.Config.TestName + "_" + Environment.MachineName + ".csv";
+                                CsvHandler csvHandler = new CsvHandler(FilePath);
+
+                                csvHandler.SaveRecord(record);
+                                // 清空产品编号
+                                TextBoxSn.Text = string.Empty;
+                                // 将焦点移动到产品编号输入框
+                                TextBoxSn.Focus();
+                            }
+                            log.Debug("mes 已经上传");
                         }
                         else
                         {
-                            HYMesManager.GetInstance().UploadNG("流程运行失败");
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName, "ColorVision");
+                            HYMesManager.GetInstance().UploadNG("流程结果数据错误");
+                            MessageBox.Show(Application.Current.GetActiveWindow(), "流程结果数据错误", "ColorVision");
                         }
                     }
                     else
                     {
-                        HYMesManager.GetInstance().UploadNG("流程运行失败");
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName, "ColorVision");
+                        HYMesManager.GetInstance().UploadNG("找不到批次号");
+                        MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号", "ColorVision");
                     }
-
                 }
                 else
                 {
-                    HYMesManager.GetInstance().UploadNG("流程运行异常");
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "1", "ColorVision");
+                    HYMesManager.GetInstance().UploadNG("流程运行失败");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName, "ColorVision");
                 }
             }));
 
@@ -506,17 +488,6 @@ namespace ColorVision.Projects.ProjectHeyuan
                     flowControl ??= new Engine.Templates.Flow.FlowControl(MQTTControl.GetInstance(), flowEngine);
                     
                     handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
-
-                    flowControl.FlowData += (s, e) =>
-                    {
-                        if (s is FlowControlData msg)
-                        {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
-                            });
-                        }
-                    };
 
                     flowControl.FlowCompleted += FlowControl_FlowCompleted;
                     string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");

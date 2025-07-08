@@ -76,12 +76,7 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();
-            if (result.ResultCode != 0)
-            {
-                if (File.Exists(result.FilePath))
-                    view.ImageView.OpenImage(result.FilePath);
-                return;
-            }
+
 
             void OpenSource()
             {
