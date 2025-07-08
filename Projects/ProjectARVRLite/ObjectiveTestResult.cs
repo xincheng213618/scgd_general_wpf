@@ -133,37 +133,81 @@ namespace ProjectARVRLite
         /// <summary>
         /// 亮度均匀性(%) 测试项
         /// </summary>
-        public ObjectiveTestItem LuminanceUniformity { get; set; }
+        public ObjectiveTestItem W255LuminanceUniformity { get; set; }
 
         /// <summary>
         /// 色彩均匀性 测试项
         /// </summary>
-        public ObjectiveTestItem ColorUniformity { get; set; }
+        public ObjectiveTestItem W255ColorUniformity { get; set; }
+
+        /// <summary>
+        /// 中心点亮度
+        /// </summary>
+        public ObjectiveTestItem W255CenterLunimance {get;set;}
+        /// <summary>
+        /// W255CenterCIE1931ChromaticCoordinatesx
+        /// </summary>
+        public ObjectiveTestItem W255CenterCIE1931ChromaticCoordinatesx { get; set; }
+        /// <summary>
+        /// W255CenterCIE1931ChromaticCoordinatesy
+        /// </summary>
+        public ObjectiveTestItem W255CenterCIE1931ChromaticCoordinatesy { get; set; }
+        /// <summary>
+        /// W255CenterCIE1976ChromaticCoordinatesu
+        /// </summary>
+        public ObjectiveTestItem W255CenterCIE1976ChromaticCoordinatesu { get; set; }
+        /// <summary>
+        /// W255CenterCIE1976ChromaticCoordinatesv
+        /// </summary>
+        public ObjectiveTestItem W255CenterCIE1976ChromaticCoordinatesv { get; set; }
+
 
         /// <summary>
         /// 中心相关色温(K) 测试项
         /// </summary>
-        public ObjectiveTestItem CenterCorrelatedColorTemperature { get; set; }
+        public ObjectiveTestItem BlackCenterCorrelatedColorTemperature { get; set; }
 
         /// <summary>
         /// 水平视场角(°) 测试项
         /// </summary>
-        public ObjectiveTestItem HorizontalFieldOfViewAngle { get; set; }
+        public ObjectiveTestItem W255HorizontalFieldOfViewAngle { get; set; }
 
         /// <summary>
         /// 垂直视场角(°) 测试项
         /// </summary>
-        public ObjectiveTestItem VerticalFieldOfViewAngle { get; set; }
+        public ObjectiveTestItem W255VerticalFieldOfViewAngle { get; set; }
 
         /// <summary>
         /// 对角线视场角(°) 测试项
         /// </summary>
-        public ObjectiveTestItem DiagonalFieldOfViewAngle { get; set; }
+        public ObjectiveTestItem W255DiagonalFieldOfViewAngle { get; set; }
 
         /// <summary>
         /// FOFO对比度 测试项
         /// </summary>
         public ObjectiveTestItem FOFOContrast { get; set; }
+
+
+        /// <summary>
+        /// 中心点亮度
+        /// </summary>
+        public ObjectiveTestItem W25CenterLunimance { get; set; }
+        /// <summary>
+        /// W255CenterCIE1931ChromaticCoordinatesx
+        /// </summary>
+        public ObjectiveTestItem W25CenterCIE1931ChromaticCoordinatesx { get; set; }
+        /// <summary>
+        /// W255CenterCIE1931ChromaticCoordinatesy
+        /// </summary>
+        public ObjectiveTestItem W25CenterCIE1931ChromaticCoordinatesy { get; set; }
+        /// <summary>
+        /// W255CenterCIE1976ChromaticCoordinatesu
+        /// </summary>
+        public ObjectiveTestItem W25CenterCIE1976ChromaticCoordinatesu { get; set; }
+        /// <summary>
+        /// W255CenterCIE1976ChromaticCoordinatesv
+        /// </summary>
+        public ObjectiveTestItem W25CenterCIE1976ChromaticCoordinatesv { get; set; }
 
         /// <summary>
         /// 棋盘格对比度 测试项

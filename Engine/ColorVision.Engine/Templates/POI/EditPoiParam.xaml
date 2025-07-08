@@ -236,11 +236,12 @@
                                         </Button>
                                     
                                     </DockPanel>
-                                    <DockPanel  Margin="2" HorizontalAlignment="Left">
+                                    <StackPanel Orientation="Horizontal"  Margin="2" HorizontalAlignment="Left">
                                         <TextBlock Text="中心点"  MinWidth="50"/>
                                         <TextBox  Text="{Binding PoiConfig.CenterX}" Width="55"  />
                                         <TextBox  Text="{Binding PoiConfig.CenterY}" Width="55" Margin="5,0"  />
-                                    </DockPanel>
+                                        <Button Content="充满" Click="Button_Click_2"/>
+                                    </StackPanel>
                                     <UniformGrid  Columns="2">
                                         <DockPanel Margin="2" HorizontalAlignment="Left">
                                             <TextBlock Text="宽度:" MinWidth="50"/>
@@ -529,6 +530,9 @@
                         <Button Content="单十字准线" Command="{Binding ToolConcentricCircle.Select1Command}" Click="reference1_Click" Width="80"  Tag="1"/>
                     </StackPanel>
                 </Popup>
+                <ToggleButton  IsChecked="{Binding Measure}" Padding="5" Margin="0,0,2,0" >
+                    <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageruler}" />
+                </ToggleButton>
             </ToolBar>
 
             <ToolBarTray x:Name="ToolBarLeft"   d:DataContext="{Binding Config}" Orientation="Vertical" Margin="2,50,2,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top">
