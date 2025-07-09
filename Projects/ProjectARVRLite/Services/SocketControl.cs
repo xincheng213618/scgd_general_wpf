@@ -23,7 +23,7 @@ namespace ProjectARVRLite.Services
             {
                 ProjectWindowInstance.WindowInstance.InitTest();
                 //现在先切换PG
-                return new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVR1TestType.White } };
+                return new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVR1TestType.W51 } };
             }
             else
             {

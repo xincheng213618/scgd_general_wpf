@@ -130,6 +130,9 @@ namespace ProjectARVRLite
     /// </summary>
     public class ObjectiveTestResult:ViewModelBase
     {
+
+
+
         /// <summary>
         /// 亮度均匀性(%) 测试项
         /// </summary>
@@ -170,17 +173,17 @@ namespace ProjectARVRLite
         /// <summary>
         /// 水平视场角(°) 测试项
         /// </summary>
-        public ObjectiveTestItem W255HorizontalFieldOfViewAngle { get; set; }
+        public ObjectiveTestItem W51HorizontalFieldOfViewAngle { get; set; }
 
         /// <summary>
         /// 垂直视场角(°) 测试项
         /// </summary>
-        public ObjectiveTestItem W255VerticalFieldOfViewAngle { get; set; }
+        public ObjectiveTestItem W51VerticalFieldOfViewAngle { get; set; }
 
         /// <summary>
         /// 对角线视场角(°) 测试项
         /// </summary>
-        public ObjectiveTestItem W255DiagonalFieldOfViewAngle { get; set; }
+        public ObjectiveTestItem W51DiagonalFieldOfViewAngle { get; set; }
 
         /// <summary>
         /// FOFO对比度 测试项
@@ -317,17 +320,32 @@ namespace ProjectARVRLite
         /// <summary>
         /// X轴倾斜角(°) 测试项
         /// </summary>
-        public ObjectiveTestItem XTilt { get; set; }
+        public ObjectiveTestItem ImageCenterXTilt { get; set; }
 
         /// <summary>
         /// Y轴倾斜角(°) 测试项
         /// </summary>
-        public ObjectiveTestItem YTilt { get; set; }
+        public ObjectiveTestItem ImageCenterYTilt { get; set; }
 
         /// <summary>
         /// 旋转角(°) 测试项
         /// </summary>
-        public ObjectiveTestItem Rotation { get; set; }
+        public ObjectiveTestItem OptCenterRotation { get; set; }
+
+        /// <summary>
+        /// X轴倾斜角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem OptCenterXTilt { get; set; }
+
+        /// <summary>
+        /// Y轴倾斜角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem OptCenterYTilt { get; set; }
+
+        /// <summary>
+        /// 旋转角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem ImageCenterRotation { get; set; }
 
         /// <summary>
         /// 鬼影(%) 测试项
