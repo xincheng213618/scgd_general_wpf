@@ -10,28 +10,6 @@ namespace ProjectARVRLite.Config
         public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; NotifyPropertyChanged(); } }
         private bool _IsEnabled = true;
 
-        [DisplayName("Luminance uniformity(%) Min")]
-        public double LuminanceUniformityMin { get => _LuminanceUniformityMin; set { _LuminanceUniformityMin = value; NotifyPropertyChanged(); } }
-        private double _LuminanceUniformityMin = 0.75;
-
-        [DisplayName("Luminance uniformity(%) Max")]
-        public double LuminanceUniformityMax { get => _LuminanceUniformityMax; set { _LuminanceUniformityMax = value; NotifyPropertyChanged(); } }
-        private double _LuminanceUniformityMax;
-
-        public double ColorUniformityMin { get => _ColorUniformityMin; set { _ColorUniformityMin = value; NotifyPropertyChanged(); } }
-        private double _ColorUniformityMin;
-
-        public double ColorUniformityMax { get => _ColorUniformityMax; set { _ColorUniformityMax = value; NotifyPropertyChanged(); } }
-        private double _ColorUniformityMax = 0.02;
-
-        [DisplayName("Center Correlated Color Temperature(K) Min")]
-        public double CenterCorrelatedColorTemperatureMin { get => _CenterCorrelatedColorTemperatureMin; set { _CenterCorrelatedColorTemperatureMin = value; NotifyPropertyChanged(); } }
-        private double _CenterCorrelatedColorTemperatureMin = 6000;
-
-        [DisplayName("Center Correlated Color Temperature(K) Max")]
-        public double CenterCorrelatedColorTemperatureMax { get => _CenterCorrelatedColorTemperatureMax; set { _CenterCorrelatedColorTemperatureMax = value; NotifyPropertyChanged(); } }
-        private double _CenterCorrelatedColorTemperatureMax = 7000;
-
         [DisplayName("Horizontal Field Of View Angle(°) Min")]
         public double HorizontalFieldOfViewAngleMin { get => _HorizontalFieldOfViewAngleMin; set { _HorizontalFieldOfViewAngleMin = value; NotifyPropertyChanged(); } }
         private double _HorizontalFieldOfViewAngleMin = 23.5;
@@ -55,6 +33,31 @@ namespace ProjectARVRLite.Config
         [DisplayName("Diagonal  Field of View Angle(°) Max")]
         public double DiagonalFieldOfViewAngleMax { get => _DiagonalFieldOfViewAngleMax; set { _DiagonalFieldOfViewAngleMax = value; NotifyPropertyChanged(); } }
         private double _DiagonalFieldOfViewAngleMax = 12.5;
+
+
+        [DisplayName("Luminance uniformity(%) Min")]
+        public double LuminanceUniformityMin { get => _LuminanceUniformityMin; set { _LuminanceUniformityMin = value; NotifyPropertyChanged(); } }
+        private double _LuminanceUniformityMin = 0.75;
+
+        [DisplayName("Luminance uniformity(%) Max")]
+        public double LuminanceUniformityMax { get => _LuminanceUniformityMax; set { _LuminanceUniformityMax = value; NotifyPropertyChanged(); } }
+        private double _LuminanceUniformityMax;
+
+        public double ColorUniformityMin { get => _ColorUniformityMin; set { _ColorUniformityMin = value; NotifyPropertyChanged(); } }
+        private double _ColorUniformityMin;
+
+        public double ColorUniformityMax { get => _ColorUniformityMax; set { _ColorUniformityMax = value; NotifyPropertyChanged(); } }
+        private double _ColorUniformityMax = 0.02;
+
+        [DisplayName("Center Correlated Color Temperature(K) Min")]
+        public double CenterCorrelatedColorTemperatureMin { get => _CenterCorrelatedColorTemperatureMin; set { _CenterCorrelatedColorTemperatureMin = value; NotifyPropertyChanged(); } }
+        private double _CenterCorrelatedColorTemperatureMin = 6000;
+
+        [DisplayName("Center Correlated Color Temperature(K) Max")]
+        public double CenterCorrelatedColorTemperatureMax { get => _CenterCorrelatedColorTemperatureMax; set { _CenterCorrelatedColorTemperatureMax = value; NotifyPropertyChanged(); } }
+        private double _CenterCorrelatedColorTemperatureMax = 7000;
+
+
 
         public double FOFOContrastMin { get => _FOFOContrastMin; set { _FOFOContrastMin = value; NotifyPropertyChanged(); } }
         private double _FOFOContrastMin = 100000;
@@ -80,113 +83,113 @@ namespace ProjectARVRLite.Config
         public double VerticalTVDistortionMax { get => _VerticalTVDistortionMax; set { _VerticalTVDistortionMax = value; NotifyPropertyChanged(); } }
         private double _VerticalTVDistortionMax = 2.1;
 
-        public double MTF_H_Center_0FMin { get => _MTF_H_Center_0FMin; set { _MTF_H_Center_0FMin = value; NotifyPropertyChanged(); } }
-        private double _MTF_H_Center_0FMin = 0.5;
+        public double MTF_HV_H_Center_0FMin { get => _MTF_HV_H_Center_0FMin; set { _MTF_HV_H_Center_0FMin = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_H_Center_0FMin = 0.5;
 
-        public double MTF_H_Center_0FMax { get => _MTF_H_Center_0FMax; set { _MTF_H_Center_0FMax = value; NotifyPropertyChanged(); } }
-        private double _MTF_H_Center_0FMax;
+        public double MTF_HV_H_Center_0FMax { get => _MTF_HV_H_Center_0FMax; set { _MTF_HV_H_Center_0FMax = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_H_Center_0FMax;
 
-        public double MTF_H_LeftUp_0_5FMin { get => _MTF_H_LeftUp_0_5FMin; set { _MTF_H_LeftUp_0_5FMin = value; NotifyPropertyChanged(); } }
-        private double _MTF_H_LeftUp_0_5FMin = 0.5;
+        public double MTF_HV_H_LeftUp_0_4FMin { get => _MTF_HV_H_LeftUp_0_4FMin; set { _MTF_HV_H_LeftUp_0_4FMin = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_H_LeftUp_0_4FMin = 0.5;
 
-        public double MTF_H_LeftUp_0_5FMax { get => _MTF_H_LeftUp_0_5FMax; set { _MTF_H_LeftUp_0_5FMax = value; NotifyPropertyChanged(); } }
-        private double _MTF_H_LeftUp_0_5FMax;
+        public double MTF_HV_H_LeftUp_0_4FMax { get => _MTF_HV_H_LeftUp_0_4FMax; set { _MTF_HV_H_LeftUp_0_4FMax = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_H_LeftUp_0_4FMax;
 
-        public double MTF_H_RightUp_0_5FMin { get => _MTF_H_RightUp_0_5FMin; set { _MTF_H_RightUp_0_5FMin = value; NotifyPropertyChanged(); } }
-        private double _MTF_H_RightUp_0_5FMin = 0.5;
+        public double MTF_HV_H_RightUp_0_4FMin { get => _MTF_HV_H_RightUp_0_4FMin; set { _MTF_HV_H_RightUp_0_4FMin = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_H_RightUp_0_4FMin = 0.5;
 
-        public double MTF_H_RightUp_0_5FMax { get => _MTF_H_RightUp_0_5FMax; set { _MTF_H_RightUp_0_5FMax = value; NotifyPropertyChanged(); } }
-        private double _MTF_H_RightUp_0_5FMax;
+        public double MTF_HV_H_RightUp_0_4FMax { get => _MTF_HV_H_RightUp_0_4FMax; set { _MTF_HV_H_RightUp_0_4FMax = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_H_RightUp_0_4FMax;
 
-        public double MTF_H_RightDown_0_5FMin { get => _MTF_H_RightDown_0_5FMin; set { _MTF_H_RightDown_0_5FMin = value; NotifyPropertyChanged(); } }
-        private double _MTF_H_RightDown_0_5FMin = 0.5;
+        public double MTF_HV_H_RightDown_0_4FMin { get => _MTF_HV_H_RightDown_0_4FMin; set { _MTF_HV_H_RightDown_0_4FMin = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_H_RightDown_0_4FMin = 0.5;
 
-        public double MTF_H_RightDown_0_5FMax { get => _MTF_H_RightDown_0_5FMax; set { _MTF_H_RightDown_0_5FMax = value; NotifyPropertyChanged(); } }
-        private double _MTF_H_RightDown_0_5FMax;
+        public double MTF_HV_H_RightDown_0_4FMax { get => _MTF_HV_H_RightDown_0_4FMax; set { _MTF_HV_H_RightDown_0_4FMax = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_H_RightDown_0_4FMax;
 
-        public double MTF_H_LeftDown_0_5FMin { get => _MTF_H_LeftDown_0_5FMin; set { _MTF_H_LeftDown_0_5FMin = value; NotifyPropertyChanged(); } }
-        private double _MTF_H_LeftDown_0_5FMin = 0.5;
+        public double MTF_HV_H_LeftDown_0_4FMin { get => _MTF_HV_H_LeftDown_0_4FMin; set { _MTF_HV_H_LeftDown_0_4FMin = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_H_LeftDown_0_4FMin = 0.5;
 
-        public double MTF_H_LeftDown_0_5FMax { get => _MTF_H_LeftDown_0_5FMax; set { _MTF_H_LeftDown_0_5FMax = value; NotifyPropertyChanged(); } }
-        private double _MTF_H_LeftDown_0_5FMax;
+        public double MTF_HV_H_LeftDown_0_4FMax { get => _MTF_HV_H_LeftDown_0_4FMax; set { _MTF_HV_H_LeftDown_0_4FMax = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_H_LeftDown_0_4FMax;
 
-        public double MTF_H_LeftUp_0_8FMin { get => _MTF_H_LeftUp_0_8FMin; set { _MTF_H_LeftUp_0_8FMin = value; NotifyPropertyChanged(); } }
-        private double _MTF_H_LeftUp_0_8FMin = 0.5;
+        public double MTF_HV_H_LeftUp_0_8FMin { get => _MTF_HV_H_LeftUp_0_8FMin; set { _MTF_HV_H_LeftUp_0_8FMin = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_H_LeftUp_0_8FMin = 0.5;
 
-        public double MTF_H_LeftUp_0_8FMax { get => _MTF_H_LeftUp_0_8FMax; set { _MTF_H_LeftUp_0_8FMax = value; NotifyPropertyChanged(); } }
-        private double _MTF_H_LeftUp_0_8FMax;
+        public double MTF_HV_H_LeftUp_0_8FMax { get => _MTF_HV_H_LeftUp_0_8FMax; set { _MTF_HV_H_LeftUp_0_8FMax = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_H_LeftUp_0_8FMax;
 
-        public double MTF_H_RightUp_0_8FMin { get => _MTF_H_RightUp_0_8FMin; set { _MTF_H_RightUp_0_8FMin = value; NotifyPropertyChanged(); } }
-        private double _MTF_H_RightUp_0_8FMin = 0.5;
+        public double MTF_HV_H_RightUp_0_8FMin { get => _MTF_HV_H_RightUp_0_8FMin; set { _MTF_HV_H_RightUp_0_8FMin = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_H_RightUp_0_8FMin = 0.5;
 
-        public double MTF_H_RightUp_0_8FMax { get => _MTF_H_RightUp_0_8FMax; set { _MTF_H_RightUp_0_8FMax = value; NotifyPropertyChanged(); } }
-        private double _MTF_H_RightUp_0_8FMax;
+        public double MTF_HV_H_RightUp_0_8FMax { get => _MTF_HV_H_RightUp_0_8FMax; set { _MTF_HV_H_RightUp_0_8FMax = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_H_RightUp_0_8FMax;
 
-        public double MTF_H_RightDown_0_8FMin { get => _MTF_H_RightDown_0_8FMin; set { _MTF_H_RightDown_0_8FMin = value; NotifyPropertyChanged(); } }
-        private double _MTF_H_RightDown_0_8FMin = 0.5;
+        public double MTF_HV_H_RightDown_0_8FMin { get => _MTF_HV_H_RightDown_0_8FMin; set { _MTF_HV_H_RightDown_0_8FMin = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_H_RightDown_0_8FMin = 0.5;
 
-        public double MTF_H_RightDown_0_8FMax { get => _MTF_H_RightDown_0_8FMax; set { _MTF_H_RightDown_0_8FMax = value; NotifyPropertyChanged(); } }
-        private double _MTF_H_RightDown_0_8FMax;
+        public double MTF_HV_H_RightDown_0_8FMax { get => _MTF_HV_H_RightDown_0_8FMax; set { _MTF_HV_H_RightDown_0_8FMax = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_H_RightDown_0_8FMax;
 
-        public double MTF_H_LeftDown_0_8FMin { get => _MTF_H_LeftDown_0_8FMin; set { _MTF_H_LeftDown_0_8FMin = value; NotifyPropertyChanged(); } }
-        private double _MTF_H_LeftDown_0_8FMin = 0.5;
+        public double MTF_HV_H_LeftDown_0_8FMin { get => _MTF_HV_H_LeftDown_0_8FMin; set { _MTF_HV_H_LeftDown_0_8FMin = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_H_LeftDown_0_8FMin = 0.5;
 
-        public double MTF_H_LeftDown_0_8FMax { get => _MTF_H_LeftDown_0_8FMax; set { _MTF_H_LeftDown_0_8FMax = value; NotifyPropertyChanged(); } }
-        private double _MTF_H_LeftDown_0_8FMax;
+        public double MTF_HV_H_LeftDown_0_8FMax { get => _MTF_HV_H_LeftDown_0_8FMax; set { _MTF_HV_H_LeftDown_0_8FMax = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_H_LeftDown_0_8FMax;
 
-        public double MTF_V_Center_0FMin { get => _MTF_V_Center_0FMin; set { _MTF_V_Center_0FMin = value; NotifyPropertyChanged(); } }
-        private double _MTF_V_Center_0FMin = 0.5;
+        public double MTF_HV_V_Center_0FMin { get => _MTF_HV_V_Center_0FMin; set { _MTF_HV_V_Center_0FMin = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_V_Center_0FMin = 0.5;
 
-        public double MTF_V_Center_0FMax { get => _MTF_V_Center_0FMax; set { _MTF_V_Center_0FMax = value; NotifyPropertyChanged(); } }
-        private double _MTF_V_Center_0FMax;
+        public double MTF_HV_V_Center_0FMax { get => _MTF_HV_V_Center_0FMax; set { _MTF_HV_V_Center_0FMax = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_V_Center_0FMax;
 
-        public double MTF_V_LeftUp_0_5FMin { get => _MTF_V_LeftUp_0_5FMin; set { _MTF_V_LeftUp_0_5FMin = value; NotifyPropertyChanged(); } }
-        private double _MTF_V_LeftUp_0_5FMin = 0.5;
+        public double MTF_HV_V_LeftUp_0_4FMin { get => _MTF_HV_V_LeftUp_0_4FMin; set { _MTF_HV_V_LeftUp_0_4FMin = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_V_LeftUp_0_4FMin = 0.5;
 
-        public double MTF_V_LeftUp_0_5FMax { get => _MTF_V_LeftUp_0_5FMax; set { _MTF_V_LeftUp_0_5FMax = value; NotifyPropertyChanged(); } }
-        private double _MTF_V_LeftUp_0_5FMax;
+        public double MTF_HV_V_LeftUp_0_4FMax { get => _MTF_HV_V_LeftUp_0_4FMax; set { _MTF_HV_V_LeftUp_0_4FMax = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_V_LeftUp_0_4FMax;
 
-        public double MTF_V_RightUp_0_5FMin { get => _MTF_V_RightUp_0_5FMin; set { _MTF_V_RightUp_0_5FMin = value; NotifyPropertyChanged(); } }
-        private double _MTF_V_RightUp_0_5FMin = 0.5;
+        public double MTF_HV_V_RightUp_0_4FMin { get => _MTF_HV_V_RightUp_0_4FMin; set { _MTF_HV_V_RightUp_0_4FMin = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_V_RightUp_0_4FMin = 0.5;
 
-        public double MTF_V_RightUp_0_5FMax { get => _MTF_V_RightUp_0_5FMax; set { _MTF_V_RightUp_0_5FMax = value; NotifyPropertyChanged(); } }
-        private double _MTF_V_RightUp_0_5FMax;
+        public double MTF_HV_V_RightUp_0_4FMax { get => _MTF_HV_V_RightUp_0_4FMax; set { _MTF_HV_V_RightUp_0_4FMax = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_V_RightUp_0_4FMax;
 
-        public double MTF_V_RightDown_0_5FMin { get => _MTF_V_RightDown_0_5FMin; set { _MTF_V_RightDown_0_5FMin = value; NotifyPropertyChanged(); } }
-        private double _MTF_V_RightDown_0_5FMin = 0.5;
+        public double MTF_HV_V_RightDown_0_4FMin { get => _MTF_HV_V_RightDown_0_4FMin; set { _MTF_HV_V_RightDown_0_4FMin = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_V_RightDown_0_4FMin = 0.5;
 
-        public double MTF_V_RightDown_0_5FMax { get => _MTF_V_RightDown_0_5FMax; set { _MTF_V_RightDown_0_5FMax = value; NotifyPropertyChanged(); } }
-        private double _MTF_V_RightDown_0_5FMax;
+        public double MTF_HV_V_RightDown_0_4FMax { get => _MTF_HV_V_RightDown_0_4FMax; set { _MTF_HV_V_RightDown_0_4FMax = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_V_RightDown_0_4FMax;
 
-        public double MTF_V_LeftDown_0_5FMin { get => _MTF_V_LeftDown_0_5FMin; set { _MTF_V_LeftDown_0_5FMin = value; NotifyPropertyChanged(); } }
-        private double _MTF_V_LeftDown_0_5FMin = 0.5;
+        public double MTF_HV_V_LeftDown_0_4FMin { get => _MTF_HV_V_LeftDown_0_4FMin; set { _MTF_HV_V_LeftDown_0_4FMin = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_V_LeftDown_0_4FMin = 0.5;
 
-        public double MTF_V_LeftDown_0_5FMax { get => _MTF_V_LeftDown_0_5FMax; set { _MTF_V_LeftDown_0_5FMax = value; NotifyPropertyChanged(); } }
-        private double _MTF_V_LeftDown_0_5FMax;
+        public double MTF_HV_V_LeftDown_0_4FMax { get => _MTF_HV_V_LeftDown_0_4FMax; set { _MTF_HV_V_LeftDown_0_4FMax = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_V_LeftDown_0_4FMax;
 
-        public double MTF_V_LeftUp_0_8FMin { get => _MTF_V_LeftUp_0_8FMin; set { _MTF_V_LeftUp_0_8FMin = value; NotifyPropertyChanged(); } }
-        private double _MTF_V_LeftUp_0_8FMin = 0.5;
+        public double MTF_HV_V_LeftUp_0_8FMin { get => _MTF_HV_V_LeftUp_0_8FMin; set { _MTF_HV_V_LeftUp_0_8FMin = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_V_LeftUp_0_8FMin = 0.5;
 
-        public double MTF_V_LeftUp_0_8FMax { get => _MTF_V_LeftUp_0_8FMax; set { _MTF_V_LeftUp_0_8FMax = value; NotifyPropertyChanged(); } }
-        private double _MTF_V_LeftUp_0_8FMax;
+        public double MTF_HV_V_LeftUp_0_8FMax { get => _MTF_HV_V_LeftUp_0_8FMax; set { _MTF_HV_V_LeftUp_0_8FMax = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_V_LeftUp_0_8FMax;
 
-        public double MTF_V_RightUp_0_8FMin { get => _MTF_V_RightUp_0_8FMin; set { _MTF_V_RightUp_0_8FMin = value; NotifyPropertyChanged(); } }
-        private double _MTF_V_RightUp_0_8FMin = 0.5;
+        public double MTF_HV_V_RightUp_0_8FMin { get => _MTF_HV_V_RightUp_0_8FMin; set { _MTF_HV_V_RightUp_0_8FMin = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_V_RightUp_0_8FMin = 0.5;
 
-        public double MTF_V_RightUp_0_8FMax { get => _MTF_V_RightUp_0_8FMax; set { _MTF_V_RightUp_0_8FMax = value; NotifyPropertyChanged(); } }
-        private double _MTF_V_RightUp_0_8FMax;
+        public double MTF_HV_V_RightUp_0_8FMax { get => _MTF_HV_V_RightUp_0_8FMax; set { _MTF_HV_V_RightUp_0_8FMax = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_V_RightUp_0_8FMax;
 
-        public double MTF_V_RightDown_0_8FMin { get => _MTF_V_RightDown_0_8FMin; set { _MTF_V_RightDown_0_8FMin = value; NotifyPropertyChanged(); } }
-        private double _MTF_V_RightDown_0_8FMin = 0.5;
+        public double MTF_HV_V_RightDown_0_8FMin { get => _MTF_HV_V_RightDown_0_8FMin; set { _MTF_HV_V_RightDown_0_8FMin = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_V_RightDown_0_8FMin = 0.5;
 
-        public double MTF_V_RightDown_0_8FMax { get => _MTF_V_RightDown_0_8FMax; set { _MTF_V_RightDown_0_8FMax = value; NotifyPropertyChanged(); } }
-        private double _MTF_V_RightDown_0_8FMax;
+        public double MTF_HV_V_RightDown_0_8FMax { get => _MTF_HV_V_RightDown_0_8FMax; set { _MTF_HV_V_RightDown_0_8FMax = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_V_RightDown_0_8FMax;
 
-        public double MTF_V_LeftDown_0_8FMin { get => _MTF_V_LeftDown_0_8FMin; set { _MTF_V_LeftDown_0_8FMin = value; NotifyPropertyChanged(); } }
-        private double _MTF_V_LeftDown_0_8FMin = 0.5;
+        public double MTF_HV_V_LeftDown_0_8FMin { get => _MTF_HV_V_LeftDown_0_8FMin; set { _MTF_HV_V_LeftDown_0_8FMin = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_V_LeftDown_0_8FMin = 0.5;
 
-        public double MTF_V_LeftDown_0_8FMax { get => _MTF_V_LeftDown_0_8FMax; set { _MTF_V_LeftDown_0_8FMax = value; NotifyPropertyChanged(); } }
-        private double _MTF_V_LeftDown_0_8FMax;
+        public double MTF_HV_V_LeftDown_0_8FMax { get => _MTF_HV_V_LeftDown_0_8FMax; set { _MTF_HV_V_LeftDown_0_8FMax = value; NotifyPropertyChanged(); } }
+        private double _MTF_HV_V_LeftDown_0_8FMax;
 
         public double XTiltMin { get => _XTiltMin; set { _XTiltMin = value; NotifyPropertyChanged(); } }
         private double _XTiltMin = -0.16;

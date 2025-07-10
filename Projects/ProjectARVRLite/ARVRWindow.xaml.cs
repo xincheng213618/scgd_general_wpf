@@ -32,6 +32,7 @@ using FlowEngineLib;
 using FlowEngineLib.Base;
 using LiveChartsCore.Kernel;
 using log4net;
+using log4net.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Org.BouncyCastle.Asn1.Ocsp;
@@ -127,9 +128,7 @@ namespace ProjectARVRLite
 
         public ViewReslutCheckerboard ViewReslutCheckerboard { get; set; } = new ViewReslutCheckerboard();
 
-        public ViewRelsultMTFH ViewRelsultMTFH { get; set; } = new ViewRelsultMTFH();
-
-        public ViewRelsultMTFV ViewRelsultMTFV { get; set; } = new ViewRelsultMTFV();
+        public ViewRelsultMTFHV ViewRelsultMTFH { get; set; } = new ViewRelsultMTFHV();
 
         public ViewReslutDistortionGhost ViewReslutDistortionGhost { get; set; } = new ViewReslutDistortionGhost();
 
@@ -174,12 +173,7 @@ namespace ProjectARVRLite
 
     }
 
-    public class ViewRelsultMTFH
-    {
-        public MTFDetailViewReslut MTFDetailViewReslut { get; set; }
-
-    }
-    public class ViewRelsultMTFV
+    public class ViewRelsultMTFHV
     {
         public MTFDetailViewReslut MTFDetailViewReslut { get; set; }
 
@@ -267,13 +261,15 @@ namespace ProjectARVRLite
     public class ARVRWindowConfig : WindowConfig
     {
         public static ARVRWindowConfig Instance => ConfigService.Instance.GetRequiredService<ARVRWindowConfig>();
+        public ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = new ObservableCollection<ProjectARVRReuslt>();
+
     }
 
     public partial class ARVRWindow : Window, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
         public static ARVRWindowConfig Config => ARVRWindowConfig.Instance;
-        public ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = new ObservableCollection<ProjectARVRReuslt>();
+        public ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = Config.ViewResluts;
 
         public ARVRWindow()
         {
@@ -645,22 +641,8 @@ namespace ProjectARVRLite
         private void Processing(string SerialNumber)
         {
             IsSavePicture = true;
+            BatchResultMasterModel Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
 
-            BatchResultMasterModel Batch = null;
-            try
-            {
-                Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
-            }catch(Exception ex)
-            {
-                try
-                {
-                    Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
-                }
-                catch(Exception ex1)
-                {
-                    log.Error(ex1);
-                }
-            }
 
             if (Batch == null)
             {
@@ -681,7 +663,7 @@ namespace ProjectARVRLite
 
             if (result.Model.Contains("White51"))
             {
-                log.Info("正在解析白画面的流程");
+                log.Info("正在解析White51的流程");
                 result.TestType = ARVR1TestType.W51;
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
@@ -744,36 +726,6 @@ namespace ProjectARVRLite
                 }
             }
 
-            if (result.Model.Contains("White25"))
-            {
-                log.Info("正在解析白画面的流程");
-                result.TestType = ARVR1TestType.W25;
-                var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
-                if (values.Count > 0)
-                {
-                    result.FileName = values[0].FileUrl;
-                }
-                var AlgResultMasterlists = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
-                log.Info($"AlgResultMasterlists count {AlgResultMasterlists.Count}");
-                foreach (var AlgResultMaster in AlgResultMasterlists)
-                {
-                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.POI_XYZ)
-                    {
-                        result.ViewResultW25.PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
-
-                        List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(AlgResultMaster.Id);
-                        int id = 0;
-                        foreach (var item in POIPointResultModels)
-                        {
-                            PoiResultCIExyuvData poiResultCIExyuvData = new(item) { Id = id++ };
-                            result.ViewResultW25.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
-                        }
-                    }
-
-
-                }
-            }
-
             if (result.Model.Contains("White255"))
             {
                 log.Info("正在解析白画面的流程");
@@ -790,7 +742,6 @@ namespace ProjectARVRLite
                     if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.POI_XYZ)
                     {
                         result.ViewResultWhite.PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
-
                         List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(AlgResultMaster.Id);
                         int id = 0;
                         foreach (var item in POIPointResultModels)
@@ -814,7 +765,6 @@ namespace ProjectARVRLite
                             result.ViewResultWhite.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                         }
                     }
-
                     if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.PoiAnalysis)
                     {
                         if (AlgResultMaster.TName.Contains("Luminance_uniformity"))
@@ -862,7 +812,85 @@ namespace ProjectARVRLite
                     }
 
                 }
+
+
             }
+
+            else if (result.Model.Contains("White25"))
+            {
+                log.Info("正在解析White25画面的流程");
+                result.TestType = ARVR1TestType.W25;
+                var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
+                if (values.Count > 0)
+                {
+                    result.FileName = values[0].FileUrl;
+                }
+                var AlgResultMasterlists = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
+                log.Info($"AlgResultMasterlists count {AlgResultMasterlists.Count}");
+                foreach (var AlgResultMaster in AlgResultMasterlists)
+                {
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.POI_XYZ)
+                    {
+                        result.ViewResultW25.PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
+
+                        List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                        int id = 0;
+                        foreach (var item in POIPointResultModels)
+                        {
+                            PoiResultCIExyuvData poiResultCIExyuvData = new(item) { Id = id++ };
+                            result.ViewResultW25.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                        }
+                        if (result.ViewResultW25.PoiResultCIExyuvDatas.Count == 1)
+                        {
+                            ObjectiveTestResult.W25CenterLunimance = new ObjectiveTestItem()
+                            {
+                                Name = "W25CenterLunimance",
+                                LowLimit = SPECConfig.ChessboardContrastMin,
+                                UpLimit = SPECConfig.ChessboardContrastMax,
+                                Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].Y,
+                                TestValue = result.ViewResultW25.PoiResultCIExyuvDatas[0].Y.ToString("F3")
+                            };
+                            ObjectiveTestResult.W25CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem()
+                            {
+                                Name = "W25CenterCIE1931ChromaticCoordinatesx",
+                                LowLimit = SPECConfig.ChessboardContrastMin,
+                                UpLimit = SPECConfig.ChessboardContrastMax,
+                                Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].x,
+                                TestValue = result.ViewResultW25.PoiResultCIExyuvDatas[0].x.ToString("F3")
+                            };
+                            ObjectiveTestResult.W25CenterCIE1931ChromaticCoordinatesy = new ObjectiveTestItem()
+                            {
+                                Name = "W25CenterCIE1931ChromaticCoordinatesy",
+                                LowLimit = SPECConfig.ChessboardContrastMin,
+                                UpLimit = SPECConfig.ChessboardContrastMax,
+                                Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].y,
+                                TestValue = result.ViewResultW25.PoiResultCIExyuvDatas[0].y.ToString("F3")
+                            };
+                            ObjectiveTestResult.W25CenterCIE1976ChromaticCoordinatesu = new ObjectiveTestItem()
+                            {
+                                Name = "W25CenterCIE1976ChromaticCoordinatesu",
+                                LowLimit = SPECConfig.ChessboardContrastMin,
+                                UpLimit = SPECConfig.ChessboardContrastMax,
+                                Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].y,
+                                TestValue = result.ViewResultW25.PoiResultCIExyuvDatas[0].u.ToString("F3")
+                            };
+                            ObjectiveTestResult.W25CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem()
+                            {
+                                Name = "W25CenterCIE1976ChromaticCoordinatesv",
+                                LowLimit = SPECConfig.ChessboardContrastMin,
+                                UpLimit = SPECConfig.ChessboardContrastMax,
+                                Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].y,
+                                TestValue = result.ViewResultW25.PoiResultCIExyuvDatas[0].v.ToString("F3")
+                            };
+                        }
+
+
+                    }
+
+
+                }
+            }
+
             else if (result.Model.Contains("Black"))
             {
                 log.Info("正在解析黑画面的流程");
@@ -893,7 +921,7 @@ namespace ProjectARVRLite
                         {
                             if (result.ViewResultWhite != null && result.ViewResultWhite.PoiResultCIExyuvDatas.Count == 9 && result.ViewResultBlack.PoiResultCIExyuvDatas.Count == 1)
                             {
-                               var contrast1 = result.ViewResultWhite.PoiResultCIExyuvDatas[5].Y / result.ViewResultBlack.PoiResultCIExyuvDatas[0].Y;
+                                var contrast1 = result.ViewResultWhite.PoiResultCIExyuvDatas[5].Y / result.ViewResultBlack.PoiResultCIExyuvDatas[0].Y;
                                 var FOFOContrast = new ObjectiveTestItem()
                                 {
                                     Name = "FOFOContrast",
@@ -942,6 +970,7 @@ namespace ProjectARVRLite
                             PoiResultCIExyuvData poiResultCIExyuvData = new(item) { Id = id++ };
                             result.ViewReslutCheckerboard.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                         }
+
                     }
 
                     if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.PoiAnalysis)
@@ -962,7 +991,7 @@ namespace ProjectARVRLite
                                     LowLimit = SPECConfig.ChessboardContrastMin,
                                     UpLimit = SPECConfig.ChessboardContrastMax,
                                     Value = viewReslut.PoiAnalysisResult.result.Value,
-                                    TestValue = ChessboardContrast.ToString("F2")
+                                    TestValue = ChessboardContrast.ToString("F3")
                                 };
 
                                 result.ViewReslutCheckerboard.ChessboardContrast = ObjectiveTestResult.ChessboardContrast;
@@ -992,7 +1021,7 @@ namespace ProjectARVRLite
             }
             else if (result.Model.Contains("MTF_HV"))
             {
-                log.Info("正在解析MTF_H画面的流程");
+                log.Info("正在解析MTF_HV画面的流程");
                 result.TestType = ARVR1TestType.MTFHV;
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
@@ -1011,118 +1040,202 @@ namespace ProjectARVRLite
                         {
                             MTFDetailViewReslut mtfresults = new MTFDetailViewReslut(detailCommonModels[0]);
 
-                            foreach (var mtf in mtfresults.MTFResult.result)
+                            foreach (var mtf in mtfresults.MTFResult.resultChild)
                             {
-                                if (mtf.name == "Center_0F_H")
+                                if (mtf.name == "Center_0F")
                                 {
-                                    ObjectiveTestResult.MTF_H_Center_0F = new ObjectiveTestItem()
-                                    { 
-                                        Name = "MTF_H_Center_0F", 
-                                        LowLimit = SPECConfig.MTF_H_Center_0FMin,
-                                        UpLimit = SPECConfig.MTF_H_Center_0FMax,
-                                        Value = mtf.mtfValue ??0,
-                                        TestValue = mtf.mtfValue.ToString() 
+                                    ObjectiveTestResult.MTF_HV_H_Center_0F = new ObjectiveTestItem()
+                                    {
+                                        Name = "MTF_HV_H_Center_0F",
+                                        LowLimit = SPECConfig.MTF_HV_H_Center_0FMin,
+                                        UpLimit = SPECConfig.MTF_HV_H_Center_0FMax,
+                                        Value = mtf.horizontalAverage,
+                                        TestValue = mtf.horizontalAverage.ToString()
                                     };
-                                    result.Result = result.Result && ObjectiveTestResult.MTF_H_Center_0F.TestResult;
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_H_Center_0F.TestResult;
+
+                                    ObjectiveTestResult.MTF_HV_V_Center_0F = new ObjectiveTestItem()
+                                    {
+                                        Name = "MTF_HV_V_Center_0F",
+                                        LowLimit = SPECConfig.MTF_HV_V_Center_0FMin,
+                                        UpLimit = SPECConfig.MTF_HV_V_Center_0FMax,
+                                        Value = mtf.verticalAverage,
+                                        TestValue = mtf.verticalAverage.ToString()
+                                    };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_V_Center_0F.TestResult;
+                                }
+
+                                if (mtf.name == "LeftUp_0.4F")
+                                {
+                                    ObjectiveTestResult.MTF_HV_H_LeftUp_0_4F = new ObjectiveTestItem()
+                                    {
+                                        Name = "MTF_HV_H_LeftUp_0_4F",
+                                        LowLimit = SPECConfig.MTF_HV_H_LeftUp_0_4FMin,
+                                        UpLimit = SPECConfig.MTF_HV_H_LeftUp_0_4FMax,
+                                        Value = mtf.horizontalAverage,
+                                        TestValue = mtf.horizontalAverage.ToString()
+                                    };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_H_LeftUp_0_4F.TestResult;
+
+                                    ObjectiveTestResult.MTF_HV_V_LeftUp_0_4F = new ObjectiveTestItem()
+                                    {
+                                        Name = "MTF_HV_V_LeftUp_0_4F",
+                                        LowLimit = SPECConfig.MTF_HV_V_LeftUp_0_4FMin,
+                                        UpLimit = SPECConfig.MTF_HV_V_LeftUp_0_4FMax,
+                                        Value = mtf.verticalAverage,
+                                        TestValue = mtf.verticalAverage.ToString()
+                                    };
 
                                 }
 
-                                if (mtf.name == "LeftUp_0.5F_H")
+                                if (mtf.name == "RightUp_0.4F")
                                 {
-                                    ObjectiveTestResult.MTF_H_LeftUp_0_5F = new ObjectiveTestItem()
+                                    ObjectiveTestResult.MTF_HV_H_RightUp_0_4F = new ObjectiveTestItem()
                                     {
-                                        Name = "MTF_H_LeftUp_0_5F",
-                                        LowLimit = SPECConfig.MTF_H_LeftUp_0_5FMin,
-                                        UpLimit = SPECConfig.MTF_H_LeftUp_0_5FMax,
-                                        Value = mtf.mtfValue ?? 0,
-                                        TestValue = mtf.mtfValue.ToString()
+                                        Name = "MTF_HV_H_RightUp_0_4F",
+                                        LowLimit = SPECConfig.MTF_HV_H_RightUp_0_4FMin,
+                                        UpLimit = SPECConfig.MTF_HV_H_RightUp_0_4FMax,
+                                        Value = mtf.horizontalAverage,
+                                        TestValue = mtf.horizontalAverage.ToString()
                                     };
-                                    result.Result = result.Result && ObjectiveTestResult.MTF_H_LeftUp_0_5F.TestResult;
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_H_RightUp_0_4F.TestResult;
+                                    ObjectiveTestResult.MTF_HV_V_RightUp_0_4F = new ObjectiveTestItem()
+                                    {
+                                        Name = "MTF_HV_V_RightUp_0_4F",
+                                        LowLimit = SPECConfig.MTF_HV_V_RightUp_0_4FMin,
+                                        UpLimit = SPECConfig.MTF_HV_V_RightUp_0_4FMax,
+                                        Value = mtf.verticalAverage,
+                                        TestValue = mtf.verticalAverage.ToString()
+                                    };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_V_RightUp_0_4F.TestResult;
+
                                 }
-                                if (mtf.name == "RightUp_0.5F_H")
+                                if (mtf.name == "LeftDown_0.4F")
                                 {
-                                    ObjectiveTestResult.MTF_H_RightUp_0_5F = new ObjectiveTestItem()
+                                    ObjectiveTestResult.MTF_HV_H_LeftDown_0_4F = new ObjectiveTestItem()
                                     {
-                                        Name = "MTF_H_RightUp_0_5F",
-                                        LowLimit = SPECConfig.MTF_H_RightUp_0_5FMin,
-                                        UpLimit = SPECConfig.MTF_H_RightUp_0_5FMax,
-                                        Value = mtf.mtfValue ?? 0,
-                                        TestValue = mtf.mtfValue.ToString()
+                                        Name = "MTF_HV_H_LeftDown_0_4F",
+                                        LowLimit = SPECConfig.MTF_HV_H_LeftDown_0_4FMin,
+                                        UpLimit = SPECConfig.MTF_HV_H_LeftDown_0_4FMax,
+                                        Value = mtf.horizontalAverage,
+                                        TestValue = mtf.horizontalAverage.ToString()
                                     };
-                                    result.Result = result.Result && ObjectiveTestResult.MTF_H_RightUp_0_5F.TestResult;
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_H_LeftDown_0_4F.TestResult;
+                                    ObjectiveTestResult.MTF_HV_V_LeftDown_0_4F = new ObjectiveTestItem()
+                                    {
+                                        Name = "MTF_HV_V_LeftDown_0_4F",
+                                        LowLimit = SPECConfig.MTF_HV_V_LeftDown_0_4FMin,
+                                        UpLimit = SPECConfig.MTF_HV_V_LeftDown_0_4FMax,
+                                        Value = mtf.verticalAverage,
+                                        TestValue = mtf.verticalAverage.ToString()
+                                    };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_V_LeftDown_0_4F.TestResult;
                                 }
-                                if (mtf.name == "LeftDown_0.5F_H")
+                                if (mtf.name == "RightDown_0.4F")
                                 {
-                                    ObjectiveTestResult.MTF_H_LeftDown_0_5F = new ObjectiveTestItem()
+                                    ObjectiveTestResult.MTF_HV_H_RightDown_0_4F = new ObjectiveTestItem()
                                     {
-                                        Name = "MTF_H_LeftDown_0_5F",
-                                        LowLimit = SPECConfig.MTF_H_LeftDown_0_5FMin,
-                                        UpLimit = SPECConfig.MTF_H_LeftDown_0_5FMax,
-                                        Value = mtf.mtfValue ?? 0,
-                                        TestValue = mtf.mtfValue.ToString()
+                                        Name = "MTF_HV_H_RightDown_0_4F",
+                                        LowLimit = SPECConfig.MTF_HV_H_RightDown_0_4FMin,
+                                        UpLimit = SPECConfig.MTF_HV_H_RightDown_0_4FMax,
+                                        Value = mtf.horizontalAverage,
+                                        TestValue = mtf.horizontalAverage.ToString()
                                     };
-                                    result.Result = result.Result && ObjectiveTestResult.MTF_H_LeftDown_0_5F.TestResult;
-                                }
-                                if (mtf.name == "RightDown_0.5F_H")
-                                {
-                                    ObjectiveTestResult.MTF_H_RightDown_0_5F = new ObjectiveTestItem()
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_H_RightDown_0_4F.TestResult;
+                                    ObjectiveTestResult.MTF_HV_V_RightDown_0_4F = new ObjectiveTestItem()
                                     {
-                                        Name = "MTF_H_RightDown_0_5F",
-                                        LowLimit = SPECConfig.MTF_H_RightDown_0_5FMin,
-                                        UpLimit = SPECConfig.MTF_H_RightDown_0_5FMax,
-                                        Value = mtf.mtfValue ?? 0,
-                                        TestValue = mtf.mtfValue.ToString()
+                                        Name = "MTF_HV_V_RightDown_0_4F",
+                                        LowLimit = SPECConfig.MTF_HV_V_RightDown_0_4FMin,
+                                        UpLimit = SPECConfig.MTF_HV_V_RightDown_0_4FMax,
+                                        Value = mtf.verticalAverage,
+                                        TestValue = mtf.verticalAverage.ToString()
                                     };
-                                    result.Result = result.Result && ObjectiveTestResult.MTF_H_RightDown_0_5F.TestResult;
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_V_RightDown_0_4F.TestResult;
                                 }
 
-                                if (mtf.name == "LeftUp_0.8F_H")
+                                if (mtf.name == "LeftUp_0.8F")
                                 {
-                                    ObjectiveTestResult.MTF_H_LeftUp_0_8F = new ObjectiveTestItem()
+                                    ObjectiveTestResult.MTF_HV_H_LeftUp_0_8F = new ObjectiveTestItem()
                                     {
-                                        Name = "MTF_H_LeftUp_0_8F",
-                                        LowLimit = SPECConfig.MTF_H_LeftUp_0_8FMin,
-                                        UpLimit = SPECConfig.MTF_H_LeftUp_0_8FMax,
-                                        Value = mtf.mtfValue ?? 0,
-                                        TestValue = mtf.mtfValue.ToString()
+                                        Name = "MTF_HV_H_LeftUp_0_8F",
+                                        LowLimit = SPECConfig.MTF_HV_H_LeftUp_0_8FMin,
+                                        UpLimit = SPECConfig.MTF_HV_H_LeftUp_0_8FMax,
+                                        Value = mtf.horizontalAverage,
+                                        TestValue = mtf.horizontalAverage.ToString()
                                     };
-                                    result.Result = result.Result && ObjectiveTestResult.MTF_H_LeftUp_0_8F.TestResult;
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_H_LeftUp_0_8F.TestResult;
+                                    ObjectiveTestResult.MTF_HV_V_LeftUp_0_8F = new ObjectiveTestItem()
+                                    {
+                                        Name = "MTF_HV_V_LeftUp_0_8F",
+                                        LowLimit = SPECConfig.MTF_HV_V_LeftUp_0_8FMin,
+                                        UpLimit = SPECConfig.MTF_HV_V_LeftUp_0_8FMax,
+                                        Value = mtf.verticalAverage,
+                                        TestValue = mtf.verticalAverage.ToString()
+                                    };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_V_LeftUp_0_8F.TestResult;
                                 }
-                                if (mtf.name == "RightUp_0.8F_H")
+                                if (mtf.name == "RightUp_0.8F")
                                 {
-                                    ObjectiveTestResult.MTF_H_RightUp_0_8F = new ObjectiveTestItem()
+                                    ObjectiveTestResult.MTF_HV_H_RightUp_0_8F = new ObjectiveTestItem()
                                     {
-                                        Name = "MTF_H_RightUp_0_8F",
-                                        LowLimit = SPECConfig.MTF_H_RightUp_0_8FMin,
-                                        UpLimit = SPECConfig.MTF_H_RightUp_0_8FMax,
-                                        Value = mtf.mtfValue ?? 0,
-                                        TestValue = mtf.mtfValue.ToString()
+                                        Name = "MTF_HV_H_RightUp_0_8F",
+                                        LowLimit = SPECConfig.MTF_HV_H_RightUp_0_8FMin,
+                                        UpLimit = SPECConfig.MTF_HV_H_RightUp_0_8FMax,
+                                        Value = mtf.horizontalAverage,
+                                        TestValue = mtf.horizontalAverage.ToString()
                                     };
-                                    result.Result = result.Result && ObjectiveTestResult.MTF_H_RightUp_0_8F.TestResult;
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_H_RightUp_0_8F.TestResult;
+                                    ObjectiveTestResult.MTF_HV_V_RightUp_0_8F = new ObjectiveTestItem()
+                                    {
+                                        Name = "MTF_HV_V_RightUp_0_8F",
+                                        LowLimit = SPECConfig.MTF_HV_V_RightUp_0_8FMin,
+                                        UpLimit = SPECConfig.MTF_HV_V_RightUp_0_8FMax,
+                                        Value = mtf.verticalAverage,
+                                        TestValue = mtf.verticalAverage.ToString()
+                                    };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_V_RightUp_0_8F.TestResult;
                                 }
-                                if (mtf.name == "LeftDown_0.8F_H")
+                                if (mtf.name == "LeftDown_0.8F")
                                 {
-                                    ObjectiveTestResult.MTF_H_LeftDown_0_8F = new ObjectiveTestItem()
+                                    ObjectiveTestResult.MTF_HV_H_LeftDown_0_8F = new ObjectiveTestItem()
                                     {
-                                        Name = "MTF_H_LeftDown_0_8F",
-                                        LowLimit = SPECConfig.MTF_H_LeftDown_0_8FMin,
-                                        UpLimit = SPECConfig.MTF_H_LeftDown_0_8FMax,
-                                        Value = mtf.mtfValue ?? 0,
-                                        TestValue = mtf.mtfValue.ToString()
+                                        Name = "MTF_HV_H_LeftDown_0_8F",
+                                        LowLimit = SPECConfig.MTF_HV_H_LeftDown_0_8FMin,
+                                        UpLimit = SPECConfig.MTF_HV_H_LeftDown_0_8FMax,
+                                        Value = mtf.horizontalAverage,
+                                        TestValue = mtf.horizontalAverage.ToString()
                                     };
-                                    result.Result = result.Result && ObjectiveTestResult.MTF_H_LeftDown_0_8F.TestResult;
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_H_LeftDown_0_8F.TestResult;
+                                    ObjectiveTestResult.MTF_HV_V_LeftDown_0_8F = new ObjectiveTestItem()
+                                    {
+                                        Name = "MTF_HV_V_LeftDown_0_8F",
+                                        LowLimit = SPECConfig.MTF_HV_V_LeftDown_0_8FMin,
+                                        UpLimit = SPECConfig.MTF_HV_V_LeftDown_0_8FMax,
+                                        Value = mtf.verticalAverage,
+                                        TestValue = mtf.verticalAverage.ToString()
+                                    };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_V_LeftDown_0_8F.TestResult;
                                 }
-                                if (mtf.name == "RightDown_0.8F_H")
+                                if (mtf.name == "RightDown_0.8F")
                                 {
-                                    ObjectiveTestResult.MTF_H_RightDown_0_8F = new ObjectiveTestItem()
+                                    ObjectiveTestResult.MTF_HV_H_RightDown_0_8F = new ObjectiveTestItem()
                                     {
-                                        Name = "MTF_H_RightDown_0_8F",
-                                        LowLimit = SPECConfig.MTF_H_RightDown_0_8FMin,
-                                        UpLimit = SPECConfig.MTF_H_RightDown_0_8FMax,
-                                        Value = mtf.mtfValue ?? 0,
-                                        TestValue = mtf.mtfValue.ToString()
+                                        Name = "MTF_HV_H_RightDown_0_8F",
+                                        LowLimit = SPECConfig.MTF_HV_H_RightDown_0_8FMin,
+                                        UpLimit = SPECConfig.MTF_HV_H_RightDown_0_8FMax,
+                                        Value = mtf.horizontalAverage,
+                                        TestValue = mtf.horizontalAverage.ToString()
                                     };
-                                    result.Result = result.Result && ObjectiveTestResult.MTF_H_RightDown_0_8F.TestResult;
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_H_RightDown_0_8F.TestResult;
+                                    ObjectiveTestResult.MTF_HV_V_RightDown_0_8F = new ObjectiveTestItem()
+                                    {
+                                        Name = "MTF_HV_V_RightDown_0_8F",
+                                        LowLimit = SPECConfig.MTF_HV_V_RightDown_0_8FMin,
+                                        UpLimit = SPECConfig.MTF_HV_V_RightDown_0_8FMax,
+                                        Value = mtf.verticalAverage,
+                                        TestValue = mtf.verticalAverage.ToString()
+                                    };
+                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_V_RightDown_0_8F.TestResult;
                                 }
                             }
                             result.ViewRelsultMTFH.MTFDetailViewReslut = mtfresults;
@@ -1227,38 +1340,39 @@ namespace ProjectARVRLite
                             FindCrossDetailViewReslut mtfresult = new FindCrossDetailViewReslut(detailCommonModels[0]);
                             result.ViewResultOpticCenter.FindCrossDetailViewReslut = mtfresult;
 
-                            //ObjectiveTestResult.ImageCenterXTilt = new ObjectiveTestItem()
-                            //{
-                            //    Name = "ImageCenterXTilt",
-                            //    LowLimit = SPECConfig.XTiltMin,
-                            //    UpLimit = SPECConfig.XTiltMax,
-                            //    Value = result.ViewResultOpticCenter.FindCrossDetailViewReslut.FindCrossResult.result[0].tilt.tilt_x,
-                            //    TestValue = result.ViewResultOpticCenter.FindCrossDetailViewReslut.FindCrossResult.result[0].tilt.tilt_x.ToString("F4")
-                            //};
-                            //ObjectiveTestResult.ImageCenterYTilt = new ObjectiveTestItem()
-                            //{
-                            //    Name = "ImageCenterYTilt",
-                            //    LowLimit = SPECConfig.YTiltMin,
-                            //    UpLimit = SPECConfig.YTiltMax,
-                            //    Value = result.ViewResultOpticCenter.FindCrossDetailViewReslut.YDegree,
-                            //    TestValue = result.ViewResultOpticCenter.FindCrossDetailViewReslut.YDegree.ToString("F4")
-                            //};
-                            //ObjectiveTestResult.ImageCenterRotation = new ObjectiveTestItem()
-                            //{
-                            //    Name = "ImageCenterRotation",
-                            //    LowLimit = SPECConfig.RotationMin,
-                            //    UpLimit = SPECConfig.RotationMax,
-                            //    Value = result.ViewResultOpticCenter.FindCrossDetailViewReslut.ZDegree,
-                            //    TestValue = result.ViewResultOpticCenter.FindCrossDetailViewReslut.ZDegree.ToString("F4")
-                            //};
+                            ObjectiveTestResult.OptCenterXTilt = new ObjectiveTestItem()
+                            {
+                                Name = "OptCenterXTilt",
+                                LowLimit = SPECConfig.XTiltMin,
+                                UpLimit = SPECConfig.XTiltMax,
+                                Value = mtfresult.FindCrossResult.result[0].tilt.tilt_x,
+                                TestValue = mtfresult.FindCrossResult.result[0].tilt.tilt_x.ToString("F4")
+                            };
+                            ObjectiveTestResult.OptCenterYTilt = new ObjectiveTestItem()
+                            {
+                                Name = "OptCenterYTilt",
+                                LowLimit = SPECConfig.YTiltMin,
+                                UpLimit = SPECConfig.YTiltMax,
+                                Value = mtfresult.FindCrossResult.result[0].tilt.tilt_y,
+                                TestValue = mtfresult.FindCrossResult.result[0].tilt.tilt_y.ToString("F4")
+                            };
 
-                            //result.ViewResultOpticCenter.XTilt = ObjectiveTestResult.ImageCenterXTilt;
-                            //result.ViewResultOpticCenter.YTilt = ObjectiveTestResult.ImageCenterYTilt;
-                            //result.ViewResultOpticCenter.Rotation = ObjectiveTestResult.ImageCenterRotation;
+                            ObjectiveTestResult.OptCenterRotation = new ObjectiveTestItem()
+                            {
+                                Name = "OptCenterRotation",
+                                LowLimit = SPECConfig.RotationMin,
+                                UpLimit = SPECConfig.RotationMax,
+                                Value = mtfresult.FindCrossResult.result[0].rotationAngle,
+                                TestValue = mtfresult.FindCrossResult.result[0].rotationAngle.ToString("F4")
+                            };
 
-                            //result.Result = result.Result && ObjectiveTestResult.ImageCenterXTilt.TestResult;
-                            //result.Result = result.Result && ObjectiveTestResult.ImageCenterYTilt.TestResult;
-                            //result.Result = result.Result && ObjectiveTestResult.ImageCenterRotation.TestResult;
+                            result.ViewResultOpticCenter.XTilt = ObjectiveTestResult.OptCenterXTilt;
+                            result.ViewResultOpticCenter.YTilt = ObjectiveTestResult.OptCenterYTilt;
+                            result.ViewResultOpticCenter.Rotation = ObjectiveTestResult.OptCenterRotation;
+
+                            result.Result = result.Result && ObjectiveTestResult.OptCenterXTilt.TestResult;
+                            result.Result = result.Result && ObjectiveTestResult.OptCenterYTilt.TestResult;
+                            result.Result = result.Result && ObjectiveTestResult.OptCenterRotation.TestResult;
 
                         }
 
@@ -1289,67 +1403,75 @@ namespace ProjectARVRLite
             if (SocketManager.GetInstance().TcpClients.Count > 0)
             {
                 log.Info("Socket已经链接 ");
-                if (SocketControl.Current.Stream != null)
+                try
                 {
-                    var values = Enum.GetValues(typeof(ARVR1TestType));
-                    int currentIndex = Array.IndexOf(values, CurrentTestType);
-                    int nextIndex = (currentIndex + 1) % values.Length;
-                    // 跳过 None（假设 None 是第一个）
-                    if ((ARVR1TestType)values.GetValue(nextIndex) == ARVR1TestType.None)
-                        nextIndex = (nextIndex + 1) % values.Length;
-                    ARVR1TestType aRVRTestType = (ARVR1TestType)values.GetValue(nextIndex);
-
-                    if (aRVRTestType == ARVR1TestType.Ghost)
+                    if (SocketControl.Current.Stream != null)
                     {
-                        log.Info("ARVR测试完成");
+                        var values = Enum.GetValues(typeof(ARVR1TestType));
+                        int currentIndex = Array.IndexOf(values, CurrentTestType);
+                        int nextIndex = (currentIndex + 1) % values.Length;
+                        // 跳过 None（假设 None 是第一个）
+                        if ((ARVR1TestType)values.GetValue(nextIndex) == ARVR1TestType.None)
+                            nextIndex = (nextIndex + 1) % values.Length;
+                        ARVR1TestType aRVRTestType = (ARVR1TestType)values.GetValue(nextIndex);
 
-                        ObjectiveTestResult.TotalResult = true;
-
-                        string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                        string filePath = Path.Combine(ProjectARVRLiteConfig.Instance.ResultSavePath, $"ObjectiveTestResults_{timeStr}.csv");
-
-                        List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
-                      
-                        objectiveTestResults.Add(ObjectiveTestResult);
-                        ObjectiveTestResultCsvExporter.ExportToCsv(objectiveTestResults, filePath);
-                        var response = new SocketResponse
+                        if (aRVRTestType == ARVR1TestType.Ghost)
                         {
-                            Version = "1.0",
-                            MsgID = string.Empty,
-                            EventName = "ProjectARVRResult",
-                            Code = 0,
-                            Msg = "ARVR Test Completed",
-                            Data = ObjectiveTestResult
-                        };
-                        string respString = JsonConvert.SerializeObject(response);
-                        log.Info(respString);
-                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+                            log.Info("ARVR测试完成");
+
+                            ObjectiveTestResult.TotalResult = true;
+
+                            string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                            string filePath = Path.Combine(ProjectARVRLiteConfig.Instance.ResultSavePath, $"ObjectiveTestResults_{timeStr}.csv");
+
+                            List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
+
+                            objectiveTestResults.Add(ObjectiveTestResult);
+                            ObjectiveTestResultCsvExporter.ExportToCsv(objectiveTestResults, filePath);
+                            var response = new SocketResponse
+                            {
+                                Version = "1.0",
+                                MsgID = string.Empty,
+                                EventName = "ProjectARVRResult",
+                                Code = 0,
+                                Msg = "ARVR Test Completed",
+                                Data = ObjectiveTestResult
+                            };
+                            string respString = JsonConvert.SerializeObject(response);
+                            log.Info(respString);
+                            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+                        }
+                        else
+                        {
+
+                            var response = new SocketResponse
+                            {
+                                Version = "1.0",
+                                MsgID = string.Empty,
+                                EventName = "SwitchPG",
+                                Code = 0,
+                                Msg = "Switch PG",
+                                Data = new SwitchPG
+                                {
+                                    ARVRTestType = aRVRTestType
+                                },
+                            };
+                            string respString = JsonConvert.SerializeObject(response);
+                            log.Info(respString);
+                            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+                        }
+
                     }
                     else
                     {
-
-                        var response = new SocketResponse
-                        {
-                            Version = "1.0",
-                            MsgID = string.Empty,
-                            EventName = "SwitchPG",
-                            Code = 0,
-                            Msg = "Switch PG",
-                            Data = new SwitchPG
-                            {
-                                ARVRTestType = aRVRTestType
-                            },
-                        };
-                        string respString = JsonConvert.SerializeObject(response);
-                        log.Info(respString);
-                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+                        log.Info("Socket流为空，无法发送数据");
                     }
-
                 }
-                else
+                catch(Exception ex)
                 {
-                    log.Info("Socket流为空，无法发送数据");
+                    log.ErrorExt(ex);
                 }
+
             }
             else
             {
@@ -1367,6 +1489,7 @@ namespace ProjectARVRLite
 
         private void Button_Click_Clear(object sender, RoutedEventArgs e)
         {
+            ViewResluts.Clear();
             ImageView.Clear();
             outputText.Document.Blocks.Clear();
             outputText.Background = Brushes.White;
@@ -1438,6 +1561,42 @@ namespace ProjectARVRLite
                 if (result.TestType == ARVR1TestType.White)
                 {
                     foreach (var poiResultCIExyuvData in result.ViewResultWhite.PoiResultCIExyuvDatas)
+                    {
+                        var item = poiResultCIExyuvData.Point;
+                        switch (item.PointType)
+                        {
+                            case POIPointTypes.Circle:
+                                DVCircleText Circle = new DVCircleText();
+                                Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
+                                Circle.Attribute.Radius = item.Radius;
+                                Circle.Attribute.Brush = Brushes.Transparent;
+                                Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                                Circle.Attribute.Id = item.Id ?? -1;
+                                Circle.Attribute.Text = item.Name;
+                                Circle.Attribute.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                                Circle.Render();
+                                ImageView.AddVisual(Circle);
+                                break;
+                            case POIPointTypes.Rect:
+                                DVRectangleText Rectangle = new DVRectangleText();
+                                Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
+                                Rectangle.Attribute.Brush = Brushes.Transparent;
+                                Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                                Rectangle.Attribute.Id = item.Id ?? -1;
+                                Rectangle.Attribute.Text = item.Name;
+                                Rectangle.Attribute.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                                Rectangle.Render();
+                                ImageView.AddVisual(Rectangle);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+
+                if (result.TestType == ARVR1TestType.W25)
+                {
+                    foreach (var poiResultCIExyuvData in result.ViewResultW25.PoiResultCIExyuvDatas)
                     {
                         var item = poiResultCIExyuvData.Point;
                         switch (item.PointType)
@@ -1558,7 +1717,7 @@ namespace ProjectARVRLite
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
                             Rectangle.Attribute.Id = id;
-                            Rectangle.Attribute.Text = item.name;
+                            Rectangle.Attribute.Text = item.name + "_"+ item.id;
                             Rectangle.Attribute.Msg = item.mtfValue.ToString();
                             Rectangle.Render();
                             ImageView.AddVisual(Rectangle);
@@ -1642,37 +1801,47 @@ namespace ProjectARVRLite
             switch (result.TestType)
             {
                 case ARVR1TestType.W51:
-                    outtext += $"W51 测试项：自动AA区域定位算法+FOV算法" + Environment.NewLine;
+                    outtext += $"白画面绿图W51 测试项：自动AA区域定位算法+FOV算法" + Environment.NewLine;
 
+                    outtext += $"发光区角点：" + Environment.NewLine;
                     if (result.ViewReslutW51.AlgResultLightAreaModels != null)
                     {
                         foreach (var item in result.ViewReslutW51.AlgResultLightAreaModels)
                         {
-                            outtext += $"AlgResultLightAreaModel:{item.PosX},{item.PosY}" + Environment.NewLine;
+                            outtext += $"{item.PosX},{item.PosY}" + Environment.NewLine;
                         }
                     }
+
                     outtext += $"DiagonalFieldOfViewAngle:{result.ViewReslutW51.DiagonalFieldOfViewAngle.TestValue}  LowLimit:{result.ViewReslutW51.DiagonalFieldOfViewAngle.LowLimit} UpLimit:{result.ViewReslutW51.DiagonalFieldOfViewAngle.UpLimit},Rsult{(result.ViewReslutW51.DiagonalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     outtext += $"HorizontalFieldOfViewAngle:{result.ViewReslutW51.HorizontalFieldOfViewAngle.TestValue} LowLimit:{result.ViewReslutW51.HorizontalFieldOfViewAngle.LowLimit} UpLimit:{result.ViewReslutW51.HorizontalFieldOfViewAngle.UpLimit} ,Rsult{(result.ViewReslutW51.HorizontalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     outtext += $"VerticalFieldOfViewAngle:{result.ViewReslutW51.VerticalFieldOfViewAngle.TestValue} LowLimit:{result.ViewReslutW51.VerticalFieldOfViewAngle.LowLimit} UpLimit:{result.ViewReslutW51.VerticalFieldOfViewAngle.UpLimit},Rsult{(result.ViewReslutW51.VerticalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     break;
                 case ARVR1TestType.White:
-                    outtext += $"白画面 测试项：自动AA区域定位算法+关注点算法+FOV算法+亮度均匀性+颜色均匀性算法+" + Environment.NewLine;
+                    outtext += $"白画面九点圆 测试项：关注点算法+亮度均匀性+颜色均匀性算法+" + Environment.NewLine;
 
                     if (result.ViewResultWhite.PoiResultCIExyuvDatas != null)
                     {
                         foreach (var item in result.ViewResultWhite.PoiResultCIExyuvDatas)
                         {
-                            outtext += $"X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
+                            outtext += $"{item.Name}  X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
                         }
                     }
 
-                    //outtext += $"CenterCorrelatedColorTemperature:{result.ViewResultWhite.CenterCorrelatedColorTemperature.TestValue}  LowLimit:{result.ViewResultWhite.CenterCorrelatedColorTemperature.LowLimit} UpLimit:{result.ViewResultWhite.CenterCorrelatedColorTemperature.UpLimit},Rsult{(result.ViewResultWhite.CenterCorrelatedColorTemperature.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-                    //outtext += $"Luminance_uniformity:{result.ViewResultWhite.LuminanceUniformity.TestValue} LowLimit:{result.ViewResultWhite.LuminanceUniformity.LowLimit}  UpLimit:{result.ViewResultWhite.LuminanceUniformity.UpLimit},Rsult{(result.ViewResultWhite.LuminanceUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-                    //outtext += $"Color_uniformity:{result.ViewResultWhite.ColorUniformity.TestValue} LowLimit:{result.ViewResultWhite.ColorUniformity.LowLimit} UpLimit:{result.ViewResultWhite.ColorUniformity.UpLimit},Rsult{(result.ViewResultWhite.ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    outtext += $"CenterCorrelatedColorTemperature:{result.ViewResultWhite.CenterCorrelatedColorTemperature.TestValue}  LowLimit:{result.ViewResultWhite.CenterCorrelatedColorTemperature.LowLimit} UpLimit:{result.ViewResultWhite.CenterCorrelatedColorTemperature.UpLimit},Rsult{(result.ViewResultWhite.CenterCorrelatedColorTemperature.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    outtext += $"Luminance_uniformity:{result.ViewResultWhite.LuminanceUniformity.TestValue} LowLimit:{result.ViewResultWhite.LuminanceUniformity.LowLimit}  UpLimit:{result.ViewResultWhite.LuminanceUniformity.UpLimit},Rsult{(result.ViewResultWhite.LuminanceUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    outtext += $"Color_uniformity:{result.ViewResultWhite.ColorUniformity.TestValue} LowLimit:{result.ViewResultWhite.ColorUniformity.LowLimit} UpLimit:{result.ViewResultWhite.ColorUniformity.UpLimit},Rsult{(result.ViewResultWhite.ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
 
                     break;
                 case ARVR1TestType.Black:
                     outtext += $"黑画面 测试项：自动AA区域定位算法+关注点算法+序列对比度算法(中心亮度比值)" + Environment.NewLine;
+                    if (result.ViewResultBlack.PoiResultCIExyuvDatas != null)
+                    {
+                        foreach (var item in result.ViewResultBlack.PoiResultCIExyuvDatas)
+                        {
+                            outtext += $"{item.Name}  X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
+                        }
+                    }
+
                     outtext += $"FOFOContrast:{result.ViewResultBlack.FOFOContrast.TestValue}  LowLimit:{result.ViewResultBlack.FOFOContrast.LowLimit} UpLimit:{result.ViewResultBlack.FOFOContrast.UpLimit},Rsult{(result.ViewResultBlack.FOFOContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     break;
                 case ARVR1TestType.W25:
@@ -1681,17 +1850,20 @@ namespace ProjectARVRLite
                     {
                         foreach (var item in result.ViewResultW25.PoiResultCIExyuvDatas)
                         {
-                            outtext += $"X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
+                            outtext += $"{item.Name}  X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
                         }
                     }
                     break;
                 case ARVR1TestType.MTFHV:
-                    outtext += $"水平MTF 测试项：自动AA区域定位算法+关注点+MTF算法" + Environment.NewLine;
+                    outtext += $"水平MTF 测试项：自动AA区域定位算法+MTFHV算法" + Environment.NewLine;
+
+                    outtext += $"name,horizontalAverage,verticalAverage,Average," + Environment.NewLine;
+
                     if (result.ViewRelsultMTFH.MTFDetailViewReslut.MTFResult != null)
                     {
-                        foreach (var item in result.ViewRelsultMTFH.MTFDetailViewReslut.MTFResult.result)
+                        foreach (var item in result.ViewRelsultMTFH.MTFDetailViewReslut.MTFResult.resultChild)
                         {
-                            outtext += $"{item.name},{item.mtfValue}" + Environment.NewLine;
+                            outtext += $"{item.name},{item.horizontalAverage},{item.verticalAverage},{item.Average}" + Environment.NewLine;
                         }
                     }
 
@@ -1708,15 +1880,23 @@ namespace ProjectARVRLite
                     break;
                 case ARVR1TestType.Chessboard:
                     outtext += $"棋盘格 测试项：" + Environment.NewLine;
+
+                    if (result.ViewReslutCheckerboard.PoiResultCIExyuvDatas != null)
+                    {
+                        foreach (var item in result.ViewReslutCheckerboard.PoiResultCIExyuvDatas)
+                        {
+                            outtext += $"{item.Name}  Y:{item.Y.ToString("F2")}{Environment.NewLine}";
+                        }
+                    }
                     outtext += $"ChessboardContrast:{result.ViewReslutCheckerboard.ChessboardContrast.TestValue} LowLimit:{result.ViewReslutCheckerboard.ChessboardContrast.LowLimit}  UpLimit:{result.ViewReslutCheckerboard.ChessboardContrast.UpLimit},Rsult{(result.ViewReslutCheckerboard.ChessboardContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     break;
                 case ARVR1TestType.OpticCenter:
                     outtext += $"OpticCenter 测试项：" + Environment.NewLine;
-                    //outtext += $"中心点x:{result.ViewResultOpticCenter.BinocularFusionModel.CrossMarkCenterX} 中心点y:{result.ViewResultOpticCenter.BinocularFusionModel.CrossMarkCenterY}" + Environment.NewLine;
+                    outtext += $"中心点x:{result.ViewResultOpticCenter.FindCrossDetailViewReslut.FindCrossResult.result[0].center.x} 中心点y:{result.ViewResultOpticCenter.FindCrossDetailViewReslut.FindCrossResult.result[0].center.y}" + Environment.NewLine;
 
-                    //outtext += $"XTilt:{result.ViewResultOpticCenter.XTilt.TestValue} LowLimit:{result.ViewResultOpticCenter.XTilt.LowLimit}  UpLimit:{result.ViewResultOpticCenter.XTilt.UpLimit},Rsult{(result.ViewResultOpticCenter.XTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-                    //outtext += $"YTilt:{result.ViewResultOpticCenter.YTilt.TestValue} LowLimit:{result.ViewResultOpticCenter.YTilt.LowLimit}  UpLimit:{result.ViewResultOpticCenter.YTilt.UpLimit},Rsult{(result.ViewResultOpticCenter.YTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-                    //outtext += $"Rotation:{result.ViewResultOpticCenter.Rotation.TestValue} LowLimit:{result.ViewResultOpticCenter.Rotation.LowLimit}  UpLimit:{result.ViewResultOpticCenter.Rotation.UpLimit},Rsult{(result.ViewResultOpticCenter.Rotation.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    outtext += $"XTilt:{result.ViewResultOpticCenter.XTilt.TestValue} LowLimit:{result.ViewResultOpticCenter.XTilt.LowLimit}  UpLimit:{result.ViewResultOpticCenter.XTilt.UpLimit},Rsult{(result.ViewResultOpticCenter.XTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    outtext += $"YTilt:{result.ViewResultOpticCenter.YTilt.TestValue} LowLimit:{result.ViewResultOpticCenter.YTilt.LowLimit}  UpLimit:{result.ViewResultOpticCenter.YTilt.UpLimit},Rsult{(result.ViewResultOpticCenter.YTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    outtext += $"Rotation:{result.ViewResultOpticCenter.Rotation.TestValue} LowLimit:{result.ViewResultOpticCenter.Rotation.LowLimit}  UpLimit:{result.ViewResultOpticCenter.Rotation.UpLimit},Rsult{(result.ViewResultOpticCenter.Rotation.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
 
                     break;
                 default:

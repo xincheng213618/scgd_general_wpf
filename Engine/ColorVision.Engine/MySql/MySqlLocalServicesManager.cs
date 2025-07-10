@@ -100,7 +100,7 @@ namespace ColorVision.Engine.MySql
         public RelayCommand BackupResourcesCommand { get; set; }
         public RelayCommand BackupAllResourcesCommand { get; set; }
 
-        public MySqlLocalServicesManager()
+        public MySqlLocalServicesManager()   
         {
             try
             {
