@@ -761,6 +761,52 @@ namespace ProjectARVRLite
                                 ObjectiveTestResult.BlackCenterCorrelatedColorTemperature = objectiveTestItem;
                                 result.ViewResultWhite.CenterCorrelatedColorTemperature = objectiveTestItem;
                                 result.Result = result.Result && objectiveTestItem.TestResult;
+
+
+                                ObjectiveTestResult.W255CenterLunimance = new ObjectiveTestItem()
+                                {
+                                    Name = "W255CenterLunimance",
+                                    LowLimit = SPECConfig.W255CenterLunimanceMin,
+                                    UpLimit = SPECConfig.W255CenterLunimanceMax,
+                                    Value = poiResultCIExyuvData.Y,
+                                    TestValue = poiResultCIExyuvData.Y.ToString("F3")
+                                };
+                                ObjectiveTestResult.W255CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem()
+                                {
+                                    Name = "W255CenterCIE1931ChromaticCoordinatesx",
+                                    LowLimit = SPECConfig.ChessboardContrastMin,
+                                    UpLimit = SPECConfig.ChessboardContrastMax,
+                                    Value = poiResultCIExyuvData.x,
+                                    TestValue = poiResultCIExyuvData.x.ToString("F3")
+                                };
+                                ObjectiveTestResult.W255CenterCIE1931ChromaticCoordinatesy = new ObjectiveTestItem()
+                                {
+                                    Name = "W255CenterCIE1931ChromaticCoordinatesy",
+                                    LowLimit = SPECConfig.ChessboardContrastMin,
+                                    UpLimit = SPECConfig.ChessboardContrastMax,
+                                    Value = poiResultCIExyuvData.y,
+                                    TestValue = poiResultCIExyuvData.y.ToString("F3")
+                                };
+                                ObjectiveTestResult.W255CenterCIE1976ChromaticCoordinatesu = new ObjectiveTestItem()
+                                {
+                                    Name = "W255CenterCIE1976ChromaticCoordinatesu",
+                                    LowLimit = SPECConfig.ChessboardContrastMin,
+                                    UpLimit = SPECConfig.ChessboardContrastMax,
+                                    Value = poiResultCIExyuvData.u,
+                                    TestValue = poiResultCIExyuvData.u.ToString("F3")
+                                };
+                                ObjectiveTestResult.W255CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem()
+                                {
+                                    Name = "W255CenterCIE1976ChromaticCoordinatesv",
+                                    LowLimit = SPECConfig.ChessboardContrastMin,
+                                    UpLimit = SPECConfig.ChessboardContrastMax,
+                                    Value = poiResultCIExyuvData.v,
+                                    TestValue=poiResultCIExyuvData.v.ToString("F3")
+                                };
+
+
+
+
                             }
                             result.ViewResultWhite.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                         }
@@ -803,7 +849,7 @@ namespace ProjectARVRLite
                                     LowLimit = SPECConfig.ColorUniformityMin,
                                     UpLimit = SPECConfig.ColorUniformityMax
                                 };
-                                //ObjectiveTestResult.ColorUniformity = ColorUniformity;
+                                ObjectiveTestResult.W255ColorUniformity = ColorUniformity;
                                 result.ViewResultWhite.ColorUniformity = ColorUniformity;
                                 result.Result = result.Result && ColorUniformity.TestResult;
 
@@ -845,8 +891,8 @@ namespace ProjectARVRLite
                             ObjectiveTestResult.W25CenterLunimance = new ObjectiveTestItem()
                             {
                                 Name = "W25CenterLunimance",
-                                LowLimit = SPECConfig.ChessboardContrastMin,
-                                UpLimit = SPECConfig.ChessboardContrastMax,
+                                LowLimit = SPECConfig.W25CenterLunimanceMin,
+                                UpLimit = SPECConfig.W25CenterLunimanceMax,
                                 Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].Y,
                                 TestValue = result.ViewResultW25.PoiResultCIExyuvDatas[0].Y.ToString("F3")
                             };
@@ -871,7 +917,7 @@ namespace ProjectARVRLite
                                 Name = "W25CenterCIE1976ChromaticCoordinatesu",
                                 LowLimit = SPECConfig.ChessboardContrastMin,
                                 UpLimit = SPECConfig.ChessboardContrastMax,
-                                Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].y,
+                                Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].u,
                                 TestValue = result.ViewResultW25.PoiResultCIExyuvDatas[0].u.ToString("F3")
                             };
                             ObjectiveTestResult.W25CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem()
@@ -879,7 +925,7 @@ namespace ProjectARVRLite
                                 Name = "W25CenterCIE1976ChromaticCoordinatesv",
                                 LowLimit = SPECConfig.ChessboardContrastMin,
                                 UpLimit = SPECConfig.ChessboardContrastMax,
-                                Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].y,
+                                Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].v,
                                 TestValue = result.ViewResultW25.PoiResultCIExyuvDatas[0].v.ToString("F3")
                             };
                         }

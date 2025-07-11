@@ -58,6 +58,17 @@ namespace ProjectARVRLite.Config
         private double _CenterCorrelatedColorTemperatureMax = 7000;
 
 
+        public double W25CenterLunimanceMin { get => _W25CenterLunimanceMin; set { _W25CenterLunimanceMin = value; NotifyPropertyChanged(); } }
+        private double _W25CenterLunimanceMin = 0;
+
+        public double W25CenterLunimanceMax { get => _W25CenterLunimanceMax; set { _W25CenterLunimanceMax = value; NotifyPropertyChanged(); } }
+        private double _W25CenterLunimanceMax = 0;
+
+        public double W255CenterLunimanceMin { get => _W255CenterLunimanceMin; set { _W255CenterLunimanceMin = value; NotifyPropertyChanged(); } }
+        private double _W255CenterLunimanceMin = 0;
+
+        public double W255CenterLunimanceMax { get => _W255CenterLunimanceMax; set { _W255CenterLunimanceMax = value; NotifyPropertyChanged(); } }
+        private double _W255CenterLunimanceMax = 0;
 
         public double FOFOContrastMin { get => _FOFOContrastMin; set { _FOFOContrastMin = value; NotifyPropertyChanged(); } }
         private double _FOFOContrastMin = 100000;

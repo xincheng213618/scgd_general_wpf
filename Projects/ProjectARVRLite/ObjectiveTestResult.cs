@@ -59,6 +59,7 @@ namespace ProjectARVRLite
                 .ToList();
 
             // CSV 列头（每项后缀可自定义，比如 TestValue/Name/LowLimit/UpLimit/TestResult 均输出）
+
             var headers = new List<string>();
             foreach (var prop in itemProps)
             {
@@ -332,9 +333,6 @@ namespace ProjectARVRLite
 
         //public ObjectiveTestItem MTF_HV_LeftDown_0_8F { get; set; }
 
-
-        public ObjectiveTestItem Horizontal_TV_Distortion { get; set; }
-        public ObjectiveTestItem Vertical_TV_Distortion { get; set; }
 
         /// <summary>
         /// X轴倾斜角(°) 测试项
