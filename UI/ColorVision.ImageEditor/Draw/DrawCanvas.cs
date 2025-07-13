@@ -104,6 +104,7 @@ namespace ColorVision.ImageEditor.Draw
 
         public event EventHandler? VisualsAdd;
         public event EventHandler? VisualsRemove;
+        public event EventHandler VisualsClear;
 
         public void Clear()
         {
