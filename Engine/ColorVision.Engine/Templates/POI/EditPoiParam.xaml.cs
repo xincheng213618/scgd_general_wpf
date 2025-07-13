@@ -1858,6 +1858,56 @@ namespace ColorVision.Engine.Templates.POI
             PoiConfig.DefaultRectWidth = PoiConfig.AreaRectWidth / PoiConfig.AreaRectRow;
             PoiConfig.DefaultRectHeight = PoiConfig.AreaRectHeight / PoiConfig.AreaRectCol;
         }
+
+        private void Button_Click_3(object sender, RoutedEventArgs e)
+        {
+            PoiParam.LeftBottomX = PoiEditRectCache.Instance.LeftBottomX;
+            PoiParam.LeftBottomY = PoiEditRectCache.Instance.LeftBottomY;
+            PoiParam.LeftTopX = PoiEditRectCache.Instance.LeftTopX;
+            PoiParam.LeftTopY = PoiEditRectCache.Instance.LeftTopY;
+            PoiParam.RightBottomX = PoiEditRectCache.Instance.RightBottomX;
+            PoiParam.RightBottomY = PoiEditRectCache.Instance.RightBottomY;
+            PoiParam.RightTopX = PoiEditRectCache.Instance.RightTopX;
+            PoiParam.RightTopY = PoiEditRectCache.Instance.RightTopY;
+        }
+
+        private void Button_Click_4(object sender, RoutedEventArgs e)
+        {
+            PoiEditRectCache.Instance.LeftBottomX = PoiParam.LeftBottomX;
+            PoiEditRectCache.Instance.LeftBottomY = PoiParam.LeftBottomY;
+            PoiEditRectCache.Instance.LeftTopX = PoiParam.LeftTopX;
+            PoiEditRectCache.Instance.LeftTopY = PoiParam.LeftTopY;
+            PoiEditRectCache.Instance.RightBottomX = PoiParam.RightBottomX;
+            PoiEditRectCache.Instance.RightBottomY = PoiParam.RightBottomY;
+            PoiEditRectCache.Instance.RightTopX = PoiParam.RightTopX;
+            PoiEditRectCache.Instance.RightTopY = PoiParam.RightTopY;
+        }
+
+        private void Button_Click_5(object sender, RoutedEventArgs e)
+        {
+            PoiEditRectCache.Instance.LeftTopX = PoiConfig.PointInt1.X;
+            PoiEditRectCache.Instance.LeftTopY = PoiConfig.PointInt1.Y;
+            PoiEditRectCache.Instance.RightTopX = PoiConfig.PointInt2.X;
+            PoiEditRectCache.Instance.RightTopY = PoiConfig.PointInt2.Y;
+            PoiEditRectCache.Instance.RightBottomX = PoiConfig.PointInt3.X;
+            PoiEditRectCache.Instance.RightBottomY = PoiConfig.PointInt3.Y;
+            PoiEditRectCache.Instance.LeftBottomX = PoiConfig.PointInt4.X;
+            PoiEditRectCache.Instance.LeftBottomY = PoiConfig.PointInt4.Y;
+
+        }
+    }
+
+    public class PoiEditRectCache:IConfig
+    {
+        public static PoiEditRectCache Instance => ConfigService.Instance.GetRequiredService<PoiEditRectCache>();
+        public int? LeftTopX { get; set; }
+        public int? LeftTopY { get; set; }
+        public int? RightTopX { get; set; }
+        public int? RightTopY { get; set; }
+        public int? RightBottomX { get; set; }
+        public int? RightBottomY { get; set; }
+        public int? LeftBottomX { get; set; }
+        public int? LeftBottomY { get; set; }
     }
 
 }

@@ -227,17 +227,17 @@ namespace ProjectARVRLite
         /// <summary>
         /// 中心相关色温(K) 测试项
         /// </summary>
-        public ObjectiveTestItem CenterCorrelatedColorTemperature { get; set; }
+        public ObjectiveTestItem CenterCorrelatedColorTemperature { get; set; } = new ObjectiveTestItem();
 
         /// <summary>
         /// 亮度均匀性(%) 测试项
         /// </summary>
-        public ObjectiveTestItem LuminanceUniformity { get; set; }
+        public ObjectiveTestItem LuminanceUniformity { get; set; } = new ObjectiveTestItem();
 
         /// <summary>
         /// 色彩均匀性 测试项
         /// </summary>
-        public ObjectiveTestItem ColorUniformity { get; set; }
+        public ObjectiveTestItem ColorUniformity { get; set; } = new ObjectiveTestItem();
 
     }
 
@@ -769,7 +769,7 @@ namespace ProjectARVRLite
                                     LowLimit = SPECConfig.W255CenterLunimanceMin,
                                     UpLimit = SPECConfig.W255CenterLunimanceMax,
                                     Value = poiResultCIExyuvData.Y,
-                                    TestValue = poiResultCIExyuvData.Y.ToString("F3")
+                                    TestValue = poiResultCIExyuvData.Y.ToString("F3") + " nit"
                                 };
                                 ObjectiveTestResult.W255CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem()
                                 {
@@ -894,7 +894,7 @@ namespace ProjectARVRLite
                                 LowLimit = SPECConfig.W25CenterLunimanceMin,
                                 UpLimit = SPECConfig.W25CenterLunimanceMax,
                                 Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].Y,
-                                TestValue = result.ViewResultW25.PoiResultCIExyuvDatas[0].Y.ToString("F3")
+                                TestValue = result.ViewResultW25.PoiResultCIExyuvDatas[0].Y.ToString("F3") + " nit"
                             };
                             ObjectiveTestResult.W25CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem()
                             {
@@ -1546,7 +1546,14 @@ namespace ProjectARVRLite
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
                 var result = ViewResluts[listView.SelectedIndex];
-                GenoutputText(result);
+                try
+                {
+                    GenoutputText(result);
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                }
 
                 Task.Run(async () =>
                 {
@@ -1869,7 +1876,7 @@ namespace ProjectARVRLite
                     {
                         foreach (var item in result.ViewResultWhite.PoiResultCIExyuvDatas)
                         {
-                            outtext += $"{item.Name}  X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
+                            outtext += $"X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
                         }
                     }
 

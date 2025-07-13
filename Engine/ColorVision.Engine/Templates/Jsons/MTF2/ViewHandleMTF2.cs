@@ -187,6 +187,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
 
             Load(view, result);
 
+
             if (result.ViewResults.Count == 1)
             {
                 if (result.ViewResults[0] is MTFDetailViewReslut mTFDetailViewReslut)

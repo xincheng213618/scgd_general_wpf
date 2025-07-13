@@ -66,14 +66,22 @@ namespace ColorVision.Engine.Templates.POI
             LeftBottomY = dbModel.LeftBottomY;
         }
 
-        public int? LeftTopX { get; set; }
-        public int? LeftTopY { get; set; }
-        public int? RightTopX { get; set; }
-        public int? RightTopY { get; set; }
-        public int? RightBottomX { get; set; }
-        public int? RightBottomY { get; set; }
-        public int? LeftBottomX { get; set; }
-        public int? LeftBottomY { get; set; }
+        public int? LeftTopX { get => _LeftTopX; set { _LeftTopX = value; NotifyPropertyChanged(); } }
+        private int? _LeftTopX;
+        public int? LeftTopY { get => _LeftTopY; set { _LeftTopY = value; NotifyPropertyChanged(); } }
+        private int? _LeftTopY;
+        public int? RightTopX { get => _RightTopX; set { _RightTopX = value; NotifyPropertyChanged(); } }
+        private int? _RightTopX;
+        public int? RightTopY { get => _RightTopY; set { _RightTopY = value; NotifyPropertyChanged(); } }
+        private int? _RightTopY;
+        public int? RightBottomX { get => _RightBottomX; set { _RightBottomX = value; NotifyPropertyChanged(); } }
+        private int? _RightBottomX;
+        public int? RightBottomY { get => _RightBottomY; set { _RightBottomY = value; NotifyPropertyChanged(); } }
+        private int? _RightBottomY;
+        public int? LeftBottomX { get => _LeftBottomX; set { _LeftBottomX = value; NotifyPropertyChanged(); } }
+        private int? _LeftBottomX;
+        public int? LeftBottomY { get => _LeftBottomY; set { _LeftBottomY = value; NotifyPropertyChanged(); } }
+        private int? _LeftBottomY;
 
 
         public string CfgJson

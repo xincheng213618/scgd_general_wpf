@@ -100,11 +100,11 @@ namespace ColorVision.ImageEditor.Draw
         }
 
 
-        public event EventHandler? VisualsChanged;
+        public event EventHandler VisualsChanged;
 
-        public event EventHandler? VisualsAdd;
-        public event EventHandler? VisualsRemove;
-        public event EventHandler VisualsClear;
+        public event EventHandler VisualsAdd;
+        public event EventHandler VisualsRemove;
+
 
         public void Clear()
         {
@@ -116,7 +116,6 @@ namespace ColorVision.ImageEditor.Draw
                 RemoveLogicalChild(item);
             }
             visuals.Clear();
-
         }
         public void OnlyAddVisual(Visual visual)
         {
