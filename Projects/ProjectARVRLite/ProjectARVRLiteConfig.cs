@@ -53,6 +53,12 @@ namespace ProjectARVRLite
 
             EditSPECConfigcommand = new RelayCommand(a => EditSPECConfig());
         }
+        public int StepIndex { get => _StepIndex; set { _StepIndex = value; NotifyPropertyChanged(); } }
+        private int _StepIndex;
+
+        public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; NotifyPropertyChanged(); } }
+        private bool _LogControlVisibility = true;
+
 
         [DisplayName("重试次数")]
         public int TryCountMax { get => _TryCountMax; set { _TryCountMax = value; NotifyPropertyChanged(); } }

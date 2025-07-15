@@ -27,6 +27,7 @@ using ColorVision.SocketProtocol;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
+using ColorVision.UI.LogImp;
 using CVCommCore.CVAlgorithm;
 using FlowEngineLib;
 using FlowEngineLib.Base;
@@ -269,6 +270,9 @@ namespace ProjectARVRLite
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
         public static ARVRWindowConfig Config => ARVRWindowConfig.Instance;
+
+        public static ProjectARVRLiteConfig ProjectConfig => ProjectARVRLiteConfig.Instance;
+
         public ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = Config.ViewResluts;
 
         public ARVRWindow()
@@ -285,6 +289,7 @@ namespace ProjectARVRLite
         Random Random = new Random();
         public void InitTest()
         {
+            ProjectConfig.StepIndex = 0;
             ObjectiveTestResult = new ObjectiveTestResult();
             CurrentTestType = ARVR1TestType.None;
 
@@ -307,41 +312,53 @@ namespace ProjectARVRLite
 
             if (CurrentTestType == ARVR1TestType.W51)
             {
+                ProjectConfig.StepIndex = 1;
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White51")).Value;
                 RunTemplate();
             }
             if (CurrentTestType == ARVR1TestType.White)
             {
+                ProjectConfig.StepIndex = 2;
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White255")).Value;
                 RunTemplate();
             }
             if (CurrentTestType == ARVR1TestType.Black)
             {
+                ProjectConfig.StepIndex = 3;
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Black")).Value;
                 RunTemplate();
             }
             if (CurrentTestType == ARVR1TestType.W25)
             {
+                ProjectConfig.StepIndex = 4;
+
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White25")).Value;
                 RunTemplate();
             }
             if (CurrentTestType == ARVR1TestType.Chessboard)
             {
+                ProjectConfig.StepIndex = 5;
+
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Chessboard")).Value;
                 RunTemplate();
             }
             if (CurrentTestType == ARVR1TestType.MTFHV)
             {
+                ProjectConfig.StepIndex = 6;
+
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("MTF_HV")).Value;
                 RunTemplate();
             }
             if (CurrentTestType == ARVR1TestType.Distortion)
             {
+                ProjectConfig.StepIndex = 7;
+
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Distortion")).Value;
                 RunTemplate();
             }
             if (CurrentTestType == ARVR1TestType.OpticCenter)
             {
+                ProjectConfig.StepIndex = 8;
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("OpticCenter")).Value;
                 RunTemplate();
             }
@@ -354,6 +371,7 @@ namespace ProjectARVRLite
 
         public static SPECConfig SPECConfig => ProjectARVRLiteConfig.Instance.SPECConfig;
 
+        private LogOutput? logOutput;
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = ProjectARVRLiteConfig.Instance;
@@ -387,13 +405,17 @@ namespace ProjectARVRLite
             timer = new Timer(TimeRun, null, 0, 500);
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
+            if (ProjectARVRLiteConfig.Instance.LogControlVisibility)
+            {
+                logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
+                LogGrid.Children.Add(logOutput);
+            }
+
             this.Closed += (s, e) =>
             {
-                timer.Change(Timeout.Infinite, 500); // 停止定时器
-                timer?.Dispose();
-
-                LogOutput1?.Dispose();
+                this.Dispose();
             };
+
             listView1.ItemsSource = ViewResluts;
 
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
@@ -540,7 +562,7 @@ namespace ProjectARVRLite
                 flowEngine.LoadFromBase64(base64);
                 await Refresh();
                 log.Info($"IsReady{flowEngine.IsReady}");
-            }
+            }  
 
 
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
@@ -2012,7 +2034,9 @@ namespace ProjectARVRLite
         public void Dispose()
         {
             STNodeEditorMain.Dispose();
+            timer.Change(Timeout.Infinite, 500); // 停止定时器
             timer?.Dispose();
+            logOutput?.Dispose();
             GC.SuppressFinalize(this);
         }
     }

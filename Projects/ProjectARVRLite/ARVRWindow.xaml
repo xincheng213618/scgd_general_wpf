@@ -134,7 +134,7 @@
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0" Margin="5">
                     <StackPanel>
-                        <DockPanel  Margin="0,0,0,5">
+                        <DockPanel  Margin="0,0,0,0">
                             <ComboBox  x:Name="FlowTemplate" Height="10" SelectedIndex="{Binding TemplateSelectedIndex}" ItemsSource="{Binding TemplateItemSource}" SelectedValuePath="Value" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
                             <Grid Width="30" Margin="5,0"  HorizontalAlignment="Left">
                                 <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -164,23 +164,37 @@
                                     </EventTrigger>
                                 </Button.Triggers>
                             </Button>
-                            <Button Content="Test"  DockPanel.Dock="Right" Background="Pink"  Click="TestClick" />
+                            <Button Content="测试"  DockPanel.Dock="Right" Background="Pink"  Click="TestClick" />
                         </DockPanel>
                     </StackPanel>
                 </Grid>
-                <Grid Grid.Row="1" Margin="5,0">
+                <Grid Grid.Row="1" Margin="0,0,0,5">
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <RichTextBox x:Name="outputText"   Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <RichTextBox x:Name="outputText"  Grid.Row="1"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                         <FlowDocument>
                             <Paragraph>
 
                             </Paragraph>
                         </FlowDocument>
                     </RichTextBox>
-                    <LogImp:LogOutput x:Name="LogOutput1"  Grid.Row="1" />
+                    <hc:StepBar Grid.Row="0" StepIndex="{Binding StepIndex}" Margin="-10,0">
+                        <hc:StepBarItem Content="初始化"/>
+                        <hc:StepBarItem Content="W51"/>
+                        <hc:StepBarItem Content="W255"/>
+                        <hc:StepBarItem Content="Black"/>
+                        <hc:StepBarItem Content="W25"/>
+                        <hc:StepBarItem Content="Chessboard"/>
+                        <hc:StepBarItem Content="MTFHV"/>
+                        <hc:StepBarItem Content="Distortion"/>
+                        <hc:StepBarItem Content="OpticCenter"/>
+                    </hc:StepBar>
+                    <Grid Grid.Row="2" x:Name="LogGrid">
+
+                    </Grid>
                 </Grid>
 
             </Grid>

@@ -2,6 +2,7 @@
   "profiles": {
     "ColorVision": {
       "commandName": "Project",
+      "commandLineArgs": "-project ARVRLite检测",
       "nativeDebugging": true
     }
   }
