@@ -199,6 +199,61 @@ void LampBeadDetection(cv::Mat image, int rows, int cols)
 
 }
 
+// 返回0正常，-1图像空，-2未找到发光区
+// points 返回发光区四个角点（顺序为 minAreaRect 顺序）
+int findLuminousAreaCorners(cv::Mat& src, std::vector<cv::Point2f>& points, int threshold)
+{
+    points.clear();
+    if (src.empty()) return -1;
+
+    Mat gray;
+    if (src.channels() != 1)
+        cvtColor(src, gray, COLOR_BGR2GRAY);
+    else
+        gray = src;
+    if (gray.depth() == CV_16U)
+        normalize(gray, gray, 0, 255, NORM_MINMAX, CV_8U);
+
+    GaussianBlur(gray, gray, Size(5, 5), 0);
+    Mat thresh;
+    cv::threshold(gray, thresh, threshold, 255, THRESH_BINARY);
+
+    Mat kernel = getStructuringElement(MORPH_RECT, Size(3, 3));
+    dilate(thresh, thresh, kernel);
+
+    std::vector<std::vector<Point>> contours;
+    findContours(thresh, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+
+    // 去除贴边的
+    contours.erase(remove_if(contours.begin(), contours.end(),
+        [&](const std::vector<Point>& contour) {
+            Rect rect = boundingRect(contour);
+            return rect.x == 0 || rect.y == 0 ||
+                rect.x + rect.width == src.cols ||
+                rect.y + rect.height == src.rows;
+        }), contours.end());
+
+    if (contours.empty()) return -2;
+
+    // 找最大面积轮廓
+    size_t maxIdx = 0;
+    double maxArea = 0;
+    for (size_t i = 0; i < contours.size(); ++i) {
+        double area = contourArea(contours[i]);
+        if (area > maxArea) {
+            maxArea = area;
+            maxIdx = i;
+        }
+    }
+
+    // 最小外接矩形
+    RotatedRect minRect = minAreaRect(contours[maxIdx]);
+    Point2f verts[4];
+    minRect.points(verts);
+    points.assign(verts, verts + 4);
+    return 0;
+}
+
 
 int findLuminousArea(cv::Mat& src, cv::Rect& largestRect,int threshold)
 {

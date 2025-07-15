@@ -615,23 +615,25 @@ namespace ProjectARVRLite
             }
             else
             {
-                log.Info("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
-                if (SocketManager.GetInstance().TcpClients.Count > 0 && SocketControl.Current.Stream != null)
-                {
-                    ObjectiveTestResult.TotalResult = false;
-                    var response = new SocketResponse
-                    {
-                        Version = "1.0",
-                        MsgID = "",
-                        EventName = "ProjectARVRResult",
-                        Code = -1,
-                        Msg = "ARVR Test Fail",
-                        Data = ObjectiveTestResult
-                    };
-                    string respString = JsonConvert.SerializeObject(response);
-                    log.Info(respString);
-                    SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
-                }
+                log.Error("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
+                SwithchSocket();
+
+                //if (SocketManager.GetInstance().TcpClients.Count > 0 && SocketControl.Current.Stream != null)
+                //{
+                //    ObjectiveTestResult.TotalResult = false;
+                //    var response = new SocketResponse
+                //    {
+                //        Version = "1.0",
+                //        MsgID = "",
+                //        EventName = "ProjectARVRResult",
+                //        Code = -1,
+                //        Msg = "ARVR Test Fail",
+                //        Data = ObjectiveTestResult
+                //    };
+                //    string respString = JsonConvert.SerializeObject(response);
+                //    log.Info(respString);
+                //    SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+                //}
             }
         }
 
@@ -1446,6 +1448,11 @@ namespace ProjectARVRLite
             ViewResluts.Insert(0,result); //倒序插入
             listView1.SelectedIndex = 0;
 
+            SwithchSocket();
+        }
+
+        private void SwithchSocket()
+        {
             if (SocketManager.GetInstance().TcpClients.Count > 0)
             {
                 log.Info("Socket已经链接 ");
@@ -1513,7 +1520,7 @@ namespace ProjectARVRLite
                         log.Info("Socket流为空，无法发送数据");
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     log.ErrorExt(ex);
                 }
@@ -1523,6 +1530,7 @@ namespace ProjectARVRLite
             {
                 log.Info("找不到连接的Socket");
             }
+
         }
 
 

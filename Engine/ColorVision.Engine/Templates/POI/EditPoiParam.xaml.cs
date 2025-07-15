@@ -1750,10 +1750,10 @@ namespace ColorVision.Engine.Templates.POI
             {
                 if (HImageCache != null)
                 {
-                    string re = PoiConfig.FindLuminousArea.ToJsonN();
+                    string FindLuminousAreajson = PoiConfig.FindLuminousArea.ToJsonN();
                     Task.Run(() =>
                     {
-                        int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)HImageCache, re,out IntPtr resultPtr);
+                        int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)HImageCache, FindLuminousAreajson,out IntPtr resultPtr);
                         if (length > 0)
                         {
                             string result = Marshal.PtrToStringAnsi(resultPtr);
@@ -1894,6 +1894,69 @@ namespace ColorVision.Engine.Templates.POI
             PoiEditRectCache.Instance.LeftBottomX = PoiConfig.PointInt4.X;
             PoiEditRectCache.Instance.LeftBottomY = PoiConfig.PointInt4.Y;
 
+        }
+
+        private void FindLuminousAreaCorner_Click(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Dispatcher.BeginInvoke((Action)(() =>
+            {
+                if (HImageCache != null)
+                {
+                    string FindLuminousAreaCornerjson = PoiConfig.FindLuminousAreaCorner.ToJsonN();
+                    Task.Run(() =>
+                    {
+                        int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)HImageCache, FindLuminousAreaCornerjson, out IntPtr resultPtr);
+                        if (length > 0)
+                        {
+                            string result = Marshal.PtrToStringAnsi(resultPtr);
+                            log.Info(result);
+                            OpenCVMediaHelper.FreeResult(resultPtr);
+
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                if (PoiConfig.FindLuminousAreaCorner.UseRotatedRect)
+                                {
+                                    var jObj = Newtonsoft.Json.Linq.JObject.Parse(result);
+                                    var corners = jObj["Corners"].ToObject<List<List<float>>>();
+                                    if (corners.Count == 4)
+                                    {
+                                        PoiConfig.Polygon1X = (int)corners[0][0];
+                                        PoiConfig.Polygon1Y = (int)corners[0][1];
+                                        PoiConfig.Polygon2X = (int)corners[1][0];
+                                        PoiConfig.Polygon2Y = (int)corners[1][1];
+                                        PoiConfig.Polygon3X = (int)corners[2][0];
+                                        PoiConfig.Polygon3Y = (int)corners[2][1];
+                                        PoiConfig.Polygon4X = (int)corners[3][0];
+                                        PoiConfig.Polygon4Y = (int)corners[3][1];
+                                    }
+
+
+
+                                }
+                                else
+                                {
+                                    MRect rect = Newtonsoft.Json.JsonConvert.DeserializeObject<MRect>(result);
+                                    PoiConfig.Polygon1X = rect.X;
+                                    PoiConfig.Polygon1Y = rect.Y;
+                                    PoiConfig.Polygon2X = rect.X + rect.Width;
+                                    PoiConfig.Polygon2Y = rect.Y;
+                                    PoiConfig.Polygon3X = rect.X + rect.Width;
+                                    PoiConfig.Polygon3Y = rect.Y + rect.Height;
+                                    PoiConfig.Polygon4X = rect.X;
+                                    PoiConfig.Polygon4Y = rect.Y + rect.Height;
+                                }
+                                RenderPoiConfig();
+                            });
+
+                        }
+                        else
+                        {
+                            Console.WriteLine("Error occurred, code: " + length);
+                        }
+                    });
+                }
+                ;
+            }));
         }
     }
 

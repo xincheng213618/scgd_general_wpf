@@ -308,6 +308,26 @@
                                 <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaMask,Converter={StaticResource bool2VisibilityConverter}}">
                                     <Grid>
                                         <StackPanel>
+                                            <DockPanel Margin="0,2" >
+                                                <Button Content="寻找发光区角点" Margin="5,0,0,0" ToolTip="一次"  Click="FindLuminousAreaCorner_Click"   />
+                                                <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding PoiConfig.FindLuminousAreaCornerEditCommand}" Padding="2" Height="25" Width="25" >
+                                                    <Button.Triggers>
+                                                        <EventTrigger RoutedEvent="Button.Click">
+                                                            <BeginStoryboard>
+                                                                <Storyboard>
+                                                                    <DoubleAnimation Storyboard.TargetName="rotateTransform121" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </EventTrigger>
+                                                    </Button.Triggers>
+                                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                                                        <TextBlock.RenderTransform>
+                                                            <RotateTransform x:Name="rotateTransform121"/>
+                                                        </TextBlock.RenderTransform>
+                                                    </TextBlock>
+                                                </Button>
+
+                                            </DockPanel>
                                             <DockPanel Margin="2" HorizontalAlignment="Left">
                                                 <TextBlock Text="左上"   MinWidth="20"/>
                                                 <TextBox Text="{Binding PoiConfig.Polygon1X}" Width="55" Margin="5,0" />

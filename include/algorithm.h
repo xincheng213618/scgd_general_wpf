@@ -18,6 +18,7 @@ cv::Mat removeMoire(const cv::Mat& image);
 /// <param name="threshold"></param>
 /// <returns></returns>
 int findLuminousArea(cv::Mat& src, cv::Rect& largestRect,int threshold);
+int findLuminousAreaCorners(cv::Mat& src, std::vector<cv::Point2f>& points, int threshold);
 
 /// <summary>
 /// µ∆÷ÈºÏ≤‚

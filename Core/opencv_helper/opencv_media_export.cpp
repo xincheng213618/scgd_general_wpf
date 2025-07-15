@@ -370,33 +370,54 @@ COLORVISIONCORE_API int M_Threshold(HImage img, HImage* outImage, double thresh,
 COLORVISIONCORE_API int M_FindLuminousArea(HImage img, const char* config, char** result)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	// ºÏ≤È ‰»ÎÕºœÒ «∑ÒŒ™ø’
-	if (mat.empty()) {
+	if (mat.empty() || !config || !result) {
 		return -1;
 	}
 
-	if (!config || !result) {
-		return -1; 
-	}        
 	json j = json::parse(config);
 	int threshold = j.at("Threshold").get<int>();
-
-
-	cv::Rect LuminousArea;
-	
-	findLuminousArea(mat, LuminousArea, threshold);
+	bool useRotatedRect = false;
+	if (j.contains("UseRotatedRect")) {
+		useRotatedRect = j.at("UseRotatedRect").get<bool>();
+	}
 
 	json outputJson;
-	outputJson["X"] = LuminousArea.x;
-	outputJson["Y"] = LuminousArea.y;
-	outputJson["Width"] = LuminousArea.width;
-	outputJson["Height"] = LuminousArea.height;
+	int ret = 0;
+
+	if (useRotatedRect) {
+		std::vector<cv::Point2f> corners;
+		ret = findLuminousAreaCorners(mat, corners, threshold);
+		if (ret == 0 && corners.size() == 4) {
+			outputJson["Corners"] = {
+				{corners[0].x, corners[0].y},
+				{corners[1].x, corners[1].y},
+				{corners[2].x, corners[2].y},
+				{corners[3].x, corners[3].y}
+			};
+		}
+		else {
+			return -2;
+		}
+	}
+	else {
+		cv::Rect LuminousArea;
+		ret = findLuminousArea(mat, LuminousArea, threshold);
+		if (ret == 0) {
+			outputJson["X"] = LuminousArea.x;
+			outputJson["Y"] = LuminousArea.y;
+			outputJson["Width"] = LuminousArea.width;
+			outputJson["Height"] = LuminousArea.height;
+		}
+		else {
+			return -2;
+		}
+	}
 
 	std::string output = outputJson.dump();
 	size_t length = output.length() + 1;
 	*result = new char[length];
 	if (!*result) {
-		return -2; // ¥ÌŒÛ£∫ƒ⁄¥Ê∑÷≈‰ ß∞‹
+		return -3; // ¥ÌŒÛ£∫ƒ⁄¥Ê∑÷≈‰ ß∞‹
 	}
 	std::strcpy(*result, output.c_str());
 	return static_cast<int>(length);
