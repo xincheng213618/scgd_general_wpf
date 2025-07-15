@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using static QRCoder.PayloadGenerator;
 
 namespace ColorVision.Engine.Services.Flow
 {
@@ -47,6 +48,7 @@ namespace ColorVision.Engine.Services.Flow
 
         public ViewFlow()
         {
+
             FlowEngineControl = new FlowEngineLib.FlowEngineControl(false);
             InitializeComponent();
             AutoSizeCommand = new RelayCommand(a => AutoSize());
@@ -75,8 +77,6 @@ namespace ColorVision.Engine.Services.Flow
                     e.CanExecute = DisplayFlow.flowControl.IsFlowRun;
             }));
         }
-
-
 
         #region ActionCommand
 
@@ -159,11 +159,8 @@ namespace ColorVision.Engine.Services.Flow
         {
             this.DataContext = this;
             STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
-
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
-
             STNodeEditorMain.ActiveChanged +=(s,e) => SignStackBorder.Visibility = STNodeEditorMain.ActiveNode != null ? Visibility.Visible : Visibility.Collapsed;
-
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {
                 if (e.KeyCode == System.Windows.Forms.Keys.Delete)
@@ -186,6 +183,7 @@ namespace ColorVision.Engine.Services.Flow
             };
 
             FlowEngineControl.AttachNodeEditor(STNodeEditorMain);
+
 
             View = new View();
             ViewGridManager.GetInstance().AddView(0, this);
@@ -399,6 +397,8 @@ namespace ColorVision.Engine.Services.Flow
         public void Dispose()
         {
             STNodeEditorMain?.Dispose();
+            STNodeTreeView1?.Dispose();
+            winf1?.Dispose();
             GC.SuppressFinalize(this);
         }
     }

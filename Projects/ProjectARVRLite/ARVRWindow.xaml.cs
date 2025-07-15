@@ -371,6 +371,7 @@ namespace ProjectARVRLite
                 if (ProjectARVRLiteConfig.Instance.TemplateSelectedIndex > -1)
                 {
                     string Name = TemplateFlow.Params[ProjectARVRLiteConfig.Instance.TemplateSelectedIndex].Key;
+
                     if (ProjectARVRLiteConfig.Instance.SPECConfigs.TryGetValue(Name, out SPECConfig sPECConfig))
                     {
                         ProjectARVRLiteConfig.Instance.SPECConfig = sPECConfig;
@@ -381,7 +382,6 @@ namespace ProjectARVRLite
                         ProjectARVRLiteConfig.Instance.SPECConfigs.TryAdd(Name, sPECConfig);
                         ProjectARVRLiteConfig.Instance.SPECConfig = sPECConfig;
                     }
-
                 }
             };
             timer = new Timer(TimeRun, null, 0, 500);
@@ -2011,6 +2011,7 @@ namespace ProjectARVRLite
         }
         public void Dispose()
         {
+            STNodeEditorMain.Dispose();
             timer?.Dispose();
             GC.SuppressFinalize(this);
         }
