@@ -815,6 +815,7 @@ namespace ColorVision.ImageEditor
             };
             if (imageSource is WriteableBitmap writeableBitmap)
             {
+                Config.AddProperties("PixelFormat", writeableBitmap.Format);
                 Task.Run(() => Application.Current.Dispatcher.Invoke((() =>
                 {
                     HImageCache = writeableBitmap.ToHImage();
@@ -1052,22 +1053,48 @@ namespace ColorVision.ImageEditor
         {
             if (HImageCache != null)
             {
-                int ret = OpenCVMediaHelper.M_GetWhiteBalance((HImage)HImageCache, out HImage hImageProcessed, Config.RedBalance, Config.GreenBalance, Config.BlueBalance);
-                if (ret == 0)
+                PixelFormat pixelFormat = Config.GetProperties<PixelFormat>("PixelFormat");
+                if (pixelFormat == PixelFormats.Rgb48)
                 {
-                    Application.Current?.Dispatcher.BeginInvoke(() =>
+                    //算法本身有余数，这里优化一下
+                    int ret = OpenCVMediaHelper.M_GetWhiteBalance((HImage)HImageCache, out HImage hImageProcessed, Config.BlueBalance, Config.GreenBalance, Config.RedBalance);
+                    if (ret == 0)
                     {
-                        if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
+                        Application.Current?.Dispatcher.BeginInvoke(() =>
                         {
-                            var image = hImageProcessed.ToWriteableBitmap();
+                            if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
+                            {
+                                var image = hImageProcessed.ToWriteableBitmap();
 
-                            OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                            hImageProcessed.pData = IntPtr.Zero;
-                            FunctionImage = image;
-                        }
-                        ImageShow.Source = FunctionImage;
-                    });
+                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                hImageProcessed.pData = IntPtr.Zero;
+                                FunctionImage = image;
+                            }
+                            ImageShow.Source = FunctionImage;
+                        });
+                    }
                 }
+                else
+                {
+                    int ret = OpenCVMediaHelper.M_GetWhiteBalance((HImage)HImageCache, out HImage hImageProcessed, Config.RedBalance, Config.GreenBalance, Config.BlueBalance);
+                    if (ret == 0)
+                    {
+                        Application.Current?.Dispatcher.BeginInvoke(() =>
+                        {
+                            if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
+                            {
+                                var image = hImageProcessed.ToWriteableBitmap();
+
+                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                hImageProcessed.pData = IntPtr.Zero;
+                                FunctionImage = image;
+                            }
+                            ImageShow.Source = FunctionImage;
+                        });
+                    }
+                }
+
+
             };
         }
 

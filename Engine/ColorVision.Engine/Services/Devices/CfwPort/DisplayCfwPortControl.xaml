@@ -56,7 +56,7 @@
                 </DockPanel>
 
                 <DockPanel x:Name="ButtonUnauthorized" Margin="0,0,0,3" >
-                    <Button Content="未授权或者许可证过期" Command="{Binding PhyCamera.UploadLicenseCommand}"  />
+                    <Button Content="未授权或者许可证过期"  Command="{Binding EditCommand}"/>
                 </DockPanel>
                 <DockPanel x:Name="ButtonInit" Margin="0,0,0,3" >
                     <Button Content="请先配置SN" Command="{Binding EditCommand}"/>
