@@ -202,23 +202,45 @@ namespace ProjectARVRLite.Config
         public double MTF_HV_V_LeftDown_0_8FMax { get => _MTF_HV_V_LeftDown_0_8FMax; set { _MTF_HV_V_LeftDown_0_8FMax = value; NotifyPropertyChanged(); } }
         private double _MTF_HV_V_LeftDown_0_8FMax;
 
-        public double XTiltMin { get => _XTiltMin; set { _XTiltMin = value; NotifyPropertyChanged(); } }
-        private double _XTiltMin = -0.16;
+        public double OptCenterXTiltMin { get => _OptCenterXTiltMin; set { _OptCenterXTiltMin = value; NotifyPropertyChanged(); } }
+        private double _OptCenterXTiltMin = -0.16;
 
-        public double XTiltMax { get => _XTiltMax; set { _XTiltMax = value; NotifyPropertyChanged(); } }
-        private double _XTiltMax = 0.16;
+        public double OptCenterXTiltMax { get => _OptCenterXTiltMax; set { _OptCenterXTiltMax = value; NotifyPropertyChanged(); } }
+        private double _OptCenterXTiltMax = 0.16;
 
-        public double YTiltMin { get => _YTiltMin; set { _YTiltMin = value; NotifyPropertyChanged(); } }
-        private double _YTiltMin = -0.16;
+        public double OptCenterYTiltMin { get => _OptCenterYTiltMin; set { _OptCenterYTiltMin = value; NotifyPropertyChanged(); } }
+        private double _OptCenterYTiltMin = -0.16;
 
-        public double YTiltMax { get => _YTiltMax; set { _YTiltMax = value; NotifyPropertyChanged(); } }
-        private double _YTiltMax = 0.16;
+        public double OptCenterYTiltMax { get => _OptCenterYTiltMax; set { _OptCenterYTiltMax = value; NotifyPropertyChanged(); } }
+        private double _OptCenterYTiltMax = 0.16;
 
-        public double RotationMin { get => _RotationMin; set { _RotationMin = value; NotifyPropertyChanged(); } }
-        private double _RotationMin = -0.16;
+        public double OptCenterRotationMin { get => _OptCenterRotationMin; set { _OptCenterRotationMin = value; NotifyPropertyChanged(); } }
+        private double _OptCenterRotationMin = -0.16;
 
-        public double RotationMax { get => _RotationMax; set { _RotationMax = value; NotifyPropertyChanged(); } }
-        private double _RotationMax = 0.16;
+        public double OptCenterRotationMax { get => _OptCenterRotationMax; set { _OptCenterRotationMax = value; NotifyPropertyChanged(); } }
+        private double _OptCenterRotationMax = 0.16;
+
+        public double ImageCenterXTiltMin { get => _ImageCenterXTiltMin; set { _ImageCenterXTiltMin = value; NotifyPropertyChanged(); } }
+        private double _ImageCenterXTiltMin = -0.16;
+
+        public double ImageCenterXTiltMax { get => _ImageCenterXTiltMax; set { _ImageCenterXTiltMax = value; NotifyPropertyChanged(); } }
+        private double _ImageCenterXTiltMax = 0.16;
+
+        public double ImageCenterYTiltMin { get => _ImageCenterYTiltMin; set { _ImageCenterYTiltMin = value; NotifyPropertyChanged(); } }
+        private double _ImageCenterYTiltMin = -0.16;
+
+        public double ImageCenterYTiltMax { get => _ImageCenterYTiltMax; set { _ImageCenterYTiltMax = value; NotifyPropertyChanged(); } }
+        private double _ImageCenterYTiltMax = 0.16;
+
+        public double ImageCenterRotationMin { get => _ImageCenterRotationMin; set { _ImageCenterRotationMin = value; NotifyPropertyChanged(); } }
+        private double _ImageCenterRotationMin = -0.16;
+
+        public double ImageCenterRotationMax { get => _ImageCenterRotationMax; set { _ImageCenterRotationMax = value; NotifyPropertyChanged(); } }
+        private double _ImageCenterRotationMax = 0.16;
+
+
+
+
 
         public double GhostMin { get => _GhostMin; set { _GhostMin = value; NotifyPropertyChanged(); } }
         private double _GhostMin;

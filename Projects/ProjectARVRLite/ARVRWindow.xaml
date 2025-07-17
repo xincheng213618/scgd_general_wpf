@@ -60,7 +60,9 @@
                             <Button Click="Button_Click_Clear"  Padding="0" Height="25" Width="25" Margin="5,0,0,0">
                                 <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" Margin="2" />
                             </Button>
-
+                            <Button Click="Button_Click_Search"  Padding="0" Height="25" Width="25" Margin="5,0,0,0">
+                                <Image  Stretch="Uniform" Source="{DynamicResource  COMDrawingImage}" Margin="2" />
+                            </Button>
                         </StackPanel>
                     </Grid>
 

@@ -142,20 +142,37 @@ namespace ProjectARVRLite
     {
         public FindCrossDetailViewReslut FindCrossDetailViewReslut { get; set; }
 
+        public FindCrossDetailViewReslut FindCrossDetailViewReslut1 { get; set; }
+
         /// <summary>
         /// X轴倾斜角(°) 测试项
         /// </summary>
-        public ObjectiveTestItem XTilt { get; set; }
+        public ObjectiveTestItem OptCenterXTilt { get; set; }
 
         /// <summary>
         /// Y轴倾斜角(°) 测试项
         /// </summary>
-        public ObjectiveTestItem YTilt { get; set; }
+        public ObjectiveTestItem OptCenterYTilt { get; set; }
 
         /// <summary>
         /// 旋转角(°) 测试项
         /// </summary>
-        public ObjectiveTestItem Rotation { get; set; }
+        public ObjectiveTestItem OptCenterRotation { get; set; }
+
+        /// <summary>
+        /// X轴倾斜角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem ImageCenterXTilt { get; set; }
+
+        /// <summary>
+        /// Y轴倾斜角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem ImageCenterYTilt { get; set; }
+
+        /// <summary>
+        /// 旋转角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem ImageCenterRotation { get; set; }
     }
 
     public class ViewReslutDistortionGhost
@@ -1401,60 +1418,92 @@ namespace ProjectARVRLite
 
                 foreach (var AlgResultMaster in AlgResultMasterlists)
                 {
-                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.FindCross)
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.FindCross )
                     {
-
+                        log.Info(AlgResultMaster.Id);
                         List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
                         if (detailCommonModels.Count == 1)
                         {
-                            FindCrossDetailViewReslut mtfresult = new FindCrossDetailViewReslut(detailCommonModels[0]);
-                            result.ViewResultOpticCenter.FindCrossDetailViewReslut = mtfresult;
-
-                            ObjectiveTestResult.OptCenterXTilt = new ObjectiveTestItem()
+                            FindCrossDetailViewReslut findresult = new FindCrossDetailViewReslut(detailCommonModels[0]);
+                            if (AlgResultMaster.TName == "optCenter")
                             {
-                                Name = "OptCenterXTilt",
-                                LowLimit = SPECConfig.XTiltMin,
-                                UpLimit = SPECConfig.XTiltMax,
-                                Value = mtfresult.FindCrossResult.result[0].tilt.tilt_x,
-                                TestValue = mtfresult.FindCrossResult.result[0].tilt.tilt_x.ToString("F4")
-                            };
-                            ObjectiveTestResult.OptCenterYTilt = new ObjectiveTestItem()
+                                result.ViewResultOpticCenter.FindCrossDetailViewReslut = findresult;
+                                ObjectiveTestResult.OptCenterXTilt = new ObjectiveTestItem()
+                                {
+                                    Name = "OptCenterXTilt",
+                                    LowLimit = SPECConfig.OptCenterXTiltMin,
+                                    UpLimit = SPECConfig.OptCenterXTiltMax,
+                                    Value = findresult.FindCrossResult.result[0].tilt.tilt_x,
+                                    TestValue = findresult.FindCrossResult.result[0].tilt.tilt_x.ToString("F4")
+                                };
+                                ObjectiveTestResult.OptCenterYTilt = new ObjectiveTestItem()
+                                {
+                                    Name = "OptCenterYTilt",
+                                    LowLimit = SPECConfig.OptCenterYTiltMin,
+                                    UpLimit = SPECConfig.OptCenterYTiltMax,
+                                    Value = findresult.FindCrossResult.result[0].tilt.tilt_y,
+                                    TestValue = findresult.FindCrossResult.result[0].tilt.tilt_y.ToString("F4")
+                                };
+
+                                ObjectiveTestResult.OptCenterRotation = new ObjectiveTestItem()
+                                {
+                                    Name = "OptCenterRotation",
+                                    LowLimit = SPECConfig.OptCenterRotationMin,
+                                    UpLimit = SPECConfig.OptCenterRotationMax,
+                                    Value = findresult.FindCrossResult.result[0].rotationAngle,
+                                    TestValue = findresult.FindCrossResult.result[0].rotationAngle.ToString("F4")
+                                };
+
+                                result.ViewResultOpticCenter.OptCenterXTilt = ObjectiveTestResult.OptCenterXTilt;
+                                result.ViewResultOpticCenter.OptCenterYTilt = ObjectiveTestResult.OptCenterYTilt;
+                                result.ViewResultOpticCenter.OptCenterRotation = ObjectiveTestResult.OptCenterRotation;
+
+                                result.Result = result.Result && ObjectiveTestResult.OptCenterXTilt.TestResult;
+                                result.Result = result.Result && ObjectiveTestResult.OptCenterYTilt.TestResult;
+                                result.Result = result.Result && ObjectiveTestResult.OptCenterRotation.TestResult;
+                            }
+                            if (AlgResultMaster.TName == "ImageCenter")
                             {
-                                Name = "OptCenterYTilt",
-                                LowLimit = SPECConfig.YTiltMin,
-                                UpLimit = SPECConfig.YTiltMax,
-                                Value = mtfresult.FindCrossResult.result[0].tilt.tilt_y,
-                                TestValue = mtfresult.FindCrossResult.result[0].tilt.tilt_y.ToString("F4")
-                            };
+                                result.ViewResultOpticCenter.FindCrossDetailViewReslut1 = findresult;
+                                ObjectiveTestResult.ImageCenterXTilt = new ObjectiveTestItem()
+                                {
+                                    Name = "ImageCenterXTilt",
+                                    LowLimit = SPECConfig.ImageCenterXTiltMin,
+                                    UpLimit = SPECConfig.ImageCenterXTiltMax,
+                                    Value = findresult.FindCrossResult.result[0].tilt.tilt_x,
+                                    TestValue = findresult.FindCrossResult.result[0].tilt.tilt_x.ToString("F4")
+                                };
+                                ObjectiveTestResult.ImageCenterYTilt = new ObjectiveTestItem()
+                                {
+                                    Name = "ImageCenterYTilt",
+                                    LowLimit = SPECConfig.ImageCenterYTiltMin,
+                                    UpLimit = SPECConfig.ImageCenterYTiltMax,
+                                    Value = findresult.FindCrossResult.result[0].tilt.tilt_y,
+                                    TestValue = findresult.FindCrossResult.result[0].tilt.tilt_y.ToString("F4")
+                                };
 
-                            ObjectiveTestResult.OptCenterRotation = new ObjectiveTestItem()
-                            {
-                                Name = "OptCenterRotation",
-                                LowLimit = SPECConfig.RotationMin,
-                                UpLimit = SPECConfig.RotationMax,
-                                Value = mtfresult.FindCrossResult.result[0].rotationAngle,
-                                TestValue = mtfresult.FindCrossResult.result[0].rotationAngle.ToString("F4")
-                            };
+                                ObjectiveTestResult.ImageCenterRotation = new ObjectiveTestItem()
+                                {
+                                    Name = "ImageCenterRotation",
+                                    LowLimit = SPECConfig.ImageCenterRotationMin,
+                                    UpLimit = SPECConfig.ImageCenterRotationMax,
+                                    Value = findresult.FindCrossResult.result[0].rotationAngle,
+                                    TestValue = findresult.FindCrossResult.result[0].rotationAngle.ToString("F4")
+                                };
 
-                            result.ViewResultOpticCenter.XTilt = ObjectiveTestResult.OptCenterXTilt;
-                            result.ViewResultOpticCenter.YTilt = ObjectiveTestResult.OptCenterYTilt;
-                            result.ViewResultOpticCenter.Rotation = ObjectiveTestResult.OptCenterRotation;
-
-                            result.Result = result.Result && ObjectiveTestResult.OptCenterXTilt.TestResult;
-                            result.Result = result.Result && ObjectiveTestResult.OptCenterYTilt.TestResult;
-                            result.Result = result.Result && ObjectiveTestResult.OptCenterRotation.TestResult;
+                                result.ViewResultOpticCenter.ImageCenterXTilt = ObjectiveTestResult.ImageCenterXTilt;
+                                result.ViewResultOpticCenter.ImageCenterYTilt = ObjectiveTestResult.ImageCenterYTilt;
+                                result.ViewResultOpticCenter.ImageCenterRotation = ObjectiveTestResult.ImageCenterRotation;
+                                    
+                                result.Result = result.Result && ObjectiveTestResult.ImageCenterXTilt.TestResult;
+                                result.Result = result.Result && ObjectiveTestResult.ImageCenterYTilt.TestResult;
+                                result.Result = result.Result && ObjectiveTestResult.ImageCenterRotation.TestResult;
+                            }
 
                         }
-
-                        List<BinocularFusionModel> AlgResultModels = BinocularFusionDao.Instance.GetAllByPid(AlgResultMaster.Id);
-                        if (AlgResultModels.Count == 1)
-                        {
-
-
-
-                        }
-
                     }
+
+
                 }
 
             }
@@ -1854,32 +1903,19 @@ namespace ProjectARVRLite
 
         public void GenoutputText(ProjectARVRReuslt result)
         {
-
             outputText.Background = result.Result ? Brushes.Lime : Brushes.Red;
             outputText.Document.Blocks.Clear(); // 清除之前的内容
 
             string outtext = string.Empty;
-            outtext += $"Model:{result.Model}" + Environment.NewLine;
-            outtext += $"SN:{result.SN}" + Environment.NewLine;
-            outtext += $"{DateTime.Now:yyyy/MM//dd HH:mm:ss}" + Environment.NewLine;
-
+            outtext += $"Model:{result.Model}  SN:{result.SN}  {DateTime.Now:yyyy/MM//dd HH:mm:ss}";
             Run run = new Run(outtext);
             run.Foreground = result.Result ? Brushes.Black : Brushes.White;
             run.FontSize += 1;
 
-
-
             var paragraph = new Paragraph();
             paragraph.Inlines.Add(run);
-
             outputText.Document.Blocks.Add(paragraph);
             outtext = string.Empty;
-
-            paragraph = new Paragraph();
-
-            outtext = string.Empty;
-
-            outputText.Document.Blocks.Add(paragraph);
 
             switch (result.TestType)
             {
@@ -1975,20 +2011,35 @@ namespace ProjectARVRLite
                     break;
                 case ARVR1TestType.OpticCenter:
                     outtext += $"OpticCenter 测试项：" + Environment.NewLine;
-                    outtext += $"中心点x:{result.ViewResultOpticCenter.FindCrossDetailViewReslut.FindCrossResult.result[0].center.x} 中心点y:{result.ViewResultOpticCenter.FindCrossDetailViewReslut.FindCrossResult.result[0].center.y}" + Environment.NewLine;
 
-                    outtext += $"XTilt:{result.ViewResultOpticCenter.XTilt.TestValue} LowLimit:{result.ViewResultOpticCenter.XTilt.LowLimit}  UpLimit:{result.ViewResultOpticCenter.XTilt.UpLimit},Rsult{(result.ViewResultOpticCenter.XTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-                    outtext += $"YTilt:{result.ViewResultOpticCenter.YTilt.TestValue} LowLimit:{result.ViewResultOpticCenter.YTilt.LowLimit}  UpLimit:{result.ViewResultOpticCenter.YTilt.UpLimit},Rsult{(result.ViewResultOpticCenter.YTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-                    outtext += $"Rotation:{result.ViewResultOpticCenter.Rotation.TestValue} LowLimit:{result.ViewResultOpticCenter.Rotation.LowLimit}  UpLimit:{result.ViewResultOpticCenter.Rotation.UpLimit},Rsult{(result.ViewResultOpticCenter.Rotation.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    if (result.ViewResultOpticCenter.FindCrossDetailViewReslut != null)
+                    {
+                        outtext += $"Opt中心点x:{result.ViewResultOpticCenter.FindCrossDetailViewReslut.FindCrossResult.result[0].center.x} 中心点y:{result.ViewResultOpticCenter.FindCrossDetailViewReslut.FindCrossResult.result[0].center.y}" + Environment.NewLine;
+                        if (result.ViewResultOpticCenter.OptCenterXTilt != null)
+                            outtext += $"OptCenterXTilt:{result.ViewResultOpticCenter.OptCenterXTilt.TestValue} LowLimit:{result.ViewResultOpticCenter.OptCenterXTilt.LowLimit}  UpLimit:{result.ViewResultOpticCenter.OptCenterXTilt.UpLimit},Rsult{(result.ViewResultOpticCenter.OptCenterXTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                        if (result.ViewResultOpticCenter.OptCenterYTilt != null)
+                            outtext += $"OptCenterYTilt:{result.ViewResultOpticCenter.OptCenterYTilt.TestValue} LowLimit:{result.ViewResultOpticCenter.OptCenterYTilt.LowLimit}  UpLimit:{result.ViewResultOpticCenter.OptCenterYTilt.UpLimit},Rsult{(result.ViewResultOpticCenter.OptCenterYTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                        if (result.ViewResultOpticCenter.OptCenterRotation != null)
+                            outtext += $"OptCenterRotation:{result.ViewResultOpticCenter.OptCenterRotation.TestValue} LowLimit:{result.ViewResultOpticCenter.OptCenterRotation.LowLimit}  UpLimit:{result.ViewResultOpticCenter.OptCenterRotation.UpLimit},Rsult{(result.ViewResultOpticCenter.OptCenterRotation.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
 
+                    }
+
+                    if (result.ViewResultOpticCenter.FindCrossDetailViewReslut1 !=null)
+                    {
+                        outtext += $"Image中心点x:{result.ViewResultOpticCenter.FindCrossDetailViewReslut1.FindCrossResult.result[0].center.x} 中心点y:{result.ViewResultOpticCenter.FindCrossDetailViewReslut1.FindCrossResult.result[0].center.y}" + Environment.NewLine;
+                        if (result.ViewResultOpticCenter.ImageCenterXTilt != null)
+                            outtext += $"ImageCenterXTilt:{result.ViewResultOpticCenter.ImageCenterXTilt.TestValue} LowLimit:{result.ViewResultOpticCenter.ImageCenterXTilt.LowLimit}  UpLimit:{result.ViewResultOpticCenter.ImageCenterXTilt.UpLimit},Rsult{(result.ViewResultOpticCenter.ImageCenterXTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                        if (result.ViewResultOpticCenter.ImageCenterYTilt != null)
+                            outtext += $"ImageCenterYTilt:{result.ViewResultOpticCenter.ImageCenterYTilt.TestValue} LowLimit:{result.ViewResultOpticCenter.ImageCenterYTilt.LowLimit}  UpLimit:{result.ViewResultOpticCenter.ImageCenterYTilt.UpLimit},Rsult{(result.ViewResultOpticCenter.ImageCenterYTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                        if (result.ViewResultOpticCenter.ImageCenterRotation != null)
+                            outtext += $"ImageCenterRotation:{result.ViewResultOpticCenter.ImageCenterRotation.TestValue} LowLimit:{result.ViewResultOpticCenter.ImageCenterRotation.LowLimit}  UpLimit:{result.ViewResultOpticCenter.ImageCenterRotation.UpLimit},Rsult{(result.ViewResultOpticCenter.ImageCenterRotation.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    }
                     break;
                 default:
                     break;
             }
 
-
-            outtext += Environment.NewLine;
-            outtext += $"Pass/Fail Criteria:" + Environment.NewLine;
+            outtext += Environment.NewLine + $"Pass/Fail Criteria:" + Environment.NewLine;
 
             outtext += result.Result ? "Pass" : "Fail" + Environment.NewLine;
 
@@ -2038,6 +2089,12 @@ namespace ProjectARVRLite
             timer?.Dispose();
             logOutput?.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        private void Button_Click_Search(object sender, RoutedEventArgs e)
+        {
+            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(ObjectiveTestResult, false) { Owner = Application.Current.GetActiveWindow() };
+            propertyEditorWindow.ShowDialog();
         }
     }
 }
