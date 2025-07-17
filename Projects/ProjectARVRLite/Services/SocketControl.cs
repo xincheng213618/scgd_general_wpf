@@ -21,7 +21,8 @@ namespace ProjectARVRLite.Services
             SocketControl.Current.Stream = stream;
             if (ProjectWindowInstance.WindowInstance != null)
             {
-                ProjectWindowInstance.WindowInstance.InitTest();
+
+                ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
                 //现在先切换PG
                 return new SocketResponse() { MsgID = request.MsgID, EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVR1TestType.W51 } };
             }
@@ -49,7 +50,7 @@ namespace ProjectARVRLite.Services
             }
             else
             {
-                return new SocketResponse { MsgID = request.MsgID, Code = -3, Msg = $"ProjectARVR Wont Open", EventName = EventName };
+                return new SocketResponse { MsgID = request.MsgID, SerialNumber =request.SerialNumber,Code = -3, Msg = $"ProjectARVR Wont Open", EventName = EventName };
             }
         }
     }

@@ -304,16 +304,20 @@ namespace ProjectARVRLite
 
         ObjectiveTestResult ObjectiveTestResult { get; set; } = new ObjectiveTestResult();
         Random Random = new Random();
-        public void InitTest()
+        public void InitTest(string SN)
         {
             ProjectConfig.StepIndex = 0;
             ObjectiveTestResult = new ObjectiveTestResult();
             CurrentTestType = ARVR1TestType.None;
-
-            Application.Current.Dispatcher.Invoke(() =>
+            if (string.IsNullOrWhiteSpace(SN ))
             {
-                ProjectARVRLiteConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
-            });
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ProjectARVRLiteConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
+                });
+            }
+
+
         }
 
         public void SwitchPGCompleted()
@@ -1558,6 +1562,7 @@ namespace ProjectARVRLite
                                 MsgID = string.Empty,
                                 EventName = "ProjectARVRResult",
                                 Code = 0,
+                                SerialNumber =SNtextBox.Text,
                                 Msg = "ARVR Test Completed",
                                 Data = ObjectiveTestResult
                             };
@@ -1575,6 +1580,7 @@ namespace ProjectARVRLite
                                 EventName = "SwitchPG",
                                 Code = 0,
                                 Msg = "Switch PG",
+                                SerialNumber = SNtextBox.Text,
                                 Data = new SwitchPG
                                 {
                                     ARVRTestType = aRVRTestType

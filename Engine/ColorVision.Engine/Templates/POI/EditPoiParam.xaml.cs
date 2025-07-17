@@ -1187,6 +1187,8 @@ namespace ColorVision.Engine.Templates.POI
             if (MessageBox.Show("清空关注点", "ColorVision", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
                 return;
             ClearRender();
+            //清空关注点的时候重置计数
+            No = 0;
         }
 
         public void ClearRender()
