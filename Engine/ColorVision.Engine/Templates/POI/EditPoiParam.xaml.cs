@@ -10,10 +10,11 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine.Templates.POI.POIGenCali;
+using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Tif;
-using ColorVision.FileIO;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
@@ -102,7 +103,6 @@ namespace ColorVision.Engine.Templates.POI
             ComboBoxBorderType2.SelectedIndex = 0;
 
             ImageViewModel = new ImageViewModel(ImageContentGrid, Zoombox1, ImageShow);
-
             ImageViewModel.ToolBarScaleRuler.IsShow = false;
             ToolBar1.DataContext = ImageViewModel;
             ToolBarRight.DataContext = ImageViewModel;
@@ -761,16 +761,16 @@ namespace ColorVision.Engine.Templates.POI
                                     case DrawingPOIPosition.LineOn:
                                         break;
                                     case DrawingPOIPosition.Internal:
-                                        startU += PoiConfig.DefaultRectWidth / 2;
-                                        startD += PoiConfig.DefaultRectWidth / 2;
-                                        startL += PoiConfig.DefaultRectHeight / 2;
-                                        startR += PoiConfig.DefaultRectHeight / 2;
+                                        startU += PoiConfig.DefaultRectHeight / 2;
+                                        startD += PoiConfig.DefaultRectHeight / 2;
+                                        startL += PoiConfig.DefaultRectWidth / 2;
+                                        startR += PoiConfig.DefaultRectWidth / 2;
                                         break;
                                     case DrawingPOIPosition.External:
-                                        startU -= PoiConfig.DefaultRectWidth / 2;
-                                        startD -= PoiConfig.DefaultRectWidth / 2;
-                                        startL -= PoiConfig.DefaultRectHeight / 2;
-                                        startR -= PoiConfig.DefaultRectHeight / 2;
+                                        startU -= PoiConfig.DefaultRectHeight / 2;
+                                        startD -= PoiConfig.DefaultRectHeight / 2;
+                                        startL -= PoiConfig.DefaultRectWidth / 2;
+                                        startR -= PoiConfig.DefaultRectWidth / 2;
                                         break;
                                     default:
                                         break;
@@ -1750,10 +1750,10 @@ namespace ColorVision.Engine.Templates.POI
             {
                 if (HImageCache != null)
                 {
-                    string re = PoiConfig.FindLuminousArea.ToJsonN();
+                    string FindLuminousAreajson = PoiConfig.FindLuminousArea.ToJsonN();
                     Task.Run(() =>
                     {
-                        int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)HImageCache, re,out IntPtr resultPtr);
+                        int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)HImageCache, FindLuminousAreajson,out IntPtr resultPtr);
                         if (length > 0)
                         {
                             string result = Marshal.PtrToStringAnsi(resultPtr);
@@ -1852,6 +1852,125 @@ namespace ColorVision.Engine.Templates.POI
 
             }
         }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            PoiConfig.DefaultRectWidth = PoiConfig.AreaRectWidth / PoiConfig.AreaRectRow;
+            PoiConfig.DefaultRectHeight = PoiConfig.AreaRectHeight / PoiConfig.AreaRectCol;
+        }
+
+        private void Button_Click_3(object sender, RoutedEventArgs e)
+        {
+            PoiParam.LeftBottomX = PoiEditRectCache.Instance.LeftBottomX;
+            PoiParam.LeftBottomY = PoiEditRectCache.Instance.LeftBottomY;
+            PoiParam.LeftTopX = PoiEditRectCache.Instance.LeftTopX;
+            PoiParam.LeftTopY = PoiEditRectCache.Instance.LeftTopY;
+            PoiParam.RightBottomX = PoiEditRectCache.Instance.RightBottomX;
+            PoiParam.RightBottomY = PoiEditRectCache.Instance.RightBottomY;
+            PoiParam.RightTopX = PoiEditRectCache.Instance.RightTopX;
+            PoiParam.RightTopY = PoiEditRectCache.Instance.RightTopY;
+        }
+
+        private void Button_Click_4(object sender, RoutedEventArgs e)
+        {
+            PoiEditRectCache.Instance.LeftBottomX = PoiParam.LeftBottomX;
+            PoiEditRectCache.Instance.LeftBottomY = PoiParam.LeftBottomY;
+            PoiEditRectCache.Instance.LeftTopX = PoiParam.LeftTopX;
+            PoiEditRectCache.Instance.LeftTopY = PoiParam.LeftTopY;
+            PoiEditRectCache.Instance.RightBottomX = PoiParam.RightBottomX;
+            PoiEditRectCache.Instance.RightBottomY = PoiParam.RightBottomY;
+            PoiEditRectCache.Instance.RightTopX = PoiParam.RightTopX;
+            PoiEditRectCache.Instance.RightTopY = PoiParam.RightTopY;
+        }
+
+        private void Button_Click_5(object sender, RoutedEventArgs e)
+        {
+            PoiEditRectCache.Instance.LeftTopX = PoiConfig.PointInt1.X;
+            PoiEditRectCache.Instance.LeftTopY = PoiConfig.PointInt1.Y;
+            PoiEditRectCache.Instance.RightTopX = PoiConfig.PointInt2.X;
+            PoiEditRectCache.Instance.RightTopY = PoiConfig.PointInt2.Y;
+            PoiEditRectCache.Instance.RightBottomX = PoiConfig.PointInt3.X;
+            PoiEditRectCache.Instance.RightBottomY = PoiConfig.PointInt3.Y;
+            PoiEditRectCache.Instance.LeftBottomX = PoiConfig.PointInt4.X;
+            PoiEditRectCache.Instance.LeftBottomY = PoiConfig.PointInt4.Y;
+
+        }
+
+        private void FindLuminousAreaCorner_Click(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Dispatcher.BeginInvoke((Action)(() =>
+            {
+                if (HImageCache != null)
+                {
+                    string FindLuminousAreaCornerjson = PoiConfig.FindLuminousAreaCorner.ToJsonN();
+                    Task.Run(() =>
+                    {
+                        int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)HImageCache, FindLuminousAreaCornerjson, out IntPtr resultPtr);
+                        if (length > 0)
+                        {
+                            string result = Marshal.PtrToStringAnsi(resultPtr);
+                            log.Info(result);
+                            OpenCVMediaHelper.FreeResult(resultPtr);
+
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                if (PoiConfig.FindLuminousAreaCorner.UseRotatedRect)
+                                {
+                                    var jObj = Newtonsoft.Json.Linq.JObject.Parse(result);
+                                    var corners = jObj["Corners"].ToObject<List<List<float>>>();
+                                    if (corners.Count == 4)
+                                    {
+                                        PoiConfig.Polygon1X = (int)corners[0][0];
+                                        PoiConfig.Polygon1Y = (int)corners[0][1];
+                                        PoiConfig.Polygon2X = (int)corners[1][0];
+                                        PoiConfig.Polygon2Y = (int)corners[1][1];
+                                        PoiConfig.Polygon3X = (int)corners[2][0];
+                                        PoiConfig.Polygon3Y = (int)corners[2][1];
+                                        PoiConfig.Polygon4X = (int)corners[3][0];
+                                        PoiConfig.Polygon4Y = (int)corners[3][1];
+                                    }
+
+
+
+                                }
+                                else
+                                {
+                                    MRect rect = Newtonsoft.Json.JsonConvert.DeserializeObject<MRect>(result);
+                                    PoiConfig.Polygon1X = rect.X;
+                                    PoiConfig.Polygon1Y = rect.Y;
+                                    PoiConfig.Polygon2X = rect.X + rect.Width;
+                                    PoiConfig.Polygon2Y = rect.Y;
+                                    PoiConfig.Polygon3X = rect.X + rect.Width;
+                                    PoiConfig.Polygon3Y = rect.Y + rect.Height;
+                                    PoiConfig.Polygon4X = rect.X;
+                                    PoiConfig.Polygon4Y = rect.Y + rect.Height;
+                                }
+                                RenderPoiConfig();
+                            });
+
+                        }
+                        else
+                        {
+                            Console.WriteLine("Error occurred, code: " + length);
+                        }
+                    });
+                }
+                ;
+            }));
+        }
+    }
+
+    public class PoiEditRectCache:IConfig
+    {
+        public static PoiEditRectCache Instance => ConfigService.Instance.GetRequiredService<PoiEditRectCache>();
+        public int? LeftTopX { get; set; }
+        public int? LeftTopY { get; set; }
+        public int? RightTopX { get; set; }
+        public int? RightTopY { get; set; }
+        public int? RightBottomX { get; set; }
+        public int? RightBottomY { get; set; }
+        public int? LeftBottomX { get; set; }
+        public int? LeftBottomY { get; set; }
     }
 
 }

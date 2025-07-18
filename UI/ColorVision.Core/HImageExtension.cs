@@ -48,7 +48,8 @@ namespace ColorVision
                 { PixelFormats.Bgr24, (3, 8) },
                 { PixelFormats.Rgb24, (3, 8) },
                 { PixelFormats.Bgr32, (3, 8) },
-                { PixelFormats.Bgra32, (4, 8) }
+                { PixelFormats.Bgra32, (4, 8) },
+                { PixelFormats.Rgb48, (3, 16) }
             };
 
             if (!formatInfoMap.TryGetValue(writeableBitmap.Format, out var formatInfo) ||

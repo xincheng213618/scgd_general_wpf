@@ -38,7 +38,7 @@ namespace ColorVision.SocketProtocol
 
         [DisplayName(nameof(SocketBufferSize))] 
         public int SocketBufferSize { get => _SocketBufferSize; set { _SocketBufferSize = value; NotifyPropertyChanged(); } }
-        private int _SocketBufferSize = 1024;
+        private int _SocketBufferSize = 10240;
 
         public SocketConfig()
         {

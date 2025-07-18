@@ -82,7 +82,6 @@ namespace ColorVision.Engine.MySql
             Close();
         }
 
-
         public MySqlConfig MySqlConfig { get;set;}
 
         private MySqlConfig MySqlConfigBackUp { get; set; }
@@ -113,8 +112,7 @@ namespace ColorVision.Engine.MySql
             MySqlConfig.UserPwd = PasswordBox1.Password;
             Task.Run(() =>
             {
-                bool IsConnect = MySqlControl.TestConnect(MySqlConfig);
-                Dispatcher.BeginInvoke(() => MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}", "ColorVision"));
+                 MySqlControl.TestConnect(MySqlConfig);
             });
         }
 

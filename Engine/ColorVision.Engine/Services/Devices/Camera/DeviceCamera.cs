@@ -218,7 +218,20 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 if ( MessageBox.Show(Application.Current.GetActiveWindow(), "当前逻辑相机许可证过期，无法刷新设备列表，是否清空当前相机服务绑定的物理相机，然后在重试", "ColorVision",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
-                    this.Config.Code = "";
+                    Config.CameraCode = string.Empty;
+                    Save();
+                    return;
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            if (DService.DeviceStatus == DeviceStatusType.OffLine)
+            {
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), "当前逻辑相机离线，无法刷新设备列表，是否清空当前相机服务绑定的物理相机，然后在重试", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                {
                     Config.CameraCode = string.Empty;
                     Save();
                     return;

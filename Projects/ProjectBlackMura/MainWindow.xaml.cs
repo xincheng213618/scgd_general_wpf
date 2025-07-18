@@ -8,12 +8,17 @@ using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
+using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.LogImp;
+using CVCommCore.CVAlgorithm;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
+using MySqlConnector.Logging;
 using NPOI.SS.Formula.Functions;
 using Panuon.WPF.UI;
 using ST.Library.UI.NodeEditor;
@@ -22,11 +27,13 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Ports;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using WpfHexaEditor.Core.MethodExtention;
 
 namespace ProjectBlackMura
 {
@@ -45,11 +52,11 @@ namespace ProjectBlackMura
         public string WhiteFilePath { get => _WhiteFilePath; set { _WhiteFilePath = value; NotifyPropertyChanged(); } }
         private string _WhiteFilePath = string.Empty;
 
-        public string BlackFilePath { get => _BlackFilePath; set { _BlackFilePath = value; NotifyPropertyChanged(); } }
-        private string _BlackFilePath = string.Empty;
 
         public bool Result { get => _Result; set { _Result = value; NotifyPropertyChanged(); } }
         private bool _Result = true;
+
+        public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
 
     }
 
@@ -93,9 +100,11 @@ namespace ProjectBlackMura
 
             this.Closed += (s, e) =>
             {
+                HYMesManager.GetInstance().CCPICompleted -= MainWindow_CCPICompleted;
+                HYMesManager.GetInstance().CONCompleted -= MainWindow_CONCompleted;
+
                 timer.Change(Timeout.Infinite, 500); // 停止定时器
                 timer?.Dispose();
-
                 logOutput?.Dispose();
             };
 
@@ -105,7 +114,17 @@ namespace ProjectBlackMura
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
             HYMesManager.GetInstance().CCPICompleted += MainWindow_CCPICompleted;
+            HYMesManager.GetInstance().CONCompleted += MainWindow_CONCompleted;
+
         }
+
+        private void MainWindow_CONCompleted(object? sender, bool e)
+        {
+            if (HYMesConfig.Instance.IsSingleMes) return;
+            ProjectBlackMuraConfig.Instance.StepIndex = 1;
+            HYMesManager.GetInstance().PGSwitch(0);
+        }
+
         public void Delete()
         {
             if (listView1.SelectedIndex < 0) return;
@@ -149,9 +168,7 @@ namespace ProjectBlackMura
                         ProjectBlackMuraConfig.Instance.JudgeConfigs.TryAdd(Name, sPECConfig);
                         ProjectBlackMuraConfig.Instance.JudgeConfig = sPECConfig;
                     }
-
                 }
-                Refresh();
             };
             timer = new Timer(TimeRun, null, 0, 500);
             timer.Change(Timeout.Infinite, 500); // 停止定时器
@@ -173,12 +190,32 @@ namespace ProjectBlackMura
                     item.nodeRunEvent -= UpdateMsg;
 
                 flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+                foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                    item.nodeRunEvent += UpdateMsg;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                flowEngine.LoadFromBase64(string.Empty);
+            }
+        }
 
-                for (int i = 0; i < 200; i++)
+        public async Task RefreshAsync()
+        {
+            if (FlowTemplate.SelectedIndex < 0) return;
+
+            try
+            {
+                foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                    item.nodeRunEvent -= UpdateMsg;
+
+                flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+
+                for (int i = 0; i < 2000; i++)
                 {
                     if (flowEngine.IsReady)
                         break;
-                    Thread.Sleep(10);
+                    await Task.Delay(10);
                 }
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                     item.nodeRunEvent += UpdateMsg;
@@ -242,17 +279,41 @@ namespace ProjectBlackMura
                 }
             }
         }
+
+        bool IsSingle;
         private void TestClick(object sender, RoutedEventArgs e)
         {
-            RunTemplate();
+            IsSingle = true;
+            if (string.IsNullOrWhiteSpace(SNtextBox.Text))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "产品编号为空");
+                return;
+            }
+            BlackMudraResult = new BlackMudraResult();
+            BlackMudraResult.SN = SNtextBox.Text;
+
+            CurrentTestType = BlackMuraTestType.None;
+            if (FlowTemplate.Text.Contains("White"))
+                CurrentTestType = BlackMuraTestType.White;
+            if (FlowTemplate.Text.Contains("Black"))
+                CurrentTestType = BlackMuraTestType.Black;
+            if (FlowTemplate.Text.Contains("Red"))
+                CurrentTestType = BlackMuraTestType.Red;
+            if (FlowTemplate.Text.Contains("Green"))
+                CurrentTestType = BlackMuraTestType.Green;
+            if (FlowTemplate.Text.Contains("Blue"))
+                CurrentTestType = BlackMuraTestType.Blue;
+            log.Info(CurrentTestType);
+
+            _= RunTemplate();
         }
         bool LastCompleted = true;
 
         BlackMuraResult CurrentFlowResult;
         long LastFlowTime;
-        int TryCount = 0;
+        int TryCount;
 
-        public void RunTemplate()
+        public async Task RunTemplate()
         {
             if (flowControl != null && flowControl.IsFlowRun) return;
 
@@ -260,31 +321,18 @@ namespace ProjectBlackMura
             LastFlowTime = FlowConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
 
             CurrentFlowResult = new BlackMuraResult();
-            CurrentFlowResult.SN = SNtextBox.Name;
+            CurrentFlowResult.SN = SNtextBox.Text;
             CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info("找不到完整流程，运行失败"); return; }
-
+            await RefreshAsync();
+            if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info("找不到完整流程，运行失败"); return; } 
             //多潘基次次
             log.Info($"IsReady{flowEngine.IsReady}");
             if (!flowEngine.IsReady)
             {
                 string base64 = string.Empty;
                 flowEngine.LoadFromBase64(base64);
-                Refresh();
-                log.Info($"IsReady{flowEngine.IsReady}");
-                if (!flowEngine.IsReady)
-                {
-                    flowEngine.LoadFromBase64(base64);
-                    Refresh();
-                    log.Info($"IsReady{flowEngine.IsReady}");
-                    if (!flowEngine.IsReady)
-                    {
-                        flowEngine.LoadFromBase64(base64);
-                        Refresh();
-                        log.Info($"IsReady{flowEngine.IsReady}");
-                    }
-
-                }
+                await RefreshAsync();
+                log.Info($"IsReady1{flowEngine.IsReady}");
             }
 
 
@@ -297,14 +345,7 @@ namespace ProjectBlackMura
             stopwatch.Reset();
             stopwatch.Start();
 
-            try
-            {
-                BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
-            }
-            catch (Exception ex)
-            {
-                log.Info(ex);
-            }
+            BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
 
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
@@ -331,24 +372,23 @@ namespace ProjectBlackMura
 
             if (FlowControlData.EventName == "Completed")
             {
-                try
+                Application.Current.Dispatcher.BeginInvoke(() =>
                 {
-                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    try
                     {
                         Processing(FlowControlData.SerialNumber);
-                    });
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
-                }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
+                    }
+                });
                 TryCount = 0;
             }
             else if (FlowControlData.EventName == "OverTime")
             {
                 log.Info("流程运行超时，正在重新尝试");
-                flowEngine.LoadFromBase64(string.Empty);
-                Refresh();
+                log.Info($"IsReady{flowEngine.IsReady}");
                 if (TryCount < ProjectBlackMuraConfig.Instance.TryCountMax)
                 {
                     Task.Delay(200).ContinueWith(t =>
@@ -374,10 +414,7 @@ namespace ProjectBlackMura
 
         private void Processing(string SerialNumber)
         {
-            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            bool sucess = true;
             var Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
-
             if (Batch == null)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
@@ -387,7 +424,6 @@ namespace ProjectBlackMura
             result.Model = FlowTemplate.Text;
             result.Id = Batch.Id;
             result.SN = BlackMudraResult.SN;
-
             if (CurrentTestType == BlackMuraTestType.White)
             {
                 foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
@@ -400,9 +436,9 @@ namespace ProjectBlackMura
                             BlackMuraView blackMuraView = new BlackMuraView(AlgResultModels[0]);
 
                             blackMuraView.ResultJson.LvAvg = blackMuraView.ResultJson.LvAvg;
-                            blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.LvMaxScale;
-                            blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.LvMinScale;
-                            blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.ZaRelMaxScale;
+                            blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.WLvMaxScale;
+                            blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.WLvMinScale;
+                            blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.WZaRelMaxScale;
                             blackMuraView.ResultJson.Uniformity = blackMuraView.ResultJson.LvMin / blackMuraView.ResultJson.LvMax * 100;
 
                             result.WhiteFilePath = item.ImgFile;
@@ -412,11 +448,30 @@ namespace ProjectBlackMura
                             BlackMudraResult.WhiteImage.Min = blackMuraView.ResultJson.LvMin;
                             BlackMudraResult.WhiteImage.Uniformity = blackMuraView.ResultJson.Uniformity;
                             BlackMudraResult.WhiteImage.ZaRelmax = blackMuraView.ResultJson.ZaRelMax;
-
-
-
+                            BlackMudraResult.WhiteImage.Bordersize = blackMuraView.ResultJson.Nle;
 
                         }
+                    }
+
+                    if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
+                    {
+                        List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
+                        int id = 0;
+                        foreach (var model in POIPointResultModels)
+                        {
+                            PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(model) { Id = id++ };
+                            BlackMudraResult.WhiteImage.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                            result.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+
+                        }
+
+                        if (BlackMudraResult.WhiteImage.PoiResultCIExyuvDatas.Count > 0)
+                        {
+                            PoiResultCIExyuvData poiResultCIExyuvData = BlackMudraResult.WhiteImage.PoiResultCIExyuvDatas[BlackMudraResult.WhiteImage.PoiResultCIExyuvDatas.Count/2];
+                            BlackMudraResult.WhiteImage.Wavelength = poiResultCIExyuvData.Wave;
+                            BlackMudraResult.WhiteImage.Saturation = poiResultCIExyuvData.CCT;
+                        }
+
                     }
                 }
             }
@@ -431,11 +486,10 @@ namespace ProjectBlackMura
                         {
                             BlackMuraView blackMuraView = new BlackMuraView(AlgResultModels[0]);
 
-                            blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.LvMaxScale;
-                            blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.LvMinScale;
-                            blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.ZaRelMaxScale;
+                            blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.BLvMaxScale;
+                            blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.BLvMinScale;
+                            blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.BZaRelMaxScale;
                             blackMuraView.ResultJson.Uniformity = blackMuraView.ResultJson.LvMin / blackMuraView.ResultJson.LvMax * 100;
-
                             result.WhiteFilePath = item.ImgFile;
 
                             BlackMudraResult.BlackImage.Mean = blackMuraView.ResultJson.LvAvg;
@@ -443,6 +497,27 @@ namespace ProjectBlackMura
                             BlackMudraResult.BlackImage.Min = blackMuraView.ResultJson.LvMin;
                             BlackMudraResult.BlackImage.Uniformity = blackMuraView.ResultJson.Uniformity;
                             BlackMudraResult.BlackImage.ZaRelmax = blackMuraView.ResultJson.ZaRelMax;
+                            BlackMudraResult.BlackImage.Bordersize = blackMuraView.ResultJson.Nle;
+
+                        }
+                    }
+                    if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
+                    {
+                        List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
+                        int id = 0;
+                        foreach (var model in POIPointResultModels)
+                        {
+                            PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(model) { Id = id++ };
+                            BlackMudraResult.BlackImage.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                            result.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                        }
+
+
+                        if (BlackMudraResult.BlackImage.PoiResultCIExyuvDatas.Count > 0)
+                        {
+                            PoiResultCIExyuvData poiResultCIExyuvData = BlackMudraResult.BlackImage.PoiResultCIExyuvDatas[BlackMudraResult.WhiteImage.PoiResultCIExyuvDatas.Count / 2];
+                            BlackMudraResult.BlackImage.Wavelength = poiResultCIExyuvData.Wave;
+                            BlackMudraResult.BlackImage.Saturation = poiResultCIExyuvData.CCT;
                         }
                     }
                 }
@@ -459,9 +534,9 @@ namespace ProjectBlackMura
                         {
                             BlackMuraView blackMuraView = new BlackMuraView(AlgResultModels[0]);
 
-                            blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.LvMaxScale;
-                            blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.LvMinScale;
-                            blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.ZaRelMaxScale;
+                            blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.WLvMaxScale;
+                            blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.WLvMinScale;
+                            blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.WZaRelMaxScale;
                             blackMuraView.ResultJson.Uniformity = blackMuraView.ResultJson.LvMin / blackMuraView.ResultJson.LvMax * 100;
 
                             result.WhiteFilePath = item.ImgFile;
@@ -471,6 +546,25 @@ namespace ProjectBlackMura
                             BlackMudraResult.RedImage.Min = blackMuraView.ResultJson.LvMin;
                             BlackMudraResult.RedImage.Uniformity = blackMuraView.ResultJson.Uniformity;
                             BlackMudraResult.RedImage.ZaRelmax = blackMuraView.ResultJson.ZaRelMax;
+                            BlackMudraResult.RedImage.Bordersize = blackMuraView.ResultJson.Nle;
+
+                        }
+                    }
+                    if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
+                    {
+                        List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
+                        int id = 0;
+                        foreach (var model in POIPointResultModels)
+                        {
+                            PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(model) { Id = id++ };
+                            BlackMudraResult.RedImage.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                            result.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                        }
+                        if (BlackMudraResult.RedImage.PoiResultCIExyuvDatas.Count > 0)
+                        {
+                            PoiResultCIExyuvData poiResultCIExyuvData = BlackMudraResult.RedImage.PoiResultCIExyuvDatas[BlackMudraResult.WhiteImage.PoiResultCIExyuvDatas.Count / 2];
+                            BlackMudraResult.RedImage.Wavelength = poiResultCIExyuvData.Wave;
+                            BlackMudraResult.RedImage.Saturation = poiResultCIExyuvData.CCT;
                         }
                     }
                 }
@@ -487,9 +581,9 @@ namespace ProjectBlackMura
                         {
                             BlackMuraView blackMuraView = new BlackMuraView(AlgResultModels[0]);
 
-                            blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.LvMaxScale;
-                            blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.LvMinScale;
-                            blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.ZaRelMaxScale;
+                            blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.WLvMaxScale;
+                            blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.WLvMinScale;
+                            blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.WZaRelMaxScale;
                             blackMuraView.ResultJson.Uniformity = blackMuraView.ResultJson.LvMin / blackMuraView.ResultJson.LvMax * 100;
 
                             result.WhiteFilePath = item.ImgFile;
@@ -499,6 +593,25 @@ namespace ProjectBlackMura
                             BlackMudraResult.GreenImage.Min = blackMuraView.ResultJson.LvMin;
                             BlackMudraResult.GreenImage.Uniformity = blackMuraView.ResultJson.Uniformity;
                             BlackMudraResult.GreenImage.ZaRelmax = blackMuraView.ResultJson.ZaRelMax;
+                            BlackMudraResult.GreenImage.Bordersize = blackMuraView.ResultJson.Nle;
+
+                        }
+                    }
+                    if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
+                    {
+                        List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
+                        int id = 0;
+                        foreach (var model in POIPointResultModels)
+                        {
+                            PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(model) { Id = id++ };
+                            BlackMudraResult.GreenImage.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                            result.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                        }
+                        if (BlackMudraResult.GreenImage.PoiResultCIExyuvDatas.Count > 0)
+                        {
+                            PoiResultCIExyuvData poiResultCIExyuvData = BlackMudraResult.GreenImage.PoiResultCIExyuvDatas[BlackMudraResult.WhiteImage.PoiResultCIExyuvDatas.Count / 2];
+                            BlackMudraResult.GreenImage.Wavelength = poiResultCIExyuvData.Wave;
+                            BlackMudraResult.GreenImage.Saturation = poiResultCIExyuvData.CCT;
                         }
                     }
                 }
@@ -515,9 +628,9 @@ namespace ProjectBlackMura
                         {
                             BlackMuraView blackMuraView = new BlackMuraView(AlgResultModels[0]);
 
-                            blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.LvMaxScale;
-                            blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.LvMinScale;
-                            blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.ZaRelMaxScale;
+                            blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.WLvMaxScale;
+                            blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.WLvMinScale;
+                            blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.WZaRelMaxScale;
                             blackMuraView.ResultJson.Uniformity = blackMuraView.ResultJson.LvMin / blackMuraView.ResultJson.LvMax * 100;
 
                             result.WhiteFilePath = item.ImgFile;
@@ -527,6 +640,26 @@ namespace ProjectBlackMura
                             BlackMudraResult.BlueImage.Min = blackMuraView.ResultJson.LvMin;
                             BlackMudraResult.BlueImage.Uniformity = blackMuraView.ResultJson.Uniformity;
                             BlackMudraResult.BlueImage.ZaRelmax = blackMuraView.ResultJson.ZaRelMax;
+                            BlackMudraResult.BlueImage.Bordersize = blackMuraView.ResultJson.Nle;
+
+                        }
+                    }
+                    if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
+                    {
+                        List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
+                        int id = 0;
+                        foreach (var model in POIPointResultModels)
+                        {
+                            PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(model) { Id = id++ };
+                            BlackMudraResult.BlueImage.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                            result.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                        }
+
+                        if (BlackMudraResult.BlueImage.PoiResultCIExyuvDatas.Count > 0)
+                        {
+                            PoiResultCIExyuvData poiResultCIExyuvData = BlackMudraResult.BlueImage.PoiResultCIExyuvDatas[BlackMudraResult.WhiteImage.PoiResultCIExyuvDatas.Count / 2];
+                            BlackMudraResult.BlueImage.Wavelength = poiResultCIExyuvData.Wave;
+                            BlackMudraResult.BlueImage.Saturation = poiResultCIExyuvData.CCT;
                         }
                     }
                 }
@@ -537,11 +670,25 @@ namespace ProjectBlackMura
             listView1.SelectedIndex = 0;
             ProcessCompleted();
 
-
         } 
 
         public void ProcessCompleted()
         {
+            if (IsSingle)
+            {
+                try
+                {
+                    if (Directory.Exists(ProjectBlackMuraConfig.Instance.ResultSavePath))
+                    {
+                        ExcelReportGenerator.GenerateExcel(Path.Combine(ProjectBlackMuraConfig.Instance.ResultSavePath, $"{BlackMudraResult.SN}.xlsx"), BlackMudraResult);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                }
+                IsSingle = false;
+            }
             if (CurrentTestType  == BlackMuraTestType.White)
             {
                 HYMesManager.GetInstance().PGSwitch(1);
@@ -549,7 +696,6 @@ namespace ProjectBlackMura
             else if (CurrentTestType == BlackMuraTestType.Black)
             {
                 HYMesManager.GetInstance().PGSwitch(2);
-
             }
             else if (CurrentTestType == BlackMuraTestType.Red)
             {
@@ -562,15 +708,62 @@ namespace ProjectBlackMura
             else if (CurrentTestType == BlackMuraTestType.Blue)
             {
                 HYMesManager.GetInstance().UploadSN(BlackMudraResult.SN);
-                if (Directory.Exists(ProjectBlackMuraConfig.Instance.ResultSavePath))
+                try
                 {
-                    ExcelReportGenerator.GenerateExcel(Path.Combine(ProjectBlackMuraConfig.Instance.ResultSavePath, $"{BlackMudraResult.SN}.xlsx"), BlackMudraResult);
+                    if (Directory.Exists(ProjectBlackMuraConfig.Instance.ResultSavePath))
+                    {
+                        ExcelReportGenerator.GenerateExcel(Path.Combine(ProjectBlackMuraConfig.Instance.ResultSavePath, $"{BlackMudraResult.SN}.xlsx"), BlackMudraResult);
+                    }
+                }catch(Exception ex)
+                {
+                    log.Error(ex);
                 }
+                ProjectBlackMuraConfig.Instance.StepIndex = 6;
+                HYMesManager.GetInstance().PGPowerOff();
             }
 
         }
 
 
+        public async void AddPOIPoint(List<PoiResultCIExyuvData> PoiPoints)
+        {
+            ImageView.ImageShow.Clear();
+            await Task.Delay(1000);
+            for (int i = 0; i < PoiPoints.Count; i++)
+            {
+                if (i % 10000 == 0)
+                    await Task.Delay(30);
+
+                var item = PoiPoints[i];
+                switch (item.POIPoint.PointType)
+                {
+                    case POIPointTypes.Circle:
+                        DVCircleText Circle = new();
+                        Circle.Attribute.Center = new Point(item.POIPoint.PixelX, item.POIPoint.PixelY);
+                        Circle.Attribute.Radius = item.POIPoint.Radius;
+                        Circle.Attribute.Brush = Brushes.Transparent;
+                        Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                        Circle.Attribute.Id = item.Id;
+                        Circle.Attribute.Text = item.Name;
+                        Circle.Render();
+                        ImageView.AddVisual(Circle);
+                        break;
+                    case POIPointTypes.Rect:
+                        DVRectangleText Rectangle = new();
+                        Rectangle.Attribute.Rect = new Rect(item.POIPoint.PixelX - item.POIPoint.Width / 2, item.POIPoint.PixelY - item.POIPoint.Height / 2, item.POIPoint.Width, item.POIPoint.Height);
+                        Rectangle.Attribute.Brush = Brushes.Transparent;
+                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                        Rectangle.Attribute.Id = item.Id;
+                        Rectangle.Attribute.Text = item.Name;
+                        Rectangle.Render();
+                        ImageView.AddVisual(Rectangle);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            ImageView.RaiseRenderCompleted();
+        }
 
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -578,7 +771,7 @@ namespace ProjectBlackMura
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
                 var result = ViewResluts[listView.SelectedIndex];
-                GenoutputText(result);
+                GenoutputText();
 
                 Task.Run(async () =>
                 {
@@ -587,38 +780,32 @@ namespace ProjectBlackMura
                         try
                         {
                             var fileInfo = new FileInfo(result.WhiteFilePath);
-                            log.Warn($"fileInfo.Length{fileInfo.Length}");
+                            log.Debug($"fileInfo.Length{fileInfo.Length}");
                             using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
                             {
-                                log.Warn("文件可以读取，没有被占用。");
+                                log.Debug("文件可以读取，没有被占用。");
                             }
                             if (fileInfo.Length > 0)
                             {
                                 _ = Application.Current.Dispatcher.BeginInvoke(() =>
                                 {
-                                    ImageView.OpenImage(result.WhiteFilePath);
                                     ImageView.ImageShow.Clear();
+                                    ImageView.OpenImage(result.WhiteFilePath);
+                                    AddPOIPoint(result.PoiResultCIExyuvDatas);
                                 });
                             }
                         }
                         catch
                         {
-                            log.Warn("文件还在写入");
+                            log.Debug("文件还在写入");
                             await Task.Delay(ProjectBlackMuraConfig.Instance.ViewImageReadDelay);
                             _ = Application.Current.Dispatcher.BeginInvoke(() =>
                             {
-                                ImageView.OpenImage(result.WhiteFilePath);
                                 ImageView.ImageShow.Clear();
+                                ImageView.OpenImage(result.WhiteFilePath);
+                                AddPOIPoint(result.PoiResultCIExyuvDatas);
                             });
                         }
-
-                        _ = Application.Current.Dispatcher.BeginInvoke(() =>
-                        {
-
-
-
-                        });
-
                     }
                 });
 
@@ -626,20 +813,17 @@ namespace ProjectBlackMura
 
         }
 
-        public void GenoutputText(BlackMuraResult kmitemmaster)
+        public void GenoutputText()
         {
-
-            outputText.Background = kmitemmaster.Result ? Brushes.Lime : Brushes.Red;
+            outputText.Background = BlackMudraResult.Result ? Brushes.Lime : Brushes.Red;
             outputText.Document.Blocks.Clear(); // 清除之前的内容
 
             string outtext = string.Empty;
-            outtext += $"Model:{kmitemmaster.Model}" + Environment.NewLine;
-            outtext += $"SN:{kmitemmaster.SN}" + Environment.NewLine;
-            outtext += $"Poiints of Interest: " + Environment.NewLine;
+            outtext += $"SN:{BlackMudraResult.SN}" + Environment.NewLine;
             outtext += $"{DateTime.Now:yyyy/MM//dd HH:mm:ss}" + Environment.NewLine;
 
             Run run = new Run(outtext);
-            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.Foreground = BlackMudraResult.Result ? Brushes.Black : Brushes.White;
             run.FontSize += 1;
 
             var paragraph = new Paragraph();
@@ -650,13 +834,19 @@ namespace ProjectBlackMura
 
             paragraph = new Paragraph();
 
-            string title1 = "PT";
-            string title2 = "Lv";
+            outtext += $"WhiteUniformity %  {BlackMudraResult.WhiteImage.Uniformity:F2} Pass" + Environment.NewLine;
+            outtext += $"BlackUniformity %  {BlackMudraResult.BlackImage.Uniformity:F2} Pass" + Environment.NewLine;
+            outtext += $"Gradient W - %/Dpixel  {BlackMudraResult.WhiteImage.ZaRelmax:F4} Pass" + Environment.NewLine;
+            outtext += $"Gradient B - %/Dpixel  {BlackMudraResult.BlackImage.ZaRelmax:F4} Pass" + Environment.NewLine;
+            outtext += Environment.NewLine; ;
+            outtext += $"      White        Black        Red       Green      Blue" + Environment.NewLine;
+            outtext += $"Lv {BlackMudraResult.WhiteImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.Y),10:F2} {BlackMudraResult.BlackImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.Y),10:F2} {BlackMudraResult.RedImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.Y),10:F2} {BlackMudraResult.GreenImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.Y),10:F2} {BlackMudraResult.BlueImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.Y),10:F2}" + Environment.NewLine;
+            outtext += $"x  {BlackMudraResult.WhiteImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.x),10:F4} {BlackMudraResult.BlackImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.x),10:F4} {BlackMudraResult.RedImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.x),10:F4} {BlackMudraResult.GreenImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.x),10:F4} {BlackMudraResult.BlueImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.x),10:F4}" + Environment.NewLine;
+            outtext += $"y  {BlackMudraResult.WhiteImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.y),10:F4} {BlackMudraResult.BlackImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.y),10:F4} {BlackMudraResult.RedImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.y),10:F4} {BlackMudraResult.GreenImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.y),10:F4} {BlackMudraResult.BlueImage.PoiResultCIExyuvDatas.AverageOrDefault(x => x.y),10:F4}" + Environment.NewLine;
 
-            string title5 = "Lc";
-            outtext += $"{title1,-20}   {title2,-10} {title5,10}" + Environment.NewLine;
+
             run = new Run(outtext);
-            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.Foreground = BlackMudraResult.Result ? Brushes.Black : Brushes.White;
             run.FontSize += 1;
 
             paragraph.Inlines.Add(run);
@@ -664,21 +854,12 @@ namespace ProjectBlackMura
 
             outputText.Document.Blocks.Add(paragraph);
 
-            //outtext += $"Min Lv= {kmitemmaster.MinLv:F2} cd/m2" + Environment.NewLine;
-            //outtext += $"Max Lv= {kmitemmaster.MaxLv:F2} cd/m2" + Environment.NewLine;
-            //outtext += $"Darkest Key= {kmitemmaster.DrakestKey}" + Environment.NewLine;
-            //outtext += $"Brightest Key= {kmitemmaster.BrightestKey}" + Environment.NewLine;
-
             outtext += Environment.NewLine;
             outtext += $"Pass/Fail Criteria:" + Environment.NewLine;
-            //outtext += $"NbrFail Points={kmitemmaster.NbrFailPoints}" + Environment.NewLine;
-            //outtext += $"Avg Lv={kmitemmaster.AvgLv:F2}" + Environment.NewLine;
-            //outtext += $"Lv Uniformity={kmitemmaster.LvUniformity * 100:F2}%" + Environment.NewLine;
-
-            outtext += kmitemmaster.Result ? "Pass" : "Fail" + Environment.NewLine;
+            outtext += BlackMudraResult.Result ? "Pass" : "Fail" + Environment.NewLine;
 
             run = new Run(outtext);
-            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.Foreground = BlackMudraResult.Result ? Brushes.Black : Brushes.White;
             run.FontSize += 1;
             paragraph = new Paragraph(run);
             outtext = string.Empty;
@@ -724,6 +905,8 @@ namespace ProjectBlackMura
 
         public void Dispose()
         {
+            timer?.Dispose();
+            logOutput?.Dispose();
             GC.SuppressFinalize(this);
         }
 
@@ -731,7 +914,8 @@ namespace ProjectBlackMura
         {
             if (!HYMesManager.GetInstance().IsConnect)
             {
-                int i = HYMesManager.GetInstance().OpenPort(ComboBoxSer.Text);
+                _= HYMesManager.GetInstance().OpenPortAsync(ComboBoxSer.Text);
+
             }
             else
             {
@@ -781,8 +965,6 @@ namespace ProjectBlackMura
             HYMesManager.GetInstance().PGSwitch(15);
         }
 
-
-
         private void Test1_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(SNtextBox.Text))
@@ -794,13 +976,15 @@ namespace ProjectBlackMura
             BlackMudraResult.SN = SNtextBox.Text;
 
             CurrentTestType = BlackMuraTestType.None;
-            HYMesManager.GetInstance().PGSwitch(0);
+            ProjectBlackMuraConfig.Instance.StepIndex = 0;
+            HYMesManager.GetInstance().PGPowerOn();
         }
-        public BlackMudraResult BlackMudraResult { get; set; }
+        public BlackMudraResult BlackMudraResult { get; set; } = new BlackMudraResult();
         public BlackMuraTestType CurrentTestType { get; set; } = BlackMuraTestType.None;
 
         private void MainWindow_CCPICompleted(object? sender, bool e)
         {
+            if (HYMesConfig.Instance.IsSingleMes) return;
             var values = Enum.GetValues(typeof(BlackMuraTestType));
             int currentIndex = Array.IndexOf(values, CurrentTestType);
             int nextIndex = (currentIndex + 1) % values.Length;
@@ -812,30 +996,37 @@ namespace ProjectBlackMura
             if (CurrentTestType == BlackMuraTestType.White)
             {
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White")).Value;
-                RunTemplate();
+                _= RunTemplate();
 
             }
             else if (CurrentTestType == BlackMuraTestType.Black)
             {
+                ProjectBlackMuraConfig.Instance.StepIndex = 2;
+
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Black")).Value;
-                RunTemplate();
+                _ = RunTemplate();
             }
             else if (CurrentTestType == BlackMuraTestType.Red)
             {
+                ProjectBlackMuraConfig.Instance.StepIndex = 3;
+
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Red")).Value;
-                RunTemplate();
+                _ = RunTemplate();
             }
             else if (CurrentTestType == BlackMuraTestType.Green)
             {
+                ProjectBlackMuraConfig.Instance.StepIndex = 4;
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Green")).Value;
-                RunTemplate();
+                _ = RunTemplate();
             }
             else if (CurrentTestType == BlackMuraTestType.Blue)
             {
+                ProjectBlackMuraConfig.Instance.StepIndex = 5;
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Blue")).Value;
-                RunTemplate();
+                _ = RunTemplate();
             }
         }
+
     }
 
     public enum BlackMuraTestType

@@ -134,11 +134,11 @@
                         </StackPanel>
                     </DockPanel>
                 </Border>
-                <TabControl Grid.Row="1">
+                <TabControl x:Name="TabControl1" Grid.Row="1" SelectionChanged="TabControl_SelectionChanged">
                     <TabItem Header="README">
                         <wv2:WebView2 Name="webViewReadMe"  Grid.Row="1" />
                     </TabItem>
-                    <TabItem Header="CHANGELOG"> 
+                    <TabItem Header="CHANGELOG" > 
                         <wv2:WebView2 Name="webViewChangeLog"  Grid.Row="1" />
                     </TabItem>
                     <TabItem Header="插件详细信息">

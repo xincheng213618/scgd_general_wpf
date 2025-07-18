@@ -88,6 +88,17 @@ namespace ColorVision.Engine.Templates.POI
         private int _Threshold = 100;
     }
 
+    public class FindLuminousAreaCorner : ViewModelBase
+    {
+        [DisplayName("Threshold")]
+        public int Threshold { get => _Threshold; set { if (value > 255) value = 255; if (value < 0) value = 0; _Threshold = value; NotifyPropertyChanged(); } }
+        private int _Threshold = 100;
+
+        [DisplayName("UseRotatedRect")]
+        public bool UseRotatedRect { get => _UseRotatedRect; set { _UseRotatedRect = value; NotifyPropertyChanged(); } }
+        private bool _UseRotatedRect = true;
+    }
+
     public class PoiConfig : ViewModelBase
     {
         [JsonIgnore]
@@ -97,6 +108,9 @@ namespace ColorVision.Engine.Templates.POI
         [JsonIgnore]
         public RelayCommand FindLuminousAreaEditCommand { get; set; }
         [JsonIgnore]
+        public RelayCommand FindLuminousAreaCornerEditCommand { get; set; }
+        
+        [JsonIgnore]
         public RelayCommand EditCalibrationTemplateCommand { get; set; }
 
         public PoiConfig()
@@ -104,6 +118,7 @@ namespace ColorVision.Engine.Templates.POI
             SetPoiFileCommand = new RelayCommand(a => SetPoiCIEFile());
             OpenPoiCIEFileCommand = new RelayCommand(a => OpenPoiCIEFile());
             FindLuminousAreaEditCommand = new RelayCommand(a => new PropertyEditorWindow(FindLuminousArea) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            FindLuminousAreaCornerEditCommand = new RelayCommand(a => new PropertyEditorWindow(FindLuminousAreaCorner) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             EditCalibrationTemplateCommand = new RelayCommand(a => OpenCalibrationTemplate());
         }
         [JsonIgnore]
@@ -161,6 +176,8 @@ namespace ColorVision.Engine.Templates.POI
         public RiPointTypes DefaultPointType { set; get; }
 
         public FindLuminousArea FindLuminousArea { get; set; } = new FindLuminousArea();
+
+        public FindLuminousAreaCorner FindLuminousAreaCorner { get; set; } = new FindLuminousAreaCorner();
 
         public string BackgroundFilePath { get => _BackgroundFilePath; set { _BackgroundFilePath = value; NotifyPropertyChanged(); } }
         private string _BackgroundFilePath;

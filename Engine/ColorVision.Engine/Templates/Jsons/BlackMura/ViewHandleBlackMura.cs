@@ -27,14 +27,26 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
         public static BlackMuraConfig Instance =>  ConfigService.Instance.GetRequiredService<BlackMuraConfig>();
 
-        public double LvMaxScale { get => _LvMaxScale; set { _LvMaxScale = value; NotifyPropertyChanged(); } }
-        private double _LvMaxScale = 1;
+        public double WLvMaxScale { get => _WLvMaxScale; set { _WLvMaxScale = value; NotifyPropertyChanged(); } }
+        private double _WLvMaxScale = 1;
 
-        public double LvMinScale { get => _LvMinScale; set { _LvMinScale = value; NotifyPropertyChanged(); } }
-        private double _LvMinScale = 1;
+        public double WLvMinScale { get => _WLvMinScale; set { _WLvMinScale = value; NotifyPropertyChanged(); } }
+        private double _WLvMinScale = 1;
 
-        public double ZaRelMaxScale { get => _ZaRelMaxScale; set { _ZaRelMaxScale = value; NotifyPropertyChanged(); } }
-        private double _ZaRelMaxScale = 1;
+        public double WZaRelMaxScale { get => _WZaRelMaxScale; set { _WZaRelMaxScale = value; NotifyPropertyChanged(); } }
+        private double _WZaRelMaxScale = 1;
+
+
+        public double BLvMaxScale { get => _BLvMaxScale; set { _BLvMaxScale = value; NotifyPropertyChanged(); } }
+        private double _BLvMaxScale = 1;
+
+        public double BLvMinScale { get => _BLvMinScale; set { _BLvMinScale = value; NotifyPropertyChanged(); } }
+        private double _BLvMinScale = 1;
+
+        public double BZaRelMaxScale { get => _BZaRelMaxScale; set { _BZaRelMaxScale = value; NotifyPropertyChanged(); } }
+        private double _BZaRelMaxScale = 1;
+
+
 
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
@@ -45,7 +57,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                     Description = "BlackMura",
                     Order = 8,
                     Type = ConfigSettingType.Class,
-                    BindingName =nameof(LvMaxScale),
+                    BindingName =nameof(WLvMaxScale),
                     Source = Instance,
                 },
             };
@@ -162,7 +174,6 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
         {
             if (result.ViewResults == null)
             {
-
                 void OpenSource()
                 {
                     view.ImageView.ImageShow.Clear();
@@ -246,9 +257,9 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                 foreach (var item in AlgResultModels)
                 {
                     BlackMuraView blackMuraView = new BlackMuraView(item);
-                    blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.LvMaxScale;
-                    blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.LvMinScale;
-                    blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.ZaRelMaxScale;
+                    blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.WLvMaxScale;
+                    blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.WLvMinScale;
+                    blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.WZaRelMaxScale;
                     blackMuraView.ResultJson.Uniformity =  blackMuraView.ResultJson.LvMin / blackMuraView.ResultJson.LvMax * 100;
                     result.ViewResults.Add(blackMuraView);
                 }
@@ -265,7 +276,6 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();
-
 
             void OpenSource()
             {

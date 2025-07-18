@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading;
 
 namespace ColorVision.Engine.MySql.ORM
 {
@@ -32,7 +33,7 @@ namespace ColorVision.Engine.MySql.ORM
             int count = -1;
             try
             {
-                using var conn = CreateConnection();
+                var conn = MySqlControl.GetInstance().MySqlConnection;
                 using MySqlCommand command = new(sql, conn);
                 count = command.ExecuteNonQuery();
             }
@@ -75,7 +76,7 @@ namespace ColorVision.Engine.MySql.ORM
             int count = -1;
             try
             {
-                using var conn = CreateConnection();
+                var conn = MySqlControl.GetInstance().MySqlConnection;
                 using MySqlCommand command = new MySqlCommand(sql, conn);
                 if (param != null)
                 {
@@ -94,34 +95,46 @@ namespace ColorVision.Engine.MySql.ORM
         }
 
         public DataTable GetData(string sql) => GetData(sql, new Dictionary<string, object>());
+        private static readonly object _dbLock = new object();
 
+        //https://stackoverflow.com/questions/5440168/exception-there-is-already-an-open-datareader-associated-with-this-connection-w
         public DataTable GetData(string sql, Dictionary<string, object>? param)
         {
             DataTable dt = new();
-            try
+            lock (_dbLock)
             {
-                if (param == null || param.Count == 0)
+                try
                 {
-                    using var conn = CreateConnection();
-                    using MySqlDataAdapter adapter = new MySqlDataAdapter(sql, conn);
-                    int count = adapter.Fill(dt);
-                }
-                else
-                {
-                    using var conn = CreateConnection();
-                    using MySqlCommand command = new(sql, conn);
-                    foreach (var item in param)
+                    if (param == null || param.Count == 0)
                     {
-                        command.Parameters.AddWithValue(item.Key, item.Value);
+                        var conn = MySqlControl.GetInstance().MySqlConnection;
+                        using (MySqlDataAdapter adapter = new MySqlDataAdapter(sql, conn))
+                        {
+                            int count = adapter.Fill(dt);
+                        }
                     }
-                    using MySqlDataAdapter adapter = new(command);
-                    int count = adapter.Fill(dt);
-                }  
+                    else
+                    {
+                        var conn = MySqlControl.GetInstance().MySqlConnection;
+                        using (MySqlCommand command = new(sql, conn))
+                        {
+                            foreach (var item in param)
+                            {
+                                command.Parameters.AddWithValue(item.Key, item.Value);
+                            }
+                            using (MySqlDataAdapter adapter = new MySqlDataAdapter(command))
+                            {
+                                int count = adapter.Fill(dt);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    log.Error($"sql{sql} +{ex}");
+                }
             }
-            catch (Exception ex)
-            {
-                log.Error($"sql{sql} +{ex}");
-            }
+
             return dt;
         }
 
@@ -131,17 +144,22 @@ namespace ColorVision.Engine.MySql.ORM
             string sqlStr = string.Format("SELECT * FROM {0} WHERE FALSE", TableName);
             try
             {
-                using var conn = CreateConnection();
-                using MySqlCommand cmd = new MySqlCommand(sqlStr, conn);
-                using MySqlDataAdapter dataAdapter = new MySqlDataAdapter(cmd);
-                dataAdapter.RowUpdated += DataAdapter_RowUpdated;
-                using MySqlCommandBuilder builder = new(dataAdapter);
-                builder.ConflictOption = ConflictOption.OverwriteChanges;
-                builder.SetAllValues = true;
-                dataAdapter.UpdateCommand = builder.GetUpdateCommand(true) as MySqlCommand;
-                count = dataAdapter.Update(dt);
-                dt.AcceptChanges();
-
+                var conn = MySqlControl.GetInstance().MySqlConnection;
+                using (MySqlCommand cmd = new MySqlCommand(sqlStr, conn))
+                {
+                    using (MySqlDataAdapter dataAdapter = new MySqlDataAdapter(cmd))
+                    {
+                        dataAdapter.RowUpdated += DataAdapter_RowUpdated;
+                        using (MySqlCommandBuilder builder = new(dataAdapter))
+                        {
+                            builder.ConflictOption = ConflictOption.OverwriteChanges;
+                            builder.SetAllValues = true;
+                            dataAdapter.UpdateCommand = builder.GetUpdateCommand(true) as MySqlCommand;
+                            count = dataAdapter.Update(dt);
+                            dt.AcceptChanges();
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {

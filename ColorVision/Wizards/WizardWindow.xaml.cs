@@ -30,7 +30,7 @@ namespace ColorVision.Wizards
 
     public class WizardManager : ViewModelBase
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(ProjectManager));
+        private static readonly ILog log = LogManager.GetLogger(typeof(WizardManager));
         private static WizardManager _instance;
         private static readonly object _locker = new();
         public static WizardManager GetInstance() { lock (_locker) { _instance ??= new WizardManager(); return _instance; } }
@@ -52,9 +52,6 @@ namespace ColorVision.Wizards
             }
             IWizardSteps = IWizardSteps.OrderBy(handler => handler.Order).ToList();
         }
-
-
-
     }
 
         /// <summary>

@@ -95,10 +95,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     switch (msg.Code)
                     {
                         default:
-                            List<AlgResultMasterModel> resultMaster = null;
+                            List<AlgResultMasterModel> resultMaster = new List<AlgResultMasterModel>();
                             if (msg.Data.MasterId > 0)
                             {
-                                resultMaster = new List<AlgResultMasterModel>();
                                 int MasterId = msg.Data.MasterId;
                                 AlgResultMasterModel model = AlgResultMasterDao.Instance.GetById(MasterId);
                                 if (model != null)

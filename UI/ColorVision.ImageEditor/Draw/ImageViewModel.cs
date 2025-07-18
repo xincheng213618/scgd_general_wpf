@@ -1079,6 +1079,7 @@ namespace ColorVision.ImageEditor.Draw
 
         public void Dispose()
         {
+            SelectEditorVisual.Dispose();
             Parent = null;
             ZoomboxSub = null;
             Image = null;

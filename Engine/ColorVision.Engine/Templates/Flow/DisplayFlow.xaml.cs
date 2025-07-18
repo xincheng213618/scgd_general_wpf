@@ -129,7 +129,11 @@ namespace ColorVision.Engine.Templates.Flow
                 }
                 Refresh();
             };
-            MqttRCService.GetInstance().ServiceTokensInitialized +=(s,e) => Refresh();
+            MqttRCService.GetInstance().ServiceTokensInitialized +=(s,e) => 
+            {
+                View.FlowEngineControl.LoadFromBase64(string.Empty);
+                Refresh();
+            };
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
@@ -137,7 +141,11 @@ namespace ColorVision.Engine.Templates.Flow
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
             this.Loaded += FlowDisplayControl_Loaded;
-            View.RefreshFlow += (s,e) => Refresh();
+            View.RefreshFlow += (s, e) =>
+            {
+                View.FlowEngineControl.LoadFromBase64(string.Empty);
+                Refresh();
+            };
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
 
         }
@@ -158,18 +166,16 @@ namespace ColorVision.Engine.Templates.Flow
         }
 
 
-        private void Refresh()
+        private async Task Refresh()
         {
             if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
-            {
                 MqttRCService.GetInstance().QueryServices();
-            }
-           
-            if (ComboBoxFlow.SelectedIndex  <0 && ComboBoxFlow.SelectedIndex >= TemplateFlow.Params.Count) return;
-            if (ComboBoxFlow.SelectedIndex < 0) return;
+            if (ComboBoxFlow.SelectedIndex  <0 || ComboBoxFlow.SelectedIndex >= TemplateFlow.Params.Count) return;
+
             FlowParam flowParam = TemplateFlow.Params[ComboBoxFlow.SelectedIndex].Value;
 
             if (View == null) return;
+
             if (string.IsNullOrEmpty(flowParam.DataBase64))
             {
                 MessageBox.Show("再选择之前请先创建对映的模板");
@@ -190,7 +196,7 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     if (View.FlowEngineControl.IsReady)
                         break;
-                     Thread.Sleep(10);
+                     await Task.Delay(10);
                 }
 
                 View.FlowParam = flowParam;
@@ -365,27 +371,33 @@ namespace ColorVision.Engine.Templates.Flow
             RunFlow();
         }
 
-        public void RunFlow()
+
+        public async void RunFlow()
         {
+            if (!MqttRCService.GetInstance().IsConnect)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(),"注册中心没有连接");
+                return;
+            }
 
             if (flowControl.IsFlowRun)
             {
                 log.Info("流程正在运行");
                 return;
             }
+            if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
+            {
+                MqttRCService.GetInstance().QueryServices();
+                MessageBox.Show(Application.Current.GetActiveWindow(), "Token为空，正在刷新token,请重试");
+                return;
+            }
+
             log.Info($"IsReady{View.FlowEngineControl.IsReady}");
             if (!View.FlowEngineControl.IsReady)
             {
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
-                Refresh();
+                await Refresh();
                 log.Info($"IsReady{View.FlowEngineControl.IsReady}");
-                log.Info($"IsReady{View.FlowEngineControl.IsReady}");
-                if (!View.FlowEngineControl.IsReady)
-                {
-                    View.FlowEngineControl.LoadFromBase64(string.Empty);
-                    Refresh();
-                    log.Info($"IsReady{View.FlowEngineControl.IsReady}");
-                }
             }
 
             CheckDiskSpace("C");
@@ -396,12 +408,6 @@ namespace ColorVision.Engine.Templates.Flow
             if (string.IsNullOrWhiteSpace(startNode))
             {
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到流程启动结点，运行失败", "ColorVision");
-                return;
-            }
-            if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
-            {
-                MqttRCService.GetInstance().QueryServices();
-                MessageBox.Show("Token为空，正在刷新token,请重试");
                 return;
             }
 

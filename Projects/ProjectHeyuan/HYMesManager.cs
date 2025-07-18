@@ -37,14 +37,15 @@ namespace ColorVision.Projects.ProjectHeyuan
         public bool IsOpenConnect { get => _IsOpenConnect;set { _IsOpenConnect = value; NotifyPropertyChanged(); } }
         private bool _IsOpenConnect;
 
+        public string PortName { get => _PortName; set { _PortName = value; NotifyPropertyChanged(); } }
+        private string _PortName;
+
         public string FlowName { get => _FlowName; set { _FlowName = value; NotifyPropertyChanged(); } }
         private string _FlowName;
 
         public int DeviceId { get => _DeviceId; set { _DeviceId = value; NotifyPropertyChanged(); } }
         private int _DeviceId;
 
-        public string PortName { get => _PortName; set { _PortName = value; NotifyPropertyChanged(); } }
-        private string _PortName;
 
         public string TestName { get => _TestName; set { _TestName = value; NotifyPropertyChanged(); } }
         private string _TestName = "WBROtest";
