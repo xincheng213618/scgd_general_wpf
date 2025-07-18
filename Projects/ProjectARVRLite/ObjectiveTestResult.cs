@@ -364,8 +364,6 @@ namespace ProjectARVRLite
         /// </summary>
         public ObjectiveTestItem OptCenterYTilt { get; set; }
 
-
-
         /// <summary>
         /// 鬼影(%) 测试项
         /// </summary>
@@ -381,6 +379,15 @@ namespace ProjectARVRLite
         /// 总体测试结果字符串（如“pass”或“fail”）
         /// </summary>
         public string TotalResultString => TotalResult?"PASS":"Fail";
+
+        public bool FlowW51TestReslut { get; set; } = false;
+        public bool FlowWhiteTestReslut { get; set; } = false;
+        public bool FlowBlackTestReslut { get; set; } = false;
+        public bool FlowW25TestReslut { get; set; } = false;
+        public bool FlowChessboardTestReslut { get; set; } = false;
+        public bool FlowMTFHVTestReslut { get; set; } = false;
+        public bool FlowDistortionTestReslut { get; set; } = false;
+        public bool FlowOpticCenterTestReslut { get; set; } = false;
     }
 
 
