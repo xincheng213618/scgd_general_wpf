@@ -316,8 +316,13 @@ namespace ProjectARVRLite
                     ProjectARVRLiteConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
                 });
             }
-
-
+            else
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ProjectARVRLiteConfig.Instance.SN = SN;
+                });
+            }
         }
 
         public void SwitchPGCompleted()
