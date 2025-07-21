@@ -12,7 +12,7 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayBinocularFusion : UserControl
+    public partial class DisplayBinocularFusion : UserControl,IDisposable
     {
         public AlgorithmBinocularFusion IAlgorithm { get; set; }
         public DisplayBinocularFusion(AlgorithmBinocularFusion iAlgorithm)
@@ -144,6 +144,12 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
                 return;
             }
             IAlgorithm.Device.View.ImageView.OpenImage(ImageFile.Text);
+        }
+
+        public void Dispose()
+        {
+            
+            GC.SuppressFinalize(this);
         }
     }
 }

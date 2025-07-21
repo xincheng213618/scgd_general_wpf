@@ -1,7 +1,9 @@
-﻿using ColorVision.Common.MVVM;
+﻿using AvalonDock.Controls;
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Abstractions;
 using ColorVision.UI;
 using CVCommCore;
+using LiveChartsCore.SkiaSharpView.Painting.ImageFilters;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -9,6 +11,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
@@ -25,6 +28,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
     }
 
+
     /// <summary>
     /// DisplayAlgorithm.xaml 的交互逻辑
     /// </summary>
@@ -38,6 +42,22 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         {
             Device = device;
             InitializeComponent();
+        }
+
+        public static FrameworkElement FindChildByName(DependencyObject parent, string name)
+        {
+            int count = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < count; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is FrameworkElement fe)
+                {
+                    if (fe.Name == name) return fe;
+                    var result = FindChildByName(fe, name);
+                    if (result != null) return result;
+                }
+            }
+            return null;
         }
         public ObservableCollection<IDisplayAlgorithm> Algorithms { get; set; } 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -85,8 +105,24 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     CB_StackPanel.Children.Add(algorithm.GetUserControl());
                 }
             };
+            DisplayAlgorithmManager.GetInstance().SelectTypeChanged += (s,e) =>
+            {
+                foreach(var Algorithm in Algorithms)
+                {
+                    if (Algorithm.GetType() == e)
+                    {
+                        CB_Algorithms.SelectedItem = Algorithm;
+                    }
+                }
+            };
+            DisplayAlgorithmManager.GetInstance().SelectFileNameChanged += (s, e) =>
+            {
+                if (FindChildByName(CB_StackPanel,"ImageFile") is TextBox  ssss )
+                {
 
-
+                    ssss.Text = e;
+                }
+            };
 
             void CB_AlgorithmTypesChanged()
             {
@@ -175,7 +211,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             UpdateUI(Device.DService.DeviceStatus);
             Device.DService.DeviceStatusChanged += UpdateUI;
         }
-        
+
+        private void DisplayAlgorithm_SelectTypeChanged(object? sender, Type e)
+        {
+            throw new NotImplementedException();
+        }
+
         public event RoutedEventHandler Selected;
         public event RoutedEventHandler Unselected;
         public event EventHandler SelectChanged;
