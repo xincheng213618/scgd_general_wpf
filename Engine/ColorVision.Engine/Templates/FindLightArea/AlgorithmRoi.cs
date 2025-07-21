@@ -12,6 +12,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.FindLightArea
 {
+
+    [DisplayAlgorithm(11, "发光区检测", "FindLightArea")]
     public class AlgorithmRoi : DisplayAlgorithmBase
     {
 
@@ -22,10 +24,6 @@ namespace ColorVision.Engine.Templates.FindLightArea
 
         public AlgorithmRoi(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "发光区检测";
-            Order = 11;
-            Group = "FindLightArea";
-
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

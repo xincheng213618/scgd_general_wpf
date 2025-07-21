@@ -12,6 +12,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.BlackMura
 {
+    [DisplayAlgorithm(21, "BlackMura", "Json")]
+
     public class AlgorithmBlackMura : DisplayAlgorithmBase
     {
 
@@ -22,11 +24,6 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
         public AlgorithmBlackMura(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "BlackMura";
-            Order = 21;
-
-            Group = "Json";
-
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

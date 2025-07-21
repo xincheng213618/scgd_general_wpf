@@ -13,6 +13,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.MTF2
 {
+
+    [DisplayAlgorithm(53, "MTF2.0", "Json")]
     public class AlgorithmMTF2 : DisplayAlgorithmBase
     {
 
@@ -23,9 +25,6 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
 
         public AlgorithmMTF2(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "MTF2.0";
-            Order = 53;
-            Group = "Json";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());

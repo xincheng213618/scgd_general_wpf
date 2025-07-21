@@ -9,12 +9,21 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
+    public class DisplayAlgorithmMeta
+    {
+        public Type Type { get; set; }
+        public int Order { get; set; }
+        public string Name { get; set; }
+        public string Group { get; set; }
+    }
+
     public class DisplayAlgorithmConfig:ViewModelBase,IConfig
     {
         public static DisplayAlgorithmConfig Instance => ConfigService.Instance.GetRequiredService<DisplayAlgorithmConfig>();
@@ -66,45 +75,72 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             this.ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
+            List<DisplayAlgorithmMeta> algorithmMetas = new List<DisplayAlgorithmMeta>();
 
-            List<IDisplayAlgorithm> algorithms = new List<IDisplayAlgorithm>();
+
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IDisplayAlgorithm).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    if (Activator.CreateInstance(type, Device) is IDisplayAlgorithm  algorithm)
+                    var attr = type.GetCustomAttribute<DisplayAlgorithmAttribute>();
+                    if (attr != null)
                     {
-                        algorithms.Add(algorithm);
+                        algorithmMetas.Add(new DisplayAlgorithmMeta
+                        {
+                            Type = type,
+                            Order = attr.Order,
+                            Name = attr.Name,
+                            Group = attr.Group
+                        });
                     }
                 }
             }
 
-            // 创建一个包含所有算法的组
-            string allAlgorithmsGroup = "All";
-            Algorithms = new ObservableCollection<IDisplayAlgorithm>(algorithms.OrderBy(item => item.Order));
+            List<IDisplayAlgorithm> algorithms = new List<IDisplayAlgorithm>();
 
-            // 创建一个包含不同组的列表
-            List<string> groups = new List<string> { allAlgorithmsGroup };
-            foreach (var group in Algorithms.Select(a => a.Group).Distinct())
-            {
-                if (!groups.Contains(group) && !string.IsNullOrWhiteSpace(group))
-                {
-                    groups.Add(group);
-                }
-            }
+            // 用于展示和分组（不需要实例化对象）
+            string allAlgorithmsGroup = "All";
+            var groups = new List<string> { allAlgorithmsGroup };
+            groups.AddRange(algorithmMetas.Select(a => a.Group).Distinct().Where(g => !string.IsNullOrWhiteSpace(g) && g != allAlgorithmsGroup));
 
             CB_AlgorithmTypes.ItemsSource = groups;
             CB_AlgorithmTypes.SelectedItem = DisplayAlgorithmConfig.Instance.LastSelectGroup;
 
+            // 按分组和排序展示算法
+            var filteredAlgorithms = algorithmMetas
+                .Where(a => a.Group == (string)CB_AlgorithmTypes.SelectedItem || (string)CB_AlgorithmTypes.SelectedItem == allAlgorithmsGroup)
+                .OrderBy(a => a.Order)
+                .ToList();
+
+            CB_Algorithms.ItemsSource = filteredAlgorithms;
+            CB_Algorithms.DisplayMemberPath = "Name";  // 假设绑定到 Name 显示
+            Dictionary<Type, IDisplayAlgorithm> algorithmDict = new Dictionary<Type, IDisplayAlgorithm>();
             CB_Algorithms.SelectionChanged += (s, e) =>
             {
-                if (CB_Algorithms.SelectedItem is IDisplayAlgorithm algorithm)
+                if (CB_Algorithms.SelectedItem is DisplayAlgorithmMeta meta)
                 {
-                    DisplayAlgorithmConfig.Instance.LastSelectTemplate = algorithm.Name;
+                    IDisplayAlgorithm algorithm;
+                    if (!algorithmDict.TryGetValue(meta.Type, out algorithm))
+                    {
+                        algorithm = Activator.CreateInstance(meta.Type, Device) as IDisplayAlgorithm;
+                        if (algorithm != null)
+                        {
+                            algorithmDict[meta.Type] = algorithm;
+                        }
+                        else
+                        {
+                            // 可选：异常处理或日志
+                            return;
+                        }
+                    }
+
+                    DisplayAlgorithmConfig.Instance.LastSelectTemplate = meta.Name;
                     CB_StackPanel.Children.Clear();
                     CB_StackPanel.Children.Add(algorithm.GetUserControl());
+
                 }
             };
+
             DisplayAlgorithmManager.GetInstance().SelectTypeChanged += (s,e) =>
             {
                 foreach(var Algorithm in Algorithms)
@@ -129,40 +165,34 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 if (CB_AlgorithmTypes.SelectedItem is string selectedGroup)
                 {
                     DisplayAlgorithmConfig.Instance.LastSelectGroup = selectedGroup;
+                    List<DisplayAlgorithmMeta> filteredAlgorithms;
                     if (selectedGroup == allAlgorithmsGroup)
                     {
-                        var TypeAlgorithmThms = Algorithms.OrderBy(a => a.Order).ToList();
-
-                        CB_Algorithms.ItemsSource = TypeAlgorithmThms;
-
-                        var lastSelectedAlgorithm = TypeAlgorithmThms
-                            .FirstOrDefault(a => a.Name == DisplayAlgorithmConfig.Instance.LastSelectTemplate);
-
-                        if (lastSelectedAlgorithm != null)
-                        {
-                            CB_Algorithms.SelectedItem = lastSelectedAlgorithm;
-                        }
-                        else
-                        {
-                            CB_Algorithms.SelectedIndex = 0; // Default to the first item if no match is found
-                        }
+                        filteredAlgorithms = algorithmMetas
+                            .OrderBy(a => a.Order)
+                            .ToList();
                     }
                     else
                     {
-                        var TypeAlgorithmThms = Algorithms.Where(a => a.Group == selectedGroup).OrderBy(a => a.Order).ToList();
-                        CB_Algorithms.ItemsSource = TypeAlgorithmThms;
-                      
-                        var lastSelectedAlgorithm = TypeAlgorithmThms
-                            .FirstOrDefault(a => a.Name == DisplayAlgorithmConfig.Instance.LastSelectTemplate);
+                        filteredAlgorithms = algorithmMetas
+                            .Where(a => a.Group == selectedGroup)
+                            .OrderBy(a => a.Order)
+                            .ToList();
+                    }
 
-                        if (lastSelectedAlgorithm != null)
-                        {
-                            CB_Algorithms.SelectedItem = lastSelectedAlgorithm;
-                        }
-                        else
-                        {
-                            CB_Algorithms.SelectedIndex = 0; // Default to the first item if no match is found
-                        }
+                    CB_Algorithms.ItemsSource = filteredAlgorithms;
+                    CB_Algorithms.DisplayMemberPath = "Name";
+
+                    var lastSelectedAlgorithm = filteredAlgorithms
+                        .FirstOrDefault(a => a.Name == DisplayAlgorithmConfig.Instance.LastSelectTemplate);
+
+                    if (lastSelectedAlgorithm != null)
+                    {
+                        CB_Algorithms.SelectedItem = lastSelectedAlgorithm;
+                    }
+                    else
+                    {
+                        CB_Algorithms.SelectedIndex = 0;
                     }
 
 

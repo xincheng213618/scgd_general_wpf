@@ -12,6 +12,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.BuildPOIAA
 {
+    [DisplayAlgorithm(53, "AA布点", "Json")]
     public class AlgorithmBuildPOIAA : DisplayAlgorithmBase
     {
 
@@ -22,9 +23,6 @@ namespace ColorVision.Engine.Templates.Jsons.BuildPOIAA
 
         public AlgorithmBuildPOIAA(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "AA布点";
-            Order = 53;
-            Group = "Json";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

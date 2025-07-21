@@ -12,6 +12,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.FocusPoints
 {
+
+    [DisplayAlgorithm(12, "发光区1", "数据提取算法")]
     public class AlgorithmFocusPoints : DisplayAlgorithmBase
     {
         public DeviceAlgorithm Device { get; set; }
@@ -21,9 +23,6 @@ namespace ColorVision.Engine.Templates.FocusPoints
 
         public AlgorithmFocusPoints(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "发光区1";
-            Order = 12;
-            Group = "数据提取算法";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

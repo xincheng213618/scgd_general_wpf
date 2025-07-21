@@ -13,6 +13,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.JND
 {
+
+    [DisplayAlgorithm(3, "JND", "数据提取算法")]
     public class AlgorithmJND : DisplayAlgorithmBase
     {
         public DeviceAlgorithm Device { get; set; }
@@ -23,9 +25,6 @@ namespace ColorVision.Engine.Templates.JND
 
         public AlgorithmJND(DeviceAlgorithm deviceAlgorithm) 
         {
-            Name = "JND";
-            Order = 3;
-			Group = "数据提取算法";
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());

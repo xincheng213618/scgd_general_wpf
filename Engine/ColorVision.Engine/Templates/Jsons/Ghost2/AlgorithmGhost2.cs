@@ -12,6 +12,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.Ghost2
 {
+    [DisplayAlgorithm(54, "鬼影2", "Json")]
     public class AlgorithmGhost2 : DisplayAlgorithmBase
     {
 
@@ -22,9 +23,6 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
 
         public AlgorithmGhost2(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "鬼影2";
-            Order = 54;
-            Group = "Json";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

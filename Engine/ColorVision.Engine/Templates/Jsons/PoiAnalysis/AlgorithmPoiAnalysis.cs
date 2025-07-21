@@ -12,6 +12,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
 {
+
+    [DisplayAlgorithm(53, "POI分析", "Json")]
     public class AlgorithmPoiAnalysis : DisplayAlgorithmBase
     {
 
@@ -22,9 +24,6 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
 
         public AlgorithmPoiAnalysis(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "POI分析";
-            Order = 53;
-            Group = "Json";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

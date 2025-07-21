@@ -124,7 +124,7 @@ namespace ColorVision.Engine.Templates.Matching
                     code = deviceService.Code;
                 }
                 var ss = IAlgorithm.SendCommand(code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(ss, IAlgorithm.Name);
+                ServicesHelper.SendCommand(ss, "Name");
             }
         }
 

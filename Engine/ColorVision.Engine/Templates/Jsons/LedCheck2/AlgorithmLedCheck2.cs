@@ -26,7 +26,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
         }
     }
 
-
+    [DisplayAlgorithm(21, "亚像素级灯珠检测", "定位算法")]
     public class AlgorithmLedCheck2 : DisplayAlgorithmBase
     {
 
@@ -37,10 +37,6 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 
         public AlgorithmLedCheck2(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "亚像素级灯珠检测";
-            Order = 21;
-			Group = "定位算法";
-
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

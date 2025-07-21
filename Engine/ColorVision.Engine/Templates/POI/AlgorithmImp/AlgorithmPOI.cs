@@ -16,6 +16,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
+
+    [DisplayAlgorithm(1, "POI", "数据提取算法")]
     public class AlgorithmPoi : DisplayAlgorithmBase
     {
 
@@ -34,11 +36,6 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
         public AlgorithmPoi(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "POI";
-            Order = 1;
-			Group = "数据提取算法";
-
-
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePOIFilterCommand = new RelayCommand(a => OpenTemplatePOIFilter());

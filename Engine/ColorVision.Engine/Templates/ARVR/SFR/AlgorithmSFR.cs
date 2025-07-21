@@ -13,6 +13,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.SFR
 {
+
+    [DisplayAlgorithm(51, "SFR", "ARVR")]
     public class AlgorithmSFR : DisplayAlgorithmBase
     {
 
@@ -23,9 +25,6 @@ namespace ColorVision.Engine.Templates.SFR
 
         public AlgorithmSFR(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "SFR";
-            Order = 51;
-            Group = "SFR";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());

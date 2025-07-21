@@ -12,6 +12,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.FOV
 {
+    [DisplayAlgorithm(53, "FOV", "ARVR")]
     public class AlgorithmFOV : DisplayAlgorithmBase
     {
 
@@ -22,9 +23,6 @@ namespace ColorVision.Engine.Templates.FOV
 
         public AlgorithmFOV(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "FOV";
-            Order = 53;
-			Group = "FOV";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

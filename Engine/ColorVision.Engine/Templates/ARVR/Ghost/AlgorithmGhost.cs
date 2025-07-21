@@ -11,6 +11,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Ghost
 {
+    [DisplayAlgorithm(54, "鬼影", "ARVR")]
     public class AlgorithmGhost : DisplayAlgorithmBase
     {
 
@@ -21,9 +22,6 @@ namespace ColorVision.Engine.Templates.Ghost
 
         public AlgorithmGhost(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "鬼影";
-            Order = 54;
-			Group = "鬼影";
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

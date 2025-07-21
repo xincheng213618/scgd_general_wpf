@@ -13,6 +13,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.LedCheck
 {
+    [DisplayAlgorithm(20, "像素级灯珠检测", "定位算法")]
     public class AlgorithmLedCheck : DisplayAlgorithmBase
     {
 
@@ -24,10 +25,6 @@ namespace ColorVision.Engine.Templates.LedCheck
 
         public AlgorithmLedCheck(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "像素级灯珠检测";
-            Order = 20;
-			Group = "定位算法";
-
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());

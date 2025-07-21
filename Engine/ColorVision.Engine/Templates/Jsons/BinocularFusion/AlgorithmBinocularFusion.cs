@@ -12,6 +12,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
 {
+    [DisplayAlgorithm(12, "双目融合", "Json")]
     public class AlgorithmBinocularFusion : DisplayAlgorithmBase
     {
         public DeviceAlgorithm Device { get; set; }
@@ -21,10 +22,6 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
 
         public AlgorithmBinocularFusion(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "双目融合";
-            Order = 21;
-			Group = "Json";
-
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
