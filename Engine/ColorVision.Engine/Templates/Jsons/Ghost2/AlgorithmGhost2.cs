@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
         {
             Name = "鬼影2";
             Order = 54;
-            Group = "鬼影";
+            Group = "Json";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

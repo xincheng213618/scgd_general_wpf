@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
         {
             Name = "POI分析";
             Order = 53;
-            Group = "AR/VR算法";
+            Group = "Json";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

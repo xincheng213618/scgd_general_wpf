@@ -25,9 +25,9 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
             Name = "BlackMura";
             Order = 21;
 
+            Group = "Json";
 
-
-			Device = deviceAlgorithm;
+            Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }

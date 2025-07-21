@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Templates.Jsons.BuildPOIAA
         {
             Name = "AA布点";
             Order = 53;
-            Group = "BuildPOI";
+            Group = "Json";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

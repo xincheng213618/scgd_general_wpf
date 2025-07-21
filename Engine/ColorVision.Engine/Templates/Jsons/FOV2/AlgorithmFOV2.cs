@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
         {
             Name = "FOV2.0";
             Order = 53;
-            Group = "FOV";
+            Group = "Json";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

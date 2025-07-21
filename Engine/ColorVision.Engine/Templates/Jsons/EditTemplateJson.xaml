@@ -31,7 +31,7 @@
         <avalonEdit:TextEditor Name="textEditor" FontFamily="Consolas" FontSize="10pt" Background="Transparent" SyntaxHighlighting="Json"  Margin="5"/>
 
         <StackPanel x:Name="FuncStackPanel"  Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,5,0,0">
-            <Button x:Name="DescriptionButton" Content="注释" Margin="0,0,5,0" Click="Button_Click" Visibility="Collapsed"/>
+            <ToggleButton x:Name="DescriptionButton" Content="注释" Margin="0,0,5,0" Click="Button_Click" />
             <Button Content="校验Json" Margin="0,0,5,0" Command="{Binding CheckCommand}"/>
             <Button Content="编辑工具" Command="{Binding OpenEditToolCommand}"/>
             <Button Content="在线json解析" Click="Button_Click_1"/>

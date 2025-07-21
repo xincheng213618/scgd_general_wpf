@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
         {
             Name = "MTF2.0";
             Order = 53;
-            Group = "MTF";
+            Group = "Json";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
