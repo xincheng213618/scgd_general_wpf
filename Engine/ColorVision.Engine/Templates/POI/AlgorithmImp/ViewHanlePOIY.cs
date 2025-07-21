@@ -1,4 +1,5 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
@@ -34,20 +35,13 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                     PoiResultCIEYData poiResultCIExyuvData = new(item);
                     result.ViewResults.Add(poiResultCIExyuvData);
                 }
-                ;
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmPoi), ImageFilePath = result.FilePath })) });
             }
         }
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
-
-
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
-
-            Load(view,result);
-
-            view.ImageView.ImageShow.Clear();
-
 
             List<GridViewColumn> gridViewColumns = new List<GridViewColumn>();
 

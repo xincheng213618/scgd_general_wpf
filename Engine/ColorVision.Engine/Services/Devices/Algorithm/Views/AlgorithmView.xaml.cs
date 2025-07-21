@@ -3,9 +3,9 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
-using ColorVision.FileIO;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
@@ -212,6 +212,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(result));
             if (ResultHandle != null)
             {
+                ImageView.ImageShow.Clear();
+                ResultHandle.Load(this, result);
                 ResultHandle.Handle(this, result);
                 return;
             }

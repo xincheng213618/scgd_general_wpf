@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Abstractions;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
@@ -15,15 +16,8 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
     {
         public override List<AlgorithmResultType> CanHandle { get;  } = new List<AlgorithmResultType>() { AlgorithmResultType.BuildPOI};
 
-
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Load(AlgorithmView view, AlgorithmResult result)
         {
-            view.ImageView.ImageShow.Clear();
-
-
-            if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
-
             if (result.ViewResults == null)
             {
                 result.ViewResults = new ObservableCollection<IViewResult>();
@@ -33,7 +27,16 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
                     ViewResultBuildPoi mTFResultData = new(item);
                     result.ViewResults.Add(mTFResultData);
                 }
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmBuildPoi), ImageFilePath = result.FilePath })) });
             }
+
+        }
+
+        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        {
+            if (File.Exists(result.FilePath))
+                view.ImageView.OpenImage(result.FilePath);
+
 
             List<POIPoint> DrawPoiPoint = new();
             foreach (var item in result.ViewResults)

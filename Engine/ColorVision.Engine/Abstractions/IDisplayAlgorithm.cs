@@ -8,6 +8,12 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Abstractions
 {
+    public class DisplayAlgorithmParam
+    {
+        public Type Type { get; set; }
+        public string?  ImageFilePath { get; set; }
+    }
+
     public class DisplayAlgorithmManager
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DisplayAlgorithmManager));
@@ -31,21 +37,14 @@ namespace ColorVision.Engine.Abstractions
                 }
             }
         }
-        public event EventHandler<Type> SelectTypeChanged;
+        public event EventHandler<DisplayAlgorithmParam> SelectParamChanged;
 
-        public void SetType(Type type)
+        public void SetType(DisplayAlgorithmParam param)
         {
-            if (type == null) return;
-            SelectTypeChanged?.Invoke(this, type);
+            if (param == null) return;
+            SelectParamChanged?.Invoke(this, param);
         }
 
-        public event EventHandler<string> SelectFileNameChanged;
-
-        public void SetFileName(string fileName)
-        {
-            if (string.IsNullOrEmpty(fileName)) return;
-            SelectFileNameChanged?.Invoke(this, fileName);
-        }
     }
 
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
@@ -65,11 +64,23 @@ namespace ColorVision.Engine.Abstractions
     
     public interface IDisplayAlgorithm
     {
+        public bool IsLocalFile { get; set; }
+
+        public string ImageFilePath { get; set; }
+
         public UserControl GetUserControl();
     }
 
     public abstract class DisplayAlgorithmBase : ViewModelBase, IDisplayAlgorithm
     {
+        public bool IsLocalFile { get => _IsLocalFile; set { _IsLocalFile = value; NotifyPropertyChanged(); } }
+        private bool _IsLocalFile;
+
+        public string ImageFilePath { get => _ImageFilePath; set { _ImageFilePath = value; NotifyPropertyChanged(); } }
+        private string _ImageFilePath;
+
+
+
         public virtual UserControl GetUserControl()
         {
             throw new NotImplementedException();

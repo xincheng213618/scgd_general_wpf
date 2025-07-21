@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Algorithms;
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
@@ -17,18 +18,20 @@ namespace ColorVision.Engine.Templates.Matching
         public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.AOI};
 
 
+        public override void Load(AlgorithmView view, AlgorithmResult result)
+        {
+           if (result.ViewResults != null)
+            {
+                result.ViewResults = new ObservableCollection<IViewResult>(AlgResultAoiDao.Instance.GetAllByPid(result.Id));
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmMatching), ImageFilePath = result.FilePath })) });
+            }
+        }
+
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
-            view.ImageView.ImageShow.Clear();
-
-
 
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
-
-            result.ViewResults ??= new ObservableCollection<IViewResult>(AlgResultAoiDao.Instance.GetAllByPid(result.Id));
-
-
 
             foreach (var item in result.ViewResults.ToSpecificViewResults<AlgResultAoiModel>())
             {

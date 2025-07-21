@@ -68,7 +68,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             }
             return null;
         }
-        public ObservableCollection<IDisplayAlgorithm> Algorithms { get; set; } 
+        Dictionary<Type, IDisplayAlgorithm> AlgorithmDict = new Dictionary<Type, IDisplayAlgorithm>();
+
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
@@ -77,7 +78,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
             List<DisplayAlgorithmMeta> algorithmMetas = new List<DisplayAlgorithmMeta>();
 
-
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IDisplayAlgorithm).IsAssignableFrom(t) && !t.IsAbstract))
@@ -85,19 +85,23 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     var attr = type.GetCustomAttribute<DisplayAlgorithmAttribute>();
                     if (attr != null)
                     {
-                        algorithmMetas.Add(new DisplayAlgorithmMeta
+                        var meta = new DisplayAlgorithmMeta
                         {
                             Type = type,
                             Order = attr.Order,
                             Name = attr.Name,
                             Group = attr.Group
-                        });
+                        };
+
+                        algorithmMetas.Add(meta);
+
+                        if (Activator.CreateInstance(meta.Type, Device) is IDisplayAlgorithm  algorithm)
+                        {
+                            AlgorithmDict[meta.Type] = algorithm;
+                        }
                     }
                 }
             }
-
-            List<IDisplayAlgorithm> algorithms = new List<IDisplayAlgorithm>();
-
             // 用于展示和分组（不需要实例化对象）
             string allAlgorithmsGroup = "All";
             var groups = new List<string> { allAlgorithmsGroup };
@@ -114,18 +118,17 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             CB_Algorithms.ItemsSource = filteredAlgorithms;
             CB_Algorithms.DisplayMemberPath = "Name";  // 假设绑定到 Name 显示
-            Dictionary<Type, IDisplayAlgorithm> algorithmDict = new Dictionary<Type, IDisplayAlgorithm>();
             CB_Algorithms.SelectionChanged += (s, e) =>
             {
                 if (CB_Algorithms.SelectedItem is DisplayAlgorithmMeta meta)
                 {
                     IDisplayAlgorithm algorithm;
-                    if (!algorithmDict.TryGetValue(meta.Type, out algorithm))
+                    if (!AlgorithmDict.TryGetValue(meta.Type, out algorithm))
                     {
                         algorithm = Activator.CreateInstance(meta.Type, Device) as IDisplayAlgorithm;
                         if (algorithm != null)
                         {
-                            algorithmDict[meta.Type] = algorithm;
+                            AlgorithmDict[meta.Type] = algorithm;
                         }
                         else
                         {
@@ -141,23 +144,16 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 }
             };
 
-            DisplayAlgorithmManager.GetInstance().SelectTypeChanged += (s,e) =>
+            DisplayAlgorithmManager.GetInstance().SelectParamChanged += (s,e) =>
             {
-                foreach(var Algorithm in Algorithms)
+                if (AlgorithmDict.TryGetValue(e.Type, out IDisplayAlgorithm algorithm))
                 {
-                    if (Algorithm.GetType() == e)
-                    {
-                        CB_Algorithms.SelectedItem = Algorithm;
-                    }
+                    CB_AlgorithmTypes.SelectedItem = "All";
+                    CB_Algorithms.SelectedItem = algorithmMetas.FirstOrDefault(a=>a.Type == e.Type);
+                    algorithm.IsLocalFile = true;
+                    algorithm.ImageFilePath = e.ImageFilePath ?? string.Empty;
                 }
-            };
-            DisplayAlgorithmManager.GetInstance().SelectFileNameChanged += (s, e) =>
-            {
-                if (FindChildByName(CB_StackPanel,"ImageFile") is TextBox  ssss )
-                {
 
-                    ssss.Text = e;
-                }
             };
 
             void CB_AlgorithmTypesChanged()
