@@ -25,6 +25,7 @@ namespace ColorVision.Util.Draw.Special
         public RelayCommand Select0Command { get; set; }
         public RelayCommand Select1Command { get; set; }
         public RelayCommand Select2Command { get; set; }
+        public RelayCommand LockCommand { get; set; }
 
         public ImageViewModel Paraent { get; set; }
 
@@ -39,6 +40,7 @@ namespace ColorVision.Util.Draw.Special
             Select0Command = new RelayCommand(a => SetMode(0));
             Select1Command = new RelayCommand(a => SetMode(1));
             Select2Command = new RelayCommand(a => SetMode(2));
+            LockCommand = new RelayCommand(a => { IsLocked = !IsLocked; Render(); });
         }
 
 
@@ -92,37 +94,14 @@ namespace ColorVision.Util.Draw.Special
                 }
             }
         }
-        TextBox textBox;
         private void Image_MouseDoubleClick(object sender, RoutedEventArgs e)
         {
-            var canvas = sender as DrawCanvas;
-            if (canvas != null)
+            if (sender is DrawCanvas canvas)
             {
                 var position = Mouse.GetPosition(canvas);
-
-                textBox = new TextBox
-                {
-                    Width = 100, // Set desired width
-                    Height = 30, // Set desired height
-                    Background = Brushes.Transparent
-                };
-                textBox.Text = "2222";
-                textBox.PreviewKeyDown += (s, e) =>
-                {
-
-                };
-
-                Canvas.SetLeft(textBox, position.X);
-                Canvas.SetTop(textBox, position.Y);
-
-                var parent = ViewHelper.GetParentOfType<Grid>(canvas);
-                if (parent != null)
-                {
-                    parent.Children.Add(textBox);
-                }
+                IsLocked = !IsLocked;
+                Render();
             }
-
-
         }
 
         private void ZoomboxSub_LayoutUpdated(object? sender, EventArgs e)
@@ -145,6 +124,8 @@ namespace ColorVision.Util.Draw.Special
 
         private void PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            if (IsLocked) return;
+
             RMouseDownP = Mouse.GetPosition(Image);
             IsRMouseDown = true;
             Render();
@@ -153,6 +134,9 @@ namespace ColorVision.Util.Draw.Special
 
         private void Image_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
+            if (IsLocked) return;
+
+
             LMouseDownP = Mouse.GetPosition(Image);
             IsLMouseDown = true;
             PointLen = LMouseDownP - RMouseDownP;
@@ -161,6 +145,9 @@ namespace ColorVision.Util.Draw.Special
 
         private void PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (IsLocked) return;
+
+
             IsRMouseDown = false;
             IsLMouseDown = false;
             Render();
@@ -168,9 +155,13 @@ namespace ColorVision.Util.Draw.Special
 
 
 
+        // 1. 添加锁定字段
+        private bool IsLocked = true;
+
+        // 2. 修改 MouseMove 方法
         private void MouseMove(object sender, MouseEventArgs e)
         {
-            if (IsShow && (IsRMouseDown || IsLMouseDown))
+            if (IsShow && !IsLocked && (IsRMouseDown || IsLMouseDown))
             {
                 if (IsRMouseDown)
                 {
@@ -362,7 +353,7 @@ namespace ColorVision.Util.Draw.Special
                 if (IsRMouseDown || IsLMouseDown)
                 {
                     FormattedText formattedRText = new($"({(int)RMouseDownP.X},{(int)RMouseDownP.Y})", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                    dc.DrawText(formattedRText, RMouseDownP + new Vector(a, 2*a));
+                    dc.DrawText(formattedRText, RMouseDownP + new Vector(a, 2 * a));
                 }
 
                 FormattedText formattedText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
@@ -390,7 +381,7 @@ namespace ColorVision.Util.Draw.Special
                 TextAttribute textAttribute = new();
                 textAttribute.FontSize = 15 / ZoomboxSub.ContentMatrix.M11;
                 double a = 15 / ZoomboxSub.ContentMatrix.M11;
-                if (IsRMouseDown|| IsLMouseDown)
+                if (IsRMouseDown || IsLMouseDown)
                 {
                     FormattedText formattedRText = new($"({(int)RMouseDownP.X},{(int)RMouseDownP.Y})", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
                     dc.DrawText(formattedRText, RMouseDownP + new Vector(a, 2 * a));
@@ -401,8 +392,21 @@ namespace ColorVision.Util.Draw.Special
                 dc.DrawText(formattedText, RMouseDownP + new Vector(a, a));
             }
 
+            if (IsLocked)
+            {
+                // 画一个小锁图标或者文字
+                FormattedText lockText = new(
+                    "锁定",
+                    CultureInfo.CurrentCulture,
+                    FlowDirection.LeftToRight,
+                    new Typeface("Segoe UI"),
+                    18 / ZoomboxSub.ContentMatrix.M11,
+                    Brushes.Red,
+                    VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip
+                );
+                dc.DrawText(lockText, new Point(10, 10));
 
-
+            }
         }
 
         private bool _IsShow;
