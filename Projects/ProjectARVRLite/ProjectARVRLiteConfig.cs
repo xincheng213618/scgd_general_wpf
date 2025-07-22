@@ -5,7 +5,9 @@ using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using Newtonsoft.Json;
+using Org.BouncyCastle.Asn1.Ocsp;
 using ProjectARVRLite.Config;
+using ProjectARVRLite.PluginConfig;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -36,6 +38,8 @@ namespace ProjectARVRLite
 
         [JsonIgnore]
         public RelayCommand EditSPECConfigcommand { get; set; }
+        [JsonIgnore]
+        public RelayCommand InitTestCommand { get; set; }
 
         public ProjectARVRLiteConfig()
         {
@@ -52,7 +56,14 @@ namespace ProjectARVRLite
             OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
 
             EditSPECConfigcommand = new RelayCommand(a => EditSPECConfig());
+            InitTestCommand = new RelayCommand(a => InitTest());
         }
+
+        public void InitTest()
+        {
+            ProjectWindowInstance.WindowInstance.InitTest(string.Empty);
+        }
+
         public int StepIndex { get => _StepIndex; set { _StepIndex = value; NotifyPropertyChanged(); } }
         private int _StepIndex;
 

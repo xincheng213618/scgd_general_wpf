@@ -216,6 +216,9 @@
             <StatusBarItem>
                 <Button Content="自述文件" Command="{Binding OpenReadMeCommand}"/>
             </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="自述文件" Command="{Binding InitTestCommand}"/>
+            </StatusBarItem>
         </StatusBar>
 
     </Grid>
