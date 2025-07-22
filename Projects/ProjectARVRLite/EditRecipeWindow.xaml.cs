@@ -56,7 +56,7 @@ namespace ProjectARVRLite
                 if (!Directory.Exists(DirectoryPath))
                     Directory.CreateDirectory(DirectoryPath);
 
-                string json = JsonConvert.SerializeObject(RecipeConfig, Formatting.Indented);
+                string json = JsonConvert.SerializeObject(RecipeConfigs, Formatting.Indented);
                 File.WriteAllText(ObjectiveTestResultFixPath, json);
             }
             catch
