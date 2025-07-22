@@ -94,8 +94,8 @@ namespace ProjectARVRLite
 
         public void EditSPECConfig()
         {
-            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(SPECConfig ,false) { Owner = Application.Current.GetActiveWindow() };
-            propertyEditorWindow.ShowDialog();
+            EditRecipeWindow EditRecipeWindow = new EditRecipeWindow() { Owner = Application.Current.GetActiveWindow() };
+            EditRecipeWindow.ShowDialog();
         }
 
 
@@ -226,10 +226,5 @@ namespace ProjectARVRLite
         private SummaryInfo _SummaryInfo = new SummaryInfo();
 
         public static ARVRWindowConfig ProjectKBWindowConfig => ARVRWindowConfig.Instance;
-        public Dictionary<string, RecipeConfig> SPECConfigs { get; set; } = new Dictionary<string, RecipeConfig>();
-
-        public RecipeConfig SPECConfig { get => _SPECConfig; set { _SPECConfig = value; NotifyPropertyChanged(); } }
-        private RecipeConfig _SPECConfig = new RecipeConfig();
-
     }
 }

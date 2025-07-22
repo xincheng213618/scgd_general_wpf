@@ -1,8 +1,11 @@
 ﻿#pragma warning disable
 using ColorVision.Common.MVVM;
+using ProjectARVRLite;
+using ProjectARVRLite;
+using ProjectARVRLite.Config;
 using System.ComponentModel;
 
-namespace ProjectARVRLite.Config
+namespace ProjectARVRLite
 {
     [DisplayName("ARVR上下限判定")]
     public class RecipeConfig : ViewModelBase

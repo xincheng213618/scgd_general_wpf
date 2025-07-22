@@ -38,6 +38,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Org.BouncyCastle.Asn1.Ocsp;
 using Panuon.WPF.UI;
+using ProjectARVRLite;
 using ProjectARVRLite.Config;
 using ProjectARVRLite.Services;
 using ST.Library.UI.NodeEditor;
@@ -398,7 +399,9 @@ namespace ProjectARVRLite
         private Timer timer;
         Stopwatch stopwatch = new Stopwatch();
 
-        public static RecipeConfig SPECConfig => ProjectARVRLiteConfig.Instance.SPECConfig;
+        public static RecipeManager RecipeManager => RecipeManager.GetInstance();
+        public static RecipeConfig recipeConfig => RecipeManager.RecipeConfig;
+
 
         private LogOutput? logOutput;
         private void Window_Initialized(object sender, EventArgs e)
@@ -419,18 +422,19 @@ namespace ProjectARVRLite
                 {
                     string Name = TemplateFlow.Params[ProjectARVRLiteConfig.Instance.TemplateSelectedIndex].Key;
 
-                    if (ProjectARVRLiteConfig.Instance.SPECConfigs.TryGetValue(Name, out RecipeConfig sPECConfig))
+                    if (RecipeManager.RecipeConfigs.TryGetValue(Name, out RecipeConfig recipeConfig))
                     {
-                        ProjectARVRLiteConfig.Instance.SPECConfig = sPECConfig;
+                        RecipeManager.RecipeConfig = recipeConfig;
                     }
                     else
                     {
-                        sPECConfig = new RecipeConfig();
-                        ProjectARVRLiteConfig.Instance.SPECConfigs.TryAdd(Name, sPECConfig);
-                        ProjectARVRLiteConfig.Instance.SPECConfig = sPECConfig;
+                        recipeConfig = new RecipeConfig();
+                        RecipeManager.RecipeConfigs.TryAdd(Name, recipeConfig);
+                        RecipeManager.RecipeConfig = recipeConfig;
                     }
                 }
             };
+
             timer = new Timer(TimeRun, null, 0, 500);
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
@@ -754,8 +758,8 @@ namespace ProjectARVRLite
                             ObjectiveTestResult.W51DiagonalFieldOfViewAngle = new ObjectiveTestItem()
                             {
                                 Name = "DiagonalFieldOfViewAngle",
-                                LowLimit = SPECConfig.DiagonalFieldOfViewAngleMin,
-                                UpLimit = SPECConfig.DiagonalFieldOfViewAngleMax,
+                                LowLimit = recipeConfig.DiagonalFieldOfViewAngleMin,
+                                UpLimit = recipeConfig.DiagonalFieldOfViewAngleMax,
                                 Value = view1.Result.result.D_Fov,
                                 TestValue = view1.Result.result.D_Fov.ToString("F3")
                             };
@@ -763,16 +767,16 @@ namespace ProjectARVRLite
                             ObjectiveTestResult.W51HorizontalFieldOfViewAngle = new ObjectiveTestItem()
                             {
                                 Name = "HorizontalFieldOfViewAngle",
-                                LowLimit = SPECConfig.HorizontalFieldOfViewAngleMin,
-                                UpLimit = SPECConfig.HorizontalFieldOfViewAngleMax,
+                                LowLimit = recipeConfig.HorizontalFieldOfViewAngleMin,
+                                UpLimit = recipeConfig.HorizontalFieldOfViewAngleMax,
                                 Value = view1.Result.result.ClolorVisionH_Fov,
                                 TestValue = view1.Result.result.ClolorVisionH_Fov.ToString("F3")
                             };
                             ObjectiveTestResult.W51VerticalFieldOfViewAngle = new ObjectiveTestItem()
                             {
                                 Name = "VerticalFieldOfViewAngle",
-                                LowLimit = SPECConfig.VerticalFieldOfViewAngleMin,
-                                UpLimit = SPECConfig.VerticalFieldOfViewAngleMax,
+                                LowLimit = recipeConfig.VerticalFieldOfViewAngleMin,
+                                UpLimit = recipeConfig.VerticalFieldOfViewAngleMax,
                                 Value = view1.Result.result.ClolorVisionV_Fov,
                                 TestValue = view1.Result.result.ClolorVisionV_Fov.ToString("F3")
                             };
@@ -831,8 +835,8 @@ namespace ProjectARVRLite
                                     Name = "CenterCorrelatedColorTemperature",
                                     TestValue = poiResultCIExyuvData.CCT.ToString(),
                                     Value = poiResultCIExyuvData.CCT,
-                                    LowLimit = SPECConfig.CenterCorrelatedColorTemperatureMin,
-                                    UpLimit = SPECConfig.CenterCorrelatedColorTemperatureMax
+                                    LowLimit = recipeConfig.CenterCorrelatedColorTemperatureMin,
+                                    UpLimit = recipeConfig.CenterCorrelatedColorTemperatureMax
                                 };
                                 ObjectiveTestResult.BlackCenterCorrelatedColorTemperature = objectiveTestItem;
                                 result.ViewResultWhite.CenterCorrelatedColorTemperature = objectiveTestItem;
@@ -842,40 +846,40 @@ namespace ProjectARVRLite
                                 ObjectiveTestResult.W255CenterLunimance = new ObjectiveTestItem()
                                 {
                                     Name = "W255CenterLunimance",
-                                    LowLimit = SPECConfig.W255CenterLunimanceMin,
-                                    UpLimit = SPECConfig.W255CenterLunimanceMax,
+                                    LowLimit = recipeConfig.W255CenterLunimanceMin,
+                                    UpLimit = recipeConfig.W255CenterLunimanceMax,
                                     Value = poiResultCIExyuvData.Y,
                                     TestValue = poiResultCIExyuvData.Y.ToString("F3") + " nit"
                                 };
                                 ObjectiveTestResult.W255CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem()
                                 {
                                     Name = "W255CenterCIE1931ChromaticCoordinatesx",
-                                    LowLimit = SPECConfig.W255CenterCIE1931ChromaticCoordinatesxMin,
-                                    UpLimit = SPECConfig.W255CenterCIE1931ChromaticCoordinatesxMax,
+                                    LowLimit = recipeConfig.W255CenterCIE1931ChromaticCoordinatesxMin,
+                                    UpLimit = recipeConfig.W255CenterCIE1931ChromaticCoordinatesxMax,
                                     Value = poiResultCIExyuvData.x,
                                     TestValue = poiResultCIExyuvData.x.ToString("F3")
                                 };
                                 ObjectiveTestResult.W255CenterCIE1931ChromaticCoordinatesy = new ObjectiveTestItem()
                                 {
                                     Name = "W255CenterCIE1931ChromaticCoordinatesy",
-                                    LowLimit = SPECConfig.W255CenterCIE1931ChromaticCoordinatesyMin,
-                                    UpLimit = SPECConfig.W255CenterCIE1931ChromaticCoordinatesyMax,
+                                    LowLimit = recipeConfig.W255CenterCIE1931ChromaticCoordinatesyMin,
+                                    UpLimit = recipeConfig.W255CenterCIE1931ChromaticCoordinatesyMax,
                                     Value = poiResultCIExyuvData.y,
                                     TestValue = poiResultCIExyuvData.y.ToString("F3")
                                 };
                                 ObjectiveTestResult.W255CenterCIE1976ChromaticCoordinatesu = new ObjectiveTestItem()
                                 {
                                     Name = "W255CenterCIE1976ChromaticCoordinatesu",
-                                    LowLimit = SPECConfig.W255CenterCIE1976ChromaticCoordinatesuMin,
-                                    UpLimit = SPECConfig.W255CenterCIE1976ChromaticCoordinatesuMax,
+                                    LowLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesuMin,
+                                    UpLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesuMax,
                                     Value = poiResultCIExyuvData.u,
                                     TestValue = poiResultCIExyuvData.u.ToString("F3")
                                 };
                                 ObjectiveTestResult.W255CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem()
                                 {
                                     Name = "W255CenterCIE1976ChromaticCoordinatesv",
-                                    LowLimit = SPECConfig.W255CenterCIE1976ChromaticCoordinatesvMin,
-                                    UpLimit = SPECConfig.W255CenterCIE1976ChromaticCoordinatesvMax,
+                                    LowLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesvMin,
+                                    UpLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesvMax,
                                     Value = poiResultCIExyuvData.v,
                                     TestValue=poiResultCIExyuvData.v.ToString("F3")
                                 };
@@ -901,8 +905,8 @@ namespace ProjectARVRLite
                                     Name = "Luminance_uniformity(%)",
                                     TestValue = (viewReslut.PoiAnalysisResult.result.Value * 100).ToString("F3") + "%",
                                     Value = viewReslut.PoiAnalysisResult.result.Value,
-                                    LowLimit = SPECConfig.W255LuminanceUniformityMin,
-                                    UpLimit = SPECConfig.W255LuminanceUniformityMax,
+                                    LowLimit = recipeConfig.W255LuminanceUniformityMin,
+                                    UpLimit = recipeConfig.W255LuminanceUniformityMax,
                                 };
                                 ObjectiveTestResult.W255LuminanceUniformity = LuminanceUniformity;
                                 result.ViewResultWhite.W255LuminanceUniformity = LuminanceUniformity;
@@ -925,8 +929,8 @@ namespace ProjectARVRLite
                                     Name = "Color_uniformity",
                                     TestValue = (viewReslut.PoiAnalysisResult.result.Value).ToString("F5"),
                                     Value = viewReslut.PoiAnalysisResult.result.Value,
-                                    LowLimit = SPECConfig.W255ColorUniformityMin,
-                                    UpLimit = SPECConfig.W255ColorUniformityMax
+                                    LowLimit = recipeConfig.W255ColorUniformityMin,
+                                    UpLimit = recipeConfig.W255ColorUniformityMax
                                 };
                                 ObjectiveTestResult.W255ColorUniformity = ColorUniformity;
                                 result.ViewResultWhite.W255ColorUniformity = ColorUniformity;
@@ -979,40 +983,40 @@ namespace ProjectARVRLite
                             ObjectiveTestResult.W25CenterLunimance = new ObjectiveTestItem()
                             {
                                 Name = "W25CenterLunimance",
-                                LowLimit = SPECConfig.W25CenterLunimanceMin,
-                                UpLimit = SPECConfig.W25CenterLunimanceMax,
+                                LowLimit = recipeConfig.W25CenterLunimanceMin,
+                                UpLimit = recipeConfig.W25CenterLunimanceMax,
                                 Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].Y,
                                 TestValue = result.ViewResultW25.PoiResultCIExyuvDatas[0].Y.ToString("F3") + " nit"
                             };
                             ObjectiveTestResult.W25CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem()
                             {
                                 Name = "W25CenterCIE1931ChromaticCoordinatesx",
-                                LowLimit = SPECConfig.W25CenterCIE1931ChromaticCoordinatesxMin,
-                                UpLimit = SPECConfig.W25CenterCIE1931ChromaticCoordinatesxMax,
+                                LowLimit = recipeConfig.W25CenterCIE1931ChromaticCoordinatesxMin,
+                                UpLimit = recipeConfig.W25CenterCIE1931ChromaticCoordinatesxMax,
                                 Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].x,
                                 TestValue = result.ViewResultW25.PoiResultCIExyuvDatas[0].x.ToString("F3")
                             };
                             ObjectiveTestResult.W25CenterCIE1931ChromaticCoordinatesy = new ObjectiveTestItem()
                             {
                                 Name = "W25CenterCIE1931ChromaticCoordinatesy",
-                                LowLimit = SPECConfig.W25CenterCIE1931ChromaticCoordinatesyMin,
-                                UpLimit = SPECConfig.W25CenterCIE1931ChromaticCoordinatesyMax,
+                                LowLimit = recipeConfig.W25CenterCIE1931ChromaticCoordinatesyMin,
+                                UpLimit = recipeConfig.W25CenterCIE1931ChromaticCoordinatesyMax,
                                 Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].y,
                                 TestValue = result.ViewResultW25.PoiResultCIExyuvDatas[0].y.ToString("F3")
                             };
                             ObjectiveTestResult.W25CenterCIE1976ChromaticCoordinatesu = new ObjectiveTestItem()
                             {
                                 Name = "W25CenterCIE1976ChromaticCoordinatesu",
-                                LowLimit = SPECConfig.W25CenterCIE1976ChromaticCoordinatesuMin,
-                                UpLimit = SPECConfig.W25CenterCIE1976ChromaticCoordinatesuMax,
+                                LowLimit = recipeConfig.W25CenterCIE1976ChromaticCoordinatesuMin,
+                                UpLimit = recipeConfig.W25CenterCIE1976ChromaticCoordinatesuMax,
                                 Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].u,
                                 TestValue = result.ViewResultW25.PoiResultCIExyuvDatas[0].u.ToString("F3")
                             };
                             ObjectiveTestResult.W25CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem()
                             {
                                 Name = "W25CenterCIE1976ChromaticCoordinatesv",
-                                LowLimit = SPECConfig.W25CenterCIE1976ChromaticCoordinatesvMin,
-                                UpLimit = SPECConfig.W25CenterCIE1976ChromaticCoordinatesvMax,
+                                LowLimit = recipeConfig.W25CenterCIE1976ChromaticCoordinatesvMin,
+                                UpLimit = recipeConfig.W25CenterCIE1976ChromaticCoordinatesvMax,
                                 Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].v,
                                 TestValue = result.ViewResultW25.PoiResultCIExyuvDatas[0].v.ToString("F3")
                             };
@@ -1061,8 +1065,8 @@ namespace ProjectARVRLite
                                 var FOFOContrast = new ObjectiveTestItem()
                                 {
                                     Name = "FOFOContrast",
-                                    LowLimit = SPECConfig.FOFOContrastMin,
-                                    UpLimit = SPECConfig.FOFOContrastMax,
+                                    LowLimit = recipeConfig.FOFOContrastMin,
+                                    UpLimit = recipeConfig.FOFOContrastMax,
                                     Value = contrast1,
                                     TestValue = contrast1.ToString("F2")
                                 };
@@ -1126,8 +1130,8 @@ namespace ProjectARVRLite
                                 ObjectiveTestResult.ChessboardContrast = new ObjectiveTestItem()
                                 {
                                     Name = "Chessboard_Contrast",
-                                    LowLimit = SPECConfig.ChessboardContrastMin,
-                                    UpLimit = SPECConfig.ChessboardContrastMax,
+                                    LowLimit = recipeConfig.ChessboardContrastMin,
+                                    UpLimit = recipeConfig.ChessboardContrastMax,
                                     Value = viewReslut.PoiAnalysisResult.result.Value,
                                     TestValue = ChessboardContrast.ToString("F3")
                                 };
@@ -1190,8 +1194,8 @@ namespace ProjectARVRLite
                                     ObjectiveTestResult.MTF_HV_H_Center_0F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_H_Center_0F",
-                                        LowLimit = SPECConfig.MTF_HV_H_Center_0FMin,
-                                        UpLimit = SPECConfig.MTF_HV_H_Center_0FMax,
+                                        LowLimit = recipeConfig.MTF_HV_H_Center_0FMin,
+                                        UpLimit = recipeConfig.MTF_HV_H_Center_0FMax,
                                         Value = mtf.horizontalAverage,
                                         TestValue = mtf.horizontalAverage.ToString()
                                     };
@@ -1200,8 +1204,8 @@ namespace ProjectARVRLite
                                     ObjectiveTestResult.MTF_HV_V_Center_0F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_V_Center_0F",
-                                        LowLimit = SPECConfig.MTF_HV_V_Center_0FMin,
-                                        UpLimit = SPECConfig.MTF_HV_V_Center_0FMax,
+                                        LowLimit = recipeConfig.MTF_HV_V_Center_0FMin,
+                                        UpLimit = recipeConfig.MTF_HV_V_Center_0FMax,
                                         Value = mtf.verticalAverage,
                                         TestValue = mtf.verticalAverage.ToString()
                                     };
@@ -1216,8 +1220,8 @@ namespace ProjectARVRLite
                                     ObjectiveTestResult.MTF_HV_H_LeftUp_0_4F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_H_LeftUp_0_4F",
-                                        LowLimit = SPECConfig.MTF_HV_H_LeftUp_0_4FMin,
-                                        UpLimit = SPECConfig.MTF_HV_H_LeftUp_0_4FMax,
+                                        LowLimit = recipeConfig.MTF_HV_H_LeftUp_0_4FMin,
+                                        UpLimit = recipeConfig.MTF_HV_H_LeftUp_0_4FMax,
                                         Value = mtf.horizontalAverage,
                                         TestValue = mtf.horizontalAverage.ToString()
                                     };
@@ -1226,8 +1230,8 @@ namespace ProjectARVRLite
                                     ObjectiveTestResult.MTF_HV_V_LeftUp_0_4F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_V_LeftUp_0_4F",
-                                        LowLimit = SPECConfig.MTF_HV_V_LeftUp_0_4FMin,
-                                        UpLimit = SPECConfig.MTF_HV_V_LeftUp_0_4FMax,
+                                        LowLimit = recipeConfig.MTF_HV_V_LeftUp_0_4FMin,
+                                        UpLimit = recipeConfig.MTF_HV_V_LeftUp_0_4FMax,
                                         Value = mtf.verticalAverage,
                                         TestValue = mtf.verticalAverage.ToString()
                                     };
@@ -1242,8 +1246,8 @@ namespace ProjectARVRLite
                                     ObjectiveTestResult.MTF_HV_H_RightUp_0_4F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_H_RightUp_0_4F",
-                                        LowLimit = SPECConfig.MTF_HV_H_RightUp_0_4FMin,
-                                        UpLimit = SPECConfig.MTF_HV_H_RightUp_0_4FMax,
+                                        LowLimit = recipeConfig.MTF_HV_H_RightUp_0_4FMin,
+                                        UpLimit = recipeConfig.MTF_HV_H_RightUp_0_4FMax,
                                         Value = mtf.horizontalAverage,
                                         TestValue = mtf.horizontalAverage.ToString()
                                     };
@@ -1251,8 +1255,8 @@ namespace ProjectARVRLite
                                     ObjectiveTestResult.MTF_HV_V_RightUp_0_4F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_V_RightUp_0_4F",
-                                        LowLimit = SPECConfig.MTF_HV_V_RightUp_0_4FMin,
-                                        UpLimit = SPECConfig.MTF_HV_V_RightUp_0_4FMax,
+                                        LowLimit = recipeConfig.MTF_HV_V_RightUp_0_4FMin,
+                                        UpLimit = recipeConfig.MTF_HV_V_RightUp_0_4FMax,
                                         Value = mtf.verticalAverage,
                                         TestValue = mtf.verticalAverage.ToString()
                                     };
@@ -1267,8 +1271,8 @@ namespace ProjectARVRLite
                                     ObjectiveTestResult.MTF_HV_H_LeftDown_0_4F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_H_LeftDown_0_4F",
-                                        LowLimit = SPECConfig.MTF_HV_H_LeftDown_0_4FMin,
-                                        UpLimit = SPECConfig.MTF_HV_H_LeftDown_0_4FMax,
+                                        LowLimit = recipeConfig.MTF_HV_H_LeftDown_0_4FMin,
+                                        UpLimit = recipeConfig.MTF_HV_H_LeftDown_0_4FMax,
                                         Value = mtf.horizontalAverage,
                                         TestValue = mtf.horizontalAverage.ToString()
                                     };
@@ -1276,8 +1280,8 @@ namespace ProjectARVRLite
                                     ObjectiveTestResult.MTF_HV_V_LeftDown_0_4F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_V_LeftDown_0_4F",
-                                        LowLimit = SPECConfig.MTF_HV_V_LeftDown_0_4FMin,
-                                        UpLimit = SPECConfig.MTF_HV_V_LeftDown_0_4FMax,
+                                        LowLimit = recipeConfig.MTF_HV_V_LeftDown_0_4FMin,
+                                        UpLimit = recipeConfig.MTF_HV_V_LeftDown_0_4FMax,
                                         Value = mtf.verticalAverage,
                                         TestValue = mtf.verticalAverage.ToString()
                                     };
@@ -1291,8 +1295,8 @@ namespace ProjectARVRLite
                                     ObjectiveTestResult.MTF_HV_H_RightDown_0_4F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_H_RightDown_0_4F",
-                                        LowLimit = SPECConfig.MTF_HV_H_RightDown_0_4FMin,
-                                        UpLimit = SPECConfig.MTF_HV_H_RightDown_0_4FMax,
+                                        LowLimit = recipeConfig.MTF_HV_H_RightDown_0_4FMin,
+                                        UpLimit = recipeConfig.MTF_HV_H_RightDown_0_4FMax,
                                         Value = mtf.horizontalAverage,
                                         TestValue = mtf.horizontalAverage.ToString()
                                     };
@@ -1300,8 +1304,8 @@ namespace ProjectARVRLite
                                     ObjectiveTestResult.MTF_HV_V_RightDown_0_4F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_V_RightDown_0_4F",
-                                        LowLimit = SPECConfig.MTF_HV_V_RightDown_0_4FMin,
-                                        UpLimit = SPECConfig.MTF_HV_V_RightDown_0_4FMax,
+                                        LowLimit = recipeConfig.MTF_HV_V_RightDown_0_4FMin,
+                                        UpLimit = recipeConfig.MTF_HV_V_RightDown_0_4FMax,
                                         Value = mtf.verticalAverage,
                                         TestValue = mtf.verticalAverage.ToString()
                                     };
@@ -1316,8 +1320,8 @@ namespace ProjectARVRLite
                                     ObjectiveTestResult.MTF_HV_H_LeftUp_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_H_LeftUp_0_8F",
-                                        LowLimit = SPECConfig.MTF_HV_H_LeftUp_0_8FMin,
-                                        UpLimit = SPECConfig.MTF_HV_H_LeftUp_0_8FMax,
+                                        LowLimit = recipeConfig.MTF_HV_H_LeftUp_0_8FMin,
+                                        UpLimit = recipeConfig.MTF_HV_H_LeftUp_0_8FMax,
                                         Value = mtf.horizontalAverage,
                                         TestValue = mtf.horizontalAverage.ToString()
                                     };
@@ -1325,8 +1329,8 @@ namespace ProjectARVRLite
                                     ObjectiveTestResult.MTF_HV_V_LeftUp_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_V_LeftUp_0_8F",
-                                        LowLimit = SPECConfig.MTF_HV_V_LeftUp_0_8FMin,
-                                        UpLimit = SPECConfig.MTF_HV_V_LeftUp_0_8FMax,
+                                        LowLimit = recipeConfig.MTF_HV_V_LeftUp_0_8FMin,
+                                        UpLimit = recipeConfig.MTF_HV_V_LeftUp_0_8FMax,
                                         Value = mtf.verticalAverage,
                                         TestValue = mtf.verticalAverage.ToString()
                                     };
@@ -1340,8 +1344,8 @@ namespace ProjectARVRLite
                                     ObjectiveTestResult.MTF_HV_H_RightUp_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_H_RightUp_0_8F",
-                                        LowLimit = SPECConfig.MTF_HV_H_RightUp_0_8FMin,
-                                        UpLimit = SPECConfig.MTF_HV_H_RightUp_0_8FMax,
+                                        LowLimit = recipeConfig.MTF_HV_H_RightUp_0_8FMin,
+                                        UpLimit = recipeConfig.MTF_HV_H_RightUp_0_8FMax,
                                         Value = mtf.horizontalAverage,
                                         TestValue = mtf.horizontalAverage.ToString()
                                     };
@@ -1349,8 +1353,8 @@ namespace ProjectARVRLite
                                     ObjectiveTestResult.MTF_HV_V_RightUp_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_V_RightUp_0_8F",
-                                        LowLimit = SPECConfig.MTF_HV_V_RightUp_0_8FMin,
-                                        UpLimit = SPECConfig.MTF_HV_V_RightUp_0_8FMax,
+                                        LowLimit = recipeConfig.MTF_HV_V_RightUp_0_8FMin,
+                                        UpLimit = recipeConfig.MTF_HV_V_RightUp_0_8FMax,
                                         Value = mtf.verticalAverage,
                                         TestValue = mtf.verticalAverage.ToString()
                                     };
@@ -1364,8 +1368,8 @@ namespace ProjectARVRLite
                                     ObjectiveTestResult.MTF_HV_H_LeftDown_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_H_LeftDown_0_8F",
-                                        LowLimit = SPECConfig.MTF_HV_H_LeftDown_0_8FMin,
-                                        UpLimit = SPECConfig.MTF_HV_H_LeftDown_0_8FMax,
+                                        LowLimit = recipeConfig.MTF_HV_H_LeftDown_0_8FMin,
+                                        UpLimit = recipeConfig.MTF_HV_H_LeftDown_0_8FMax,
                                         Value = mtf.horizontalAverage,
                                         TestValue = mtf.horizontalAverage.ToString()
                                     };
@@ -1373,8 +1377,8 @@ namespace ProjectARVRLite
                                     ObjectiveTestResult.MTF_HV_V_LeftDown_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_V_LeftDown_0_8F",
-                                        LowLimit = SPECConfig.MTF_HV_V_LeftDown_0_8FMin,
-                                        UpLimit = SPECConfig.MTF_HV_V_LeftDown_0_8FMax,
+                                        LowLimit = recipeConfig.MTF_HV_V_LeftDown_0_8FMin,
+                                        UpLimit = recipeConfig.MTF_HV_V_LeftDown_0_8FMax,
                                         Value = mtf.verticalAverage,
                                         TestValue = mtf.verticalAverage.ToString()
                                     };
@@ -1388,8 +1392,8 @@ namespace ProjectARVRLite
                                     ObjectiveTestResult.MTF_HV_H_RightDown_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_H_RightDown_0_8F",
-                                        LowLimit = SPECConfig.MTF_HV_H_RightDown_0_8FMin,
-                                        UpLimit = SPECConfig.MTF_HV_H_RightDown_0_8FMax,
+                                        LowLimit = recipeConfig.MTF_HV_H_RightDown_0_8FMin,
+                                        UpLimit = recipeConfig.MTF_HV_H_RightDown_0_8FMax,
                                         Value = mtf.horizontalAverage,
                                         TestValue = mtf.horizontalAverage.ToString()
                                     };
@@ -1397,8 +1401,8 @@ namespace ProjectARVRLite
                                     ObjectiveTestResult.MTF_HV_V_RightDown_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_V_RightDown_0_8F",
-                                        LowLimit = SPECConfig.MTF_HV_V_RightDown_0_8FMin,
-                                        UpLimit = SPECConfig.MTF_HV_V_RightDown_0_8FMax,
+                                        LowLimit = recipeConfig.MTF_HV_V_RightDown_0_8FMin,
+                                        UpLimit = recipeConfig.MTF_HV_V_RightDown_0_8FMax,
                                         Value = mtf.verticalAverage,
                                         TestValue = mtf.verticalAverage.ToString()
                                     };
@@ -1463,8 +1467,8 @@ namespace ProjectARVRLite
                             ObjectiveTestResult.HorizontalTVDistortion = new ObjectiveTestItem()
                             {
                                 Name = "HorizontalTVDistortion",
-                                LowLimit = SPECConfig.HorizontalTVDistortionMin,
-                                UpLimit = SPECConfig.HorizontalTVDistortionMax,
+                                LowLimit = recipeConfig.HorizontalTVDistortionMin,
+                                UpLimit = recipeConfig.HorizontalTVDistortionMax,
                                 Value = Distortion2View.DistortionReslut.TVDistortion.HorizontalRatio,
                                 TestValue = Distortion2View.DistortionReslut.TVDistortion.HorizontalRatio.ToString("F5")
                             };
@@ -1472,8 +1476,8 @@ namespace ProjectARVRLite
                             ObjectiveTestResult.VerticalTVDistortion = new ObjectiveTestItem()
                             {
                                 Name = "VerticalTVDistortion",
-                                LowLimit = SPECConfig.VerticalTVDistortionMin,
-                                UpLimit = SPECConfig.VerticalTVDistortionMax,
+                                LowLimit = recipeConfig.VerticalTVDistortionMin,
+                                UpLimit = recipeConfig.VerticalTVDistortionMax,
                                 Value = Distortion2View.DistortionReslut.TVDistortion.VerticalRatio,
                                 TestValue = Distortion2View.DistortionReslut.TVDistortion.VerticalRatio.ToString("F5")
                             };
@@ -1525,16 +1529,16 @@ namespace ProjectARVRLite
                                 ObjectiveTestResult.OptCenterXTilt = new ObjectiveTestItem()
                                 {
                                     Name = "OptCenterXTilt",
-                                    LowLimit = SPECConfig.OptCenterXTiltMin,
-                                    UpLimit = SPECConfig.OptCenterXTiltMax,
+                                    LowLimit = recipeConfig.OptCenterXTiltMin,
+                                    UpLimit = recipeConfig.OptCenterXTiltMax,
                                     Value = findresult.FindCrossResult.result[0].tilt.tilt_x,
                                     TestValue = findresult.FindCrossResult.result[0].tilt.tilt_x.ToString("F4")
                                 };
                                 ObjectiveTestResult.OptCenterYTilt = new ObjectiveTestItem()
                                 {
                                     Name = "OptCenterYTilt",
-                                    LowLimit = SPECConfig.OptCenterYTiltMin,
-                                    UpLimit = SPECConfig.OptCenterYTiltMax,
+                                    LowLimit = recipeConfig.OptCenterYTiltMin,
+                                    UpLimit = recipeConfig.OptCenterYTiltMax,
                                     Value = findresult.FindCrossResult.result[0].tilt.tilt_y,
                                     TestValue = findresult.FindCrossResult.result[0].tilt.tilt_y.ToString("F4")
                                 };
@@ -1542,8 +1546,8 @@ namespace ProjectARVRLite
                                 ObjectiveTestResult.OptCenterRotation = new ObjectiveTestItem()
                                 {
                                     Name = "OptCenterRotation",
-                                    LowLimit = SPECConfig.OptCenterRotationMin,
-                                    UpLimit = SPECConfig.OptCenterRotationMax,
+                                    LowLimit = recipeConfig.OptCenterRotationMin,
+                                    UpLimit = recipeConfig.OptCenterRotationMax,
                                     Value = findresult.FindCrossResult.result[0].rotationAngle,
                                     TestValue = findresult.FindCrossResult.result[0].rotationAngle.ToString("F4")
                                 };
@@ -1567,16 +1571,16 @@ namespace ProjectARVRLite
                                 ObjectiveTestResult.ImageCenterXTilt = new ObjectiveTestItem()
                                 {
                                     Name = "ImageCenterXTilt",
-                                    LowLimit = SPECConfig.ImageCenterXTiltMin,
-                                    UpLimit = SPECConfig.ImageCenterXTiltMax,
+                                    LowLimit = recipeConfig.ImageCenterXTiltMin,
+                                    UpLimit = recipeConfig.ImageCenterXTiltMax,
                                     Value = findresult.FindCrossResult.result[0].tilt.tilt_x,
                                     TestValue = findresult.FindCrossResult.result[0].tilt.tilt_x.ToString("F4")
                                 };
                                 ObjectiveTestResult.ImageCenterYTilt = new ObjectiveTestItem()
                                 {
                                     Name = "ImageCenterYTilt",
-                                    LowLimit = SPECConfig.ImageCenterYTiltMin,
-                                    UpLimit = SPECConfig.ImageCenterYTiltMax,
+                                    LowLimit = recipeConfig.ImageCenterYTiltMin,
+                                    UpLimit = recipeConfig.ImageCenterYTiltMax,
                                     Value = findresult.FindCrossResult.result[0].tilt.tilt_y,
                                     TestValue = findresult.FindCrossResult.result[0].tilt.tilt_y.ToString("F4")
                                 };
@@ -1584,8 +1588,8 @@ namespace ProjectARVRLite
                                 ObjectiveTestResult.ImageCenterRotation = new ObjectiveTestItem()
                                 {
                                     Name = "ImageCenterRotation",
-                                    LowLimit = SPECConfig.ImageCenterRotationMin,
-                                    UpLimit = SPECConfig.ImageCenterRotationMax,
+                                    LowLimit = recipeConfig.ImageCenterRotationMin,
+                                    UpLimit = recipeConfig.ImageCenterRotationMax,
                                     Value = findresult.FindCrossResult.result[0].rotationAngle,
                                     TestValue = findresult.FindCrossResult.result[0].rotationAngle.ToString("F4")
                                 };
