@@ -217,7 +217,13 @@
                 <Button Content="自述文件" Command="{Binding OpenReadMeCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="自述文件" Command="{Binding InitTestCommand}"/>
+                <Button Content="InitTest" Command="{Binding InitTestCommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="Recipe" Command="{Binding EditSPECConfigcommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="EditFix" Command="{Binding EditObjectiveTestResultFixCommand}"/>
             </StatusBarItem>
         </StatusBar>
 

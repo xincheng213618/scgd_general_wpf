@@ -251,12 +251,12 @@ namespace ProjectARVRLite
         /// <summary>
         /// 亮度均匀性(%) 测试项
         /// </summary>
-        public ObjectiveTestItem LuminanceUniformity { get; set; } = new ObjectiveTestItem();
+        public ObjectiveTestItem W255LuminanceUniformity { get; set; } = new ObjectiveTestItem();
 
         /// <summary>
         /// 色彩均匀性 测试项
         /// </summary>
-        public ObjectiveTestItem ColorUniformity { get; set; } = new ObjectiveTestItem();
+        public ObjectiveTestItem W255ColorUniformity { get; set; } = new ObjectiveTestItem();
 
     }
 
@@ -292,6 +292,8 @@ namespace ProjectARVRLite
         public static ProjectARVRLiteConfig ProjectConfig => ProjectARVRLiteConfig.Instance;
 
         public ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = Config.ViewResluts;
+
+        public static ObjectiveTestResultFix ObjectiveTestResultFix => ObjectiveTestResultFixManager.GetInstance().ObjectiveTestResultFix;
 
         public ARVRWindow()
         {
@@ -396,7 +398,7 @@ namespace ProjectARVRLite
         private Timer timer;
         Stopwatch stopwatch = new Stopwatch();
 
-        public static SPECConfig SPECConfig => ProjectARVRLiteConfig.Instance.SPECConfig;
+        public static RecipeConfig SPECConfig => ProjectARVRLiteConfig.Instance.SPECConfig;
 
         private LogOutput? logOutput;
         private void Window_Initialized(object sender, EventArgs e)
@@ -417,13 +419,13 @@ namespace ProjectARVRLite
                 {
                     string Name = TemplateFlow.Params[ProjectARVRLiteConfig.Instance.TemplateSelectedIndex].Key;
 
-                    if (ProjectARVRLiteConfig.Instance.SPECConfigs.TryGetValue(Name, out SPECConfig sPECConfig))
+                    if (ProjectARVRLiteConfig.Instance.SPECConfigs.TryGetValue(Name, out RecipeConfig sPECConfig))
                     {
                         ProjectARVRLiteConfig.Instance.SPECConfig = sPECConfig;
                     }
                     else
                     {
-                        sPECConfig = new SPECConfig();
+                        sPECConfig = new RecipeConfig();
                         ProjectARVRLiteConfig.Instance.SPECConfigs.TryAdd(Name, sPECConfig);
                         ProjectARVRLiteConfig.Instance.SPECConfig = sPECConfig;
                     }
@@ -743,8 +745,12 @@ namespace ProjectARVRLite
                         if (AlgResultModels.Count == 1)
                         {
                             DFovView view1 = new DFovView(AlgResultModels[0]);
-                            result.ViewResultWhite.DFovView = view1;
 
+                            view1.Result.result.D_Fov = view1.Result.result.D_Fov * ObjectiveTestResultFix.W51DiagonalFieldOfViewAngle;
+                            view1.Result.result.ClolorVisionH_Fov = view1.Result.result.ClolorVisionH_Fov * ObjectiveTestResultFix.W51HorizontalFieldOfViewAngle;
+                            view1.Result.result.ClolorVisionV_Fov = view1.Result.result.ClolorVisionV_Fov * ObjectiveTestResultFix.W51VerticalFieldOfViewAngle;
+
+                            result.ViewResultWhite.DFovView = view1;
                             ObjectiveTestResult.W51DiagonalFieldOfViewAngle = new ObjectiveTestItem()
                             {
                                 Name = "DiagonalFieldOfViewAngle",
@@ -810,6 +816,16 @@ namespace ProjectARVRLite
 
                             if (item.PoiName == "POI_5")
                             {
+                                poiResultCIExyuvData.CCT = poiResultCIExyuvData.CCT * ObjectiveTestResultFix.BlackCenterCorrelatedColorTemperature;
+
+                                poiResultCIExyuvData.Y = poiResultCIExyuvData.Y * ObjectiveTestResultFix.W255CenterLunimance;
+                                poiResultCIExyuvData.x = poiResultCIExyuvData.x * ObjectiveTestResultFix.W255CenterCIE1931ChromaticCoordinatesx;
+                                poiResultCIExyuvData.y = poiResultCIExyuvData.y * ObjectiveTestResultFix.W255CenterCIE1931ChromaticCoordinatesy;
+                                poiResultCIExyuvData.u = poiResultCIExyuvData.u * ObjectiveTestResultFix.W255CenterCIE1976ChromaticCoordinatesu;
+                                poiResultCIExyuvData.v = poiResultCIExyuvData.v * ObjectiveTestResultFix.W255CenterCIE1976ChromaticCoordinatesv;
+
+
+
                                 var objectiveTestItem = new ObjectiveTestItem()
                                 {
                                     Name = "CenterCorrelatedColorTemperature",
@@ -834,40 +850,37 @@ namespace ProjectARVRLite
                                 ObjectiveTestResult.W255CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem()
                                 {
                                     Name = "W255CenterCIE1931ChromaticCoordinatesx",
-                                    LowLimit = SPECConfig.ChessboardContrastMin,
-                                    UpLimit = SPECConfig.ChessboardContrastMax,
+                                    LowLimit = SPECConfig.W255CenterCIE1931ChromaticCoordinatesxMin,
+                                    UpLimit = SPECConfig.W255CenterCIE1931ChromaticCoordinatesxMax,
                                     Value = poiResultCIExyuvData.x,
                                     TestValue = poiResultCIExyuvData.x.ToString("F3")
                                 };
                                 ObjectiveTestResult.W255CenterCIE1931ChromaticCoordinatesy = new ObjectiveTestItem()
                                 {
                                     Name = "W255CenterCIE1931ChromaticCoordinatesy",
-                                    LowLimit = SPECConfig.ChessboardContrastMin,
-                                    UpLimit = SPECConfig.ChessboardContrastMax,
+                                    LowLimit = SPECConfig.W255CenterCIE1931ChromaticCoordinatesyMin,
+                                    UpLimit = SPECConfig.W255CenterCIE1931ChromaticCoordinatesyMax,
                                     Value = poiResultCIExyuvData.y,
                                     TestValue = poiResultCIExyuvData.y.ToString("F3")
                                 };
                                 ObjectiveTestResult.W255CenterCIE1976ChromaticCoordinatesu = new ObjectiveTestItem()
                                 {
                                     Name = "W255CenterCIE1976ChromaticCoordinatesu",
-                                    LowLimit = SPECConfig.ChessboardContrastMin,
-                                    UpLimit = SPECConfig.ChessboardContrastMax,
+                                    LowLimit = SPECConfig.W255CenterCIE1976ChromaticCoordinatesuMin,
+                                    UpLimit = SPECConfig.W255CenterCIE1976ChromaticCoordinatesuMax,
                                     Value = poiResultCIExyuvData.u,
                                     TestValue = poiResultCIExyuvData.u.ToString("F3")
                                 };
                                 ObjectiveTestResult.W255CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem()
                                 {
                                     Name = "W255CenterCIE1976ChromaticCoordinatesv",
-                                    LowLimit = SPECConfig.ChessboardContrastMin,
-                                    UpLimit = SPECConfig.ChessboardContrastMax,
+                                    LowLimit = SPECConfig.W255CenterCIE1976ChromaticCoordinatesvMin,
+                                    UpLimit = SPECConfig.W255CenterCIE1976ChromaticCoordinatesvMax,
                                     Value = poiResultCIExyuvData.v,
                                     TestValue=poiResultCIExyuvData.v.ToString("F3")
                                 };
-
-
-
-
                             }
+
                             result.ViewResultWhite.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                         }
                     }
@@ -879,16 +892,20 @@ namespace ProjectARVRLite
                             if (detailCommonModels.Count == 1)
                             {
                                 PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
+
+                                viewReslut.PoiAnalysisResult.result.Value = viewReslut.PoiAnalysisResult.result.Value * ObjectiveTestResultFix.W255LuminanceUniformity;
+           
+
                                 var LuminanceUniformity = new ObjectiveTestItem()
                                 {
                                     Name = "Luminance_uniformity(%)",
                                     TestValue = (viewReslut.PoiAnalysisResult.result.Value * 100).ToString("F3") + "%",
                                     Value = viewReslut.PoiAnalysisResult.result.Value,
-                                    LowLimit = SPECConfig.LuminanceUniformityMin,
-                                    UpLimit = SPECConfig.LuminanceUniformityMax,
+                                    LowLimit = SPECConfig.W255LuminanceUniformityMin,
+                                    UpLimit = SPECConfig.W255LuminanceUniformityMax,
                                 };
                                 ObjectiveTestResult.W255LuminanceUniformity = LuminanceUniformity;
-                                result.ViewResultWhite.LuminanceUniformity = LuminanceUniformity;
+                                result.ViewResultWhite.W255LuminanceUniformity = LuminanceUniformity;
 
                                 result.Result = result.Result && LuminanceUniformity.TestResult;
 
@@ -901,16 +918,18 @@ namespace ProjectARVRLite
                             if (detailCommonModels.Count == 1)
                             {
                                 PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
+                                viewReslut.PoiAnalysisResult.result.Value = viewReslut.PoiAnalysisResult.result.Value * ObjectiveTestResultFix.W255ColorUniformity;
+
                                 var ColorUniformity = new ObjectiveTestItem()
                                 {
                                     Name = "Color_uniformity",
                                     TestValue = (viewReslut.PoiAnalysisResult.result.Value).ToString("F5"),
                                     Value = viewReslut.PoiAnalysisResult.result.Value,
-                                    LowLimit = SPECConfig.ColorUniformityMin,
-                                    UpLimit = SPECConfig.ColorUniformityMax
+                                    LowLimit = SPECConfig.W255ColorUniformityMin,
+                                    UpLimit = SPECConfig.W255ColorUniformityMax
                                 };
                                 ObjectiveTestResult.W255ColorUniformity = ColorUniformity;
-                                result.ViewResultWhite.ColorUniformity = ColorUniformity;
+                                result.ViewResultWhite.W255ColorUniformity = ColorUniformity;
                                 result.Result = result.Result && ColorUniformity.TestResult;
 
                             }
@@ -950,6 +969,13 @@ namespace ProjectARVRLite
                         }
                         if (result.ViewResultW25.PoiResultCIExyuvDatas.Count == 1)
                         {
+                            result.ViewResultW25.PoiResultCIExyuvDatas[0].Y = result.ViewResultW25.PoiResultCIExyuvDatas[0].Y * ObjectiveTestResultFix.W25CenterLunimance;
+                            result.ViewResultW25.PoiResultCIExyuvDatas[0].x = result.ViewResultW25.PoiResultCIExyuvDatas[0].x * ObjectiveTestResultFix.W25CenterCIE1931ChromaticCoordinatesx;
+                            result.ViewResultW25.PoiResultCIExyuvDatas[0].y = result.ViewResultW25.PoiResultCIExyuvDatas[0].y * ObjectiveTestResultFix.W25CenterCIE1931ChromaticCoordinatesy;
+                            result.ViewResultW25.PoiResultCIExyuvDatas[0].u = result.ViewResultW25.PoiResultCIExyuvDatas[0].u * ObjectiveTestResultFix.W25CenterCIE1976ChromaticCoordinatesu;
+                            result.ViewResultW25.PoiResultCIExyuvDatas[0].v = result.ViewResultW25.PoiResultCIExyuvDatas[0].v * ObjectiveTestResultFix.W25CenterCIE1976ChromaticCoordinatesv;
+
+
                             ObjectiveTestResult.W25CenterLunimance = new ObjectiveTestItem()
                             {
                                 Name = "W25CenterLunimance",
@@ -961,38 +987,36 @@ namespace ProjectARVRLite
                             ObjectiveTestResult.W25CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem()
                             {
                                 Name = "W25CenterCIE1931ChromaticCoordinatesx",
-                                LowLimit = SPECConfig.ChessboardContrastMin,
-                                UpLimit = SPECConfig.ChessboardContrastMax,
+                                LowLimit = SPECConfig.W25CenterCIE1931ChromaticCoordinatesxMin,
+                                UpLimit = SPECConfig.W25CenterCIE1931ChromaticCoordinatesxMax,
                                 Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].x,
                                 TestValue = result.ViewResultW25.PoiResultCIExyuvDatas[0].x.ToString("F3")
                             };
                             ObjectiveTestResult.W25CenterCIE1931ChromaticCoordinatesy = new ObjectiveTestItem()
                             {
                                 Name = "W25CenterCIE1931ChromaticCoordinatesy",
-                                LowLimit = SPECConfig.ChessboardContrastMin,
-                                UpLimit = SPECConfig.ChessboardContrastMax,
+                                LowLimit = SPECConfig.W25CenterCIE1931ChromaticCoordinatesyMin,
+                                UpLimit = SPECConfig.W25CenterCIE1931ChromaticCoordinatesyMax,
                                 Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].y,
                                 TestValue = result.ViewResultW25.PoiResultCIExyuvDatas[0].y.ToString("F3")
                             };
                             ObjectiveTestResult.W25CenterCIE1976ChromaticCoordinatesu = new ObjectiveTestItem()
                             {
                                 Name = "W25CenterCIE1976ChromaticCoordinatesu",
-                                LowLimit = SPECConfig.ChessboardContrastMin,
-                                UpLimit = SPECConfig.ChessboardContrastMax,
+                                LowLimit = SPECConfig.W25CenterCIE1976ChromaticCoordinatesuMin,
+                                UpLimit = SPECConfig.W25CenterCIE1976ChromaticCoordinatesuMax,
                                 Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].u,
                                 TestValue = result.ViewResultW25.PoiResultCIExyuvDatas[0].u.ToString("F3")
                             };
                             ObjectiveTestResult.W25CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem()
                             {
                                 Name = "W25CenterCIE1976ChromaticCoordinatesv",
-                                LowLimit = SPECConfig.ChessboardContrastMin,
-                                UpLimit = SPECConfig.ChessboardContrastMax,
+                                LowLimit = SPECConfig.W25CenterCIE1976ChromaticCoordinatesvMin,
+                                UpLimit = SPECConfig.W25CenterCIE1976ChromaticCoordinatesvMax,
                                 Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].v,
                                 TestValue = result.ViewResultW25.PoiResultCIExyuvDatas[0].v.ToString("F3")
                             };
                         }
-
-
                     }
 
 
@@ -1031,6 +1055,9 @@ namespace ProjectARVRLite
                             if (result.ViewResultWhite != null && result.ViewResultWhite.PoiResultCIExyuvDatas.Count == 9 && result.ViewResultBlack.PoiResultCIExyuvDatas.Count == 1)
                             {
                                 var contrast1 = result.ViewResultWhite.PoiResultCIExyuvDatas[5].Y / result.ViewResultBlack.PoiResultCIExyuvDatas[0].Y;
+
+                                contrast1 = contrast1 * ObjectiveTestResultFix.FOFOContrast;
+
                                 var FOFOContrast = new ObjectiveTestItem()
                                 {
                                     Name = "FOFOContrast",
@@ -1092,6 +1119,7 @@ namespace ProjectARVRLite
                             {
                                 PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
 
+                                viewReslut.PoiAnalysisResult.result.Value = viewReslut.PoiAnalysisResult.result.Value * ObjectiveTestResultFix.ChessboardContrast;
 
                                 var ChessboardContrast = viewReslut.PoiAnalysisResult.result.Value;
 
@@ -1156,6 +1184,9 @@ namespace ProjectARVRLite
                             {
                                 if (mtf.name == "Center_0F")
                                 {
+                                    mtf.horizontalAverage = mtf.horizontalAverage * ObjectiveTestResultFix.MTF_HV_H_Center_0F;
+                                    mtf.verticalAverage = mtf.verticalAverage * ObjectiveTestResultFix.MTF_HV_V_Center_0F;
+
                                     ObjectiveTestResult.MTF_HV_H_Center_0F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_H_Center_0F",
@@ -1179,6 +1210,9 @@ namespace ProjectARVRLite
 
                                 if (mtf.name == "LeftUp_0.4F")
                                 {
+                                    mtf.horizontalAverage = mtf.horizontalAverage * ObjectiveTestResultFix.MTF_HV_H_LeftUp_0_4F;
+                                    mtf.verticalAverage = mtf.verticalAverage * ObjectiveTestResultFix.MTF_HV_V_LeftUp_0_4F;
+
                                     ObjectiveTestResult.MTF_HV_H_LeftUp_0_4F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_H_LeftUp_0_4F",
@@ -1202,6 +1236,9 @@ namespace ProjectARVRLite
 
                                 if (mtf.name == "RightUp_0.4F")
                                 {
+                                    mtf.horizontalAverage = mtf.horizontalAverage * ObjectiveTestResultFix.MTF_HV_H_RightUp_0_4F;
+                                    mtf.verticalAverage = mtf.verticalAverage * ObjectiveTestResultFix.MTF_HV_V_RightUp_0_4F;
+
                                     ObjectiveTestResult.MTF_HV_H_RightUp_0_4F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_H_RightUp_0_4F",
@@ -1224,6 +1261,9 @@ namespace ProjectARVRLite
                                 }
                                 if (mtf.name == "LeftDown_0.4F")
                                 {
+                                    mtf.horizontalAverage = mtf.horizontalAverage * ObjectiveTestResultFix.MTF_HV_H_LeftDown_0_4F;
+                                    mtf.verticalAverage = mtf.verticalAverage * ObjectiveTestResultFix.MTF_HV_V_LeftDown_0_4F;
+
                                     ObjectiveTestResult.MTF_HV_H_LeftDown_0_4F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_H_LeftDown_0_4F",
@@ -1245,6 +1285,9 @@ namespace ProjectARVRLite
                                 }
                                 if (mtf.name == "RightDown_0.4F")
                                 {
+                                    mtf.horizontalAverage = mtf.horizontalAverage * ObjectiveTestResultFix.MTF_HV_H_RightDown_0_4F;
+                                    mtf.verticalAverage = mtf.verticalAverage * ObjectiveTestResultFix.MTF_HV_V_RightDown_0_4F;
+
                                     ObjectiveTestResult.MTF_HV_H_RightDown_0_4F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_H_RightDown_0_4F",
@@ -1267,6 +1310,9 @@ namespace ProjectARVRLite
 
                                 if (mtf.name == "LeftUp_0.8F")
                                 {
+                                    mtf.horizontalAverage = mtf.horizontalAverage * ObjectiveTestResultFix.MTF_HV_H_LeftUp_0_8F;
+                                    mtf.verticalAverage = mtf.verticalAverage * ObjectiveTestResultFix.MTF_HV_V_LeftUp_0_8F;
+
                                     ObjectiveTestResult.MTF_HV_H_LeftUp_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_H_LeftUp_0_8F",
@@ -1288,6 +1334,9 @@ namespace ProjectARVRLite
                                 }
                                 if (mtf.name == "RightUp_0.8F")
                                 {
+                                    mtf.horizontalAverage = mtf.horizontalAverage * ObjectiveTestResultFix.MTF_HV_H_RightUp_0_8F;
+                                    mtf.verticalAverage = mtf.verticalAverage * ObjectiveTestResultFix.MTF_HV_V_RightUp_0_8F;
+
                                     ObjectiveTestResult.MTF_HV_H_RightUp_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_H_RightUp_0_8F",
@@ -1309,6 +1358,9 @@ namespace ProjectARVRLite
                                 }
                                 if (mtf.name == "LeftDown_0.8F")
                                 {
+                                    mtf.horizontalAverage = mtf.horizontalAverage * ObjectiveTestResultFix.MTF_HV_H_LeftDown_0_8F;
+                                    mtf.verticalAverage = mtf.verticalAverage * ObjectiveTestResultFix.MTF_HV_V_LeftDown_0_8F;
+
                                     ObjectiveTestResult.MTF_HV_H_LeftDown_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_H_LeftDown_0_8F",
@@ -1330,6 +1382,9 @@ namespace ProjectARVRLite
                                 }
                                 if (mtf.name == "RightDown_0.8F")
                                 {
+                                    mtf.horizontalAverage = mtf.horizontalAverage * ObjectiveTestResultFix.MTF_HV_H_RightDown_0_8F;
+                                    mtf.verticalAverage = mtf.verticalAverage * ObjectiveTestResultFix.MTF_HV_V_RightDown_0_8F;
+
                                     ObjectiveTestResult.MTF_HV_H_RightDown_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_HV_H_RightDown_0_8F",
@@ -1397,16 +1452,21 @@ namespace ProjectARVRLite
                         List<DetailCommonModel> AlgResultModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
                         if (AlgResultModels.Count == 1)
                         {
-                            ColorVision.Engine.Templates.Jsons.Distortion2.Distortion2View blackMuraView = new ColorVision.Engine.Templates.Jsons.Distortion2.Distortion2View(AlgResultModels[0]);
-                            result.ViewReslutDistortionGhost.Distortion2View = blackMuraView;
+                            ColorVision.Engine.Templates.Jsons.Distortion2.Distortion2View Distortion2View = new ColorVision.Engine.Templates.Jsons.Distortion2.Distortion2View(AlgResultModels[0]);
+
+                            Distortion2View.DistortionReslut.TVDistortion.HorizontalRatio = Distortion2View.DistortionReslut.TVDistortion.HorizontalRatio * ObjectiveTestResultFix.HorizontalTVDistortion;
+                            Distortion2View.DistortionReslut.TVDistortion.VerticalRatio = Distortion2View.DistortionReslut.TVDistortion.VerticalRatio * ObjectiveTestResultFix.VerticalTVDistortion;
+
+
+                            result.ViewReslutDistortionGhost.Distortion2View = Distortion2View;
 
                             ObjectiveTestResult.HorizontalTVDistortion = new ObjectiveTestItem()
                             {
                                 Name = "HorizontalTVDistortion",
                                 LowLimit = SPECConfig.HorizontalTVDistortionMin,
                                 UpLimit = SPECConfig.HorizontalTVDistortionMax,
-                                Value = blackMuraView.DistortionReslut.TVDistortion.HorizontalRatio,
-                                TestValue = blackMuraView.DistortionReslut.TVDistortion.HorizontalRatio.ToString("F5")
+                                Value = Distortion2View.DistortionReslut.TVDistortion.HorizontalRatio,
+                                TestValue = Distortion2View.DistortionReslut.TVDistortion.HorizontalRatio.ToString("F5")
                             };
 
                             ObjectiveTestResult.VerticalTVDistortion = new ObjectiveTestItem()
@@ -1414,8 +1474,8 @@ namespace ProjectARVRLite
                                 Name = "VerticalTVDistortion",
                                 LowLimit = SPECConfig.VerticalTVDistortionMin,
                                 UpLimit = SPECConfig.VerticalTVDistortionMax,
-                                Value = blackMuraView.DistortionReslut.TVDistortion.VerticalRatio,
-                                TestValue = blackMuraView.DistortionReslut.TVDistortion.VerticalRatio.ToString("F5")
+                                Value = Distortion2View.DistortionReslut.TVDistortion.VerticalRatio,
+                                TestValue = Distortion2View.DistortionReslut.TVDistortion.VerticalRatio.ToString("F5")
                             };
                             result.ViewReslutDistortionGhost.HorizontalTVDistortion = ObjectiveTestResult.HorizontalTVDistortion;
                             result.ViewReslutDistortionGhost.VerticalTVDistortion = ObjectiveTestResult.VerticalTVDistortion;
@@ -1453,8 +1513,14 @@ namespace ProjectARVRLite
                         if (detailCommonModels.Count == 1)
                         {
                             FindCrossDetailViewReslut findresult = new FindCrossDetailViewReslut(detailCommonModels[0]);
+
                             if (AlgResultMaster.TName == "optCenter")
                             {
+                                findresult.FindCrossResult.result[0].tilt.tilt_x = findresult.FindCrossResult.result[0].tilt.tilt_x * ObjectiveTestResultFix.OptCenterXTilt;
+                                findresult.FindCrossResult.result[0].tilt.tilt_y = findresult.FindCrossResult.result[0].tilt.tilt_y * ObjectiveTestResultFix.OptCenterYTilt;
+                                findresult.FindCrossResult.result[0].rotationAngle = findresult.FindCrossResult.result[0].rotationAngle * ObjectiveTestResultFix.OptCenterRotation;
+
+
                                 result.ViewResultOpticCenter.FindCrossDetailViewReslut = findresult;
                                 ObjectiveTestResult.OptCenterXTilt = new ObjectiveTestItem()
                                 {
@@ -1492,6 +1558,11 @@ namespace ProjectARVRLite
                             }
                             if (AlgResultMaster.TName == "ImageCenter")
                             {
+
+                                findresult.FindCrossResult.result[0].tilt.tilt_x = findresult.FindCrossResult.result[0].tilt.tilt_x * ObjectiveTestResultFix.ImageCenterXTilt;
+                                findresult.FindCrossResult.result[0].tilt.tilt_y = findresult.FindCrossResult.result[0].tilt.tilt_y * ObjectiveTestResultFix.ImageCenterYTilt;
+                                findresult.FindCrossResult.result[0].rotationAngle = findresult.FindCrossResult.result[0].rotationAngle * ObjectiveTestResultFix.ImageCenterRotation;
+
                                 result.ViewResultOpticCenter.FindCrossDetailViewReslut1 = findresult;
                                 ObjectiveTestResult.ImageCenterXTilt = new ObjectiveTestItem()
                                 {
@@ -1985,8 +2056,8 @@ namespace ProjectARVRLite
                     }
 
                     outtext += $"CenterCorrelatedColorTemperature:{result.ViewResultWhite.CenterCorrelatedColorTemperature.TestValue}  LowLimit:{result.ViewResultWhite.CenterCorrelatedColorTemperature.LowLimit} UpLimit:{result.ViewResultWhite.CenterCorrelatedColorTemperature.UpLimit},Rsult{(result.ViewResultWhite.CenterCorrelatedColorTemperature.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-                    outtext += $"Luminance_uniformity:{result.ViewResultWhite.LuminanceUniformity.TestValue} LowLimit:{result.ViewResultWhite.LuminanceUniformity.LowLimit}  UpLimit:{result.ViewResultWhite.LuminanceUniformity.UpLimit},Rsult{(result.ViewResultWhite.LuminanceUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-                    outtext += $"Color_uniformity:{result.ViewResultWhite.ColorUniformity.TestValue} LowLimit:{result.ViewResultWhite.ColorUniformity.LowLimit} UpLimit:{result.ViewResultWhite.ColorUniformity.UpLimit},Rsult{(result.ViewResultWhite.ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    outtext += $"Luminance_uniformity:{result.ViewResultWhite.W255LuminanceUniformity.TestValue} LowLimit:{result.ViewResultWhite.W255LuminanceUniformity.LowLimit}  UpLimit:{result.ViewResultWhite.W255LuminanceUniformity.UpLimit},Rsult{(result.ViewResultWhite.W255LuminanceUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    outtext += $"Color_uniformity:{result.ViewResultWhite.W255ColorUniformity.TestValue} LowLimit:{result.ViewResultWhite.W255ColorUniformity.LowLimit} UpLimit:{result.ViewResultWhite.W255ColorUniformity.UpLimit},Rsult{(result.ViewResultWhite.W255ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
 
                     break;
                 case ARVR1TestType.Black:
