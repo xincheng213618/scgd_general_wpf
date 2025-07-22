@@ -53,8 +53,12 @@
                             <Button Content="🗁" Click="Open1_Click" Margin="5,0" Height="30" Width="30" Padding="0" VerticalAlignment="Center"/>
                         </StackPanel>
                         <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="KBLVSacle " Width="120"/>
-                            <TextBox Width="140"  Text="{Binding KBLVSacle}"/>
+                            <TextBlock Text="重试次数 " Width="120"/>
+                            <TextBox Width="140"  Text="{Binding TryCountMax}"/>
+                        </StackPanel>
+                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
+                            <TextBlock Text="允许测试失败 " Width="120"/>
+                            <ui:ToggleSwitch IsChecked="{Binding AllowTestFailures}" Margin="0,0,5,0"/>
                         </StackPanel>
                         <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
                             <TextBlock Text="打开图像延迟 " Width="120"/>
@@ -62,41 +66,12 @@
                         </StackPanel>
                     </StackPanel>
                 </Border>
-                <Border Grid.Row="1" Background="{StaticResource GlobalBorderBrush}" BorderThickness="1" BorderBrush="{ StaticResource BorderBrush}" CornerRadius="5" Margin="0,0,0,5">
-                    <StackPanel Margin="10,5">
-                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="线别: " Width="120"/>
-                            <TextBox Width="200"  Text="{Binding SummaryInfo.LineNumber}"/>
-                        </StackPanel>
-                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="工号: " Width="120"/>
-                            <TextBox Width="200" Text="{Binding SummaryInfo.WorkerNumber}"/>
-                        </StackPanel>
-                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="目标产量: " Width="120"/>
-                            <TextBox Width="200"  Text="{Binding SummaryInfo.TargetProduction}"/>
-                        </StackPanel>
-                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="已经生产产量: " Width="120"/>
-                            <TextBox Width="200"  Text="{Binding SummaryInfo.ActualProduction}"/>
-                        </StackPanel>
-                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="良品数量: " Width="120"/>
-                            <TextBox Width="200" Text="{Binding SummaryInfo.GoodProductCount}"/>
-                        </StackPanel>
-                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="不良品数量:"  Width="120"/>
-                            <TextBox Width="200" Text="{Binding SummaryInfo.DefectiveProductCount}"/>
-                        </StackPanel>
-
-                    </StackPanel>
-
-                </Border>
 
             </StackPanel>
         </ScrollViewer>
         <Grid Grid.Row="1">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
+                <Button Content="保存" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Save_Click" Margin="5,0,0,0"/>
                 <Button Content="重置" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Reset_Click" Margin="5,0,0,0"/>
                 <Button Content="关闭" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Close_Click" Margin="5,0,0,0"/>
             </StackPanel>

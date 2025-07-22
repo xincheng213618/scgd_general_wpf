@@ -665,24 +665,29 @@ namespace ProjectARVRLite
             else
             {
                 log.Error("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
-                SwithchSocket();
-
-                //if (SocketManager.GetInstance().TcpClients.Count > 0 && SocketControl.Current.Stream != null)
-                //{
-                //    ObjectiveTestResult.TotalResult = false;
-                //    var response = new SocketResponse
-                //    {
-                //        Version = "1.0",
-                //        MsgID = "",
-                //        EventName = "ProjectARVRResult",
-                //        Code = -1,
-                //        Msg = "ARVR Test Fail",
-                //        Data = ObjectiveTestResult
-                //    };
-                //    string respString = JsonConvert.SerializeObject(response);
-                //    log.Info(respString);
-                //    SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
-                //}
+                if (ProjectARVRLiteConfig.Instance.AllowTestFailures)
+                {
+                    SwithchSocket();
+                }
+                else
+                {
+                    if (SocketManager.GetInstance().TcpClients.Count > 0 && SocketControl.Current.Stream != null)
+                    {
+                        ObjectiveTestResult.TotalResult = false;
+                        var response = new SocketResponse
+                        {
+                            Version = "1.0",
+                            MsgID = "",
+                            EventName = "ProjectARVRResult",
+                            Code = -1,
+                            Msg = "ARVR Test Fail",
+                            Data = ObjectiveTestResult
+                        };
+                        string respString = JsonConvert.SerializeObject(response);
+                        log.Info(respString);
+                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+                    }
+                }
             }
         }
 
