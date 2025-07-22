@@ -151,12 +151,12 @@ namespace ProjectKB
         private long _LastFlowTime;
        
         public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; NotifyPropertyChanged(); } }
-        private string _ResultSavePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        private string _ResultSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "TestReslut");
 
 
 
         public string ResultSavePath1 { get => _ResultSavePath1; set { _ResultSavePath1 = value; NotifyPropertyChanged(); } }
-        private string _ResultSavePath1 = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        private string _ResultSavePath1 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "TestReslut");
 
         public double Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
         private double _Height = 300;
