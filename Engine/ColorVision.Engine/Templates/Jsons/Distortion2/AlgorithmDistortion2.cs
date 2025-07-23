@@ -12,6 +12,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.Distortion2
 {
+    [DisplayAlgorithm(55, "畸变2.0", "Json")]
+
     public class AlgorithmDistortion2 : DisplayAlgorithmBase
     {
 
@@ -22,9 +24,6 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
 
         public AlgorithmDistortion2(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "畸变2.0";
-            Order = 55;
-            Group = "畸变评价";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

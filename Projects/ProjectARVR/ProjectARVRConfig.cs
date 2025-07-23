@@ -58,6 +58,10 @@ namespace ProjectARVR
         public int TryCountMax { get => _TryCountMax; set { _TryCountMax = value; NotifyPropertyChanged(); } }
         private int _TryCountMax = 2;
 
+        [DisplayName("允许测试失败")]
+        public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; NotifyPropertyChanged(); } }
+        private bool _AllowTestFailures = true;
+
 
         public void EditSPECConfig()
         {
@@ -175,11 +179,11 @@ namespace ProjectARVR
         private bool _IsAutoUploadSn;
 
         public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; NotifyPropertyChanged(); } }
-        private string _ResultSavePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        private string _ResultSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop),"TestReslut");
 
 
         public string ResultSavePath1 { get => _ResultSavePath1; set { _ResultSavePath1 = value; NotifyPropertyChanged(); } }
-        private string _ResultSavePath1 = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        private string _ResultSavePath1 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "TestReslut");
 
         public double Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
         private double _Height = 300;

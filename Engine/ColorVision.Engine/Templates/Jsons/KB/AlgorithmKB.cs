@@ -47,6 +47,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             };
         }
     }
+    [DisplayAlgorithm(98, "键盘检测", "数据提取算法")]
     public class AlgorithmKB : DisplayAlgorithmBase
     {
 
@@ -59,9 +60,6 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
         public AlgorithmKB(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "键盘检测";
-            Order = 98;
-            Group = "数据提取算法";
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenFirstTemplateCommand = new RelayCommand(a => OpenFirstTemplate());

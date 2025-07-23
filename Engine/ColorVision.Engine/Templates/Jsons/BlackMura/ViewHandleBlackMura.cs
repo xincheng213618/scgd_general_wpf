@@ -270,13 +270,14 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                 ContextMenu.Items.Add(new MenuItem() { Header = "切分示意图", Command = relayCommand });
                 RelayCommand relayCommand1 = new RelayCommand(a => OpenAA());
                 ContextMenu.Items.Add(new MenuItem() { Header = "AA区", Command = relayCommand1 });
+
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmBlackMura), ImageFilePath = result.FilePath })) });
+
             }
         }
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
-            view.ImageView.ImageShow.Clear();
-
             void OpenSource()
             {
                 view.ImageView.ImageShow.Clear();
@@ -310,8 +311,6 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                     }
                 }
             }
-
-            Load(view, result);
             OpenSource();
 
             List<string> header = new() { "LvAvg", "LvMax", "LvMin", "Uniformity(%)", "ZaRelMax", "AreaJsonVal" };

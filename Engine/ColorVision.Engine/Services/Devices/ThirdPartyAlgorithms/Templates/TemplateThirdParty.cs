@@ -41,7 +41,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
         {
             EditTemplateThird.SetParam(TemplateParams[index].Value);
         }
-        public EditTemplateJson EditTemplateThird { get; set; } = new EditTemplateJson();
+        public EditTemplateJson EditTemplateThird { get; set; } = new EditTemplateJson("!");
 
         public override UserControl GetUserControl()
         {

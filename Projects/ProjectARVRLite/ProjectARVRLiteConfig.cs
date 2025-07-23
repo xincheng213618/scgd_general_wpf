@@ -64,6 +64,9 @@ namespace ProjectARVRLite
         public int TryCountMax { get => _TryCountMax; set { _TryCountMax = value; NotifyPropertyChanged(); } }
         private int _TryCountMax = 2;
 
+        [DisplayName("允许测试失败")]
+        public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; NotifyPropertyChanged(); } }
+        private bool _AllowTestFailures = true;
 
         public void EditSPECConfig()
         {

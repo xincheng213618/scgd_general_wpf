@@ -13,6 +13,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.MTF
 {
+
+    [DisplayAlgorithm(50, "MTF", "MTF")]
     public class AlgorithmMTF : DisplayAlgorithmBase
     {
         public DeviceAlgorithm Device { get; set; }
@@ -21,9 +23,6 @@ namespace ColorVision.Engine.Templates.MTF
 
         public AlgorithmMTF(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "MTF";
-            Order = 50;
-			Group = "MTF";
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());

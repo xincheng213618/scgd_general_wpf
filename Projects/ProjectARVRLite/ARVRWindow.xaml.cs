@@ -104,6 +104,7 @@ namespace ProjectARVRLite
         BKscreeenDefectDetection,
     }
 
+
     public class ProjectARVRReuslt : ViewModelBase
     {
         public int Id { get; set; }
@@ -136,6 +137,7 @@ namespace ProjectARVRLite
         public ViewResultOpticCenter ViewResultOpticCenter { get; set; } = new ViewResultOpticCenter();
 
     }
+
 
 
     public class ViewResultOpticCenter
@@ -241,7 +243,6 @@ namespace ProjectARVRLite
         public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
 
         public DFovView DFovView { get; set; }
-
         /// <summary>
         /// 中心相关色温(K) 测试项
         /// </summary>
@@ -304,16 +305,25 @@ namespace ProjectARVRLite
 
         ObjectiveTestResult ObjectiveTestResult { get; set; } = new ObjectiveTestResult();
         Random Random = new Random();
-        public void InitTest()
+        public void InitTest(string SN)
         {
             ProjectConfig.StepIndex = 0;
             ObjectiveTestResult = new ObjectiveTestResult();
             CurrentTestType = ARVR1TestType.None;
-
-            Application.Current.Dispatcher.Invoke(() =>
+            if (string.IsNullOrWhiteSpace(SN ))
             {
-                ProjectARVRLiteConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
-            });
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ProjectARVRLiteConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
+                });
+            }
+            else
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ProjectARVRLiteConfig.Instance.SN = SN;
+                });
+            }
         }
 
         public void SwitchPGCompleted()
@@ -655,24 +665,29 @@ namespace ProjectARVRLite
             else
             {
                 log.Error("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
-                SwithchSocket();
-
-                //if (SocketManager.GetInstance().TcpClients.Count > 0 && SocketControl.Current.Stream != null)
-                //{
-                //    ObjectiveTestResult.TotalResult = false;
-                //    var response = new SocketResponse
-                //    {
-                //        Version = "1.0",
-                //        MsgID = "",
-                //        EventName = "ProjectARVRResult",
-                //        Code = -1,
-                //        Msg = "ARVR Test Fail",
-                //        Data = ObjectiveTestResult
-                //    };
-                //    string respString = JsonConvert.SerializeObject(response);
-                //    log.Info(respString);
-                //    SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
-                //}
+                if (ProjectARVRLiteConfig.Instance.AllowTestFailures)
+                {
+                    SwithchSocket();
+                }
+                else
+                {
+                    if (SocketManager.GetInstance().TcpClients.Count > 0 && SocketControl.Current.Stream != null)
+                    {
+                        ObjectiveTestResult.TotalResult = false;
+                        var response = new SocketResponse
+                        {
+                            Version = "1.0",
+                            MsgID = "",
+                            EventName = "ProjectARVRResult",
+                            Code = -1,
+                            Msg = "ARVR Test Fail",
+                            Data = ObjectiveTestResult
+                        };
+                        string respString = JsonConvert.SerializeObject(response);
+                        log.Info(respString);
+                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+                    }
+                }
             }
         }
 
@@ -706,6 +721,8 @@ namespace ProjectARVRLite
             {
                 log.Info("正在解析White51的流程");
                 result.TestType = ARVR1TestType.W51;
+                ObjectiveTestResult.FlowW51TestReslut = true;
+
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
                 {
@@ -771,6 +788,8 @@ namespace ProjectARVRLite
             {
                 log.Info("正在解析白画面的流程");
                 result.TestType = ARVR1TestType.White;
+                ObjectiveTestResult.FlowWhiteTestReslut = true;
+
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
                 {
@@ -907,6 +926,8 @@ namespace ProjectARVRLite
             {
                 log.Info("正在解析White25画面的流程");
                 result.TestType = ARVR1TestType.W25;
+                ObjectiveTestResult.FlowW25TestReslut = true;
+
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
                 {
@@ -982,6 +1003,7 @@ namespace ProjectARVRLite
             {
                 log.Info("正在解析黑画面的流程");
                 result.TestType = ARVR1TestType.Black;
+                ObjectiveTestResult.FlowBlackTestReslut = true;
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
@@ -1035,6 +1057,7 @@ namespace ProjectARVRLite
             {
                 log.Info("正在解析棋盘格画面的流程");
                 result.TestType = ARVR1TestType.Chessboard;
+                ObjectiveTestResult.FlowChessboardTestReslut = true;
 
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
@@ -1110,6 +1133,8 @@ namespace ProjectARVRLite
             {
                 log.Info("正在解析MTF_HV画面的流程");
                 result.TestType = ARVR1TestType.MTFHV;
+                ObjectiveTestResult.FlowMTFHVTestReslut = true;
+
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
                 {
@@ -1356,6 +1381,8 @@ namespace ProjectARVRLite
             {
                 log.Info("正在解析Distortion画面的流程");
                 result.TestType = ARVR1TestType.Distortion;
+                ObjectiveTestResult.FlowDistortionTestReslut = true;
+
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
                 {
@@ -1407,6 +1434,7 @@ namespace ProjectARVRLite
             {
                 log.Info("正在解析OpticCenter画面的流程");
                 result.TestType = ARVR1TestType.OpticCenter;
+                ObjectiveTestResult.FlowOpticCenterTestReslut = true;
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
@@ -1541,9 +1569,17 @@ namespace ProjectARVRLite
 
                         if (aRVRTestType == ARVR1TestType.Ghost)
                         {
-                            log.Info("ARVR测试完成");
 
                             ObjectiveTestResult.TotalResult = true;
+                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowW51TestReslut;
+                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowWhiteTestReslut;
+                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowBlackTestReslut;
+                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowW25TestReslut;
+                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowChessboardTestReslut;
+                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowMTFHVTestReslut;
+                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowDistortionTestReslut;
+                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowOpticCenterTestReslut;
+                            log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
 
                             string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                             string filePath = Path.Combine(ProjectARVRLiteConfig.Instance.ResultSavePath, $"ObjectiveTestResults_{timeStr}.csv");
@@ -1558,6 +1594,7 @@ namespace ProjectARVRLite
                                 MsgID = string.Empty,
                                 EventName = "ProjectARVRResult",
                                 Code = 0,
+                                SerialNumber =SNtextBox.Text,
                                 Msg = "ARVR Test Completed",
                                 Data = ObjectiveTestResult
                             };
@@ -1575,6 +1612,7 @@ namespace ProjectARVRLite
                                 EventName = "SwitchPG",
                                 Code = 0,
                                 Msg = "Switch PG",
+                                SerialNumber = SNtextBox.Text,
                                 Data = new SwitchPG
                                 {
                                     ARVRTestType = aRVRTestType

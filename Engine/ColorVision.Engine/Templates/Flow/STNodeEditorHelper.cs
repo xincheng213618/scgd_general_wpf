@@ -60,6 +60,7 @@ using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
 using ColorVision.Engine.Templates.Jsons.BuildPOIAA;
 using System.IO;
 using ColorVision.Engine.Templates.Jsons.FindCross;
+using ColorVision.Engine.Templates.POI.POIGenCali;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -205,6 +206,13 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => algorithmFindLEDNode.TempName = name, algorithmFindLEDNode.TempName, "像素级灯珠检测", new TemplateLedCheck());
 
             }
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.POI.POIReviseNode poiReviseNode)
+            {
+                AddStackPanel(name => poiReviseNode.DeviceCode = name, poiReviseNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+
+                AddStackPanel(name => poiReviseNode.TemplateName = name, poiReviseNode.TemplateName, "POI修正标定", new TemplatePoiGenCalParam());
+            }
+
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.POI.RealPOINode realPOINode)
             {
                 AddStackPanel(name => realPOINode.DeviceCode = name, realPOINode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());

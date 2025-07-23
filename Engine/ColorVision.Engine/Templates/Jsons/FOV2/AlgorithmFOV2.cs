@@ -12,6 +12,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.FOV2
 {
+
+    [DisplayAlgorithm(53, "FOV2.0", "Json")]
     public class AlgorithmFOV2 : DisplayAlgorithmBase
     {
 
@@ -22,9 +24,6 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
 
         public AlgorithmFOV2(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "FOV2.0";
-            Order = 53;
-            Group = "FOV";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

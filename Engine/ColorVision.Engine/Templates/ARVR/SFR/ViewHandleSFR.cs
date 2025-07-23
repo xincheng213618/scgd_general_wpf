@@ -4,6 +4,7 @@ using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.ARVR.SFR;
+using ColorVision.Engine.Templates.MTF;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
 using System;
@@ -125,12 +126,17 @@ namespace ColorVision.Engine.Templates.SFR
                 RelayCommand relayCommand = new RelayCommand(a => new WindowSFR(AlgResultSFRModels).Show());
 
                 result.ContextMenu.Items.Add(new MenuItem() { Header = "分析", Command = relayCommand });
+
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmSFR), ImageFilePath = result.FilePath })) });
+
             }
         }
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
-            view.ImageView.ImageShow.Clear();
+            if (File.Exists(result.FilePath))
+                view.ImageView.OpenImage(result.FilePath);
+
             if (TemplateSFR.Params.Where(x => x.Key == result.POITemplateName).FirstOrDefault() is TemplateModel<SFRParam> templateModel)
             {
                 var rect = templateModel.Value.RECT;
@@ -141,13 +147,6 @@ namespace ColorVision.Engine.Templates.SFR
                 Rectangle.Render();
                 view.ImageView.AddVisual(Rectangle);
             }
-
-            if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
-
-            Load(view,result);
-
-            view.ImageView.ImageShow.Clear();
 
             foreach (var item in result.ViewResults.ToSpecificViewResults<AlgResultSFRModel>())
             {

@@ -14,6 +14,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Matching
 {
+
+    [DisplayAlgorithm(99, "模板匹配", "定位算法")]
     public class AlgorithmMatching : DisplayAlgorithmBase
     {
 
@@ -28,10 +30,6 @@ namespace ColorVision.Engine.Templates.Matching
 
         public AlgorithmMatching(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "模板匹配";
-            Order = 99;
-			Group = "定位算法";
-
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());

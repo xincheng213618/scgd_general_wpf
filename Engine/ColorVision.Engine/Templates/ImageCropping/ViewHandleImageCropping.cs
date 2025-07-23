@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Abstractions;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using System;
@@ -45,18 +46,24 @@ namespace ColorVision.Engine.Templates.ImageCropping
 
         public AlgorithmView AlgorithmView { get; set; }
 
+
+        public override void Load(AlgorithmView view, AlgorithmResult result)
+        {
+            if (result.ViewResults == null)
+            {
+                result.ViewResults = new ObservableCollection<IViewResult>(ResultImageDao.Instance.GetAllByPid(result.Id));
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmImageCropping), ImageFilePath = result.FilePath })) });
+            }
+        }
+
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             AlgorithmView = view;
-            view.ImageView.ImageShow.Clear();
 
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
 
-            if (result.ViewResults == null)
-            {
-                result.ViewResults = new ObservableCollection<IViewResult>(ResultImageDao.Instance.GetAllByPid(result.Id));
-            }
+
             List<GridViewColumn> gridViewColumns = new List<GridViewColumn>();
             List<string> header = new() { "file_name", "order_index", "FileInfo" };
             List<string> bdHeader = new() { "FileName", "OrderIndex", "FileInfo" };

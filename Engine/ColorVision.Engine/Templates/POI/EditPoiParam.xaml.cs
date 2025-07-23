@@ -86,6 +86,8 @@ namespace ColorVision.Engine.Templates.POI
 
         public BulkObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new BulkObservableCollection<IDrawingVisual>();
         public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
+
+        public ImageViewConfig Config { get; set; } = new ImageViewConfig();
         private void Window_Initialized(object sender, EventArgs e)
         {
             DataContext = PoiParam;
@@ -390,12 +392,41 @@ namespace ColorVision.Engine.Templates.POI
             {
                 HImageCache?.Dispose();
                 HImageCache = null;
-            };
+            }
+            ;
             if (imageSource is WriteableBitmap writeableBitmap)
             {
+                Config.AddProperties("PixelFormat", writeableBitmap.Format);
                 Task.Run(() => Application.Current.Dispatcher.Invoke((() =>
                 {
                     HImageCache = writeableBitmap.ToHImage();
+                    if (HImageCache is HImage hImage)
+                    {
+                        Config.AddProperties("Cols", hImage.cols);
+                        Config.AddProperties("Rows", hImage.rows);
+                        Config.AddProperties("Channel", hImage.channels);
+                        Config.AddProperties("Depth", hImage.depth);
+                        Config.AddProperties("Stride", hImage.stride);
+
+                        Config.Channel = hImage.channels;
+                        Config.Ochannel = Config.Channel;
+
+                        if (hImage.depth == 16)
+                        {
+                            PseudoSlider.Maximum = 65535;
+                            PseudoSlider.ValueEnd = 65535;
+                            Config.AddProperties("Max", 65535);
+
+                        }
+                        else
+                        {
+                            Config.AddProperties("Max", 255);
+
+                            PseudoSlider.Maximum = 255;
+                            PseudoSlider.ValueEnd = 255;
+
+                        }
+                    }
                 })));
             }
             PoiParam.Width = imageSource.PixelWidth;
@@ -1187,6 +1218,8 @@ namespace ColorVision.Engine.Templates.POI
             if (MessageBox.Show("清空关注点", "ColorVision", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
                 return;
             ClearRender();
+            //清空关注点的时候重置计数
+            No = 0;
         }
 
         public void ClearRender()
@@ -1675,7 +1708,7 @@ namespace ColorVision.Engine.Templates.POI
             }
         }
 
-        public ImageSource PseudoImage { get; set; }
+        public ImageSource FunctionImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
 
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
@@ -1705,7 +1738,7 @@ namespace ColorVision.Engine.Templates.POI
                 if (Pseudo.IsChecked == false)
                 {
                     ImageShow.Source = this.ViewBitmapSource;
-                    PseudoImage = null;
+                    FunctionImage = null;
                     return;
                 }
 
@@ -1724,16 +1757,16 @@ namespace ColorVision.Engine.Templates.POI
                         {
                             if (ret == 0)
                             {
-                                if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                                if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                                 {
                                     var image = hImageProcessed.ToWriteableBitmap();
                                     OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                                     hImageProcessed.pData = nint.Zero;
-                                    PseudoImage = image;
+                                    FunctionImage = image;
                                 }
                                 if (Pseudo.IsChecked == true)
                                 {
-                                    ImageShow.Source = PseudoImage;
+                                    ImageShow.Source = FunctionImage;
                                 }
                             }
                         });

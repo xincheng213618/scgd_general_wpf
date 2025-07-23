@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Abstractions;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
@@ -43,18 +44,9 @@ namespace ColorVision.Engine.Templates.LedCheck
 
 
 
-
-
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Load(AlgorithmView view, AlgorithmResult result)
         {
-            view.ImageView.ImageShow.Clear();
-
-
-            if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
-
-            view.ImageView.ImageShow.Clear();
-
+            base.Load(view, result);
             if (result.ViewResults == null)
             {
                 result.ViewResults = new ObservableCollection<IViewResult>();
@@ -64,8 +56,18 @@ namespace ColorVision.Engine.Templates.LedCheck
                     ViewResultLedCheck ledResultData = new(new Point((double)item.PoiX, (double)item.PoiY), (double)item.PoiWidth / 2);
                     result.ViewResults.Add(ledResultData);
                 }
-                ;
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmLedCheck), ImageFilePath = result.FilePath })) });
             }
+
+        }
+
+
+        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        {
+
+            if (File.Exists(result.FilePath))
+                view.ImageView.OpenImage(result.FilePath);
+
             var header = new List<string> { "坐标", "半径" };
             var bdHeader = new List<string> { "Point", "Radius" };
 

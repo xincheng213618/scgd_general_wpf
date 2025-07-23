@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8602
 
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
@@ -49,14 +50,12 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
                     Distortion2View blackMuraView = new Distortion2View(item);
                     result.ViewResults.Add(blackMuraView);
                 }
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmDistortion2), ImageFilePath = result.FilePath })) });
             }
         }
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
-            view.ImageView.ImageShow.Clear();
-
-
             void OpenSource()
             {
                 view.ImageView.ImageShow.Clear();
@@ -65,7 +64,6 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
                 log.Info(result.FilePath);
             }
 
-            Load(view, result);
             OpenSource();
 
             foreach (var item in result.ViewResults.ToSpecificViewResults<Distortion2View>())

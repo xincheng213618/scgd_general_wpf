@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Abstractions;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using System.Collections.Generic;
@@ -25,19 +26,15 @@ namespace ColorVision.Engine.Templates.FOV
                     ViewResultFOV fOVResultData = new(item);
                     result.ViewResults.Add(fOVResultData);
                 }
-                ;
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmFOV), ImageFilePath = result.FilePath })) });
             }
         }
 
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
-            view.ImageView.ImageShow.Clear();
-
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
-
-            Load(view, result);
 
             List<string> header =  new() { "Pattern", "Type", "Degrees" };
             List<string> bdHeader = new() { "Pattern", "Type", "Degrees" };

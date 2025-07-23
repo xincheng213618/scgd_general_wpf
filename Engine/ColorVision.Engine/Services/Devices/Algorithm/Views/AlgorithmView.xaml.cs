@@ -3,9 +3,9 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
-using ColorVision.FileIO;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
@@ -46,20 +46,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private NetFileUtil netFileUtil;
 
         public ViewAlgorithmConfig Config => ViewAlgorithmConfig.Instance;
-        public ObservableCollection<IResultHandleBase> ResultHandles { get; set; } = new ObservableCollection<IResultHandleBase>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-            {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IResultHandleBase).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is IResultHandleBase  algorithmResultRender)
-                    {
-                        ResultHandles.Add(algorithmResultRender);
-                    }
-                }
-            }
             this.DataContext = this;
 
             View = new View();
@@ -198,7 +187,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             {
                 AlgorithmResult algorithmResult = new AlgorithmResult(result);
 
-                var ResultHandle = ResultHandles.FirstOrDefault(a => a.CanHandle1(algorithmResult));
+                var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(algorithmResult));
                     ResultHandle?.Load(this,algorithmResult);
 
                 ViewResults.AddUnique(algorithmResult, Config.InsertAtBeginning);
@@ -220,9 +209,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         {
             if (listView1.SelectedIndex < 0) return;
             if (ViewResults[listView1.SelectedIndex] is not AlgorithmResult result) return;
-            var ResultHandle = ResultHandles.FirstOrDefault(a => a.CanHandle1(result));
+            var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(result));
             if (ResultHandle != null)
             {
+                ImageView.ImageShow.Clear();
+                ResultHandle.Load(this, result);
                 ResultHandle.Handle(this, result);
                 return;
             }
@@ -460,7 +451,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public void SideSave(AlgorithmResult result,string selectedPath)
         {
-            var ResultHandle = ResultHandles.FirstOrDefault(a => a.CanHandle.Contains(result.ResultType));
+            var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle.Contains(result.ResultType));
             if (ResultHandle != null)
             {
                 ResultHandle.SideSave(result,selectedPath);

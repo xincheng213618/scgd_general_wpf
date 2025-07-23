@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Abstractions;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
@@ -58,19 +59,17 @@ namespace ColorVision.Engine.Templates.JND
                 result.ViewResults = new ObservableCollection<IViewResult>();
                 foreach (var item in PoiPointResultDao.Instance.GetAllByPid(result.Id))
                     result.ViewResults.Add(new ViewRsultJND(item));
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmJND), ImageFilePath = result.FilePath })) });
             }
         }
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             AlgorithmView = view;
-            view.ImageView.ImageShow.Clear();
 
 
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
-
-            Load(view,result);
 
             List<GridViewColumn> gridViewColumns = new List<GridViewColumn>();
             List<string> header = new() { "Name", "位置", "大小", "形状", "h_jnd", "v_jnd" };

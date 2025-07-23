@@ -150,7 +150,6 @@ namespace ColorVision.ImageEditor.Draw
 
         public void Render()
         {
-            DrawCanvas.AddVisual(this,false);
             using DrawingContext dc = this.RenderOpen();
             if (SelectVisual == null)
                 return;

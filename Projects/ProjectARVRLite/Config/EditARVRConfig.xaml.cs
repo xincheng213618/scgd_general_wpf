@@ -26,7 +26,7 @@ namespace ProjectARVRLite
 
         private void Close_Click(object sender, RoutedEventArgs e)
         {
-            ConfigHandler.GetInstance().SaveConfigs();
+            ConfigService.Instance.SaveConfigs();
             this.Close();
         }
 
@@ -72,6 +72,12 @@ namespace ProjectARVRLite
         private void Open1_Click(object sender, RoutedEventArgs e)
         {
             ColorVision.Common.Utilities.PlatformHelper.OpenFolder(ProjectARVRLiteConfig.Instance.ResultSavePath1);
+        }
+
+        private void Save_Click(object sender, RoutedEventArgs e)
+        {
+            ConfigService.Instance.SaveConfigs();
+            this.Close();
         }
     }
 }

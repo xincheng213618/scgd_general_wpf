@@ -5,6 +5,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.UI;
 using log4net;
 using System.Collections.Generic;
@@ -70,30 +71,22 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
                     result.ContextMenu.Items.Add(new MenuItem() { Header = "选中2.0结果集", Command = SelectrelayCommand });
                     result.ContextMenu.Items.Add(new MenuItem() { Header = "打开2.0结果集", Command = OpenrelayCommand });
                 }
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmGhost2), ImageFilePath = result.FilePath })) });
+
             }
         }
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
-            view.ImageView.ImageShow.Clear();
-
-
-            void OpenSource()
+            foreach (var item in result.ViewResults)
             {
-                view.ImageView.ImageShow.Clear();
-                foreach (var item in result.ViewResults)
+                if (item is GhostView blackMuraModel)
                 {
-                    if (item is GhostView blackMuraModel)
-                    {
-                        if (File.Exists(result.FilePath))
-                            view.ImageView.OpenImage(result.FilePath);
-                        log.Info(result.FilePath);
-                    }
+                    if (File.Exists(result.FilePath))
+                        view.ImageView.OpenImage(result.FilePath);
+                    log.Info(result.FilePath);
                 }
             }
-
-            Load(view, result);
-            OpenSource();
 
             List<string> header = new() { "Analysis", "Bright", "Ghost" };
             List<string> bdHeader = new() { "GhostReslut.Analysis", "GhostReslut.Bright", "GhostReslut.Ghost" };

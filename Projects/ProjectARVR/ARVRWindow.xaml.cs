@@ -31,6 +31,7 @@ using FlowEngineLib;
 using FlowEngineLib.Base;
 using LiveChartsCore.Kernel;
 using log4net;
+using log4net.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Org.BouncyCastle.Asn1.Ocsp;
@@ -606,22 +607,29 @@ namespace ProjectARVR
             }
             else
             {
-                log.Info("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
-                if (SocketManager.GetInstance().TcpClients.Count > 0 && SocketControl.Current.Stream != null)
+                log.Error("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
+                if (ProjectARVRConfig.Instance.AllowTestFailures)
                 {
-                    ObjectiveTestResult.TotalResult = false;
-                    var response = new SocketResponse
+                    SwithchSocket();
+                }
+                else
+                {
+                    if (SocketManager.GetInstance().TcpClients.Count > 0 && SocketControl.Current.Stream != null)
                     {
-                        Version = "1.0",
-                        MsgID = "",
-                        EventName = "ProjectARVRResult",
-                        Code = -1,
-                        Msg = "ARVR Test Fail",
-                        Data = ObjectiveTestResult
-                    };
-                    string respString = JsonConvert.SerializeObject(response);
-                    log.Info(respString);
-                    SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+                        ObjectiveTestResult.TotalResult = false;
+                        var response = new SocketResponse
+                        {
+                            Version = "1.0",
+                            MsgID = "",
+                            EventName = "ProjectARVRResult",
+                            Code = -1,
+                            Msg = "ARVR Test Fail",
+                            Data = ObjectiveTestResult
+                        };
+                        string respString = JsonConvert.SerializeObject(response);
+                        log.Info(respString);
+                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+                    }
                 }
             }
         }
@@ -633,21 +641,9 @@ namespace ProjectARVR
         {
             IsSavePicture = true;
 
-            BatchResultMasterModel Batch = null;
-            try
-            {
-                Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
-            }catch(Exception ex)
-            {
-                try
-                {
-                    Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
-                }
-                catch(Exception ex1)
-                {
-                    log.Error(ex1);
-                }
-            }
+            IsSavePicture = true;
+            BatchResultMasterModel Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
+
 
             if (Batch == null)
             {
@@ -1374,79 +1370,101 @@ namespace ProjectARVR
                 }
             }
 
-            ViewResluts.Insert(0,result); //倒序插入
+            ViewResluts.Insert(0, result); //倒序插入
             listView1.SelectedIndex = 0;
 
+            SwithchSocket();
+        }
+
+        private void SwithchSocket()
+        {
             if (SocketManager.GetInstance().TcpClients.Count > 0)
             {
                 log.Info("Socket已经链接 ");
-                if (SocketControl.Current.Stream != null)
+                try
                 {
-                    var values = Enum.GetValues(typeof(ARVRTestType));
-                    int currentIndex = Array.IndexOf(values, CurrentTestType);
-                    int nextIndex = (currentIndex + 1) % values.Length;
-                    // 跳过 None（假设 None 是第一个）
-                    if ((ARVRTestType)values.GetValue(nextIndex) == ARVRTestType.None)
-                        nextIndex = (nextIndex + 1) % values.Length;
-                    ARVRTestType aRVRTestType = (ARVRTestType)values.GetValue(nextIndex);
-
-                    if (aRVRTestType == ARVRTestType.Ghost)
+                    if (SocketControl.Current.Stream != null)
                     {
-                        log.Info("ARVR测试完成");
+                        var values = Enum.GetValues(typeof(ARVRTestType));
+                        int currentIndex = Array.IndexOf(values, CurrentTestType);
+                        int nextIndex = (currentIndex + 1) % values.Length;
+                        // 跳过 None（假设 None 是第一个）
+                        if ((ARVRTestType)values.GetValue(nextIndex) == ARVRTestType.None)
+                            nextIndex = (nextIndex + 1) % values.Length;
+                        ARVRTestType aRVRTestType = (ARVRTestType)values.GetValue(nextIndex);
 
-                        ObjectiveTestResult.TotalResult = true;
-
-                        string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                        string filePath = Path.Combine(ProjectARVRConfig.Instance.ResultSavePath, $"ObjectiveTestResults_{timeStr}.csv");
-
-                        List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
-                      
-                        objectiveTestResults.Add(ObjectiveTestResult);
-                        ObjectiveTestResultCsvExporter.ExportToCsv(objectiveTestResults, filePath);
-                        var response = new SocketResponse
+                        if (aRVRTestType == ARVRTestType.Ghost)
                         {
-                            Version = "1.0",
-                            MsgID = string.Empty,
-                            EventName = "ProjectARVRResult",
-                            Code = 0,
-                            Msg = "ARVR Test Completed",
-                            Data = ObjectiveTestResult
-                        };
 
-                        string respString = JsonConvert.SerializeObject(response);
-                        log.Info(respString);
-                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+                            ObjectiveTestResult.TotalResult = true;
+                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowWhiteTestReslut;
+                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowBlackTestReslut;
+                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowChessboardTestReslut;
+                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowMTFHTestReslut;
+                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowMTFVTestReslut;
+                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowDistortionTestReslut;
+                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowOpticCenterTestReslut;
+                            log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
+
+                            string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                            string filePath = Path.Combine(ProjectARVRConfig.Instance.ResultSavePath, $"ObjectiveTestResults_{timeStr}.csv");
+
+                            List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
+
+                            objectiveTestResults.Add(ObjectiveTestResult);
+                            ObjectiveTestResultCsvExporter.ExportToCsv(objectiveTestResults, filePath);
+                            var response = new SocketResponse
+                            {
+                                Version = "1.0",
+                                MsgID = string.Empty,
+                                EventName = "ProjectARVRResult",
+                                Code = 0,
+                                SerialNumber = SNtextBox.Text,
+                                Msg = "ARVR Test Completed",
+                                Data = ObjectiveTestResult
+                            };
+                            string respString = JsonConvert.SerializeObject(response);
+                            log.Info(respString);
+                            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+                        }
+                        else
+                        {
+
+                            var response = new SocketResponse
+                            {
+                                Version = "1.0",
+                                MsgID = string.Empty,
+                                EventName = "SwitchPG",
+                                Code = 0,
+                                Msg = "Switch PG",
+                                SerialNumber = SNtextBox.Text,
+                                Data = new SwitchPG
+                                {
+                                    ARVRTestType = aRVRTestType
+                                },
+                            };
+                            string respString = JsonConvert.SerializeObject(response);
+                            log.Info(respString);
+                            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+                        }
+
                     }
                     else
                     {
-
-                        var response = new SocketResponse
-                        {
-                            Version = "1.0",
-                            MsgID = string.Empty,
-                            EventName = "SwitchPG",
-                            Code = 0,
-                            Msg = "Switch PG",
-                            Data = new SwitchPG
-                            {
-                                ARVRTestType = aRVRTestType
-                            },
-                        };
-                        string respString = JsonConvert.SerializeObject(response);
-                        log.Info(respString);
-                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+                        log.Info("Socket流为空，无法发送数据");
                     }
-
                 }
-                else
+                catch (Exception ex)
                 {
-                    log.Info("Socket流为空，无法发送数据");
+                    log.ErrorExt(ex);
                 }
+
             }
             else
             {
                 log.Info("找不到连接的Socket");
             }
+
         }
 
 

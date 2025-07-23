@@ -13,6 +13,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.FindCross
 {
+    [DisplayAlgorithm(53, "十字计算", "Json")]
     public class AlgorithmFindCross : DisplayAlgorithmBase
     {
 
@@ -23,9 +24,6 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
 
         public AlgorithmFindCross(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "十字计算";
-            Order = 53;
-            Group = "Json";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
