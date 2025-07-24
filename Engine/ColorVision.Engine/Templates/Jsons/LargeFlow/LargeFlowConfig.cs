@@ -10,6 +10,9 @@ namespace ColorVision.Engine.Templates.Jsons.LargeFlow
 
         private ObservableCollection<string> _Flows = new ObservableCollection<string>();
 
+        public string ReceiptName { get => _ReceiptName; set { _ReceiptName = value; NotifyPropertyChanged(); } }
+        private string _ReceiptName;
+
         public string ReceiptConfig { get => _ReceiptConfig; set { _ReceiptConfig = value; NotifyPropertyChanged(); } }
         private string _ReceiptConfig;
 

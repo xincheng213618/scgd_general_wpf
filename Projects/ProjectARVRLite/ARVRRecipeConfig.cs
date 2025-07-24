@@ -1,5 +1,6 @@
 ﻿#pragma warning disable
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using ProjectARVRLite;
 using ProjectARVRLite;
 using ProjectARVRLite.Config;
@@ -8,7 +9,7 @@ using System.ComponentModel;
 namespace ProjectARVRLite
 {
     [DisplayName("ARVR上下限判定")]
-    public class ARVRRecipeConfig : ViewModelBase
+    public class ARVRRecipeConfig : ViewModelBase, IRecipe
     {
         public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; NotifyPropertyChanged(); } }
         private bool _IsEnabled = true;

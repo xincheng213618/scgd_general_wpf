@@ -7,6 +7,7 @@
         xmlns:template="clr-namespace:ColorVision.Engine.Templates" 
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+        xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
         mc:Ignorable="d"
         Title="流程管理" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" Closed="Window_Closed">
     <Window.Resources>
@@ -181,7 +182,22 @@
 
                 </StackPanel>
             </Grid>
+
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <StackPanel>
+                    <ComboBox x:Name="CBRecipeTypes"  Style="{StaticResource ComboBox.Small}" DisplayMemberPath="Key" Text="{Binding ReceiptName}" />
+                    <Button Content="编辑Recipe"  Click="Button_Click"/>
+                </StackPanel>
+                <avalonEdit:TextEditor Grid.Row="1" Name="textEditor" FontFamily="Consolas" FontSize="10pt" Background="Transparent" SyntaxHighlighting="Json"  Margin="5"/>
+
+
+            </Grid>
         </Grid>
+
         
         
 
