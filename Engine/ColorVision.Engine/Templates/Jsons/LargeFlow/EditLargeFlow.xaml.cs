@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,6 +12,73 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Templates.Jsons.LargeFlow
 {
+
+    public interface IRecipe
+    {
+
+    }
+    public class RecipeManager
+    {
+        private static RecipeManager _instance;
+        private static readonly object _locker = new();
+        public static RecipeManager GetInstance() { lock (_locker) { _instance ??= new RecipeManager(); return _instance; } }
+        public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
+
+        public static string ObjectiveTestResultFixPath { get; set; } = DirectoryPath + "Recipe.json";
+        public Dictionary<string, IRecipe> RecipeConfigs { get; set; }
+
+        public IRecipe RecipeConfig { get; set; }
+        public RecipeManager()
+        {
+            if (!Directory.Exists(DirectoryPath))
+                Directory.CreateDirectory(DirectoryPath);
+
+            if (LoadFromFile(ObjectiveTestResultFixPath) is Dictionary<string, IRecipe> fix)
+            {
+                RecipeConfigs = fix;
+            }
+            else
+            {
+                RecipeConfigs = new Dictionary<string, IRecipe>();
+                Save();
+            }
+
+        }
+
+        public void Save()
+        {
+            try
+            {
+                if (!Directory.Exists(DirectoryPath))
+                    Directory.CreateDirectory(DirectoryPath);
+
+                string json = JsonConvert.SerializeObject(RecipeConfigs, Formatting.Indented);
+                File.WriteAllText(ObjectiveTestResultFixPath, json);
+            }
+            catch
+            {
+                // Optionally log or rethrow
+            }
+        }
+
+        public static Dictionary<string, IRecipe>? LoadFromFile(string filePath)
+        {
+            try
+            {
+                if (!File.Exists(filePath)) return null;
+                string json = File.ReadAllText(filePath);
+                if (string.IsNullOrWhiteSpace(json)) return null;
+                return JsonConvert.DeserializeObject<Dictionary<string, IRecipe>>(json);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+
+
+
     /// <summary>
     /// EditLargeFlow.xaml 的交互逻辑
     /// </summary>
@@ -179,14 +247,6 @@ namespace ColorVision.Engine.Templates.Jsons.LargeFlow
 
         private void OK_Click(object sender, RoutedEventArgs e)
         {
-            LargeFlowConfig.Flows.Clear();
-            foreach (var item in LargeFlowParams)
-            {
-                if (!LargeFlowConfig.Flows.Contains(item.Key))
-                    LargeFlowConfig.Flows.Add(item.Key);
-            }
-            TJLargeFlowParam.JsonValue = JsonConvert.SerializeObject(LargeFlowConfig);
-            TemplateJsonDao.Instance.Save(TJLargeFlowParam.TemplateJsonModel);
             Close();
         }
 
@@ -203,6 +263,18 @@ namespace ColorVision.Engine.Templates.Jsons.LargeFlow
         private void TextBox_LostFocus(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            LargeFlowConfig.Flows.Clear();
+            foreach (var item in LargeFlowParams)
+            {
+                if (!LargeFlowConfig.Flows.Contains(item.Key))
+                    LargeFlowConfig.Flows.Add(item.Key);
+            }
+            TJLargeFlowParam.JsonValue = JsonConvert.SerializeObject(LargeFlowConfig);
+            TemplateJsonDao.Instance.Save(TJLargeFlowParam.TemplateJsonModel);
         }
     }
 }

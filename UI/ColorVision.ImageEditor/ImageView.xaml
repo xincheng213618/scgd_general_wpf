@@ -85,11 +85,7 @@
                     <draw:DrawCanvas x:Name="ImageShow"  x:FieldModifier="public" Initialized="ImageShow_Initialized"  FocusVisualStyle="{x:Null}"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto" MouseMove="ImageShow_MouseMove">
                     </draw:DrawCanvas>
                 </draw:ZoomboxSub>
-                <ToolBarTray  x:Name="ToolBarLayers"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Right" Visibility="Collapsed">
-                    <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True" >
-                        <ComboBox x:Name="ComboBoxLayers"  x:FieldModifier="public"  SelectedIndex="0"/>
-                    </ToolBar>
-                </ToolBarTray>
+                <ComboBox x:Name="ComboBoxLayers" HorizontalAlignment="Right" VerticalAlignment="Top"  Style="{StaticResource ComboBox.Small}" x:FieldModifier="public"  SelectedIndex="0" Margin="5"/>
 
                 <ToolBarTray  x:Name="ToolBarAl"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Left" Visibility="Collapsed">
                     <ToolBar Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" >

@@ -779,7 +779,7 @@ namespace ColorVision.ImageEditor
                 HImageCache = null;
             }
             GC.Collect();
-            ToolBarLayers.Visibility = Visibility.Collapsed;
+            ComboBoxLayers.Visibility = Visibility.Collapsed;
         }
 
         public void OpenImage(WriteableBitmap? writeableBitmap)
@@ -872,7 +872,7 @@ namespace ColorVision.ImageEditor
 
         public void SetImageSource(ImageSource imageSource)
         {
-            ToolBarLayers.Visibility = Visibility.Visible;
+            ComboBoxLayers.Visibility = Visibility.Visible;
             if (HImageCache != null)
             {
                 HImageCache?.Dispose();

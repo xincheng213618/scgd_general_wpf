@@ -8,17 +8,31 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        Title="编辑大流程模板" Height="450" Width="800" Initialized="Window_Initialized">
+        Title="流程管理" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" Closed="Window_Closed">
     <Window.Resources>
-        <Style TargetType="{x:Type Border}">
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
         </Style>
-
     </Window.Resources>
     <Grid>
-        <DockPanel>
-            <UniformGrid Columns="1" DockPanel.Dock="Bottom" HorizontalAlignment="Right" Margin="10">
-                <Button Content="{x:Static properties:Resources.OK}" Height="20" Width="75" Margin="5,0" Click="OK_Click"/>
-            </UniformGrid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="2">
+            <Button Content="{x:Static properties:Resources.OK}" Height="20" Width="75" Margin="5,0" Click="OK_Click"/>
+        </Grid>
+
+        <Grid Grid.Row="1" Margin="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
             <Grid  Grid.Row="1" Margin="10">
                 <Grid.ColumnDefinitions >
                     <ColumnDefinition Width="*"/>
@@ -27,28 +41,64 @@
                     <ColumnDefinition Width="40"/>
                 </Grid.ColumnDefinitions>
                 <Grid  Grid.Column="0"  Margin="5,0">
+                    <ListView x:Name="SeriesExportTreeView1"  Style="{StaticResource ListView.Small}"  Background="Transparent" FocusVisualStyle="{x:Null}" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="0" Margin="2,0,2,2" >
+                        <ListView.Resources>
+                            <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
+                            <ContextMenu x:Key="ContextMenuItem">
+                                <MenuItem Header="{x:Static properties:Resources.MenuDelete}" Command="ApplicationCommands.Delete" />
+                            </ContextMenu>
+                        </ListView.Resources>
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
+                                <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.View>
+                            <GridView >
+                                <GridView.ColumnHeaderContainerStyle>
+                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                                        <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                                        <EventSetter Event="Click" Handler="GridViewColumnSort"/>
+                                    </Style>
+                                </GridView.ColumnHeaderContainerStyle>
+                                <GridViewColumn  Header="{x:Static properties:Resources.SerialNumber1}" >
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type template:TemplateBase}">
+                                            <TextBlock Text="{Binding Id}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="{x:Static properties:Resources.Name}">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type template:TemplateBase}">
+                                            <DockPanel Height="20">
+                                                <Grid VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Key}" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}" Padding="6,0"/>
+                                                    <TextBox  Text="{Binding Key}" LostFocus="TextBox_LostFocus" Tag="{Binding .}" HorizontalAlignment="Left" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}"/>
+                                                </Grid>
+                                            </DockPanel>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+
+                </Grid>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <Button Content=">>" Click="Button_Click_01" Margin="0,10"/>
+                    <Button Content=">" Click="Button_Click_02" Margin="0,10"/>
+                    <Button Content="&lt;" Click="Button_Click_03"  Margin="0,10"/>
+                    <Button Content="&lt;&lt;" Click="Button_Click_04"  Margin="0,10"/>
+                </StackPanel>
+
+                <Grid  Grid.Column="2"  Margin="5,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <Border BorderThickness="1"  Grid.Row="1" CornerRadius="3" >
-                        <Border.BorderBrush>
-                            <DrawingBrush Viewport="0,0,8,8" ViewportUnits="Absolute" TileMode="Tile">
-                                <DrawingBrush.Drawing>
-                                    <DrawingGroup>
-                                        <GeometryDrawing Brush="Black">
-                                            <GeometryDrawing.Geometry>
-                                                <GeometryGroup>
-                                                    <RectangleGeometry Rect="0,0,50,50" />
-                                                    <RectangleGeometry Rect="50,50,50,50" />
-                                                </GeometryGroup>
-                                            </GeometryDrawing.Geometry>
-                                        </GeometryDrawing>
-                                    </DrawingGroup>
-                                </DrawingBrush.Drawing>
-                            </DrawingBrush>
-                        </Border.BorderBrush>
-                        <ListView x:Name="SeriesExportTreeView1"  Style="{StaticResource ListView.Small}"  FocusVisualStyle="{x:Null}" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="0" Margin="2,0,2,2" >
+                    <Grid  Grid.Row="1"  PreviewMouseDown="Grid_MouseDown" MouseMove="Grid_MouseMove" PreviewMouseUp="Grid_MouseUp" >
+                        <ListView x:Name="SeriesExportTreeView2"  Background="Transparent" Style="{StaticResource ListView.Small}"  FocusVisualStyle="{x:Null}" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="0" Margin="2,0,2,2" >
                             <ListView.Resources>
                                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
                                 <ContextMenu x:Key="ContextMenuItem">
@@ -90,81 +140,7 @@
                                 </GridView>
                             </ListView.View>
                         </ListView>
-                    </Border>
-                </Grid>
-                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <Button Content=">>" Click="Button_Click_01" Margin="0,10"/>
-                    <Button Content=">" Click="Button_Click_02" Margin="0,10"/>
-                    <Button Content="&lt;" Click="Button_Click_03"  Margin="0,10"/>
-                    <Button Content="&lt;&lt;" Click="Button_Click_04"  Margin="0,10"/>
-                </StackPanel>
 
-                <Grid  Grid.Column="2"  Margin="5,0">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <Grid  Grid.Row="1"  PreviewMouseDown="Grid_MouseDown" MouseMove="Grid_MouseMove" PreviewMouseUp="Grid_MouseUp" >
-                        <Border BorderThickness="1" Margin="5,0"  CornerRadius="3">
-                            <Border.BorderBrush>
-                                <DrawingBrush Viewport="0,0,8,8" ViewportUnits="Absolute" TileMode="Tile">
-                                    <DrawingBrush.Drawing>
-                                        <DrawingGroup>
-                                            <GeometryDrawing Brush="Black">
-                                                <GeometryDrawing.Geometry>
-                                                    <GeometryGroup>
-                                                        <RectangleGeometry Rect="0,0,50,50" />
-                                                        <RectangleGeometry Rect="50,50,50,50" />
-                                                    </GeometryGroup>
-                                                </GeometryDrawing.Geometry>
-                                            </GeometryDrawing>
-                                        </DrawingGroup>
-                                    </DrawingBrush.Drawing>
-                                </DrawingBrush>
-                            </Border.BorderBrush>
-                            <ListView x:Name="SeriesExportTreeView2"  Style="{StaticResource ListView.Small}"  FocusVisualStyle="{x:Null}" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="0" Margin="2,0,2,2" >
-                                <ListView.Resources>
-                                    <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
-                                    <ContextMenu x:Key="ContextMenuItem">
-                                        <MenuItem Header="{x:Static properties:Resources.MenuDelete}" Command="ApplicationCommands.Delete" />
-                                    </ContextMenu>
-                                </ListView.Resources>
-                                <ListView.ItemContainerStyle>
-                                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
-                                        <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
-                                    </Style>
-                                </ListView.ItemContainerStyle>
-                                <ListView.View>
-                                    <GridView >
-                                        <GridView.ColumnHeaderContainerStyle>
-                                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
-                                                <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
-                                                <EventSetter Event="Click" Handler="GridViewColumnSort"/>
-                                            </Style>
-                                        </GridView.ColumnHeaderContainerStyle>
-                                        <GridViewColumn  Header="{x:Static properties:Resources.SerialNumber1}" >
-                                            <GridViewColumn.CellTemplate>
-                                                <DataTemplate DataType="{x:Type template:TemplateBase}">
-                                                    <TextBlock Text="{Binding Id}" />
-                                                </DataTemplate>
-                                            </GridViewColumn.CellTemplate>
-                                        </GridViewColumn>
-                                        <GridViewColumn Header="{x:Static properties:Resources.Name}">
-                                            <GridViewColumn.CellTemplate>
-                                                <DataTemplate DataType="{x:Type template:TemplateBase}">
-                                                    <DockPanel Height="20">
-                                                        <Grid VerticalAlignment="Center">
-                                                            <TextBlock Text="{Binding Key}" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}" Padding="6,0"/>
-                                                            <TextBox  Text="{Binding Key}" LostFocus="TextBox_LostFocus" Tag="{Binding .}" HorizontalAlignment="Left" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}"/>
-                                                        </Grid>
-                                                    </DockPanel>
-                                                </DataTemplate>
-                                            </GridViewColumn.CellTemplate>
-                                        </GridViewColumn>
-                                    </GridView>
-                                </ListView.View>
-                            </ListView>
-                        </Border>
                     </Grid>
 
                 </Grid>
@@ -205,6 +181,9 @@
 
                 </StackPanel>
             </Grid>
-        </DockPanel>
+        </Grid>
+        
+        
+
     </Grid>
 </Window>

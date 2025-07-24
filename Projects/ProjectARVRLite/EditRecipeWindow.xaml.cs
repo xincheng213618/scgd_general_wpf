@@ -28,22 +28,22 @@ namespace ProjectARVRLite
         public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
 
         public static string ObjectiveTestResultFixPath { get; set; } = DirectoryPath + "ProjectARVRLiteRecipe.json";
-        public Dictionary<string, RecipeConfig> RecipeConfigs { get; set; }
+        public Dictionary<string, ARVRRecipeConfig> RecipeConfigs { get; set; }
 
-        public RecipeConfig RecipeConfig { get; set; } = new RecipeConfig();
+        public ARVRRecipeConfig RecipeConfig { get; set; } = new ARVRRecipeConfig();
 
         public RecipeManager()
         {
             if (!Directory.Exists(DirectoryPath))
                 Directory.CreateDirectory(DirectoryPath);
 
-            if (LoadFromFile(ObjectiveTestResultFixPath) is Dictionary<string, RecipeConfig> fix)
+            if (LoadFromFile(ObjectiveTestResultFixPath) is Dictionary<string, ARVRRecipeConfig> fix)
             {
                 RecipeConfigs = fix;
             }
             else
             {
-                RecipeConfigs = new Dictionary<string, RecipeConfig>();
+                RecipeConfigs = new Dictionary<string, ARVRRecipeConfig>();
                 Save();
             }
 
@@ -65,21 +65,20 @@ namespace ProjectARVRLite
             }
         }
 
-        public static Dictionary<string, RecipeConfig>? LoadFromFile(string filePath)
+        public static Dictionary<string, ARVRRecipeConfig>? LoadFromFile(string filePath)
         {
             try
             {
                 if (!File.Exists(filePath)) return null;
                 string json = File.ReadAllText(filePath);
                 if (string.IsNullOrWhiteSpace(json)) return null;
-                return JsonConvert.DeserializeObject<Dictionary<string, RecipeConfig>>(json);
+                return JsonConvert.DeserializeObject<Dictionary<string, ARVRRecipeConfig>>(json);
             }
             catch
             {
                 return null;
             }
         }
-
     }
 
     /// <summary>
@@ -107,7 +106,7 @@ namespace ProjectARVRLite
 
         private void Reset_Click(object sender, RoutedEventArgs e)
         {
-            var ObjectiveTestResultFix  = new RecipeConfig();
+            var ObjectiveTestResultFix  = new ARVRRecipeConfig();
             RecipeManager.RecipeConfig.CopyFrom(ObjectiveTestResultFix);
             RecipeManager.Save();
         }

@@ -8,7 +8,7 @@ using System.ComponentModel;
 namespace ProjectARVRLite
 {
     [DisplayName("ARVR上下限判定")]
-    public class RecipeConfig : ViewModelBase
+    public class ARVRRecipeConfig : ViewModelBase
     {
         public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; NotifyPropertyChanged(); } }
         private bool _IsEnabled = true;

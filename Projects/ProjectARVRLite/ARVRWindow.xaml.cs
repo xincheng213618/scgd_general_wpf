@@ -400,7 +400,7 @@ namespace ProjectARVRLite
         Stopwatch stopwatch = new Stopwatch();
 
         public static RecipeManager RecipeManager => RecipeManager.GetInstance();
-        public static RecipeConfig recipeConfig => RecipeManager.RecipeConfig;
+        public static ARVRRecipeConfig recipeConfig => RecipeManager.RecipeConfig;
 
 
         private LogOutput? logOutput;
@@ -422,13 +422,13 @@ namespace ProjectARVRLite
                 {
                     string Name = TemplateFlow.Params[ProjectARVRLiteConfig.Instance.TemplateSelectedIndex].Key;
 
-                    if (RecipeManager.RecipeConfigs.TryGetValue(Name, out RecipeConfig recipeConfig))
+                    if (RecipeManager.RecipeConfigs.TryGetValue(Name, out ARVRRecipeConfig recipeConfig))
                     {
                         RecipeManager.RecipeConfig = recipeConfig;
                     }
                     else
                     {
-                        recipeConfig = new RecipeConfig();
+                        recipeConfig = new ARVRRecipeConfig();
                         RecipeManager.RecipeConfigs.TryAdd(Name, recipeConfig);
                         RecipeManager.RecipeConfig = recipeConfig;
                     }
