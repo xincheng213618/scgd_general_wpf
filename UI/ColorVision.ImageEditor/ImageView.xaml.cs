@@ -210,11 +210,11 @@ namespace ColorVision.ImageEditor
 
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
         {
-            //if (Config.IsLayoutUpdated)
-            //{
-            //    double scale = 1/ Zoombox1.ContentMatrix.M11;
-            //    DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + Guid.ToString(), 20, ()=>ImageLayoutUpdatedRender(scale, DrawingVisualLists));
-            //}
+            if (Config.IsLayoutUpdated)
+            {
+                double scale = 1 / Zoombox1.ContentMatrix.M11;
+                DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + Guid.ToString(), 20, () => ImageLayoutUpdatedRender(scale, DrawingVisualLists));
+            }
         }
 
         public static void ImageLayoutUpdatedRender(double scale, ObservableCollection<IDrawingVisual> DrawingVisualLists)

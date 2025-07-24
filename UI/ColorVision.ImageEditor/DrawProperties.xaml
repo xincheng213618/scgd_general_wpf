@@ -35,6 +35,10 @@
                                 <ComboBox Name="ComboBoxBrush" SelectedValue="{Binding Brush}"  SelectionChanged="ComboBoxBrush_SelectionChanged" />
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
+                                <TextBlock Text="FontSize" Width="100"/>
+                                <TextBox Text="{Binding FontSize}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
                                 <TextBlock Text="FontWeight" Width="100"/>
                                 <ComboBox Name="ComboBoxFontWeight" SelectedValue="{Binding FontWeight}"  SelectionChanged="ComboBoxBrush_SelectionChanged" >
                                     <ComboBox.ItemTemplate>
