@@ -25,7 +25,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
                 GridEx = grid;
                 ScalRuler.PreviewMouseDown += (s, e) =>
                 {
-                    EditScaleRuler editScaleRuler = new(ScalRuler) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                    EditScaleRuler editScaleRuler = new EditScaleRuler(ScalRuler) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                     editScaleRuler.ShowDialog();
                     Render();
                 };

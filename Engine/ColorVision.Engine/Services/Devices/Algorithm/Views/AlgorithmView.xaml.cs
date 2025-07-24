@@ -171,7 +171,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         + item.CreateTime + ","
                         + item.ResultType + ","
                         + item.TotalTime + ","
-                        + item.Result + ","
                         + item.ResultDesc + ","
                         + Environment.NewLine;
                 }

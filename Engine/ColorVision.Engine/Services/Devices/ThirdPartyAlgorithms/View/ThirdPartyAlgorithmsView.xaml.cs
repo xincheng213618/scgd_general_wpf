@@ -156,7 +156,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
                         + item.CreateTime + ","
                         + item.ResultType + ","
                         + item.TotalTime + ","
-                        + item.Result + ","
                         + item.ResultDesc + ","
                         + Environment.NewLine;
                 }
@@ -464,38 +463,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
                 MessageBox.Show("您需要先选择数据");
             }
         }
-
-        private void ButtonChart_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.SelectedIndex > -1)
-            {
-                if (listView1.Items[listView1.SelectedIndex] is AlgorithmResult result)
-                {
-                    if (result.ResultType == AlgorithmResultType.POI_XYZ)
-                    {
-                        var PoiResultCIExyuvDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>();
-                        if (PoiResultCIExyuvDatas.Count !=0)
-                        {
-                            WindowChart windowChart = new(PoiResultCIExyuvDatas);
-                            windowChart.Show();
-                        }
-                        else
-                        {
-                            MessageBox.Show("结果为空");
-                        }
-                    }
-                    else
-                    {
-                        MessageBox.Show("暂不支持其他");
-                    }
-                }
-            }
-            else
-            {
-                MessageBox.Show("没有选择条目");
-            }
-        }
-
 
     }
 }

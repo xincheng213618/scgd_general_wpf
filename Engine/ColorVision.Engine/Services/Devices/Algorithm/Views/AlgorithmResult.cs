@@ -241,8 +241,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public int? ResultCode { get { return _ResultCode; } set { _ResultCode = value; NotifyPropertyChanged(); } }
         private int? _ResultCode;
 
-        public string Result => ResultCode == 0 ? "成功" : "失败";
-
 
     }
 }

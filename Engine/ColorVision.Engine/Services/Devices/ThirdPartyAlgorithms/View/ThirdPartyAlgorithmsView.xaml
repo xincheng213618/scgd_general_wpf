@@ -40,9 +40,6 @@
                     <ToolBar Padding="3,2">
                         <ToggleButton  Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding Config.IsShowListView, Converter={StaticResource Boolean2BooleanReConverter}}"/>
                         <ToggleButton  Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding Config.IsShowSideListView, Converter={StaticResource Boolean2BooleanReConverter}}"/>
-                        <Button Click="Button_Click" Margin="2,0,0,0" >
-                            <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
-                        </Button>
 
                         <Button  Content="{x:Static properties:Resources.Exchange}" Click="Exchange_Click" Margin="2,0,0,0"/>
 
@@ -79,12 +76,28 @@
                             </Border>
                         </Popup>
                         <Button x:Name="Button222" Content="{x:Static properties:Resources.SaveDataColumn}" Click="SideSave_Click"/>
-                        <Button x:Name="ButtonChart" Content="{x:Static properties:Resources.Chart}" Click="ButtonChart_Click"/>
                     </ToolBar>
                 </ToolBarTray>
                 <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
-                    <Button Click="Button_Delete_Click" Background="#01FFFFFF" BorderThickness="0"    >
-                        <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" Margin="4" />
+                    <Button Click="Button_Click" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
+                        <Rectangle Width="16" Height="16" Fill="{StaticResource DISave}" />
+                    </Button>
+                    <Button  Click="Button_Delete_Click" Padding="2" Height="25" Width="25" Margin="0,1,5,0" >
+                        <Button.Triggers>
+                            <EventTrigger RoutedEvent="Button.Click">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation  Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX" To="0.7" Duration="0:0:0.1" AutoReverse="True" />
+                                        <DoubleAnimation  Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY" To="0.7" Duration="0:0:0.1" AutoReverse="True" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Button.Triggers>
+                        <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" RenderTransformOrigin="0.5,0.5">
+                            <Image.RenderTransform>
+                                <ScaleTransform x:Name="ScaleTransform" ScaleX="1" ScaleY="1" />
+                            </Image.RenderTransform>
+                        </Image>
                     </Button>
                     <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding Config.EditCommand}" Padding="2" Height="25" Width="25" >
                         <Button.Triggers>

@@ -40,9 +40,6 @@
                     <ToolBar Padding="3,2">
                         <ToggleButton  Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding Config.IsShowListView, Converter={StaticResource Boolean2BooleanReConverter}}"/>
                         <ToggleButton  Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding Config.IsShowSideListView, Converter={StaticResource Boolean2BooleanReConverter}}"/>
-                        <Button Click="Button_Click" Margin="2,0,0,0" >
-                            <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
-                        </Button>
 
                         <Button  Content="{x:Static properties:Resources.Exchange}" Click="Exchange_Click" Margin="2,0,0,0"/>
 
@@ -83,7 +80,10 @@
                     </ToolBar>
                 </ToolBarTray>
                 <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
-                    <Button  Command="{Binding Config.ClearListCommand}" Padding="2" Height="25" Width="25">
+                    <Button Click="Button_Click" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
+                        <Rectangle Width="16" Height="16" Fill="{StaticResource DISave}" />
+                    </Button>
+                    <Button  Command="{Binding Config.ClearListCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0" >
                         <Button.Triggers>
                             <EventTrigger RoutedEvent="Button.Click">
                                 <BeginStoryboard>
@@ -100,7 +100,7 @@
                             </Image.RenderTransform>
                         </Image>
                     </Button>
-                    <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding Config.EditCommand}" Padding="2" Height="25" Width="25" >
+                    <Button Grid.Column="1" Margin="0,1,5,0" HorizontalAlignment="Left" Command="{Binding Config.EditCommand}" Padding="2" Height="25" Width="25" >
                         <Button.Triggers>
                             <EventTrigger RoutedEvent="Button.Click">
                                 <BeginStoryboard>
@@ -183,14 +183,6 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="{x:Static properties:Resources.Result}" >
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
-                                        <TextBlock Text="{ Binding  Result}" />
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            
 
                             <GridViewColumn  Header="{x:Static properties:Resources.CreateTime}" >
                                 <GridViewColumn.CellTemplate>

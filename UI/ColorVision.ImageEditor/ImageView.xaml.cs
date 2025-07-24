@@ -71,16 +71,83 @@ namespace ColorVision.ImageEditor
             ToolBarLeft.DataContext = Config;
             Zoombox1.DataContext = imageViewConfig;
             ImageViewModel.PropertyCommand = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(Parent), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
-
+           
+            Config.ColormapTypesChanged -= Config_ColormapTypesChanged;
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
             Config.BalanceChanged += ImageViewConfig_BalanceChanged;
         }
 
+
+        public static Dictionary<ColormapTypes, string> GetColormapVDictionary()
+        {
+            var colormapDictionary = new Dictionary<ColormapTypes, string>
+        {
+            { ColormapTypes.COLORMAP_AUTUMN, "Assets/Colormaps/colorscale_autumn.jpg" },
+            { ColormapTypes.COLORMAP_BONE, "Assets/Colormaps/colorscale_bone.jpg" },
+            { ColormapTypes.COLORMAP_JET, "Assets/Colormaps/colorscale_jet.jpg" },
+            { ColormapTypes.COLORMAP_WINTER, "Assets/Colormaps/colorscale_winter.jpg" },
+            { ColormapTypes.COLORMAP_RAINBOW, "Assets/Colormaps/colorscale_rainbow.jpg" },
+            { ColormapTypes.COLORMAP_OCEAN, "Assets/Colormaps/colorscale_ocean.jpg" },
+            { ColormapTypes.COLORMAP_SUMMER, "Assets/Colormaps/colorscale_summer.jpg" },
+            { ColormapTypes.COLORMAP_SPRING, "Assets/Colormaps/colorscale_spring.jpg" },
+            { ColormapTypes.COLORMAP_COOL, "Assets/Colormaps/colorscale_cool.jpg" },
+            { ColormapTypes.COLORMAP_HSV, "Assets/Colormaps/colorscale_hsv.jpg" },
+            { ColormapTypes.COLORMAP_PINK, "Assets/Colormaps/colorscale_pink.jpg" },
+            { ColormapTypes.COLORMAP_HOT, "Assets/Colormaps/colorscale_hot.jpg" },
+            { ColormapTypes.COLORMAP_PARULA, "Assets/Colormaps/colorscale_parula.jpg" },
+            { ColormapTypes.COLORMAP_MAGMA, "Assets/Colormaps/colorscale_magma.jpg" },
+            { ColormapTypes.COLORMAP_INFERNO, "Assets/Colormaps/colorscale_inferno.jpg" },
+            { ColormapTypes.COLORMAP_PLASMA, "Assets/Colormaps/colorscale_plasma.jpg" },
+            { ColormapTypes.COLORMAP_VIRIDIS, "Assets/Colormaps/colorscale_viridis.jpg" },
+            { ColormapTypes.COLORMAP_CIVIDIS, "Assets/Colormaps/colorscale_cividis.jpg" },
+            { ColormapTypes.COLORMAP_TWILIGHT, "Assets/Colormaps/colorscale_twilight.jpg" },
+            { ColormapTypes.COLORMAP_TWILIGHT_SHIFTED, "Assets/Colormaps/colorscale_twilight_shifted.jpg" },
+            { ColormapTypes.COLORMAP_TURBO, "Assets/Colormaps/colorscale_turbo.jpg" },
+            { ColormapTypes.COLORMAP_DEEPGREEN, "Assets/Colormaps/colorscale_deepgreen.jpg" }
+        };
+            return colormapDictionary;
+        }
+
+        public static Dictionary<ColormapTypes, string> GetColormapHDictionary()
+        {
+            var colormapDictionary = new Dictionary<ColormapTypes, string>
+        {
+            { ColormapTypes.COLORMAP_AUTUMN, "Assets/Colormap/colorscale_autumn.jpg" },
+            { ColormapTypes.COLORMAP_BONE, "Assets/Colormap/colorscale_bone.jpg" },
+            { ColormapTypes.COLORMAP_JET, "Assets/Colormap/colorscale_jet.jpg" },
+            { ColormapTypes.COLORMAP_WINTER, "Assets/Colormap/colorscale_winter.jpg" },
+            { ColormapTypes.COLORMAP_RAINBOW, "Assets/Colormap/colorscale_rainbow.jpg" },
+            { ColormapTypes.COLORMAP_OCEAN, "Assets/Colormap/colorscale_ocean.jpg" },
+            { ColormapTypes.COLORMAP_SUMMER, "Assets/Colormap/colorscale_summer.jpg" },
+            { ColormapTypes.COLORMAP_SPRING, "Assets/Colormap/colorscale_spring.jpg" },
+            { ColormapTypes.COLORMAP_COOL, "Assets/Colormap/colorscale_cool.jpg" },
+            { ColormapTypes.COLORMAP_HSV, "Assets/Colormap/colorscale_hsv.jpg" },
+            { ColormapTypes.COLORMAP_PINK, "Assets/Colormap/colorscale_pink.jpg" },
+            { ColormapTypes.COLORMAP_HOT, "Assets/Colormap/colorscale_hot.jpg" },
+            { ColormapTypes.COLORMAP_PARULA, "Assets/Colormap/colorscale_parula.jpg" },
+            { ColormapTypes.COLORMAP_MAGMA, "Assets/Colormap/colorscale_magma.jpg" },
+            { ColormapTypes.COLORMAP_INFERNO, "Assets/Colormap/colorscale_inferno.jpg" },
+            { ColormapTypes.COLORMAP_PLASMA, "Assets/Colormap/colorscale_plasma.jpg" },
+            { ColormapTypes.COLORMAP_VIRIDIS, "Assets/Colormap/colorscale_viridis.jpg" },
+            { ColormapTypes.COLORMAP_CIVIDIS, "Assets/Colormap/colorscale_cividis.jpg" },
+            { ColormapTypes.COLORMAP_TWILIGHT, "Assets/Colormap/colorscale_twilight.jpg" },
+            { ColormapTypes.COLORMAP_TWILIGHT_SHIFTED, "Assets/Colormap/colorscale_twilight_shifted.jpg" },
+            { ColormapTypes.COLORMAP_TURBO, "Assets/Colormap/colorscale_turbo.jpg" },
+            { ColormapTypes.COLORMAP_DEEPGREEN, "Assets/Colormap/colorscale_deepgreen.jpg" }
+        };
+            return colormapDictionary;
+        }
+
         private void Config_ColormapTypesChanged(object? sender, EventArgs e)
         {
-            var ColormapTypes = PseudoColor.GetColormapDictionary().First(x => x.Key == Config.ColormapTypes);
+            var ColormapTypes = GetColormapHDictionary().First(x => x.Key == Config.ColormapTypes);
             string valuepath = ColormapTypes.Value;
-            ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative));
+
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative));
+            });
+            DebounceTimer.AddOrResetTimer("PseudoSlider", 50, e => RenderPseudo(), 0);
         }
 
         private void ImageViewConfig_BalanceChanged(object? sender, EventArgs e)
@@ -105,8 +172,6 @@ namespace ColorVision.ImageEditor
                 }
             }
 
-
-
             ImageViewModel = new ImageViewModel(this,Zoombox1, ImageShow);
             Zoombox1.ContextMenu = ImageViewModel.ContextMenu;
             ToolBar1.DataContext = ImageViewModel;
@@ -121,7 +186,7 @@ namespace ColorVision.ImageEditor
             PreviewKeyDown += ImageView_PreviewKeyDown;
             Drop += ImageView_Drop;
 
-            ComColormapTypes.ItemsSource = PseudoColor.GetColormapsDictionary();
+            ComColormapTypes.ItemsSource = GetColormapHDictionary();
 
             ComboxeType.ItemsSource = from e1 in Enum.GetValues(typeof(MagnigifierType)).Cast<MagnigifierType>()
                                       select new KeyValuePair<MagnigifierType, string>(e1, e1.ToString());
@@ -869,15 +934,12 @@ namespace ColorVision.ImageEditor
 
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
         {
-            RenderPseudo();
+            DebounceTimer.AddOrResetTimer("PseudoSlider", 50, e=>  RenderPseudo(), 0);
         }
 
         private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
         {
-            DebounceTimer.AddOrResetTimer("PseudoSlider", 50, (e) =>
-            {
-                RenderPseudo();
-            }, e.NewValue);
+            DebounceTimer.AddOrResetTimer("PseudoSlider", 50, e => RenderPseudo(), 0);
         }
         public void RenderPseudo()
         {
