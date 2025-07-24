@@ -58,6 +58,8 @@ namespace ColorVision.UI
             };
             Authorization.Instance = GetRequiredService<Authorization>();
         }
+
+
         public bool IsAutoSave { get; set; } = true;
 
         public void Reload()

@@ -12,7 +12,7 @@ namespace ColorVision.Common.MVVM
     public static class ViewModeBaseExtensions
     {
         //复制一个新的对象
-        public static T Clone<T>(this T source) where T : ViewModelBase, new()
+        public static T Clone<T>(this T source) where T : new()
         {
             Type type = source.GetType();
             if (Activator.CreateInstance(type) is T target)
@@ -27,7 +27,7 @@ namespace ColorVision.Common.MVVM
             return target;
         }
 
-        public static bool EqualMax<T>(this T source, T target) where T : ViewModelBase, new()
+        public static bool EqualMax<T>(this T source, T target) where T :new()
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(target);
@@ -56,7 +56,7 @@ namespace ColorVision.Common.MVVM
             return true;
         }
 
-        public static void Reset<T>(this T source) where T : ViewModelBase, new()
+        public static void Reset<T>(this T source) where T : new()
         {
             ArgumentNullException.ThrowIfNull(source);
 
@@ -79,7 +79,7 @@ namespace ColorVision.Common.MVVM
 
 
 
-        public static T DeepCopy<T>(this T source) where T : ViewModelBase, new()
+        public static T DeepCopy<T>(this T source) where T : new()
         {
             #pragma warning disable SYSLIB0011
             using var ms = new System.IO.MemoryStream();
@@ -90,7 +90,7 @@ namespace ColorVision.Common.MVVM
             #pragma warning restore SYSLIB0011
         }
 
-        public static void CopyToSimple<T>(this T source, T target) where T : ViewModelBase
+        public static void CopyToSimple<T>(this T source, T target)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(target);
@@ -151,8 +151,8 @@ namespace ColorVision.Common.MVVM
 
 
 
-        public static void CopyFrom<T>(this T source, T target) where T : ViewModelBase => target.CopyTo(source);
-        public static void CopyTo<T>(this T source, T target) where T : ViewModelBase
+        public static void CopyFrom<T>(this T source, T target) => target.CopyTo(source);
+        public static void CopyTo<T>(this T source, T target) 
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(target);

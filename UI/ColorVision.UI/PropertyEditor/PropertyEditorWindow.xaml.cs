@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
@@ -25,14 +26,15 @@ namespace ColorVision.UI
     public partial class PropertyEditorWindow : Window
     {
         public event EventHandler Submited;
-        public ViewModelBase Config { get; set; }
-        public ViewModelBase EditConfig { get; set; }
-
+        public object Config { get; set; }
+        public object EditConfig { get; set; }
         public bool IsEdit { get; set; } = true;
         public Dictionary<string, List<PropertyInfo>> categoryGroups { get; set; } = new Dictionary<string, List<PropertyInfo>>();
 
+
         ResourceManager? resourceManager;
-        public PropertyEditorWindow(ViewModelBase config ,bool isEdit = true)
+
+        public PropertyEditorWindow(object config ,bool isEdit = true)
         {
             Type type = config.GetType();
             var lazyResourceManager = PropertyEditorHelper.ResourceManagerCache.GetOrAdd(type, t => new Lazy<ResourceManager?>(() =>
@@ -100,7 +102,7 @@ namespace ColorVision.UI
         }
 
 
-        public void GenCategoryGroups(ViewModelBase source)
+        public void GenCategoryGroups(object source)
         {
             Type type = source.GetType();
             var title = type.GetCustomAttribute<DisplayNameAttribute>();
@@ -142,7 +144,7 @@ namespace ColorVision.UI
         }
 
 
-        public void DisplayProperties(ViewModelBase obj)
+        public void DisplayProperties(object obj)
         {
             categoryGroups.Clear();
             GenCategoryGroups(obj);

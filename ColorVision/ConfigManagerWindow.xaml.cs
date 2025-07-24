@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Templates.Menus;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System;
@@ -8,56 +8,39 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 
-namespace ColorVision.Engine.Templates
+namespace ColorVision
 {
 
-    public class MenuTemplateManagerWindow : MenuItemBase
+    public class MenuConfigManagerWindow : MenuItemBase
     {
-        public override string OwnerGuid => nameof(MenuTemplate);
-        public override string Header => ColorVision.Engine.Properties.Resources.Settings;
+        public override string OwnerGuid => MenuItemConstants.Help;
+        public override string Header => "配置管理窗口";
 
-        public override int Order => 999999;
-        public override object? Icon
-        {
-            get
-            {
-                TextBlock text = new()
-                {
-                    Text = "\uE713", // 使用Unicode字符
-                    FontFamily = new FontFamily("Segoe MDL2 Assets"),
-                    FontSize = 15,
-                };
-                text.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
-                return text;
-            }
-        }
+        public override int Order => 9000;
 
         public override void Execute()
         {
-            new TemplateManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new ConfigManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
     }
 
     /// <summary>
     /// ConfigManagerWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class TemplateManagerWindow : Window
+    public partial class ConfigManagerWindow : Window
     {
-        public TemplateManagerWindow()
+        public ConfigManagerWindow()
         {
             InitializeComponent();
         }
-        List<KeyValuePair<string, ITemplate>> Templates  = new List<KeyValuePair<string, ITemplate>>();
+        List<KeyValuePair<Type, IConfig>> Templates  = new List<KeyValuePair<Type, IConfig>>();
         private void Window_Initialized(object sender, EventArgs e)
         {
-            Templates  = TemplateControl.ITemplateNames
-                .OrderBy(x => x.Key)
-                .ToList();
+            Templates  = ConfigHandler.GetInstance().Configs.ToList();
 
             // 统计模板总数
-            int totalTemplateCount = Templates.Sum(x => x.Value.Count);
+            int totalTemplateCount = Templates.Count();
 
             // 绑定到 ListView
             ListView2.ItemsSource = Templates;
@@ -72,7 +55,7 @@ namespace ColorVision.Engine.Templates
         private readonly char[] Chars = new[] { ' ' };
         private void Searchbox_GotFocus(object sender, RoutedEventArgs e)
         {
-            Searches = new ObservableCollection<ISearch>(new SearchProvider().GetSearchItems());
+            //Searches = new ObservableCollection<ISearch>(new SearchProvider().GetSearchItems());
         }
         private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
         {
@@ -145,9 +128,9 @@ namespace ColorVision.Engine.Templates
         {
             if (ListView2.SelectedIndex > -1)
             {
-                if (Templates[ListView2.SelectedIndex].Value is ITemplate template)
+                if (Templates[ListView2.SelectedIndex].Value is IConfig template)
                 {
-                    SummaryText1.Text = $"当前选择：{template.Title}，共计{template.Count}个模板";
+                    SummaryText1.Text = $"当前选择：{template}";
                 }
                 else
                 {
@@ -164,11 +147,17 @@ namespace ColorVision.Engine.Templates
         {
             if (ListView2.SelectedIndex > -1)
             {
-                if (Templates[ListView2.SelectedIndex].Value is ITemplate template)
+                if (Templates[ListView2.SelectedIndex].Value is IConfig template)
                 {
-                    new TemplateEditorWindow(template) { Owner = Application.Current.GetActiveWindow() }.Show();
+                    new PropertyEditorWindow(template).Show();
                 }
             }
+        }
+
+        private void Save_Click(object sender, RoutedEventArgs e)
+        {
+            ConfigHandler.GetInstance().SaveConfigs();
+            MessageBox.Show("保存成功");
         }
     }
 }
