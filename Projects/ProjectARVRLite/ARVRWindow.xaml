@@ -225,6 +225,9 @@
             <StatusBarItem>
                 <Button Content="EditFix" Command="{Binding EditObjectiveTestResultFixCommand}"/>
             </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="Test" Click="Button_Click"/>
+            </StatusBarItem>
         </StatusBar>
 
     </Grid>

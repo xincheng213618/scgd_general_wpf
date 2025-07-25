@@ -49,7 +49,11 @@ namespace ColorVision.UI
         private bool _AutoScrollToEnd = true;
 
         public bool AutoRefresh { get => _AutoRefresh; set { _AutoRefresh = value; NotifyPropertyChanged(); } }
-        private bool _AutoRefresh = true;
+        private bool _AutoRefresh;
+
+        public int LogFlushIntervalMs { get => _LogFlushIntervalMs; set { _LogFlushIntervalMs = value; NotifyPropertyChanged(); } }
+        private int _LogFlushIntervalMs;
+
 
         public LogLoadState LogLoadState { get => _LogLoadState; set { _LogLoadState = value; NotifyPropertyChanged(); } }
         private LogLoadState _LogLoadState = LogLoadState.SinceStartup;
@@ -69,8 +73,15 @@ namespace ColorVision.UI
             }
         }
 
+        public TextWrapping TextWrapping { get => _TextWrapping; set { _TextWrapping = value; NotifyPropertyChanged(); } }
+        private TextWrapping _TextWrapping = TextWrapping.NoWrap;
+
+        public int MaxChars { get => _MaxChars; set { _MaxChars = value; NotifyPropertyChanged(); } }
+        private int _MaxChars = -1;
+
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
+            TextBox textBox = new TextBox();
             ComboBox cmlog = new ComboBox() { SelectedValuePath = "Key", DisplayMemberPath = "Value" };
             cmlog.SetBinding(System.Windows.Controls.Primitives.Selector.SelectedValueProperty, new Binding(nameof(LogLevel)));
 

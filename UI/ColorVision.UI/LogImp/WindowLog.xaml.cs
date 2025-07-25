@@ -14,6 +14,7 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace ColorVision.UI
 {
@@ -37,7 +38,7 @@ namespace ColorVision.UI
         }
     }
 
-    public class LogStatusBarProvider : ViewModelBase, IConfig,IStatusBarProvider
+    public class LogStatusBarProvider : ViewModelBase, IConfig, IStatusBarProvider
     {
         public static LogStatusBarProvider Instance => ConfigService.Instance.GetRequiredService<LogStatusBarProvider>();
         private TextAppender _textAppender;
@@ -151,6 +152,7 @@ namespace ColorVision.UI
                 Hierarchy.Root.RemoveAppender(TextBoxAppender);
                 log4net.Config.BasicConfigurator.Configure(Hierarchy);
             };
+
             this.DataContext = LogConfig.Instance;
 
             cmlog.ItemsSource = LogConfig.GetAllLevels().Select(level => new KeyValuePair<Level, string>(level, level.Name));
@@ -175,7 +177,7 @@ namespace ColorVision.UI
         {
             if (LogConfig.Instance.LogLoadState == LogLoadState.None) return;
             logTextBox.Text = string.Empty;
-           var logFilePath = GetLogFilePath();
+            var logFilePath = GetLogFilePath();
             if (logFilePath != null && File.Exists(logFilePath))
             {
                 try
@@ -213,7 +215,7 @@ namespace ColorVision.UI
                 string timestampLine = line;
                 string logContentLine = reader.ReadLine(); // 读取日志内容行
 
-                if (timestampLine.Length>23 && DateTime.TryParseExact(timestampLine.Substring(0, 23), "yyyy-MM-dd HH:mm:ss,fff", null, DateTimeStyles.None, out DateTime logTime))
+                if (timestampLine.Length > 23 && DateTime.TryParseExact(timestampLine.Substring(0, 23), "yyyy-MM-dd HH:mm:ss,fff", null, DateTimeStyles.None, out DateTime logTime))
                 {
                     if (logLoadState == LogLoadState.AllToday && logTime.Date != today)
                     {
@@ -324,32 +326,5 @@ namespace ColorVision.UI
         }
 
 
-    }
-    public class TextBoxAppender : AppenderSkeleton
-    {
-        public TextBoxAppender(TextBox textBox)
-        {
-            _textBox = textBox;
-        }
-
-        private TextBox _textBox;
-        protected override void Append(LoggingEvent loggingEvent)
-        {
-            if (!LogConfig.Instance.AutoRefresh) return;
-            var renderedMessage = RenderLoggingEvent(loggingEvent);
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                if (LogConfig.Instance.LogReserve)
-                {
-                    _textBox.Text = renderedMessage + _textBox.Text;
-                }
-                else
-                {
-                    _textBox.AppendText(renderedMessage);
-                    if (LogConfig.Instance.AutoScrollToEnd)  
-                        _textBox.ScrollToEnd();
-                }
-            });
-        }
     }
 }

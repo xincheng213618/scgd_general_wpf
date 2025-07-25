@@ -607,7 +607,7 @@ namespace ProjectARVRLite
             stopwatch.Reset();
             stopwatch.Start();
 
-            BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
+            BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = CurrentFlowResult.SN, Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff"), CreateDate = DateTime.Now });
 
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
@@ -1605,8 +1605,6 @@ namespace ProjectARVRLite
 
                         }
                     }
-
-
                 }
 
             }
@@ -1642,7 +1640,7 @@ namespace ProjectARVRLite
                             nextIndex = (nextIndex + 1) % values.Length;
                         ARVR1TestType aRVRTestType = (ARVR1TestType)values.GetValue(nextIndex);
 
-                        if (aRVRTestType == ARVR1TestType.Ghost)
+                        if (aRVRTestType >= ARVR1TestType.Ghost)
                         {
 
                             ObjectiveTestResult.TotalResult = true;
@@ -2208,6 +2206,47 @@ namespace ProjectARVRLite
         {
             PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(ObjectiveTestResult, false) { Owner = Application.Current.GetActiveWindow() };
             propertyEditorWindow.ShowDialog();
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            Task.Run(testlog);
+        }
+
+        private static readonly Random random = new Random();
+
+        // 生成随机字符串
+        private static string GenerateRandomLog(int length = 16)
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            char[] buffer = new char[length];
+            for (int i = 0; i < length; i++)
+            {
+                buffer[i] = chars[random.Next(chars.Length)];
+            }
+            return new string(buffer);
+        }
+
+        private async Task testlog()
+        {
+            int j = 0;
+            while (true)
+            {
+                j++;
+                var stopwatch = Stopwatch.StartNew();
+
+
+                for (int i = 0; i < 1000; i++)
+                {
+                    string randomLog = $"{GenerateRandomLog(1000)}";
+                    log.Info(randomLog);
+                    await Task.Delay(1); // 模拟异步操作
+                }
+                stopwatch.Stop();
+                log.Info($"第{j + 1}次日志写入用时: {stopwatch.ElapsedMilliseconds} ms");
+                await Task.Delay(1000); // 模拟异步操作
+            }
+            return;
         }
     }
 }
