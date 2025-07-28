@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.4.1.2</VersionPrefix>
+		<VersionPrefix>1.4.4.6</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -45,6 +45,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Compile Update="EditRecipeWindow.xaml.cs">
+	    <SubType>Code</SubType>
+	  </Compile>
 	  <Compile Update="Properties\Resources.Designer.cs">
 	    <DesignTime>True</DesignTime>
 	    <AutoGen>True</AutoGen>

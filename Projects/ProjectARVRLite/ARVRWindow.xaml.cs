@@ -329,8 +329,21 @@ namespace ProjectARVRLite
             }
         }
 
+        bool IsSwitchRun = false;
         public void SwitchPGCompleted()
         {
+            if (IsSwitchRun)
+            {
+                log.Info("重复触发PG");
+                return;
+            }
+            IsSwitchRun = true;
+
+            if (flowControl != null && flowControl.IsFlowRun)
+            {
+                log.Info("PG切换错误，正在执行流程");
+                return;
+            }
             log.Info("PG切换结束");
             var values = Enum.GetValues(typeof(ARVR1TestType));
             int currentIndex = Array.IndexOf(values, CurrentTestType);
@@ -392,6 +405,7 @@ namespace ProjectARVRLite
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("OpticCenter")).Value;
                 RunTemplate();
             }
+            IsSwitchRun = false;
         }
 
         public STNodeEditor STNodeEditorMain { get; set; }
@@ -416,24 +430,18 @@ namespace ProjectARVRLite
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             flowEngine.AttachNodeEditor(STNodeEditorMain);
 
-            FlowTemplate.SelectionChanged += (s, e) =>
+            string Name = "Default";
+            if (RecipeManager.RecipeConfigs.TryGetValue(Name, out ARVRRecipeConfig recipeConfig))
             {
-                if (ProjectARVRLiteConfig.Instance.TemplateSelectedIndex > -1)
-                {
-                    string Name = TemplateFlow.Params[ProjectARVRLiteConfig.Instance.TemplateSelectedIndex].Key;
-
-                    if (RecipeManager.RecipeConfigs.TryGetValue(Name, out ARVRRecipeConfig recipeConfig))
-                    {
-                        RecipeManager.RecipeConfig = recipeConfig;
-                    }
-                    else
-                    {
-                        recipeConfig = new ARVRRecipeConfig();
-                        RecipeManager.RecipeConfigs.TryAdd(Name, recipeConfig);
-                        RecipeManager.RecipeConfig = recipeConfig;
-                    }
-                }
-            };
+                RecipeManager.RecipeConfig = recipeConfig;
+            }
+            else
+            {
+                recipeConfig = new ARVRRecipeConfig();
+                RecipeManager.RecipeConfigs.TryAdd(Name, recipeConfig);
+                RecipeManager.RecipeConfig = recipeConfig;
+                RecipeManager.Save();
+            }
 
             timer = new Timer(TimeRun, null, 0, 500);
             timer.Change(Timeout.Infinite, 500); // 停止定时器
@@ -581,6 +589,7 @@ namespace ProjectARVRLite
 
             CurrentFlowResult = new ProjectARVRReuslt();
             CurrentFlowResult.SN = SNtextBox.Name;
+
             CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
 
             await Refresh();
@@ -607,7 +616,7 @@ namespace ProjectARVRLite
             stopwatch.Reset();
             stopwatch.Start();
 
-            BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = CurrentFlowResult.SN, Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff"), CreateDate = DateTime.Now });
+            BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
 
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
@@ -670,6 +679,7 @@ namespace ProjectARVRLite
             }
             else
             {
+                TryCount = 0;
                 log.Error("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
                 if (ProjectARVRLiteConfig.Instance.AllowTestFailures)
                 {

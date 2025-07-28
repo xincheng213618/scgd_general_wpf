@@ -1,15 +1,15 @@
 ﻿#pragma warning disable
 using ColorVision.Common.MVVM;
+using ProjectARVR;
+using ProjectARVR;
+using ProjectARVR.Config;
 using System.ComponentModel;
 
-namespace ProjectARVR.Config
+namespace ProjectARVR
 {
     [DisplayName("ARVR上下限判定")]
-    public class SPECConfig : ViewModelBase
+    public class ARVRRecipeConfig : ViewModelBase
     {
-        public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; NotifyPropertyChanged(); } }
-        private bool _IsEnabled = true;
-
         [DisplayName("Luminance uniformity(%) Min")]
         public double LuminanceUniformityMin { get => _LuminanceUniformityMin; set { _LuminanceUniformityMin = value; NotifyPropertyChanged(); } }
         private double _LuminanceUniformityMin = 0.75;
@@ -24,6 +24,17 @@ namespace ProjectARVR.Config
         public double ColorUniformityMax { get => _ColorUniformityMax; set { _ColorUniformityMax = value; NotifyPropertyChanged(); } }
         private double _ColorUniformityMax = 0.02;
 
+        public double CenterLuminaceMax { get => _CenterLuminaceMax; set { _CenterLuminaceMax = value; NotifyPropertyChanged(); } }
+        private double _CenterLuminaceMax = 0;
+        public double CenterLuminaceMin { get => _CenterLuminaceMin; set { _CenterLuminaceMin = value; NotifyPropertyChanged(); } }
+        private double _CenterLuminaceMin = 0;
+
+        public double White1CenterLuminaceMax { get => _White1CenterLuminaceMax; set { _White1CenterLuminaceMax = value; NotifyPropertyChanged(); } }
+        private double _White1CenterLuminaceMax = 0;
+        public double White1CenterLuminaceMin { get => _White1CenterLuminaceMin; set { _White1CenterLuminaceMin = value; NotifyPropertyChanged(); } }
+        private double _White1CenterLuminaceMin = 0;
+
+
         [DisplayName("Center Correlated Color Temperature(K) Min")]
         public double CenterCorrelatedColorTemperatureMin { get => _CenterCorrelatedColorTemperatureMin; set { _CenterCorrelatedColorTemperatureMin = value; NotifyPropertyChanged(); } }
         private double _CenterCorrelatedColorTemperatureMin = 6000;
@@ -31,6 +42,16 @@ namespace ProjectARVR.Config
         [DisplayName("Center Correlated Color Temperature(K) Max")]
         public double CenterCorrelatedColorTemperatureMax { get => _CenterCorrelatedColorTemperatureMax; set { _CenterCorrelatedColorTemperatureMax = value; NotifyPropertyChanged(); } }
         private double _CenterCorrelatedColorTemperatureMax = 7000;
+
+
+        [DisplayName("White1 Center Correlated Color Temperature(K) Min")]
+        public double White1CenterCorrelatedColorTemperatureMin { get => _White1CenterCorrelatedColorTemperatureMin; set { _White1CenterCorrelatedColorTemperatureMin = value; NotifyPropertyChanged(); } }
+        private double _White1CenterCorrelatedColorTemperatureMin = 6000;
+
+        [DisplayName("White1 Center Correlated Color Temperature(K) Max")]
+        public double White1CenterCorrelatedColorTemperatureMax { get => _White1CenterCorrelatedColorTemperatureMax; set { _White1CenterCorrelatedColorTemperatureMax = value; NotifyPropertyChanged(); } }
+        private double _White1CenterCorrelatedColorTemperatureMax = 7000;
+
 
         [DisplayName("Horizontal Field Of View Angle(°) Min")]
         public double HorizontalFieldOfViewAngleMin { get => _HorizontalFieldOfViewAngleMin; set { _HorizontalFieldOfViewAngleMin = value; NotifyPropertyChanged(); } }
