@@ -136,8 +136,8 @@ namespace ColorVision.Engine.Templates.Flow
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
-            timer = new Timer(UpdateMsg, null, 0, 500);
-            timer.Change(Timeout.Infinite, 500); // 停止定时器
+            timer = new Timer(UpdateMsg, null, 0, 100);
+            timer.Change(Timeout.Infinite, 100); // 停止定时器
 
             this.Loaded += FlowDisplayControl_Loaded;
             View.RefreshFlow += (s, e) =>
@@ -232,9 +232,18 @@ namespace ColorVision.Engine.Templates.Flow
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
             FlowEngineConfig.Instance.FlowRunTime[ComboBoxFlow.Text] = stopwatch.ElapsedMilliseconds;
-
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
-            handler?.Close();
+
+
+
+            if (Config.IsNewMsgUI)
+            {
+                View.logTextBox.Text = FlowControlData.EventName;
+            }
+            else
+            {
+                handler?.Close();
+            }
 
             ButtonRun.Visibility = Visibility.Visible;
             ButtonStop.Visibility = Visibility.Collapsed;
@@ -245,10 +254,14 @@ namespace ColorVision.Engine.Templates.Flow
             }
             if (FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
             {
-                Application.Current.Dispatcher.BeginInvoke(() =>
+                if (Config.IsNewMsgUI)
+                {
+                    View.logTextBox.Text = FlowControlData.EventName +  Environment.NewLine + FlowControlData.Params;
+                }
+                else
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
-                });
+                }
             }
         }
 
@@ -283,7 +296,16 @@ namespace ColorVision.Engine.Templates.Flow
                 Application.Current.Dispatcher.BeginInvoke(() =>
                 {
                     if (flowControl.IsFlowRun)
-                        handler.UpdateMessage(msg);
+                    {
+                        if (Config.IsNewMsgUI)
+                        {
+                            View.logTextBox.Text = msg;
+                        }
+                        else
+                        {
+                            handler.UpdateMessage(msg);
+                        }
+                    }
                 });
             }
         }
@@ -371,10 +393,11 @@ namespace ColorVision.Engine.Templates.Flow
             if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
             {
                 MqttRCService.GetInstance().QueryServices();
+                View.logTextBox.Text = $"Token为空，正在刷新token,请重试";
                 MessageBox.Show(Application.Current.GetActiveWindow(), "Token为空，正在刷新token,请重试");
                 return;
             }
-
+            View.logTextBox.Text = $"IsReady{View.FlowEngineControl.IsReady}";
             log.Info($"IsReady{View.FlowEngineControl.IsReady}");
             if (!View.FlowEngineControl.IsReady)
             {
@@ -409,9 +432,17 @@ namespace ColorVision.Engine.Templates.Flow
 
             if (FlowEngineConfig.Instance.FlowPreviewMsg)
             {
-                handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
-                handler.Cancelling -= Handler_Cancelling; ;
-                handler.Cancelling += Handler_Cancelling; ;
+                if (Config.IsNewMsgUI)
+                {
+                    View.logTextBox.Text = "Run " + ComboBoxFlow.Text;
+                }
+                else
+                {
+
+                    handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
+                    handler.Cancelling -= Handler_Cancelling; ;
+                    handler.Cancelling += Handler_Cancelling; ;
+                }
             }
 
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
@@ -458,7 +489,19 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 flowControl?.Stop();
             });
-            handler?.Close();
+
+            if (Config.IsNewMsgUI)
+            {
+                View.logTextBox.Text = "已经取消执行";
+            }
+            else
+            {
+
+                handler?.Close();
+            }
+
+
+
         }
 
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)

@@ -879,4 +879,7 @@
   <data name="ProjectName" xml:space="preserve">
     <value>НазваниеПроекта</value>
   </data>
+  <data name="Workflow" xml:space="preserve">
+    <value>Рабочий процесс</value>
+  </data>
 </root>

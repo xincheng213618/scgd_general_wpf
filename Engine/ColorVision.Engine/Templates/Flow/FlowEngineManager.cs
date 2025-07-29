@@ -35,8 +35,11 @@ namespace ColorVision.Engine.Templates.Flow
 
         [DisplayName("IsShowLargeFlow")]
         public bool IsShowLargeFlow { get => _IsShowLargeFlow; set { _IsShowLargeFlow = value; NotifyPropertyChanged(); } }
-        
         private bool _IsShowLargeFlow;
+
+        [DisplayName("新消息UI")]
+        public bool IsNewMsgUI{ get => _IsNewMsgUI; set { _IsNewMsgUI = value; NotifyPropertyChanged(); } }
+        private bool _IsNewMsgUI = true;
 
         [DisplayName("流程运行时自动刷新")]
         public bool AutoRefreshView { get => _AutoRefreshView; set { _AutoRefreshView = value; NotifyPropertyChanged(); } }
