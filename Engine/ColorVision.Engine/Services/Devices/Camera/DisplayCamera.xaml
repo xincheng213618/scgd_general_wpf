@@ -28,6 +28,7 @@
                 <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
                 <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}"/>
             </Grid>
+            
             <Button DockPanel.Dock="Right" Command="{Binding RefreshCommand}" Background="Transparent"  BorderThickness="0" Padding="3">
                 <Button.Triggers>
                     <EventTrigger RoutedEvent="Button.Click">
@@ -44,11 +45,27 @@
                     </TextBlock.RenderTransform>
                 </TextBlock>
             </Button>
-
+            <Button DockPanel.Dock="Right"  Command="{Binding PhyCamera.EditCommand}" Background="Transparent" BorderThickness="0" Padding="2" Height="20" Width="20" >
+                <Button.Triggers>
+                    <EventTrigger RoutedEvent="Button.Click">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="rotateTransform21" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                </Button.Triggers>
+                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{DynamicResource GlobalTextBrush}">
+                    <TextBlock.RenderTransform>
+                        <RotateTransform x:Name="rotateTransform21" CenterX="7" CenterY="7"/>
+                    </TextBlock.RenderTransform>
+                </TextBlock>
+            </Button>
             <Grid  DockPanel.Dock="Right"  ToolTip="查看相机的温度数据">
                 <Image Source="{DynamicResource DITemperature}" Stretch="Uniform" Height="18"/>
                 <Button   Background="Transparent" BorderThickness="0" Command="{Binding FetchLatestTemperatureCommand}"/>
             </Grid>
+
             <Grid  DockPanel.Dock="Right" ToolTip="保存当前的曝光等参数">
                 <Image Source="{DynamicResource DrawingImageSave}" Stretch="Uniform" Height="18">
                     <Image.RenderTransform>

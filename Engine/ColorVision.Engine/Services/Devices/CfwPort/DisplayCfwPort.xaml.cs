@@ -1,8 +1,5 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Devices.Camera.Video;
-using ColorVision.UI;
+﻿using ColorVision.UI;
 using CVCommCore;
-using FlowEngineLib;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -13,7 +10,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
     /// <summary>
     /// DisplaySMUControl.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayCfwPortControl : UserControl,IDisPlayControl
+    public partial class DisplayCfwPort : UserControl,IDisPlayControl
     {
 
         public DeviceCfwPort Device { get; set; }
@@ -21,7 +18,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
 
         public string DisPlayName => Device.Config.Code;
 
-        public DisplayCfwPortControl(DeviceCfwPort device)
+        public DisplayCfwPort(DeviceCfwPort device)
         {
             Device = device;
             InitializeComponent();
@@ -52,8 +49,6 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                     SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
                     SetVisibility(TextBlockUnknow, Visibility.Collapsed);
                     SetVisibility(StackPanelOpen, Visibility.Collapsed);
-
-                    
                 }
                 HideAllButtons();
 

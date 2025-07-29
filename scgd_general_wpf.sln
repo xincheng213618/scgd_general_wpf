@@ -598,12 +598,9 @@ Global
 		{0BB55149-1CD3-25FF-B6BD-D7F715DE3280} = {7D74447C-5191-4C1D-BEB2-B537366B980D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
-		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
-		RESX_NeutralResourcesLanguage = zh-Hans
-		RESX_PrefixTranslations = False
-		RESX_EnableXlifSync = False
-		RESX_AutoCreateNewLanguageFiles = True
 		RESX_ConfirmAddLanguageFile = True
+		RESX_AutoCreateNewLanguageFiles = True
+		RESX_PrefixTranslations = False
+		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
 	EndGlobalSection
 EndGlobal

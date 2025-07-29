@@ -3,6 +3,7 @@ import zipfile
 import shutil
 import filecmp
 import re
+import json
 
 import pefile
 import time
@@ -135,7 +136,25 @@ def compare_and_write_version(latest_version, latest_release_path, latest_file, 
             print(f"Could not copy file to {target_directory}: {e}")
     else:
         print(f"The current version ({current_version}) is up to date.")
+        
+def update_manifest_requires(manifest_path, required_version):
+    """Updates the 'requires' field in the manifest.json file."""
+    if not os.path.exists(manifest_path):
+        print(f"Warning: manifest.json not found at {manifest_path}")
+        return
+    try:
+        with open(manifest_path, 'r', encoding='utf-8') as f:
+            manifest_data = json.load(f)
+        
+        manifest_data['requires'] = required_version
+        
+        with open(manifest_path, 'w', encoding='utf-8') as f:
+            json.dump(manifest_data, f, indent=2)
+        print(f"Successfully updated {manifest_path} with requires: {required_version}")
 
+    except (json.JSONDecodeError, IOError) as e:
+        print(f"Error updating manifest file {manifest_path}: {e}")
+        
 def build_project(project_name, type_name):
     print(f"Building project: {project_name}")
     script_path = os.path.abspath(os.path.dirname(__file__))
@@ -143,7 +162,23 @@ def build_project(project_name, type_name):
     src_dir = os.path.join(base_path, type_name, project_name, 'bin', 'x64', 'Release', 'net8.0-windows')
     ref_dir = os.path.join(base_path, 'ColorVision', 'bin', 'x64', 'Release', 'net8.0-windows')
     target_dir = os.path.join("H:\\", 'ColorVision', 'Plugins')
-
+    
+        # --- Start: Update manifest.json ---
+    # 1. Get version from ColorVision.Engine.dll
+    engine_dll_path = os.path.join(ref_dir, 'ColorVision.Engine.dll')
+    engine_version = get_file_version(engine_dll_path)
+    
+    if engine_version:
+        print(f'Found ColorVision.Engine.dll version: {engine_version}')
+        # 2. Find and update the project's manifest.json
+        manifest_path = os.path.join(base_path, type_name, project_name, 'manifest.json')
+        update_manifest_requires(manifest_path, engine_version)
+        manifest_path = os.path.join(src_dir, 'manifest.json')
+        update_manifest_requires(manifest_path, engine_version)
+    else:
+        print("Warning: Could not determine engine version. 'requires' field in manifest.json will not be updated.")
+    # --- End: Update manifest.json ---
+    
     # 获取 DLL 版本号
     dll_path = os.path.join(src_dir, f'{project_name}.dll')
     version = get_file_version(dll_path)

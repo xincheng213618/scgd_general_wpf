@@ -34,6 +34,8 @@ namespace ColorVision.Engine.Templates.Flow
         public dynamic Params { get => _Params; set { _Params = value; NotifyPropertyChanged(); } }
         private dynamic _Params;
     }
+
+
     public class FlowControl : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowControl));

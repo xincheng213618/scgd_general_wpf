@@ -39,7 +39,7 @@ namespace ColorVision.Engine.Services.Flow
 
         public RelayCommand OpenFlowTemplateCommand { get; set; }
 
-        public static FlowConfig FlowConfig => FlowConfig.Instance;
+        public static FlowEngineConfig FlowConfig => FlowEngineConfig.Instance;
 
         public bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; NotifyPropertyChanged(); } }
         private bool _IsEditMode = true;

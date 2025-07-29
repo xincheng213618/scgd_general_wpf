@@ -79,8 +79,9 @@ namespace ColorVision.Engine.Templates.Flow
         public static DisplayFlow GetInstance() { lock (_locker) { return _instance ??= new DisplayFlow(); } }
 
         public ViewFlow View { get; set; }
+
         public string DisPlayName => "Flow";
-        public static FlowConfig Config => FlowConfig.Instance;
+        public static FlowEngineConfig Config => FlowEngineConfig.Instance;
 
         private Timer timer;
         Stopwatch stopwatch = new Stopwatch();
@@ -104,26 +105,24 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = Config;
+            this.DataContext = FlowEngineManager.GetInstance();
             this.ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = "开始执行(_S)", Command = EngineCommands.StartExecutionCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "停止执行(_S)", Command = EngineCommands.StopExecutionCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "属性", Command = Config.EditCommand });
 
-
-            View = new ViewFlow();
-            View.View.Title = $"流程窗口 ";
+            View = FlowEngineManager.GetInstance().View;
             this.SetIconResource("DrawingImageFlow", View.View);
 
             this.AddViewConfig(View, ComboxView);
             View.DisplayFlow = this;
-            ComboBoxFlow.ItemsSource = TemplateFlow.Params;
+
             ComboBoxFlow.SelectionChanged += (s, e) =>
             {
                 if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
                 {
-                    FlowConfig.Instance.LastSelectFlow = flowParam.Id;
-                    if (FlowConfig.Instance.FlowRunTime.TryGetValue(flowParam.Name, out long time))
+                    FlowEngineConfig.Instance.LastSelectFlow = flowParam.Id;
+                    if (FlowEngineConfig.Instance.FlowRunTime.TryGetValue(flowParam.Name, out long time))
                         LastFlowTime = time;
 
                 }
@@ -153,7 +152,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void FlowDisplayControl_Loaded(object sender, RoutedEventArgs e)
         {
-            var s = TemplateFlow.Params.FirstOrDefault(a => a.Id == FlowConfig.Instance.LastSelectFlow);
+            var s = TemplateFlow.Params.FirstOrDefault(a => a.Id == FlowEngineConfig.Instance.LastSelectFlow);
             if (s != null)
             {
                 ComboBoxFlow.SelectedItem = s;
@@ -232,7 +231,7 @@ namespace ColorVision.Engine.Templates.Flow
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
-            FlowConfig.Instance.FlowRunTime[ComboBoxFlow.Text] = stopwatch.ElapsedMilliseconds;
+            FlowEngineConfig.Instance.FlowRunTime[ComboBoxFlow.Text] = stopwatch.ElapsedMilliseconds;
 
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             handler?.Close();
@@ -244,7 +243,6 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 ErrorSign();
             }
-
             if (FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
             {
                 Application.Current.Dispatcher.BeginInvoke(() =>
@@ -257,28 +255,13 @@ namespace ColorVision.Engine.Templates.Flow
         public ImageSource Icon { get => _Icon; set { _Icon = value; } }
         private ImageSource _Icon;
 
-        private static void CheckDiskSpace(string driveLetter = "C")
-        {
-            if (!Config.ShowWarning) return;
-            DriveInfo drive = new DriveInfo(driveLetter);
-            if (drive.IsReady)
-            {
-                long availableSpace = drive.AvailableFreeSpace;
-                long threshold = Config.Capacity; //10 GB in bytes
-
-                if (availableSpace < threshold)
-                {
-                    MessageBox.Show($"警告: {driveLetter}盘空间不足。剩余空间为 {availableSpace / (1024 * 1024 * 1024)} GB", "空间不足", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-            }
-        }
 
         private long LastFlowTime;
 
         string Msg1;
         private void UpdateMsg(object? sender)
         {
-            if (!FlowConfig.Instance.FlowPreviewMsg) return;
+            if (!FlowEngineConfig.Instance.FlowPreviewMsg) return;
             if (flowControl.IsFlowRun)
             {
                 long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
@@ -357,7 +340,7 @@ namespace ColorVision.Engine.Templates.Flow
                 algorithmNode.IsSelected = true;
                 Msg1 = algorithmNode.Title;
 
-                if (FlowConfig.Instance.FlowPreviewMsg)
+                if (FlowEngineConfig.Instance.FlowPreviewMsg)
                 {
                     UpdateMsg(sender);
                 }
@@ -400,9 +383,7 @@ namespace ColorVision.Engine.Templates.Flow
                 log.Info($"IsReady{View.FlowEngineControl.IsReady}");
             }
 
-            CheckDiskSpace("C");
-            CheckDiskSpace("D");
-            LastFlowTime = FlowConfig.Instance.FlowRunTime.TryGetValue(ComboBoxFlow.Text, out long time) ? time : 0;
+            LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(ComboBoxFlow.Text, out long time) ? time : 0;
 
             string startNode = View.FlowEngineControl.GetStartNodeName();
             if (string.IsNullOrWhiteSpace(startNode))
@@ -426,7 +407,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
 
 
-            if (FlowConfig.Instance.FlowPreviewMsg)
+            if (FlowEngineConfig.Instance.FlowPreviewMsg)
             {
                 handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
                 handler.Cancelling -= Handler_Cancelling; ;
@@ -485,27 +466,16 @@ namespace ColorVision.Engine.Templates.Flow
             ToggleButton0.IsChecked =!ToggleButton0.IsChecked;
         }
 
-        private void Button_Click_Refresh(object sender, RoutedEventArgs e)
-        {
-            Refresh();
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            new TemplateEditorWindow(new TemplateFlow(), ComboBoxFlow.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-            Refresh();
-        }
-
-        private void ButtonEdit_Click(object sender, RoutedEventArgs e)
-        {
-            new FlowEngineToolWindow(TemplateFlow.Params[ComboBoxFlow.SelectedIndex].Value) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
-            Refresh();
-        }
 
         public void Dispose()
         {
             timer.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        private void Button_Click_Refresh(object sender, RoutedEventArgs e)
+        {
+            Refresh();
         }
     }
 }

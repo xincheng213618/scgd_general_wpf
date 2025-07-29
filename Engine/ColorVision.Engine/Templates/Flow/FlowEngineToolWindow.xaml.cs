@@ -206,7 +206,7 @@ namespace ColorVision.Engine.Templates.Flow
             this.DataContext = this;
             this.Closed += (s, e) =>
             {
-                if (FlowConfig.Instance.IsAutoEditSave)
+                if (FlowEngineConfig.Instance.IsAutoEditSave)
                 {
                     if (AutoSave())
                     {

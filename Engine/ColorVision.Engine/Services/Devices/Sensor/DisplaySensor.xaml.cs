@@ -8,6 +8,7 @@ using CVCommCore;
 using MQTTMessageLib;
 using MQTTMessageLib.Sensor;
 using System;
+using System.IO.Ports;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -112,10 +113,61 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
         private void Open_Click(object sender, RoutedEventArgs e)
         {
+            if (!DeviceService.Config.IsNet)
+            {
+                string portName = DeviceService.Config.Addr;
+                int baudRate = DeviceService.Config.Port;
+                // 1. 检查串口是否可用
+                SerialPort serialPort = null;
+                try
+                {
+                    serialPort = new SerialPort { PortName = portName, BaudRate = baudRate };
+                    serialPort.Open();
+                    serialPort.Close();
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    MessageBox.Show(
+                        Application.Current.GetActiveWindow(),
+                        $"串口 {portName} 正在被其他程序占用，无法打开。\n\n请关闭相机或其他占用该串口的程序或检查设备连接。",
+                        "串口被占用",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error
+                    );
+                    return;
+                }
+                catch (ArgumentException)
+                {
+                    MessageBox.Show(
+                        Application.Current.GetActiveWindow(),
+                        $"串口名称 {portName} 无效或不存在。\n\n请检查串口设置。",
+                        "无效串口",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error
+                    );
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        Application.Current.GetActiveWindow(),
+                        $"串口 {portName} 无法打开。\n\n异常信息：{ex.Message}",
+                        "串口异常",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error
+                    );
+                    return;
+                }
+                finally
+                {
+                    serialPort?.Dispose();
+                }
+            }
+
             MsgRecord msgRecord = DeviceService.Open();
             msgRecord.MsgRecordStateChanged += (e) =>
             {
-
+                MessageBox.Show(Application.Current.GetActiveWindow(), "打开成功");
             };
         }
 

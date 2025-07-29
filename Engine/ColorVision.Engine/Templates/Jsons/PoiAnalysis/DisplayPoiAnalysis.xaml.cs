@@ -1,5 +1,6 @@
 ﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
@@ -24,10 +25,8 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = IAlgorithm;
+ 
             
-            ComboxTemplate.ItemsSource = TemplatePoiAnalysis.Params;
-            ComboxTemplate.SelectedIndex = 0;
-
             void UpdateCB_SourceImageFiles()
             {
                 CB_SourceImageFiles.ItemsSource = ServiceManager.GetInstance().GetImageSourceServices();
@@ -42,10 +41,6 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
             if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择PoiAnalysis模板")) return;
 
             if (ComboxTemplate.SelectedValue is not TemplateJsonParam param) return;
-
-
-
-
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {

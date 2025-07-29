@@ -66,6 +66,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
 
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
+
             if(TemplatePoiSelectedIndex > -1)
             {
                 var poi_pm = TemplatePoi.Params[TemplatePoiSelectedIndex].Value;
