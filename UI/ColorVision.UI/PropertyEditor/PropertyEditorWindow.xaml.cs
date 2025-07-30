@@ -567,5 +567,10 @@ namespace ColorVision.UI
                 e.Handled = true;
             }
         }
+
+        private void TreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            PropertyPanel.Children.Clear();
+        }
     }
 }

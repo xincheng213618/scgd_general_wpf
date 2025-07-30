@@ -8,7 +8,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:properties ="clr-namespace:ColorVision.UI.Properties"
         mc:Ignorable="d"
-        Title="配置"  Height="450" Width="450" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="配置"  Height="450" Width="600" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -23,13 +23,22 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Border Background="{DynamicResource  SecondaryRegionBrush}" Grid.RowSpan="2" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" />
-        <ScrollViewer>
-            <Grid Margin="5">
-                <StackPanel x:Name="PropertyPanel">
-                    
-                </StackPanel>
-            </Grid>
-        </ScrollViewer>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TreeView Name="treeView" SelectedItemChanged="TreeView_SelectedItemChanged" Margin="5,5,0,0"/>
+            <Border  Grid.Column="1" Margin="5,5,5,0"  Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5">
+                <ScrollViewer Margin="5">
+                    <StackPanel x:Name="PropertyPanel">
+
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+        </Grid>
+
         <Grid Grid.Row="1">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
                 <Button Content="{x:Static properties:Resources.Reset}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Reset_Click" />
