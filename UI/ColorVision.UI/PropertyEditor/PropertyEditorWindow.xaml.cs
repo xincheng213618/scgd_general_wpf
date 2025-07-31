@@ -29,8 +29,8 @@ namespace ColorVision.UI
         public object Config { get; set; }
         public object EditConfig { get; set; }
         public bool IsEdit { get; set; } = true;
-        public Dictionary<string, List<PropertyInfo>> categoryGroups { get; set; } = new Dictionary<string, List<PropertyInfo>>();
 
+        public Dictionary<string, List<PropertyInfo>> categoryGroups { get; set; } = new Dictionary<string, List<PropertyInfo>>();
 
         ResourceManager? resourceManager;
 
@@ -158,10 +158,11 @@ namespace ColorVision.UI
                     CornerRadius = new CornerRadius(5),
                     Margin = new Thickness(0, 0, 0, 5)
                 };
-                var stackPanel = new StackPanel { Margin = new Thickness(10, 5,10,5) };
+                var stackPanel = new StackPanel { Margin = new Thickness(10,5,10,0) };
                 border.Child = stackPanel;
                 PropertyPanel.Children.Add(border);
-
+                TreeViewItem treeViewItem = new TreeViewItem() { Header = categoryGroup.Key, Tag = border };
+                treeView.Items.Add(treeViewItem);
                 foreach (var property in categoryGroup.Value)
                 {
                     var browsableAttr = property.GetCustomAttribute<BrowsableAttribute>();
@@ -180,7 +181,6 @@ namespace ColorVision.UI
                         else if (property.PropertyType.IsEnum)
                         {
                             dockPanel = GenEnumProperties(property, obj);
-
                         }
                         else if (typeof(ViewModelBase).IsAssignableFrom(property.PropertyType))
                         {
@@ -192,10 +192,8 @@ namespace ColorVision.UI
                                 continue;
                             }
                         }
-                        if (categoryGroup.Value.IndexOf(property) == categoryGroup.Value.Count - 1)
-                        {
-                            dockPanel.Margin = new Thickness(0);
-                        }
+
+                        dockPanel.Margin = new Thickness(0, 0, 0, 5);
 
                         var VisibleBlindAttr = property.GetCustomAttribute<PropertyVisibilityAttribute>();
                         if (VisibleBlindAttr != null)
@@ -224,14 +222,13 @@ namespace ColorVision.UI
             string displayName = displayNameAttr?.DisplayName ?? property.Name;
             displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
 
-            var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 5) };
+            var dockPanel = new DockPanel();
             var textBlock = new TextBlock
             {
                 Text = displayName,
                 MinWidth = 120,
                 Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
             };
-            dockPanel.Children.Add(textBlock);
 
             var toggleSwitch = new Wpf.Ui.Controls.ToggleSwitch
             {
@@ -243,7 +240,10 @@ namespace ColorVision.UI
                 Mode = BindingMode.TwoWay
             };
             toggleSwitch.SetBinding(ToggleButton.IsCheckedProperty, binding);
+            DockPanel.SetDock(toggleSwitch, Dock.Right);
+
             dockPanel.Children.Add(toggleSwitch);
+            dockPanel.Children.Add(textBlock);
             return dockPanel;
         }
 
@@ -257,7 +257,7 @@ namespace ColorVision.UI
 
             string displayName = displayNameAttr?.DisplayName ?? property.Name;
             displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
-            var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 5) };
+            var dockPanel = new DockPanel();
 
             var textBlock = new TextBlock
             {
@@ -265,7 +265,6 @@ namespace ColorVision.UI
                 MinWidth = 120,
                 Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
             };
-            dockPanel.Children.Add(textBlock);
 
             var comboBox = new ComboBox
             {
@@ -287,8 +286,10 @@ namespace ColorVision.UI
                 Mode = BindingMode.TwoWay
             };
             comboBox.SetBinding(ComboBox.SelectedItemProperty, binding);
+            DockPanel.SetDock(comboBox, Dock.Right);
 
             dockPanel.Children.Add(comboBox);
+            dockPanel.Children.Add(textBlock);
             return dockPanel;
 
         }
@@ -303,7 +304,7 @@ namespace ColorVision.UI
 
             string displayName = displayNameAttr?.DisplayName ?? property.Name;
             displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
-            var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 5) };
+            var dockPanel = new DockPanel();
 
             var textBlock = new TextBlock
             {
@@ -312,7 +313,6 @@ namespace ColorVision.UI
                 Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
             };
             dockPanel.Children.Add(textBlock);
-
             if (propertyEditorType == PropertyEditorType.TextSelectFile)
             {
                 var button = new Button
@@ -556,6 +556,7 @@ namespace ColorVision.UI
                 textbox.SetBinding(TextBox.TextProperty, binding);
                 dockPanel.Children.Add(textbox);
             }
+
             return dockPanel;
         }
 
@@ -570,7 +571,10 @@ namespace ColorVision.UI
 
         private void TreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            PropertyPanel.Children.Clear();
+            if(sender is TreeView treeView && treeView.SelectedItem is TreeViewItem treeViewItem && treeViewItem.Tag is Border obj)
+            {
+                obj.BringIntoView();
+            }
         }
     }
 }

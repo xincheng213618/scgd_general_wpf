@@ -1,10 +1,8 @@
 ﻿#pragma warning disable CS8602,CS8603,CS8601
-using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Templates.FOV;
 using ColorVision.Scheduler;
 using ColorVision.SocketProtocol;
 using ColorVision.UI;
@@ -17,7 +15,6 @@ using ST.Library.UI.NodeEditor;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
@@ -78,7 +75,7 @@ namespace ColorVision.Engine.Templates.Flow
         private static readonly object _locker = new();
         public static DisplayFlow GetInstance() { lock (_locker) { return _instance ??= new DisplayFlow(); } }
 
-        public ViewFlow View { get; set; }
+        public static ViewFlow View => FlowEngineManager.GetInstance().View;
 
         public string DisPlayName => "Flow";
         public static FlowEngineConfig Config => FlowEngineConfig.Instance;
@@ -86,6 +83,8 @@ namespace ColorVision.Engine.Templates.Flow
         private Timer timer;
         Stopwatch stopwatch = new Stopwatch();
         IPendingHandler handler { get; set; }
+
+        static FlowEngineControl FlowEngineControl => FlowEngineManager.GetInstance().FlowEngineControl;
 
         public DisplayFlow()
         {
@@ -111,7 +110,6 @@ namespace ColorVision.Engine.Templates.Flow
             ContextMenu.Items.Add(new MenuItem() { Header = "停止执行(_S)", Command = EngineCommands.StopExecutionCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "属性", Command = Config.EditCommand });
 
-            View = FlowEngineManager.GetInstance().View;
             this.SetIconResource("DrawingImageFlow", View.View);
 
             this.AddViewConfig(View, ComboxView);
@@ -211,7 +209,11 @@ namespace ColorVision.Engine.Templates.Flow
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                log.Error(ex);
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
+                });
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
             }
             return;
@@ -451,7 +453,8 @@ namespace ColorVision.Engine.Templates.Flow
             ButtonStop.Visibility = Visibility.Visible;
             stopwatch.Restart();
             stopwatch.Start();
-            timer.Change(0, 500); // 启动定时器
+
+            timer.Change(0, 100); // 启动定时器
             BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = sn, Code = sn, CreateDate = DateTime.Now });
             flowControl.Start(sn);
         }

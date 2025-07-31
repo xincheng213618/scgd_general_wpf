@@ -2,6 +2,7 @@
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using ColorVision.UI;
+using FlowEngineLib;
 using log4net;
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -83,6 +84,7 @@ namespace ColorVision.Engine.Templates.Flow
         public RelayCommand EditLargeFlowCommand { get; set; }
         public RelayCommand EditTemplateLargeFlowCommand { get; set; }
         public ViewFlow View { get; set; }
+        public FlowEngineControl FlowEngineControl { get; set; }
 
         public FlowEngineManager()
         {
@@ -91,7 +93,9 @@ namespace ColorVision.Engine.Templates.Flow
             EditLargeFlowCommand = new RelayCommand(a => EditLargeFlow());
             EditTemplateLargeFlowCommand = new RelayCommand(a => EditTemplateLargeFlow());
 
-            View = new ViewFlow();
+            FlowEngineControl = new FlowEngineControl(false);
+
+            View = new ViewFlow(FlowEngineControl);
             View.View.Title = $"流程窗口 ";
         }
         public void EditFlow()

@@ -4,6 +4,7 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using ColorVision.UI.Views;
+using FlowEngineLib;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.ObjectModel;
@@ -24,7 +25,7 @@ namespace ColorVision.Engine.Services.Flow
         public event PropertyChangedEventHandler? PropertyChanged;
         public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-        public FlowEngineLib.FlowEngineControl FlowEngineControl { get; set; }
+        public  FlowEngineControl FlowEngineControl { get; set; }
         public View View { get; set; }
         public RelayCommand AutoSizeCommand { get; set; }
 
@@ -46,10 +47,9 @@ namespace ColorVision.Engine.Services.Flow
 
         public DisplayFlow DisplayFlow { get; set; }
 
-        public ViewFlow()
+        public ViewFlow(FlowEngineControl flowEngineControl)
         {
-
-            FlowEngineControl = new FlowEngineLib.FlowEngineControl(false);
+            FlowEngineControl = flowEngineControl;
             InitializeComponent();
             AutoSizeCommand = new RelayCommand(a => AutoSize());
             RefreshCommand = new RelayCommand(a => Refresh());
