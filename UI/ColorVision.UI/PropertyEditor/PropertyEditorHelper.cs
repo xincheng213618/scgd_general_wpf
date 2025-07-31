@@ -448,7 +448,7 @@ namespace ColorVision.UI
                     CornerRadius = new CornerRadius(5),
                     Margin = new Thickness(0, 0, 0, 5)
                 };
-                var stackPanel = new StackPanel { Margin = new Thickness(10, 5, 10, 0) };
+                var stackPanel = new StackPanel { Margin = new Thickness(5, 5, 5, 0) };
                 border.Child = stackPanel;
                 PropertyPanel.Children.Add(border);
 
