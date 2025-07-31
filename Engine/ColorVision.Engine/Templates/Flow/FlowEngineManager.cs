@@ -41,15 +41,6 @@ namespace ColorVision.Engine.Templates.Flow
         [DisplayName("新消息UI")]
         public bool IsNewMsgUI{ get => _IsNewMsgUI; set { _IsNewMsgUI = value; NotifyPropertyChanged(); } }
         private bool _IsNewMsgUI = true;
-
-        [DisplayName("流程运行时自动刷新")]
-        public bool AutoRefreshView { get => _AutoRefreshView; set { _AutoRefreshView = value; NotifyPropertyChanged(); } }
-        private bool _AutoRefreshView;
-
-        [DisplayName("流程运行显示监控")]
-        public bool FlowPreviewMsg { get => _FlowPreviewMsg; set { _FlowPreviewMsg = value; NotifyPropertyChanged(); } }
-        private bool _FlowPreviewMsg = true;
-
         public int LastSelectFlow { get => _LastSelectFlow; set { _LastSelectFlow = value; NotifyPropertyChanged(); } }
         private int _LastSelectFlow;
 
@@ -63,7 +54,12 @@ namespace ColorVision.Engine.Templates.Flow
         public int TemplateLargeFlowParamsIndex { get => _TemplateLargeFlowParamsIndex; set { _TemplateLargeFlowParamsIndex = value; NotifyPropertyChanged(); } }
         private int _TemplateLargeFlowParamsIndex;
 
+        [JsonIgnore,Browsable(false)]
+        public bool IsReady { get => _IsReady; set { if (value == _IsReady) return; _IsReady = value; NotifyPropertyChanged(); } }
+        private bool _IsReady;
     }
+
+
     public class FlowEngineManager:ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowEngineManager));
@@ -101,11 +97,13 @@ namespace ColorVision.Engine.Templates.Flow
         public void EditFlow()
         {
             new FlowEngineToolWindow(FlowParams[TemplateFlowParamsIndex].Value) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
+            _=View.DisplayFlow.Refresh();
         }
 
         public void EditTemplateFlow()
         {
             new TemplateEditorWindow(new TemplateFlow(), TemplateFlowParamsIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            _ = View.DisplayFlow.Refresh();
         }
         public void EditLargeFlow()
         {

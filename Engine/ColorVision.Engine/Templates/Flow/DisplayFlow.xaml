@@ -109,6 +109,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
+                    <TextBlock Text="Ready" Visibility="{Binding Config.IsReady,Converter={StaticResource bool2VisibilityConverter}}"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Height="30">
                         <Button Content="{x:Static properties:Resources.ExecutionProcess}"  x:Name="ButtonRun" Click="Button_FlowRun_Click"/>
                         <Button Content="{x:Static properties:Resources.StopProcess}"  x:Name="ButtonStop" Visibility="Collapsed"  Click="Button_FlowStop_Click"/>

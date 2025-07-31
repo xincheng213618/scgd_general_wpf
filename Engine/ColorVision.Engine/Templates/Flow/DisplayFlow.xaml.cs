@@ -124,12 +124,12 @@ namespace ColorVision.Engine.Templates.Flow
                         LastFlowTime = time;
 
                 }
-                Refresh();
+                _ = Refresh();
             };
             MqttRCService.GetInstance().ServiceTokensInitialized +=(s,e) => 
             {
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
-                Refresh();
+                _ = Refresh();
             };
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
@@ -141,7 +141,7 @@ namespace ColorVision.Engine.Templates.Flow
             View.RefreshFlow += (s, e) =>
             {
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
-                Refresh();
+                _=Refresh();
             };
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
 
@@ -163,7 +163,7 @@ namespace ColorVision.Engine.Templates.Flow
         }
 
 
-        private async Task Refresh()
+        public async Task Refresh()
         {
             if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
                 MqttRCService.GetInstance().QueryServices();
@@ -191,6 +191,7 @@ namespace ColorVision.Engine.Templates.Flow
 
                 for (int i = 0; i < 20; i++)
                 {
+                    Config.IsReady = View.FlowEngineControl.IsReady;
                     if (View.FlowEngineControl.IsReady)
                         break;
                      await Task.Delay(10);
@@ -240,7 +241,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             if (Config.IsNewMsgUI)
             {
-                View.logTextBox.Text = FlowControlData.EventName;
+                View.logTextBox.Text = FlowName +  Environment.NewLine+ FlowControlData.EventName;
             }
             else
             {
@@ -258,7 +259,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 if (Config.IsNewMsgUI)
                 {
-                    View.logTextBox.Text = FlowControlData.EventName +  Environment.NewLine + FlowControlData.Params;
+                    View.logTextBox.Text = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}节点:{Msg1}{Environment.NewLine}{FlowControlData.Params}";
                 }
                 else
                 {
@@ -276,7 +277,6 @@ namespace ColorVision.Engine.Templates.Flow
         string Msg1;
         private void UpdateMsg(object? sender)
         {
-            if (!FlowEngineConfig.Instance.FlowPreviewMsg) return;
             if (flowControl.IsFlowRun)
             {
                 long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
@@ -285,7 +285,7 @@ namespace ColorVision.Engine.Templates.Flow
                 string msg;
                 if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
                 {
-                    msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
+                    msg = $"{FlowName}{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}";
                 }
                 else
                 {
@@ -293,9 +293,9 @@ namespace ColorVision.Engine.Templates.Flow
                     TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                     string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                    msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{LastFlowTime} ms, 预计还需要：{remainingTime}";
+                    msg = $"{FlowName} 上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
                 }
-                Application.Current.Dispatcher.BeginInvoke(() =>
+                Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
                     if (flowControl.IsFlowRun)
                     {
@@ -363,12 +363,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 algorithmNode.IsSelected = true;
                 Msg1 = algorithmNode.Title;
-
-                if (FlowEngineConfig.Instance.FlowPreviewMsg)
-                {
-                    UpdateMsg(sender);
-                }
-
+                UpdateMsg(sender);
             }
         }
 
@@ -377,8 +372,7 @@ namespace ColorVision.Engine.Templates.Flow
         {
             RunFlow();
         }
-
-
+        string FlowName;
         public async void RunFlow()
         {
             if (!MqttRCService.GetInstance().IsConnect)
@@ -401,13 +395,15 @@ namespace ColorVision.Engine.Templates.Flow
             }
             View.logTextBox.Text = $"IsReady{View.FlowEngineControl.IsReady}";
             log.Info($"IsReady{View.FlowEngineControl.IsReady}");
+            Config.IsReady = View.FlowEngineControl.IsReady;
             if (!View.FlowEngineControl.IsReady)
             {
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
                 await Refresh();
                 log.Info($"IsReady{View.FlowEngineControl.IsReady}");
+                Config.IsReady = View.FlowEngineControl.IsReady;
             }
-
+            FlowName = ComboBoxFlow.Text;
             LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(ComboBoxFlow.Text, out long time) ? time : 0;
 
             string startNode = View.FlowEngineControl.GetStartNodeName();
@@ -431,20 +427,16 @@ namespace ColorVision.Engine.Templates.Flow
                 }
             }
 
-
-            if (FlowEngineConfig.Instance.FlowPreviewMsg)
+            if (Config.IsNewMsgUI)
             {
-                if (Config.IsNewMsgUI)
-                {
-                    View.logTextBox.Text = "Run " + ComboBoxFlow.Text;
-                }
-                else
-                {
+                View.logTextBox.Text = "Run " + ComboBoxFlow.Text;
+            }
+            else
+            {
 
-                    handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
-                    handler.Cancelling -= Handler_Cancelling; ;
-                    handler.Cancelling += Handler_Cancelling; ;
-                }
+                handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
+                handler.Cancelling -= Handler_Cancelling; ;
+                handler.Cancelling += Handler_Cancelling; ;
             }
 
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
