@@ -31,7 +31,7 @@ namespace ColorVision.Common.Utilities
 
         public static void AddOrResetTimerDispatcher(string actionType, int delayMilliseconds, Action action)
         {
-            ElapsedEventHandler handler = (s, e) => Application.Current?.Dispatcher.Invoke(action);
+            ElapsedEventHandler handler = (s, e) => Application.Current?.Dispatcher.BeginInvoke(action);
             AddOrResetTimer(actionType, delayMilliseconds, handler);
         }
 

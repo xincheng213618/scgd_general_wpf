@@ -29,7 +29,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCamera));
 
-        public PhyCamera? PhyCamera { get; set; }
+        public PhyCamera? PhyCamera { get => _PhyCamera; set { _PhyCamera = value; NotifyPropertyChanged(); } }
+        private PhyCamera? _PhyCamera;
         public ViewCamera View { get; set; }
         public MQTTCamera DService { get; set; }
         public RelayCommand FetchLatestTemperatureCommand { get; set; }

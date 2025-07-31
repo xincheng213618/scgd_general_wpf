@@ -3,7 +3,6 @@
     public interface IProject
     {
         string? Header { get; }
-        string? UpdateUrl { get; }
         string Description { get; }
 
         void Execute();

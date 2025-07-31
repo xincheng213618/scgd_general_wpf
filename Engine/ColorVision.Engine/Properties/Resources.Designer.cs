@@ -2329,6 +2329,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 工作流程 的本地化字符串。
+        /// </summary>
+        public static string Workflow {
+            get {
+                return ResourceManager.GetString("Workflow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 流程引擎(_F) 的本地化字符串。
         /// </summary>
         public static string WorkflowEngine {

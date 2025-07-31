@@ -6,22 +6,21 @@
         xmlns:local="clr-namespace:ColorVision.ImageEditor.Draw.Ruler" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:DrawingVisualScaleHost}"
-        Title="EditScaleRuler" Background="{DynamicResource GlobalBackground}"  Height="200" Width="400" Initialized="Window_Initialized">
+        Title="EditScaleRuler" Background="{DynamicResource GlobalBackground}"  Height="170" Width="400" Initialized="Window_Initialized">
     <Window.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/HandyControl;component/Themes/basic/colors/colors.xaml"/>
-                <ResourceDictionary Source="/HandyControl;component/Themes/Theme.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/White.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Base.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Menu.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/GroupBox.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Icons.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
+        <Style  TargetType="{x:Type TextBlock}">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        </Style>
     </Window.Resources>
-    <Border  Style="{DynamicResource BorderModuleArea}" Margin="0">
+    <Border>
         <StackPanel Margin="5">
+            <DockPanel Margin="0,0,0,5">
+                <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding IsUsePhysicalUnit}"/>
+                <TextBlock Text="测量是否启用实际单位"/>
+            </DockPanel>
             <DockPanel Margin="0,2">
                 <Button Name="Calculate" DockPanel.Dock="Right" Content="计算" Click="Calculate_Click" Margin="0,0,5,0"/>
                 <TextBlock Text="物理比例" MinWidth="60"/>
@@ -44,11 +43,6 @@
                     <Run Text=")"/>
                 </TextBlock>
             </DockPanel>
-            <DockPanel Margin="0,2">
-                <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding IsUsePhysicalUnit}"/>
-                <TextBlock Text="测量启用实际单位"/>
-            </DockPanel>
-            <Button Content="关闭"  Click="Button_Click" />
             <Popup  x:Name="CalPopup"  AllowsTransparency="True" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Left" StaysOpen="false" PlacementTarget="{Binding ElementName=Calculate}">
                 <Border Margin="5"  Width="200" Height="120" Style="{StaticResource BorderModuleArea}">
                     <StackPanel Margin="5">

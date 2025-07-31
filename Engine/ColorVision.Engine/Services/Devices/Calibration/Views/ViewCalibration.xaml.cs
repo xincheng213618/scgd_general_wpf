@@ -140,23 +140,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             }
         }
 
-        private void Button_Click_Export(object sender, RoutedEventArgs e)
-        {
-            if (listView1.SelectedIndex < 0)
-            {
-                MessageBox1.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
-                return;
-            }
-            using var dialog = new System.Windows.Forms.SaveFileDialog();
-            dialog.Filter = "CSV files (*.csv) | *.csv";
-            dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
-            dialog.RestoreDirectory = true;
-            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-            CsvWriter.WriteToCsv(ViewResults[listView1.SelectedIndex], dialog.FileName);
-            ImageSource bitmapSource = ImageView.ImageShow.Source;
-            ImageUtils.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
-        }
-
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -292,6 +275,23 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             listView1.Height = MainGridRow2.ActualHeight - 32;
             MainGridRow1.Height = new GridLength(1, GridUnitType.Star);
             MainGridRow2.Height = GridLength.Auto;
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (listView1.SelectedIndex < 0)
+            {
+                MessageBox1.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
+                return;
+            }
+            using var dialog = new System.Windows.Forms.SaveFileDialog();
+            dialog.Filter = "CSV files (*.csv) | *.csv";
+            dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+            dialog.RestoreDirectory = true;
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            CsvWriter.WriteToCsv(ViewResults[listView1.SelectedIndex], dialog.FileName);
+            ImageSource bitmapSource = ImageView.ImageShow.Source;
+            ImageUtils.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
         }
     }
 }

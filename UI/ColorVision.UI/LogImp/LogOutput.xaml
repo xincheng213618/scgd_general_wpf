@@ -6,7 +6,9 @@
              xmlns:local="clr-namespace:ColorVision.UI.LogImp"
              xmlns:properties ="clr-namespace:ColorVision.UI.Properties"
              xmlns:hc ="https://handyorg.github.io/handycontrol"
-             mc:Ignorable="d" 
+             mc:Ignorable="d"         
+             xmlns:ui ="clr-namespace:ColorVision.UI"
+             d:DataContext="{d:DesignInstance ui:LogConfig}"
              d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
@@ -52,14 +54,7 @@
             </StackPanel>
 
         </Grid>
-        <RichTextBox x:Name="logRichTextBox" Grid.Row="1" Visibility="Collapsed" Margin="5,0"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <FlowDocument>
-                <Paragraph>
-
-                </Paragraph>
-            </FlowDocument>
-        </RichTextBox>
-        <TextBox x:Name="logTextBox" TextWrapping="Wrap" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
-        <TextBox x:Name="logTextBoxSerch" TextWrapping="Wrap" Visibility="Collapsed" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
+        <TextBox x:Name="logTextBox" TextWrapping="{Binding TextWrapping}" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
+        <TextBox x:Name="logTextBoxSerch" TextWrapping="{Binding TextWrapping}" Visibility="Collapsed" Grid.Row="1"  ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"  BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
     </Grid>
 </UserControl>

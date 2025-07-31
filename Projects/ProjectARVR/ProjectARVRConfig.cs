@@ -62,11 +62,10 @@ namespace ProjectARVR
         public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; NotifyPropertyChanged(); } }
         private bool _AllowTestFailures = true;
 
-
         public void EditSPECConfig()
         {
-            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(SPECConfig ,false) { Owner = Application.Current.GetActiveWindow() };
-            propertyEditorWindow.ShowDialog();
+            EditRecipeWindow EditRecipeWindow = new EditRecipeWindow() { Owner = Application.Current.GetActiveWindow() };
+            EditRecipeWindow.ShowDialog();
         }
 
 
@@ -197,10 +196,6 @@ namespace ProjectARVR
         private SummaryInfo _SummaryInfo = new SummaryInfo();
 
         public static ARVRWindowConfig ProjectKBWindowConfig => ARVRWindowConfig.Instance;
-        public Dictionary<string, SPECConfig> SPECConfigs { get; set; } = new Dictionary<string, SPECConfig>();
-
-        public SPECConfig SPECConfig { get => _SPECConfig; set { _SPECConfig = value; NotifyPropertyChanged(); } }
-        private SPECConfig _SPECConfig = new SPECConfig();
 
     }
 }

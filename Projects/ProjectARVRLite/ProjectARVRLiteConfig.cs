@@ -6,6 +6,7 @@ using ColorVision.ImageEditor;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using ProjectARVRLite.Config;
+using ProjectARVRLite.PluginConfig;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -36,6 +37,11 @@ namespace ProjectARVRLite
 
         [JsonIgnore]
         public RelayCommand EditSPECConfigcommand { get; set; }
+        [JsonIgnore]
+        public RelayCommand InitTestCommand { get; set; }
+
+        [JsonIgnore]
+        public RelayCommand EditObjectiveTestResultFixCommand { get; set; }
 
         public ProjectARVRLiteConfig()
         {
@@ -52,7 +58,25 @@ namespace ProjectARVRLite
             OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
 
             EditSPECConfigcommand = new RelayCommand(a => EditSPECConfig());
+            InitTestCommand = new RelayCommand(a => InitTest());
+
+            EditObjectiveTestResultFixCommand = new RelayCommand(a => EditObjectiveTestResultFix());
         }
+
+        public void EditObjectiveTestResultFix()
+        {
+            ObjectiveTestResultFixWindow objectiveTestResultFixWindow = new ObjectiveTestResultFixWindow() { Owner = Application.Current.GetActiveWindow() };
+            objectiveTestResultFixWindow.ShowDialog();
+        }
+
+
+        public void InitTest()
+        {
+            ProjectWindowInstance.WindowInstance.InitTest(string.Empty);
+        }
+
+
+
         public int StepIndex { get => _StepIndex; set { _StepIndex = value; NotifyPropertyChanged(); } }
         private int _StepIndex;
 
@@ -70,8 +94,8 @@ namespace ProjectARVRLite
 
         public void EditSPECConfig()
         {
-            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(SPECConfig ,false) { Owner = Application.Current.GetActiveWindow() };
-            propertyEditorWindow.ShowDialog();
+            EditRecipeWindow EditRecipeWindow = new EditRecipeWindow() { Owner = Application.Current.GetActiveWindow() };
+            EditRecipeWindow.ShowDialog();
         }
 
 
@@ -202,10 +226,5 @@ namespace ProjectARVRLite
         private SummaryInfo _SummaryInfo = new SummaryInfo();
 
         public static ARVRWindowConfig ProjectKBWindowConfig => ARVRWindowConfig.Instance;
-        public Dictionary<string, SPECConfig> SPECConfigs { get; set; } = new Dictionary<string, SPECConfig>();
-
-        public SPECConfig SPECConfig { get => _SPECConfig; set { _SPECConfig = value; NotifyPropertyChanged(); } }
-        private SPECConfig _SPECConfig = new SPECConfig();
-
     }
 }

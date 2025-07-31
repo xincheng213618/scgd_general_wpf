@@ -5,9 +5,6 @@ using System.Windows;
 
 namespace ColorVision.Engine.Templates.Jsons.LargeFlow
 {
-
-
-
     public class TemplateLargeFlow : ITemplateJson<TJLargeFlowParam>,IITemplateLoad
     {
         public static ObservableCollection<TemplateModel<TJLargeFlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<TJLargeFlowParam>>();

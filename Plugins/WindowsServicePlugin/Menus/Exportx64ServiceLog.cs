@@ -14,6 +14,28 @@ namespace WindowsServicePlugin.Menus
         public override int Order => 102;
         public override string Url => "http://localhost:8064/system/log";
     }
+
+
+    public class ExportNewAlgorithmLog : ExportLogBase
+    {
+        public override string OwnerGuid => nameof(MenuLog);
+        public override string Header => "NewAlgorithmLog";
+        public override int Order => 103;
+        public override string Url
+        {
+            get
+            {
+                string logpath = "C:\\Windows\\System32";
+                if (!Directory.Exists(logpath))
+                    return string.Empty;
+                string path = Path.Combine(logpath,"log");
+                if (!Directory.Exists(path))
+                    return string.Empty;
+                return path;
+            }
+        }
+    }
+
     public class Exportx64ServiceLog1 : ExportLogBase
     {
         public override string OwnerGuid => nameof(MenuLog);

@@ -42,12 +42,6 @@
                         <ToggleButton Click="Button1_Click" Margin="0,0,2,0" >
                             <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSwitch}" />
                         </ToggleButton>
-                        <Button Click="Button_Click" Margin="0,0,2,0" >
-                            <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
-                        </Button>
-                        <Button Click="Button2_Click" Margin="0,0,2,0"  >
-                            <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
-                        </Button>
                         <ToggleButton x:Name="ToggleButtonChoice" Click="Button3_Click" Margin="0,0,2,0"  >
                             <ToggleButton.Style>
                                 <Style TargetType="ToggleButton" BasedOn="{StaticResource ToggleButtonDefault}">
@@ -98,22 +92,46 @@
                     </ToolBar>
                 </ToolBarTray>
 
-                <Button Grid.Column="0" Margin="5,1,5,0" HorizontalAlignment="Right" Command="{Binding EditCommand}" Padding="2" Height="25" Width="25" >
-                    <Button.Triggers>
-                        <EventTrigger RoutedEvent="Button.Click">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                    </Button.Triggers>
-                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
-                        <TextBlock.RenderTransform>
-                            <RotateTransform x:Name="rotateTransform2" CenterX="8" CenterY="8"/>
-                        </TextBlock.RenderTransform>
-                    </TextBlock>
-                </Button>
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                    <Button Click="Button_Click" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
+                        <Rectangle Width="16" Height="16" Fill="{StaticResource DISave}" />
+                    </Button>
+                    <Button  Click="Button2_Click" Padding="2" Height="25" Width="25" Margin="0,1,5,0" >
+                        <Button.Triggers>
+                            <EventTrigger RoutedEvent="Button.Click">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation  Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX" To="0.7" Duration="0:0:0.1" AutoReverse="True" />
+                                        <DoubleAnimation  Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY" To="0.7" Duration="0:0:0.1" AutoReverse="True" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Button.Triggers>
+                        <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" RenderTransformOrigin="0.5,0.5">
+                            <Image.RenderTransform>
+                                <ScaleTransform x:Name="ScaleTransform" ScaleX="1" ScaleY="1" />
+                            </Image.RenderTransform>
+                        </Image>
+                    </Button>
+                    <Button Grid.Column="0" Margin="0,1,5,0"  Command="{Binding EditCommand}" Padding="2" Height="25" Width="25" >
+                        <Button.Triggers>
+                            <EventTrigger RoutedEvent="Button.Click">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Button.Triggers>
+                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                            <TextBlock.RenderTransform>
+                                <RotateTransform x:Name="rotateTransform2" CenterX="8" CenterY="8"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                    </Button>
+
+                </StackPanel>
+
 
                 <ListView  Height="200" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" BorderThickness="0" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.Resources>

@@ -1,11 +1,15 @@
 ﻿#pragma warning disable
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates.Jsons.LargeFlow;
+using ProjectARVRLite;
+using ProjectARVRLite;
+using ProjectARVRLite.Config;
 using System.ComponentModel;
 
-namespace ProjectARVRLite.Config
+namespace ProjectARVRLite
 {
     [DisplayName("ARVR上下限判定")]
-    public class SPECConfig : ViewModelBase
+    public class ARVRRecipeConfig : ViewModelBase, IRecipe
     {
         public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; NotifyPropertyChanged(); } }
         private bool _IsEnabled = true;
@@ -36,17 +40,17 @@ namespace ProjectARVRLite.Config
 
 
         [DisplayName("Luminance uniformity(%) Min")]
-        public double LuminanceUniformityMin { get => _LuminanceUniformityMin; set { _LuminanceUniformityMin = value; NotifyPropertyChanged(); } }
+        public double W255LuminanceUniformityMin { get => _LuminanceUniformityMin; set { _LuminanceUniformityMin = value; NotifyPropertyChanged(); } }
         private double _LuminanceUniformityMin = 0.75;
 
         [DisplayName("Luminance uniformity(%) Max")]
-        public double LuminanceUniformityMax { get => _LuminanceUniformityMax; set { _LuminanceUniformityMax = value; NotifyPropertyChanged(); } }
+        public double W255LuminanceUniformityMax { get => _LuminanceUniformityMax; set { _LuminanceUniformityMax = value; NotifyPropertyChanged(); } }
         private double _LuminanceUniformityMax;
 
-        public double ColorUniformityMin { get => _ColorUniformityMin; set { _ColorUniformityMin = value; NotifyPropertyChanged(); } }
+        public double W255ColorUniformityMin { get => _ColorUniformityMin; set { _ColorUniformityMin = value; NotifyPropertyChanged(); } }
         private double _ColorUniformityMin;
 
-        public double ColorUniformityMax { get => _ColorUniformityMax; set { _ColorUniformityMax = value; NotifyPropertyChanged(); } }
+        public double W255ColorUniformityMax { get => _ColorUniformityMax; set { _ColorUniformityMax = value; NotifyPropertyChanged(); } }
         private double _ColorUniformityMax = 0.02;
 
         [DisplayName("Center Correlated Color Temperature(K) Min")]
@@ -58,17 +62,70 @@ namespace ProjectARVRLite.Config
         private double _CenterCorrelatedColorTemperatureMax = 7000;
 
 
-        public double W25CenterLunimanceMin { get => _W25CenterLunimanceMin; set { _W25CenterLunimanceMin = value; NotifyPropertyChanged(); } }
-        private double _W25CenterLunimanceMin = 0;
 
-        public double W25CenterLunimanceMax { get => _W25CenterLunimanceMax; set { _W25CenterLunimanceMax = value; NotifyPropertyChanged(); } }
-        private double _W25CenterLunimanceMax = 0;
 
         public double W255CenterLunimanceMin { get => _W255CenterLunimanceMin; set { _W255CenterLunimanceMin = value; NotifyPropertyChanged(); } }
         private double _W255CenterLunimanceMin = 0;
 
         public double W255CenterLunimanceMax { get => _W255CenterLunimanceMax; set { _W255CenterLunimanceMax = value; NotifyPropertyChanged(); } }
         private double _W255CenterLunimanceMax = 0;
+        public double W255CenterCIE1931ChromaticCoordinatesxMin { get => _W255CenterCIE1931ChromaticCoordinatesxMin; set { _W255CenterCIE1931ChromaticCoordinatesxMin = value; NotifyPropertyChanged(); } }
+        private double _W255CenterCIE1931ChromaticCoordinatesxMin = 0;
+
+        public double W255CenterCIE1931ChromaticCoordinatesxMax { get => _W255CenterCIE1931ChromaticCoordinatesxMax; set { _W255CenterCIE1931ChromaticCoordinatesxMax = value; NotifyPropertyChanged(); } }
+        private double _W255CenterCIE1931ChromaticCoordinatesxMax = 0;
+
+        public double W255CenterCIE1931ChromaticCoordinatesyMin { get => _W255CenterCIE1931ChromaticCoordinatesyMin; set { _W255CenterCIE1931ChromaticCoordinatesyMin = value; NotifyPropertyChanged(); } }
+        private double _W255CenterCIE1931ChromaticCoordinatesyMin = 0;
+
+        public double W255CenterCIE1931ChromaticCoordinatesyMax { get => _W255CenterCIE1931ChromaticCoordinatesyMax; set { _W255CenterCIE1931ChromaticCoordinatesyMax = value; NotifyPropertyChanged(); } }
+        private double _W255CenterCIE1931ChromaticCoordinatesyMax = 0;
+
+        public double W255CenterCIE1976ChromaticCoordinatesuMin { get => _W255CenterCIE1976ChromaticCoordinatesuMin; set { _W255CenterCIE1976ChromaticCoordinatesuMin = value; NotifyPropertyChanged(); } }
+        private double _W255CenterCIE1976ChromaticCoordinatesuMin = 0;
+
+        public double W255CenterCIE1976ChromaticCoordinatesuMax { get => _W255CenterCIE1976ChromaticCoordinatesuMax; set { _W255CenterCIE1976ChromaticCoordinatesuMax = value; NotifyPropertyChanged(); } }
+        private double _W255CenterCIE1976ChromaticCoordinatesuMax = 0;
+
+        public double W255CenterCIE1976ChromaticCoordinatesvMin { get => _W255CenterCIE1976ChromaticCoordinatesvMin; set { _W255CenterCIE1976ChromaticCoordinatesvMin = value; NotifyPropertyChanged(); } }
+        private double _W255CenterCIE1976ChromaticCoordinatesvMin = 0;
+
+        public double W255CenterCIE1976ChromaticCoordinatesvMax { get => _W255CenterCIE1976ChromaticCoordinatesvMax; set { _W255CenterCIE1976ChromaticCoordinatesvMax = value; NotifyPropertyChanged(); } }
+        private double _W255CenterCIE1976ChromaticCoordinatesvMax = 0;
+
+
+        public double W25CenterLunimanceMin { get => _W25CenterLunimanceMin; set { _W25CenterLunimanceMin = value; NotifyPropertyChanged(); } }
+        private double _W25CenterLunimanceMin = 0;
+
+        public double W25CenterLunimanceMax { get => _W25CenterLunimanceMax; set { _W25CenterLunimanceMax = value; NotifyPropertyChanged(); } }
+        private double _W25CenterLunimanceMax = 0;
+
+
+        public double W25CenterCIE1931ChromaticCoordinatesxMin { get => _W25CenterCIE1931ChromaticCoordinatesxMin; set { _W25CenterCIE1931ChromaticCoordinatesxMin = value; NotifyPropertyChanged(); } }
+        private double _W25CenterCIE1931ChromaticCoordinatesxMin = 0;
+
+        public double W25CenterCIE1931ChromaticCoordinatesxMax { get => _W25CenterCIE1931ChromaticCoordinatesxMax; set { _W25CenterCIE1931ChromaticCoordinatesxMax = value; NotifyPropertyChanged(); } }
+        private double _W25CenterCIE1931ChromaticCoordinatesxMax = 0;
+
+        public double W25CenterCIE1931ChromaticCoordinatesyMin { get => _W25CenterCIE1931ChromaticCoordinatesyMin; set { _W25CenterCIE1931ChromaticCoordinatesyMin = value; NotifyPropertyChanged(); } }
+        private double _W25CenterCIE1931ChromaticCoordinatesyMin = 0;
+
+        public double W25CenterCIE1931ChromaticCoordinatesyMax { get => _W25CenterCIE1931ChromaticCoordinatesyMax; set { _W25CenterCIE1931ChromaticCoordinatesyMax = value; NotifyPropertyChanged(); } }
+        private double _W25CenterCIE1931ChromaticCoordinatesyMax = 0;
+
+        public double W25CenterCIE1976ChromaticCoordinatesuMin { get => _W25CenterCIE1976ChromaticCoordinatesuMin; set { _W25CenterCIE1976ChromaticCoordinatesuMin = value; NotifyPropertyChanged(); } }
+        private double _W25CenterCIE1976ChromaticCoordinatesuMin = 0;
+
+        public double W25CenterCIE1976ChromaticCoordinatesuMax { get => _W25CenterCIE1976ChromaticCoordinatesuMax; set { _W25CenterCIE1976ChromaticCoordinatesuMax = value; NotifyPropertyChanged(); } }
+        private double _W25CenterCIE1976ChromaticCoordinatesuMax = 0;
+
+        public double W25CenterCIE1976ChromaticCoordinatesvMin { get => _W25CenterCIE1976ChromaticCoordinatesvMin; set { _W25CenterCIE1976ChromaticCoordinatesvMin = value; NotifyPropertyChanged(); } }
+        private double _W25CenterCIE1976ChromaticCoordinatesvMin = 0;
+
+        public double W25CenterCIE1976ChromaticCoordinatesvMax { get => _W25CenterCIE1976ChromaticCoordinatesvMax; set { _W25CenterCIE1976ChromaticCoordinatesvMax = value; NotifyPropertyChanged(); } }
+        private double _W25CenterCIE1976ChromaticCoordinatesvMax = 0;
+
+
 
         public double FOFOContrastMin { get => _FOFOContrastMin; set { _FOFOContrastMin = value; NotifyPropertyChanged(); } }
         private double _FOFOContrastMin = 100000;

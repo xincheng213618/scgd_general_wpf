@@ -1514,15 +1514,6 @@ namespace ColorVision.Engine.Templates.POI
         {
             RenderPseudo();
         }
-        private void Pseudo_MouseDoubleClick(object sender, RoutedEventArgs e)
-        {
-            PseudoColor pseudoColor = new PseudoColor(new ImageViewConfig());
-            pseudoColor.ShowDialog();
-            var Colormapes = PseudoColor.GetColormapDictionary().First(x => x.Key == ColormapTypes.COLORMAP_JET);
-            string valuepath = Colormapes.Value;
-            ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative));
-            RenderPseudo();
-        }
         private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
         {
             DebounceTimer.AddOrResetTimer("PseudoSlider", 50, (e) =>

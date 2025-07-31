@@ -51,16 +51,9 @@
                     </Button.Triggers>
                 </Button>
             </StackPanel>
-            
-        </Grid>
-        <RichTextBox x:Name="logRichTextBox" Grid.Row="1" Visibility="Collapsed" Margin="5,0"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <FlowDocument>
-                <Paragraph>
 
-                </Paragraph>
-            </FlowDocument>
-        </RichTextBox>
-        <TextBox x:Name="logTextBox" TextWrapping="Wrap" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
-        <TextBox x:Name="logTextBoxSerch" TextWrapping="Wrap" Visibility="Collapsed" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
+        </Grid>
+        <TextBox x:Name="logTextBox" TextWrapping="{Binding TextWrapping}" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
+        <TextBox x:Name="logTextBoxSerch" TextWrapping="{Binding TextWrapping}" Visibility="Collapsed" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"  BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
     </Grid>
 </Window>

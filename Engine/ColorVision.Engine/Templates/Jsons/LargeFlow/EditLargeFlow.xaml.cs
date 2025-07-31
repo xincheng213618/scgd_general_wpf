@@ -1,9 +1,13 @@
 ﻿using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes;
+using ColorVision.UI;
+using ColorVision.UI.Extension;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,6 +15,37 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Templates.Jsons.LargeFlow
 {
+
+    public interface IRecipe
+    {
+
+    }
+
+
+    public class RecipeManager
+    {
+        private static RecipeManager _instance;
+        private static readonly object _locker = new();
+        public static RecipeManager GetInstance() { lock (_locker) { _instance ??= new RecipeManager(); return _instance; } }
+
+        public List<Type> RecipeTypes { get; set; }
+        public RecipeManager()
+        {
+            RecipeTypes = new List<Type>();
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            {
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IRecipe).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    RecipeTypes.Add(type);
+                }
+            }
+
+        }
+
+    }
+
+
+
     /// <summary>
     /// EditLargeFlow.xaml 的交互逻辑
     /// </summary>
@@ -30,8 +65,11 @@ namespace ColorVision.Engine.Templates.Jsons.LargeFlow
         public ObservableCollection<TemplateModel<FlowParam>> LargeFlowParams { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
         public ObservableCollection<TemplateModel<FlowParam>> LargeFlowParamAll { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
 
+        object recipeInstance;
+
         private void Window_Initialized(object sender, EventArgs e)
         {
+            this.DataContext = LargeFlowConfig;
             var flowNames = new HashSet<string>(LargeFlowConfig.Flows);
             var largeFlowParamsSet = new HashSet<TemplateModel<FlowParam>>();
 
@@ -47,6 +85,36 @@ namespace ColorVision.Engine.Templates.Jsons.LargeFlow
 
             SeriesExportTreeView1.ItemsSource = LargeFlowParams;
             SeriesExportTreeView2.ItemsSource = LargeFlowParamAll;
+
+
+            var list = RecipeManager.GetInstance().RecipeTypes.Select(x => new KeyValuePair<string, Type>(x.Name, x));
+            CBRecipeTypes.ItemsSource = list;
+            CBRecipeTypes.SelectionChanged += (s, e) =>
+            {
+                if (CBRecipeTypes.SelectedItem is KeyValuePair<string, Type> recipeType)
+                {
+                    if (string.IsNullOrWhiteSpace(LargeFlowConfig.ReceiptConfig))
+                    {
+                         recipeInstance = Activator.CreateInstance(recipeType.Value);
+                        textEditor.Text = recipeInstance.ToJsonN();
+                    }
+                    else
+                    {
+                        try
+                        {
+                            recipeInstance = JsonConvert.DeserializeObject(LargeFlowConfig.ReceiptConfig, recipeType.Value);
+                            textEditor.Text = recipeInstance.ToJsonN();
+                        }
+                        catch
+                        {
+                             recipeInstance = Activator.CreateInstance(recipeType.Value);
+                            textEditor.Text = recipeInstance.ToJsonN();
+                        }
+                    }
+
+  
+                }
+            };
 
         }
 
@@ -179,14 +247,6 @@ namespace ColorVision.Engine.Templates.Jsons.LargeFlow
 
         private void OK_Click(object sender, RoutedEventArgs e)
         {
-            LargeFlowConfig.Flows.Clear();
-            foreach (var item in LargeFlowParams)
-            {
-                if (!LargeFlowConfig.Flows.Contains(item.Key))
-                    LargeFlowConfig.Flows.Add(item.Key);
-            }
-            TJLargeFlowParam.JsonValue = JsonConvert.SerializeObject(LargeFlowConfig);
-            TemplateJsonDao.Instance.Save(TJLargeFlowParam.TemplateJsonModel);
             Close();
         }
 
@@ -201,6 +261,24 @@ namespace ColorVision.Engine.Templates.Jsons.LargeFlow
         }
 
         private void TextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            LargeFlowConfig.ReceiptConfig = textEditor.Text;
+            LargeFlowConfig.Flows.Clear();
+            foreach (var item in LargeFlowParams)
+            {
+                if (!LargeFlowConfig.Flows.Contains(item.Key))
+                    LargeFlowConfig.Flows.Add(item.Key);
+            }
+            TJLargeFlowParam.JsonValue = JsonConvert.SerializeObject(LargeFlowConfig);
+            TemplateJsonDao.Instance.Save(TJLargeFlowParam.TemplateJsonModel);
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
         {
 
         }
