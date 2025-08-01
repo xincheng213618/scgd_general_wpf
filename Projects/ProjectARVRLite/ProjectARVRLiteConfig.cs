@@ -92,6 +92,10 @@ namespace ProjectARVRLite
         public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; NotifyPropertyChanged(); } }
         private bool _AllowTestFailures = true;
 
+        [DisplayName("RefreshResult")]
+        public bool RefreshResult { get => _RefreshResult; set { _RefreshResult = value; NotifyPropertyChanged(); } }
+        private bool _RefreshResult = true;
+
         public void EditSPECConfig()
         {
             EditRecipeWindow EditRecipeWindow = new EditRecipeWindow() { Owner = Application.Current.GetActiveWindow() };

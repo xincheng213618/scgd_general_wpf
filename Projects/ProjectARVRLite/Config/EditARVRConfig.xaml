@@ -56,6 +56,10 @@
                             <ui:ToggleSwitch IsChecked="{Binding AllowTestFailures}" Margin="0,0,5,0"/>
                         </StackPanel>
                         <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
+                            <TextBlock Text="RefreshResult " Width="120"/>
+                            <ui:ToggleSwitch IsChecked="{Binding RefreshResult}" Margin="0,0,5,0"/>
+                        </StackPanel>
+                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
                             <TextBlock Text="打开图像延迟 " Width="120"/>
                             <TextBox Width="140"  Text="{Binding ViewImageReadDelay}"/>
                         </StackPanel>

@@ -442,9 +442,8 @@ namespace ProjectARVRLite
                 RecipeManager.RecipeConfig = recipeConfig;
                 RecipeManager.Save();
             }
-
-            timer = new Timer(TimeRun, null, 0, 500);
-            timer.Change(Timeout.Infinite, 500); // 停止定时器
+            timer = new Timer(TimeRun, null, 0, 100);
+            timer.Change(Timeout.Infinite, 100); // 停止定时器
 
             if (ProjectARVRLiteConfig.Instance.LogControlVisibility)
             {
@@ -520,37 +519,32 @@ namespace ProjectARVRLite
             UpdateMsg(state);
         }
 
-        IPendingHandler handler { get; set; }
-
         string Msg1;
         private long LastFlowTime;
+        string FlowName;
         private void UpdateMsg(object? sender)
         {
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
                 try
                 {
-                    if (handler != null)
+                    long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+                    TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
+                    string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
+                    string msg;
+                    if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
                     {
-                        long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
-                        TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
-                        string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
-                        string msg;
-                        if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
-                        {
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
-                        }
-                        else
-                        {
-                            long remainingMilliseconds = LastFlowTime - elapsedMilliseconds;
-                            TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
-                            string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
-
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{LastFlowTime} ms, 预计还需要：{remainingTime}";
-                        }
-                        if (flowControl.IsFlowRun)
-                            handler.UpdateMessage(msg);
+                        msg = $"{FlowName}{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}";
                     }
+                    else
+                    {
+                        long remainingMilliseconds = LastFlowTime - elapsedMilliseconds;
+                        TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
+                        string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
+
+                        msg = $"{FlowName} {Environment.NewLine} 上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
+                    }
+                    logTextBox.Text = msg;
                 }
                 catch
                 {
@@ -589,13 +583,12 @@ namespace ProjectARVRLite
 
             CurrentFlowResult = new ProjectARVRReuslt();
             CurrentFlowResult.SN = SNtextBox.Name;
-
+            FlowName = FlowTemplate.Text;
             CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
 
             await Refresh();
 
             if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info( "找不到完整流程，运行失败");return; }
-
 
             log.Info($"IsReady{flowEngine.IsReady}");
             if (!flowEngine.IsReady)
@@ -606,12 +599,7 @@ namespace ProjectARVRLite
                 log.Info($"IsReady{flowEngine.IsReady}");
             }  
 
-
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
-
-            handler = PendingBox.Show(this, "流程", "流程启动", true);
-            handler.Cancelling -= Handler_Cancelling;
-            handler.Cancelling += Handler_Cancelling;
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
             stopwatch.Reset();
             stopwatch.Start();
@@ -622,26 +610,20 @@ namespace ProjectARVRLite
             timer.Change(0, 500); // 启动定时器
         }
 
-        private void Handler_Cancelling(object? sender, CancelEventArgs e)
-        {
-            stopwatch.Stop();
-            timer.Change(Timeout.Infinite, 500); // 停止定时器
-            flowControl.Stop();
-        }
+
 
         private FlowControl flowControl;
 
         private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
-            handler?.Close();
-            handler = null;
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
-
             FlowEngineConfig.Instance.FlowRunTime[FlowTemplate.Text] = stopwatch.ElapsedMilliseconds;
 
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
+            logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
+
 
             if (FlowControlData.EventName == "Completed")
             {
@@ -681,6 +663,7 @@ namespace ProjectARVRLite
             {
                 TryCount = 0;
                 log.Error("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
+                logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
                 if (ProjectARVRLiteConfig.Instance.AllowTestFailures)
                 {
                     SwithchSocket();
@@ -824,10 +807,21 @@ namespace ProjectARVRLite
                         result.ViewResultWhite.PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
                         List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(AlgResultMaster.Id);
                         int id = 0;
+                        ObjectiveTestResult.W255PoixyuvDatas.Clear();
                         foreach (var item in POIPointResultModels)
                         {
-                            PoiResultCIExyuvData poiResultCIExyuvData = new(item) { Id = id++ };
-
+                            PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(item) { Id = id++ };
+                            ObjectiveTestResult.W255PoixyuvDatas.Add(new PoixyuvData() 
+                            {
+                                Id =  poiResultCIExyuvData.Id, 
+                                Name = poiResultCIExyuvData.Name,
+                                CCT = poiResultCIExyuvData.CCT * ObjectiveTestResultFix.BlackCenterCorrelatedColorTemperature,
+                                Y = poiResultCIExyuvData.Y * ObjectiveTestResultFix.W255CenterLunimance,
+                                x = poiResultCIExyuvData.x * ObjectiveTestResultFix.W255CenterCIE1931ChromaticCoordinatesx,
+                                y = poiResultCIExyuvData.y * ObjectiveTestResultFix.W255CenterCIE1931ChromaticCoordinatesy,
+                                u = poiResultCIExyuvData.u * ObjectiveTestResultFix.W255CenterCIE1976ChromaticCoordinatesu,
+                                v = poiResultCIExyuvData.v * ObjectiveTestResultFix.W255CenterCIE1976ChromaticCoordinatesv
+                            } );
                             if (item.PoiName == "POI_5")
                             {
                                 poiResultCIExyuvData.CCT = poiResultCIExyuvData.CCT * ObjectiveTestResultFix.BlackCenterCorrelatedColorTemperature;
@@ -1628,7 +1622,10 @@ namespace ProjectARVRLite
             }
 
             ViewResluts.Insert(0,result); //倒序插入
-            listView1.SelectedIndex = 0;
+            if (ProjectARVRLiteConfig.Instance.RefreshResult)
+            {
+                listView1.SelectedIndex = 0;
+            }
 
             SwithchSocket();
         }
@@ -2216,47 +2213,6 @@ namespace ProjectARVRLite
         {
             PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(ObjectiveTestResult, false) { Owner = Application.Current.GetActiveWindow() };
             propertyEditorWindow.ShowDialog();
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            Task.Run(testlog);
-        }
-
-        private static readonly Random random = new Random();
-
-        // 生成随机字符串
-        private static string GenerateRandomLog(int length = 16)
-        {
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-            char[] buffer = new char[length];
-            for (int i = 0; i < length; i++)
-            {
-                buffer[i] = chars[random.Next(chars.Length)];
-            }
-            return new string(buffer);
-        }
-
-        private async Task testlog()
-        {
-            int j = 0;
-            while (true)
-            {
-                j++;
-                var stopwatch = Stopwatch.StartNew();
-
-
-                for (int i = 0; i < 1000; i++)
-                {
-                    string randomLog = $"{GenerateRandomLog(1000)}";
-                    log.Info(randomLog);
-                    await Task.Delay(1); // 模拟异步操作
-                }
-                stopwatch.Stop();
-                log.Info($"第{j + 1}次日志写入用时: {stopwatch.ElapsedMilliseconds} ms");
-                await Task.Delay(1000); // 模拟异步操作
-            }
-            return;
         }
     }
 }
