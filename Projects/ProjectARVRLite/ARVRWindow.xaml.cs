@@ -657,6 +657,22 @@ namespace ProjectARVRLite
                     });
                     return;
                 }
+                else
+                {
+                    ObjectiveTestResult.TotalResult = false;
+                    var response = new SocketResponse
+                    {
+                        Version = "1.0",
+                        MsgID = "",
+                        EventName = "ProjectARVRResult",
+                        Code = -2,
+                        Msg = "ARVR Test OverTime",
+                        Data = ObjectiveTestResult
+                    };
+                    string respString = JsonConvert.SerializeObject(response);
+                    log.Info(respString);
+                    SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+                }
                 TryCount = 0;
             }
             else
