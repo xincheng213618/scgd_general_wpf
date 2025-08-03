@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 
 namespace ColorVision.UI
@@ -18,9 +19,18 @@ namespace ColorVision.UI
         private const int FlushIntervalMs = 100; // 刷新频率，100ms合并一次刷新
         private bool _reverseLastState = false;
 
-        public TextBoxAppender(TextBox textBox)
+
+        public string SearchText { get => _SearchText; set { _SearchText = value; IsSearchEnabled = !string.IsNullOrWhiteSpace(value); } }
+        private string _SearchText;
+
+        private bool IsSearchEnabled;
+
+        private readonly TextBox _logTextBoxSearch;
+
+        public TextBoxAppender(TextBox textBox,TextBox logTextBoxSerch)
         {
             _textBox = textBox ?? throw new ArgumentNullException(nameof(textBox));
+            _logTextBoxSearch = logTextBoxSerch ?? throw new ArgumentNullException(nameof(logTextBoxSerch));
             _flushTimer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromMilliseconds(FlushIntervalMs)
@@ -79,6 +89,7 @@ namespace ColorVision.UI
         private void UpdateTextBox(string logs, bool reverse)
         {
 
+
             if (reverse)
             {
                 if (LogConfig.Instance.MaxChars > 1000 && _textBox.Text.Length > LogConfig.Instance.MaxChars)
@@ -86,7 +97,18 @@ namespace ColorVision.UI
                     _textBox.Text = _textBox.Text.Substring(0,LogConfig.Instance.MaxChars);
                     _textBox.CaretIndex = _textBox.Text.Length;
                 }
-                _textBox.Text = logs + _textBox.Text;
+                if (IsSearchEnabled && logs.Contains(SearchText))
+                {
+                    var logLines = logs.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+                    var filteredLines = logLines.Where(line => line.Contains(SearchText, StringComparison.OrdinalIgnoreCase)).ToArray();
+                    if (filteredLines.Length == 0) return;
+                    logs = Environment.NewLine + string.Join(Environment.NewLine, filteredLines);
+                    _logTextBoxSearch.Text = logs + _logTextBoxSearch.Text;
+                }
+                else
+                {
+                    _textBox.Text = logs + _textBox.Text;
+                }
             }
             else
             {
@@ -95,9 +117,22 @@ namespace ColorVision.UI
                     _textBox.Text = _textBox.Text.Substring(_textBox.Text.Length - LogConfig.Instance.MaxChars);
                     _textBox.CaretIndex = _textBox.Text.Length;
                 }
-                _textBox.AppendText(logs);
-                if (LogConfig.Instance.AutoScrollToEnd && !suspendAutoScroll)
-                    _textBox.ScrollToEnd();
+                if (IsSearchEnabled )
+                {
+                    var logLines = logs.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+                    var filteredLines = logLines.Where(line=>line.Contains(SearchText, StringComparison.OrdinalIgnoreCase)).ToArray();
+                    if (filteredLines.Length== 0) return;
+                    logs = Environment.NewLine + string.Join(Environment.NewLine, filteredLines);
+                    _logTextBoxSearch.AppendText(logs);
+                    if (LogConfig.Instance.AutoScrollToEnd && !suspendAutoScroll)
+                        _logTextBoxSearch.ScrollToEnd();
+                }
+                else
+                {
+                    _textBox.AppendText(logs);
+                    if (LogConfig.Instance.AutoScrollToEnd && !suspendAutoScroll)
+                        _textBox.ScrollToEnd();
+                }
             }
         }
 
@@ -155,7 +190,7 @@ namespace ColorVision.UI
         }
 
         // 获取TextBox的ScrollViewer
-        private ScrollViewer GetScrollViewer(DependencyObject depObj)
+        private static ScrollViewer? GetScrollViewer(DependencyObject depObj)
         {
             if (depObj is ScrollViewer) return (ScrollViewer)depObj;
             for (int i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)

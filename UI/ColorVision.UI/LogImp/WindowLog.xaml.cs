@@ -142,7 +142,7 @@ namespace ColorVision.UI
         private void Window_Initialized(object sender, EventArgs e)
         {
             Hierarchy = (Hierarchy)LogManager.GetRepository();
-            TextBoxAppender = new TextBoxAppender(logTextBox);
+            TextBoxAppender = new TextBoxAppender(logTextBox, logTextBoxSerch);
             TextBoxAppender.Layout = new PatternLayout("%date [%thread] %-5level %logger %  %message%newline");
             Hierarchy.Root.AddAppender(TextBoxAppender);
             log4net.Config.BasicConfigurator.Configure(Hierarchy);
@@ -287,6 +287,7 @@ namespace ColorVision.UI
         private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
         {
             var searchText = SearchBar1.Text.ToLower(CultureInfo.CurrentCulture);
+            TextBoxAppender.SearchText = searchText;
             if (!string.IsNullOrEmpty(searchText))
             {
                 var containsRegexSpecialChars = RegexSpecialChars.Any(searchText.Contains);
