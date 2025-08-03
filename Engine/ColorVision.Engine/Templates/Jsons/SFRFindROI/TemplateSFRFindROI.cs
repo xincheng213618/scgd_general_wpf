@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
 
         public override UserControl GetUserControl()
         {
-            EditTemplateJson = EditTemplateJson ?? new EditTemplateJson(Description);
+            EditTemplateJson = new EditTemplateJson(Description);
             return EditTemplateJson;
         }
         public string Description { get; set; } = "//sfr roi配置\r\nstruct SfrRoiParam\r\n{\r\n        float th;                 //二值化阈值      \r\n        float lowThreshold;       //边缘化低阈值 \r\n        float highThreshold;      //边缘化高阈值\r\n        float minLength;          //最短线段长度\r\n        int   roi_w;              //roi的宽和高      \r\n        int   roi_h;              //\r\n\r\n};";
