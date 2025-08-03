@@ -105,11 +105,11 @@ namespace ProjectARVRLite
         BKscreeenDefectDetection,
     }
 
-
     public class ProjectARVRReuslt : ViewModelBase
     {
         public int Id { get; set; }
         public string Model { get; set; }
+
         public DateTime CreateTime { get; set; } = DateTime.Now;
 
         public string FileName { get; set; }
@@ -117,6 +117,8 @@ namespace ProjectARVRLite
         public string SN { get; set; }
 
         public string Code { get; set; }
+
+        public FlowStatus FlowStatus { get; set; } = FlowStatus.Ready;
 
         public bool Result { get; set; } = true;
 
@@ -421,8 +423,6 @@ namespace ProjectARVRLite
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = ProjectARVRLiteConfig.Instance;
-            ImageView.SetConfig(ProjectARVRLiteConfig.Instance.ImageViewConfig);
-
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
             flowEngine = new FlowEngineControl(false);
@@ -597,7 +597,8 @@ namespace ProjectARVRLite
                 flowEngine.LoadFromBase64(base64);
                 await Refresh();
                 log.Info($"IsReady{flowEngine.IsReady}");
-            }  
+            }
+            CurrentFlowResult.FlowStatus = FlowStatus.Ready;
 
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
@@ -643,8 +644,11 @@ namespace ProjectARVRLite
             else if (FlowControlData.EventName == "OverTime")
             {
                 log.Info("流程运行超时，正在重新尝试");
+                CurrentFlowResult.FlowStatus = FlowStatus.OverTime;
+                ViewResluts.Insert(0, CurrentFlowResult); //倒序插入
                 flowEngine.LoadFromBase64(string.Empty);
                 Refresh();
+
                 if (TryCount < ProjectARVRLiteConfig.Instance.TryCountMax)
                 {
                     Task.Delay(200).ContinueWith(t =>
@@ -679,6 +683,10 @@ namespace ProjectARVRLite
             {
                 TryCount = 0;
                 log.Error("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
+                CurrentFlowResult.FlowStatus = FlowStatus.Failed;
+                ViewResluts.Insert(0, CurrentFlowResult); //倒序插入
+
+
                 logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
                 if (ProjectARVRLiteConfig.Instance.AllowTestFailures)
                 {
@@ -720,7 +728,7 @@ namespace ProjectARVRLite
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
                 return;
             }
-            ProjectARVRReuslt result = new ProjectARVRReuslt();
+            ProjectARVRReuslt result = CurrentFlowResult ?? new ProjectARVRReuslt();
 
             if (ViewResluts.FirstOrDefault(a => a.SN == ProjectARVRLiteConfig.Instance.SN) is ProjectARVRReuslt result1)
             {
@@ -730,8 +738,8 @@ namespace ProjectARVRLite
             result.Model = FlowTemplate.Text;
             result.Id = Batch.Id;
             result.SN = ProjectARVRLiteConfig.Instance.SN;
+            result.FlowStatus = FlowStatus.Completed;
             result.Result = true;
-
             if (result.Model.Contains("White51"))
             {
                 log.Info("正在解析White51的流程");
@@ -903,6 +911,15 @@ namespace ProjectARVRLite
                                     Value = poiResultCIExyuvData.v,
                                     TestValue=poiResultCIExyuvData.v.ToString("F3")
                                 };
+
+
+                                result.Result = result.Result && ObjectiveTestResult.W255CenterLunimance.TestResult;
+                                result.Result = result.Result && ObjectiveTestResult.W255CenterCIE1931ChromaticCoordinatesx.TestResult;
+                                result.Result = result.Result && ObjectiveTestResult.W255CenterCIE1931ChromaticCoordinatesy.TestResult;
+                                result.Result = result.Result && ObjectiveTestResult.W255CenterCIE1976ChromaticCoordinatesu.TestResult;
+                                result.Result = result.Result && ObjectiveTestResult.W255CenterCIE1976ChromaticCoordinatesv.TestResult;
+
+
                             }
 
                             result.ViewResultWhite.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
@@ -961,8 +978,6 @@ namespace ProjectARVRLite
                     }
 
                 }
-
-
             }
 
             else if (result.Model.Contains("White25"))
@@ -1040,11 +1055,20 @@ namespace ProjectARVRLite
                                 Value = result.ViewResultW25.PoiResultCIExyuvDatas[0].v,
                                 TestValue = result.ViewResultW25.PoiResultCIExyuvDatas[0].v.ToString("F3")
                             };
+
+
+                            result.Result = result.Result && ObjectiveTestResult.W25CenterLunimance.TestResult;
+                            result.Result = result.Result && ObjectiveTestResult.W25CenterCIE1931ChromaticCoordinatesx.TestResult;
+                            result.Result = result.Result && ObjectiveTestResult.W25CenterCIE1931ChromaticCoordinatesy.TestResult;
+                            result.Result = result.Result && ObjectiveTestResult.W25CenterCIE1976ChromaticCoordinatesu.TestResult;
+                            result.Result = result.Result && ObjectiveTestResult.W25CenterCIE1976ChromaticCoordinatesv.TestResult;
+
                         }
                     }
 
 
                 }
+
             }
 
             else if (result.Model.Contains("Black"))
@@ -1093,7 +1117,7 @@ namespace ProjectARVRLite
 
                                 ObjectiveTestResult.FOFOContrast = FOFOContrast;
                                 result.ViewResultBlack.FOFOContrast = FOFOContrast;
-                                result.Result = result.Result && FOFOContrast.TestResult;
+                                result.Result = result.Result &&  FOFOContrast.TestResult;
                             }
                         }
                         catch (Exception ex)
@@ -1506,8 +1530,6 @@ namespace ProjectARVRLite
 
                             result.Result = result.Result && ObjectiveTestResult.HorizontalTVDistortion.TestResult;
                             result.Result = result.Result && ObjectiveTestResult.VerticalTVDistortion.TestResult;
-
-
                         }
 
                     }
@@ -1576,9 +1598,9 @@ namespace ProjectARVRLite
                                 result.ViewResultOpticCenter.OptCenterYTilt = ObjectiveTestResult.OptCenterYTilt;
                                 result.ViewResultOpticCenter.OptCenterRotation = ObjectiveTestResult.OptCenterRotation;
 
-                                result.Result = result.Result && ObjectiveTestResult.OptCenterXTilt.TestResult;
-                                result.Result = result.Result && ObjectiveTestResult.OptCenterYTilt.TestResult;
-                                result.Result = result.Result && ObjectiveTestResult.OptCenterRotation.TestResult;
+                                 result.Result = result.Result && ObjectiveTestResult.OptCenterXTilt.TestResult;
+                                 result.Result = result.Result && ObjectiveTestResult.OptCenterYTilt.TestResult;
+                                 result.Result = result.Result && ObjectiveTestResult.OptCenterRotation.TestResult;
                             }
                             if (AlgResultMaster.TName == "ImageCenter")
                             {
@@ -1617,7 +1639,7 @@ namespace ProjectARVRLite
                                 result.ViewResultOpticCenter.ImageCenterXTilt = ObjectiveTestResult.ImageCenterXTilt;
                                 result.ViewResultOpticCenter.ImageCenterYTilt = ObjectiveTestResult.ImageCenterYTilt;
                                 result.ViewResultOpticCenter.ImageCenterRotation = ObjectiveTestResult.ImageCenterRotation;
-                                    
+
                                 result.Result = result.Result && ObjectiveTestResult.ImageCenterXTilt.TestResult;
                                 result.Result = result.Result && ObjectiveTestResult.ImageCenterYTilt.TestResult;
                                 result.Result = result.Result && ObjectiveTestResult.ImageCenterRotation.TestResult;
@@ -1637,12 +1659,13 @@ namespace ProjectARVRLite
                 }
             }
 
+
             ViewResluts.Insert(0,result); //倒序插入
             if (ProjectARVRLiteConfig.Instance.RefreshResult)
             {
                 listView1.SelectedIndex = 0;
             }
-
+            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
             SwithchSocket();
         }
 

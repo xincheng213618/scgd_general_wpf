@@ -43,6 +43,7 @@ namespace ProjectARVRLite
         [JsonIgnore]
         public RelayCommand EditObjectiveTestResultFixCommand { get; set; }
 
+
         public ProjectARVRLiteConfig()
         {
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
@@ -101,9 +102,6 @@ namespace ProjectARVRLite
             EditRecipeWindow EditRecipeWindow = new EditRecipeWindow() { Owner = Application.Current.GetActiveWindow() };
             EditRecipeWindow.ShowDialog();
         }
-
-
-        public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig() { IsLayoutUpdated = true };
 
         public static void OpenConfig()
         {
@@ -191,22 +189,9 @@ namespace ProjectARVRLite
 
 
         [JsonIgnore]
-        public string SN { get => _SN; set
-            {
-                if (!string.IsNullOrEmpty(value) && value.Length > SNMax)
-                {
-                    // 移除最前面的字符，使其长度为 14
-                    _SN = value.Substring(value.Length - SNMax);
-                }
-                else
-                {
-                    _SN = value;
-                }
-                NotifyPropertyChanged(); } }
+        public string SN { get => _SN; set{ _SN = value; NotifyPropertyChanged(); } }
         private string _SN;
 
-        public int SNMax { get => _SMMax; set { _SMMax = value; NotifyPropertyChanged(); } }
-        private int _SMMax = 17;
 
         public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; NotifyPropertyChanged(); } }
         private bool _IsAutoUploadSn;
