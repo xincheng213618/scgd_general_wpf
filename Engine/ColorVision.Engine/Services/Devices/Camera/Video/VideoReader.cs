@@ -46,15 +46,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private static readonly ILog log = LogManager.GetLogger(typeof(VideoReader));
         private bool OpenVideo;
         MemoryMappedFile memoryMappedFile;
-        protected MemoryMappedViewStream memoryMappedViewStream;
+        MemoryMappedViewStream memoryMappedViewStream;
         BinaryReader binaryReader;
         Image? Image { get; set; }
 
-        public VideoReader()
-        {
-            OpenVideo = false;
-        }
-        byte[]? lastFrameData = null; // 保存上一帧数据
+        byte[]? lastFrameData; // 保存上一帧数据
 
         public int Startup(string mapNamePrefix, Image image)
         {
@@ -88,11 +84,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             binaryReader?.Dispose();
         }
 
-        private int frameCount = 0;
+        private int frameCount;
         private Stopwatch fpsTimer = new Stopwatch();
-        private double lastFps = 0;
+        private double lastFps;
 
-        private WriteableBitmap? writeableBitmap = null;
+        private WriteableBitmap? writeableBitmap;
 
         private async Task StartupAsync()
         {
@@ -112,43 +108,62 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                             await Task.Delay(1);
                             continue;
                         }
-                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        Application.Current?.Dispatcher.BeginInvoke(() =>
                         {
                             if (Image == null) return;
 
-                            // 判断是否需要重建WriteableBitmap
-                            bool needNewBitmap = writeableBitmap == null ||
-                                writeableBitmap.PixelWidth != cVImagePacket.width ||
-                                writeableBitmap.PixelHeight != cVImagePacket.height ||
-                                GetPixelFormat(cVImagePacket) != writeableBitmap.Format;
+                            if (Image.Source is WriteableBitmap writeableBitmap)
+                            {
+                                // 判断是否需要重建WriteableBitmap
+                                bool needNewBitmap = writeableBitmap == null ||
+                                    writeableBitmap.PixelWidth != cVImagePacket.width ||
+                                    writeableBitmap.PixelHeight != cVImagePacket.height ||
+                                    GetPixelFormat(cVImagePacket) != writeableBitmap.Format;
 
-                            if (needNewBitmap)
+                                if (needNewBitmap)
+                                {
+                                    writeableBitmap = new WriteableBitmap(
+                                        cVImagePacket.width,
+                                        cVImagePacket.height,
+                                        96, 96,
+                                        GetPixelFormat(cVImagePacket),
+                                        null);
+                                    Image.Source = writeableBitmap;
+                                }
+                                // 写入数据到 WriteableBitmap
+                                writeableBitmap!.Lock();
+                                writeableBitmap.WritePixels(
+                                    new Int32Rect(0, 0, cVImagePacket.width, cVImagePacket.height),
+                                    cVImagePacket.data,
+                                    cVImagePacket.width * cVImagePacket.channels * (cVImagePacket.bpp / 8),
+                                    0);
+                                writeableBitmap.Unlock();
+                            }
+                            else
                             {
                                 writeableBitmap = new WriteableBitmap(
-                                    cVImagePacket.width,
-                                    cVImagePacket.height,
-                                    96, 96,
-                                    GetPixelFormat(cVImagePacket),
-                                    null);
+                                        cVImagePacket.width,
+                                        cVImagePacket.height,
+                                        96, 96,
+                                        GetPixelFormat(cVImagePacket),
+                                        null);
                                 Image.Source = writeableBitmap;
+                                // 写入数据到 WriteableBitmap
+                                writeableBitmap!.Lock();
+                                writeableBitmap.WritePixels(
+                                    new Int32Rect(0, 0, cVImagePacket.width, cVImagePacket.height),
+                                    cVImagePacket.data,
+                                    cVImagePacket.width * cVImagePacket.channels * (cVImagePacket.bpp / 8),
+                                    0);
+                                writeableBitmap.Unlock();
                             }
 
-                            // 写入数据到 WriteableBitmap
-                            writeableBitmap!.Lock();
-                            writeableBitmap.WritePixels(
-                                new Int32Rect(0, 0, cVImagePacket.width, cVImagePacket.height),
-                                cVImagePacket.data,
-                                cVImagePacket.width * cVImagePacket.channels * (cVImagePacket.bpp / 8),
-                                0);
-                            writeableBitmap.Unlock();
-
                             Interlocked.Increment(ref frameCount);
-
                             // 每秒统计一次帧率
                             if (fpsTimer.ElapsedMilliseconds >= 1000)
                             {
                                 lastFps = (double)frameCount*1000/ fpsTimer.ElapsedMilliseconds;
-                                log.Info($"Current FPS: {lastFps}");
+                                log.Info($"Current FPS: {lastFps:F2}");
                                 Interlocked.Exchange(ref frameCount, 0);
                                 fpsTimer.Restart();
                             }
