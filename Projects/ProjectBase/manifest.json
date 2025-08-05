@@ -1,9 +1,0 @@
-{
-  "manifest_version": 1,
-  "Id": "ProjectBase",
-  "name": "ProjectBase",
-  "version": "1.0",
-  "description": "",
-  "dllpath": "ProjectBase.dll",
-  "requires": "1.2.4.23"
-} 

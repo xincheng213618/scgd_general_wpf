@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿using ColorVision.ImageEditor;
+using log4net;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -48,12 +49,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         MemoryMappedFile memoryMappedFile;
         MemoryMappedViewStream memoryMappedViewStream;
         BinaryReader binaryReader;
-        Image? Image { get; set; }
+        ImageView? Image { get; set; }
 
         byte[]? lastFrameData; // 保存上一帧数据
 
-        public int Startup(string mapNamePrefix, Image image)
+        public int Startup(string mapNamePrefix, ImageView image)
         {
+            first = true;
             Image = image;
             try
             {
@@ -88,7 +90,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private Stopwatch fpsTimer = new Stopwatch();
         private double lastFps;
 
-        private WriteableBitmap? writeableBitmap;
+        bool first = true;
 
         private async Task StartupAsync()
         {
@@ -112,7 +114,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                         {
                             if (Image == null) return;
 
-                            if (Image.Source is WriteableBitmap writeableBitmap)
+                            if (Image.ImageShow.Source is WriteableBitmap writeableBitmap)
                             {
                                 // 判断是否需要重建WriteableBitmap
                                 bool needNewBitmap = writeableBitmap == null ||
@@ -128,7 +130,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                                         96, 96,
                                         GetPixelFormat(cVImagePacket),
                                         null);
-                                    Image.Source = writeableBitmap;
+                                    Image.ImageShow.Source = writeableBitmap;
                                 }
                                 // 写入数据到 WriteableBitmap
                                 writeableBitmap!.Lock();
@@ -147,7 +149,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                                         96, 96,
                                         GetPixelFormat(cVImagePacket),
                                         null);
-                                Image.Source = writeableBitmap;
+                                Image.ImageShow.Source = writeableBitmap;
                                 // 写入数据到 WriteableBitmap
                                 writeableBitmap!.Lock();
                                 writeableBitmap.WritePixels(
@@ -166,6 +168,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                                 log.Info($"Current FPS: {lastFps:F2}");
                                 Interlocked.Exchange(ref frameCount, 0);
                                 fpsTimer.Restart();
+                            }
+
+                            if (first)
+                            {
+                                first = false;
+                                Image.ImageViewModel.ZoomboxSub.ZoomUniform();
                             }
                         });
 

@@ -403,7 +403,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                 DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(msg.MsgReturn.Data));
                                 string mapName = Device.Code;
                                 if (pm_live.IsLocal) mapName = pm_live.MapName;
-                                Device.CameraVideoControl.Startup(mapName, View.ImageView.ImageShow);
+                                Device.CameraVideoControl.Startup(mapName, View.ImageView);
 
                                 DService.IsVideoOpen = true;
                                 ButtonOpen.Visibility = Visibility.Collapsed;
@@ -412,7 +412,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                             }
                         };
                         ServicesHelper.SendCommand(button, msg);
-                        View.ImageView.ImageShow.Source = null;
                     }
                     else
                     {
