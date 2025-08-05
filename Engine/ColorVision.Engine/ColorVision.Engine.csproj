@@ -88,7 +88,6 @@
     <ProjectReference Include="..\..\UI\ColorVision.SocketProtocol\ColorVision.SocketProtocol.csproj" />
     <ProjectReference Include="..\ColorVision.FileIO\ColorVision.FileIO.csproj" />
     <ProjectReference Include="..\cvColorVision\cvColorVision.csproj" />
-    <ProjectReference Include="..\CVImageChannelLib\CVImageChannelLib.csproj" />
     <ProjectReference Include="..\..\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
     <ProjectReference Include="..\..\UI\ColorVision.Scheduler\ColorVision.Scheduler.csproj" />
     <ProjectReference Include="..\..\UI\ColorVision.Solution\ColorVision.Solution.csproj" />

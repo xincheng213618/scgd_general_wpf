@@ -28,6 +28,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using YamlDotNet.Core;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -182,18 +183,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         SetVisibility(StackPanelOpen, Visibility.Visible);
                         SetVisibility(ButtonClose, Visibility.Visible);
 
-                        Device.CameraVideoControl ??= new CameraVideoControl();
+                        Device.CameraVideoControl ??= new VideoReader();
                         if (!DService.IsVideoOpen)
                         {
                             DService.CurrentTakeImageMode = TakeImageMode.Live;
                             string host = Device.Config.VideoConfig.Host;
                             int port = Tool.GetFreePort(Device.Config.VideoConfig.Port);
-                            port = Device.CameraVideoControl.Open(host, port);
                             if (port > 0)
                             {
                                 View.ImageView.ImageShow.Source = null;
-                                Device.CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
-                                Device.CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
                             }
                             else
                             {
@@ -214,26 +212,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
             UpdateUI(DService.DeviceStatus);
             DService.DeviceStatusChanged += UpdateUI;
-
-            DService.MsgReturnReceived += (msg) =>
-            {
-                if (msg.Code == 0)
-                {
-                    switch (msg.EventName)
-                    {
-                        case MQTTCameraEventEnum.Event_OpenLive:
-                            DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(msg.Data));
-                            string mapName = Device.Code;
-                            if (pm_live.IsLocal) mapName = pm_live.MapName;
-                            Device.CameraVideoControl ??= new CameraVideoControl();
-                            Device.CameraVideoControl.Start(pm_live.IsLocal, mapName, pm_live.FrameInfo.width, pm_live.FrameInfo.height);
-                            break;
-                        default:
-                            break;
-                    }
-                }
-
-            };
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
         }
@@ -404,13 +382,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (sender is Button button)
             {
-                Device.CameraVideoControl ??= new CameraVideoControl();
                 if (!DService.IsVideoOpen)
                 {
                     DService.CurrentTakeImageMode = TakeImageMode.Live;
                     string host = Device.Config.VideoConfig.Host;
                     int port = Tool.GetFreePort(Device.Config.VideoConfig.Port);
-                    port = Device.CameraVideoControl.Open(host, port);
                     if (port > 0)
                     {
                         MsgRecord msg = DService.OpenVideo(host, port);
@@ -418,13 +394,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         {
                             if (s == MsgRecordState.Fail)
                             {
-                                Device.CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
                                 Device.CameraVideoControl.Close();
                                 DService.Close();
                                 DService.IsVideoOpen = false;
                             }
                             else
                             {
+                                DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(msg.MsgReturn.Data));
+                                string mapName = Device.Code;
+                                if (pm_live.IsLocal) mapName = pm_live.MapName;
+                                Device.CameraVideoControl.Startup(mapName, View.ImageView.ImageShow);
+
                                 DService.IsVideoOpen = true;
                                 ButtonOpen.Visibility = Visibility.Collapsed;
                                 ButtonClose.Visibility = Visibility.Visible;
@@ -433,8 +413,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         };
                         ServicesHelper.SendCommand(button, msg);
                         View.ImageView.ImageShow.Source = null;
-                        Device.CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
-                        Device.CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
                     }
                     else
                     {
@@ -443,17 +421,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     }
                 }
             }
-
-        }
-        bool isfist;
-        public void CameraVideoFrameReceived(WriteableBitmap bmp)
-        {
-            View.ImageView.ImageShow.Source = bmp;
-            if (!isfist)
-            {
-                View.ImageView.ImageViewModel.ZoomUniformCommand.Execute(this);
-            }
-            isfist = true;
         }
 
 

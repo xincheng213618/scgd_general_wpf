@@ -67,7 +67,6 @@ public class MMFWriter : CVImageWriterProxy
             logger.Error(ex.Message);
             return;
         }
-
         // 获取文件路径（假设内存映射文件是基于文件系统的）
         string filePath = "path_to_your_memory_mapped_file"; // 需要替换为实际路径
 
@@ -88,10 +87,6 @@ public class MMFWriter : CVImageWriterProxy
 	{
 		if (publisher != null)
 		{
-			if (IsNeedResize)
-			{
-				packet.Resize(ResizeRatio);
-			}
 			publisher.Publish(packet);
 		}
 	}

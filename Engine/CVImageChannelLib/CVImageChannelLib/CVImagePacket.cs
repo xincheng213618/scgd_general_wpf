@@ -1,6 +1,5 @@
 using System.IO;
 using System.Runtime.InteropServices;
-using OpenCvSharp;
 
 namespace CVImageChannelLib;
 
@@ -26,18 +25,6 @@ public class CVImagePacket : ISerializer<CVImagePacket>
 		channels = reader.ReadInt32();
 		len = reader.ReadInt32();
 		data = reader.ReadBytes(len);
-	}
-
-	public void Resize(float resizeRatio)
-	{
-		Mat mat = Mat.FromPixelData(height, width, MatType.MakeType(OpenCvMatTools.GetMatDepth(bpp), channels), data, 0L);
-		Mat mat2 = new Mat();
-		width = (int)((float)width * resizeRatio);
-		height = (int)((float)height * resizeRatio);
-		Cv2.Resize(mat, mat2, new Size(width, height));
-		len = width * height * channels * (bpp / 8);
-		data = new byte[len];
-		Marshal.Copy(mat2.Data, data, 0, len);
 	}
 
 	public void Serialize(BinaryWriter writer)

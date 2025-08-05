@@ -1,92 +1,137 @@
 #pragma warning disable CS8603
-using System;
-using System.Threading.Tasks;
-using System.Windows.Media.Imaging;
 using log4net;
+using System;
+using System.IO;
+using System.IO.MemoryMappedFiles;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Media.Imaging;
 
 namespace CVImageChannelLib;
 
-public class VideoReader : CVImageReaderProxy
+public class VideoReader :IDisposable
 {
-	private static readonly ILog logger = LogManager.GetLogger(typeof(VideoReader));
-
-	private MMFReader reader;
-
-	private H264Reader h264Reader;
+	private static readonly ILog log = LogManager.GetLogger(typeof(VideoReader));
 
 	private bool OpenVideo;
 
 	public event H264ReaderRecvHandler OnFrameRecv;
+    MemoryMappedFile memoryMappedFile;
+    protected MemoryMappedViewStream memoryMappedViewStream;
+	BinaryReader binaryReader;
 
-	public VideoReader()
+    public VideoReader()
 	{
 		OpenVideo = false;
 	}
 
-	public void Startup(string name, bool isLocal)
+	public int Startup(string mapNamePrefix)
     {
-		if (isLocal)
-		{
-			reader = new MMFReader(name);
-            OpenVideo = true;
-			Task.Run(async delegate
-			{
-				await StartupAsync();
-			});
-		}
-	}
+        try
+        {
+            memoryMappedFile = MemoryMappedFile.OpenExisting(mapNamePrefix);
+        }
+        catch (Exception ex)
+        {
+			log.Error(ex);
+			return -1;
+        }
+        if (memoryMappedFile != null)
+        {
+			memoryMappedViewStream = memoryMappedFile.CreateViewStream();
+			binaryReader = new BinaryReader(memoryMappedViewStream);
+        }
+        OpenVideo = true;
+        frameCount = 0;
+        lastFpsLogTime = DateTime.Now;
+        Task.Run(async delegate
+        {
+            await StartupAsync();
+        });
+		return 0;
+    }
 
 	public void Close()
 	{
 		OpenVideo = false;
-	}
+        memoryMappedFile?.Dispose();
+        memoryMappedViewStream?.Dispose();
+        binaryReader?.Dispose();
+    }
 
-	public int Open(string localIp, int localPort)
-	{
-		if (localIp == "127.0.0.1")
-		{
-			return 1;
-		}
-		h264Reader = new H264Reader(localIp, localPort);
-		h264Reader.H264ReaderRecv += H264Reader_H264ReaderRecv;
-		return h264Reader.GetLocalPort();
-	}
+    WriteableBitmap writeableBitmap;
+    int frameCount = 0;
+    DateTime lastFpsLogTime = DateTime.Now;
 
-	private async Task StartupAsync()
-	{
-		while (OpenVideo)
+    private async Task StartupAsync()
+    {
+        while (OpenVideo)
 		{
 			try
-			{
-                WriteableBitmap bmp = reader?.Subscribe();
-				if (bmp != null)
+            {
+                memoryMappedViewStream.Position = 0L;
+                CVImagePacket cVImagePacket = new CVImagePacket();
+                cVImagePacket.Deserialize(binaryReader);
+				if (cVImagePacket != null && cVImagePacket.len > 0)
 				{
-					this.OnFrameRecv?.Invoke(bmp);
-				}
-				await Task.Delay(20);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        if (writeableBitmap == null || writeableBitmap.PixelWidth != cVImagePacket.width || writeableBitmap.PixelHeight != cVImagePacket.height)
+                        {
+                            System.Windows.Media.PixelFormat pixelFormat;
+                            switch (cVImagePacket.channels)
+                            {
+                                case 3:
+                                    pixelFormat = cVImagePacket.bpp switch
+                                    {
+                                        16 => System.Windows.Media.PixelFormats.Rgb48,
+                                        _ => System.Windows.Media.PixelFormats.Bgr24,
+                                    };
+                                    break;
+                                default:
+                                    pixelFormat = cVImagePacket.bpp switch
+                                    {
+                                        16 => System.Windows.Media.PixelFormats.Gray16,
+                                        _ => System.Windows.Media.PixelFormats.Gray8,
+                                    };
+                                    pixelFormat = System.Windows.Media.PixelFormats.Gray8;
+                                    break;
+                            }
+                            writeableBitmap = new WriteableBitmap(cVImagePacket.width, cVImagePacket.height, 96, 96, pixelFormat, null);
+                        }
+                        // 写入数据到 WriteableBitmap
+                        writeableBitmap.Lock();
+                        writeableBitmap.WritePixels(
+                            new Int32Rect(0, 0, cVImagePacket.width, cVImagePacket.height),
+                            cVImagePacket.data,
+                            cVImagePacket.width * cVImagePacket.channels * (cVImagePacket.bpp / 8),
+                            0);
+                        writeableBitmap.Unlock();
+                        this.OnFrameRecv?.Invoke(writeableBitmap);
+                        // 帧数递增
+                        frameCount++;
+                        // 每秒统计一次帧率
+                        DateTime now = DateTime.Now;
+                        if ((now - lastFpsLogTime).TotalSeconds >= 1)
+                        {
+                            log.Info($"Current FPS: {frameCount}");
+                            frameCount = 0;
+                            lastFpsLogTime = now;
+                        }
+                    });
+                }
+				await Task.Delay(10);
 			}
 			catch (Exception ex)
 			{
-				logger.Error(ex.Message);
+				log.Error(ex.Message);
 			}
 		}
 	}
 
-	private void H264Reader_H264ReaderRecv(WriteableBitmap bmp)
+	public void Dispose()
 	{
-		this.OnFrameRecv?.Invoke(bmp);
-	}
 
-	public override WriteableBitmap Subscribe()
-	{
-		return reader?.Subscribe();
-	}
-
-	public override void Dispose()
-	{
-		base.Dispose();
-		h264Reader?.Dispose();
-		reader?.Dispose();
-		GC.SuppressFinalize(this);
+        GC.SuppressFinalize(this);
 	}
 }
