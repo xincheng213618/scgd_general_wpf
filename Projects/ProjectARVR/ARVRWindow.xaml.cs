@@ -9,6 +9,7 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Services.Types;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.Flow;
@@ -111,7 +112,8 @@ namespace ProjectARVR
     {
         public int Id { get; set; }
         public string Model { get; set; }
-        public DateTime CreateTime { get; set; } = DateTime.Now;
+
+        public DateTime CreateTime { get; set; } 
 
         public string FileName { get; set; }
 
@@ -291,14 +293,14 @@ namespace ProjectARVR
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    ProjectARVRConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
+                    ProjectARVRConfig.Instance.SN = "SN" + Random.NextInt64(1000, 9000).ToString();
                 });
             }
             else
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    ProjectARVRConfig.Instance.SN = SN;
+                    ProjectARVRConfig.Instance.SN = "SN" + Random.NextInt64(1000, 9000).ToString();
                 });
             }
         }
@@ -555,6 +557,7 @@ namespace ProjectARVR
             FlowName = FlowTemplate.Text;
             CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             CurrentFlowResult.FlowStatus = FlowStatus.Ready;
+            CurrentFlowResult.CreateTime = DateTime.Now;
             await Refresh();
 
             if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info( "找不到完整流程，运行失败");return; }
@@ -694,15 +697,12 @@ namespace ProjectARVR
             }
             ProjectARVRReuslt result = CurrentFlowResult ?? new ProjectARVRReuslt();
 
-            if (ViewResluts.FirstOrDefault(a => a.SN == ProjectARVRConfig.Instance.SN) is ProjectARVRReuslt result1)
-            {
-                result1.CopyTo(result);
-            }
-
             result.Model = FlowTemplate.Text;
             result.Id = Batch.Id;
             result.SN = ProjectARVRConfig.Instance.SN;
             result.Result = true;
+            result.CreateTime = DateTime.Now;
+            result.FlowStatus = FlowStatus.Completed;
 
             //if (result.Model.Contains("White_calibrate"))
             //{
@@ -753,7 +753,7 @@ namespace ProjectARVR
             //        }
             //    }
             //}
-            
+
             if (result.Model.Contains("White"))
             {
                 log.Info("正在解析白画面的流程");
@@ -928,6 +928,11 @@ namespace ProjectARVR
                 log.Info("正在解析黑画面的流程");
                 result.TestType = ARVRTestType.Black;
                 ObjectiveTestResult.FlowBlackTestReslut = true;
+
+                if (ViewResluts.FirstOrDefault(a => a.SN == ProjectARVRConfig.Instance.SN) is ProjectARVRReuslt result1)
+                {
+                    result.ViewResultWhite = result1.ViewResultWhite;
+                }
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
@@ -1481,8 +1486,8 @@ namespace ProjectARVR
                             result.ViewResultOpticCenter.BinocularFusionModel = AlgResultModels[0];
 
                             result.ViewResultOpticCenter.BinocularFusionModel.XDegree = (float)(result.ViewResultOpticCenter.BinocularFusionModel.XDegree * ObjectiveTestResultFix.XTilt);
-                            result.ViewResultOpticCenter.BinocularFusionModel.YDegree = (float)(result.ViewResultOpticCenter.BinocularFusionModel.XDegree * ObjectiveTestResultFix.YTilt);
-                            result.ViewResultOpticCenter.BinocularFusionModel.ZDegree = (float)(result.ViewResultOpticCenter.BinocularFusionModel.XDegree * ObjectiveTestResultFix.Rotation);
+                            result.ViewResultOpticCenter.BinocularFusionModel.YDegree = (float)(result.ViewResultOpticCenter.BinocularFusionModel.YDegree * ObjectiveTestResultFix.YTilt);
+                            result.ViewResultOpticCenter.BinocularFusionModel.ZDegree = (float)(result.ViewResultOpticCenter.BinocularFusionModel.ZDegree * ObjectiveTestResultFix.Rotation);
 
                             ObjectiveTestResult.XTilt = new ObjectiveTestItem()
                             {
@@ -1909,7 +1914,8 @@ namespace ProjectARVR
             string outtext = string.Empty;
             outtext += $"Model:{result.Model}" + Environment.NewLine;
             outtext += $"SN:{result.SN}" + Environment.NewLine;
-            outtext += $"{DateTime.Now:yyyy/MM//dd HH:mm:ss}" + Environment.NewLine;
+
+            outtext += $"{result.CreateTime:yyyy/MM//dd HH:mm:ss}" + Environment.NewLine;
 
             Run run = new Run(outtext);
             run.Foreground = result.Result ? Brushes.Black : Brushes.White;

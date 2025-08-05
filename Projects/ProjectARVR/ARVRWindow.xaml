@@ -129,7 +129,7 @@
                                     <GridViewColumn Header="Time" Width="150">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
-                                                <TextBlock Text="{Binding CreateTime}" />
+                                                <TextBlock Text="{Binding CreateTime,StringFormat=yyyy/MM//dd HH:mm:ss}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>

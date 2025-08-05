@@ -51,7 +51,7 @@ namespace ProjectARVRLite
         public double W255ColorUniformityMin { get => _W255ColorUniformityMin; set { _W255ColorUniformityMin = value; NotifyPropertyChanged(); } }
         private double _W255ColorUniformityMin;
         [Category("W255")]
-        public double W255ColorUniformityMax { get => W255ColorUniformityMax; set { W255ColorUniformityMax = value; NotifyPropertyChanged(); } }
+        public double W255ColorUniformityMax { get => _W255ColorUniformityMax; set { _W255ColorUniformityMax = value; NotifyPropertyChanged(); } }
         private double _W255ColorUniformityMax = 0.02;
         [Category("W255")]
         [DisplayName("Center Correlated Color Temperature(K) Min")]

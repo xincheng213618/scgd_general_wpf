@@ -326,7 +326,7 @@ namespace ProjectARVRLite
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    ProjectARVRLiteConfig.Instance.SN = SN;
+                    ProjectARVRLiteConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
                 });
             }
         }
@@ -487,7 +487,7 @@ namespace ProjectARVRLite
         }
 
 
-        public  async Task Refresh()
+        public async Task Refresh()
         {
             if (FlowTemplate.SelectedIndex < 0) return;
 
@@ -730,15 +730,12 @@ namespace ProjectARVRLite
             }
             ProjectARVRReuslt result = CurrentFlowResult ?? new ProjectARVRReuslt();
 
-            if (ViewResluts.FirstOrDefault(a => a.SN == ProjectARVRLiteConfig.Instance.SN) is ProjectARVRReuslt result1)
-            {
-                result1.CopyTo(result);
-            }
 
             result.Model = FlowTemplate.Text;
             result.Id = Batch.Id;
             result.SN = ProjectARVRLiteConfig.Instance.SN;
             result.FlowStatus = FlowStatus.Completed;
+            result.CreateTime = DateTime.Now;
             result.Result = true;
             if (result.Model.Contains("White51"))
             {
@@ -1076,7 +1073,10 @@ namespace ProjectARVRLite
                 log.Info("正在解析黑画面的流程");
                 result.TestType = ARVR1TestType.Black;
                 ObjectiveTestResult.FlowBlackTestReslut = true;
-
+                if (ViewResluts.FirstOrDefault(a => a.SN == ProjectARVRLiteConfig.Instance.SN) is ProjectARVRReuslt result1)
+                {
+                    result.ViewResultWhite =result1.ViewResultWhite;
+                }
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
                 {
