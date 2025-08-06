@@ -59,7 +59,6 @@ namespace ColorVision.Engine.Templates.Flow
         private bool _IsReady;
     }
 
-
     public class FlowEngineManager:ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowEngineManager));
@@ -81,6 +80,8 @@ namespace ColorVision.Engine.Templates.Flow
         public RelayCommand EditTemplateLargeFlowCommand { get; set; }
         public ViewFlow View { get; set; }
         public FlowEngineControl FlowEngineControl { get; set; }
+
+        public FlowControlData CurrentFlowMsg { get; set; } = new FlowControlData();
 
         public FlowEngineManager()
         {

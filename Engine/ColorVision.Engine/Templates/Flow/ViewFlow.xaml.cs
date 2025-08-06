@@ -1,5 +1,7 @@
 ﻿#pragma warning disable CA1720,CS8602
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.Archive.Dao;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
@@ -400,6 +402,23 @@ namespace ColorVision.Engine.Services.Flow
             STNodeTreeView1?.Dispose();
             winf1?.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            var Batch = BatchResultMasterDao.Instance.GetByCode(FlowEngineManager.GetInstance().CurrentFlowMsg.SerialNumber);
+            if (Batch == null)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
+            }
+            Frame frame = new Frame();
+
+            BatchDataHistory batchDataHistory = new BatchDataHistory(frame, new ViewBatchResult(Batch));
+
+            Window window = new Window();
+            window.Content = batchDataHistory;
+            window.Show();
+
         }
     }
 }

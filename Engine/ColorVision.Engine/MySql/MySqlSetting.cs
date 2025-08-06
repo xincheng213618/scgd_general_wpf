@@ -8,8 +8,6 @@ using System.Windows;
 
 namespace ColorVision.Engine.MySql
 {
-    public delegate void UseMySqlHandler(bool IsUseMySql);
-
     public class MySqlSettingProvider : IConfigSettingProvider,IStatusBarProvider
     {
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
@@ -61,10 +59,10 @@ namespace ColorVision.Engine.MySql
         public static MySqlControl MySqlControl => MySqlControl.GetInstance();
         public static bool IsConnect => MySqlControl.IsConnect;
 
-        public bool IsUseMySql { get => _IsUseMySql; set { _IsUseMySql = value; NotifyPropertyChanged(); UseMySqlChanged?.Invoke(value); } }
+        public bool IsUseMySql { get => _IsUseMySql; set { _IsUseMySql = value; NotifyPropertyChanged(); UseMySqlChanged?.Invoke(this,value); } }
         private bool _IsUseMySql = true;
 
-        public event UseMySqlHandler UseMySqlChanged;
+        public event EventHandler<bool> UseMySqlChanged;
 
 
         /// <summary>

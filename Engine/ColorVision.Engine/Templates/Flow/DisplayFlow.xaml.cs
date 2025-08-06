@@ -237,6 +237,7 @@ namespace ColorVision.Engine.Templates.Flow
             FlowEngineConfig.Instance.FlowRunTime[ComboBoxFlow.Text] = stopwatch.ElapsedMilliseconds;
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
 
+            FlowEngineManager.GetInstance().CurrentFlowMsg = FlowControlData;
 
 
             if (Config.IsNewMsgUI)
