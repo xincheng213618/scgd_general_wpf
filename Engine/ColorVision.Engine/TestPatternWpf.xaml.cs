@@ -25,7 +25,7 @@ namespace ColorVision.Engine
     public partial class TestPatternWpf : Window
     {
         private OpenCvSharp.Mat currentMat;
-        private readonly string[] patternTypes = { "纯色", "棋盘格", "点阵", "十字", "隔行点亮" };
+        private readonly string[] patternTypes = { "纯色", "棋盘格", "点阵", "十字图卡", "隔行点亮"，"MTF图卡","畸变图卡","双目融合图卡" };
         private readonly string[] imageFormats = { "png", "jpg", "bmp" };
         private readonly (string, int, int)[] commonResolutions =
         {
