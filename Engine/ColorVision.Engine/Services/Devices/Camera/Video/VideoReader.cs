@@ -19,10 +19,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private MemoryMappedFile memoryMappedFile;
         private MemoryMappedViewStream memoryMappedViewStream;
         private BinaryReader binaryReader;
-        private ImageView? Image { get; set; }
+        private BinaryWriter binaryWriter;
 
-        private byte[]? lastFrameData; // 上一帧池化数据
-        private int lastFrameLen;      // 上一帧有效长度
+        private ImageView? Image { get; set; }
 
         public int Startup(string mapNamePrefix, ImageView image)
         {
@@ -33,6 +32,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 memoryMappedFile = MemoryMappedFile.OpenExisting(mapNamePrefix);
                 memoryMappedViewStream = memoryMappedFile.CreateViewStream();
                 binaryReader = new BinaryReader(memoryMappedViewStream);
+                binaryWriter = new BinaryWriter(memoryMappedViewStream);
             }
             catch (Exception ex)
             {
@@ -47,13 +47,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         public void Close()
         {
             openVideo = false;
-
-            if (lastFrameData != null)
-            {
-                ArrayPool<byte>.Shared.Return(lastFrameData);
-                lastFrameData = null;
-                lastFrameLen = 0;
-            }
             Image = null;
             binaryReader?.Dispose();
             memoryMappedViewStream?.Dispose();
@@ -76,11 +69,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 {
                     memoryMappedViewStream.Position = 0L;
                     width = binaryReader.ReadInt32();
+                    if (width == 0)
+                    {
+                        await Task.Delay(10);
+                        continue;
+                    }
                     height = binaryReader.ReadInt32();
                     bpp = binaryReader.ReadInt32();
                     channels = binaryReader.ReadInt32();
                     len = binaryReader.ReadInt32();
-
                     if (len <= 0)
                     {
                         await Task.Delay(10);
@@ -95,26 +92,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                         await Task.Delay(10);
                         continue;
                     }
-
-                    bool isFrameChanged = lastFrameData == null ||
-                        lastFrameLen != len ||
-                        !buffer.AsSpan(0, len).SequenceEqual(lastFrameData.AsSpan(0, lastFrameLen));
-
-                    if (!isFrameChanged)
-                    {
-                        ArrayPool<byte>.Shared.Return(buffer);
-                        await Task.Delay(1);
-                        continue;
-                    }
+                    binaryWriter.Seek(0, SeekOrigin.Begin);
+                    binaryWriter.Write(0); // width=0 表示写入中/无新帧
 
                     // 渲染逻辑调度到UI线程
                     Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
                     {
                         if (Image == null)
                         { 
-                            // 用完上一帧归还
-                            if (lastFrameData != null)
-                                ArrayPool<byte>.Shared.Return(lastFrameData);
+                            if (buffer != null)
+                                ArrayPool<byte>.Shared.Return(buffer);
                             return;
                         }
                         WriteableBitmap writeableBitmap = Image.ImageShow.Source as WriteableBitmap;
@@ -159,11 +146,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                             Image.ImageViewModel.ZoomboxSub.ZoomUniform();
                         }
                         // 用完上一帧归还
-                        if (lastFrameData != null)
-                            ArrayPool<byte>.Shared.Return(lastFrameData);
-                        lastFrameData = buffer;
+                        if (buffer != null)
+                            ArrayPool<byte>.Shared.Return(buffer);
                     }));
-                    lastFrameLen = len;
                     await Task.Delay(20);
                 }
                 catch (Exception ex)
