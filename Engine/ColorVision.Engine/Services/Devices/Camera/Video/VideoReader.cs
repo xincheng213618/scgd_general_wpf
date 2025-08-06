@@ -1,57 +1,28 @@
 ﻿using ColorVision.ImageEditor;
 using log4net;
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
-    public class CVImagePacket
-    {
-        public int width { get; set; }
-        public int height { get; set; }
-        public int bpp { get; set; }
-        public int channels { get; set; }
-        public int len { get; set; }
-        public byte[] data { get; set; }
-        public void Deserialize(BinaryReader reader)
-        {
-            width = reader.ReadInt32();
-            height = reader.ReadInt32();
-            bpp = reader.ReadInt32();
-            channels = reader.ReadInt32();
-            len = reader.ReadInt32();
-            data = reader.ReadBytes(len);
-        }
-        public void Serialize(BinaryWriter writer)
-        {
-            writer.Write(width);
-            writer.Write(height);
-            writer.Write(bpp);
-            writer.Write(channels);
-            writer.Write(len);
-            writer.Write(data);
-            writer.Flush();
-        }
-    }
-
     public class VideoReader : IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(VideoReader));
-        private bool OpenVideo;
-        MemoryMappedFile memoryMappedFile;
-        MemoryMappedViewStream memoryMappedViewStream;
-        BinaryReader binaryReader;
-        ImageView? Image { get; set; }
+        private bool openVideo;
+        private MemoryMappedFile memoryMappedFile;
+        private MemoryMappedViewStream memoryMappedViewStream;
+        private BinaryReader binaryReader;
+        private ImageView? Image { get; set; }
 
-        byte[]? lastFrameData; // 保存上一帧数据
+        private byte[]? lastFrameData; // 上一帧池化数据
+        private int lastFrameLen;      // 上一帧有效长度
 
         public int Startup(string mapNamePrefix, ImageView image)
         {
@@ -60,130 +31,140 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             try
             {
                 memoryMappedFile = MemoryMappedFile.OpenExisting(mapNamePrefix);
+                memoryMappedViewStream = memoryMappedFile.CreateViewStream();
+                binaryReader = new BinaryReader(memoryMappedViewStream);
             }
             catch (Exception ex)
             {
                 log.Error("Startup error: " + ex);
                 return -1;
             }
-            if (memoryMappedFile != null)
-            {
-                memoryMappedViewStream = memoryMappedFile.CreateViewStream();
-                binaryReader = new BinaryReader(memoryMappedViewStream);
-            }
-            OpenVideo = true;
-            Task.Run(async () => await StartupAsync());
+            openVideo = true;
+            Task.Run(StartupAsync);
             return 0;
         }
 
         public void Close()
         {
-            lastFrameData = null;
-            OpenVideo = false;
+            openVideo = false;
+
+            if (lastFrameData != null)
+            {
+                ArrayPool<byte>.Shared.Return(lastFrameData);
+                lastFrameData = null;
+                lastFrameLen = 0;
+            }
             Image = null;
-            memoryMappedFile?.Dispose();
-            memoryMappedViewStream?.Dispose();
             binaryReader?.Dispose();
+            memoryMappedViewStream?.Dispose();
+            memoryMappedFile?.Dispose();
         }
 
         private int frameCount;
-        private Stopwatch fpsTimer = new Stopwatch();
+        private readonly Stopwatch fpsTimer = new Stopwatch();
         private double lastFps;
-
-        bool first = true;
+        private bool first = true;
 
         private async Task StartupAsync()
         {
             fpsTimer.Start();
-            while (OpenVideo)
+            while (openVideo)
             {
+                byte[] buffer = null;
+                int width = 0, height = 0, bpp = 0, channels = 0, len = 0;
                 try
                 {
                     memoryMappedViewStream.Position = 0L;
-                    CVImagePacket cVImagePacket = new CVImagePacket();
-                    cVImagePacket.Deserialize(binaryReader);
-                    if (cVImagePacket != null && cVImagePacket.len > 0)
-                    {
-                        bool isFrameChanged = lastFrameData == null || !cVImagePacket.data.SequenceEqual(lastFrameData);
-                        if (!isFrameChanged)
-                        {
-                            await Task.Delay(1);
-                            continue;
-                        }
-                        Application.Current?.Dispatcher.BeginInvoke(() =>
-                        {
-                            if (Image == null) return;
+                    width = binaryReader.ReadInt32();
+                    height = binaryReader.ReadInt32();
+                    bpp = binaryReader.ReadInt32();
+                    channels = binaryReader.ReadInt32();
+                    len = binaryReader.ReadInt32();
 
-                            if (Image.ImageShow.Source is WriteableBitmap writeableBitmap)
-                            {
-                                // 判断是否需要重建WriteableBitmap
-                                bool needNewBitmap = writeableBitmap == null ||
-                                    writeableBitmap.PixelWidth != cVImagePacket.width ||
-                                    writeableBitmap.PixelHeight != cVImagePacket.height ||
-                                    GetPixelFormat(cVImagePacket) != writeableBitmap.Format;
-
-                                if (needNewBitmap)
-                                {
-                                    writeableBitmap = new WriteableBitmap(
-                                        cVImagePacket.width,
-                                        cVImagePacket.height,
-                                        96, 96,
-                                        GetPixelFormat(cVImagePacket),
-                                        null);
-                                    Image.ImageShow.Source = writeableBitmap;
-                                }
-                                // 写入数据到 WriteableBitmap
-                                writeableBitmap!.Lock();
-                                writeableBitmap.WritePixels(
-                                    new Int32Rect(0, 0, cVImagePacket.width, cVImagePacket.height),
-                                    cVImagePacket.data,
-                                    cVImagePacket.width * cVImagePacket.channels * (cVImagePacket.bpp / 8),
-                                    0);
-                                writeableBitmap.Unlock();
-                            }
-                            else
-                            {
-                                writeableBitmap = new WriteableBitmap(
-                                        cVImagePacket.width,
-                                        cVImagePacket.height,
-                                        96, 96,
-                                        GetPixelFormat(cVImagePacket),
-                                        null);
-                                Image.ImageShow.Source = writeableBitmap;
-                                // 写入数据到 WriteableBitmap
-                                writeableBitmap!.Lock();
-                                writeableBitmap.WritePixels(
-                                    new Int32Rect(0, 0, cVImagePacket.width, cVImagePacket.height),
-                                    cVImagePacket.data,
-                                    cVImagePacket.width * cVImagePacket.channels * (cVImagePacket.bpp / 8),
-                                    0);
-                                writeableBitmap.Unlock();
-                            }
-
-                            Interlocked.Increment(ref frameCount);
-                            // 每秒统计一次帧率
-                            if (fpsTimer.ElapsedMilliseconds >= 1000)
-                            {
-                                lastFps = (double)frameCount*1000/ fpsTimer.ElapsedMilliseconds;
-                                log.Info($"Current FPS: {lastFps:F2}");
-                                Interlocked.Exchange(ref frameCount, 0);
-                                fpsTimer.Restart();
-                            }
-
-                            if (first)
-                            {
-                                first = false;
-                                Image.ImageViewModel.ZoomboxSub.ZoomUniform();
-                            }
-                        });
-
-                        lastFrameData = (byte[])cVImagePacket.data.Clone();
-                        await Task.Delay(20);
-                    }
-                    else
+                    if (len <= 0)
                     {
                         await Task.Delay(10);
+                        continue;
                     }
+
+                    buffer = ArrayPool<byte>.Shared.Rent(len);
+                    int read = binaryReader.Read(buffer, 0, len);
+                    if (read < len)
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                        await Task.Delay(10);
+                        continue;
+                    }
+
+                    bool isFrameChanged = lastFrameData == null ||
+                        lastFrameLen != len ||
+                        !buffer.AsSpan(0, len).SequenceEqual(lastFrameData.AsSpan(0, lastFrameLen));
+
+                    if (!isFrameChanged)
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                        await Task.Delay(1);
+                        continue;
+                    }
+
+                    // 渲染逻辑调度到UI线程
+                    Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        if (Image == null)
+                        { 
+                            // 用完上一帧归还
+                            if (lastFrameData != null)
+                                ArrayPool<byte>.Shared.Return(lastFrameData);
+                            return;
+                        }
+                        WriteableBitmap writeableBitmap = Image.ImageShow.Source as WriteableBitmap;
+                        bool needNewBitmap = writeableBitmap == null
+                            || writeableBitmap.PixelWidth != width
+                            || writeableBitmap.PixelHeight != height
+                            || GetPixelFormat(channels, bpp) != writeableBitmap.Format;
+
+                        if (needNewBitmap)
+                        {
+                            writeableBitmap = new WriteableBitmap(
+                                width,
+                                height,
+                                96, 96,
+                                GetPixelFormat(channels, bpp),
+                                null);
+                            Image.ImageShow.Source = writeableBitmap;
+                        }
+
+                        writeableBitmap!.Lock();
+                        writeableBitmap.WritePixels(
+                            new Int32Rect(0, 0, width, height),
+                            buffer,
+                            width * channels * (bpp / 8),
+                            0);
+                        writeableBitmap.Unlock();
+
+                        Interlocked.Increment(ref frameCount);
+
+                        // 帧率统计
+                        if (fpsTimer.ElapsedMilliseconds >= 1000)
+                        {
+                            lastFps = (double)frameCount * 1000 / fpsTimer.ElapsedMilliseconds;
+                            log.Info($"Current FPS: {lastFps:F2}");
+                            Interlocked.Exchange(ref frameCount, 0);
+                            fpsTimer.Restart();
+                        }
+
+                        if (first)
+                        {
+                            first = false;
+                            Image.ImageViewModel.ZoomboxSub.ZoomUniform();
+                        }
+                        // 用完上一帧归还
+                        if (lastFrameData != null)
+                            ArrayPool<byte>.Shared.Return(lastFrameData);
+                        lastFrameData = buffer;
+                    }));
+                    lastFrameLen = len;
+                    await Task.Delay(20);
                 }
                 catch (Exception ex)
                 {
@@ -193,17 +174,17 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             fpsTimer.Stop();
         }
 
-        private System.Windows.Media.PixelFormat GetPixelFormat(CVImagePacket pkt)
+        private static System.Windows.Media.PixelFormat GetPixelFormat(int channels, int bpp)
         {
-            if (pkt.channels == 3)
+            if (channels == 3)
             {
-                return pkt.bpp == 16
+                return bpp == 16
                     ? System.Windows.Media.PixelFormats.Rgb48
                     : System.Windows.Media.PixelFormats.Bgr24;
             }
             else
             {
-                return pkt.bpp == 16
+                return bpp == 16
                     ? System.Windows.Media.PixelFormats.Gray16
                     : System.Windows.Media.PixelFormats.Gray8;
             }
@@ -215,5 +196,4 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             Close();
         }
     }
-
 }
