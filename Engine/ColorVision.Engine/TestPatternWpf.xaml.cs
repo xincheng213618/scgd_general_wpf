@@ -1,9 +1,13 @@
-﻿using ColorVision.Engine;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine;
+using ColorVision.Engine.Pattern;
 using ColorVision.ImageEditor;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
 using OpenCvSharp.WpfExtensions;
 using System;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace ColorVision.Engine
@@ -19,26 +23,53 @@ namespace ColorVision.Engine
             new TestPatternWpf() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
     }
+
+    public class TestPatternWpfConfig :ViewModelBase,IConfig
+    {
+        public static TestPatternWpfConfig Instance => ConfigService.Instance.GetRequiredService<TestPatternWpfConfig>();
+
+        public int Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); } }
+        private int _Width = 640;
+
+        public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
+        private int _Height = 480;
+
+        public int Spacing { get => _Spacing; set { _Spacing = value; NotifyPropertyChanged(); } }
+        private int _Spacing = 20;
+        public int Radius { get => _Radius; set { _Radius = value; NotifyPropertyChanged(); } }
+        private int _Radius = 3;
+    }
+
+
     /// <summary>
     /// TestPatternWpf.xaml 的交互逻辑
     /// </summary>
-    public partial class TestPatternWpf : Window
+    public partial class TestPatternWpf : Window,IDisposable
     {
         private OpenCvSharp.Mat currentMat;
-        private readonly string[] patternTypes = { "纯色", "棋盘格", "点阵", "十字图卡", "隔行点亮"，"MTF图卡","畸变图卡","双目融合图卡" };
-        private readonly string[] imageFormats = { "png", "jpg", "bmp" };
+        private readonly string[] patternTypes = { "纯色", "棋盘格", "点阵","SFR" ,"9点","十字图卡","圆环" ,"隔行点亮" };
+        private readonly string[] imageFormats = {"bmp" ,"tif","png", "jpg"};
         private readonly (string, int, int)[] commonResolutions =
         {
-            ("1920x1080",1920,1080), ("1280x720",1280,720), ("1024x768",1024,768),
+            ("3840x2160",3840,2160), ("1920x1080",1920,1080), ("1280x720",1280,720), ("1024x768",1024,768),
             ("800x600",800,600), ("640x480",640,480), ("自定义",0,0)
         };
         private System.Windows.Media.Color mainColor = System.Windows.Media.Colors.Black;
         private System.Windows.Media.Color altColor = System.Windows.Media.Colors.White;
+        static TestPatternWpfConfig Config => TestPatternWpfConfig.Instance;
 
         public TestPatternWpf()
         {
             InitializeComponent();
+        }
 
+        ImageView imgDisplay { get; set; }
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            this.DataContext = TestPatternWpfConfig.Instance;
+            imgDisplay = new ImageView();
+            DisplayGrid.Children.Add(imgDisplay);
+            this.Closed += (s, e) => Dispose();
             cmbPattern.ItemsSource = patternTypes;
             cmbPattern.SelectedIndex = 0;
             cmbFormat.ItemsSource = imageFormats;
@@ -55,8 +86,8 @@ namespace ColorVision.Engine
             int idx = cmbResolution.SelectedIndex;
             if (idx >= 0 && idx < commonResolutions.Length - 1)
             {
-                txtWidth.Text = commonResolutions[idx].Item2.ToString();
-                txtHeight.Text = commonResolutions[idx].Item3.ToString();
+                Config.Width = commonResolutions[idx].Item2;
+                Config.Height = commonResolutions[idx].Item3;
                 txtWidth.IsEnabled = false;
                 txtHeight.IsEnabled = false;
             }
@@ -120,10 +151,7 @@ namespace ColorVision.Engine
 
         private void BtnGenerate_Click(object sender, RoutedEventArgs e)
         {
-            int w = int.TryParse(txtWidth.Text, out int tw) ? tw : 640;
-            int h = int.TryParse(txtHeight.Text, out int th) ? th : 480;
             string pattern = patternTypes[cmbPattern.SelectedIndex];
-
             currentMat?.Dispose();
             OpenCvSharp.Scalar main = ToScalar(mainColor);
             OpenCvSharp.Scalar alt = ToScalar(altColor);
@@ -131,22 +159,31 @@ namespace ColorVision.Engine
             switch (pattern)
             {
                 case "棋盘格":
-                    currentMat = GenerateCheckerboard(w, h, 8, 8, main, alt);
+                    currentMat = GenerateCheckerboard(Config.Width, Config.Height, 8, 8, main, alt);
                     break;
                 case "点阵":
-                    currentMat = GenerateDotPattern(w, h, 30, 8, main, alt);
+                    currentMat = DotPattern.Generate(Config.Width, Config.Height, Config.Spacing, Config.Radius, main, alt);
                     break;
                 case "十字":
-                    currentMat = GenerateCrossPattern(w, h, main, alt);
+                    currentMat = GenerateCrossPattern(Config.Width, Config.Height, main, alt);
                     break;
                 case "隔行点亮":
-                    currentMat = GenerateInterlacedPattern(w, h, main, alt);
+                    currentMat = GenerateInterlacedPattern(Config.Width, Config.Height, main, alt);
                     break;
                 case "纯色":
-                    currentMat = GenerateSolidPattern(w, h, main);
+                    currentMat = GenerateSolidPattern(Config.Width, Config.Height, main);
+                    break;
+                case "SFR":
+                    currentMat = SFRPattern.Generate(Config.Width, Config.Height);
+                    break;
+                case "9点":
+                    currentMat = NineDotPattern.Generate(Config.Width, Config.Height, Config.Radius, alt, main);
+                    break;
+                case "圆环":
+                    currentMat = RingPattern.Generate(Config.Width, Config.Height, Config.Radius);
                     break;
                 default:
-                    currentMat = new OpenCvSharp.Mat(h, w, OpenCvSharp.MatType.CV_8UC3, OpenCvSharp.Scalar.Gray);
+                    currentMat = new OpenCvSharp.Mat(Config.Width, Config.Height,OpenCvSharp.MatType.CV_8UC3, OpenCvSharp.Scalar.Gray);
                     break;
             }
             imgDisplay.ImageShow.Source = currentMat.ToBitmapSource();
@@ -195,16 +232,6 @@ namespace ColorVision.Engine
             return mat;
         }
 
-        // 点阵
-        private OpenCvSharp.Mat GenerateDotPattern(int w, int h, int spacing, int radius, OpenCvSharp.Scalar dotColor, OpenCvSharp.Scalar bgColor)
-        {
-            var mat = new OpenCvSharp.Mat(h, w, OpenCvSharp.MatType.CV_8UC3, bgColor);
-            for (int y = spacing / 2; y < h; y += spacing)
-                for (int x = spacing / 2; x < w; x += spacing)
-                    OpenCvSharp.Cv2.Circle(mat, new OpenCvSharp.Point(x, y), radius, dotColor, -1);
-            return mat;
-        }
-
         // 十字
         private OpenCvSharp.Mat GenerateCrossPattern(int w, int h, OpenCvSharp.Scalar lineColor, OpenCvSharp.Scalar bgColor)
         {
@@ -222,16 +249,79 @@ namespace ColorVision.Engine
                 OpenCvSharp.Cv2.Line(mat, new OpenCvSharp.Point(0, y), new OpenCvSharp.Point(w, y), lineColor, 1);
             return mat;
         }
-        ImageView imgDisplay { get; set; }
-        private void Window_Initialized(object sender, EventArgs e)
-        { 
-            imgDisplay = new ImageView();
-            DisplayGrid.Children.Add(imgDisplay);
-            this.Closed += (s, e) =>
+
+
+        private void BtnPickMainColorSet_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
             {
-                currentMat?.Dispose();
-                imgDisplay?.Dispose();
-            };
+                string tag = button.Tag.ToString();
+                if (tag == "R")
+                {
+                    mainColor = Brushes.Red.Color;
+                    rectMainColor.Fill = Brushes.Red;
+                }
+                if (tag == "G")
+                {
+                    mainColor = Brushes.Green.Color;
+                    rectMainColor.Fill = Brushes.Green;
+                }
+                if (tag == "B")
+                {
+                    mainColor = Brushes.Blue.Color;
+                    rectMainColor.Fill = Brushes.Blue;
+                }
+                if (tag == "W")
+                {
+                    mainColor = Brushes.White.Color;
+                    rectMainColor.Fill = Brushes.White;
+                }
+                if (tag == "K")
+                {
+                    mainColor = Brushes.Black.Color;
+                    rectMainColor.Fill = Brushes.Black;
+                }
+            }
+        }
+
+        private void BtnPickAltColorSet_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
+            {
+                string tag = button.Tag.ToString();
+                if (tag == "R")
+                {
+                    altColor = Brushes.Red.Color;
+                    rectAltColor.Fill = Brushes.Red;
+                }
+                if (tag == "G")
+                {
+                    altColor = Brushes.Green.Color;
+                    rectAltColor.Fill = Brushes.Green;
+                }
+                if (tag == "B")
+                {
+                    altColor = Brushes.Blue.Color;
+                    rectAltColor.Fill = Brushes.Blue;
+                }
+                if (tag == "W")
+                {
+                    altColor = Brushes.White.Color;
+                    rectAltColor.Fill = Brushes.White;
+                }
+                if (tag == "K")
+                {
+                    altColor = Brushes.Black.Color;
+                    rectAltColor.Fill = Brushes.Black;
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
+            currentMat?.Dispose();
+            imgDisplay?.Dispose();
         }
     }
 }
