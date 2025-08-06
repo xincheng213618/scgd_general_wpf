@@ -110,6 +110,7 @@ namespace ColorVision.Engine
             {
                 ColorPicker1.Dispose();
             };
+            window.Show();
         }
 
         private OpenCvSharp.Scalar ToScalar(System.Windows.Media.Color color)
