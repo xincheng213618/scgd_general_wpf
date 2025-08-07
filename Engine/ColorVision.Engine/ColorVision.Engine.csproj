@@ -57,10 +57,6 @@
 			<HintPath>..\..\DLL\MQTTMessageLib.dll</HintPath>
 			<Private>True</Private>
 		</Reference>
-		<Reference Include="OpenH264Lib">
-			<HintPath>..\..\DLL\OpenH264Lib.dll</HintPath>
-			<Private>True</Private>
-		</Reference>
 		<Reference Include="ST.Library.UI">
 		  <HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
 		  <Private>True</Private>
