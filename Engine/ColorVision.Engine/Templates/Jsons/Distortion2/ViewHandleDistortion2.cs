@@ -5,6 +5,7 @@ using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.UI.Extension;
 using log4net;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -98,6 +99,9 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
                 view.listViewSide.ItemsSource = result.ViewResults;
             }
+
+            view.SideTextBox.Visibility = System.Windows.Visibility.Visible;
+            view.SideTextBox.Text = result.ViewResults.ToSpecificViewResults<Distortion2View>()[0].DistortionReslut.ToJsonN();
         }
 
 
