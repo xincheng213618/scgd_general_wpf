@@ -103,7 +103,7 @@ namespace ColorVision.Engine.Pattern
     public partial class TestPatternWpf : Window,IDisposable
     {
         private OpenCvSharp.Mat currentMat;
-        private readonly string[] patternTypes = {"棋盘格", "点阵","SFR" ,"9点","十字图卡","圆环" ,"隔行点亮" };
+        private readonly string[] patternTypes = {"点阵","SFR" ,"9点","十字图卡","圆环" ,"隔行点亮" };
         private readonly string[] imageFormats = {"bmp" ,"tif","png", "jpg"};
         private readonly (string, int, int)[] commonResolutions =
         {
@@ -249,9 +249,6 @@ namespace ColorVision.Engine.Pattern
 
             switch (pattern)
             {
-                case "棋盘格":     
-                    currentMat = GenerateCheckerboard(Config.Width, Config.Height, 8, 8, main, alt);
-                    break;
                 case "点阵":
                     currentMat = DotPattern.Generate(Config.Width, Config.Height, Config.Spacing, Config.Radius, main, alt);
                     break;
@@ -299,20 +296,6 @@ namespace ColorVision.Engine.Pattern
                 currentMat.SaveImage(dlg.FileName);
                 System.Windows.MessageBox.Show("保存成功: " + dlg.FileName);
             }
-        }
-
-
-        // 棋盘格
-        private OpenCvSharp.Mat GenerateCheckerboard(int w, int h, int gridX, int gridY, OpenCvSharp.Scalar color1, OpenCvSharp.Scalar color2)
-        {
-            var mat = new OpenCvSharp.Mat(h, w, OpenCvSharp.MatType.CV_8UC3, color1);
-            int cellW = w / gridX;
-            int cellH = h / gridY;
-            for (int y = 0; y < gridY; y++)
-                for (int x = 0; x < gridX; x++)
-                    if ((x + y) % 2 == 1)
-                        OpenCvSharp.Cv2.Rectangle(mat, new OpenCvSharp.Rect(x * cellW, y * cellH, cellW, cellH), color2, -1);
-            return mat;
         }
 
         // 十字

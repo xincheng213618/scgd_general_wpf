@@ -6,9 +6,9 @@
              xmlns:local="clr-namespace:ColorVision.Engine.Pattern.Solid"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:PatternSolodConfig}"
-             d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
+             d:DesignHeight="100" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <Grid>
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,5" VerticalAlignment="Top">
             <Button Content="主色" Width="55" Margin="0,0,5,0" Click="BtnPickMainColor_Click"/>
             <Rectangle x:Name="rectMainColor" Width="25" Height="25" Stroke="Black" Fill="{Binding MainBrush}" Margin="0,0,5,0"/>
             <Button Content="R" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="R" />
