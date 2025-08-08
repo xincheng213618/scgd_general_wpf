@@ -6,6 +6,7 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
+using ColorVision.UI.Extension;
 using log4net;
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -324,6 +325,9 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
                 view.listViewSide.ItemsSource = result.ViewResults;
             }
+
+            view.SideTextBox.Visibility = System.Windows.Visibility.Visible;
+            view.SideTextBox.Text = result.ViewResults.ToSpecificViewResults<BlackMuraView>()[0].ToJsonN();
         }
 
 
