@@ -103,7 +103,7 @@ namespace ColorVision.Engine.Pattern
     public partial class TestPatternWpf : Window,IDisposable
     {
         private OpenCvSharp.Mat currentMat;
-        private readonly string[] patternTypes = {"SFR" ,"9点","十字图卡","圆环" };
+        private readonly string[] patternTypes = {"SFR" ,"十字","圆环" };
         private readonly string[] imageFormats = {"bmp" ,"tif","png", "jpg"};
         private readonly (string, int, int)[] commonResolutions =
         {
@@ -241,9 +241,6 @@ namespace ColorVision.Engine.Pattern
             string pattern = patternTypes[cmbPattern.SelectedIndex];
             currentMat?.Dispose();
 
-
-
-
             OpenCvSharp.Scalar main = ToScalar(mainColor);
             OpenCvSharp.Scalar alt = ToScalar(altColor);
 
@@ -254,9 +251,6 @@ namespace ColorVision.Engine.Pattern
                     break;
                 case "SFR":
                     currentMat = SFRPattern.Generate(Config.Width, Config.Height);
-                    break;
-                case "9点":
-                    currentMat = NineDotPattern.Generate(Config.Width, Config.Height, Config.Radius, alt, main);
                     break;
                 case "圆环":
                     currentMat = RingPattern.Generate(Config.Width, Config.Height, Config.Radius);

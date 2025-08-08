@@ -26,6 +26,12 @@ namespace ColorVision.Engine.Pattern.NineDot
 
         public int StartY { get => _StartY; set { _StartY = value; NotifyPropertyChanged(); } }
         private int _StartY = -1;
+
+        public int Cols { get => _Cols; set { _Cols = value; NotifyPropertyChanged(); } }
+        private int _Cols =3;
+
+        public int Rows { get => _Rows; set { _Rows = value; NotifyPropertyChanged(); } }
+        private int _Rows = 3;
     }
 
     [DisplayName("九点")]
@@ -39,7 +45,7 @@ namespace ColorVision.Engine.Pattern.NineDot
 
             int radius = Config.Radius;
             // 3x3点阵，间隔算法
-            int rows = 3, cols = 3;
+            int rows = Config.Rows, cols = Config.Cols;
             double gapX = (width - cols * radius) / (cols + 1.0);
             double gapY = (height - rows * radius) / (rows + 1.0);
 
