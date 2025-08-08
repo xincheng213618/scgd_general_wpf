@@ -38,6 +38,7 @@ namespace ColorVision.Engine.Pattern.NineDot
     public class PatternNineDot : IPattern
     {
         public static PatternNineDotConfig Config => ConfigService.Instance.GetRequiredService<PatternNineDotConfig>();
+        public ViewModelBase GetConfig() => Config;
 
         public Mat Gen(int height, int width)
         {

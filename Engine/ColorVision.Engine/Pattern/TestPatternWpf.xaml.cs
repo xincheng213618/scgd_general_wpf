@@ -98,7 +98,7 @@ namespace ColorVision.Engine.Pattern
     public partial class TestPatternWpf : Window,IDisposable
     {
         private OpenCvSharp.Mat currentMat;
-        private readonly string[] patternTypes = {"SFR" ,"圆环" };
+
         private readonly string[] imageFormats = {"bmp" ,"tif","png", "jpg"};
         private readonly (string, int, int)[] commonResolutions =
         {
@@ -127,14 +127,11 @@ namespace ColorVision.Engine.Pattern
 
             DisplayGrid.Children.Add(imgDisplay);
             this.Closed += (s, e) => Dispose();
-            cmbPattern.ItemsSource = patternTypes;
-            cmbPattern.SelectedIndex = 0;
             cmbFormat.ItemsSource = imageFormats;
             cmbFormat.SelectedIndex = 0;
             cmbResolution.ItemsSource = Array.ConvertAll(commonResolutions, t => t.Item1);
             cmbResolution.SelectedIndex = 4; // 默认640x480
-            rectMainColor.Fill = new SolidColorBrush(mainColor);
-            rectAltColor.Fill = new SolidColorBrush(altColor);
+
             cmbResolution.SelectionChanged += CmbResolution_SelectionChanged;
 
             cmbPattern1.SelectionChanged += (s, e) =>
@@ -151,6 +148,10 @@ namespace ColorVision.Engine.Pattern
             cmbPattern1.ItemsSource = Patterns;
             cmbPattern1.SelectedIndex = 0;
 
+        }
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            new PropertyEditorWindow(Patterns[cmbPattern1.SelectedIndex].Pattern.GetConfig()).ShowDialog();
         }
 
         private void PatternGen_Click(object sender, RoutedEventArgs e)
@@ -180,80 +181,7 @@ namespace ColorVision.Engine.Pattern
             }
         }
 
-        private void BtnPickMainColor_Click(object sender, RoutedEventArgs e)
-        {
-            var ColorPicker1 = new HandyControl.Controls.ColorPicker();
-            ColorPicker1.SelectedBrush = (SolidColorBrush)rectMainColor.Fill;
-            ColorPicker1.SelectedColorChanged += (s, e) =>
-            {
-                mainColor = ColorPicker1.SelectedBrush.Color;
-                rectMainColor.Fill = ColorPicker1.SelectedBrush;
-            };
-            Window window = new Window() { Owner =Application.Current.GetActiveWindow(),WindowStartupLocation = WindowStartupLocation.CenterOwner,Content = ColorPicker1 ,Width =250, Height =400 };
-            ColorPicker1.Confirmed += (s, e) =>
-            {
-                mainColor = ColorPicker1.SelectedBrush.Color;
-                rectMainColor.Fill = new SolidColorBrush(mainColor);
-                window.Close();
-            };
-            window.Closed += (s, e) =>
-            {
-                ColorPicker1.Dispose();
-            };
-            window.Show();     
-        }
 
-        private void BtnPickAltColor_Click(object sender, RoutedEventArgs e)
-        {
-            var ColorPicker1 = new HandyControl.Controls.ColorPicker();
-            ColorPicker1.SelectedBrush = (SolidColorBrush)rectAltColor.Fill;
-            ColorPicker1.SelectedColorChanged += (s, e) =>
-            {
-                mainColor = ColorPicker1.SelectedBrush.Color;
-                rectAltColor.Fill = ColorPicker1.SelectedBrush;
-            };
-            Window window = new Window() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Content = ColorPicker1, Width = 250, Height = 400 };
-            ColorPicker1.Confirmed += (s, e) =>
-            {
-                mainColor = ColorPicker1.SelectedBrush.Color;
-                rectAltColor.Fill = new SolidColorBrush(mainColor);
-                window.Close();
-            };
-            window.Closed += (s, e) =>
-            {
-                ColorPicker1.Dispose();
-            };
-            window.Show();
-        }
-
-        private OpenCvSharp.Scalar ToScalar(System.Windows.Media.Color color)
-        {
-            return new OpenCvSharp.Scalar(color.B, color.G, color.R, color.A);
-        }
-
-        private void BtnGenerate_Click(object sender, RoutedEventArgs e)
-        {
-            string pattern = patternTypes[cmbPattern.SelectedIndex];
-            currentMat?.Dispose();
-
-            OpenCvSharp.Scalar main = ToScalar(mainColor);
-            OpenCvSharp.Scalar alt = ToScalar(altColor);
-
-            switch (pattern)
-            {
-                case "SFR":
-                    currentMat = SFRPattern.Generate(Config.Width, Config.Height);
-                    break;
-                case "圆环":
-                    currentMat = RingPattern.Generate(Config.Width, Config.Height, 3);
-                    break;
-                default:
-                    currentMat = new OpenCvSharp.Mat(Config.Width, Config.Height,OpenCvSharp.MatType.CV_8UC3, OpenCvSharp.Scalar.Gray);
-                    break;
-            }
-            imgDisplay.ImageShow.Source = currentMat.ToBitmapSource();
-            imgDisplay.Zoombox1.ZoomUniform();
-        }
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
         {
@@ -263,7 +191,7 @@ namespace ColorVision.Engine.Pattern
                 return;
             }
             string ext = imageFormats[cmbFormat.SelectedIndex];
-            string pattern = patternTypes[cmbPattern.SelectedIndex];
+            string pattern = Patterns[cmbPattern1.SelectedIndex].Name;
             string filename = $"{pattern}_{txtWidth.Text}x{txtHeight.Text}_{DateTime.Now:yyyyMMddHHmmss}.{ext}";
             var dlg = new Microsoft.Win32.SaveFileDialog
             {
@@ -275,75 +203,6 @@ namespace ColorVision.Engine.Pattern
             {
                 currentMat.SaveImage(dlg.FileName);
                 System.Windows.MessageBox.Show("保存成功: " + dlg.FileName);
-            }
-        }
-
-
-
-
-        private void BtnPickMainColorSet_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button)
-            {
-                string tag = button.Tag.ToString();
-                if (tag == "R")
-                {
-                    mainColor = Brushes.Red.Color;
-                    rectMainColor.Fill = Brushes.Red;
-                }
-                if (tag == "G")
-                {
-                    mainColor = Brushes.Green.Color;
-                    rectMainColor.Fill = Brushes.Green;
-                }
-                if (tag == "B")
-                {
-                    mainColor = Brushes.Blue.Color;
-                    rectMainColor.Fill = Brushes.Blue;
-                }
-                if (tag == "W")
-                {
-                    mainColor = Brushes.White.Color;
-                    rectMainColor.Fill = Brushes.White;
-                }
-                if (tag == "K")
-                {
-                    mainColor = Brushes.Black.Color;
-                    rectMainColor.Fill = Brushes.Black;
-                }
-            }
-        }
-
-        private void BtnPickAltColorSet_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button)
-            {
-                string tag = button.Tag.ToString();
-                if (tag == "R")
-                {
-                    altColor = Brushes.Red.Color;
-                    rectAltColor.Fill = Brushes.Red;
-                }
-                if (tag == "G")
-                {
-                    altColor = Brushes.Green.Color;
-                    rectAltColor.Fill = Brushes.Green;
-                }
-                if (tag == "B")
-                {
-                    altColor = Brushes.Blue.Color;
-                    rectAltColor.Fill = Brushes.Blue;
-                }
-                if (tag == "W")
-                {
-                    altColor = Brushes.White.Color;
-                    rectAltColor.Fill = Brushes.White;
-                }
-                if (tag == "K")
-                {
-                    altColor = Brushes.Black.Color;
-                    rectAltColor.Fill = Brushes.Black;
-                }
             }
         }
 

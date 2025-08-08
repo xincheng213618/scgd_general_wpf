@@ -46,6 +46,7 @@ namespace ColorVision.Engine.Pattern.Dot
     public class PatternDot : IPattern
     {
         public static PatternDotConfig Config => ConfigService.Instance.GetRequiredService<PatternDotConfig>();
+        public ViewModelBase GetConfig() => Config;
 
         public Mat Gen(int height, int width)
         {

@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.UI;
+﻿using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,19 +6,18 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Pattern.Cross
+namespace ColorVision.Engine.Pattern.SFR
 {
     /// <summary>
     /// CrossEditor.xaml 的交互逻辑
     /// </summary>
-    public partial class CrossEditor : UserControl
+    public partial class SFREditor : UserControl
     {
-        public CrossEditor()
+        public SFREditor()
         {
             InitializeComponent();
         }
-        public static PatternCrossConfig Config => ConfigService.Instance.GetRequiredService<PatternCrossConfig>();
-        public ViewModelBase GetConfig() => Config;
+        public static PatternSFRConfig Config => ConfigService.Instance.GetRequiredService<PatternSFRConfig>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {

@@ -18,36 +18,32 @@
                 <TextBox x:Name="txtWidth" Width="100" Text="{Binding Width}" Margin="0,0,5,0"/>
                 <TextBox x:Name="txtHeight" Width="100" Text="{Binding Height}" Margin="0,0,5,0"/>
             </StackPanel>
+            <DockPanel  Margin="0,0,0,5">
+                <Button DockPanel.Dock="Right" Grid.Column="1" Margin="5,0,5,0" HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="25" Width="25"  Click="Button_Click">
+                    <Button.Triggers>
+                        <EventTrigger RoutedEvent="Button.Click">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Button.Triggers>
+                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                        <TextBlock.RenderTransform>
+                            <RotateTransform x:Name="rotateTransform2"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                </Button>
 
-            <ComboBox x:Name="cmbPattern1" Margin="0,0,0,5" DisplayMemberPath="Name"/>
+                <ComboBox x:Name="cmbPattern1" DisplayMemberPath="Name"/>
+    
+            </DockPanel>
             <Grid x:Name="PatternEditorGrid">
                 
             </Grid>
             <Button Content="生成" Click="PatternGen_Click" Margin="0,0,0,5"/>
 
-
-
-
-            <ComboBox x:Name="cmbPattern" Margin="0,0,0,5"/>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <Button Content="主色" Width="55" Margin="0,0,5,0" Click="BtnPickMainColor_Click"/>
-                <Rectangle x:Name="rectMainColor" Width="25" Height="25" Stroke="Black" Margin="0,0,5,0"/>
-                <Button Content="R" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="R" />
-                <Button Content="G" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="G"/>
-                <Button Content="B" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="B"/>
-                <Button Content="W" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="W"/>
-                <Button Content="K" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="K"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <Button Content="副色" Width="55" Margin="0,0,5,0" Click="BtnPickAltColor_Click"/>
-                <Rectangle x:Name="rectAltColor" Width="25" Height="25" Stroke="Black" Margin="0,0,5,0"/>
-                <Button Content="R" Margin="0,0,5,0" Click="BtnPickAltColorSet_Click"  Tag="R"/>
-                <Button Content="G" Margin="0,0,5,0" Click="BtnPickAltColorSet_Click"  Tag="G"/>
-                <Button Content="B" Margin="0,0,5,0" Click="BtnPickAltColorSet_Click"  Tag="B"/>
-                <Button Content="W" Margin="0,0,5,0" Click="BtnPickAltColorSet_Click"  Tag="W"/>
-                <Button Content="K" Margin="0,0,5,0" Click="BtnPickAltColorSet_Click"  Tag="K"/>
-            </StackPanel>
-            <Button Content="生成" Click="BtnGenerate_Click" Margin="0,0,0,5"/>
             <ComboBox x:Name="cmbFormat"  Margin="0,0,0,5"/>
             <Button Content="保存" Click="BtnSave_Click"/>
         </StackPanel>

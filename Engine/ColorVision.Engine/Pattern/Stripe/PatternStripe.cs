@@ -47,6 +47,8 @@ namespace ColorVision.Engine.Pattern.Stripe
     {
         public static PatternStripeConfig Config => ConfigService.Instance.GetRequiredService<PatternStripeConfig>();
 
+        public ViewModelBase GetConfig() => Config;
+
         public Mat Gen(int height, int width)
         {
             Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
@@ -75,5 +77,7 @@ namespace ColorVision.Engine.Pattern.Stripe
             return mat;
         }
         public UserControl GetPatternEditor() => new StripeEditor();
+
+
     }
 }

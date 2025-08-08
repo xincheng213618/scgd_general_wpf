@@ -17,6 +17,7 @@ namespace ColorVision.Engine.Pattern.Solid
     public class PatternSolid : IPattern
     {
         public static PatternSolodConfig Config => ConfigService.Instance.GetRequiredService<PatternSolodConfig>();
+        public ViewModelBase GetConfig() => Config;
 
         public Mat Gen(int height, int width)
         {

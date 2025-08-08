@@ -37,6 +37,7 @@ namespace ColorVision.Engine.Pattern.Checkerboard
     public class PatternCheckerboard : IPattern
     {
         public static PatternCheckerboardConfig Config => ConfigService.Instance.GetRequiredService<PatternCheckerboardConfig>();
+        public ViewModelBase GetConfig() => Config;
 
         public Mat Gen(int height, int width)
         {
