@@ -108,6 +108,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Pattern\NineDot\NineDotEditor.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Pattern\Stripe\DotEditor.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
