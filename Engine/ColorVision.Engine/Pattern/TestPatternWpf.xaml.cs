@@ -103,7 +103,7 @@ namespace ColorVision.Engine.Pattern
     public partial class TestPatternWpf : Window,IDisposable
     {
         private OpenCvSharp.Mat currentMat;
-        private readonly string[] patternTypes = {"SFR" ,"9点","十字图卡","圆环" ,"隔行点亮" };
+        private readonly string[] patternTypes = {"SFR" ,"9点","十字图卡","圆环" };
         private readonly string[] imageFormats = {"bmp" ,"tif","png", "jpg"};
         private readonly (string, int, int)[] commonResolutions =
         {
@@ -252,9 +252,6 @@ namespace ColorVision.Engine.Pattern
                 case "十字":
                     currentMat = GenerateCrossPattern(Config.Width, Config.Height, main, alt);
                     break;
-                case "隔行点亮":
-                    currentMat = GenerateInterlacedPattern(Config.Width, Config.Height, main, alt);
-                    break;
                 case "SFR":
                     currentMat = SFRPattern.Generate(Config.Width, Config.Height);
                     break;
@@ -304,14 +301,6 @@ namespace ColorVision.Engine.Pattern
             return mat;
         }
 
-        // 隔行点亮
-        private OpenCvSharp.Mat GenerateInterlacedPattern(int w, int h, OpenCvSharp.Scalar lineColor, OpenCvSharp.Scalar bgColor)
-        {
-            var mat = new OpenCvSharp.Mat(h, w, OpenCvSharp.MatType.CV_8UC3, bgColor);
-            for (int y = 0; y < h; y += 2)
-                OpenCvSharp.Cv2.Line(mat, new OpenCvSharp.Point(0, y), new OpenCvSharp.Point(w, y), lineColor, 1);
-            return mat;
-        }
 
 
         private void BtnPickMainColorSet_Click(object sender, RoutedEventArgs e)

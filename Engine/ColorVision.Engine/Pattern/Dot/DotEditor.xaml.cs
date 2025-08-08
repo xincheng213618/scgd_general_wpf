@@ -9,7 +9,7 @@ using System.Windows.Media;
 namespace ColorVision.Engine.Pattern.Dot
 {
     /// <summary>
-    /// DotEditor.xaml 的交互逻辑
+    /// StripeEditor.xaml 的交互逻辑
     /// </summary>
     public partial class DotEditor : UserControl
     {
