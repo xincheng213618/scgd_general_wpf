@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
@@ -11,7 +10,6 @@ using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace ColorVision.Engine.Pattern
@@ -105,8 +103,6 @@ namespace ColorVision.Engine.Pattern
             ("3840x2160",3840,2160), ("1920x1080",1920,1080), ("1280x720",1280,720), ("1024x768",1024,768),
             ("800x600",800,600), ("640x480",640,480), ("自定义",0,0)
         };
-        private System.Windows.Media.Color mainColor = System.Windows.Media.Colors.Black;
-        private System.Windows.Media.Color altColor = System.Windows.Media.Colors.White;
         static TestPatternWpfConfig Config => TestPatternWpfConfig.Instance;
 
         public TestPatternWpf()

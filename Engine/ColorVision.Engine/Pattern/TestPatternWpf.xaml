@@ -42,7 +42,7 @@
             <Grid x:Name="PatternEditorGrid">
                 
             </Grid>
-            <Button Content="生成" Click="PatternGen_Click" Margin="0,0,0,5"/>
+            <Button Content="生成" Click="PatternGen_Click" Margin="0,0,0,10"/>
 
             <ComboBox x:Name="cmbFormat"  Margin="0,0,0,5"/>
             <Button Content="保存" Click="BtnSave_Click"/>

@@ -114,10 +114,13 @@
     <Compile Update="Pattern\Cross\CrossEditor.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Pattern\Ring\RingEditor.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Pattern\SFR\SFREditor.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Pattern\Ring\SFREditor.xaml.cs">
+    <Compile Update="Pattern\Ring\RingEditor.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Pattern\Stripe\DotEditor.xaml.cs">
