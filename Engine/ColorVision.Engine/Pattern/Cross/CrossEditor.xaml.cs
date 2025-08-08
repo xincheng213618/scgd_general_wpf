@@ -6,18 +6,18 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Pattern.NineDot
+namespace ColorVision.Engine.Pattern.Cross
 {
     /// <summary>
     /// CrossEditor.xaml 的交互逻辑
     /// </summary>
-    public partial class NineDotEditor : UserControl
+    public partial class CrossEditor : UserControl
     {
-        public NineDotEditor()
+        public CrossEditor()
         {
             InitializeComponent();
         }
-        public static PatternNineDotConfig Config => ConfigService.Instance.GetRequiredService<PatternNineDotConfig>();
+        public static PatternCrossConfig Config => ConfigService.Instance.GetRequiredService<PatternCrossConfig>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {

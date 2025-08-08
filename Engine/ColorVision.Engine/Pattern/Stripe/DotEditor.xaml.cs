@@ -9,7 +9,7 @@ using System.Windows.Media;
 namespace ColorVision.Engine.Pattern.Stripe
 {
     /// <summary>
-    /// StripeEditor.xaml 的交互逻辑
+    /// CrossEditor.xaml 的交互逻辑
     /// </summary>
     public partial class StripeEditor : UserControl
     {

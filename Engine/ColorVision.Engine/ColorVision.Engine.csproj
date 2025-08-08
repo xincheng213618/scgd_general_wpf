@@ -111,6 +111,9 @@
     <Compile Update="Pattern\NineDot\NineDotEditor.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Pattern\Cross\CrossEditor.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Pattern\Stripe\DotEditor.xaml.cs">
       <SubType>Code</SubType>
     </Compile>

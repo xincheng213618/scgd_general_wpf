@@ -103,7 +103,7 @@ namespace ColorVision.Engine.Pattern
     public partial class TestPatternWpf : Window,IDisposable
     {
         private OpenCvSharp.Mat currentMat;
-        private readonly string[] patternTypes = {"SFR" ,"十字","圆环" };
+        private readonly string[] patternTypes = {"SFR" ,"圆环" };
         private readonly string[] imageFormats = {"bmp" ,"tif","png", "jpg"};
         private readonly (string, int, int)[] commonResolutions =
         {
@@ -246,9 +246,6 @@ namespace ColorVision.Engine.Pattern
 
             switch (pattern)
             {
-                case "十字":
-                    currentMat = GenerateCrossPattern(Config.Width, Config.Height, main, alt);
-                    break;
                 case "SFR":
                     currentMat = SFRPattern.Generate(Config.Width, Config.Height);
                     break;
@@ -286,14 +283,6 @@ namespace ColorVision.Engine.Pattern
             }
         }
 
-        // 十字
-        private OpenCvSharp.Mat GenerateCrossPattern(int w, int h, OpenCvSharp.Scalar lineColor, OpenCvSharp.Scalar bgColor)
-        {
-            var mat = new OpenCvSharp.Mat(h, w, OpenCvSharp.MatType.CV_8UC3, bgColor);
-            OpenCvSharp.Cv2.Line(mat, new OpenCvSharp.Point(0, h / 2), new OpenCvSharp.Point(w, h / 2), lineColor, 3);
-            OpenCvSharp.Cv2.Line(mat, new OpenCvSharp.Point(w / 2, 0), new OpenCvSharp.Point(w / 2, h), lineColor, 3);
-            return mat;
-        }
 
 
 
