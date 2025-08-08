@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -70,13 +71,19 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
 
         public override void SideSave(AlgorithmResult result, string selectedPath)
         {
-            //var blackMuraViews = mtfresult.ViewResults.ToSpecificViewResults<GhostView>();
-            //var csvBuilder = new StringBuilder();
-            //if (blackMuraViews.Count == 1)
-            //{
-            //    string filePath = selectedPath + "//" + mtfresult.Batch + mtfresult.ResultType + ".json";
-            //    File.AppendAllText(filePath, blackMuraViews[0].Result, Encoding.UTF8);
-            //}
+            string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
+            var ViewResults = result.ViewResults.ToSpecificViewResults<PoiAnalysisDetailViewReslut>();
+
+            var csvBuilder = new StringBuilder();
+
+            if (ViewResults.Count == 1)
+            {
+                var PoiAnalysisResult = ViewResults[0].PoiAnalysisResult;
+                csvBuilder.AppendLine("Content,Value");
+                csvBuilder.AppendLine(string.Join( PoiAnalysisResult.result.Content,PoiAnalysisResult.result.Value));
+
+                File.AppendAllText(fileName, csvBuilder.ToString(), Encoding.UTF8);
+            }
         }
 
 

@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
         }
         public override void SideSave(AlgorithmResult result, string selectedPath)
         {
-            string filePath = selectedPath + "//" + result.Batch + result.ResultType + ".json";
+            string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
 
             var sb = new StringBuilder();
             // 标题
@@ -56,7 +56,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
                     EscapeCsv(res.DistortionReslut.TVDistortion?.Message)
                 ));
             }
-            File.AppendAllText(filePath, sb.ToString(), Encoding.UTF8);
+            File.AppendAllText(fileName, sb.ToString(), Encoding.UTF8);
         }
 
         private static string EscapeCsv(string? value)
