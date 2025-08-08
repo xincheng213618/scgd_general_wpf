@@ -103,7 +103,7 @@ namespace ColorVision.Engine.Pattern
     public partial class TestPatternWpf : Window,IDisposable
     {
         private OpenCvSharp.Mat currentMat;
-        private readonly string[] patternTypes = {"点阵","SFR" ,"9点","十字图卡","圆环" ,"隔行点亮" };
+        private readonly string[] patternTypes = {"SFR" ,"9点","十字图卡","圆环" ,"隔行点亮" };
         private readonly string[] imageFormats = {"bmp" ,"tif","png", "jpg"};
         private readonly (string, int, int)[] commonResolutions =
         {
@@ -249,9 +249,6 @@ namespace ColorVision.Engine.Pattern
 
             switch (pattern)
             {
-                case "点阵":
-                    currentMat = DotPattern.Generate(Config.Width, Config.Height, Config.Spacing, Config.Radius, main, alt);
-                    break;
                 case "十字":
                     currentMat = GenerateCrossPattern(Config.Width, Config.Height, main, alt);
                     break;

@@ -2,36 +2,26 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
-namespace ColorVision.Engine.Pattern.Checkerboard
+namespace ColorVision.Engine.Pattern.Dot
 {
     /// <summary>
     /// DotEditor.xaml 的交互逻辑
     /// </summary>
-    public partial class CheckerboardEditor : UserControl
+    public partial class DotEditor : UserControl
     {
-        public CheckerboardEditor()
+        public DotEditor()
         {
             InitializeComponent();
         }
-        public static PatternCheckerboardConfig Config => ConfigService.Instance.GetRequiredService<PatternCheckerboardConfig>();
+        public static PatternDotConfig Config => ConfigService.Instance.GetRequiredService<PatternDotConfig>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
-            cmbSizeMode.ItemsSource = from e1 in Enum.GetValues(typeof(CheckerboardSizeMode)).Cast<CheckerboardSizeMode>()
-                                      select new KeyValuePair<CheckerboardSizeMode, string>(e1, e1.ToString());
         }
         private void BtnPickMainColor_Click(object sender, RoutedEventArgs e)
         {
@@ -127,24 +117,6 @@ namespace ColorVision.Engine.Pattern.Checkerboard
                 if (tag == "K")
                 {
                     Config.AltBrush = Brushes.Black;
-                }
-            }
-        }
-
-
-        private void cmbSizeMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (sender is ComboBox comboBox && comboBox.SelectedValue is CheckerboardSizeMode checkerboardSizeMode)
-            {
-                if (checkerboardSizeMode == CheckerboardSizeMode.ByCellSize)
-                {
-                    CellStack.Visibility = Visibility.Visible;
-                    GridStack.Visibility = Visibility.Collapsed;
-                }
-                if (checkerboardSizeMode == CheckerboardSizeMode.ByGridCount)
-                {
-                    CellStack.Visibility = Visibility.Collapsed;
-                    GridStack.Visibility = Visibility.Visible;
                 }
             }
         }

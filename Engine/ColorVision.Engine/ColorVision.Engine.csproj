@@ -112,6 +112,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Pattern\Dot\DotEditor.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Pattern\Checkerboard\CheckerboardEditor.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
