@@ -37,11 +37,6 @@ namespace ColorVision.Engine.Pattern
 
         public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
         private int _Height = 480;
-
-        public int Spacing { get => _Spacing; set { _Spacing = value; NotifyPropertyChanged(); } }
-        private int _Spacing = 20;
-        public int Radius { get => _Radius; set { _Radius = value; NotifyPropertyChanged(); } }
-        private int _Radius = 3;
     }
 
     public class PatternMeta : ViewModelBase
@@ -250,7 +245,7 @@ namespace ColorVision.Engine.Pattern
                     currentMat = SFRPattern.Generate(Config.Width, Config.Height);
                     break;
                 case "圆环":
-                    currentMat = RingPattern.Generate(Config.Width, Config.Height, Config.Radius);
+                    currentMat = RingPattern.Generate(Config.Width, Config.Height, 3);
                     break;
                 default:
                     currentMat = new OpenCvSharp.Mat(Config.Width, Config.Height,OpenCvSharp.MatType.CV_8UC3, OpenCvSharp.Scalar.Gray);

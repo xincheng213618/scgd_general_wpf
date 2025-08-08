@@ -30,15 +30,6 @@
 
             <ComboBox x:Name="cmbPattern" Margin="0,0,0,5"/>
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBlock Width="50" Text="Spacing" Margin="0,0,5,0"/>
-                <TextBox Width="100" Text="{Binding Spacing}" Margin="0,0,5,0"/>
-            </StackPanel>
-
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBlock Width="50" Text="Radius" Margin="0,0,5,0"/>
-                <TextBox Width="100" Text="{Binding Radius}" Margin="0,0,5,0"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                 <Button Content="主色" Width="55" Margin="0,0,5,0" Click="BtnPickMainColor_Click"/>
                 <Rectangle x:Name="rectMainColor" Width="25" Height="25" Stroke="Black" Margin="0,0,5,0"/>
                 <Button Content="R" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="R" />
