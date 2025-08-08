@@ -1514,7 +1514,7 @@ namespace ProjectARVRLite
                                 LowLimit = recipeConfig.HorizontalTVDistortionMin,
                                 UpLimit = recipeConfig.HorizontalTVDistortionMax,
                                 Value = Distortion2View.DistortionReslut.TVDistortion.HorizontalRatio,
-                                TestValue = Distortion2View.DistortionReslut.TVDistortion.HorizontalRatio.ToString("F5")
+                                TestValue = Distortion2View.DistortionReslut.TVDistortion.HorizontalRatio.ToString("F5") +"%"
                             };
 
                             ObjectiveTestResult.VerticalTVDistortion = new ObjectiveTestItem()
@@ -1523,7 +1523,7 @@ namespace ProjectARVRLite
                                 LowLimit = recipeConfig.VerticalTVDistortionMin,
                                 UpLimit = recipeConfig.VerticalTVDistortionMax,
                                 Value = Distortion2View.DistortionReslut.TVDistortion.VerticalRatio,
-                                TestValue = Distortion2View.DistortionReslut.TVDistortion.VerticalRatio.ToString("F5")
+                                TestValue = Distortion2View.DistortionReslut.TVDistortion.VerticalRatio.ToString("F5") + "%"
                             };
                             result.ViewReslutDistortionGhost.HorizontalTVDistortion = ObjectiveTestResult.HorizontalTVDistortion;
                             result.ViewReslutDistortionGhost.VerticalTVDistortion = ObjectiveTestResult.VerticalTVDistortion;

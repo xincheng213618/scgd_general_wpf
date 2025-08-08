@@ -1,16 +1,20 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine;
-using ColorVision.Engine.Pattern;
+using ColorVision.Engine.Templates;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
+using log4net;
 using OpenCvSharp.WpfExtensions;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Engine
+namespace ColorVision.Engine.Pattern
 {
     public class ExportTestPatternWpf : MenuItemBase
     {
@@ -40,6 +44,58 @@ namespace ColorVision.Engine
         private int _Radius = 3;
     }
 
+    public class PatternMeta : ViewModelBase
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public string Category { get; set; }
+        public IPattern Pattern { get; set; } 
+    }
+
+    public class PatternManager
+    {
+        private static readonly ILog log = LogManager.GetLogger(typeof(PatternManager));
+        private static PatternManager _instance;
+        private static readonly object _locker = new();
+        public static PatternManager GetInstance() { lock (_locker) { _instance ??= new PatternManager(); return _instance; } }
+
+        public List<PatternMeta> Patterns { get; set; } = new List<PatternMeta>();
+        private PatternManager()
+        {
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            {
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IPattern).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    try
+                    {
+                        var displayName = type.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? type.Name;
+                        var description = type.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "";
+                        var category = type.GetCustomAttribute<CategoryAttribute>()?.Category ?? "";
+
+                        IPattern pattern = (IPattern)Activator.CreateInstance(type);
+                        if (pattern != null)
+                        {
+                            var patternMeta = new PatternMeta
+                            {
+                                Name = displayName,
+                                Description = description,
+                                Category = category,
+                                Pattern = pattern
+                            };
+                            Patterns.Add(patternMeta);
+                            log.Info($"已加载图案生成器: {type.FullName}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error($"加载图案生成器失败: {type.FullName}", ex);
+                    }
+
+                }
+            }
+        }
+    }
+
 
     /// <summary>
     /// TestPatternWpf.xaml 的交互逻辑
@@ -47,7 +103,7 @@ namespace ColorVision.Engine
     public partial class TestPatternWpf : Window,IDisposable
     {
         private OpenCvSharp.Mat currentMat;
-        private readonly string[] patternTypes = { "纯色", "棋盘格", "点阵","SFR" ,"9点","十字图卡","圆环" ,"隔行点亮" };
+        private readonly string[] patternTypes = {"棋盘格", "点阵","SFR" ,"9点","十字图卡","圆环" ,"隔行点亮" };
         private readonly string[] imageFormats = {"bmp" ,"tif","png", "jpg"};
         private readonly (string, int, int)[] commonResolutions =
         {
@@ -64,10 +120,16 @@ namespace ColorVision.Engine
         }
 
         ImageView imgDisplay { get; set; }
+
+        public static List<PatternMeta> Patterns => PatternManager.GetInstance().Patterns;
+
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = TestPatternWpfConfig.Instance;
             imgDisplay = new ImageView();
+            //这里最好实现成不模糊的样子
+            RenderOptions.SetBitmapScalingMode(imgDisplay.ImageShow, BitmapScalingMode.NearestNeighbor);
+
             DisplayGrid.Children.Add(imgDisplay);
             this.Closed += (s, e) => Dispose();
             cmbPattern.ItemsSource = patternTypes;
@@ -79,6 +141,31 @@ namespace ColorVision.Engine
             rectMainColor.Fill = new SolidColorBrush(mainColor);
             rectAltColor.Fill = new SolidColorBrush(altColor);
             cmbResolution.SelectionChanged += CmbResolution_SelectionChanged;
+
+            cmbPattern1.SelectionChanged += (s, e) =>
+            {
+                if (cmbPattern1.SelectedItem is PatternMeta selectedPattern)
+                {
+                    PatternEditorGrid.Children.Clear();
+                    if (selectedPattern.Pattern is IPattern pattern)
+                    {
+                        PatternEditorGrid.Children.Add(pattern.GetPatternEditor());
+                    }
+                }
+            };
+            cmbPattern1.ItemsSource = Patterns;
+            cmbPattern1.SelectedIndex = 0;
+
+        }
+
+        private void PatternGen_Click(object sender, RoutedEventArgs e)
+        {
+            currentMat?.Dispose();
+
+            currentMat = Patterns[cmbPattern1.SelectedIndex].Pattern.Gen(Config.Height,Config.Width);
+
+            imgDisplay.ImageShow.Source = currentMat.ToBitmapSource();
+            imgDisplay.Zoombox1.ZoomUniform();
         }
 
         private void CmbResolution_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -153,12 +240,16 @@ namespace ColorVision.Engine
         {
             string pattern = patternTypes[cmbPattern.SelectedIndex];
             currentMat?.Dispose();
+
+
+
+
             OpenCvSharp.Scalar main = ToScalar(mainColor);
             OpenCvSharp.Scalar alt = ToScalar(altColor);
 
             switch (pattern)
             {
-                case "棋盘格":
+                case "棋盘格":     
                     currentMat = GenerateCheckerboard(Config.Width, Config.Height, 8, 8, main, alt);
                     break;
                 case "点阵":
@@ -169,9 +260,6 @@ namespace ColorVision.Engine
                     break;
                 case "隔行点亮":
                     currentMat = GenerateInterlacedPattern(Config.Width, Config.Height, main, alt);
-                    break;
-                case "纯色":
-                    currentMat = GenerateSolidPattern(Config.Width, Config.Height, main);
                     break;
                 case "SFR":
                     currentMat = SFRPattern.Generate(Config.Width, Config.Height);
@@ -213,11 +301,6 @@ namespace ColorVision.Engine
             }
         }
 
-        // 3. 添加方法
-        private OpenCvSharp.Mat GenerateSolidPattern(int w, int h, OpenCvSharp.Scalar color)
-        {
-            return new OpenCvSharp.Mat(h, w, OpenCvSharp.MatType.CV_8UC3, color);
-        }
 
         // 棋盘格
         private OpenCvSharp.Mat GenerateCheckerboard(int w, int h, int gridX, int gridY, OpenCvSharp.Scalar color1, OpenCvSharp.Scalar color2)
@@ -323,5 +406,7 @@ namespace ColorVision.Engine
             currentMat?.Dispose();
             imgDisplay?.Dispose();
         }
+
+
     }
 }

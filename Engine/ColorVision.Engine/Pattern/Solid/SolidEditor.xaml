@@ -1,0 +1,21 @@
+﻿<UserControl x:Class="ColorVision.Engine.Pattern.Solid.SolidEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ColorVision.Engine.Pattern.Solid"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance local:PatternSolodConfig}"
+             d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
+    <Grid>
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+            <Button Content="主色" Width="55" Margin="0,0,5,0" Click="BtnPickMainColor_Click"/>
+            <Rectangle x:Name="rectMainColor" Width="25" Height="25" Stroke="Black" Fill="{Binding MainBrush}" Margin="0,0,5,0"/>
+            <Button Content="R" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="R" />
+            <Button Content="G" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="G"/>
+            <Button Content="B" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="B"/>
+            <Button Content="W" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="W"/>
+            <Button Content="K" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="K"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

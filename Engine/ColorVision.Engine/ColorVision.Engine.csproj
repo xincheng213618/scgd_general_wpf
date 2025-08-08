@@ -238,6 +238,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Pattern\Checkerboard\" />
     <Folder Include="Rbac\Users\" />
     <Folder Include="Rbac\Roles\" />
     <Folder Include="Rbac\Tenants\" />
