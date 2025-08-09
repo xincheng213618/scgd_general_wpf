@@ -78,6 +78,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
+            Load();
             if (File.Exists(result.ResultImagFile))
             {
                 Task.Run(async () =>
