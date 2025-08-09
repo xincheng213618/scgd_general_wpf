@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Newtonsoft.Json;
+using ProjectKB.Config;
 using System.IO;
 using System.Windows;
 

@@ -60,6 +60,10 @@
                             <TextBox Width="140"  Text="{Binding RefreshResult}"/>
                         </StackPanel>
                         <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
+                            <TextBlock Text="LogControlVisibility" Width="120"/>
+                            <ToggleButton Width="140" Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding LogControlVisibility}"/>
+                        </StackPanel>
+                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
                             <TextBlock Text="AllowTestFailures" Width="120"/>
                             <TextBox Width="140"  Text="{Binding  AllowTestFailures}"/>
                         </StackPanel>

@@ -29,5 +29,12 @@ namespace ProjectKB
             var result = MesDll.PtrToString(a);
             MessageBox.Show(result);
         }
+
+        private void Test_Mesh_Upload_Click(object sender, RoutedEventArgs e)
+        {
+            nint a = MesDll.CheckBL_WIP("1","!","1");
+            var result = MesDll.PtrToString(a);
+            MessageBox.Show(result);
+        }
     }
 }
