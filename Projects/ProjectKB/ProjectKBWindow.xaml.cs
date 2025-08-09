@@ -818,6 +818,7 @@ namespace ProjectKB
                                 }
 
                                 Rectangle.Attribute.Brush = Brushes.Transparent;
+                                Rectangle.Attribute.Name = item.Name;
                                 Rectangle.Attribute.Id = -1;
                                 Rectangle.Render();
                                 ImageView.AddVisual(Rectangle);
