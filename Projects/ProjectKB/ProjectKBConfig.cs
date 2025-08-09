@@ -17,16 +17,24 @@ namespace ProjectKB
     public class ProjectKBConfig: ViewModelBase, IConfig
     {
         public static ProjectKBConfig Instance => ConfigService.Instance.GetRequiredService<ProjectKBConfig>();
+        [JsonIgnore]
         public RelayCommand OpenTemplateCommand { get; set; }
+        [JsonIgnore]
         public RelayCommand OpenFlowEngineToolCommand { get; set; }
+        [JsonIgnore]
         public RelayCommand OpenLogCommand { get; set; }
+        [JsonIgnore]
         public RelayCommand OpenModbusCommand { get; set; }
+        [JsonIgnore]
         public RelayCommand OpenConfigCommand { get; set; }
+        [JsonIgnore]
         public RelayCommand OpenSocketConfigCommand { get; set; }
-
+        [JsonIgnore]
         public RelayCommand OpenChangeLogCommand { get; set; }
+        [JsonIgnore]
         public RelayCommand OpenReadMeCommand { get; set; }
-
+        [JsonIgnore]
+        public RelayCommand EditRecipeCommand { get; set; }
 
         public ProjectKBConfig()
         {
@@ -39,6 +47,9 @@ namespace ProjectKB
             OpenChangeLogCommand = new RelayCommand(a => OpenChangeLog());
             OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
             OpenSocketConfigCommand = new RelayCommand(a => OepnSocketConfig());
+
+            EditRecipeCommand = new RelayCommand(a => EditRecipe());
+
         }
 
         public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; NotifyPropertyChanged(); } }
@@ -56,6 +67,11 @@ namespace ProjectKB
         public bool RefreshResult { get => _RefreshResult; set { _RefreshResult = value; NotifyPropertyChanged(); } }
         private bool _RefreshResult = true;
 
+        public void EditRecipe()
+        {
+            EditRecipeWindow EditRecipeWindow = new EditRecipeWindow() { Owner = Application.Current.GetActiveWindow() };
+            EditRecipeWindow.ShowDialog();
+        }
 
         public static void OepnSocketConfig()
         {
@@ -190,10 +206,6 @@ namespace ProjectKB
         private SummaryInfo _SummaryInfo = new SummaryInfo();
 
         public static ProjectKBWindowConfig ProjectKBWindowConfig => ProjectKBWindowConfig.Instance;
-        public Dictionary<string, SPECConfig> SPECConfigs { get; set; } = new Dictionary<string, SPECConfig>();
-
-        public SPECConfig SPECConfig { get => _SPECConfig; set { _SPECConfig = value; NotifyPropertyChanged(); } }
-        private SPECConfig _SPECConfig = new SPECConfig();
 
     }
 }

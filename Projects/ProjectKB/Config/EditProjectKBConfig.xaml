@@ -25,43 +25,6 @@
         <ScrollViewer>
             <StackPanel x:Name="StackPanelContent" Margin="5">
                 <Border Grid.Row="1" Background="{StaticResource GlobalBorderBrush}" BorderThickness="1" BorderBrush="{ StaticResource BorderBrush}" CornerRadius="5" Margin="0,0,0,5">
-                    <UniformGrid Columns="2" Margin="10,5">
-                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="MinKeyLv: " Width="100"/>
-                            <TextBox Width="140"  Text="{Binding SPECConfig.MinKeyLv}"/>
-                        </StackPanel>
-                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="MaxKeyLv: " Width="100"/>
-                            <TextBox Width="140"  Text="{Binding SPECConfig.MaxKeyLv}"/>
-                        </StackPanel>
-                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="MinAvgLv: " Width="100"/>
-                            <TextBox Width="140"  Text="{Binding SPECConfig.MinAvgLv}"/>
-                        </StackPanel>
-                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="MaxAvgLv: " Width="100"/>
-                            <TextBox Width="140"  Text="{Binding SPECConfig.MaxAvgLv}"/>
-                        </StackPanel>
-                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="MinUniformity: " Width="100"/>
-                            <TextBox Width="140"  Text="{Binding SPECConfig.MinUniformity}"/>
-                        </StackPanel>
-                        <StackPanel>
-                            
-                        </StackPanel>
-                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="MinKeyLc: " Width="100"/>
-                            <TextBox Width="140"  Text="{Binding SPECConfig.MinKeyLc}"/>
-                        </StackPanel>
-                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="MaxKeyLc: " Width="100"/>
-                            <TextBox Width="140"  Text="{Binding SPECConfig.MaxKeyLc}"/>
-                        </StackPanel>
-                    </UniformGrid>
-
-
-                </Border>
-                <Border Grid.Row="1" Background="{StaticResource GlobalBorderBrush}" BorderThickness="1" BorderBrush="{ StaticResource BorderBrush}" CornerRadius="5" Margin="0,0,0,5">
                     <StackPanel Margin="10,5">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                             <TextBlock Text="序列号位数"  MinWidth="120"  />
@@ -91,6 +54,14 @@
                         <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
                             <TextBlock Text="KBLVSacle " Width="120"/>
                             <TextBox Width="140"  Text="{Binding KBLVSacle}"/>
+                        </StackPanel>
+                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
+                            <TextBlock Text="RefreshResult" Width="120"/>
+                            <TextBox Width="140"  Text="{Binding RefreshResult}"/>
+                        </StackPanel>
+                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
+                            <TextBlock Text="AllowTestFailures" Width="120"/>
+                            <TextBox Width="140"  Text="{Binding  AllowTestFailures}"/>
                         </StackPanel>
                         <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
                             <TextBlock Text="打开图像延迟 " Width="120"/>
