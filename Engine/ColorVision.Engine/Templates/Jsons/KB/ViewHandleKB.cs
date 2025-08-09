@@ -68,17 +68,15 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
         public override void Load(AlgorithmView view, AlgorithmResult result)
         {
-            if (result.ViewResults != null)
+            if (result.ViewResults == null)
             {
                 result.ViewResults ??= new ObservableCollection<IViewResult>(PoiPointResultDao.Instance.GetAllByPid(result.Id));
                 result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmKB), ImageFilePath = result.FilePath })) });
-
             }
         }
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
-            Load();
             if (File.Exists(result.ResultImagFile))
             {
                 Task.Run(async () =>
