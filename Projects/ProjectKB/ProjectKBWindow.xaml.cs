@@ -17,7 +17,6 @@ using FlowEngineLib.Base;
 using log4net;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
-using ProjectKB.Config;
 using ProjectKB.Modbus;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
@@ -115,6 +114,10 @@ namespace ProjectKB
             }
         }
 
+        public static RecipeManager RecipeManager => RecipeManager.GetInstance();
+
+        public static KBRecipeConfig RecipeConfig => RecipeManager.RecipeConfig;
+
         #region FlowRun
         public STNodeEditor STNodeEditorMain { get; set; }
         private FlowEngineControl flowEngine;
@@ -135,15 +138,15 @@ namespace ProjectKB
                 if (ProjectKBConfig.Instance.TemplateSelectedIndex > -1)
                 {
                     string Name = TemplateFlow.Params[ProjectKBConfig.Instance.TemplateSelectedIndex].Key;
-                    if (ProjectKBConfig.Instance.SPECConfigs.TryGetValue(Name, out SPECConfig sPECConfig))
+                    if (RecipeManager.RecipeConfigs.TryGetValue(Name, out KBRecipeConfig sPECConfig))
                     {
-                        ProjectKBConfig.Instance.SPECConfig = sPECConfig;
+                        RecipeManager.RecipeConfig = sPECConfig;
                     }
                     else
                     {
-                        sPECConfig = new SPECConfig();
-                        ProjectKBConfig.Instance.SPECConfigs.TryAdd(Name, sPECConfig);
-                        ProjectKBConfig.Instance.SPECConfig = sPECConfig;
+                        sPECConfig = new KBRecipeConfig();
+                        RecipeManager.RecipeConfigs.TryAdd(Name, sPECConfig);
+                        RecipeManager.RecipeConfig = sPECConfig;
                     }
 
                 }
@@ -455,34 +458,34 @@ namespace ProjectKB
             foreach (var item in kBItem.Items)
             {
 
-                if (ProjectKBConfig.Instance.SPECConfig.MinKeyLv != 0)
+                if (RecipeConfig.MinKeyLv != 0)
                 {
-                    item.Result = item.Result && item.Lv >= ProjectKBConfig.Instance.SPECConfig.MinKeyLv;
+                    item.Result = item.Result && item.Lv >= RecipeConfig.MinKeyLv;
                 }
                 else
                 {
                     log.Debug("跳过minLv检测");
                 }
-                if (ProjectKBConfig.Instance.SPECConfig.MaxKeyLv != 0)
+                if (RecipeConfig.MaxKeyLv != 0)
                 {
-                    item.Result = item.Result && item.Lv <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLv;
+                    item.Result = item.Result && item.Lv <= RecipeConfig.MaxKeyLv;
                 }
                 else
                 {
                     log.Debug("跳过MaxLv检测");
                 }
 
-                if (ProjectKBConfig.Instance.SPECConfig.MinKeyLc != 0)
+                if (RecipeConfig.MinKeyLc != 0)
                 {
-                    item.Result = item.Result && item.Lc >= ProjectKBConfig.Instance.SPECConfig.MinKeyLc / 100;
+                    item.Result = item.Result && item.Lc >= RecipeConfig.MinKeyLc / 100;
                 }
                 else
                 {
                     log.Debug("跳过MinKeyLc检测");
                 }
-                if (ProjectKBConfig.Instance.SPECConfig.MaxKeyLc != 0)
+                if (RecipeConfig.MaxKeyLc != 0)
                 {
-                    item.Result = item.Result && item.Lc <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLc / 100;
+                    item.Result = item.Result && item.Lc <= RecipeConfig.MaxKeyLc / 100;
                 }
                 else
                 {
@@ -507,60 +510,60 @@ namespace ProjectKB
 
             kBItem.Result = true;
 
-            if (ProjectKBConfig.Instance.SPECConfig.MinKeyLv != 0)
+            if (RecipeConfig.MinKeyLv != 0)
             {
-                kBItem.Result = kBItem.Result && kBItem.MinLv >= ProjectKBConfig.Instance.SPECConfig.MinKeyLv;
+                kBItem.Result = kBItem.Result && kBItem.MinLv >= RecipeConfig.MinKeyLv;
             }
             else
             {
                 log.Debug("跳过minLv检测");
             }
-            if (ProjectKBConfig.Instance.SPECConfig.MaxKeyLv != 0)
+            if (RecipeConfig.MaxKeyLv != 0)
             {
-                kBItem.Result = kBItem.Result && kBItem.MaxLv <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLv;
+                kBItem.Result = kBItem.Result && kBItem.MaxLv <= RecipeConfig.MaxKeyLv;
             }
             else
             {
                 log.Debug("跳过MaxLv检测");
             }
-            if (ProjectKBConfig.Instance.SPECConfig.MinAvgLv != 0)
+            if (RecipeConfig.MinAvgLv != 0)
             {
-                kBItem.Result = kBItem.Result && kBItem.AvgLv >= ProjectKBConfig.Instance.SPECConfig.MinAvgLv;
+                kBItem.Result = kBItem.Result && kBItem.AvgLv >= RecipeConfig.MinAvgLv;
             }
             else
             {
                 log.Debug("跳过MinAvgLv检测");
             }
-            if (ProjectKBConfig.Instance.SPECConfig.MaxAvgLv != 0)
+            if (RecipeConfig.MaxAvgLv != 0)
             {
-                kBItem.Result = kBItem.Result && kBItem.AvgLv <= ProjectKBConfig.Instance.SPECConfig.MaxAvgLv;
+                kBItem.Result = kBItem.Result && kBItem.AvgLv <= RecipeConfig.MaxAvgLv;
             }
             else
             {
                 log.Debug("跳过MaxAvgLv检测");
             }
 
-            if (ProjectKBConfig.Instance.SPECConfig.MinUniformity != 0)
+            if (RecipeConfig.MinUniformity != 0)
             {
-                kBItem.Result = kBItem.Result && kBItem.LvUniformity >= ProjectKBConfig.Instance.SPECConfig.MinUniformity / 100;
+                kBItem.Result = kBItem.Result && kBItem.LvUniformity >= RecipeConfig.MinUniformity / 100;
             }
             else
             {
                 log.Debug("跳过Uniformity检测");
             }
 
-            if (ProjectKBConfig.Instance.SPECConfig.MinKeyLc != 0)
+            if (RecipeConfig.MinKeyLc != 0)
             {
-                kBItem.Result = kBItem.Result && kBItem.Items.Min(item => item.Lc) >= ProjectKBConfig.Instance.SPECConfig.MinKeyLc / 100;
+                kBItem.Result = kBItem.Result && kBItem.Items.Min(item => item.Lc) >= RecipeConfig.MinKeyLc / 100;
             }
             else
             {
                 log.Debug("跳过MinKeyLc检测");
             }
 
-            if (ProjectKBConfig.Instance.SPECConfig.MaxKeyLc != 0)
+            if (RecipeConfig.MaxKeyLc != 0)
             {
-                kBItem.Result = kBItem.Result && kBItem.Items.Max(item => item.Lc) <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLc / 100;
+                kBItem.Result = kBItem.Result && kBItem.Items.Max(item => item.Lc) <= RecipeConfig.MaxKeyLc / 100;
             }
             else
             {
@@ -579,8 +582,11 @@ namespace ProjectKB
             {
                 ProjectKBConfig.Instance.SummaryInfo.DefectiveProductCount += 1;
             }
+
+
             ViewResluts.Insert(0, kBItem);
             listView1.SelectedIndex = 0;
+
             string resultPath = ProjectKBConfig.Instance.ResultSavePath1 + $"\\{kBItem.SN}-{kBItem.CreateTime:yyyyMMddHHmmssffff}.txt";
             string result = $"{kBItem.SN},{(kBItem.Result ? "Pass" : "Fail")}, ,";
 

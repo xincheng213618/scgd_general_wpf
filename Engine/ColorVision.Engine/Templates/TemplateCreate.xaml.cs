@@ -113,7 +113,6 @@ namespace ColorVision.Engine.Templates
                 MessageBox.Show(Application.Current.GetActiveWindow(), $"{template?.GetType()?.Name}已经存在 {CreateName}模板", "Template Manager");
                 return;
             }
-
             if (File.Exists(TemplateFile))
             {
                 ITemplate.ImportFile(TemplateFile);
