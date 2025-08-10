@@ -34,40 +34,40 @@
                         <ColumnDefinition x:Name="col1" Width="Auto"/>
                         <ColumnDefinition x:Name="col2"   Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Grid x:Name="SummaryGrid" Visibility="{Binding SummaryInfo.IsShowSummary,Converter={StaticResource bool2VisibilityConverter}}" Width="{Binding SummaryInfo.Width}">
+                    <Grid x:Name="SummaryGrid" Visibility="{Binding SummaryManager.Summary.IsShowSummary,Converter={StaticResource bool2VisibilityConverter}}" Width="{Binding SummaryManager.Summary.Width}">
                         <StackPanel Margin="5">
                             <TextBlock Text="Summary" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"  Margin="0,0,0,5"/>
                             <DockPanel  Margin="0,0,0,5">
                                 <TextBlock Text="线别: "/>
-                                <TextBlock Text="{Binding SummaryInfo.LineNumber}"/>
+                                <TextBlock Text="{Binding SummaryManager.Summary.LineNO}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <TextBlock Text="工号: "/>
-                                <TextBlock Text="{Binding SummaryInfo.WorkerNumber}"/>
+                                <TextBlock Text="{Binding SummaryManager.Summary.WorkerNO}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <TextBlock Text="目标产量: "/>
-                                <TextBlock Text="{Binding SummaryInfo.TargetProduction}"/>
+                                <TextBlock Text="{Binding SummaryManager.Summary.TargetProduction}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <TextBlock Text="已经生产产量: "/>
-                                <TextBlock Text="{Binding SummaryInfo.ActualProduction}"/>
+                                <TextBlock Text="{Binding SummaryManager.Summary.ActualProduction}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <TextBlock Text="良品数量: "/>
-                                <TextBlock Text="{Binding SummaryInfo.GoodProductCount}"/>
+                                <TextBlock Text="{Binding SummaryManager.Summary.GoodProductCount}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <TextBlock Text="不良品数量: "/>
-                                <TextBlock Text="{Binding SummaryInfo.DefectiveProductCount}"/>
+                                <TextBlock Text="{Binding SummaryManager.Summary.DefectiveProductCount}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <TextBlock Text="良品率: "/>
-                                <TextBlock Text="{Binding SummaryInfo.GoodProductRate, StringFormat={}{0:P1}}"/>
+                                <TextBlock Text="{Binding SummaryManager.Summary.GoodProductRate, StringFormat={}{0:P1}}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <TextBlock Text="不良频率: "/>
-                                <TextBlock Text="{Binding SummaryInfo.DefectiveProductRate ,StringFormat={}{0:P1}}"/>
+                                <TextBlock Text="{Binding SummaryManager.Summary.DefectiveProductRate ,StringFormat={}{0:P1}}"/>
                             </DockPanel>
                         </StackPanel>
 
@@ -275,6 +275,9 @@
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="Recipe" Command="{Binding EditRecipeCommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="Summory" Command="{Binding SummaryManager.EditCommand}"/>
             </StatusBarItem>
         </StatusBar>
 

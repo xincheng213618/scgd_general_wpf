@@ -31,15 +31,6 @@
                             <TextBox Text="{Binding  SNMax}" Width="200"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                            <TextBlock Text="恢复窗口"  MinWidth="120"  />
-                            <ui:ToggleSwitch IsChecked="{Binding ProjectKBWindowConfig.IsRestoreWindow}" Margin="0,0,5,0"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                            <TextBlock Text="显示概述信息"  MinWidth="120" />
-                            <ui:ToggleSwitch IsChecked="{Binding SummaryInfo.IsShowSummary}" Margin="0,0,5,0"/>
-                            <TextBox Text="{Binding SummaryInfo.Width }" Width="50"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                             <TextBlock Text="Csv保存路径" MinWidth="120"  />
                             <TextBox Text="{Binding  ResultSavePath}" Width="350" Margin="0,0,5,0"/>
                             <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right" Width="40"  Click="SelectDataPath_Click" />
@@ -73,37 +64,6 @@
                         </StackPanel>
                     </StackPanel>
                 </Border>
-                <Border Grid.Row="1" Background="{StaticResource GlobalBorderBrush}" BorderThickness="1" BorderBrush="{ StaticResource BorderBrush}" CornerRadius="5" Margin="0,0,0,5">
-                    <StackPanel Margin="10,5">
-                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="线别: " Width="120"/>
-                            <TextBox Width="200"  Text="{Binding SummaryInfo.LineNumber}"/>
-                        </StackPanel>
-                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="工号: " Width="120"/>
-                            <TextBox Width="200" Text="{Binding SummaryInfo.WorkerNumber}"/>
-                        </StackPanel>
-                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="目标产量: " Width="120"/>
-                            <TextBox Width="200"  Text="{Binding SummaryInfo.TargetProduction}"/>
-                        </StackPanel>
-                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="已经生产产量: " Width="120"/>
-                            <TextBox Width="200"  Text="{Binding SummaryInfo.ActualProduction}"/>
-                        </StackPanel>
-                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="良品数量: " Width="120"/>
-                            <TextBox Width="200" Text="{Binding SummaryInfo.GoodProductCount}"/>
-                        </StackPanel>
-                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="不良品数量:"  Width="120"/>
-                            <TextBox Width="200" Text="{Binding SummaryInfo.DefectiveProductCount}"/>
-                        </StackPanel>
-
-                    </StackPanel>
-
-                </Border>
-
             </StackPanel>
         </ScrollViewer>
         <Grid Grid.Row="1">

@@ -30,7 +30,6 @@ namespace ColorVision.Engine.Pattern.Cross
         public static PatternCrossConfig Config => ConfigService.Instance.GetRequiredService<PatternCrossConfig>();
         public override ViewModelBase GetConfig() => Config;
         public override UserControl GetPatternEditor() => new CrossEditor();
-
         public override Mat Gen(int height, int width)
         {
             Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());

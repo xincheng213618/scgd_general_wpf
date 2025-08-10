@@ -3,7 +3,6 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using Newtonsoft.Json;
-using ProjectKB.Config;
 using ProjectKB.Modbus;
 using ProjectKB.Services;
 using System.Collections.ObjectModel;
@@ -52,6 +51,7 @@ namespace ProjectKB
 
         }
 
+        [DisplayName("日志开关(重启窗口后生效)")]
         public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; NotifyPropertyChanged(); } }
         private bool _LogControlVisibility = true;
 
@@ -63,30 +63,30 @@ namespace ProjectKB
         public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; NotifyPropertyChanged(); } }
         private bool _AllowTestFailures = true;
 
-        [DisplayName("RefreshResult")]
+        [DisplayName("刷新结果")]
         public bool RefreshResult { get => _RefreshResult; set { _RefreshResult = value; NotifyPropertyChanged(); } }
         private bool _RefreshResult = true;
 
+        [DisplayName("启用Mes"),Category("KB")]
         public bool UseMesh { get => _UseMesh; set { _UseMesh = value; NotifyPropertyChanged(); } }
         private bool _UseMesh = true;
 
         public void EditRecipe()
         {
-            EditRecipeWindow EditRecipeWindow = new EditRecipeWindow() { Owner = Application.Current.GetActiveWindow() };
+            EditRecipeWindow EditRecipeWindow = new EditRecipeWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             EditRecipeWindow.ShowDialog();
         }
 
         public static void OepnSocketConfig()
         {
-            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(SocketConfig.Instance) { Owner = Application.Current.GetActiveWindow() };
+            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(SocketConfig.Instance) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             propertyEditorWindow.Show();
         }
 
 
-        public static void OpenConfig()
+        public void OpenConfig()
         {
-            EditProjectKBConfig editProjectKBConfig = new EditProjectKBConfig() { Owner = Application.Current.GetActiveWindow() };
-            editProjectKBConfig.ShowDialog();
+            new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(),WindowStartupLocation =WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public static void OpenResourceName(string title, string resourceName)
@@ -131,9 +131,6 @@ namespace ProjectKB
             OpenResourceName("README",resourceName);
         }
 
-
-
-
         public static void OpenModbus()
         {
             ModbusConnect modbusConnect = new ModbusConnect() { Owner = Application.Current.GetActiveWindow() };
@@ -163,31 +160,13 @@ namespace ProjectKB
         }
 
         [JsonIgnore]
-        public string SN { get => _SN; set
-            {
-                if (!string.IsNullOrEmpty(value) && value.Length > SNMax)
-                {
-                    // 移除最前面的字符，使其长度为 14
-                    _SN = value.Substring(value.Length - SNMax);
-                }
-                else
-                {
-                    _SN = value;
-                }
-                NotifyPropertyChanged(); } }
+        public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }
         private string _SN;
 
-        public int SNMax { get => _SMMax; set { _SMMax = value; NotifyPropertyChanged(); } }
-        private int _SMMax = 17;
-
-        public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; NotifyPropertyChanged(); } }
-        private bool _IsAutoUploadSn;
-       
+        [DisplayName("Csv保存路径"),PropertyEditorType(PropertyEditorType.TextSelectFolder), Category("KB")]
         public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; NotifyPropertyChanged(); } }
         private string _ResultSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "TestReslut");
-
-
-
+        [DisplayName("Text保存路径"), PropertyEditorType(PropertyEditorType.TextSelectFolder), Category("KB")]
         public string ResultSavePath1 { get => _ResultSavePath1; set { _ResultSavePath1 = value; NotifyPropertyChanged(); } }
         private string _ResultSavePath1 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "TestReslut");
 
@@ -195,18 +174,18 @@ namespace ProjectKB
         private double _Height = 300;
 
         public static ModbusControl ModbusControl => ModbusControl.GetInstance();
+
+        [DisplayName("自动连接Modbus"), Category("KB")]
         public bool AutoModbusConnect { get => _AutoModbusConnect; set { _AutoModbusConnect = value; NotifyPropertyChanged(); } }
         private bool _AutoModbusConnect = true;
-
-
+        [DisplayName("KBLVSacle"), Category("KB")]
         public double KBLVSacle { get => _KBLVSacle; set { _KBLVSacle = value; NotifyPropertyChanged(); } }
         private double _KBLVSacle = 0.006583904;
-
+        [DisplayName("打开图像延迟")]
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;
 
-        public SummaryInfo SummaryInfo { get => _SummaryInfo; set { _SummaryInfo = value; NotifyPropertyChanged(); } }
-        private SummaryInfo _SummaryInfo = new SummaryInfo();
+        public static SummaryManager SummaryManager => SummaryManager.GetInstance();
 
         public static ProjectKBWindowConfig ProjectKBWindowConfig => ProjectKBWindowConfig.Instance;
 

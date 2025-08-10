@@ -55,6 +55,8 @@ namespace ProjectKB
 
         public static ProjectKBWindowConfig Config => ProjectKBWindowConfig.Instance;
 
+        public static Summary Summary => SummaryManager.GetInstance().Summary;
+
         public ProjectKBWindow()
         {
             InitializeComponent();
@@ -573,14 +575,14 @@ namespace ProjectKB
 
             kBItem.Exposure = "50";
 
-            ProjectKBConfig.Instance.SummaryInfo.ActualProduction += 1;
+            Summary.ActualProduction += 1;
             if (kBItem.Result)
             {
-                ProjectKBConfig.Instance.SummaryInfo.GoodProductCount += 1;
+                Summary.GoodProductCount += 1;
             }
             else
             {
-                ProjectKBConfig.Instance.SummaryInfo.DefectiveProductCount += 1;
+                Summary.DefectiveProductCount += 1;
             }
 
 
@@ -875,7 +877,7 @@ namespace ProjectKB
 
         private void GridSplitter_DragCompleted1(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
-            ProjectKBConfig.Instance.SummaryInfo.Width = col1.ActualWidth;
+            Summary.Width = col1.ActualWidth;
             col1.Width = GridLength.Auto;
         }
 
