@@ -14,16 +14,16 @@ namespace ColorVision.Engine.Pattern.Solid
     }
 
     [DisplayName("纯色")]
-    public class PatternSolid : IPattern
+    public class PatternSolid : IPatternBase
     {
         public static PatternSolodConfig Config => ConfigService.Instance.GetRequiredService<PatternSolodConfig>();
-        public ViewModelBase GetConfig() => Config;
+        public override ViewModelBase GetConfig() => Config;
+        public override UserControl GetPatternEditor() => new SolidEditor();
 
-        public Mat Gen(int height, int width)
+        public override Mat Gen(int height, int width)
         {
             return new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
         }
 
-        public UserControl GetPatternEditor() => new SolidEditor();
     }
 }

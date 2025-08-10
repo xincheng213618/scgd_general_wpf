@@ -34,12 +34,14 @@ namespace ColorVision.Engine.Pattern.Checkerboard
     }
 
     [DisplayName("棋盘格")]
-    public class PatternCheckerboard : IPattern
+    public class PatternCheckerboard : IPatternBase
     {
         public static PatternCheckerboardConfig Config => ConfigService.Instance.GetRequiredService<PatternCheckerboardConfig>();
-        public ViewModelBase GetConfig() => Config;
+        public override ViewModelBase GetConfig() => Config;
+        public override UserControl GetPatternEditor() => new CheckerboardEditor();
 
-        public Mat Gen(int height, int width)
+
+        public override Mat Gen(int height, int width)
         {
             var mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
 
@@ -77,6 +79,5 @@ namespace ColorVision.Engine.Pattern.Checkerboard
             }
             return mat;
         }
-        public UserControl GetPatternEditor() => new CheckerboardEditor();
     }
 }

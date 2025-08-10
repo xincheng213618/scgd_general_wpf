@@ -1,13 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.UI;
-using NPOI.SS.UserModel;
 using OpenCvSharp;
 using System;
 using System.ComponentModel;
 using System.Windows.Controls;
 using System.Windows.Media;
-using static iText.Kernel.Pdf.Colorspace.PdfPattern;
 
 namespace ColorVision.Engine.Pattern.Stripe
 {
@@ -43,13 +40,12 @@ namespace ColorVision.Engine.Pattern.Stripe
     }
 
     [DisplayName("隔行点亮")]
-    public class PatternStripe : IPattern
+    public class PatternStripe : IPatternBase
     {
         public static PatternStripeConfig Config => ConfigService.Instance.GetRequiredService<PatternStripeConfig>();
-
-        public ViewModelBase GetConfig() => Config;
-
-        public Mat Gen(int height, int width)
+        public override ViewModelBase GetConfig() => Config;
+        public override UserControl GetPatternEditor() => new StripeEditor();
+        public override Mat Gen(int height, int width)
         {
             Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
             if (Config.IsHorizontal)
@@ -76,7 +72,6 @@ namespace ColorVision.Engine.Pattern.Stripe
             }
             return mat;
         }
-        public UserControl GetPatternEditor() => new StripeEditor();
 
 
     }

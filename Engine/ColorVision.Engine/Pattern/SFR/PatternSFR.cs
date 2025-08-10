@@ -35,12 +35,13 @@ namespace ColorVision.Engine.Pattern.SFR
     }
 
     [DisplayName("SFR")]
-    public class PatternSFR : IPattern
+    public class PatternSFR : IPatternBase
     {
         public static PatternSFRConfig Config => ConfigService.Instance.GetRequiredService<PatternSFRConfig>();
-        public ViewModelBase GetConfig() => Config;
+        public override ViewModelBase GetConfig() => Config;
+        public override UserControl GetPatternEditor() => new SFREditor();
 
-        public Mat Gen(int height, int width)
+        public override Mat Gen(int height, int width)
         {
             int cols = Config.Cols;
             int rows = Config.Rows;
@@ -98,6 +99,5 @@ namespace ColorVision.Engine.Pattern.SFR
             }
             return img;
         }
-        public UserControl GetPatternEditor() => new SFREditor();
     }
 }

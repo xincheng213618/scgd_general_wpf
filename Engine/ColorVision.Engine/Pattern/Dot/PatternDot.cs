@@ -43,12 +43,13 @@ namespace ColorVision.Engine.Pattern.Dot
     }
 
     [DisplayName("点阵")]
-    public class PatternDot : IPattern
+    public class PatternDot : IPatternBase
     {
         public static PatternDotConfig Config => ConfigService.Instance.GetRequiredService<PatternDotConfig>();
-        public ViewModelBase GetConfig() => Config;
+        public override ViewModelBase GetConfig() => Config;
+        public override UserControl GetPatternEditor() => new DotEditor();
 
-        public Mat Gen(int height, int width)
+        public override Mat Gen(int height, int width)
         {
             Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
             int spacing = Config.Spacing;
@@ -77,6 +78,5 @@ namespace ColorVision.Engine.Pattern.Dot
             }
             return mat;
         }
-        public UserControl GetPatternEditor() => new DotEditor();
     }
 }

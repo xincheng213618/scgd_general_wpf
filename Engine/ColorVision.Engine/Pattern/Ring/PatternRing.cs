@@ -29,12 +29,13 @@ namespace ColorVision.Engine.Pattern.Ring
     }
 
     [DisplayName("Ring")]
-    public class PatternRing : IPattern
+    public class PatternRing : IPatternBase
     {
         public static PatternRingConfig Config => ConfigService.Instance.GetRequiredService<PatternRingConfig>();
-        public ViewModelBase GetConfig() => Config;
+        public override ViewModelBase GetConfig() => Config;
+        public override UserControl GetPatternEditor() => new RingEditor();
 
-        public Mat Gen(int height, int width)
+        public override Mat Gen(int height, int width)
         {
             int ringWidth = Config.RingWidth;
 
@@ -61,6 +62,5 @@ namespace ColorVision.Engine.Pattern.Ring
             }
             return img;
         }
-        public UserControl GetPatternEditor() => new RingEditor();
     }
 }

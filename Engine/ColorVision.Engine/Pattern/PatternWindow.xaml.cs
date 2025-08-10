@@ -2,13 +2,9 @@
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
-using log4net;
 using OpenCvSharp.WpfExtensions;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Reflection;
 using System.Windows;
 using System.Windows.Media;
 
@@ -22,13 +18,13 @@ namespace ColorVision.Engine.Pattern
 
         public override void Execute()
         {
-            new TestPatternWpf() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new PatternWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
     }
 
-    public class TestPatternWpfConfig :ViewModelBase,IConfig
+    public class PatternWindowConfig :ViewModelBase,IConfig
     {
-        public static TestPatternWpfConfig Instance => ConfigService.Instance.GetRequiredService<TestPatternWpfConfig>();
+        public static PatternWindowConfig Instance => ConfigService.Instance.GetRequiredService<PatternWindowConfig>();
 
         public int Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); } }
         private int _Width = 640;
@@ -37,63 +33,11 @@ namespace ColorVision.Engine.Pattern
         private int _Height = 480;
     }
 
-    public class PatternMeta : ViewModelBase
-    {
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public string Category { get; set; }
-        public IPattern Pattern { get; set; } 
-    }
-
-    public class PatternManager
-    {
-        private static readonly ILog log = LogManager.GetLogger(typeof(PatternManager));
-        private static PatternManager _instance;
-        private static readonly object _locker = new();
-        public static PatternManager GetInstance() { lock (_locker) { _instance ??= new PatternManager(); return _instance; } }
-
-        public List<PatternMeta> Patterns { get; set; } = new List<PatternMeta>();
-        private PatternManager()
-        {
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-            {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IPattern).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    try
-                    {
-                        var displayName = type.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? type.Name;
-                        var description = type.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "";
-                        var category = type.GetCustomAttribute<CategoryAttribute>()?.Category ?? "";
-
-                        IPattern pattern = (IPattern)Activator.CreateInstance(type);
-                        if (pattern != null)
-                        {
-                            var patternMeta = new PatternMeta
-                            {
-                                Name = displayName,
-                                Description = description,
-                                Category = category,
-                                Pattern = pattern
-                            };
-                            Patterns.Add(patternMeta);
-                            log.Info($"已加载图案生成器: {type.FullName}");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Error($"加载图案生成器失败: {type.FullName}", ex);
-                    }
-
-                }
-            }
-        }
-    }
-
 
     /// <summary>
-    /// TestPatternWpf.xaml 的交互逻辑
+    /// PatternWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class TestPatternWpf : Window,IDisposable
+    public partial class PatternWindow : Window,IDisposable
     {
         private OpenCvSharp.Mat currentMat;
 
@@ -103,9 +47,9 @@ namespace ColorVision.Engine.Pattern
             ("3840x2160",3840,2160), ("1920x1080",1920,1080), ("1280x720",1280,720), ("1024x768",1024,768),
             ("800x600",800,600), ("640x480",640,480), ("自定义",0,0)
         };
-        static TestPatternWpfConfig Config => TestPatternWpfConfig.Instance;
+        static PatternWindowConfig Config => PatternWindowConfig.Instance;
 
-        public TestPatternWpf()
+        public PatternWindow()
         {
             InitializeComponent();
         }
@@ -116,7 +60,7 @@ namespace ColorVision.Engine.Pattern
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = TestPatternWpfConfig.Instance;
+            this.DataContext = PatternWindowConfig.Instance;
             imgDisplay = new ImageView();
             //这里最好实现成不模糊的样子
             RenderOptions.SetBitmapScalingMode(imgDisplay.ImageShow, BitmapScalingMode.NearestNeighbor);

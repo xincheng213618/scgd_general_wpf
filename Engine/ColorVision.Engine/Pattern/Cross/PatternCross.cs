@@ -25,19 +25,18 @@ namespace ColorVision.Engine.Pattern.Cross
     }
 
     [DisplayName("十字")]
-    public class PatternCross : IPattern
+    public class PatternCross : IPatternBase
     {
         public static PatternCrossConfig Config => ConfigService.Instance.GetRequiredService<PatternCrossConfig>();
+        public override ViewModelBase GetConfig() => Config;
+        public override UserControl GetPatternEditor() => new CrossEditor();
 
-        public ViewModelBase GetConfig() => Config;
-        public Mat Gen(int height, int width)
+        public override Mat Gen(int height, int width)
         {
             Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
-
             OpenCvSharp.Cv2.Line(mat, new OpenCvSharp.Point(0, height / 2), new OpenCvSharp.Point(width, height / 2), Config.AltBrush.ToScalar(), Config.HorizontalWidth);
             OpenCvSharp.Cv2.Line(mat, new OpenCvSharp.Point(width / 2, 0), new OpenCvSharp.Point(width / 2, height), Config.AltBrush.ToScalar(), Config.VerticalWidth);
             return mat;
         }
-        public UserControl GetPatternEditor() => new CrossEditor();
     }
 }
