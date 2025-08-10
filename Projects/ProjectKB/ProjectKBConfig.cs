@@ -67,6 +67,9 @@ namespace ProjectKB
         public bool RefreshResult { get => _RefreshResult; set { _RefreshResult = value; NotifyPropertyChanged(); } }
         private bool _RefreshResult = true;
 
+        public bool UseMesh { get => _UseMesh; set { _UseMesh = value; NotifyPropertyChanged(); } }
+        private bool _UseMesh = true;
+
         public void EditRecipe()
         {
             EditRecipeWindow EditRecipeWindow = new EditRecipeWindow() { Owner = Application.Current.GetActiveWindow() };
