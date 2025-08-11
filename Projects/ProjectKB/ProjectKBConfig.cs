@@ -161,7 +161,7 @@ namespace ProjectKB
 
         [JsonIgnore]
         public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }
-        private string _SN;
+        private string _SN = string.Empty;
 
         [DisplayName("Csv保存路径"),PropertyEditorType(PropertyEditorType.TextSelectFolder), Category("KB")]
         public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; NotifyPropertyChanged(); } }

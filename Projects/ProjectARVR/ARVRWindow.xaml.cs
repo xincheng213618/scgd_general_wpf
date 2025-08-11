@@ -878,8 +878,8 @@ namespace ProjectARVR
                         {
                             DFovView view1 = new DFovView(AlgResultModels[0]);
                             view1.Result.result.D_Fov = view1.Result.result.D_Fov * ObjectiveTestResultFix.DiagonalFieldOfViewAngle;
-                            view1.Result.result.ClolorVisionH_Fov = view1.Result.result.D_Fov * ObjectiveTestResultFix.HorizontalFieldOfViewAngle;
-                            view1.Result.result.ClolorVisionV_Fov = view1.Result.result.D_Fov * ObjectiveTestResultFix.VerticalFieldOfViewAngle;
+                            view1.Result.result.ClolorVisionH_Fov = view1.Result.result.H_Fov * ObjectiveTestResultFix.HorizontalFieldOfViewAngle;
+                            view1.Result.result.ClolorVisionV_Fov = view1.Result.result.V_FOV * ObjectiveTestResultFix.VerticalFieldOfViewAngle;
 
                             result.ViewResultWhite.DFovView = view1;
 
@@ -1574,13 +1574,21 @@ namespace ProjectARVR
 
                             log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
 
-                            string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                            string filePath = Path.Combine(ProjectARVRConfig.Instance.ResultSavePath, $"ObjectiveTestResults_{timeStr}.csv");
+                            try
+                            {
+                                string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                                string filePath = Path.Combine(ProjectARVRConfig.Instance.ResultSavePath, $"ObjectiveTestResults_{timeStr}.csv");
 
-                            List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
+                                List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
 
-                            objectiveTestResults.Add(ObjectiveTestResult);
-                            ObjectiveTestResultCsvExporter.ExportToCsv(objectiveTestResults, filePath);
+                                objectiveTestResults.Add(ObjectiveTestResult);
+                                ObjectiveTestResultCsvExporter.ExportToCsv(objectiveTestResults, filePath);
+                            }
+                            catch(Exception ex)
+                            {
+                                log.Error(ex);
+                            }
+
                             var response = new SocketResponse
                             {
                                 Version = "1.0",
