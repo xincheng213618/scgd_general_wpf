@@ -405,6 +405,7 @@ namespace ProjectKB
                             if (key != null)
                             {
                                 key.Lv = list.Y;
+                                key.Lv = list.Y*list.PixNumber;
                                 if (key.KBKeyRect.KBKey.Area != 0)
                                 {
                                     key.Lv = key.Lv / key.KBKeyRect.KBKey.Area;
@@ -422,6 +423,7 @@ namespace ProjectKB
                     {
                         foreach (var poi in pois)
                         {
+                            log.Info(poi.Value);
                             var list = JsonConvert.DeserializeObject<ObservableCollection<KBvalue>>(poi.Value);
 
                             var key = kBItem.Items.First(a => a.Name == poi.PoiName && poi.PoiWidth == a.KBKeyRect.Width);

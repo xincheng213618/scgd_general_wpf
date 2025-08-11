@@ -236,7 +236,7 @@
 
                 </Grid>
                 <RichTextBox x:Name="outputText" Grid.Row="3" Margin="5,0"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                    <FlowDocument>
+                    <FlowDocument>  
                         <Paragraph>
 
                         </Paragraph>
