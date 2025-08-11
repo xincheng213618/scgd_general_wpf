@@ -18,6 +18,7 @@ using log4net;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using ProjectKB.Modbus;
+using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -42,16 +43,17 @@ namespace ProjectKB
     public class ProjectKBWindowConfig : WindowConfig
     {
         public static ProjectKBWindowConfig Instance => ConfigService.Instance.GetRequiredService<ProjectKBWindowConfig>();
-        public ObservableCollection<KBItemMaster> ViewResluts { get; set; } = new ObservableCollection<KBItemMaster>();
     }
 
-    /// <summary>
-    /// Interaction logic for _windowInstance.xaml
-    /// </summary>
+        /// <summary>
+        /// Interaction logic for _windowInstance.xaml
+        /// </summary>
     public partial class ProjectKBWindow : Window,IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectKBWindow));
-        public static ObservableCollection<KBItemMaster> ViewResluts => ProjectKBWindowConfig.Instance.ViewResluts;
+        public static ViewResultManager ViewReslutManager => ViewResultManager.GetInstance();
+        public static ObservableCollection<KBItemMaster> ViewResluts => ViewReslutManager.ViewResluts;
+
 
         public static ProjectKBWindowConfig Config => ProjectKBWindowConfig.Instance;
 
@@ -603,7 +605,7 @@ namespace ProjectKB
 
                 string csvpath = ProjectKBConfig.Instance.ResultSavePath + $"\\{Regex.Replace(kBItem.Model, regexPattern, "")}_{kBItem.CreateTime:yyyyMMdd}.csv";
 
-                KBItemMaster.SaveCsv(kBItem, csvpath);
+                kBItem.SaveCsv(csvpath);
                 log.Debug($"writecsv:{csvpath}");
             });
             Application.Current.Dispatcher.BeginInvoke(() =>
@@ -886,6 +888,58 @@ namespace ProjectKB
             timer?.Dispose();
             logOutput?.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            KBItemMaster KBItemMaster = CurrentFlowResult ?? new KBItemMaster();
+            KBItemMaster.Model = FlowTemplate.Text;
+            KBItemMaster.SN = SNtextBox.Text;
+            KBItemMaster.CreateTime = DateTime.Now;
+            KBItemMaster.FlowStatus = FlowStatus.Completed;
+            KBItemMaster.Code = "@2";
+            KBItemMaster.Result = true;
+            KBItemMaster.AvgC1 = 1;
+
+            var rnd = new Random();
+            KBItemMaster.Items.Clear();
+
+            for (int i = 0; i < 80; i++)
+            {
+                // 随机生成 6 位英文字母或数字的 Name
+                string name = RandomName(rnd, 6);
+
+                KBItem kBItem = new KBItem
+                {
+                    Name = name,
+                    Lv = rnd.Next(80, 121),
+                    Lc = Math.Round(rnd.NextDouble() * 2, 2),
+                    Result = rnd.Next(0, 2) == 1,
+                    KBKeyRect = new KBKeyRect
+                    {
+                        X = rnd.Next(0, 200),
+                        Y = rnd.Next(0, 200),
+                        Width = rnd.Next(10, 60),
+                        Height = rnd.Next(10, 60),
+                        KBKey = new KBKey
+                        {
+                            Area = rnd.Next(100, 3001),
+                            KeyScale = Math.Round(rnd.NextDouble() * 3, 2)
+                        }
+                    }
+                };
+                KBItemMaster.Items.Add(kBItem);
+            }
+
+            ViewReslutManager.Save(KBItemMaster);
+            listView1.SelectedIndex = 0;
+
+        }
+        private string RandomName(Random rnd, int length)
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            return new string(Enumerable.Repeat(chars, length)
+                .Select(s => s[rnd.Next(s.Length)]).ToArray());
         }
     }
 }
