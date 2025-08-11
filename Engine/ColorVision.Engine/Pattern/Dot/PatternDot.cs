@@ -2,6 +2,8 @@
 using ColorVision.UI;
 using NPOI.SS.UserModel;
 using OpenCvSharp;
+using SkiaSharp;
+using System;
 using System.ComponentModel;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -40,6 +42,24 @@ namespace ColorVision.Engine.Pattern.Dot
         public int Row { get => _Row; set { _Row = value; NotifyPropertyChanged(); } }
         private int _Row = -1;
 
+        /// <summary>
+        /// 是否使用矩形（为 false 时使用圆形）
+        /// </summary>
+        public bool UseRectangle { get => _UseRectangle; set { _UseRectangle = value; NotifyPropertyChanged(); } }
+        private bool _UseRectangle = false;
+
+        /// <summary>
+        /// 矩形宽度（像素）
+        /// </summary>
+        public int RectWidth { get => _RectWidth; set { _RectWidth = value; NotifyPropertyChanged(); } }
+        private int _RectWidth = 6;
+
+        /// <summary>
+        /// 矩形高度（像素）
+        /// </summary>
+        public int RectHeight { get => _RectHeight; set { _RectHeight = value; NotifyPropertyChanged(); } }
+        private int _RectHeight = 6;
+
     }
 
     [DisplayName("点阵")]
@@ -52,18 +72,23 @@ namespace ColorVision.Engine.Pattern.Dot
         public override Mat Gen(int height, int width)
         {
             Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
-            int spacing = Config.Spacing;
-            int radius = Config.Radius;
 
-            int startX = Config.StartX;
-            int startY = Config.StartY;
-            int col = Config.Col;
-            int row = Config.Row;
+            int spacing = Math.Max(1, Config.Spacing);
+            int radius = Math.Max(1, Config.Radius);
 
-            int nCol = col > 0 ? col : (width - startX + spacing - 1) / spacing;
-            int nRow = row > 0 ? row : (height - startY + spacing - 1) / spacing;
-            startX = startX >0 ? startX : (spacing) / 2;
-            startY = startY > 0 ? startX : (spacing) / 2;
+            // 起点默认到单元中心
+            int startX = Config.StartX > 0 ? Config.StartX : spacing / 2;
+            int startY = Config.StartY > 0 ? Config.StartY : spacing / 2;
+
+            // 自适应行列（优先使用配置值）
+            int nCol = Config.Col > 0 ? Config.Col : (int)Math.Ceiling((width - startX) / (double)spacing);
+            int nRow = Config.Row > 0 ? Config.Row : (int)Math.Ceiling((height - startY) / (double)spacing);
+
+
+            Scalar color = Config.AltBrush.ToScalar();
+            bool useRect = Config.UseRectangle;
+            int rectW = Config.RectWidth > 0 ? Config.RectWidth : Math.Max(1, 2 * radius);
+            int rectH = Config.RectHeight > 0 ? Config.RectHeight : Math.Max(1, 2 * radius);
 
             for (int i = 0; i < nRow; i++)
             {
@@ -73,7 +98,28 @@ namespace ColorVision.Engine.Pattern.Dot
                 {
                     int x = startX + j * spacing;
                     if (x >= width) break;
-                    OpenCvSharp.Cv2.Circle(mat, new OpenCvSharp.Point(x, y), radius, Config.AltBrush.ToScalar(), -1);
+
+                    if (!useRect)
+                    {
+                        // 画实心圆
+                        Cv2.Circle(mat, new OpenCvSharp.Point(x, y), radius, color, -1);
+                    }
+                    else
+                    {
+                        // 以 (x,y) 为中心的实心矩形
+                        int x0 = x - rectW / 2;
+                        int y0 = y - rectH / 2;
+
+                        int xClip = Math.Max(0, x0);
+                        int yClip = Math.Max(0, y0);
+                        int wClip = Math.Min(rectW, width - xClip);
+                        int hClip = Math.Min(rectH, height - yClip);
+
+                        if (wClip > 0 && hClip > 0)
+                        {
+                            Cv2.Rectangle(mat, new Rect(xClip, yClip, wClip, hClip), color, -1);
+                        }
+                    }
                 }
             }
             return mat;
