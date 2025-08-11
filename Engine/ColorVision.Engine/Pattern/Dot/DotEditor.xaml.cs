@@ -9,7 +9,7 @@ using System.Windows.Media;
 namespace ColorVision.Engine.Pattern.Dot
 {
     /// <summary>
-    /// CrossEditor.xaml 的交互逻辑
+    /// DotEditor.xaml 的交互逻辑
     /// </summary>
     public partial class DotEditor : UserControl
     {

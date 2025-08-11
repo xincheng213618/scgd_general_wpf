@@ -1,4 +1,5 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,18 +7,19 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Pattern.Stripe
+namespace ColorVision.Engine.Pattern.CrossGrid
 {
     /// <summary>
-    /// CrossEditor.xaml 的交互逻辑
+    /// CrossGridEditor.xaml 的交互逻辑
     /// </summary>
-    public partial class StripeEditor : UserControl
+    public partial class CrossGridEditor : UserControl
     {
-        public StripeEditor()
+        public CrossGridEditor()
         {
             InitializeComponent();
         }
-        public static PatternStripeConfig Config => ConfigService.Instance.GetRequiredService<PatternStripeConfig>();
+        public static PatternCrossGridConfig Config => ConfigService.Instance.GetRequiredService<PatternCrossGridConfig>();
+        public ViewModelBase GetConfig() => Config;
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -29,12 +31,12 @@ namespace ColorVision.Engine.Pattern.Stripe
             ColorPicker1.SelectedBrush = (SolidColorBrush)rectMainColor.Fill;
             ColorPicker1.SelectedColorChanged += (s, e) =>
             {
-                Config.MainBrush = ColorPicker1.SelectedBrush;
+                Config.LineBrush = ColorPicker1.SelectedBrush;
             };
             Window window = new Window() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Content = ColorPicker1, Width = 250, Height = 400 };
             ColorPicker1.Confirmed += (s, e) =>
             {
-                Config.MainBrush = ColorPicker1.SelectedBrush;
+                Config.LineBrush = ColorPicker1.SelectedBrush;
                 window.Close();
             };
             window.Closed += (s, e) =>
@@ -51,23 +53,23 @@ namespace ColorVision.Engine.Pattern.Stripe
                 string tag = button.Tag.ToString();
                 if (tag == "R")
                 {
-                    Config.MainBrush = Brushes.Red;
+                    Config.LineBrush = Brushes.Red;
                 }
                 if (tag == "G")
                 {
-                    Config.MainBrush = Brushes.Green;
+                    Config.LineBrush = Brushes.Green;
                 }
                 if (tag == "B")
                 {
-                    Config.MainBrush = Brushes.Blue;
+                    Config.LineBrush = Brushes.Blue;
                 }
                 if (tag == "W")
                 {
-                    Config.MainBrush = Brushes.White;
+                    Config.LineBrush = Brushes.White;
                 }
                 if (tag == "K")
                 {
-                    Config.MainBrush = Brushes.Black;
+                    Config.LineBrush = Brushes.Black;
                 }
             }
         }
@@ -78,12 +80,12 @@ namespace ColorVision.Engine.Pattern.Stripe
             ColorPicker1.SelectedBrush = (SolidColorBrush)rectMainColor.Fill;
             ColorPicker1.SelectedColorChanged += (s, e) =>
             {
-                Config.AltBrush = ColorPicker1.SelectedBrush;
+                Config.BackgroundBrush = ColorPicker1.SelectedBrush;
             };
             Window window = new Window() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Content = ColorPicker1, Width = 250, Height = 400 };
             ColorPicker1.Confirmed += (s, e) =>
             {
-                Config.AltBrush = ColorPicker1.SelectedBrush;
+                Config.BackgroundBrush = ColorPicker1.SelectedBrush;
                 window.Close();
             };
             window.Closed += (s, e) =>
@@ -100,23 +102,23 @@ namespace ColorVision.Engine.Pattern.Stripe
                 string tag = button.Tag.ToString();
                 if (tag == "R")
                 {
-                    Config.AltBrush = Brushes.Red;
+                    Config.BackgroundBrush = Brushes.Red;
                 }
                 if (tag == "G")
                 {
-                    Config.AltBrush = Brushes.Green;
+                    Config.BackgroundBrush = Brushes.Green;
                 }
                 if (tag == "B")
                 {
-                    Config.AltBrush = Brushes.Blue;
+                    Config.BackgroundBrush = Brushes.Blue;
                 }
                 if (tag == "W")
                 {
-                    Config.AltBrush = Brushes.White;
+                    Config.BackgroundBrush = Brushes.White;
                 }
                 if (tag == "K")
                 {
-                    Config.AltBrush = Brushes.Black;
+                    Config.BackgroundBrush = Brushes.Black;
                 }
             }
         }

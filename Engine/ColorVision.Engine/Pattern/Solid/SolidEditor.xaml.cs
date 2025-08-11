@@ -17,7 +17,7 @@ using System.Windows.Shapes;
 namespace ColorVision.Engine.Pattern.Solid
 {
     /// <summary>
-    /// CrossEditor.xaml 的交互逻辑
+    /// SolidEditor.xaml 的交互逻辑
     /// </summary>
     public partial class SolidEditor : UserControl
     {

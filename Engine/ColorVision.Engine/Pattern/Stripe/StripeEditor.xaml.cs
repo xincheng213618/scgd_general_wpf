@@ -6,18 +6,18 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Pattern.Ring
+namespace ColorVision.Engine.Pattern.Stripe
 {
     /// <summary>
-    /// RingEditor.xaml 的交互逻辑
+    /// StripeEditor.xaml 的交互逻辑
     /// </summary>
-    public partial class RingEditor : UserControl
+    public partial class StripeEditor : UserControl
     {
-        public RingEditor()
+        public StripeEditor()
         {
             InitializeComponent();
         }
-        public static PatternRingConfig Config => ConfigService.Instance.GetRequiredService<PatternRingConfig>();
+        public static PatternStripeConfig Config => ConfigService.Instance.GetRequiredService<PatternStripeConfig>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {

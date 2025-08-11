@@ -108,6 +108,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Pattern\CrossGrid\CrossGridEditor.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Pattern\NineDot\NineDotEditor.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -123,7 +126,7 @@
     <Compile Update="Pattern\Ring\RingEditor.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Pattern\Stripe\DotEditor.xaml.cs">
+    <Compile Update="Pattern\Stripe\StripeEditor.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Pattern\Dot\DotEditor.xaml.cs">

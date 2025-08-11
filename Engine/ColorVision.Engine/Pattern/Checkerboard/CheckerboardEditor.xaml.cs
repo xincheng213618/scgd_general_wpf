@@ -17,7 +17,7 @@ using System.Windows.Shapes;
 namespace ColorVision.Engine.Pattern.Checkerboard
 {
     /// <summary>
-    /// CrossEditor.xaml 的交互逻辑
+    /// CheckerboardEditor.xaml 的交互逻辑
     /// </summary>
     public partial class CheckerboardEditor : UserControl
     {
