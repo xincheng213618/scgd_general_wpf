@@ -14,6 +14,9 @@ namespace ProjectKB
         public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
 
+        public int BatchId { get => _BatchId; set { _BatchId = value; NotifyPropertyChanged(); } }
+        private int _BatchId;
+
         public FlowStatus FlowStatus { get; set; } = FlowStatus.Ready;
 
         [SugarColumn(IsIgnore = true)]
