@@ -223,12 +223,11 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
     public class SensorParam : ParamModBase
     {
-        public SensorParam() : base()
+        public ObservableCollection<SensorCommand> SensorCommands { get; set; }
+        public SensorParam()
         {
 
         }
-        public ObservableCollection<SensorCommand> SensorCommands { get; set; }
-
         public SensorParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
             SensorCommands = new ObservableCollection<SensorCommand>();

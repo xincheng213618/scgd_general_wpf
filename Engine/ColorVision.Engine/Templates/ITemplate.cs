@@ -257,6 +257,7 @@ namespace ColorVision.Engine.Templates
                 }
             }
         }
+
         ModMasterDao masterDao => new ModMasterDao(TemplateDicId);
 
         public override void Load()

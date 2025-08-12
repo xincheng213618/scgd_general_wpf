@@ -634,7 +634,7 @@ namespace ProjectKB
             {
                 try
                 {
-                    string Barcode_Result = kBItem.Result ? "PASS" : "NG";
+                    string Barcode_Result = KBItemMaster.Result ? "PASS" : "NG";
                     log.Info($"Collect_test{Summary.Stage},Barcode_NO:{ProjectKBConfig.Instance.SN}Barcode_Result：{Barcode_Result}MachineNO:{Summary.MachineNO}");
                     IntPtr a = MesDll.Collect_test(Summary.Stage, ProjectKBConfig.Instance.SN, Barcode_Result, Summary.MachineNO, Summary.LineNO, Summary.Opno, Barcode_Result, string.Empty);
                     var Collect_test = MesDll.PtrToString(a);
