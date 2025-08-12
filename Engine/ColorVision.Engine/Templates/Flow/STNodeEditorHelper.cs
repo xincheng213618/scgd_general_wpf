@@ -12,8 +12,10 @@ using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.DataLoad;
 using ColorVision.Engine.Templates.Distortion;
+using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.FocusPoints;
 using ColorVision.Engine.Templates.FOV;
 using ColorVision.Engine.Templates.Ghost;
@@ -23,12 +25,16 @@ using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
+using ColorVision.Engine.Templates.Jsons.BuildPOIAA;
 using ColorVision.Engine.Templates.Jsons.Distortion2;
+using ColorVision.Engine.Templates.Jsons.FindCross;
 using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.Engine.Templates.Jsons.Ghost2;
 using ColorVision.Engine.Templates.Jsons.HDR;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.Jsons.LedCheck2;
+using ColorVision.Engine.Templates.Jsons.MTF2;
+using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
 using ColorVision.Engine.Templates.Jsons.SFRFindROI;
 using ColorVision.Engine.Templates.LedCheck;
 using ColorVision.Engine.Templates.LEDStripDetection;
@@ -36,17 +42,19 @@ using ColorVision.Engine.Templates.MTF;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine.Templates.POI.POIFilters;
+using ColorVision.Engine.Templates.POI.POIGenCali;
 using ColorVision.Engine.Templates.POI.POIOutput;
 using ColorVision.Engine.Templates.POI.POIRevise;
-using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.SFR;
 using ColorVision.Engine.Templates.Validate;
+using FlowEngineLib.Base;
 using FlowEngineLib.End;
 using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
@@ -55,12 +63,6 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.Engine.Templates.Jsons.MTF2;
-using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
-using ColorVision.Engine.Templates.Jsons.BuildPOIAA;
-using System.IO;
-using ColorVision.Engine.Templates.Jsons.FindCross;
-using ColorVision.Engine.Templates.POI.POIGenCali;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -176,7 +178,6 @@ namespace ColorVision.Engine.Templates.Flow
         #region Activate
         private void STNodeEditorMain_ActiveChanged(object? sender, EventArgs e)
         {
-
             STNodePropertyGrid1.SetNode(STNodeEditor.ActiveNode);
             SignStackPanel.Children.Clear();
 
@@ -288,13 +289,15 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 AddImagePath(name => kbnode.ImgFileName = name, kbnode.ImgFileName);
 
-
                 AddStackPanel(name => kbnode.DeviceCode = name, kbnode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
-
                 AddStackPanelKB(name => kbnode.TempName = name, kbnode.TempName, "KB", new TemplateKB());
-
             }
 
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmKBOutputNode KBOutputNode)
+            {
+                AddStackPanel(name => KBOutputNode.DeviceCode = name, KBOutputNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+                AddStackPanelKB(name => KBOutputNode.TempName = name, KBOutputNode.TempName, "KB", new TemplateKB());
+            }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Algorithm.CalibrationNode calibrationNode)
             {
@@ -1212,6 +1215,18 @@ namespace ColorVision.Engine.Templates.Flow
                                             p = STNodeEditor.ControlToCanvas(p);
                                             sTNode1.Left = p.X;
                                             sTNode1.Top = p.Y;
+
+                                            if (sTNode1 is CVBaseServerNode vBaseServerNode)
+                                            {
+                                                var matchedService = MqttRCService.GetInstance().ServiceTokens
+                                                  .FirstOrDefault(s => s.Devices.Any(d => d.Key == vBaseServerNode.DeviceCode));
+
+                                                if (matchedService != null)
+                                                {
+                                                    vBaseServerNode.Token = matchedService.Token;
+                                                }
+                                            }
+
                                             STNodeEditor.Nodes.Add(sTNode1);
                                         }
                                     });
