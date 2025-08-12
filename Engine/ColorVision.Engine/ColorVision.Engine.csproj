@@ -30,17 +30,18 @@
 		<PackageReference Include="itext" Version="9.2.0" />
 		<PackageReference Include="itext.bouncy-castle-adapter" Version="9.2.0" />
 		<PackageReference Include="MathNet.Numerics" Version="5.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.5" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
 		<PackageReference Include="MQTTnet" Version="4.3.4.1084" />
-		<PackageReference Include="MySql.Data" Version="9.3.0" />
+		<PackageReference Include="MySql.Data" Version="9.4.0" />
 		<PackageReference Include="MySqlConnector" Version="2.4.0" />
 		<PackageReference Include="OpenCvSharp4.Extensions" Version="4.11.0.20250507" />
 		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.11.0.20250507" />
 		<PackageReference Include="QRCoder.Xaml" Version="1.6.0" />
 		<PackageReference Include="ScottPlot.WPF" Version="5.0.55" />
-		<PackageReference Include="System.IO.Ports" Version="9.0.5" />
-		<PackageReference Include="System.ServiceProcess.ServiceController" Version="9.0.5" />
+		<PackageReference Include="SqlSugarCore" Version="5.1.4.199" />
+		<PackageReference Include="System.IO.Ports" Version="9.0.8" />
+		<PackageReference Include="System.ServiceProcess.ServiceController" Version="9.0.8" />
 		<PackageReference Include="YamlDotNet" Version="16.3.0" />
 	</ItemGroup>
 

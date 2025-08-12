@@ -279,6 +279,9 @@
             <StatusBarItem>
                 <Button Content="Summary" Command="{Binding SummaryManager.EditCommand}"/>
             </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="TestDB" Click="Button_Click_1"/>
+            </StatusBarItem>
         </StatusBar>
 
     </Grid>

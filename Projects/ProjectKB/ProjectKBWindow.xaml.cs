@@ -19,6 +19,7 @@ using log4net.Util;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using ProjectKB.Modbus;
+using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -44,16 +45,17 @@ namespace ProjectKB
     public class ProjectKBWindowConfig : WindowConfig
     {
         public static ProjectKBWindowConfig Instance => ConfigService.Instance.GetRequiredService<ProjectKBWindowConfig>();
-        public ObservableCollection<KBItemMaster> ViewResluts { get; set; } = new ObservableCollection<KBItemMaster>();
     }
 
-    /// <summary>
-    /// Interaction logic for _windowInstance.xaml
-    /// </summary>
+        /// <summary>
+        /// Interaction logic for _windowInstance.xaml
+        /// </summary>
     public partial class ProjectKBWindow : Window,IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectKBWindow));
-        public static ObservableCollection<KBItemMaster> ViewResluts => ProjectKBWindowConfig.Instance.ViewResluts;
+        public static ViewResultManager ViewReslutManager => ViewResultManager.GetInstance();
+        public static ObservableCollection<KBItemMaster> ViewResluts => ViewReslutManager.ViewResluts;
+
 
         public static ProjectKBWindowConfig Config => ProjectKBWindowConfig.Instance;
 
@@ -372,20 +374,20 @@ namespace ProjectKB
         #endregion
         private void Processing(string SerialNumber)
         {
-            KBItemMaster kBItem = CurrentFlowResult ?? new KBItemMaster();
-            kBItem.Model = FlowTemplate.Text;
-            kBItem.SN = SNtextBox.Text;
-            kBItem.CreateTime = DateTime.Now;
-            kBItem.FlowStatus = FlowStatus.Completed;
+            KBItemMaster KBItemMaster = CurrentFlowResult ?? new KBItemMaster();
+            KBItemMaster.Model = FlowTemplate.Text;
+            KBItemMaster.SN = SNtextBox.Text;
+            KBItemMaster.CreateTime = DateTime.Now;
+            KBItemMaster.FlowStatus = FlowStatus.Completed;
 
             var Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
             if (Batch == null)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
-                ViewResluts.Insert(0, kBItem);
+                ViewReslutManager.Save(KBItemMaster);
                 return;
             }
-            kBItem.Id = Batch.Id;
+            KBItemMaster.BatchId = Batch.Id;
             foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
             {
                 if (item.ImgFileType == AlgorithmResultType.KB || item.ImgFileType == AlgorithmResultType.KB_Raw)
@@ -401,10 +403,10 @@ namespace ProjectKB
                             KBItem kItem = new KBItem();
                             kItem.Name = keyRect.Name;
                             kItem.KBKeyRect = keyRect;
-                            kBItem.Items.Add(kItem);
+                            KBItemMaster.Items.Add(kItem);
 
                         }
-                        kBItem.ResultImagFile = item.ResultImagFile;
+                        KBItemMaster.ResultImagFile = item.ResultImagFile;
 
                     }
                 }
@@ -416,7 +418,7 @@ namespace ProjectKB
                         foreach (var poi in pois)
                         {
                             var list = JsonConvert.DeserializeObject<KBvalue>(poi.Value);
-                            var key = kBItem.Items.First(a => a.Name == poi.PoiName && poi.PoiWidth == a.KBKeyRect.Width);
+                            var key = KBItemMaster.Items.First(a => a.Name == poi.PoiName && poi.PoiWidth == a.KBKeyRect.Width);
                             if (key != null)
                             {
                                 key.Lv = list.Y;
@@ -441,7 +443,7 @@ namespace ProjectKB
                             log.Info(poi.Value);
                             var list = JsonConvert.DeserializeObject<ObservableCollection<KBvalue>>(poi.Value);
 
-                            var key = kBItem.Items.First(a => a.Name == poi.PoiName && poi.PoiWidth == a.KBKeyRect.Width);
+                            var key = KBItemMaster.Items.First(a => a.Name == poi.PoiName && poi.PoiWidth == a.KBKeyRect.Width);
                             if (key != null)
                             {
                                 if (list != null && list.Count == 2)
@@ -464,17 +466,17 @@ namespace ProjectKB
                 }
             }
 
-            if (kBItem.Items.Count == 0)
+            if (KBItemMaster.Items.Count == 0)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到对映的按键，请检查流程配置是否计算KB模板", "ColorVision");
-                ViewResluts.Insert(0, kBItem);
+                ViewReslutManager.Save(KBItemMaster);
                 return;
             }
 
-            CalCulLc(kBItem.Items);
+            CalCulLc(KBItemMaster.Items);
 
 
-            foreach (var item in kBItem.Items)
+            foreach (var item in KBItemMaster.Items)
             {
 
                 if (RecipeConfig.MinKeyLv != 0)
@@ -513,25 +515,25 @@ namespace ProjectKB
             }
 
 
-            var maxKeyItem = kBItem.Items.OrderByDescending(item => item.Lv).FirstOrDefault();
-            var minLKey = kBItem.Items.OrderBy(item => item.Lv).FirstOrDefault();
-            kBItem.MaxLv = maxKeyItem.Lv;
-            kBItem.BrightestKey = maxKeyItem.Name;
-            kBItem.MinLv = minLKey.Lv;
-            kBItem.DrakestKey = minLKey.Name;
-            kBItem.AvgLv = kBItem.Items.Any() ? kBItem.Items.Average(item => item.Lv) : 0;
-            kBItem.LvUniformity = kBItem.MinLv / kBItem.MaxLv;
-            kBItem.SN = SNtextBox.Text;
-            kBItem.NbrFailPoints = kBItem.Items.Count(item => !item.Result);
+            var maxKeyItem = KBItemMaster.Items.OrderByDescending(item => item.Lv).FirstOrDefault();
+            var minLKey = KBItemMaster.Items.OrderBy(item => item.Lv).FirstOrDefault();
+            KBItemMaster.MaxLv = maxKeyItem.Lv;
+            KBItemMaster.BrightestKey = maxKeyItem.Name;
+            KBItemMaster.MinLv = minLKey.Lv;
+            KBItemMaster.DrakestKey = minLKey.Name;
+            KBItemMaster.AvgLv = KBItemMaster.Items.Any() ? KBItemMaster.Items.Average(item => item.Lv) : 0;
+            KBItemMaster.LvUniformity = KBItemMaster.MinLv / KBItemMaster.MaxLv;
+            KBItemMaster.SN = SNtextBox.Text;
+            KBItemMaster.NbrFailPoints = KBItemMaster.Items.Count(item => !item.Result);
 
 
-            CalCulLc(kBItem.Items);
+            CalCulLc(KBItemMaster.Items);
 
-            kBItem.Result = true;
+            KBItemMaster.Result = true;
 
             if (RecipeConfig.MinKeyLv != 0)
             {
-                kBItem.Result = kBItem.Result && kBItem.MinLv >= RecipeConfig.MinKeyLv;
+                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.MinLv >= RecipeConfig.MinKeyLv;
             }
             else
             {
@@ -539,7 +541,7 @@ namespace ProjectKB
             }
             if (RecipeConfig.MaxKeyLv != 0)
             {
-                kBItem.Result = kBItem.Result && kBItem.MaxLv <= RecipeConfig.MaxKeyLv;
+                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.MaxLv <= RecipeConfig.MaxKeyLv;
             }
             else
             {
@@ -547,7 +549,7 @@ namespace ProjectKB
             }
             if (RecipeConfig.MinAvgLv != 0)
             {
-                kBItem.Result = kBItem.Result && kBItem.AvgLv >= RecipeConfig.MinAvgLv;
+                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.AvgLv >= RecipeConfig.MinAvgLv;
             }
             else
             {
@@ -555,7 +557,7 @@ namespace ProjectKB
             }
             if (RecipeConfig.MaxAvgLv != 0)
             {
-                kBItem.Result = kBItem.Result && kBItem.AvgLv <= RecipeConfig.MaxAvgLv;
+                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.AvgLv <= RecipeConfig.MaxAvgLv;
             }
             else
             {
@@ -564,7 +566,7 @@ namespace ProjectKB
 
             if (RecipeConfig.MinUniformity != 0)
             {
-                kBItem.Result = kBItem.Result && kBItem.LvUniformity >= RecipeConfig.MinUniformity / 100;
+                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.LvUniformity >= RecipeConfig.MinUniformity / 100;
             }
             else
             {
@@ -573,7 +575,7 @@ namespace ProjectKB
 
             if (RecipeConfig.MinKeyLc != 0)
             {
-                kBItem.Result = kBItem.Result && kBItem.Items.Min(item => item.Lc) >= RecipeConfig.MinKeyLc / 100;
+                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.Items.Min(item => item.Lc) >= RecipeConfig.MinKeyLc / 100;
             }
             else
             {
@@ -582,7 +584,7 @@ namespace ProjectKB
 
             if (RecipeConfig.MaxKeyLc != 0)
             {
-                kBItem.Result = kBItem.Result && kBItem.Items.Max(item => item.Lc) <= RecipeConfig.MaxKeyLc / 100;
+                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.Items.Max(item => item.Lc) <= RecipeConfig.MaxKeyLc / 100;
             }
             else
             {
@@ -590,10 +592,10 @@ namespace ProjectKB
             }
 
 
-            kBItem.Exposure = "50";
+            KBItemMaster.Exposure = "50";
 
             Summary.ActualProduction += 1;
-            if (kBItem.Result)
+            if (KBItemMaster.Result)
             {
                 Summary.GoodProductCount += 1;
             }
@@ -601,14 +603,11 @@ namespace ProjectKB
             {
                 Summary.DefectiveProductCount += 1;
             }
-
-
-            ViewResluts.Insert(0, kBItem);
+            ViewReslutManager.Save(KBItemMaster);
             listView1.SelectedIndex = 0;
 
-
-            string resultPath = ProjectKBConfig.Instance.ResultSavePath1 + $"\\{kBItem.SN}-{kBItem.CreateTime:yyyyMMddHHmmssffff}.txt";
-            string result = $"{kBItem.SN},{(kBItem.Result ? "Pass" : "Fail")}, ,";
+            string resultPath = ProjectKBConfig.Instance.ResultSavePath1 + $"\\{KBItemMaster.SN}-{KBItemMaster.CreateTime:yyyyMMddHHmmssffff}.txt";
+            string result = $"{KBItemMaster.SN},{(KBItemMaster.Result ? "Pass" : "Fail")}, ,";
 
             log.Debug($"结果正在写入{resultPath},result:{result}");
             File.WriteAllText(resultPath, result);
@@ -619,9 +618,9 @@ namespace ProjectKB
                 string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
                 string regexPattern = $"[{Regex.Escape(invalidChars)}]";
 
-                string csvpath = ProjectKBConfig.Instance.ResultSavePath + $"\\{Regex.Replace(kBItem.Model, regexPattern, "")}_{kBItem.CreateTime:yyyyMMdd}.csv";
+                string csvpath = ProjectKBConfig.Instance.ResultSavePath + $"\\{Regex.Replace(KBItemMaster.Model, regexPattern, "")}_{KBItemMaster.CreateTime:yyyyMMdd}.csv";
 
-                KBItemMaster.SaveCsv(kBItem, csvpath);
+                KBItemMaster.SaveCsv(csvpath);
                 log.Debug($"writecsv:{csvpath}");
             });
             Application.Current.Dispatcher.BeginInvoke(() =>
@@ -923,6 +922,58 @@ namespace ProjectKB
             timer?.Dispose();
             logOutput?.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            KBItemMaster KBItemMaster = CurrentFlowResult ?? new KBItemMaster();
+            KBItemMaster.Model = FlowTemplate.Text;
+            KBItemMaster.SN = SNtextBox.Text;
+            KBItemMaster.CreateTime = DateTime.Now;
+            KBItemMaster.FlowStatus = FlowStatus.Completed;
+            KBItemMaster.Code = "@2";
+            KBItemMaster.Result = true;
+            KBItemMaster.AvgC1 = 1;
+
+            var rnd = new Random();
+            KBItemMaster.Items.Clear();
+
+            for (int i = 0; i < 80; i++)
+            {
+                // 随机生成 6 位英文字母或数字的 Name
+                string name = RandomName(rnd, 6);
+
+                KBItem kBItem = new KBItem
+                {
+                    Name = name,
+                    Lv = rnd.Next(80, 121),
+                    Lc = Math.Round(rnd.NextDouble() * 2, 2),
+                    Result = rnd.Next(0, 2) == 1,
+                    KBKeyRect = new KBKeyRect
+                    {
+                        X = rnd.Next(0, 200),
+                        Y = rnd.Next(0, 200),
+                        Width = rnd.Next(10, 60),
+                        Height = rnd.Next(10, 60),
+                        KBKey = new KBKey
+                        {
+                            Area = rnd.Next(100, 3001),
+                            KeyScale = Math.Round(rnd.NextDouble() * 3, 2)
+                        }
+                    }
+                };
+                KBItemMaster.Items.Add(kBItem);
+            }
+
+            ViewReslutManager.Save(KBItemMaster);
+            listView1.SelectedIndex = 0;
+
+        }
+        private string RandomName(Random rnd, int length)
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            return new string(Enumerable.Repeat(chars, length)
+                .Select(s => s[rnd.Next(s.Length)]).ToArray());
         }
     }
 }
