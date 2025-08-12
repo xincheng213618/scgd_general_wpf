@@ -13,7 +13,6 @@ namespace ProjectKB
             }
             return string.Empty;
         }
-
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             throw new NotSupportedException("Converting from a string to a memory size is not supported.");

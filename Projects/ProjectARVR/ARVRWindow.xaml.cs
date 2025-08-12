@@ -9,11 +9,13 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Services.Types;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
+using ColorVision.Engine.Templates.Jsons.BlackMura;
 using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using ColorVision.Engine.Templates.Jsons.MTF2;
@@ -43,6 +45,7 @@ using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Net.Sockets;
 using System.Reflection;
@@ -63,8 +66,6 @@ namespace ProjectARVR
         /// 白画面
         /// </summary>
         White,
-
-        White1,
         /// <summary>
         /// 黑画面
         /// </summary>
@@ -107,23 +108,23 @@ namespace ProjectARVR
         BKscreeenDefectDetection
     }
 
-
     public class ProjectARVRReuslt : ViewModelBase
     {
         public int Id { get; set; }
         public string Model { get; set; }
-        public DateTime CreateTime { get; set; } = DateTime.Now;
+
+        public DateTime CreateTime { get; set; } 
 
         public string FileName { get; set; }
 
         public string SN { get; set; }
 
         public string Code { get; set; }
+        public FlowStatus FlowStatus { get; set; } = FlowStatus.Ready;
 
         public bool Result { get; set; } = true;
 
         public ARVRTestType TestType { get; set; }
-
 
         public ViewResultWhite ViewResultWhite { get; set; } = new ViewResultWhite();
         public ViewResultBlack ViewResultBlack { get; set; } = new ViewResultBlack();
@@ -268,6 +269,7 @@ namespace ProjectARVR
         private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
         public static ARVRWindowConfig Config => ARVRWindowConfig.Instance;
         public ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = new ObservableCollection<ProjectARVRReuslt>();
+        public static ObjectiveTestResultFix ObjectiveTestResultFix => ObjectiveTestResultFixManager.GetInstance().ObjectiveTestResultFix;
 
         public ARVRWindow()
         {
@@ -278,18 +280,29 @@ namespace ProjectARVR
         }
 
         public ARVRTestType CurrentTestType = ARVRTestType.None;
-
         ObjectiveTestResult ObjectiveTestResult { get; set; } = new ObjectiveTestResult();
+
+
         Random Random = new Random();
-        public void InitTest()
+        public void InitTest(string SN)
         {
+            ProjectARVRConfig.Instance.StepIndex = 0;
             ObjectiveTestResult = new ObjectiveTestResult();
             CurrentTestType = ARVRTestType.None;
-
-            Application.Current.Dispatcher.Invoke(() =>
+            if (string.IsNullOrWhiteSpace(SN))
             {
-                ProjectARVRConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
-            });
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ProjectARVRConfig.Instance.SN = "SN" + Random.NextInt64(1000, 9000).ToString();
+                });
+            }
+            else
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ProjectARVRConfig.Instance.SN = "SN" + Random.NextInt64(1000, 9000).ToString();
+                });
+            }
         }
 
         bool IsSwitchRun = false;
@@ -302,6 +315,13 @@ namespace ProjectARVR
             }
             IsSwitchRun = true;
 
+            if (flowControl != null && flowControl.IsFlowRun)
+            {
+                log.Info("PG切换错误，正在执行流程");
+                return;
+            }
+            log.Info("PG切换结束");
+
             var values = Enum.GetValues(typeof(ARVRTestType));
             int currentIndex = Array.IndexOf(values, CurrentTestType);
             int nextIndex = (currentIndex + 1) % values.Length;
@@ -313,43 +333,50 @@ namespace ProjectARVR
             if (CurrentTestType == ARVRTestType.White)
             {
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White")).Value;
+                ProjectARVRConfig.Instance.StepIndex = 1;
                 RunTemplate();
             }
-            if (CurrentTestType == ARVRTestType.White1)
-            {
-                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White_calibrate")).Value;
-                RunTemplate();
-            }
+            //if (CurrentTestType == ARVRTestType.White1)
+            //{
+            //    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White_calibrate")).Value;
+            //    RunTemplate();
+            //}
             if (CurrentTestType == ARVRTestType.Black)
             {
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Black")).Value;
+                ProjectARVRConfig.Instance.StepIndex = 2;
                 RunTemplate();
             }
             if (CurrentTestType == ARVRTestType.Chessboard)
             {
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Chessboard")).Value;
+                ProjectARVRConfig.Instance.StepIndex = 3;
                 RunTemplate();
             }
             if (CurrentTestType == ARVRTestType.MTFH)
             {
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("MTF_H")).Value;
+                ProjectARVRConfig.Instance.StepIndex = 4;
                 RunTemplate();
             }
 
             if (CurrentTestType == ARVRTestType.MTFV)
             {
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("MTF_V")).Value;
+                ProjectARVRConfig.Instance.StepIndex = 5;
                 RunTemplate();
             }
 
             if (CurrentTestType == ARVRTestType.Distortion)
             {
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Distortion")).Value;
+                ProjectARVRConfig.Instance.StepIndex = 6;
                 RunTemplate();
             }
             if (CurrentTestType == ARVRTestType.OpticCenter)
             {
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("OpticCenter")).Value;
+                ProjectARVRConfig.Instance.StepIndex = 7;
                 RunTemplate();
             }
 
@@ -367,7 +394,6 @@ namespace ProjectARVR
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = ProjectARVRConfig.Instance;
-            ImageView.SetConfig(ProjectARVRConfig.Instance.ImageViewConfig);
 
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
@@ -463,37 +489,33 @@ namespace ProjectARVR
             UpdateMsg(state);
         }
 
-        IPendingHandler handler { get; set; }
 
         string Msg1;
         private long LastFlowTime;
+        string FlowName;
         private void UpdateMsg(object? sender)
         {
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
                 try
                 {
-                    if (handler != null)
+                    long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+                    TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
+                    string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
+                    string msg;
+                    if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
                     {
-                        long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
-                        TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
-                        string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
-                        string msg;
-                        if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
-                        {
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
-                        }
-                        else
-                        {
-                            long remainingMilliseconds = LastFlowTime - elapsedMilliseconds;
-                            TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
-                            string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
-
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{LastFlowTime} ms, 预计还需要：{remainingTime}";
-                        }
-                        if (flowControl.IsFlowRun)
-                            handler.UpdateMessage(msg);
+                        msg = $"{FlowName}{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}";
                     }
+                    else
+                    {
+                        long remainingMilliseconds = LastFlowTime - elapsedMilliseconds;
+                        TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
+                        string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
+
+                        msg = $"{FlowName} {Environment.NewLine} 上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
+                    }
+                    logTextBox.Text = msg;
                 }
                 catch
                 {
@@ -532,8 +554,10 @@ namespace ProjectARVR
 
             CurrentFlowResult = new ProjectARVRReuslt();
             CurrentFlowResult.SN = SNtextBox.Name;
+            FlowName = FlowTemplate.Text;
             CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-
+            CurrentFlowResult.FlowStatus = FlowStatus.Ready;
+            CurrentFlowResult.CreateTime = DateTime.Now;
             await Refresh();
 
             if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info( "找不到完整流程，运行失败");return; }
@@ -547,12 +571,8 @@ namespace ProjectARVR
                 log.Info($"IsReady{flowEngine.IsReady}");
             }
 
-
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
 
-            handler = PendingBox.Show(this, "流程", "流程启动", true);
-            handler.Cancelling -= Handler_Cancelling;
-            handler.Cancelling += Handler_Cancelling;
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
             stopwatch.Reset();
             stopwatch.Start();
@@ -563,20 +583,11 @@ namespace ProjectARVR
             timer.Change(0, 500); // 启动定时器
         }
 
-        private void Handler_Cancelling(object? sender, CancelEventArgs e)
-        {
-            stopwatch.Stop();
-            timer.Change(Timeout.Infinite, 500); // 停止定时器
-            flowControl.Stop();
-        }
-
         private FlowControl flowControl;
 
         private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
-            handler?.Close();
-            handler = null;
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
@@ -602,8 +613,11 @@ namespace ProjectARVR
             else if (FlowControlData.EventName == "OverTime")
             {
                 log.Info("流程运行超时，正在重新尝试");
+                CurrentFlowResult.FlowStatus = FlowStatus.OverTime;
+                ViewResluts.Insert(0, CurrentFlowResult); //倒序插入
                 flowEngine.LoadFromBase64(string.Empty);
                 Refresh();
+
                 if (TryCount < ProjectARVRConfig.Instance.TryCountMax)
                 {
                     Task.Delay(200).ContinueWith(t =>
@@ -616,11 +630,33 @@ namespace ProjectARVR
                     });
                     return;
                 }
+                else
+                {
+                    ObjectiveTestResult.TotalResult = false;
+                    var response = new SocketResponse
+                    {
+                        Version = "1.0",
+                        MsgID = "",
+                        EventName = "ProjectARVRResult",
+                        Code = -2,
+                        Msg = "ARVR Test OverTime",
+                        Data = ObjectiveTestResult
+                    };
+                    string respString = JsonConvert.SerializeObject(response);
+                    log.Info(respString);
+                    SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+                }
                 TryCount = 0;
             }
             else
             {
+                TryCount = 0;
                 log.Error("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
+                CurrentFlowResult.FlowStatus = FlowStatus.Failed;
+                ViewResluts.Insert(0, CurrentFlowResult); //倒序插入
+
+
+                logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
                 if (ProjectARVRConfig.Instance.AllowTestFailures)
                 {
                     SwithchSocket();
@@ -648,86 +684,82 @@ namespace ProjectARVR
         }
 
         private bool IsSavePicture = false;
-        
 
         private void Processing(string SerialNumber)
         {
             IsSavePicture = true;
-
-            IsSavePicture = true;
             BatchResultMasterModel Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
-
 
             if (Batch == null)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
                 return;
             }
-            ProjectARVRReuslt result = new ProjectARVRReuslt();
-
-            if (ViewResluts.FirstOrDefault(a => a.SN == ProjectARVRConfig.Instance.SN) is ProjectARVRReuslt result1)
-            {
-                result1.CopyTo(result);
-            }
+            ProjectARVRReuslt result = CurrentFlowResult ?? new ProjectARVRReuslt();
 
             result.Model = FlowTemplate.Text;
             result.Id = Batch.Id;
             result.SN = ProjectARVRConfig.Instance.SN;
             result.Result = true;
+            result.CreateTime = DateTime.Now;
+            result.FlowStatus = FlowStatus.Completed;
 
-            if (result.Model.Contains("White_calibrate"))
-            {
-                log.Info("正在解析白画面的流程");
-                result.TestType = ARVRTestType.White1;
-                var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
-                if (values.Count > 0)
-                {
-                    result.FileName = values[0].FileUrl;
-                }
-                var AlgResultMasterlists = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
-                log.Info($"AlgResultMasterlists count {AlgResultMasterlists.Count}");
-                foreach (var AlgResultMaster in AlgResultMasterlists)
-                {
-                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.POI_XYZ)
-                    {
-                        List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(AlgResultMaster.Id);
-                        int id = 0;
-                        foreach (var item in POIPointResultModels)
-                        {
-                            PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(item) { Id = id++ };
+            //if (result.Model.Contains("White_calibrate"))
+            //{
+            //    log.Info("正在解析白画面的流程");
+            //    result.TestType = ARVRTestType.White1;
+            //    var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
+            //    if (values.Count > 0)
+            //    {
+            //        result.FileName = values[0].FileUrl;
+            //    }
+            //    var AlgResultMasterlists = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
+            //    log.Info($"AlgResultMasterlists count {AlgResultMasterlists.Count}");
+            //    foreach (var AlgResultMaster in AlgResultMasterlists)
+            //    {
+            //        if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.POI_XYZ)
+            //        {
+            //            List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(AlgResultMaster.Id);
+            //            int id = 0;
+            //            foreach (var item in POIPointResultModels)
+            //            {
+            //                PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(item) { Id = id++ };
 
-                            if (item.PoiName == "P_1")
-                            {
-                                var White1CenterCorrelatedColorTemperature = new ObjectiveTestItem()
-                                {
-                                    Name = "White1CenterCorrelatedColorTemperature",
-                                    TestValue = poiResultCIExyuvData.CCT.ToString(),
-                                    Value = poiResultCIExyuvData.CCT,
-                                    LowLimit = SPECConfig.White1CenterCorrelatedColorTemperatureMin,
-                                    UpLimit = SPECConfig.White1CenterCorrelatedColorTemperatureMax
-                                };
-                                ObjectiveTestResult.White1CenterCorrelatedColorTemperature = White1CenterCorrelatedColorTemperature;
-                                result.Result = result.Result && White1CenterCorrelatedColorTemperature.TestResult;
+            //                if (item.PoiName == "P_1")
+            //                {
+            //                    var White1CenterCorrelatedColorTemperature = new ObjectiveTestItem()
+            //                    {
+            //                        Name = "White1CenterCorrelatedColorTemperature",
+            //                        TestValue = poiResultCIExyuvData.CCT.ToString(),
+            //                        Value = poiResultCIExyuvData.CCT,
+            //                        LowLimit = SPECConfig.White1CenterCorrelatedColorTemperatureMin,
+            //                        UpLimit = SPECConfig.White1CenterCorrelatedColorTemperatureMax
+            //                    };
+            //                    ObjectiveTestResult.White1CenterCorrelatedColorTemperature = White1CenterCorrelatedColorTemperature;
+            //                    result.Result = result.Result && White1CenterCorrelatedColorTemperature.TestResult;
 
-                                var White1CenterLuminace = new ObjectiveTestItem()
-                                {
-                                    Name = "White1CenterLuminace",
-                                    TestValue = poiResultCIExyuvData.Y.ToString(),
-                                    Value = poiResultCIExyuvData.Y,
-                                    LowLimit = SPECConfig.White1CenterLuminaceMin,
-                                    UpLimit = SPECConfig.White1CenterLuminaceMax
-                                };
-                                ObjectiveTestResult.White1CenterLuminace = White1CenterLuminace;
-                                result.Result = result.Result && White1CenterLuminace.TestResult;
-                            }
-                        }
-                    }
-                }
-            }
-            else if (result.Model.Contains("White"))
+            //                    var White1CenterLuminace = new ObjectiveTestItem()
+            //                    {
+            //                        Name = "White1CenterLuminace",
+            //                        TestValue = poiResultCIExyuvData.Y.ToString(),
+            //                        Value = poiResultCIExyuvData.Y,
+            //                        LowLimit = SPECConfig.White1CenterLuminaceMin,
+            //                        UpLimit = SPECConfig.White1CenterLuminaceMax
+            //                    };
+            //                    ObjectiveTestResult.White1CenterLuminace = White1CenterLuminace;
+            //                    result.Result = result.Result && White1CenterLuminace.TestResult;
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
+
+            if (result.Model.Contains("White"))
             {
                 log.Info("正在解析白画面的流程");
                 result.TestType = ARVRTestType.White;
+                ObjectiveTestResult.FlowWhiteTestReslut = true;
+
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
                 {
@@ -749,6 +781,9 @@ namespace ProjectARVR
 
                             if (item.PoiName == "POI_5")
                             {
+                                poiResultCIExyuvData.CCT = poiResultCIExyuvData.CCT * ObjectiveTestResultFix.CenterCorrelatedColorTemperature;
+                                poiResultCIExyuvData.Y = poiResultCIExyuvData.Y * ObjectiveTestResultFix.CenterLuminace;
+
                                 var objectiveTestItem = new ObjectiveTestItem()
                                 {
                                     Name = "CenterCorrelatedColorTemperature",
@@ -760,7 +795,6 @@ namespace ProjectARVR
                                 ObjectiveTestResult.CenterCorrelatedColorTemperature = objectiveTestItem;
                                 result.ViewResultWhite.CenterCorrelatedColorTemperature = objectiveTestItem;
                                 result.Result = result.Result && objectiveTestItem.TestResult;
-
 
                                 var objectiveTestItem1 = new ObjectiveTestItem()
                                 {
@@ -794,6 +828,8 @@ namespace ProjectARVR
                             if (detailCommonModels.Count == 1)
                             {
                                 PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
+
+                                viewReslut.PoiAnalysisResult.result.Value = viewReslut.PoiAnalysisResult.result.Value * ObjectiveTestResultFix.LuminanceUniformity;
                                 var LuminanceUniformity = new ObjectiveTestItem()
                                 {
                                     Name = "Luminance_uniformity(%)",
@@ -816,6 +852,8 @@ namespace ProjectARVR
                             if (detailCommonModels.Count == 1)
                             {
                                 PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
+                                viewReslut.PoiAnalysisResult.result.Value = viewReslut.PoiAnalysisResult.result.Value * ObjectiveTestResultFix.ColorUniformity;
+
                                 var ColorUniformity = new ObjectiveTestItem()
                                 {
                                     Name = "Color_uniformity",
@@ -839,7 +877,13 @@ namespace ProjectARVR
                         if (AlgResultModels.Count == 1)
                         {
                             DFovView view1 = new DFovView(AlgResultModels[0]);
+                            view1.Result.result.D_Fov = view1.Result.result.D_Fov * ObjectiveTestResultFix.DiagonalFieldOfViewAngle;
+                            view1.Result.result.ClolorVisionH_Fov = view1.Result.result.D_Fov * ObjectiveTestResultFix.HorizontalFieldOfViewAngle;
+                            view1.Result.result.ClolorVisionV_Fov = view1.Result.result.D_Fov * ObjectiveTestResultFix.VerticalFieldOfViewAngle;
+
                             result.ViewResultWhite.DFovView = view1;
+
+
 
                             ObjectiveTestResult.DiagonalFieldOfViewAngle = new ObjectiveTestItem()
                             {
@@ -883,6 +927,12 @@ namespace ProjectARVR
             {
                 log.Info("正在解析黑画面的流程");
                 result.TestType = ARVRTestType.Black;
+                ObjectiveTestResult.FlowBlackTestReslut = true;
+
+                if (ViewResluts.FirstOrDefault(a => a.SN == ProjectARVRConfig.Instance.SN) is ProjectARVRReuslt result1)
+                {
+                    result.ViewResultWhite = result1.ViewResultWhite;
+                }
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
@@ -909,6 +959,9 @@ namespace ProjectARVR
                             if (result.ViewResultWhite != null && result.ViewResultWhite.PoiResultCIExyuvDatas.Count == 9 && result.ViewResultBlack.PoiResultCIExyuvDatas.Count == 1)
                             {
                                 var contrast1 = result.ViewResultWhite.PoiResultCIExyuvDatas[5].Y / result.ViewResultBlack.PoiResultCIExyuvDatas[0].Y;
+
+                                contrast1 = contrast1 * ObjectiveTestResultFix.FOFOContrast;
+
                                 var FOFOContrast = new ObjectiveTestItem()
                                 {
                                     Name = "FOFOContrast",
@@ -935,7 +988,7 @@ namespace ProjectARVR
             {
                 log.Info("正在解析棋盘格画面的流程");
                 result.TestType = ARVRTestType.Chessboard;
-
+                ObjectiveTestResult.FlowChessboardTestReslut = true;
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
@@ -967,7 +1020,7 @@ namespace ProjectARVR
                             if (detailCommonModels.Count == 1)
                             {
                                 PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
-
+                                viewReslut.PoiAnalysisResult.result.Value = viewReslut.PoiAnalysisResult.result.Value * ObjectiveTestResultFix.ChessboardContrast;
 
                                 var ChessboardContrast = viewReslut.PoiAnalysisResult.result.Value;
 
@@ -1009,6 +1062,8 @@ namespace ProjectARVR
             {
                 log.Info("正在解析MTF_H画面的流程");
                 result.TestType = ARVRTestType.MTFH;
+                ObjectiveTestResult.FlowMTFHTestReslut = true;
+
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
                 {
@@ -1030,6 +1085,7 @@ namespace ProjectARVR
                             {
                                 if (mtf.name == "Center_0F_H")
                                 {
+                                    mtf.mtfValue = mtf.mtfValue * ObjectiveTestResultFix.MTF_H_Center_0F;
                                     ObjectiveTestResult.MTF_H_Center_0F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_H_Center_0F",
@@ -1044,6 +1100,7 @@ namespace ProjectARVR
 
                                 if (mtf.name == "LeftUp_0.5F_H")
                                 {
+                                    mtf.mtfValue = mtf.mtfValue * ObjectiveTestResultFix.MTF_H_LeftUp_0_5F;
                                     ObjectiveTestResult.MTF_H_LeftUp_0_5F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_H_LeftUp_0_5F",
@@ -1056,6 +1113,7 @@ namespace ProjectARVR
                                 }
                                 if (mtf.name == "RightUp_0.5F_H")
                                 {
+                                    mtf.mtfValue = mtf.mtfValue * ObjectiveTestResultFix.MTF_H_RightUp_0_5F;
                                     ObjectiveTestResult.MTF_H_RightUp_0_5F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_H_RightUp_0_5F",
@@ -1068,6 +1126,7 @@ namespace ProjectARVR
                                 }
                                 if (mtf.name == "LeftDown_0.5F_H")
                                 {
+                                    mtf.mtfValue = mtf.mtfValue * ObjectiveTestResultFix.MTF_H_LeftDown_0_5F;
                                     ObjectiveTestResult.MTF_H_LeftDown_0_5F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_H_LeftDown_0_5F",
@@ -1080,6 +1139,7 @@ namespace ProjectARVR
                                 }
                                 if (mtf.name == "RightDown_0.5F_H")
                                 {
+                                    mtf.mtfValue = mtf.mtfValue * ObjectiveTestResultFix.MTF_H_RightDown_0_5F;
                                     ObjectiveTestResult.MTF_H_RightDown_0_5F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_H_RightDown_0_5F",
@@ -1093,6 +1153,7 @@ namespace ProjectARVR
 
                                 if (mtf.name == "LeftUp_0.8F_H")
                                 {
+                                    mtf.mtfValue = mtf.mtfValue * ObjectiveTestResultFix.MTF_H_LeftUp_0_8F;
                                     ObjectiveTestResult.MTF_H_LeftUp_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_H_LeftUp_0_8F",
@@ -1105,6 +1166,7 @@ namespace ProjectARVR
                                 }
                                 if (mtf.name == "RightUp_0.8F_H")
                                 {
+                                    mtf.mtfValue = mtf.mtfValue * ObjectiveTestResultFix.MTF_H_RightUp_0_8F;
                                     ObjectiveTestResult.MTF_H_RightUp_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_H_RightUp_0_8F",
@@ -1117,6 +1179,7 @@ namespace ProjectARVR
                                 }
                                 if (mtf.name == "LeftDown_0.8F_H")
                                 {
+                                    mtf.mtfValue = mtf.mtfValue * ObjectiveTestResultFix.MTF_H_LeftDown_0_8F;
                                     ObjectiveTestResult.MTF_H_LeftDown_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_H_LeftDown_0_8F",
@@ -1129,6 +1192,7 @@ namespace ProjectARVR
                                 }
                                 if (mtf.name == "RightDown_0.8F_H")
                                 {
+                                    mtf.mtfValue = mtf.mtfValue * ObjectiveTestResultFix.MTF_H_RightDown_0_8F;
                                     ObjectiveTestResult.MTF_H_RightDown_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_H_RightDown_0_8F",
@@ -1171,6 +1235,8 @@ namespace ProjectARVR
             {
                 log.Info("正在解析MTF_V画面的流程");
                 result.TestType = ARVRTestType.MTFV;
+                ObjectiveTestResult.FlowMTFVTestReslut = true;
+
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
                 {
@@ -1191,6 +1257,7 @@ namespace ProjectARVR
                             {
                                 if (mtf.name == "Center_0F_V")
                                 {
+                                    mtf.mtfValue = mtf.mtfValue * ObjectiveTestResultFix.MTF_V_Center_0F;
                                     ObjectiveTestResult.MTF_V_Center_0F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_V_Center_0F",
@@ -1203,6 +1270,7 @@ namespace ProjectARVR
                                 }
                                 if (mtf.name == "LeftUp_0.5F_V")
                                 {
+                                    mtf.mtfValue = mtf.mtfValue * ObjectiveTestResultFix.MTF_V_LeftUp_0_5F;
                                     ObjectiveTestResult.MTF_V_LeftUp_0_5F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_V_LeftUp_0_5F",
@@ -1215,6 +1283,7 @@ namespace ProjectARVR
                                 }
                                 if (mtf.name == "RightUp_0.5F_V")
                                 {
+                                    mtf.mtfValue = mtf.mtfValue * ObjectiveTestResultFix.MTF_V_RightUp_0_5F;
                                     ObjectiveTestResult.MTF_V_RightUp_0_5F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_V_RightUp_0_5F",
@@ -1227,6 +1296,7 @@ namespace ProjectARVR
                                 }
                                 if (mtf.name == "LeftDown_0.5F_V")
                                 {
+                                    mtf.mtfValue = mtf.mtfValue * ObjectiveTestResultFix.MTF_V_LeftDown_0_5F;
                                     ObjectiveTestResult.MTF_V_LeftDown_0_5F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_V_LeftDown_0_5F",
@@ -1239,6 +1309,7 @@ namespace ProjectARVR
                                 }
                                 if (mtf.name == "RightDown_0.5F_V")
                                 {
+                                    mtf.mtfValue = mtf.mtfValue * ObjectiveTestResultFix.MTF_V_RightDown_0_5F;
                                     ObjectiveTestResult.MTF_V_RightDown_0_5F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_V_RightDown_0_5F",
@@ -1251,6 +1322,7 @@ namespace ProjectARVR
                                 }
                                 if (mtf.name == "LeftUp_0.8F_V")
                                 {
+                                    mtf.mtfValue = mtf.mtfValue * ObjectiveTestResultFix.MTF_V_LeftUp_0_8F;
                                     ObjectiveTestResult.MTF_V_LeftUp_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_V_LeftUp_0_8F",
@@ -1263,6 +1335,7 @@ namespace ProjectARVR
                                 }
                                 if (mtf.name == "RightUp_0.8F_V")
                                 {
+                                    mtf.mtfValue = mtf.mtfValue * ObjectiveTestResultFix.MTF_V_RightUp_0_8F;
                                     ObjectiveTestResult.MTF_V_RightUp_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_V_RightUp_0_8F",
@@ -1275,6 +1348,7 @@ namespace ProjectARVR
                                 }
                                 if (mtf.name == "LeftDown_0.8F_V")
                                 {
+                                    mtf.mtfValue = mtf.mtfValue * ObjectiveTestResultFix.MTF_V_LeftDown_0_8F;
                                     ObjectiveTestResult.MTF_V_LeftDown_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_V_LeftDown_0_8F",
@@ -1287,6 +1361,7 @@ namespace ProjectARVR
                                 }
                                 if (mtf.name == "RightDown_0.8F_V")
                                 {
+                                    mtf.mtfValue = mtf.mtfValue * ObjectiveTestResultFix.MTF_V_RightDown_0_8F;
                                     ObjectiveTestResult.MTF_V_RightDown_0_8F = new ObjectiveTestItem()
                                     {
                                         Name = "MTF_V_RightDown_0_8F",
@@ -1333,6 +1408,8 @@ namespace ProjectARVR
             {
                 log.Info("正在解析Distortion画面的流程");
                 result.TestType = ARVRTestType.Distortion;
+                ObjectiveTestResult.FlowDistortionTestReslut = true;
+
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
                 {
@@ -1348,7 +1425,12 @@ namespace ProjectARVR
                         if (AlgResultModels.Count == 1)
                         {
                             ColorVision.Engine.Templates.Jsons.Distortion2.Distortion2View blackMuraView = new ColorVision.Engine.Templates.Jsons.Distortion2.Distortion2View(AlgResultModels[0]);
+
+                            blackMuraView.DistortionReslut.TVDistortion.HorizontalRatio = blackMuraView.DistortionReslut.TVDistortion.HorizontalRatio * ObjectiveTestResultFix.HorizontalTVDistortion;
+                            blackMuraView.DistortionReslut.TVDistortion.VerticalRatio = blackMuraView.DistortionReslut.TVDistortion.HorizontalRatio * ObjectiveTestResultFix.VerticalTVDistortion;
+
                             result.ViewReslutDistortionGhost.Distortion2View = blackMuraView;
+
 
                             ObjectiveTestResult.HorizontalTVDistortion = new ObjectiveTestItem()
                             {
@@ -1384,6 +1466,7 @@ namespace ProjectARVR
             {
                 log.Info("正在解析OpticCenter画面的流程");
                 result.TestType = ARVRTestType.OpticCenter;
+                ObjectiveTestResult.FlowDistortionTestReslut = true;
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
@@ -1401,6 +1484,11 @@ namespace ProjectARVR
                         if (AlgResultModels.Count == 1)
                         {
                             result.ViewResultOpticCenter.BinocularFusionModel = AlgResultModels[0];
+
+                            result.ViewResultOpticCenter.BinocularFusionModel.XDegree = (float)(result.ViewResultOpticCenter.BinocularFusionModel.XDegree * ObjectiveTestResultFix.XTilt);
+                            result.ViewResultOpticCenter.BinocularFusionModel.YDegree = (float)(result.ViewResultOpticCenter.BinocularFusionModel.YDegree * ObjectiveTestResultFix.YTilt);
+                            result.ViewResultOpticCenter.BinocularFusionModel.ZDegree = (float)(result.ViewResultOpticCenter.BinocularFusionModel.ZDegree * ObjectiveTestResultFix.Rotation);
+
                             ObjectiveTestResult.XTilt = new ObjectiveTestItem()
                             {
                                 Name = "XTilt",
@@ -1451,7 +1539,7 @@ namespace ProjectARVR
 
             ViewResluts.Insert(0, result); //倒序插入
             listView1.SelectedIndex = 0;
-
+            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
             SwithchSocket();
         }
 
@@ -1477,14 +1565,13 @@ namespace ProjectARVR
 
                             ObjectiveTestResult.TotalResult = true;
                             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowWhiteTestReslut;
-                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowWhite1TestReslut;
-
                             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowBlackTestReslut;
                             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowChessboardTestReslut;
                             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowMTFHTestReslut;
                             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowMTFVTestReslut;
                             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowDistortionTestReslut;
                             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowOpticCenterTestReslut;
+
                             log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
 
                             string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -1827,7 +1914,8 @@ namespace ProjectARVR
             string outtext = string.Empty;
             outtext += $"Model:{result.Model}" + Environment.NewLine;
             outtext += $"SN:{result.SN}" + Environment.NewLine;
-            outtext += $"{DateTime.Now:yyyy/MM//dd HH:mm:ss}" + Environment.NewLine;
+
+            outtext += $"{result.CreateTime:yyyy/MM//dd HH:mm:ss}" + Environment.NewLine;
 
             Run run = new Run(outtext);
             run.Foreground = result.Result ? Brushes.Black : Brushes.White;

@@ -10,6 +10,7 @@
         <StackPanel>
             <Button Content="getModbusData" Click="Button_Click"/>
             <Button Content="SetModusValue 1" Click="Button1_Click"/>
+            <Button Content="Test_Mesh" Click="Test_Mesh_Click"/>
         </StackPanel>
         
     </Grid>

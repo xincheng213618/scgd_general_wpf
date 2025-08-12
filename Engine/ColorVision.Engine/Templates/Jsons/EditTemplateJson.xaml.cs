@@ -12,13 +12,15 @@ namespace ColorVision.Engine.Templates.Jsons
 
     public class EditTemplateJsonConfig :IConfig
     {
-        public static EditTemplateJsonConfig Instance => ConfigService.Instance.GetRequiredService<EditTemplateJsonConfig>();
+        public static EditTemplateJsonConfig Instance { get; set; } = ConfigService.Instance.GetRequiredService<EditTemplateJsonConfig>();
 
-        public double Width { get; set; } = double.NaN;
+        public double Width { get => _Width; set { _Width = value; } }
+        private double _Width = double.NaN;
     }
 
     public partial class EditTemplateJson : UserControl, ITemplateUserControl
     {
+
         private string Description { get; set; }
         public EditTemplateJson(string description)
         {

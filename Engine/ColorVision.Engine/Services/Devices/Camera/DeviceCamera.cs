@@ -121,7 +121,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
 
 
-        public CameraVideoControl CameraVideoControl { get; set; }
+        public VideoReader CameraVideoControl { get; set; } = new VideoReader();
 
         public new void RestartRCService()
         {

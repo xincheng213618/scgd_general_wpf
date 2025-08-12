@@ -17,7 +17,7 @@ namespace ColorVision
         public override string OwnerGuid => MenuItemConstants.Help;
         public override string Header => "配置管理窗口";
 
-        public override int Order => 9000;
+        public override int Order => 9009;
 
         public override void Execute()
         {

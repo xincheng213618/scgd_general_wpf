@@ -102,6 +102,34 @@ namespace ProjectARVRLite
         }
     }
 
+    public class PoixyuvData
+    {
+        public int Id { get; set; }
+
+        public string Name { get; set; }
+
+        public double CCT { get; set; }
+
+        public double Wave { get; set; }
+
+        public double X { get; set; }
+
+        public double Y { get; set; }
+
+        public double Z { get; set; }
+
+        public double u { get; set; }
+
+
+        public double v { get; set; }
+
+        public double x { get; set; }
+
+
+        public double y { get; set; }
+
+    }
+
     public class ObjectiveTestItem
     {
         public string Name { get; set; }         // 项目名称
@@ -182,6 +210,8 @@ namespace ProjectARVRLite
         /// 中心相关色温(K) 测试项
         /// </summary>
         public ObjectiveTestItem BlackCenterCorrelatedColorTemperature { get; set; }
+
+        public List<PoixyuvData> W255PoixyuvDatas { get; set; } = new List<PoixyuvData>();
 
         /// <summary>
         /// FOFO对比度 测试项

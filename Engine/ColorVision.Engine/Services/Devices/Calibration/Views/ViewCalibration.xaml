@@ -78,14 +78,11 @@
             </StackPanel>
             <ListView Height="200"  Grid.Row="1" x:Name="listView1" BorderThickness="0" Padding="0" Visibility="{Binding Config.IsShowListView, Converter={StaticResource bool2VisibilityConverter}}" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
                 <ListView.Resources >
-                    <ContextMenu x:Key="ContextMenuItem">
-                        <MenuItem Header="{x:Static properties:Resources.Delete}"  Click="MenuItem_Delete_Click" Tag="{Binding .}"  />
-                    </ContextMenu>
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                 </ListView.Resources>
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                        <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
+                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.View >
@@ -115,7 +112,7 @@
                         <GridViewColumn  Header="{x:Static properties:Resources.File}" Width="120">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type model:ViewResultCamera}">
-                                    <TextBlock Text="{ Binding  FilePath}"/>
+                                    <TextBlock Text="{ Binding  FileUrl}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>

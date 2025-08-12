@@ -41,7 +41,7 @@
                     </Grid.RowDefinitions>
                     <Grid Visibility="Visible" >
                         <StackPanel Orientation="Horizontal" Background="{DynamicResource RegionBrush}">
-                            <Button  Command="{Binding OpenConfigCommand}" Padding="0" Height="25" Width="25" Margin="5,0,0,0"> 
+                            <Button  Command="{Binding OpenConfigCommand}" Padding="0" Height="25" Width="25" Margin="5,0,0,0">
                                 <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" RenderTransformOrigin="0.5,0.5"  Foreground="{DynamicResource GlobalTextBrush}">
                                     <TextBlock.RenderTransform>
                                         <RotateTransform x:Name="rotateTransform21"/>
@@ -65,65 +65,83 @@
                             </Button>
                         </StackPanel>
                     </Grid>
+                    <Grid  Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="200"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="1"  Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" >
+                            <TextBox x:FieldModifier="public"  x:Name="logTextBox" TextWrapping="WrapWithOverflow" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
+                        </Border>
+                        <ListView x:Name="listView1" BorderThickness="0" Padding="0"  SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" Grid.RowSpan="2" >
+                            <ListView.Resources >
+                                <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
+                            </ListView.Resources>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.View>
+                                <GridView>
+                                    <GridView.ColumnHeaderContainerStyle>
+                                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                                            <EventSetter Event="Click" Handler="GridViewColumnSort"/>
+                                        </Style>
+                                    </GridView.ColumnHeaderContainerStyle>
+                                    <GridViewColumn Header="Id" Width="50">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                                <TextBlock Text="{Binding Id}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="FlowStatus" Width="100">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                                <TextBlock Text="{Binding FlowStatus}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="SN" Width="100">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                                <TextBlock Text="{Binding SN}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Model" Width="150">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                                <TextBlock Text="{Binding Model}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="TestType" Width="100">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                                <TextBlock Text="{Binding TestType}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+    
+                                    
 
-                    <ListView  x:Name="listView1" Grid.Row="1"   BorderThickness="0" Padding="0"  SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" Grid.RowSpan="2" >
-                        <ListView.Resources >
-                            <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
-                        </ListView.Resources>
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                            </Style>
-                        </ListView.ItemContainerStyle>
-                        <ListView.View>
-                            <GridView>
-                                <GridView.ColumnHeaderContainerStyle>
-                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Setter Property="Background" Value="Transparent"/>
-                                        <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
-                                        <EventSetter Event="Click" Handler="GridViewColumnSort"/>
-                                    </Style>
-                                </GridView.ColumnHeaderContainerStyle>
-                                <GridViewColumn Header="Id" Width="50">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
-                                            <TextBlock Text="{Binding Id}" />
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="SN" Width="100">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
-                                            <TextBlock Text="{Binding SN}" />
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="Model" Width="150">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
-                                            <TextBlock Text="{Binding Model}" />
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="TestType" Width="100">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
-                                            <TextBlock Text="{Binding TestType}" />
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                
-                                <GridViewColumn Header="Time" Width="150">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
-                                            <TextBlock Text="{Binding CreateTime}" />
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                            </GridView>
-                        </ListView.View>
+                                    <GridViewColumn Header="Time" Width="150">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                                <TextBlock Text="{Binding CreateTime,StringFormat=yyyy/MM//dd HH:mm:ss}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
 
-                    </ListView>
+                        </ListView>
+
+                    </Grid>
 
                 </Grid>
                 <GridSplitter Grid.Row="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
@@ -224,9 +242,6 @@
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="EditFix" Command="{Binding EditObjectiveTestResultFixCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="Test" Click="Button_Click"/>
             </StatusBarItem>
         </StatusBar>
 

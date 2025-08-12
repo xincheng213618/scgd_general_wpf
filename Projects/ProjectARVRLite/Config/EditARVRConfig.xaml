@@ -28,10 +28,6 @@
                 <Border Grid.Row="1" Background="{StaticResource GlobalBorderBrush}" BorderThickness="1" BorderBrush="{ StaticResource BorderBrush}" CornerRadius="5" Margin="0,0,0,5">
                     <StackPanel Margin="10,5">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                            <TextBlock Text="序列号位数"  MinWidth="120"  />
-                            <TextBox Text="{Binding  SNMax}" Width="200"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                             <TextBlock Text="恢复窗口"  MinWidth="120"  />
                             <ui:ToggleSwitch IsChecked="{Binding ProjectKBWindowConfig.IsRestoreWindow}" Margin="0,0,5,0"/>
                         </StackPanel>
@@ -54,6 +50,10 @@
                         <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
                             <TextBlock Text="允许测试失败 " Width="120"/>
                             <ui:ToggleSwitch IsChecked="{Binding AllowTestFailures}" Margin="0,0,5,0"/>
+                        </StackPanel>
+                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
+                            <TextBlock Text="刷新结果 " Width="120"/>
+                            <ui:ToggleSwitch IsChecked="{Binding RefreshResult}" Margin="0,0,5,0"/>
                         </StackPanel>
                         <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
                             <TextBlock Text="打开图像延迟 " Width="120"/>

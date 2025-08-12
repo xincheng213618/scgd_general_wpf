@@ -7,6 +7,7 @@ using ProjectKB.Config;
 using ProjectKB.Modbus;
 using ProjectKB.Services;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Windows;
@@ -39,6 +40,22 @@ namespace ProjectKB
             OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
             OpenSocketConfigCommand = new RelayCommand(a => OepnSocketConfig());
         }
+
+        public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; NotifyPropertyChanged(); } }
+        private bool _LogControlVisibility = true;
+
+        [DisplayName("重试次数")]
+        public int TryCountMax { get => _TryCountMax; set { _TryCountMax = value; NotifyPropertyChanged(); } }
+        private int _TryCountMax = 2;
+
+        [DisplayName("允许测试失败")]
+        public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; NotifyPropertyChanged(); } }
+        private bool _AllowTestFailures = true;
+
+        [DisplayName("RefreshResult")]
+        public bool RefreshResult { get => _RefreshResult; set { _RefreshResult = value; NotifyPropertyChanged(); } }
+        private bool _RefreshResult = true;
+
 
         public static void OepnSocketConfig()
         {
@@ -146,9 +163,6 @@ namespace ProjectKB
 
         public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; NotifyPropertyChanged(); } }
         private bool _IsAutoUploadSn;
-
-        public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; NotifyPropertyChanged(); } }
-        private long _LastFlowTime;
        
         public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; NotifyPropertyChanged(); } }
         private string _ResultSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "TestReslut");

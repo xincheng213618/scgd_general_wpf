@@ -59,7 +59,7 @@ namespace ColorVision.ImageEditor.Draw
 
         public RelayCommand OpenImageCommand { get; set; }
 
-        private ZoomboxSub ZoomboxSub { get; set; }
+        public ZoomboxSub ZoomboxSub { get; set; }
 
         private DrawCanvas Image { get; set; }
 

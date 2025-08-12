@@ -134,9 +134,6 @@ namespace ColorVision.Engine.Templates.Flow
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
-            timer = new Timer(UpdateMsg, null, 0, 100);
-            timer.Change(Timeout.Infinite, 100); // 停止定时器
-
             this.Loaded += FlowDisplayControl_Loaded;
             View.RefreshFlow += (s, e) =>
             {
@@ -144,6 +141,9 @@ namespace ColorVision.Engine.Templates.Flow
                 _=Refresh();
             };
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
+
+            timer = new Timer(UpdateMsg, null, 0, 100);
+            timer.Change(Timeout.Infinite, 100); // 停止定时器
 
         }
 
@@ -226,7 +226,7 @@ namespace ColorVision.Engine.Templates.Flow
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
-        public FlowControl flowControl { get; set; }
+        public FlowControl flowControl { get; set; } 
 
 
         private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
@@ -237,6 +237,7 @@ namespace ColorVision.Engine.Templates.Flow
             FlowEngineConfig.Instance.FlowRunTime[ComboBoxFlow.Text] = stopwatch.ElapsedMilliseconds;
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
 
+            FlowEngineManager.GetInstance().CurrentFlowMsg = FlowControlData;
 
 
             if (Config.IsNewMsgUI)

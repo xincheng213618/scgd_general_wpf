@@ -22,5 +22,12 @@ namespace ProjectKB
         {
             ModbusControl.GetInstance().SetRegisterValue(1);
         }
+
+        private void Test_Mesh_Click(object sender, RoutedEventArgs e)
+        {
+            nint a = MesDll.Testdll();
+            var result = MesDll.PtrToString(a);
+            MessageBox.Show(result);
+        }
     }
 }

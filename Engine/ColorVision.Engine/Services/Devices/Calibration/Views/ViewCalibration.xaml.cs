@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
@@ -54,7 +55,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         {
             this.DataContext = this;
             View = new View();
-            ImageView.SetConfig(Config.ImageViewConfig);
+            ImageView.SetConfig(new ImageViewConfig());
+
             listView1.ItemsSource = ViewResults;
 
             if (listView1.View is GridView gridView)

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates.Flow;
 using log4net;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -92,7 +93,7 @@ namespace ProjectKB
                     "",
                     "",
                     item.Result.ToString(),
-                    item.DateTime.ToString("yyyy-MM-dd HH:mm:ss"),
+                    item.CreateTime.ToString("yyyy-MM-dd HH:mm:ss"),
                 };
 
             for (int i = 0; i < item.Items.Count; i++)
@@ -118,8 +119,9 @@ namespace ProjectKB
 
         public KBItemMaster()
         {
-            DateTime = DateTime.Now;
+            CreateTime = DateTime.Now;
         }
+        public FlowStatus FlowStatus { get; set; } = FlowStatus.Ready;
 
 
         public ObservableCollection<KBItem> Items { get; set; } = new ObservableCollection<KBItem>();
@@ -135,6 +137,9 @@ namespace ProjectKB
 
         public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }
         private string _SN;
+
+        public string Code { get => _Code; set { _Code = value; NotifyPropertyChanged(); } }
+        private string _Code;
         public string Exposure { get => _Exposure; set { _Exposure = value; NotifyPropertyChanged(); } }
         private string _Exposure;
 
@@ -171,7 +176,7 @@ namespace ProjectKB
         public bool Result { get => _Result; set { _Result = value; NotifyPropertyChanged(); } }
         private bool _Result;
 
-        public DateTime DateTime { get => __DateTime; set { __DateTime = value; NotifyPropertyChanged(); } }
-        private DateTime __DateTime = DateTime.Now;
+        public DateTime CreateTime { get => _CreateTime; set { _CreateTime = value; NotifyPropertyChanged(); } }
+        private DateTime _CreateTime = DateTime.Now;
     }
 }
