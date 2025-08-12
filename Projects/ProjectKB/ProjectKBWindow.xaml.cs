@@ -15,6 +15,7 @@ using ColorVision.UI.LogImp;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
+using log4net.Util;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using ProjectKB.Modbus;
@@ -23,6 +24,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -63,6 +65,7 @@ namespace ProjectKB
             this.ApplyCaption(false);
             Config.SetWindow(this);
             SizeChanged += (s, e) => Config.SetConfig(this);
+            this.Title += "-" + Assembly.GetAssembly(typeof(ProjectKBWindow))?.GetName().Version?.ToString() ?? "";
         }
         public LogOutput logOutput { get; set; }
 
@@ -242,6 +245,18 @@ namespace ProjectKB
         }
         private void TestClick(object sender, RoutedEventArgs e)
         {
+            if (Summary.UseMes)
+            {
+                log.Info($"CheckWIP Stage{SummaryManager.GetInstance().Summary.Stage},SN:{ProjectKBConfig.Instance.SN}");
+                IntPtr a = MesDll.CheckWIP(SummaryManager.GetInstance().Summary.Stage, ProjectKBConfig.Instance.SN);
+                var result = MesDll.PtrToString(a);
+                log.Info(result);
+                if (result != "N")
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), result);
+                    return;
+                }
+            }
             RunTemplate();
         }
 
@@ -591,6 +606,7 @@ namespace ProjectKB
             ViewResluts.Insert(0, kBItem);
             listView1.SelectedIndex = 0;
 
+
             string resultPath = ProjectKBConfig.Instance.ResultSavePath1 + $"\\{kBItem.SN}-{kBItem.CreateTime:yyyyMMddHHmmssffff}.txt";
             string result = $"{kBItem.SN},{(kBItem.Result ? "Pass" : "Fail")}, ,";
 
@@ -613,6 +629,25 @@ namespace ProjectKB
                 log.Debug("流程执行结束，设置寄存器为0，触发移动");
                 ModbusControl.GetInstance().SetRegisterValue(0);
             });
+
+            ///回传MEs
+            if (Summary.UseMes)
+            {
+                try
+                {
+                    string Barcode_Result = kBItem.Result ? "PASS" : "NG";
+                    log.Info($"Collect_test{Summary.Stage},Barcode_NO:{ProjectKBConfig.Instance.SN}Barcode_Result：{Barcode_Result}MachineNO:{Summary.MachineNO}");
+                    IntPtr a = MesDll.Collect_test(Summary.Stage, ProjectKBConfig.Instance.SN, Barcode_Result, Summary.MachineNO, Summary.LineNO, Summary.Opno, Barcode_Result, string.Empty);
+                    var Collect_test = MesDll.PtrToString(a);
+                    logTextBox.Text += Collect_test;
+                    log.Info(Collect_test);
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                }
+
+            }
             SNtextBox.Text = string.Empty;
         }
 

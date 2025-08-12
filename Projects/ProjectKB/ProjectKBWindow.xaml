@@ -224,12 +224,12 @@
                                 <Image Source="{StaticResource  DrawingImageEdit}" Width="15" Margin="0" />
                                 <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding OpenFlowEngineToolCommand}"/>
                             </Grid>
-                            <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
+                            <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown" Margin="0,0,5,0"/>
                             <Button Content="Test KeyBorder"  DockPanel.Dock="Right" Background="Pink" Click="TestClick" />
                         </DockPanel>
                     </StackPanel>
                 </Grid>
-                <Border Grid.Row="1"  Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Margin="5,0">
+                <Border Grid.Row="1"  Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Margin="5,0,5,5">
                     <TextBox x:FieldModifier="public"  x:Name="logTextBox" TextWrapping="WrapWithOverflow" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
                 </Border>
                 <Grid Grid.Row="2" x:Name="LogGrid" Height="250">
@@ -277,7 +277,7 @@
                 <Button Content="Recipe" Command="{Binding EditRecipeCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="Summory" Command="{Binding SummaryManager.EditCommand}"/>
+                <Button Content="Summary" Command="{Binding SummaryManager.EditCommand}"/>
             </StatusBarItem>
         </StatusBar>
 

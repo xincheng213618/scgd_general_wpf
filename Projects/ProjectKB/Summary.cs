@@ -9,6 +9,11 @@ namespace ProjectKB
 {
     public class Summary : ViewModelBase
     {
+
+        [DisplayName("启用ShopFloor"), Category("KB")]
+        public bool UseMes { get => _UseMesh; set { _UseMesh = value; NotifyPropertyChanged(); } }
+        private bool _UseMesh = true;
+
         /// <summary>
         /// 线别
         /// </summary>
@@ -29,6 +34,11 @@ namespace ProjectKB
         public string WorkerNO { get => _WorkerNO; set { _WorkerNO = value; NotifyPropertyChanged(); } }
         private string _WorkerNO = string.Empty;
 
+        [DisplayName("Opno")]
+        public string Opno { get => _Opno; set { _Opno = value; NotifyPropertyChanged(); } }
+        private string _Opno = string.Empty;
+
+        
         [DisplayName("设备号")]
         public string MachineNO { get => _MachineNO; set { _MachineNO = value; NotifyPropertyChanged(); } }
         private string _MachineNO = string.Empty;
@@ -112,6 +122,7 @@ namespace ProjectKB
         public void Edit()
         {
             new PropertyEditorWindow(Summary) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner }.ShowDialog();
+            this.Save();
         }
 
         public void Save()
