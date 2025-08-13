@@ -832,21 +832,23 @@ namespace ProjectARVRLite
                         foreach (var item in POIPointResultModels)
                         {
                             PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(item) { Id = id++ };
-                            ObjectiveTestResult.W255PoixyuvDatas.Add(new PoixyuvData() 
+                            ObjectiveTestResult.W255PoixyuvDatas.Add(new PoixyuvData()
                             {
-                                Id =  poiResultCIExyuvData.Id, 
+                                Id = poiResultCIExyuvData.Id,
                                 Name = poiResultCIExyuvData.Name,
                                 CCT = poiResultCIExyuvData.CCT * ObjectiveTestResultFix.BlackCenterCorrelatedColorTemperature,
+                                X = poiResultCIExyuvData.X,
                                 Y = poiResultCIExyuvData.Y * ObjectiveTestResultFix.W255CenterLunimance,
+                                Z =poiResultCIExyuvData.Z,
+                                Wave =poiResultCIExyuvData.Wave,
                                 x = poiResultCIExyuvData.x * ObjectiveTestResultFix.W255CenterCIE1931ChromaticCoordinatesx,
                                 y = poiResultCIExyuvData.y * ObjectiveTestResultFix.W255CenterCIE1931ChromaticCoordinatesy,
                                 u = poiResultCIExyuvData.u * ObjectiveTestResultFix.W255CenterCIE1976ChromaticCoordinatesu,
                                 v = poiResultCIExyuvData.v * ObjectiveTestResultFix.W255CenterCIE1976ChromaticCoordinatesv
-                            } );
+                            });
                             if (item.PoiName == "POI_5")
                             {
                                 poiResultCIExyuvData.CCT = poiResultCIExyuvData.CCT * ObjectiveTestResultFix.BlackCenterCorrelatedColorTemperature;
-
                                 poiResultCIExyuvData.Y = poiResultCIExyuvData.Y * ObjectiveTestResultFix.W255CenterLunimance;
                                 poiResultCIExyuvData.x = poiResultCIExyuvData.x * ObjectiveTestResultFix.W255CenterCIE1931ChromaticCoordinatesx;
                                 poiResultCIExyuvData.y = poiResultCIExyuvData.y * ObjectiveTestResultFix.W255CenterCIE1931ChromaticCoordinatesy;

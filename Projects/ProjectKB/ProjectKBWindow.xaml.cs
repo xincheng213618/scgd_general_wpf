@@ -15,18 +15,14 @@ using ColorVision.UI.LogImp;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
-using log4net.Util;
 using Newtonsoft.Json;
-using Panuon.WPF.UI;
 using ProjectKB.Modbus;
 using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -53,8 +49,8 @@ namespace ProjectKB
     public partial class ProjectKBWindow : Window,IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectKBWindow));
-        public static ViewResultManager ViewReslutManager => ViewResultManager.GetInstance();
-        public static ObservableCollection<KBItemMaster> ViewResluts => ViewReslutManager.ViewResluts;
+        public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
+        public static ObservableCollection<KBItemMaster> ViewResluts => ViewResultManager.ViewResluts;
 
 
         public static ProjectKBWindowConfig Config => ProjectKBWindowConfig.Instance;
@@ -74,6 +70,7 @@ namespace ProjectKB
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = ProjectKBConfig.Instance;
+            ViewResultManager.ListView = listView1;
             listView1.ItemsSource = ViewResluts;
             InitFlow();
             Task.Run(async() =>
@@ -102,6 +99,7 @@ namespace ProjectKB
 
             this.Closed += (s, e) =>
             {
+                SummaryManager.GetInstance().Save();
                 ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
                 this.Dispose();
             };
@@ -384,7 +382,7 @@ namespace ProjectKB
             if (Batch == null)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
-                ViewReslutManager.Save(KBItemMaster);
+                ViewResultManager.Save(KBItemMaster);
                 return;
             }
             KBItemMaster.BatchId = Batch.Id;
@@ -469,7 +467,7 @@ namespace ProjectKB
             if (KBItemMaster.Items.Count == 0)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到对映的按键，请检查流程配置是否计算KB模板", "ColorVision");
-                ViewReslutManager.Save(KBItemMaster);
+                ViewResultManager.Save(KBItemMaster);
                 return;
             }
 
@@ -603,22 +601,20 @@ namespace ProjectKB
             {
                 Summary.DefectiveProductCount += 1;
             }
-            ViewReslutManager.Save(KBItemMaster);
-            listView1.SelectedIndex = 0;
+            ViewResultManager.Save(KBItemMaster);
 
-            string resultPath = ProjectKBConfig.Instance.ResultSavePath1 + $"\\{KBItemMaster.SN}-{KBItemMaster.CreateTime:yyyyMMddHHmmssffff}.txt";
+            string resultPath = ViewResultManager.Config.SavePathText + $"\\{KBItemMaster.SN}-{KBItemMaster.CreateTime:yyyyMMddHHmmssffff}.txt";
             string result = $"{KBItemMaster.SN},{(KBItemMaster.Result ? "Pass" : "Fail")}, ,";
 
             log.Debug($"结果正在写入{resultPath},result:{result}");
             File.WriteAllText(resultPath, result);
-
 
             Application.Current.Dispatcher.Invoke(() =>
             {
                 string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
                 string regexPattern = $"[{Regex.Escape(invalidChars)}]";
 
-                string csvpath = ProjectKBConfig.Instance.ResultSavePath + $"\\{Regex.Replace(KBItemMaster.Model, regexPattern, "")}_{KBItemMaster.CreateTime:yyyyMMdd}.csv";
+                string csvpath = ViewResultManager.Config.SavePathCsv + $"\\{Regex.Replace(KBItemMaster.Model, regexPattern, "")}_{KBItemMaster.CreateTime:yyyyMMdd}.csv";
 
                 KBItemMaster.SaveCsv(csvpath);
                 log.Debug($"writecsv:{csvpath}");
@@ -780,7 +776,7 @@ namespace ProjectKB
 
         private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
-            ProjectKBConfig.Instance.Height = row2.ActualHeight;
+            ViewResultManager.Config.Height = row2.ActualHeight;
             row2.Height = GridLength.Auto;
         }
 
@@ -830,7 +826,7 @@ namespace ProjectKB
                         catch
                         {
                             log.Warn("文件还在写入");
-                            await Task.Delay(ProjectKBConfig.Instance.ViewImageReadDelay);
+                            await Task.Delay(ViewResultManager.Config.ViewImageReadDelay);
                             _=Application.Current.Dispatcher.BeginInvoke(() =>
                             {
                                 ImageView.OpenImage(kBItem.ResultImagFile);
@@ -965,8 +961,7 @@ namespace ProjectKB
                 KBItemMaster.Items.Add(kBItem);
             }
 
-            ViewReslutManager.Save(KBItemMaster);
-            listView1.SelectedIndex = 0;
+            ViewResultManager.Save(KBItemMaster);
 
         }
         private string RandomName(Random rnd, int length)
@@ -975,5 +970,6 @@ namespace ProjectKB
             return new string(Enumerable.Repeat(chars, length)
                 .Select(s => s[rnd.Next(s.Length)]).ToArray());
         }
+
     }
 }

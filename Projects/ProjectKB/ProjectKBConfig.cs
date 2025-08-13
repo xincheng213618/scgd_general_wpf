@@ -25,15 +25,17 @@ namespace ProjectKB
         [JsonIgnore]
         public RelayCommand OpenModbusCommand { get; set; }
         [JsonIgnore]
-        public RelayCommand OpenConfigCommand { get; set; }
+        public RelayCommand EditConfigCommand { get; set; }
         [JsonIgnore]
         public RelayCommand OpenSocketConfigCommand { get; set; }
         [JsonIgnore]
         public RelayCommand OpenChangeLogCommand { get; set; }
         [JsonIgnore]
         public RelayCommand OpenReadMeCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand EditRecipeCommand { get; set; }
+
+        public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
+        public static SummaryManager SummaryManager => SummaryManager.GetInstance();
+        public static RecipeManager RecipeManager => RecipeManager.GetInstance();
 
         public ProjectKBConfig()
         {
@@ -41,14 +43,11 @@ namespace ProjectKB
             OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
             TemplateItemSource = TemplateFlow.Params;
             OpenLogCommand = new RelayCommand(a => OpenLog());
-            OpenModbusCommand = new RelayCommand(a => OpenModbus());
-            OpenConfigCommand = new RelayCommand(a => OpenConfig());
+            EditConfigCommand = new RelayCommand(a => EditConfig());
             OpenChangeLogCommand = new RelayCommand(a => OpenChangeLog());
             OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
+            OpenModbusCommand = new RelayCommand(a => OpenModbus());
             OpenSocketConfigCommand = new RelayCommand(a => OepnSocketConfig());
-
-            EditRecipeCommand = new RelayCommand(a => EditRecipe());
-
         }
 
         [DisplayName("日志开关(重启窗口后生效)")]
@@ -62,29 +61,15 @@ namespace ProjectKB
         [DisplayName("允许测试失败")]
         public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; NotifyPropertyChanged(); } }
         private bool _AllowTestFailures = true;
-
-        [DisplayName("刷新结果")]
-        public bool RefreshResult { get => _RefreshResult; set { _RefreshResult = value; NotifyPropertyChanged(); } }
-        private bool _RefreshResult = true;
-
-        public void EditRecipe()
+        public void EditConfig()
         {
-            EditRecipeWindow EditRecipeWindow = new EditRecipeWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            EditRecipeWindow.ShowDialog();
+            new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(),WindowStartupLocation =WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-
         public static void OepnSocketConfig()
         {
             PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(SocketConfig.Instance) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             propertyEditorWindow.Show();
         }
-
-
-        public void OpenConfig()
-        {
-            new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(),WindowStartupLocation =WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
         public static void OpenResourceName(string title, string resourceName)
         {
             // 获取当前执行的程序集
@@ -159,16 +144,6 @@ namespace ProjectKB
         public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }
         private string _SN = string.Empty;
 
-        [DisplayName("Csv保存路径"),PropertyEditorType(PropertyEditorType.TextSelectFolder), Category("KB")]
-        public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; NotifyPropertyChanged(); } }
-        private string _ResultSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "TestReslut");
-        [DisplayName("Text保存路径"), PropertyEditorType(PropertyEditorType.TextSelectFolder), Category("KB")]
-        public string ResultSavePath1 { get => _ResultSavePath1; set { _ResultSavePath1 = value; NotifyPropertyChanged(); } }
-        private string _ResultSavePath1 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "TestReslut");
-
-        public double Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
-        private double _Height = 300;
-
         public static ModbusControl ModbusControl => ModbusControl.GetInstance();
 
         [DisplayName("自动连接Modbus"), Category("KB")]
@@ -177,13 +152,10 @@ namespace ProjectKB
         [DisplayName("KBLVSacle"), Category("KB")]
         public double KBLVSacle { get => _KBLVSacle; set { _KBLVSacle = value; NotifyPropertyChanged(); } }
         private double _KBLVSacle = 0.006583904;
-        [DisplayName("打开图像延迟")]
-        public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
-        private int _ViewImageReadDelay = 1000;
 
-        public static SummaryManager SummaryManager => SummaryManager.GetInstance();
 
-        public static ProjectKBWindowConfig ProjectKBWindowConfig => ProjectKBWindowConfig.Instance;
+
+
 
     }
 }

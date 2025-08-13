@@ -24,7 +24,7 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="600"/>
             </Grid.ColumnDefinitions>
-            <Grid Grid.Column="0">
+            <Grid Grid.Column="0" Background="{DynamicResource BorderBrush}">
                 <Grid.RowDefinitions>
                     <RowDefinition x:Name="row1" Height="*"/>
                     <RowDefinition x:Name="row2" Height="Auto"/>
@@ -72,47 +72,69 @@
                         </StackPanel>
 
                         <Border VerticalAlignment="Bottom">
-                            <TextBox x:Name="NGResult"  Text="" FontSize="80" HorizontalAlignment="Center"  BorderThickness="0"/>
+                            <TextBox x:Name="NGResult"  Text="" FontSize="80" HorizontalAlignment="Center" Background="Transparent"  BorderThickness="0"/>
                         </Border>
                     </Grid>
                     <im:ImageView Grid.Column="1" x:Name="ImageView" ></im:ImageView>
                     <GridSplitter  Grid.Column="0"  Background="#1FFFFFFF" Panel.ZIndex="999" Width="2" HorizontalAlignment="Right"   DragCompleted="GridSplitter_DragCompleted1"  />
                 </Grid>
-                <Grid x:Name="Grid1" Grid.Row="1" Height="{Binding Height}">
+                <Grid x:Name="Grid1" Grid.Row="1" Height="{Binding ViewResultManager.Config.Height}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="32"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <Grid Visibility="Visible" >
-                        <StackPanel Orientation="Horizontal" Background="{DynamicResource RegionBrush}">
-                            <Button  Command="{Binding OpenConfigCommand}" Padding="0" Height="25" Width="25" Margin="5,0,0,0">
-                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" RenderTransformOrigin="0.5,0.5"  Foreground="{DynamicResource GlobalTextBrush}">
-                                    <TextBlock.RenderTransform>
-                                        <RotateTransform x:Name="rotateTransform21"/>
-                                    </TextBlock.RenderTransform>
-                                </TextBlock>
+                        <ToolBarTray  Grid.Row="0" IsLocked="True">
+                            <ToolBar Padding="3,2">
+                                <Button x:Name="Search" Content="查询" Command="{Binding ViewResultManager.QueryCommand}" Margin="2,0,0,0"/>
+                            </ToolBar>
+                        </ToolBarTray>
+                        <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
+                            <Button Command="{Binding ViewResultManager.SaveCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
+                                <Rectangle Width="16" Height="16" Fill="{StaticResource DISave}" />
+                            </Button>
+                            <Button  Click="Button_Click_Clear" Command="{Binding ViewResultManager.ViewReslutsClearCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0" >
                                 <Button.Triggers>
                                     <EventTrigger RoutedEvent="Button.Click">
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="rotateTransform21" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                                <DoubleAnimation  Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX" To="0.7" Duration="0:0:0.1" AutoReverse="True" />
+                                                <DoubleAnimation  Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY" To="0.7" Duration="0:0:0.1" AutoReverse="True" />
                                             </Storyboard>
                                         </BeginStoryboard>
                                     </EventTrigger>
                                 </Button.Triggers>
+                                <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" RenderTransformOrigin="0.5,0.5">
+                                    <Image.RenderTransform>
+                                        <ScaleTransform x:Name="ScaleTransform" ScaleX="1" ScaleY="1" />
+                                    </Image.RenderTransform>
+                                </Image>
                             </Button>
-                            <Button Click="Button_Click_Clear"  Padding="0" Height="25" Width="25" Margin="5,0,0,0">
-                                <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" Margin="2" />
+                            <Button Grid.Column="1" Margin="0,1,5,0" HorizontalAlignment="Left" Command="{Binding ViewResultManager.EditConfigCommand}" Padding="2" Height="25" Width="25" >
+                                <Button.Triggers>
+                                    <EventTrigger RoutedEvent="Button.Click">
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Button.Triggers>
+                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                                    <TextBlock.RenderTransform>
+                                        <RotateTransform x:Name="rotateTransform2" CenterX="8" CenterY="8"/>
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
                             </Button>
-
                         </StackPanel>
                     </Grid>
-                    <ListView  x:Name="listView1" Grid.Row="1"   BorderThickness="0" Padding="0"  SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" Grid.RowSpan="2" >
+                    <ListView  x:Name="listView1" Grid.Row="1"  SelectedIndex="{Binding ViewResultManager.ViewReslutsSelectedIndex}" BorderThickness="0" Padding="0"  SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" Grid.RowSpan="2" >
                         <ListView.Resources >
                             <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                         </ListView.Resources>
                         <ListView.ItemContainerStyle>
                             <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                                <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
                             </Style>
                         </ListView.ItemContainerStyle>
                         <ListView.View>
@@ -245,7 +267,9 @@
             </Grid>
         </Grid>
         <StatusBar Grid.Row="2">
-            
+            <StatusBarItem>
+                <Button Content="设置" Command="{Binding EditConfigCommand}"/>
+            </StatusBarItem>
             <StatusBarItem>
                 <Button Content="日志" Command="{Binding OpenLogCommand}"/>
             </StatusBarItem>
@@ -259,28 +283,25 @@
                 </DockPanel>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="设置" Command="{Binding OpenConfigCommand}"/>
+                <Button Content="Socket" Command="{Binding OpenSocketConfigCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="socket" Command="{Binding OpenSocketConfigCommand}"/>
+                <Button Content="Recipe" Command="{Binding RecipeManager.EditCommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="Summary" Command="{Binding SummaryManager.EditCommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="Test" Click="Button_Click"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="TestDB" Click="Button_Click_1"/>
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="更新记录" Command="{Binding OpenChangeLogCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="自述文件" Command="{Binding OpenReadMeCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="Test" Click="Button_Click"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="Recipe" Command="{Binding EditRecipeCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="Summary" Command="{Binding SummaryManager.EditCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="TestDB" Click="Button_Click_1"/>
             </StatusBarItem>
         </StatusBar>
 

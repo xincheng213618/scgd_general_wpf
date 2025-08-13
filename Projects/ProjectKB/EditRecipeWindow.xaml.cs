@@ -16,6 +16,7 @@ namespace ProjectKB
 
         public static string RecipeFixPath { get; set; } = DirectoryPath + "ProjectKBRecipe.json";
         public Dictionary<string, KBRecipeConfig> RecipeConfigs { get; set; }
+        public RelayCommand EditCommand { get; set; }
 
         public KBRecipeConfig RecipeConfig { get; set; } = new KBRecipeConfig();
 
@@ -36,6 +37,11 @@ namespace ProjectKB
 
         }
 
+        public static void Edit()
+        {
+            EditRecipeWindow EditRecipeWindow = new EditRecipeWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            EditRecipeWindow.ShowDialog();
+        }
         public void Save()
         {
             try

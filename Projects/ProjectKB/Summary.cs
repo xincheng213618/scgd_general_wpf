@@ -9,7 +9,6 @@ namespace ProjectKB
 {
     public class Summary : ViewModelBase
     {
-
         [DisplayName("启用ShopFloor"), Category("KB")]
         public bool UseMes { get => _UseMesh; set { _UseMesh = value; NotifyPropertyChanged(); } }
         private bool _UseMesh = true;

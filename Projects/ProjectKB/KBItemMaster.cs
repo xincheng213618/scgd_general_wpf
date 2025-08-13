@@ -4,12 +4,24 @@ using log4net;
 using Newtonsoft.Json;
 using SqlSugar;
 using System.Collections.ObjectModel;
+using System.Windows.Controls;
 
 namespace ProjectKB
 {
     [SugarTable("KBItemMaster")]
     public class KBItemMaster : ViewModelBase
     {
+        [SugarColumn(IsIgnore = true)]
+        public ContextMenu ContextMenu { get; set; }
+
+        public KBItemMaster()
+        {
+            ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Command = System.Windows.Input.ApplicationCommands.Delete });
+
+        }
+
+
         [SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
         public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
