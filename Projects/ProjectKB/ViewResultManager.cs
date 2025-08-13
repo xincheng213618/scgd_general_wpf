@@ -100,6 +100,11 @@ namespace ProjectKB
             Query(null,null,Config.Count);
         }
 
+        public void Delete(int index)
+        {
+            ViewResluts.RemoveAt(index);
+        }
+
         public void Save()
         {
             if (ViewResluts.Count >0 &&  ViewReslutsSelectedIndex > -1)

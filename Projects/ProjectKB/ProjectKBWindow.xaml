@@ -220,9 +220,7 @@
                                 </GridViewColumn>
                             </GridView>
                         </ListView.View>
-
                     </ListView>
-
                 </Grid>
                 <GridSplitter Grid.Row="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
 
@@ -236,7 +234,7 @@
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0" Margin="5">
                     <StackPanel>
-                        <DockPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                             <hc:ComboBox x:Name="FlowTemplate"  Width="200" SelectedIndex="{Binding TemplateSelectedIndex}" ItemsSource="{Binding TemplateItemSource}"  SelectedValuePath="Value" DisplayMemberPath="Key" HorizontalAlignment="Left"  IsEditable="True"  hc:InfoElement.Necessary="True" hc:InfoElement.ShowClearButton="True"  hc:InfoElement.Symbol="*"  />
                             <Grid Width="30" Margin="5,0"  HorizontalAlignment="Left">
                                 <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -246,9 +244,71 @@
                                 <Image Source="{StaticResource  DrawingImageEdit}" Width="15" Margin="0" />
                                 <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding OpenFlowEngineToolCommand}"/>
                             </Grid>
-                            <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown" Margin="0,0,5,0"/>
-                            <Button Content="Test KeyBorder"  DockPanel.Dock="Right" Background="Pink" Click="TestClick" />
-                        </DockPanel>
+                            <Grid x:Name="SearchGrid" Margin="10,0" Width="210" HorizontalAlignment="Left" VerticalAlignment="Center" >
+                                <hc:TextBox x:Name="Searchbox"   Padding="25,1,2,1"  BorderThickness="1" GotFocus="Searchbox_GotFocus" hc:InfoElement.Placeholder="Search" BorderBrush="#CCCEDB" MaxLength="15"  VerticalContentAlignment="Center" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged"  />
+                                <Viewbox Width="16 " Height="16" HorizontalAlignment="Left" Margin="4,0,0,0">
+                                    <Rectangle Width="16 " Height="16" >
+                                        <Rectangle.Resources>
+                                            <SolidColorBrush x:Key="canvas" Opacity="0" />
+                                            <SolidColorBrush x:Key="light-defaultgrey-10" Color="{DynamicResource defaultgreyColor}" Opacity=" 0.1" />
+                                            <SolidColorBrush x:Key="light-defaultgrey" Color="{DynamicResource defaultgreyColor}" Opacity="1" />
+                                        </Rectangle.Resources>
+                                        <Rectangle.Fill>
+                                            <DrawingBrush Stretch="None">
+                                                <DrawingBrush.Drawing>
+                                                    <DrawingGroup>
+                                                        <DrawingGroup x:Name="canvas">
+                                                            <GeometryDrawing Brush="{DynamicResource canvas}" Geometry="F1M0,0H16V16H0Z" />
+                                                        </DrawingGroup>
+                                                        <DrawingGroup x:Name="level_1">
+                                                            <GeometryDrawing Brush="{DynamicResource light-defaultgrey-10}" Geometry="F1M11.5,6.5a5,5,0,1,1-5-5A5,5,0,0,1,11.5,6.5Z" />
+                                                            <GeometryDrawing Brush="{DynamicResource light-defaultgrey}" Geometry="F1M1,6.5a5.5,5.5,0,0,0,9.017,4.224l5.129,5.13.708-.708-5.13-5.129A5.5,5.5,0,1,0,1,6.5Zm1,0A4.5,4.5,0,1,1,6.5,11,4.505,4.505,0,0,1,2,6.5Z" />
+                                                        </DrawingGroup>
+                                                    </DrawingGroup>
+                                                </DrawingBrush.Drawing>
+                                            </DrawingBrush>
+                                        </Rectangle.Fill>
+                                    </Rectangle>
+                                </Viewbox>
+                            </Grid>
+                            <Popup x:Name="SearchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Searchbox}">
+                                <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="210" Height="500">
+                                    <ListView  x:Name="ListViewSearch" Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionChanged="ListViewSearch_SelectionChanged" MouseDoubleClick="ListViewSearch_MouseDoubleClick">
+                                        <ListView.ItemContainerStyle>
+                                            <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                                                <Setter Property="Background" Value="Transparent"/>
+                                            </Style>
+                                        </ListView.ItemContainerStyle>
+                                        <ListView.View>
+                                            <GridView>
+                                                <GridView.ColumnHeaderContainerStyle>
+                                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Setter Property="Background" Value="Transparent"/>
+                                                        <Setter Property="BorderThickness" Value="0"/>
+                                                    </Style>
+                                                </GridView.ColumnHeaderContainerStyle>
+                                                <GridViewColumn Width="240">
+                                                    <GridViewColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="{Binding Header}" Foreground="{DynamicResource Foreground}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,0"/>
+                                                            </StackPanel>
+                                                        </DataTemplate>
+                                                    </GridViewColumn.CellTemplate>
+                                                </GridViewColumn>
+                                            </GridView>
+                                        </ListView.View>
+                                    </ListView>
+                                </Border>
+                            </Popup>
+
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox x:Name="SNtextBox" IsEnabled="{Binding SNlocked,Converter={StaticResource Boolean2BooleanReConverter}}" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown" Margin="0,0,5,0"/>
+                            <Button Content="上传" Click="UploadSN_Click" Visibility="{Binding SummaryManager.Summary.UseMes,Converter={StaticResource bool2VisibilityConverter}}"  Margin="0,0,5,0"/>
+                            <Button Content="Test KeyBorder"  DockPanel.Dock="Right" Background="Pink" Click="TestClick" Width="200" />
+                        </StackPanel>
                     </StackPanel>
                 </Grid>
                 <Border Grid.Row="1"  Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Margin="5,0,5,5">
@@ -293,9 +353,6 @@
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="Test" Click="Button_Click"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="TestDB" Click="Button_Click_1"/>
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="更新记录" Command="{Binding OpenChangeLogCommand}"/>

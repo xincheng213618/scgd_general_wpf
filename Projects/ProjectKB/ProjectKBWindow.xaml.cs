@@ -1,4 +1,6 @@
-﻿using ColorVision.Engine.Abstractions;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
@@ -12,6 +14,7 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.LogImp;
+using ColorVision.UI.Serach;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
@@ -29,6 +32,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using static Azure.Core.HttpHeader;
 
 namespace ProjectKB
 {
@@ -70,7 +74,9 @@ namespace ProjectKB
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = ProjectKBConfig.Instance;
+
             ViewResultManager.ListView = listView1;
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => ViewResultManager.Delete(listView1.SelectedIndex), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.ItemsSource = ViewResluts;
             InitFlow();
             Task.Run(async() =>
@@ -99,6 +105,8 @@ namespace ProjectKB
 
             this.Closed += (s, e) =>
             {
+                ProjectKBConfig.Instance.SNChanged -= Instance_SNChanged;
+
                 SummaryManager.GetInstance().Save();
                 ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
                 this.Dispose();
@@ -137,6 +145,7 @@ namespace ProjectKB
             STNodeEditorMain = new STNodeEditor();
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             flowEngine.AttachNodeEditor(STNodeEditorMain);
+            ProjectKBConfig.Instance.SNChanged += Instance_SNChanged;
 
             FlowTemplate.SelectionChanged += (s, e) =>
             {
@@ -166,6 +175,7 @@ namespace ProjectKB
                 timer?.Dispose();
             };
         }
+
 
         public async Task Refresh()
         {
@@ -245,22 +255,10 @@ namespace ProjectKB
         }
         private void TestClick(object sender, RoutedEventArgs e)
         {
-            if (Summary.UseMes)
-            {
-                log.Info($"CheckWIP Stage{SummaryManager.GetInstance().Summary.Stage},SN:{ProjectKBConfig.Instance.SN}");
-                IntPtr a = MesDll.CheckWIP(SummaryManager.GetInstance().Summary.Stage, ProjectKBConfig.Instance.SN);
-                var result = MesDll.PtrToString(a);
-                log.Info(result);
-                if (result != "N")
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), result);
-                    return;
-                }
-            }
             RunTemplate();
         }
 
-        int TryCount = 0;
+        int TryCount;
         public async Task RunTemplate()
         {
             if (flowControl!=null && flowControl.IsFlowRun) return;
@@ -316,7 +314,8 @@ namespace ProjectKB
                 logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
             });
 
-
+            ProjectKBConfig.Instance.SNlocked = false;
+            SNtextBox.Focus();
 
             if (FlowControlData.EventName == "Completed")
             {
@@ -644,6 +643,7 @@ namespace ProjectKB
 
             }
             SNtextBox.Text = string.Empty;
+            SNtextBox.Focus();
         }
 
         public static bool IsPointInCircle(double px, double py, double centerX, double centerY, double r)
@@ -970,6 +970,139 @@ namespace ProjectKB
             return new string(Enumerable.Repeat(chars, length)
                 .Select(s => s[rnd.Next(s.Length)]).ToArray());
         }
+        private void Instance_SNChanged(object? sender, string e)
+        {
+            if (Summary.AutoUploadSN)
+            {
+                DebounceTimer.AddOrResetTimer("KBUploadSN", 500, e => UploadSN(), 0);
+            }
+        }
+        private bool IsUploadSNing { get; set; }
+        private void UploadSN()
+        {
+            if (IsUploadSNing) return;
+            IsUploadSNing = true;
+            if (Summary.UseMes)
+            {
+                log.Info($"CheckWIP Stage{SummaryManager.GetInstance().Summary.Stage},SN:{ProjectKBConfig.Instance.SN}");
+                IntPtr a = MesDll.CheckWIP(SummaryManager.GetInstance().Summary.Stage, ProjectKBConfig.Instance.SN);
+                var result = MesDll.PtrToString(a);
+                log.Info(result);
+                if (result != "N")
+                {
+                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), result);
+                    });
+                    return;
+                }
+                ProjectKBConfig.Instance.SNlocked = true;
+            }
+            else
+            {
+                ProjectKBConfig.Instance.SNlocked = true;
+            }
+            IsUploadSNing = false;
+        }
 
+        private void UploadSN_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsUploadSNing)
+            {
+                MessageBox.Show("上一次上传还未完成");
+            }
+            Task.Run(UploadSN);
+        }
+
+        public ObservableCollection<ISearch> Searches { get; set; } = new ObservableCollection<ISearch>();
+        public List<ISearch> filteredResults { get; set; } = new List<ISearch>();
+
+        private readonly char[] Chars = new[] { ' ' };
+        private void Searchbox_GotFocus(object sender, RoutedEventArgs e)
+        {
+            Searches.Clear();
+
+            foreach (var item in ProjectKBConfig.Instance.TemplateItemSource)
+            {
+                ISearch search = new SearchMeta
+                {
+                    Header = item.Key,
+                    GuidId = item.Key,
+                    Command = new RelayCommand(a =>
+                    {
+                        FlowTemplate.Text = item.Key;
+                    })
+                };
+                Searches.Add(search);
+
+            }
+        }
+
+        private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (sender is TextBox textBox)
+            {
+                string searchtext = textBox.Text;
+                if (string.IsNullOrWhiteSpace(searchtext))
+                {
+                    SearchPopup.IsOpen = false;
+                }
+                else
+                {
+                    SearchPopup.IsOpen = true;
+                    var keywords = searchtext.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
+
+                    filteredResults = Searches
+                        .OfType<ISearch>()
+                        .Where(template => keywords.All(keyword =>
+                            (!string.IsNullOrEmpty(template.Header) && template.Header.Contains(keyword, StringComparison.OrdinalIgnoreCase)) ||
+                            (template.GuidId != null && template.GuidId.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                        ))
+                        .ToList();
+
+                    ListViewSearch.ItemsSource = filteredResults;
+                    if (filteredResults.Count > 0)
+                    {
+                        ListViewSearch.SelectedIndex = 0;
+                    }
+                }
+            }
+        }
+
+        private void Searchbox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                if (ListViewSearch.SelectedIndex > -1)
+                {
+                    Searchbox.Text = string.Empty;
+                    filteredResults[ListViewSearch.SelectedIndex].Command?.Execute(this);
+                }
+            }
+            if (e.Key == System.Windows.Input.Key.Up)
+            {
+                if (ListViewSearch.SelectedIndex > 0)
+                    ListViewSearch.SelectedIndex -= 1;
+            }
+            if (e.Key == System.Windows.Input.Key.Down)
+            {
+                if (ListViewSearch.SelectedIndex < filteredResults.Count - 1)
+                    ListViewSearch.SelectedIndex += 1;
+            }
+        }
+
+        private void ListViewSearch_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (ListViewSearch.SelectedIndex > -1)
+            {
+                Searchbox.Text = string.Empty;
+                filteredResults[ListViewSearch.SelectedIndex].Command?.Execute(this);
+            }
+        }
+
+        private void ListViewSearch_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
     }
 }

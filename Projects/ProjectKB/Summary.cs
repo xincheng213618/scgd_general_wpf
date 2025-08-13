@@ -13,6 +13,10 @@ namespace ProjectKB
         public bool UseMes { get => _UseMesh; set { _UseMesh = value; NotifyPropertyChanged(); } }
         private bool _UseMesh = true;
 
+        [DisplayName("自动上传SN"), Category("KB")]
+        public bool AutoUploadSN { get => _AutoUploadSN; set { _AutoUploadSN = value; NotifyPropertyChanged(); } }
+        private bool _AutoUploadSN;
+
         /// <summary>
         /// 线别
         /// </summary>

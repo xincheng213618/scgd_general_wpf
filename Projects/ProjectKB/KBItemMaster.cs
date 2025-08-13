@@ -18,7 +18,6 @@ namespace ProjectKB
         {
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Command = System.Windows.Input.ApplicationCommands.Delete });
-
         }
 
 

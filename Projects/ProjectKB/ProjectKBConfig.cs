@@ -139,9 +139,14 @@ namespace ProjectKB
         {
             new FlowEngineToolWindow(TemplateFlow.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+        public event EventHandler<string> SNChanged;
+
+        [DisplayName("SN锁")]
+        public bool SNlocked { get => _SNlocked; set { _SNlocked = value; NotifyPropertyChanged(); } }
+        private bool _SNlocked;
 
         [JsonIgnore]
-        public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }
+        public string SN { get => _SN; set { if (SNlocked) return;  _SN = value; NotifyPropertyChanged(); SNChanged?.Invoke(this, value); } }
         private string _SN = string.Empty;
 
         public static ModbusControl ModbusControl => ModbusControl.GetInstance();

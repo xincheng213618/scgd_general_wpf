@@ -352,6 +352,7 @@ namespace ColorVision
                 AddStatusBarIconMetadata(item);
             }
         }
+
         public ObservableCollection<ISearch> Searches { get; set; } = new ObservableCollection<ISearch>();
         public List<ISearch> filteredResults { get; set; } = new List<ISearch>();
 
@@ -440,16 +441,16 @@ namespace ColorVision
                     };
                     filteredResults.Add(browserSearch);
 
-                    ListView1.ItemsSource = filteredResults;
+                    ListViewSearch.ItemsSource = filteredResults;
                     if (filteredResults.Count > 0)
                     {
-                        ListView1.SelectedIndex = 0;
+                        ListViewSearch.SelectedIndex = 0;
                     }
                 }
             }
         }
 
-        private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ListViewSearch_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
 
         }
@@ -458,31 +459,30 @@ namespace ColorVision
         {
             if (e.Key == System.Windows.Input.Key.Enter)
             {
-                if (ListView1.SelectedIndex > -1)
+                if (ListViewSearch.SelectedIndex > -1)
                 {
                     Searchbox.Text = string.Empty;
-                    filteredResults[ListView1.SelectedIndex].Command?.Execute(this);
+                    filteredResults[ListViewSearch.SelectedIndex].Command?.Execute(this);
                 }
             }
             if (e.Key == System.Windows.Input.Key.Up)
             {
-                if (ListView1.SelectedIndex > 0)
-                    ListView1.SelectedIndex -= 1;
+                if (ListViewSearch.SelectedIndex > 0)
+                    ListViewSearch.SelectedIndex -= 1;
             }
             if (e.Key == System.Windows.Input.Key.Down)
             {
-                if (ListView1.SelectedIndex < filteredResults.Count - 1)
-                    ListView1.SelectedIndex += 1;
-
+                if (ListViewSearch.SelectedIndex < filteredResults.Count - 1)
+                    ListViewSearch.SelectedIndex += 1;
             }
         }
 
-        private void ListView1_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private void ListViewSearch_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (ListView1.SelectedIndex > -1)
+            if (ListViewSearch.SelectedIndex > -1)
             {
                 Searchbox.Text = string.Empty;
-                filteredResults[ListView1.SelectedIndex].Command?.Execute(this);
+                filteredResults[ListViewSearch.SelectedIndex].Command?.Execute(this);
             }
         }
     }

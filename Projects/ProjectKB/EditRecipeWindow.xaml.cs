@@ -42,6 +42,7 @@ namespace ProjectKB
             EditRecipeWindow EditRecipeWindow = new EditRecipeWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             EditRecipeWindow.ShowDialog();
         }
+
         public void Save()
         {
             try
