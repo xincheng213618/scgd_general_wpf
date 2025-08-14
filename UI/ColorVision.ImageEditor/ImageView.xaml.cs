@@ -35,7 +35,7 @@ namespace ColorVision.ImageEditor
         public ImageViewModel ImageViewModel { get; set; }
 
 
-        public ImageViewConfig Config { get => ImageViewModel.Config; set { ImageViewModel.Config = value;  } }
+        public ImageViewConfig Config => ImageViewModel.Config;
 
         public event EventHandler RenderCompleted;
         protected virtual void OnRenderCompleted()
@@ -60,12 +60,6 @@ namespace ColorVision.ImageEditor
 
         public void SetConfig(ImageViewConfig imageViewConfig)
         {
-            if (Config != null)
-            {
-                Config.ColormapTypesChanged -= Config_ColormapTypesChanged;
-                Config.BalanceChanged -= ImageViewConfig_BalanceChanged;
-            }
-            Config = imageViewConfig;
             this.DataContext = this;
             AdvancedStackPanel.DataContext = this;
             ToolBarLeft.DataContext = Config;

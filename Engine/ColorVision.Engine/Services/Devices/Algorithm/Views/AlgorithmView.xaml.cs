@@ -6,7 +6,6 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
-using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using CVCommCore.CVAlgorithm;
@@ -52,7 +51,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             this.DataContext = this;
 
             View = new View();
-            ImageView.SetConfig(Config.ImageViewConfig);
             if (listView1.View is GridView gridView)
             {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);

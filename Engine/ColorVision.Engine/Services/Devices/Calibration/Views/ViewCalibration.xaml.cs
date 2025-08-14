@@ -55,8 +55,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         {
             this.DataContext = this;
             View = new View();
-            ImageView.SetConfig(new ImageViewConfig());
-
             listView1.ItemsSource = ViewResults;
 
             if (listView1.View is GridView gridView)

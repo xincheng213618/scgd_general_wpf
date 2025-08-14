@@ -19,7 +19,9 @@ ColrVision Inc 开发的一款 Windows WPF 应用程序。
 - 支持重复任务设置
 - 支持插件机制
 - 支持Socket通信
-- 支持更新系统
+- 支持更新
+- 支持数据库持久化保存
+- 支持解决方案管理
 
 [更新日志](CHANGELOG.md)
 

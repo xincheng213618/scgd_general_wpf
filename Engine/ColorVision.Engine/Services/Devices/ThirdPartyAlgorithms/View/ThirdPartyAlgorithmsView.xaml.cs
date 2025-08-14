@@ -65,7 +65,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
             this.DataContext = this;
 
             View = new View();
-            ImageView.SetConfig(Config.ImageViewConfig);
             if (listView1.View is GridView gridView)
             {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);

@@ -22,6 +22,7 @@ namespace ProjectKB
 
         public RecipeManager()
         {
+            EditCommand = new RelayCommand(a => Edit());
             if (!Directory.Exists(DirectoryPath))
                 Directory.CreateDirectory(DirectoryPath);
 

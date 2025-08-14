@@ -14,7 +14,6 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.LogImp;
-using ColorVision.UI.Serach;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
@@ -32,7 +31,6 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using static Azure.Core.HttpHeader;
 
 namespace ProjectKB
 {
@@ -55,8 +53,6 @@ namespace ProjectKB
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectKBWindow));
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
         public static ObservableCollection<KBItemMaster> ViewResluts => ViewResultManager.ViewResluts;
-
-
         public static ProjectKBWindowConfig Config => ProjectKBWindowConfig.Instance;
 
         public static Summary Summary => SummaryManager.GetInstance().Summary;
