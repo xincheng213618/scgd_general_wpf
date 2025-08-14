@@ -2,13 +2,16 @@
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI;
 using SqlSugar;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
-namespace ProjectKB
+namespace ColorVision.Engine
 {
     public class GenericQueryBaseConfig:ViewModelBase
     {
@@ -25,12 +28,19 @@ namespace ProjectKB
     {
         public SqlSugarClient Db { get; set; }
 
+        public ObservableCollection<KeyValuePair<string, PropertyInfo>> PropertyInfos { get; set; }
+
         public GenericQueryBase(SqlSugarClient db)
         {
             Db = db;
         }
 
         public virtual FrameworkElement GetControl()
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual void AddPropertyInfo(PropertyInfo propertyInfo)
         {
             throw new NotImplementedException();
         }
@@ -48,44 +58,75 @@ namespace ProjectKB
         GenericQueryBaseConfig GenericQueryBaseConfig { get; set; }
 
         T QueryValue { get; set; }
+        ObservableCollection<PropertyInfo> QueryPropertyInfos { get; set; }
 
         public GenericQuery(SqlSugarClient db, Collection<T> viewResluts) :base (db)
         {
             ViewResluts = viewResluts;
             GenericQueryBaseConfig = new GenericQueryBaseConfig();
             QueryValue = new T();
+            PropertyInfos = new ObservableCollection<KeyValuePair<string, PropertyInfo>>();
+            QueryPropertyInfos = new ObservableCollection<PropertyInfo>();
+
+            foreach (var prop in typeof(T).GetProperties())
+            {
+                string propName = prop.Name;
+                var SugarColumn = prop.GetCustomAttribute<SugarColumn>();
+                if (SugarColumn != null)
+                {
+                    if (SugarColumn.IsIgnore) continue;
+                    if (SugarColumn.ColumnName != null) propName = SugarColumn.ColumnName;
+                }
+                var Browsable = prop.GetCustomAttribute<BrowsableAttribute>();
+                if (Browsable != null && Browsable.Browsable == false) continue;
+                PropertyInfos.Add(new KeyValuePair<string, PropertyInfo>(propName, prop));
+            }
         }
+        public StackPanel QueryStackPanel { get; set; } = new StackPanel();
 
         public override FrameworkElement GetControl()
         {
             StackPanel stackPanel = new StackPanel();
             stackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(GenericQueryBaseConfig));
-
-            // 反射遍历 QueryValue 属性，根据有效值拼接 Where
-            foreach (var prop in typeof(T).GetProperties())
+            var border = new Border
             {
-                if (prop.PropertyType == typeof(string))
-                {
-                    prop.SetValue(QueryValue,string.Empty);
-                }
-                if (prop.PropertyType.IsEnum)
-                {
-                    var value = prop.GetValue(QueryValue);
-                }
-            }
-
-            stackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(QueryValue));
-
+                Background = (Brush)Application.Current.FindResource("GlobalBorderBrush"),
+                BorderThickness = new Thickness(1),
+                BorderBrush = (Brush)Application.Current.FindResource("BorderBrush"),
+                CornerRadius = new CornerRadius(5),
+                Margin = new Thickness(0, 0, 0, 5)
+            };
+            QueryStackPanel = new StackPanel { Margin = new Thickness(5, 5, 5, 0) };
+            border.Child = QueryStackPanel;
+            stackPanel.Children.Add(border);
             return stackPanel;
         }
-
+        public override void AddPropertyInfo(PropertyInfo property)
+        {
+            DockPanel dockPanel = new DockPanel();
+            if (property.PropertyType == typeof(bool))
+            {
+                dockPanel = PropertyEditorHelper.GenBoolProperties(property, QueryValue);
+            }
+            else if (property.PropertyType == typeof(int) || property.PropertyType == (typeof(float)) || property.PropertyType == (typeof(Rect)) || property.PropertyType == typeof(uint) || property.PropertyType == typeof(long) || property.PropertyType == typeof(ulong) || property.PropertyType == typeof(sbyte) || property.PropertyType == typeof(double) || property.PropertyType == typeof(string))
+            {
+                dockPanel = PropertyEditorHelper.GenTextboxProperties(property, QueryValue);
+            }
+            else if (property.PropertyType.IsEnum)
+            {
+                dockPanel = PropertyEditorHelper.GenEnumProperties(property, QueryValue);
+            }
+            dockPanel.Margin = new Thickness(0, 0, 0, 5);
+            QueryStackPanel.Children.Add(dockPanel);
+            QueryPropertyInfos.Add(property);
+        }
         public override void QueryDB()
         {
             ViewResluts.Clear();
             var query = Db.Queryable<T>();
 
             // 反射遍历 QueryValue 属性，根据有效值拼接 Where
-            foreach (var prop in typeof(T).GetProperties())
+            foreach (var prop in QueryPropertyInfos)
             {
                 var value = prop.GetValue(QueryValue);
                 if (value == null) continue;
@@ -145,12 +186,21 @@ namespace ProjectKB
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = GenericQueryBase;
+            PropertyInfoCB.ItemsSource = GenericQueryBase.PropertyInfos;
             QueryGrid.Children.Add(GenericQueryBase.GetControl());
         }
 
         private void Query_Click(object sender, RoutedEventArgs e)
         {
             GenericQueryBase.QueryDB();
+        }
+
+        private void AddPropertyInfo_Click(object sender, RoutedEventArgs e)
+        {
+            if (PropertyInfoCB.SelectedValue is PropertyInfo  property)
+            {
+                GenericQueryBase.AddPropertyInfo(property);
+            }
         }
     }
 }
