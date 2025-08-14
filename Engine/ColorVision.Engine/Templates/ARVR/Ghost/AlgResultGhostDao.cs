@@ -1,6 +1,7 @@
 ﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using Newtonsoft.Json;
+using SqlSugar;
 using System.Collections.Generic;
 
 namespace ColorVision.Engine.Templates.Ghost
@@ -14,7 +15,7 @@ namespace ColorVision.Engine.Templates.Ghost
         public int Y { get; set; }
     }
 
-    [Table("t_scgd_algorithm_result_detail_ghost", PrimaryKey ="id")]
+    [SugarTable("t_scgd_algorithm_result_detail_ghost")]
     public class AlgResultGhostModel : VPKModel, IViewResult
     {
         [Column("pid")]

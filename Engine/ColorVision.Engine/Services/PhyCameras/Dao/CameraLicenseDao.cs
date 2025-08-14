@@ -4,6 +4,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 
@@ -35,7 +36,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
         public string LicenseeSignature { get; set; }
     }
 
-    [Table("t_scgd_camera_license")]
+    [SugarTable("t_scgd_camera_license")]
     public class LicenseModel : ViewModelBase,IPKModel, ISortID
     {
         [Column("id")]

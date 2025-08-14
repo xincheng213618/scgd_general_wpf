@@ -4,6 +4,7 @@ using ColorVision.Engine.MySql.ORM;
 using log4net;
 using MySql.Data.MySqlClient;
 using NPOI.SS.Formula.Functions;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -12,7 +13,7 @@ namespace ColorVision.Engine.Archive.Dao
 {
 
 
-    [Table("t_scgd_archived_master")]
+    [SugarTable("t_scgd_archived_master")]
     public class ArchivedMasterModel : PKModel
     {
         [Column("code"),DisplayName("Code")]

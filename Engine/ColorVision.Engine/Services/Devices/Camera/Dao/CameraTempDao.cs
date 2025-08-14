@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -6,7 +7,7 @@ using System.Linq;
 
 namespace ColorVision.Engine.Services.Dao
 {
-    [Table("t_scgd_camera_temp")]
+    [SugarTable("t_scgd_camera_temp")]
     public class CameraTempModel : VPKModel
     {
         [Column("temp_value")]

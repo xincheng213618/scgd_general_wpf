@@ -1,10 +1,11 @@
 ﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using Newtonsoft.Json;
+using SqlSugar;
 
 namespace ColorVision.Engine.Templates.Jsons.BlackMura
 {
-    [Table("t_scgd_algorithm_result_detail_blackmura")]
+    [SugarTable("t_scgd_algorithm_result_detail_blackmura")]
     public class BlackMuraView: IViewResult
     {
         public BlackMuraView(BlackMuraModel blackMuraModel)
@@ -38,7 +39,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
 
 
-    [Table("t_scgd_algorithm_result_detail_blackmura")]
+    [SugarTable("t_scgd_algorithm_result_detail_blackmura")]
     public class BlackMuraModel : PKModel
     {
         [Column("pid")]

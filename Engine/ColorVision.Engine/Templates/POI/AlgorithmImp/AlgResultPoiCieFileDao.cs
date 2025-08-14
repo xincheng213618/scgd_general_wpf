@@ -3,6 +3,7 @@ using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using SqlSugar;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Controls;
@@ -10,7 +11,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
 
-    [Table("t_scgd_algorithm_result_detail_poi_cie_file")]
+    [SugarTable("t_scgd_algorithm_result_detail_poi_cie_file")]
     public class AlgResultPoiCieFileModel : PKModel, IContextMenu, IViewResult
     {
         public ContextMenu ContextMenu { get; set; }

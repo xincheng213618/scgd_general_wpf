@@ -1,11 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 
 namespace ColorVision.Engine.Templates.SysDictionary
 {
-    [Table("t_scgd_sys_dictionary_mod_master")]
+    [SugarTable("t_scgd_sys_dictionary_mod_master")]
     public class SysDictionaryModModel : ViewModelBase,IPKModel
     {
         [Column("id")]

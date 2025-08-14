@@ -1,8 +1,9 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 
 namespace ColorVision.Engine.Templates.BuzProduct
 {
-    [Table("t_scgd_buz_product_detail")]
+    [SugarTable("t_scgd_buz_product_detail")]
     public class BuzProductDetailModel : VPKModel
     {
         [Column("code")]

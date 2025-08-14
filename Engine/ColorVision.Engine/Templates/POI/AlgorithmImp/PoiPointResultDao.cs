@@ -1,10 +1,11 @@
 ﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using CVCommCore.CVAlgorithm;
+using SqlSugar;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
-    [Table("t_scgd_algorithm_result_detail_poi_mtf")]
+    [SugarTable("t_scgd_algorithm_result_detail_poi_mtf")]
     public class PoiPointResultModel : PKModel,IViewResult
     {
         [Column("pid")]

@@ -1,15 +1,12 @@
 ﻿#pragma warning disable CS8601,CS8603
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Dao;
 using SqlSugar;
 using System;
-using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
-    [SugarTable("t_scgd_algorithm_result_master")]
-    [Table("t_scgd_algorithm_result_master")]
+    [@SugarTable("t_scgd_algorithm_result_master")]
     public class AlgResultMasterModel : PKModel
     {
         public AlgResultMasterModel() { }

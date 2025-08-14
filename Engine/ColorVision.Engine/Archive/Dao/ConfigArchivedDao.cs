@@ -3,13 +3,14 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using Newtonsoft.Json;
+using SqlSugar;
 using System.ComponentModel;
 using System.Text.RegularExpressions;
 
 namespace ColorVision.Engine.Archive.Dao
 {
 
-    [DisplayName("归档配置"),Table("t_scgd_sys_config_archived")]
+    [DisplayName("归档配置"),SugarTable("t_scgd_sys_config_archived")]
     public class ConfigArchivedModel : ViewModelBase, IPKModel
     {
         [Column("id"), Browsable(false)]
@@ -64,7 +65,7 @@ namespace ColorVision.Engine.Archive.Dao
     }
 
 
-    [DisplayName("数据库配置"),Table("t_scgd_sys_globle_cfg")]
+    [DisplayName("数据库配置"),SugarTable("t_scgd_sys_globle_cfg")]
     public class GlobleCfgdModel : ViewModelBase, IPKModel
     {
         [Column("id"), Browsable(false)]

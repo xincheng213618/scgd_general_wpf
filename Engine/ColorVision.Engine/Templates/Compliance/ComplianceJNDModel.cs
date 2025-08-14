@@ -2,11 +2,12 @@
 using ColorVision.Engine.MySql.ORM;
 using CVCommCore;
 using Newtonsoft.Json;
+using SqlSugar;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Templates.Compliance
 {
-    [Table("t_scgd_algorithm_result_detail_compliance_jnd")]
+    [SugarTable("t_scgd_algorithm_result_detail_compliance_jnd")]
     public class ComplianceJNDModel : PKModel, IViewResult
     {
         [Column("pid")]

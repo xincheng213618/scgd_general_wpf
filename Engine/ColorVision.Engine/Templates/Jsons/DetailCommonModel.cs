@@ -1,6 +1,7 @@
 ﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using Newtonsoft.Json;
+using SqlSugar;
 
 namespace ColorVision.Engine.Templates.Jsons
 {
@@ -28,7 +29,7 @@ namespace ColorVision.Engine.Templates.Jsons
     }
 
 
-    [Table("t_scgd_algorithm_result_detail_common")]
+    [SugarTable("t_scgd_algorithm_result_detail_common")]
     public class DetailCommonModel : PKModel
     {
         [Column("pid")]

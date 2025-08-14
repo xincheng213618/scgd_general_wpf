@@ -1,9 +1,10 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using NPOI.SS.Formula.Functions;
+using SqlSugar;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
 {
-    [Table("t_scgd_measure_result_third_party_algorithm")]
+    [SugarTable("t_scgd_measure_result_third_party_algorithm")]
     public class ThirdPartyAlgorithmsResultModel : VPKModel
     {
 

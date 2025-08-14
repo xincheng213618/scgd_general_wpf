@@ -3,11 +3,12 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI.Sorts;
+using SqlSugar;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi
 {
 
-    [Table("t_scgd_algorithm_result_detail_poi_cie_file")]
+    [SugarTable("t_scgd_algorithm_result_detail_poi_cie_file")]
     public class PoiCieFileModel : ViewModelBase,IPKModel, ISortID, IViewResult
     {
         [Column("id")]

@@ -1,5 +1,6 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -8,7 +9,7 @@ using System.Linq;
 namespace ColorVision.Engine.Services.Devices.SMU.Dao
 {
 
-    [Table("t_scgd_measure_result_smu")]
+    [SugarTable("t_scgd_measure_result_smu")]
     public class SMUResultModel : PKModel
     {
 

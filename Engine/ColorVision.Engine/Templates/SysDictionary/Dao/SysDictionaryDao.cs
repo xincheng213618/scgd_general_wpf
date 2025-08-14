@@ -1,9 +1,10 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System.Collections.Generic;
 
 namespace ColorVision.Engine.Templates.SysDictionary
 {
-    [Table("t_scgd_sys_dictionary")]
+    [SugarTable("t_scgd_sys_dictionary")]
     public class SysDictionaryModel : VPKModel
     {
         [Column("name")]

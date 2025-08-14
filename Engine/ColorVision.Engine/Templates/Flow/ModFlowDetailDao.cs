@@ -1,9 +1,10 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System.Data;
 
 namespace ColorVision.Engine.Templates.Flow
 {
-    [Table("t_scgd_mod_param_detail")]
+    [SugarTable("t_scgd_mod_param_detail")]
     public class ModFlowDetailModel : PKModel
     {
         [Column("cc_pid")]

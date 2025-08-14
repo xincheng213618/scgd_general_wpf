@@ -1,10 +1,11 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Dao
 {
-    [Table("t_scgd_measure_result_smu_scan")]
+    [SugarTable("t_scgd_measure_result_smu_scan")]
     public class SmuScanModel : PKModel
     {
         [Column("device_code")]

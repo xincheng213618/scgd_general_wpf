@@ -1,9 +1,10 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System;
 
 namespace ColorVision.Engine.Templates.Jsons
 {
-    [Table("t_scgd_sys_dictionary_mod_master")]
+    [SugarTable("t_scgd_sys_dictionary_mod_master")]
     public class DicTemplateJsonModel : VPKModel
     {
         [Column("code")]

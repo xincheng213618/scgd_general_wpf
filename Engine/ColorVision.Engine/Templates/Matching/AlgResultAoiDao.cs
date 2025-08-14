@@ -1,9 +1,10 @@
 ﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 
 namespace ColorVision.Engine.Templates.Matching
 {
-    [Table("t_scgd_algorithm_result_detail_aoi")]
+    [SugarTable("t_scgd_algorithm_result_detail_aoi")]
     public class AlgResultAoiModel : VPKModel, IViewResult
     {
         [Column("pid")]

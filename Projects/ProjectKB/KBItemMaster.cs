@@ -10,7 +10,7 @@ using System.Windows.Controls;
 
 namespace ProjectKB
 {
-    [SugarTable("KBItemMaster")]
+    [@SugarTable("KBItemMaster")]
     public class KBItemMaster : ViewModelBase,IPKModel
     {
         [SugarColumn(IsIgnore = true)]

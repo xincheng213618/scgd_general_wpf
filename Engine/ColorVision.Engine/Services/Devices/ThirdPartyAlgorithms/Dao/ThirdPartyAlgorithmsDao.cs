@@ -1,8 +1,9 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
 {
-    [Table("t_scgd_sys_third_party_algorithms")]
+    [SugarTable("t_scgd_sys_third_party_algorithms")]
     public class ThirdPartyAlgorithmsModel : VPKModel
     {
         [Column("pid")]

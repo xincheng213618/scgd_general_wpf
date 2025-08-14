@@ -1,9 +1,10 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using CVCommCore.CVAlgorithm;
+using SqlSugar;
 
 namespace ColorVision.Engine.Templates.Distortion
 {
-    [Table("t_scgd_algorithm_result_detail_distortion")]
+    [SugarTable("t_scgd_algorithm_result_detail_distortion")]
     public class AlgResultDistortionModel : PKModel
     {
         [Column("pid")]

@@ -1,14 +1,12 @@
-﻿using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI.Authorizations;
 using log4net;
-using MySql.Data.MySqlClient;
-using System;
+using SqlSugar;
 
 namespace ColorVision.Engine.Rbac
 {
 
-    [Table("t_scgd_sys_user")]
+    [SugarTable("t_scgd_sys_user")]
     public class UserModel : VPKModel
     {
         [Column("name")]
@@ -34,7 +32,7 @@ namespace ColorVision.Engine.Rbac
     }
 
 
-    [Table("t_scgd_sys_user_detail")]
+    [SugarTable("t_scgd_sys_user_detail")]
     public class UserDetailModel : VPKModel
     {
         [Column("user_id")]

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SqlSugar;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -22,19 +23,6 @@ namespace ColorVision.Engine.MySql.ORM
     [AttributeUsage(AttributeTargets.Property)]
     public class ColumnIgnoreAttribute : Attribute
     {
-    }
-
-    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
-    public class TableAttribute : Attribute
-    {
-        public string TableName { get; set; }
-        //默认是id
-        public string PrimaryKey { get; set; } = "id";
-
-        public TableAttribute(string tableName)
-        {
-            TableName = tableName;
-        }
     }
 
     public static class ReflectionHelper
@@ -154,13 +142,21 @@ namespace ColorVision.Engine.MySql.ORM
 
         public static string GetTableName(Type type)
         {
-            var attribute = type.GetCustomAttributes(typeof(TableAttribute), false).FirstOrDefault() as TableAttribute;
+            var attribute = type.GetCustomAttributes(typeof(SugarTable), false).FirstOrDefault() as SugarTable;
             return attribute?.TableName ?? type.Name;
         }
         public static string GetPrimaryKey(Type type)
         {
-            var attribute = type.GetCustomAttributes(typeof(TableAttribute), false).FirstOrDefault() as TableAttribute;
-            return attribute?.PrimaryKey ?? "id";
+            foreach (var prop in type.GetProperties())
+            {
+                var SugarColumn = prop.GetCustomAttribute<SugarColumn>();
+                if (SugarColumn != null)
+                {
+                    if (SugarColumn.IsPrimaryKey)
+                        return SugarColumn.ColumnName;
+                }
+            }
+            return "id";
         }
 
         private static bool ShouldIgnoreProperty(PropertyInfo prop)

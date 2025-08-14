@@ -1,6 +1,7 @@
 ﻿#pragma warning disable 
 using ColorVision;
 using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -8,7 +9,7 @@ using System.Linq;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
 {
-    [Table("t_scgd_measure_result_spectrometer")]
+    [SugarTable("t_scgd_measure_result_spectrometer")]
     public class SpectumResultModel : PKModel
     {
         [Column("fIntTime")]

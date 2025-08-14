@@ -1,10 +1,11 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System;
 using System.Data;
 
 namespace ColorVision.Engine.Templates.POI.Dao
 {
-    [Table("t_scgd_algorithm_poi_template_master")]
+    [SugarTable("t_scgd_algorithm_poi_template_master")]
     public class PoiMasterModel : PKModel
     {
         public PoiMasterModel()

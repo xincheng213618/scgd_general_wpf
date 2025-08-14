@@ -1,10 +1,11 @@
 ﻿#pragma warning disable CS8601
 using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System.Data;
 
 namespace ColorVision.Engine.Templates.Validate
 {
-    [Table("t_scgd_rule_validate_template_detail")]
+    [SugarTable("t_scgd_rule_validate_template_detail")]
     public class ValidateTemplateDetailModel : PKModel
     {
         [Column("dic_pid")]

@@ -7,8 +7,7 @@ using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.Dao
 {
-    [SugarTable("t_scgd_measure_result_img")]
-    [Table("t_scgd_measure_result_img")]
+    [@SugarTable("t_scgd_measure_result_img")]
     public class MeasureImgResultModel : PKModel
     {
         [SugarColumn(ColumnName = "batch_id")]

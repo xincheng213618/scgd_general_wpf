@@ -1,10 +1,11 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System;
 using System.Data;
 
 namespace ColorVision.Engine.Templates.SysDictionary
 {
-    [Table("t_scgd_sys_dictionary_mod_item")]
+    [SugarTable("t_scgd_sys_dictionary_mod_item")]
     public class SysDictionaryModDetaiModel : VPKModel
     {
         [Column("pid")]

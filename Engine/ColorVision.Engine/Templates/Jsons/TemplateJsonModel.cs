@@ -1,9 +1,10 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System;
 
 namespace ColorVision.Engine.Templates.Jsons
 {
-    [Table("t_scgd_mod_param_master")]
+    [SugarTable("t_scgd_mod_param_master")]
     public class TemplateJsonModel: VPKModel
     {
         [Column("name")]

@@ -1,9 +1,10 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System;
 
 namespace ColorVision.Engine.Rbac
 {
-    [Table("t_scgd_sys_user2tenant")]
+    [SugarTable("t_scgd_sys_user2tenant")]
     public class UserTenant : VPKModel
     {
         [Column("name")]
@@ -17,7 +18,7 @@ namespace ColorVision.Engine.Rbac
         public static UserTenantDao Instance { get; set; } = new UserTenantDao();
     }
 
-    [Table("t_scgd_sys_tenant")]
+    [SugarTable("t_scgd_sys_tenant")]
     public class Tenant: VPKModel
     {
         [Column("name")]

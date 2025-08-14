@@ -1,9 +1,10 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
 {
-    [Table("t_scgd_sys_resource_tpa_dll")]
+    [SugarTable("t_scgd_sys_resource_tpa_dll")]
     public class SysResourceTpaDLLModel : VPKModel
     {
 

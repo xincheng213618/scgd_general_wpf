@@ -1,8 +1,9 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 
 namespace ColorVision.Engine.Templates.FOV
 {
-    [Table("t_scgd_algorithm_result_detail_fov")]
+    [SugarTable("t_scgd_algorithm_result_detail_fov")]
     public class AlgResultFOVModel : PKModel
     {
         [Column("pid")]

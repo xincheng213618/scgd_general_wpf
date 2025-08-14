@@ -5,6 +5,7 @@ using ColorVision.Engine.MySql.ORM;
 using log4net;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json.Linq;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -15,7 +16,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Archive.Dao
 {
-    [Table("t_scgd_archived_detail",PrimaryKey = "guid")]
+    [SugarTable("t_scgd_archived_detail")]
     public class ArchivedDetailModel : PKModel
     {
         public RelayCommand ExportCommand { get; set; }
@@ -166,7 +167,7 @@ namespace ColorVision.Engine.Archive.Dao
             }
         }
 
-
+        [SugarColumn(ColumnName = "guid",IsPrimaryKey = true)]
         [Column("guid"), DisplayName("Guid")]
         public string Guid { get; set; }
         [Column("p_guid"),DisplayName("名称")]

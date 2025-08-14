@@ -1,10 +1,11 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using NPOI.SS.Formula.Functions;
+using SqlSugar;
 using System.Data;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
 {
-    [Table("t_scgd_mod_third_party_algorithms")]
+    [SugarTable("t_scgd_mod_third_party_algorithms")]
     public class ModThirdPartyAlgorithmsModel : VPKModel
     {
         [Column("pid")]

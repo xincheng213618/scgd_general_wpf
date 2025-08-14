@@ -1,8 +1,9 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 
 namespace ColorVision.Engine.Templates.Validate.Dic
 {
-    [Table("t_scgd_sys_dictionary_mod_item_validate")]
+    [SugarTable("t_scgd_sys_dictionary_mod_item_validate")]
     public class SysDictionaryModItemValidateModel : VPKModel
     {
         [Column("pid")]
