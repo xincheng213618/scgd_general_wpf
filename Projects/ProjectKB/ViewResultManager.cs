@@ -183,15 +183,9 @@ namespace ProjectKB
         public void Query(string model = null, string sn = null, int count = -1)
         {
             ViewResluts.Clear();
+
             var query = _db.Queryable<KBItemMaster>();
-
-            if (!string.IsNullOrWhiteSpace(model))
-                query = query.Where(x => x.Model.Contains(model));
-            if (!string.IsNullOrWhiteSpace(sn))
-                query = query.Where(x => x.SN.Contains(sn));
-
-             query = query.OrderBy(x => x.Id, Config.OrderByType);
-            
+            query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = count > 0 ? query.Take(count).ToList() : query.ToList();
 
             foreach (var dbItem in dbList)

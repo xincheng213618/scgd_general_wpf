@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using log4net;
 using MySql.Data.MySqlClient;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -24,6 +25,9 @@ namespace ColorVision.Engine.MySql
         private volatile MySqlConnection _conn; // 用于切换
         public MySqlConnection MySqlConnection => _conn;
         private Timer timer;
+
+        public SqlSugarClient DB { get; set; }
+
         public MySqlControl()
         {
             timer = new Timer(ReConnect, null, 0, 3600000);
@@ -74,6 +78,8 @@ namespace ColorVision.Engine.MySql
 
                     IsConnect = true;
                     log.Info($"数据库连接成功:{connStr}");
+
+
                     return Task.FromResult(true);
                 }
                 catch (Exception ex)
@@ -109,6 +115,14 @@ namespace ColorVision.Engine.MySql
                 }
                 ConnectionString = connStr;
                 log.Info($"数据库连接成功:{connStr}");
+
+                DB = new SqlSugarClient(new ConnectionConfig
+                {
+                    ConnectionString = GetConnectionString(Config),
+                    DbType = SqlSugar.DbType.MySql,
+                    IsAutoCloseConnection = true
+                });
+
                 return Task.FromResult(true);
             }
             catch (MySqlException ex)
@@ -408,7 +422,8 @@ namespace ColorVision.Engine.MySql
 
         public void Dispose()
         {
-            MySqlConnection.Dispose();
+            MySqlConnection?.Dispose();
+            DB?.Dispose();
             GC.SuppressFinalize(this);
         }
 

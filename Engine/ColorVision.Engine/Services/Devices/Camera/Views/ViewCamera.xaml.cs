@@ -1,8 +1,8 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Templates.Flow;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.Themes.Controls;
@@ -18,7 +18,6 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -282,10 +281,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public void SearchAll()
         {
             ViewResults.Clear();
-            List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.GetAll(Config.SearchLimit);
-            if (!Config.InsertAtBeginning)
-                algResults.Reverse();
-            foreach (var item in algResults)
+            var query = MySqlControl.GetInstance().DB.Queryable<MeasureImgResultModel>();
+            query = query.OrderBy(x => x.Id, Config.OrderByType);
+            var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
+            foreach (var item in dbList)
             {
                 ViewResultCamera algorithmResult = new(item);
                 ViewResults.AddUnique(algorithmResult);
@@ -296,20 +295,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
-            AdvanceSearch advanceSearch = new AdvanceSearch(MeasureImgResultDao.Instance) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            advanceSearch.Closed +=(s,e) =>
-            {
-                if (!Config.InsertAtBeginning)
-                    advanceSearch.SearchResults.Reverse();
-                ViewResults.Clear();
-
-                foreach (var item in advanceSearch.SearchResults)
-                {
-                    ViewResultCamera algorithmResult = new ViewResultCamera(item);
-                    ViewResults.AddUnique(algorithmResult);
-                }
-            };
-            advanceSearch.Show();
+            GenericQuery<MeasureImgResultModel,ViewResultCamera> genericQuery = new GenericQuery<MeasureImgResultModel, ViewResultCamera>(MySqlControl.GetInstance().DB, ViewResults,t=> new ViewResultCamera(t));
+            GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
+            genericQueryWindow.ShowDialog();
         }
 
 
