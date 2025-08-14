@@ -63,22 +63,5 @@ namespace ColorVision.Engine.Services.Dao
     {
 
         public static MeasureImgResultDao Instance { get;} = new MeasureImgResultDao();
-
-
-        public List<MeasureImgResultModel> GetAllDevice(string devcode,int limit) => ConditionalQuery(new Dictionary<string, Object>() { { "device_code", devcode } }, limit);
-
-
-        public List<MeasureImgResultModel> ConditionalQuery(string id, string file_url, string device_code,DateTime dateTimeSTART, DateTime dateTimeEnd, int limit =-1)
-        {
-            Dictionary<string, object> keyValuePairs = new(0);
-            keyValuePairs.Add("id", id);
-            keyValuePairs.Add("raw_file", file_url);
-            keyValuePairs.Add("device_code", device_code);
-            keyValuePairs.Add(">create_date", dateTimeSTART);
-            keyValuePairs.Add("<create_date", dateTimeEnd);
-            //业务要求，取图失败的时候的记录不显示
-            //Templates .Add("result_code", "0");
-            return ConditionalQuery(keyValuePairs, limit);
-        }
     }
 }

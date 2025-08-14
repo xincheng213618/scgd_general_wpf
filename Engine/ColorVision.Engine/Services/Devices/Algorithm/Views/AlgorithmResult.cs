@@ -3,6 +3,8 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Media;
+using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
@@ -28,10 +30,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public RelayCommand ExportToPoiCommand { get; set; }
 
+        public AlgorithmResult()
+        {
+
+        }
+
         public AlgorithmResult(AlgResultMasterModel item)
         {
             Id = item.Id;
-            Batch = item.BatchCode;
+            Batch = BatchResultMasterDao.Instance.GetById(item.BatchId)?.Code;
             FilePath = item.ImgFile;
             POITemplateName = item.TName;
             CreateTime = item.CreateDate;

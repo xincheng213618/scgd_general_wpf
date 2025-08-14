@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.UI;
+using log4net;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
@@ -26,6 +28,8 @@ namespace ColorVision.Engine
 
     public class GenericQueryBase:ViewModelBase
     {
+        public static readonly ILog log = LogManager.GetLogger(typeof(GenericQueryBase));
+
         public SqlSugarClient Db { get; set; }
 
         public ObservableCollection<KeyValuePair<string, PropertyInfo>> PropertyInfos { get; set; }
@@ -276,12 +280,13 @@ namespace ColorVision.Engine
                 {
                     var param = new Dictionary<string, object>();
                     param[propName] = (int)value; // 强制转int比较保险
-                    query = query.Where($"{propName} == @{propName}", param);
+                    query = query.Where($"{propName} = @{propName}", param);
                 }
             }
             
             query = query.OrderBy(x => x.Id, GenericQueryBaseConfig.OrderByType);
-
+            string sql = query.ToSqlString(); // 触发SQL生成
+            log.InfoFormat("GenericQuery SQL: {0}", sql);
             var dbList = GenericQueryBaseConfig.Count > 0 ? query.Take(GenericQueryBaseConfig.Count).ToList() : query.ToList();
 
             foreach (var dbItem in dbList)
