@@ -15,7 +15,6 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using static QRCoder.PayloadGenerator;
 
 namespace ColorVision.Engine.Services.Flow
 {
@@ -420,6 +419,17 @@ namespace ColorVision.Engine.Services.Flow
             window.Content = batchDataHistory;
             window.Show();
 
+        }
+
+        private void Button1_Click(object sender, RoutedEventArgs e)
+        {
+            Frame frame = new Frame();
+
+            DataSummaryPage batchDataHistory = new DataSummaryPage(frame);
+
+            Window window = new Window();
+            window.Content = batchDataHistory;
+            window.Show();
         }
     }
 }

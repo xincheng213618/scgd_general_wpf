@@ -53,7 +53,7 @@
                     <Button Click="Button_Click" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
                         <Rectangle Width="16" Height="16" Fill="{StaticResource DISave}" />
                     </Button>
-                    <Button  Command="{Binding Config.ClearListCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0" >
+                    <Button  Command="{Binding ClearListCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0" >
                         <Button.Triggers>
                             <EventTrigger RoutedEvent="Button.Click">
                                 <BeginStoryboard>
