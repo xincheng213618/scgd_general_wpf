@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Templates.Flow
         public int SysPid { get; set; }
         [Column("pid")]
         public int Pid { get; set; }
-        [Column("value"), ColumnIgnoreAttribute()]
+        [SugarColumn(IsIgnore =true)]
         public string? Value { get; set; }
         [Column("value_a")]
         public string? ValueA { get; set; }

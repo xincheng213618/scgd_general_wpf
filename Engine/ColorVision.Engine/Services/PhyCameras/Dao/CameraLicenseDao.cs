@@ -58,9 +58,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
         [Column("value")]
         public string? LicenseValue { get; set; }
 
-        [ColumnIgnore]
+        [SugarColumn(IsIgnore = true)]
         public string? LicenseContent { get => Tool.Base64Decode(LicenseValue?? string.Empty); }
-        [ColumnIgnore]
+        [SugarColumn(IsIgnore = true)]
         public ColorVisionLicense ColorVisionLicense { get => JsonConvert.DeserializeObject<ColorVisionLicense>(LicenseContent??string.Empty)?? new ColorVisionLicense(); }
         [Column("model")]
         public string? Model { get; set; }

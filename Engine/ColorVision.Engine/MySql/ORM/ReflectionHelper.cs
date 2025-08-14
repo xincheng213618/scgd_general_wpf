@@ -20,11 +20,6 @@ namespace ColorVision.Engine.MySql.ORM
         }
     }
 
-    [AttributeUsage(AttributeTargets.Property)]
-    public class ColumnIgnoreAttribute : Attribute
-    {
-    }
-
     public static class ReflectionHelper
     {
         public static BaseTableDao<T>? Create<T>() where T : IPKModel, new()
@@ -161,7 +156,7 @@ namespace ColorVision.Engine.MySql.ORM
 
         private static bool ShouldIgnoreProperty(PropertyInfo prop)
         {
-            return prop.GetCustomAttributes(typeof(ColumnIgnoreAttribute), false).Length != 0;
+            return prop.GetCustomAttribute<SugarColumn>()?.IsIgnore ?? false;
         }
     }
 
