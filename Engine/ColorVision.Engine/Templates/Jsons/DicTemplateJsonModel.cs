@@ -7,43 +7,43 @@ namespace ColorVision.Engine.Templates.Jsons
     [SugarTable("t_scgd_sys_dictionary_mod_master")]
     public class DicTemplateJsonModel : VPKModel
     {
-        [Column("code")]
+        [SugarColumn(ColumnName ="code")]
         public string Code { get => _Code; set { _Code = value; NotifyPropertyChanged(); } }
         private string _Code;
 
-        [Column("name")]
+        [SugarColumn(ColumnName ="name")]
         public string? Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string? _Name;
 
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int Pid { get => _Pid; set { _Pid = value; NotifyPropertyChanged(); } }
         private int _Pid;
 
-        [Column("mod_type")]
+        [SugarColumn(ColumnName ="mod_type")]
         public int ModType { get => _ModType; set { _ModType = value; NotifyPropertyChanged(); } }
         private int _ModType;
 
-        [Column("cfg_json")]
+        [SugarColumn(ColumnName ="cfg_json")]
         public string? JsonVal { get => _JsonVal; set { _JsonVal = value; NotifyPropertyChanged(); } }
         private string? _JsonVal;
 
-        [Column("is_enable")]
+        [SugarColumn(ColumnName ="is_enable")]
         public bool IsEnable { get => _IsEnable; set { _IsEnable = value; NotifyPropertyChanged(); } }
         private bool _IsEnable = true;
 
-        [Column("is_delete")]
+        [SugarColumn(ColumnName ="is_delete")]
         public bool IsDelete { get => _IsDelete; set { _IsDelete = value; NotifyPropertyChanged(); } }
         private bool _IsDelete;
 
-        [Column("tenant_id")]
+        [SugarColumn(ColumnName ="tenant_id")]
         public int TenantId { get => _TenantId; set { _TenantId = value; NotifyPropertyChanged(); } }
         private int _TenantId;
 
-        [Column("create_date")]
+        [SugarColumn(ColumnName ="create_date")]
         public DateTime CreateDate { get => _CreateDate; set { _CreateDate = value; NotifyPropertyChanged(); } }
         private DateTime _CreateDate = DateTime.Now;
 
-        [Column("remark")]
+        [SugarColumn(ColumnName ="remark")]
         public string? Remark { get => _Remark; set { _Remark = value; NotifyPropertyChanged(); } }
         private string? _Remark;
 

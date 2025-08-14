@@ -10,39 +10,39 @@ namespace ColorVision.Engine.Templates.Compliance
     [SugarTable("t_scgd_algorithm_result_detail_compliance_xyz")]
     public class ComplianceXYZModel : PKModel, IViewResult
     {
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int PId { get; set; }
-        [Column("name")]
+        [SugarColumn(ColumnName ="name")]
         public string Name { get; set; }
-        [Column("data_type")]
+        [SugarColumn(ColumnName ="data_type")]
         public int DataType { get; set; }
 
-        [Column("data_value_x")]
+        [SugarColumn(ColumnName ="data_value_x")]
         public float DataValuex { get; set; }
-        [Column("data_value_y")]
+        [SugarColumn(ColumnName ="data_value_y")]
         public float DataValuey { get; set; }
-        [Column("data_value_z")]
+        [SugarColumn(ColumnName ="data_value_z")]
         public float DataValuez { get; set; }
 
-        [Column("data_value_u")]
+        [SugarColumn(ColumnName ="data_value_u")]
         public float DataValueu { get; set; }
 
-        [Column("data_value_v")]
+        [SugarColumn(ColumnName ="data_value_v")]
         public float DataValuev { get; set; }
 
-        [Column("data_value_yyy")]
+        [SugarColumn(ColumnName ="data_value_yyy")]
         public float DataValueyyy { get; set; }
-        [Column("data_value_xxx")]
+        [SugarColumn(ColumnName ="data_value_xxx")]
         public float DataValuexxx { get; set; }
-        [Column("data_value_zzz")]
+        [SugarColumn(ColumnName ="data_value_zzz")]
         public float DataValuezzz { get; set; }
-        [Column("data_value_cct")]
+        [SugarColumn(ColumnName ="data_value_cct")]
         public float DataValueCCT { get; set; }
 
-        [Column("data_value_wave")]
+        [SugarColumn(ColumnName ="data_value_wave")]
         public float DataValueWave { get; set; }
 
-        [Column("validate_result")]
+        [SugarColumn(ColumnName ="validate_result")]
         public string? ValidateResult { get; set; }
 
 

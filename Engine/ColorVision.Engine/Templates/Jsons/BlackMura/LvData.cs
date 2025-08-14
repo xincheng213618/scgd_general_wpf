@@ -34,7 +34,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
         [JsonProperty("min_pt_y")]
         public int MinPtY { get; set; }
 
-        [JsonProperty("uniformity"), Column("Uniformity (%)")]
+        [JsonProperty("uniformity")]
         public double Uniformity { get; set; }
         [JsonProperty("za_rel_max")]
         public double ZaRelMax { get; set; }

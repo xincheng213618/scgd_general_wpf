@@ -57,16 +57,16 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             }
         }
 
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int Pid { get; set; }
 
-        [Column("file_name")]
+        [SugarColumn(ColumnName ="file_name")]
         public string? FileName { get; set; }
 
-        [Column("file_url")]
+        [SugarColumn(ColumnName ="file_url")]
         public string? FileUrl { get; set; }
 
-        [Column("file_type")]
+        [SugarColumn(ColumnName ="file_type")]
         public string? FileType { get; set; }
     }
 

@@ -10,49 +10,37 @@ namespace ColorVision.Engine.Services.Dao
     [@SugarTable("t_scgd_measure_result_img")]
     public class MeasureImgResultModel : PKModel
     {
-        [SugarColumn(ColumnName = "batch_id")]
-        [Column("batch_id")]
+        [SugarColumn(ColumnName ="batch_id")]
         public int BatchId { get; set; }
-        [SugarColumn(ColumnName = "params")]
-        [Column("params")]
+        [SugarColumn(ColumnName ="params")]
         public string? ReqParams { get; set; }
-        [SugarColumn(ColumnName = "raw_file")]
-        [Column("raw_file")]
+        [SugarColumn(ColumnName ="raw_file")]
         public string? RawFile { get; set; }
 
-        [SugarColumn(ColumnName = "file_data")]
-        [Column("file_data")]
+        [SugarColumn(ColumnName ="file_data")]
         public string? ImgFrameInfo { get; set; }
 
-        [SugarColumn(ColumnName = "file_type")]
-        [Column("file_type")]
+        [SugarColumn(ColumnName ="file_type")]
         public sbyte? FileType { get; set; }
 
-        [SugarColumn(ColumnName = "result_code")]
-        [Column("result_code")]
+        [SugarColumn(ColumnName ="result_code")]
         public int ResultCode { get; set; }
-        [SugarColumn(ColumnName = "total_time")]
-        [Column("total_time")]
+        [SugarColumn(ColumnName ="total_time")]
         public int TotalTime { get; set; }
 
-        [SugarColumn(ColumnName = "result")]
-        [Column("result")]
+        [SugarColumn(ColumnName ="result")]
         public string? ResultMsg { get; set; }
 
-        [SugarColumn(ColumnName = "file_data")]
-        [Column("file_data")]
+        [SugarColumn(ColumnName ="file_data")]
         public string? FileData { get; set; }
 
-        [SugarColumn(ColumnName = "file_url")]
-        [Column("file_url")]
+        [SugarColumn(ColumnName ="file_url")]
         public string? FileUrl { get; set; }
 
-        [SugarColumn(ColumnName = "device_code")]
-        [Column("device_code")]
+        [SugarColumn(ColumnName ="device_code")]
         public string? DeviceCode { get; set; }
 
-        [SugarColumn(ColumnName = "create_date")]
-        [Column("create_date")]
+        [SugarColumn(ColumnName ="create_date")]
         public DateTime? CreateDate { get; set; } = DateTime.Now;
     }
 

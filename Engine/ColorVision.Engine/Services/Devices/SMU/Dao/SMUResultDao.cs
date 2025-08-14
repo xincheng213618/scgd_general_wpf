@@ -13,28 +13,28 @@ namespace ColorVision.Engine.Services.Devices.SMU.Dao
     public class SMUResultModel : PKModel
     {
 
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int? Pid { get; set; }
 
-        [Column("batch_id")]
+        [SugarColumn(ColumnName ="batch_id")]
         public string? Bid { get; set; }
 
-        [Column("is_source_v")]
+        [SugarColumn(ColumnName ="is_source_v")]
         public bool IsSourceV { get; set; }
 
-        [Column("src_value")]
+        [SugarColumn(ColumnName ="src_value")]
         public float SrcValue { get; set; }
 
-        [Column("limit_value")]
+        [SugarColumn(ColumnName ="limit_value")]
         public float LimitValue { get; set; }
 
-        [Column("v_result")]
+        [SugarColumn(ColumnName ="v_result")]
         public float VResult { get; set; }
 
-        [Column("i_result")]
+        [SugarColumn(ColumnName ="i_result")]
         public float IResult { get; set; }
 
-        [Column("create_date")]
+        [SugarColumn(ColumnName ="create_date")]
         public DateTime? CreateDate { get; set; }
     }
 

@@ -8,21 +8,21 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
     [SugarTable("t_scgd_algorithm_result_detail_binocular_fusion")]
     public class BinocularFusionModel : PKModel, IViewResult
     {
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int PId { get; set; }
 
-        [Column("cross_mark_center_x")]
+        [SugarColumn(ColumnName ="cross_mark_center_x")]
         public float CrossMarkCenterX { get; set; }
 
-        [Column("cross_mark_center_y")]
+        [SugarColumn(ColumnName ="cross_mark_center_y")]
         public float CrossMarkCenterY { get; set; }
 
-        [Column("x_degree")]
+        [SugarColumn(ColumnName ="x_degree")]
         public float XDegree { get; set; }
-        [Column("y_degree")]
+        [SugarColumn(ColumnName ="y_degree")]
         public float YDegree { get; set; }
 
-        [Column("z_degree")]
+        [SugarColumn(ColumnName ="z_degree")]
         public float ZDegree { get; set; }
     }
 

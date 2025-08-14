@@ -7,21 +7,21 @@ namespace ColorVision.Engine.Templates.Flow
     [SugarTable("t_scgd_mod_param_detail")]
     public class ModFlowDetailModel : PKModel
     {
-        [Column("cc_pid")]
+        [SugarColumn(ColumnName ="cc_pid")]
         public int SysPid { get; set; }
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int Pid { get; set; }
-        [SugarColumn(IsIgnore =true)]
+        [@SugarColumn(IsIgnore =true)]
         public string? Value { get; set; }
-        [Column("value_a")]
+        [SugarColumn(ColumnName ="value_a")]
         public string? ValueA { get; set; }
-        [Column("value_b")]
+        [SugarColumn(ColumnName ="value_b")]
         public string? ValueB { get; set; }
-        [Column("symbol")]
+        [SugarColumn(ColumnName ="symbol")]
         public string? Symbol { get; set; }
-        [Column("is_enable")]
+        [SugarColumn(ColumnName ="is_enable")]
         public bool? IsEnable { get; set; } = true;
-        [Column("is_enable")]
+        [SugarColumn(ColumnName ="is_enable")]
         public bool? IsDelete { get; set; } = false;
     }
 

@@ -6,21 +6,21 @@ namespace ColorVision.Engine.Templates.FOV
     [SugarTable("t_scgd_algorithm_result_detail_fov")]
     public class AlgResultFOVModel : PKModel
     {
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int? Pid { get; set; }
-        [Column("pattern")]
+        [SugarColumn(ColumnName ="pattern")]
         public int? Pattern { get; set; }
-        [Column("type")]
+        [SugarColumn(ColumnName ="type")]
         public int? Type { get; set; }
-        [Column("radio")]
+        [SugarColumn(ColumnName ="radio")]
         public double? Radio { get; set; }
-        [Column("camera_degrees")]
+        [SugarColumn(ColumnName ="camera_degrees")]
         public double? CameraDegrees { get; set; }
-        [Column("dist")]
+        [SugarColumn(ColumnName ="dist")]
         public double? Dist { get; set; }
-        [Column("threshold")]
+        [SugarColumn(ColumnName ="threshold")]
         public int? Threshold { get; set; }
-        [Column("degrees")]
+        [SugarColumn(ColumnName ="degrees")]
         public double? Degrees { get; set; }
     }
 

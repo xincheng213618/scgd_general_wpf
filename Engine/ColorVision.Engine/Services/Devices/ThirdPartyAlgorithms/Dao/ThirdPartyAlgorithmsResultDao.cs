@@ -8,23 +8,23 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
     public class ThirdPartyAlgorithmsResultModel : VPKModel
     {
 
-        [Column("img_file")]
+        [SugarColumn(ColumnName ="img_file")]
         public string? ImageFilePath { get => _ImageFilePath; set { _ImageFilePath = value; NotifyPropertyChanged(); } }
         private string? _ImageFilePath;
 
-        [Column("result_type")]
+        [SugarColumn(ColumnName ="result_type")]
         public int? ResultType { get => _ResultType; set { _ResultType = value; NotifyPropertyChanged(); } }
         private int? _ResultType;
 
-        [Column("input_param")]
+        [SugarColumn(ColumnName ="input_param")]
         public string? InputParam { get => _InputParam; set { _InputParam = value; NotifyPropertyChanged(); } }
         private string? _InputParam;
 
-        [Column("dyna_param")]
+        [SugarColumn(ColumnName ="dyna_param")]
         public string? DynamicParam { get => _DynamicParam; set { _DynamicParam = value; NotifyPropertyChanged(); } }
         private string? _DynamicParam;
 
-        [Column("batch_id")]
+        [SugarColumn(ColumnName ="batch_id")]
         public int? BatchId { get => _BatchId; set { _BatchId = value; NotifyPropertyChanged(); } }
         private int? _BatchId;
     }

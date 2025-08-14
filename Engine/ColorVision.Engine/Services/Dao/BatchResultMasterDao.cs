@@ -18,30 +18,22 @@ namespace ColorVision.Engine.Services.Dao
             CreateDate = DateTime.Now;
             TotalTime = 0;
         }
-        [SugarColumn(ColumnName = "t_id")]
-        [Column("t_id")]
+        [SugarColumn(ColumnName ="t_id")]
         public int? TId { get; set; }
-        [SugarColumn(ColumnName = "name")]
-        [Column("name")]
+        [SugarColumn(ColumnName ="name")]
         public string? Name { get; set; }
-        [SugarColumn(ColumnName = "code")]
-        [Column("code")]
+        [SugarColumn(ColumnName ="code")]
         public string? Code { get; set; }
-        [SugarColumn(ColumnName = "create_date")]
-        [Column("create_date")]
+        [SugarColumn(ColumnName ="create_date")]
         public DateTime? CreateDate { get; set; }
-        [SugarColumn(ColumnName = "total_time")]
-        [Column("total_time")]
+        [SugarColumn(ColumnName ="total_time")]
         public int? TotalTime { get; set; }
-        [SugarColumn(ColumnName = "result")]
-        [Column("result")]
+        [SugarColumn(ColumnName ="result")]
         public string? Result { get; set; }
-        [SugarColumn(ColumnName = "archived_flag")]
-        [Column("archived_flag")]
+        [SugarColumn(ColumnName ="archived_flag")]
         public short ArchivedFlag { get; set; }
 
-        [SugarColumn(ColumnName = "tenant_id")]
-        [Column("tenant_id")]
+        [SugarColumn(ColumnName ="tenant_id")]
         public int TenantId { get; set; }
     }
 

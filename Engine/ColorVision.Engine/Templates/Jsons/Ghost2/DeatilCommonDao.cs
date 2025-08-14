@@ -1,6 +1,7 @@
 ﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using Newtonsoft.Json;
+using SqlSugar;
 using System.Collections.Generic;
 using System.IO;
 
@@ -68,16 +69,17 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
 
 
         }
-        [Column("id")]
+        [SugarColumn(ColumnName ="id")]
         public int Id { get; set; }
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int PId { get; set; }
 
-        [Column("result")]
+        [SugarColumn(ColumnName ="result")]
         public string Result { get; set; }
 
+        [SugarColumn(IsIgnore = true)]
         public string? ResultFileName { get; set; }
-
+        [SugarColumn(IsIgnore = true)]
         public GhostReslut GhostReslut { get; set; }
     }
 

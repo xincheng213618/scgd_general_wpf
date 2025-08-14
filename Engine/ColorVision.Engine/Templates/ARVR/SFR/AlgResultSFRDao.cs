@@ -7,21 +7,21 @@ namespace ColorVision.Engine.Templates.SFR
     [SugarTable("t_scgd_algorithm_result_detail_sfr")]
     public class AlgResultSFRModel : PKModel,IViewResult
     {
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int? Pid { get; set; }
-        [Column("roi_x")]
+        [SugarColumn(ColumnName ="roi_x")]
         public int? RoiX { get; set; }
-        [Column("roi_y")]
+        [SugarColumn(ColumnName ="roi_y")]
         public int? RoiY { get; set; }
-        [Column("roi_width")]
+        [SugarColumn(ColumnName ="roi_width")]
         public int? RoiWidth { get; set; }
-        [Column("roi_height")]
+        [SugarColumn(ColumnName ="roi_height")]
         public int? RoiHeight { get; set; }
-        [Column("gamma")]
+        [SugarColumn(ColumnName ="gamma")]
         public double? Gamma { get; set; }
-        [Column("pdfrequency")]
+        [SugarColumn(ColumnName ="pdfrequency")]
         public string? Pdfrequency { get; set; }
-        [Column("pdomain_sampling_data")]
+        [SugarColumn(ColumnName ="pdomain_sampling_data")]
         public string? PdomainSamplingData { get; set; }
     }
 

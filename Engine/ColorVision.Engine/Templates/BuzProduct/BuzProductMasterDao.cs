@@ -7,34 +7,34 @@ namespace ColorVision.Engine.Templates.BuzProduct
     [SugarTable("t_scgd_buz_product_master")]
     public class BuzProductMasterModel : VPKModel
     {
-        [Column("code")]
+        [SugarColumn(ColumnName ="code")]
         public string Code { get; set; }
 
-        [Column("name")]
+        [SugarColumn(ColumnName ="name")]
         public string Name { get; set; }
 
-        [Column("buz_type")]
+        [SugarColumn(ColumnName ="buz_type")]
         public int? BuzType { get; set; }
 
-        [Column("cfg_json")]
+        [SugarColumn(ColumnName ="cfg_json")]
         public string CfgJson { get; set; }
 
-        [Column("img_file")]
+        [SugarColumn(ColumnName ="img_file")]
         public string ImgFile { get; set; }
 
-        [Column("create_date")]
+        [SugarColumn(ColumnName ="create_date")]
         public DateTime CreateDate { get; set; } = DateTime.Now;
 
-        [Column("is_enable")]
+        [SugarColumn(ColumnName ="is_enable")]
         public bool IsEnable { get; set; } = true;
 
-        [Column("is_delete")]
+        [SugarColumn(ColumnName ="is_delete")]
         public bool IsDelete { get; set; } = false;
 
-        [Column("tenant_id")]
+        [SugarColumn(ColumnName ="tenant_id")]
         public int? TenantId { get; set; }
 
-        [Column("remark")]
+        [SugarColumn(ColumnName ="remark")]
         public string Remark { get; set; }
     }
 

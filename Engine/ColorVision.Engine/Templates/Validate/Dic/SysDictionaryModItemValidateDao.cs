@@ -6,21 +6,21 @@ namespace ColorVision.Engine.Templates.Validate.Dic
     [SugarTable("t_scgd_sys_dictionary_mod_item_validate")]
     public class SysDictionaryModItemValidateModel : VPKModel
     {
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int? Pid { get; set; }
-        [Column("code")]
+        [SugarColumn(ColumnName ="code")]
         public string Code { get; set; }
-        [Column("val_max")]
+        [SugarColumn(ColumnName ="val_max")]
         public float ValMax { get; set; }
-        [Column("val_min")]
+        [SugarColumn(ColumnName ="val_min")]
         public float ValMin { get; set; }
-        [Column("val_equal")]
+        [SugarColumn(ColumnName ="val_equal")]
         public string ValEqual { get; set; }
-        [Column("val_radix")]
+        [SugarColumn(ColumnName ="val_radix")]
         public short ValRadix { get; set; }
-        [Column("val_type")]
+        [SugarColumn(ColumnName ="val_type")]
         public short ValType { get; set; }
-        [Column("is_enable")]
+        [SugarColumn(ColumnName ="is_enable")]
         public bool IsEnable { get; set; }
     }
 

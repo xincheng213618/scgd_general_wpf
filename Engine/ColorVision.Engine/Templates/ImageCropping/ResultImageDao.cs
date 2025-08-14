@@ -7,16 +7,16 @@ namespace ColorVision.Engine.Templates.ImageCropping
     [SugarTable("t_scgd_algorithm_result_detail_image")]
     public class ResultImageModel : VPKModel,IViewResult
     {
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int? Pid { get; set; }
 
-        [Column("file_name")]
+        [SugarColumn(ColumnName ="file_name")]
         public string? FileName { get; set; }
 
-        [Column("order_index")]
+        [SugarColumn(ColumnName ="order_index")]
         public int? OrderIndex { get; set; }
 
-        [Column("file_info")]
+        [SugarColumn(ColumnName ="file_info")]
         public string? FileInfo { get; set; }
 
     }

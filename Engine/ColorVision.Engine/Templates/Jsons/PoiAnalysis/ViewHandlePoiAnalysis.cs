@@ -47,10 +47,6 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
             }
 
         }
-        [Column("id")]
-        public int Id { get; set; }
-        [Column("pid")]
-        public int PId { get; set; }
         public string? ResultFileName { get; set; }
 
         public PoiAnalysisResult? PoiAnalysisResult { get; set; }

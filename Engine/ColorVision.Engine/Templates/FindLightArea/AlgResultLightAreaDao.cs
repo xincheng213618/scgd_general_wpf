@@ -18,13 +18,13 @@ namespace ColorVision.Engine.Templates.FindLightArea
     [SugarTable("t_scgd_algorithm_result_detail_light_area")]
     public class AlgResultLightAreaModel : PKModel, IViewResult
     {
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int Pid { get; set; }
 
-        [Column("pos_x")]
+        [SugarColumn(ColumnName ="pos_x")]
         public float PosX { get; set; }
 
-        [Column("pos_y")]
+        [SugarColumn(ColumnName ="pos_y")]
         public float PosY { get; set; }
 
     }

@@ -18,12 +18,12 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
             LvData = JsonConvert.DeserializeObject<LvData>(blackMuraModel.UniformityJson) ?? new LvData();
             AreaJsonVal = blackMuraModel.AreaJsonVal;
         }
-        [Column("id")]
+        [SugarColumn(ColumnName ="id")]
         public int Id { get; set; }
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int PId { get; set; }
 
-        [Column("name")]
+        [SugarColumn(ColumnName ="name")]
         public string Name { get; set; }
 
         public ResultJson ResultJson { get; set; }
@@ -32,7 +32,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
         public Outputfile Outputfile { get; set; }
 
-        [Column("area_json_val")]
+        [SugarColumn(ColumnName ="area_json_val")]
         public string AreaJsonVal { get; set; }
 
     }
@@ -42,22 +42,22 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
     [SugarTable("t_scgd_algorithm_result_detail_blackmura")]
     public class BlackMuraModel : PKModel
     {
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int PId { get; set; }
 
-        [Column("name")]
+        [SugarColumn(ColumnName ="name")]
         public string Name { get; set; }
 
-        [Column("result_json_val")]
+        [SugarColumn(ColumnName ="result_json_val")]
         public string ResultJson { get; set; }
 
-        [Column("uniformity_json_val")]
+        [SugarColumn(ColumnName ="uniformity_json_val")]
         public string UniformityJson { get; set; }
 
-        [Column("output_file_json_val")]
+        [SugarColumn(ColumnName ="output_file_json_val")]
         public string OutputFile { get; set; }
 
-        [Column("area_json_val")]
+        [SugarColumn(ColumnName ="area_json_val")]
         public string AreaJsonVal { get; set; }
 
     }

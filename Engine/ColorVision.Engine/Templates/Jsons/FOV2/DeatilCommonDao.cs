@@ -1,6 +1,7 @@
 ﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using Newtonsoft.Json;
+using SqlSugar;
 using System.IO;
 
 namespace ColorVision.Engine.Templates.Jsons.FOV2
@@ -48,21 +49,27 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
         }
 
 
-        [Column("id")]
+        [SugarColumn(ColumnName ="id")]
         public int Id { get; set; }
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int PId { get; set; }
 
-        [Column("result")]
+        [SugarColumn(ColumnName ="result")]
         public ResDFov Result { get; set; }
 
-
+        [SugarColumn(IsIgnore =true)]
         public double D_Fov { get; set; }
+        [SugarColumn(IsIgnore = true)]
         public double H_Fov { get; set; }
+        [SugarColumn(IsIgnore = true)]
         public double V_FOV { get; set; }
+        [SugarColumn(IsIgnore = true)]
         public double ClolorVisionH_Fov { get; set; }
+        [SugarColumn(IsIgnore = true)]
         public double ClolorVisionV_Fov { get; set; }
+        [SugarColumn(IsIgnore = true)]
         public double LeftDownToRightUp { get; set; }
+        [SugarColumn(IsIgnore = true)]
         public double LeftUpToRightDown { get; set; }
 
 

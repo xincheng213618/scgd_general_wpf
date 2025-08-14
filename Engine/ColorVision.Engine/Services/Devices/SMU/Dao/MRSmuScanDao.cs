@@ -8,31 +8,31 @@ namespace ColorVision.Engine.Services.Devices.SMU.Dao
     [SugarTable("t_scgd_measure_result_smu_scan")]
     public class SmuScanModel : PKModel
     {
-        [Column("device_code")]
+        [SugarColumn(ColumnName ="device_code")]
         public string? DeviceCode { get; set; }
 
-        [Column("batch_id")]
+        [SugarColumn(ColumnName ="batch_id")]
         public int? BatchId { get; set; }
 
-        [Column("is_source_v")]
+        [SugarColumn(ColumnName ="is_source_v")]
         public bool IsSourceV { get; set; }
 
-        [Column("src_end")]
+        [SugarColumn(ColumnName ="src_end")]
         public float SrcBegin { get; set; }
 
-        [Column("src_begin")]
+        [SugarColumn(ColumnName ="src_begin")]
         public float SrcEnd { get; set; }
 
-        [Column("v_result")]
+        [SugarColumn(ColumnName ="v_result")]
         public string? VResult { get; set; }
 
-        [Column("i_result")]
+        [SugarColumn(ColumnName ="i_result")]
         public string? IResult { get; set; }
 
-        [Column("points")]
+        [SugarColumn(ColumnName ="points")]
         public int Points { get; set; }
 
-        [Column("create_date")]
+        [SugarColumn(ColumnName ="create_date")]
         public DateTime? CreateDate { get; set; }
     }
 

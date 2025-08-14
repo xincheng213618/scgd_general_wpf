@@ -18,32 +18,32 @@ namespace ColorVision.Engine.Templates.Ghost
     [SugarTable("t_scgd_algorithm_result_detail_ghost")]
     public class AlgResultGhostModel : VPKModel, IViewResult
     {
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int Pid { get; set; }
-        [Column("rows")]
+        [SugarColumn(ColumnName ="rows")]
         public int Rows { get; set; }
-        [Column("cols")]
+        [SugarColumn(ColumnName ="cols")]
         public int Cols { get; set; }
-        [Column("radius")]
+        [SugarColumn(ColumnName ="radius")]
         public int Radius { get; set; }
-        [Column("ratio_h")]
+        [SugarColumn(ColumnName ="ratio_h")]
         public float RatioH { get; set; }
-        [Column("ratio_l")]
+        [SugarColumn(ColumnName ="ratio_l")]
         public float RatioL { get; set; }
 
-        [Column("led_centers", Comment = "检出的鬼影点阵质心坐标集")]
+        [SugarColumn(ColumnName ="led_centers", ColumnDescription = "检出的鬼影点阵质心坐标集")]
         public string LEDCenters { get; set; }
-        [Column("led_pixels", Comment = "所有点阵轮廓的坐标集")]
+        [SugarColumn(ColumnName ="led_pixels", ColumnDescription = "所有点阵轮廓的坐标集")]
         public string LEDPixels { get; set; }
-        [Column("led_blob_gray", Comment = "检出光斑的灰度均值集")]
+        [SugarColumn(ColumnName ="led_blob_gray", ColumnDescription = "检出光斑的灰度均值集")]
         public string LEDBlobGray { get; set; }
-        [Column("ghost_average_gray", Comment = "检出鬼影区域的灰度均值集")]
+        [SugarColumn(ColumnName ="ghost_average_gray", ColumnDescription = "检出鬼影区域的灰度均值集")]
         public string GhostAverageGray { get; set; }
-        [Column("single_led_pixel_num", Comment = "包含的鬼影集数量")]
+        [SugarColumn(ColumnName ="single_led_pixel_num", ColumnDescription = "包含的鬼影集数量")]
         public string SingleLedPixelNum { get; set; }
-        [Column("single_ghost_pixel_num", Comment = "包含的点阵数量")]
+        [SugarColumn(ColumnName ="single_ghost_pixel_num", ColumnDescription = "包含的点阵数量")]
         public string SingleGhostPixelNum { get; set; }
-        [Column("ghost_pixels", Comment = "所有鬼影轮廓的坐标集")]
+        [SugarColumn(ColumnName ="ghost_pixels", ColumnDescription = "所有鬼影轮廓的坐标集")]
         public string GhostPixels { get; set; }
 
         public List<List<Point1>>? GhostPixel => JsonConvert.DeserializeObject<List<List<Point1>>>(GhostPixels);

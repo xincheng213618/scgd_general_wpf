@@ -11,52 +11,40 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
     {
         public AlgResultMasterModel() { }
 
-        [SugarColumn(ColumnName = "tid")]
-        [Column("tid")]
+        [SugarColumn(ColumnName ="tid")]
         public int? TId { get; set; }
 
-        [SugarColumn(ColumnName = "tname")]
-        [Column("tname")]
+        [SugarColumn(ColumnName ="tname")]
         public string TName { get; set; }
 
-        [SugarColumn(ColumnName = "img_file")]
-        [Column("img_file")]
+        [SugarColumn(ColumnName ="img_file")]
         public string ImgFile { get; set; }
 
-        [SugarColumn(ColumnName = "img_file_type")]
-        [Column("img_file_type")]
+        [SugarColumn(ColumnName ="img_file_type")]
         public AlgorithmResultType ImgFileType { get; set; }
 
-        [SugarColumn(ColumnName = "version")]
-        [Column("version")]
+        [SugarColumn(ColumnName ="version")]
         public string version { get; set; }
 
-        [SugarColumn(ColumnName = "batch_id")]
-        [Column("batch_id")]
+        [SugarColumn(ColumnName ="batch_id")]
         public int? BatchId { get; set; }
 
-        [SugarColumn(ColumnName = "params")]
-        [Column("params")]
+        [SugarColumn(ColumnName ="params")]
         public string Params { get; set; }
 
-        [SugarColumn(ColumnName = "result_code")]
-        [Column("result_code")]
+        [SugarColumn(ColumnName ="result_code")]
         public int? ResultCode { get; set; }
 
-        [SugarColumn(ColumnName = "result")]
-        [Column("result")]
+        [SugarColumn(ColumnName ="result")]
         public string Result { get; set; }
 
-        [SugarColumn(ColumnName = "img_result")]
-        [Column("img_result")]
+        [SugarColumn(ColumnName ="img_result")]
         public string ResultImagFile { get; set; }
 
-        [SugarColumn(ColumnName = "total_time")]
-        [Column("total_time")]
+        [SugarColumn(ColumnName ="total_time")]
         public long TotalTime { get; set; }
 
-        [SugarColumn(ColumnName = "create_date")]
-        [Column("create_date")]
+        [SugarColumn(ColumnName ="create_date")]
         public DateTime? CreateDate { get; set; }
 
     }

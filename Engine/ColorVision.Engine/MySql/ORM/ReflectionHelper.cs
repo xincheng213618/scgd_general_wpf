@@ -7,19 +7,6 @@ using System.Reflection;
 
 namespace ColorVision.Engine.MySql.ORM
 {
-    [AttributeUsage(AttributeTargets.Property)]
-    public class ColumnAttribute : Attribute
-    {
-        public string Name { get; set; }
-
-        public string Comment { get; set; }
-
-        public ColumnAttribute(string name)
-        {
-            Name = name;
-        }
-    }
-
     public static class ReflectionHelper
     {
         public static BaseTableDao<T>? Create<T>() where T : IPKModel, new()
@@ -131,8 +118,8 @@ namespace ColorVision.Engine.MySql.ORM
 
         public static string GetColumnName(PropertyInfo prop)
         {
-            var attribute = prop.GetCustomAttributes(typeof(ColumnAttribute), false).FirstOrDefault() as ColumnAttribute;
-            return attribute?.Name ?? prop.Name;
+            var attribute = prop.GetCustomAttributes(typeof(SugarColumn), false).FirstOrDefault() as SugarColumn;
+            return attribute?.ColumnName ?? prop.Name;
         }
 
         public static string GetTableName(Type type)

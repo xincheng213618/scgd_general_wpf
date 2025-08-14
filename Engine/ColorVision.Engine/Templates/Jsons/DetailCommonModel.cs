@@ -21,9 +21,9 @@ namespace ColorVision.Engine.Templates.Jsons
             var restfile = JsonConvert.DeserializeObject<ResultFile>(detailCommonModel.ResultJson);
             ResultFileName = restfile?.ResultFileName;
         }
-        [Column("id")]
+        [SugarColumn(ColumnName ="id")]
         public int Id { get; set; }
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int PId { get; set; }
         public string? ResultFileName { get; set; }
     }
@@ -32,10 +32,10 @@ namespace ColorVision.Engine.Templates.Jsons
     [SugarTable("t_scgd_algorithm_result_detail_common")]
     public class DetailCommonModel : PKModel
     {
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int PId { get; set; }
 
-        [Column("result")]
+        [SugarColumn(ColumnName ="result")]
         public string ResultJson { get; set; }
     }
 

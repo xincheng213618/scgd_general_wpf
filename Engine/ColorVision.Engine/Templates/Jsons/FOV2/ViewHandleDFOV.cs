@@ -5,6 +5,7 @@ using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using log4net;
+using SqlSugar;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -49,7 +50,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
             // 递归构建头部
             foreach (var prop in properties)
             {
-                var columnName = prop.GetCustomAttribute<ColumnAttribute>()?.Name ?? prop.Name;
+                var columnName = prop.GetCustomAttribute<SugarColumn>()?.ColumnName ?? prop.Name;
                 if (prop.PropertyType.IsClass && prop.PropertyType != typeof(string))
                 {
                     var nestedProperties = prop.PropertyType.GetProperties();

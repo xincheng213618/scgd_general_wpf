@@ -168,22 +168,22 @@ namespace ColorVision.Engine.Archive.Dao
         }
 
         [SugarColumn(ColumnName = "guid",IsPrimaryKey = true)]
-        [Column("guid"), DisplayName("Guid")]
+        [DisplayName("Guid")]
         public string Guid { get; set; }
-        [Column("p_guid"),DisplayName("名称")]
+        [SugarColumn(ColumnName ="p_guid"),DisplayName("名称")]
         public string PGuid { get; set; }
-        [Column("detail_type"), DisplayName("detail_type")]
+        [SugarColumn(ColumnName ="detail_type"), DisplayName("detail_type")]
         public string DetailType { get; set; }
-        [Column("z_index")]
+        [SugarColumn(ColumnName ="z_index")]
         public int? ZIndex { get; set; }
-        [Column("output_value"),DisplayName("Data")]
+        [SugarColumn(ColumnName ="output_value"),DisplayName("Data")]
         public string OutputValue { get; set; }
-        [Column("device_code"), DisplayName("设备名称")]
+        [SugarColumn(ColumnName ="device_code"), DisplayName("设备名称")]
         public string DeviceCode { get; set; }
-        [Column("device_cfg")]
+        [SugarColumn(ColumnName ="device_cfg")]
         public string DeviceCfg { get; set; }
 
-        [Column("input_cfg"),DisplayName("输入参数")]
+        [SugarColumn(ColumnName ="input_cfg"),DisplayName("输入参数")]
         public string InputCfg { get; set; }
 
     }

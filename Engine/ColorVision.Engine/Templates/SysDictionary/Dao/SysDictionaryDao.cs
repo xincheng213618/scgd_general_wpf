@@ -7,33 +7,33 @@ namespace ColorVision.Engine.Templates.SysDictionary
     [SugarTable("t_scgd_sys_dictionary")]
     public class SysDictionaryModel : VPKModel
     {
-        [Column("name")]
+        [SugarColumn(ColumnName ="name")]
         public string? Name { get; set; }
 
-        [Column("key")]
+        [SugarColumn(ColumnName ="key")]
         public string? Key { get; set; }
 
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int Type { get; set; }
 
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int Pid { get; set; }
-        [Column("val")]
+        [SugarColumn(ColumnName ="val")]
         public int Value { get; set; }
 
-        [Column("tenant_id")]
+        [SugarColumn(ColumnName ="tenant_id")]
         public int TenantId { get; set; }
 
-        [Column("is_enable")]
+        [SugarColumn(ColumnName ="is_enable")]
         public bool IsEnable { get; set; }
 
-        [Column("is_delete")]
+        [SugarColumn(ColumnName ="is_delete")]
         public bool IsDelete { get; set; }
 
-        [Column("is_hide")]
+        [SugarColumn(ColumnName ="is_hide")]
         public bool IsHide { get; set; }
 
-        [Column("remark")]
+        [SugarColumn(ColumnName ="remark")]
         public string? Remark { get; set; }
 
     }

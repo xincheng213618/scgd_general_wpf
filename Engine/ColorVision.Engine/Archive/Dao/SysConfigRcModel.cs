@@ -16,52 +16,52 @@ namespace ColorVision.Engine.Sys.Dao
     {
         [SugarColumn(ColumnName = "code", IsPrimaryKey = true)]
 
-        [Column("code"), DisplayName("Code")]
+        [DisplayName("Code")]
         public string Code { get; set; }
 
-        [Column("name"), DisplayName("RC名称")]
+        [SugarColumn(ColumnName ="name"), DisplayName("RC名称")]
         public string Name { get; set; }
 
-        [Column("platform")]
+        [SugarColumn(ColumnName ="platform")]
         public string Platform { get; set; }
 
-        [Column("rest_address"), DisplayName("REST地址")]
+        [SugarColumn(ColumnName ="rest_address"), DisplayName("REST地址")]
         public string RestAddress { get; set; }
 
-        [Column("version")]
+        [SugarColumn(ColumnName ="version")]
         public string Version { get; set; }
 
-        [Column("token_expires")]
+        [SugarColumn(ColumnName ="token_expires")]
         public int? TokenExpires { get; set; }
 
-        [Column("admin_authorization")]
+        [SugarColumn(ColumnName ="admin_authorization")]
         public string AdminAuthorization { get; set; }
 
-        [Column("monitor_id"), DisplayName("服务监控配置")]
+        [SugarColumn(ColumnName ="monitor_id"), DisplayName("服务监控配置")]
         public int? MonitorId { get; set; }
 
-        [Column("archived_id"), DisplayName("归档配置")]
+        [SugarColumn(ColumnName ="archived_id"), DisplayName("归档配置")]
         public int? ArchivedId { get; set; }
 
-        [Column("mqtt_cfg_id"), DisplayName("MQTT配置ID")]
+        [SugarColumn(ColumnName ="mqtt_cfg_id"), DisplayName("MQTT配置ID")]
         public int? MqttCfgId { get; set; }
 
-        [Column("mqtt_is_server")]
+        [SugarColumn(ColumnName ="mqtt_is_server")]
         public bool MqttIsServer { get; set; }
 
-        [Column("is_enable")]
+        [SugarColumn(ColumnName ="is_enable")]
         public bool IsEnable { get; set; }
 
-        [Column("is_delete")]
+        [SugarColumn(ColumnName ="is_delete")]
         public bool IsDelete { get; set; }
 
-        [Column("tenant_id"), DisplayName("租户ID")]
+        [SugarColumn(ColumnName ="tenant_id"), DisplayName("租户ID")]
         public int? TenantId { get; set; }
 
-        [Column("create_date"), DisplayName("创建日期")]
+        [SugarColumn(ColumnName ="create_date"), DisplayName("创建日期")]
         public DateTime CreateDate { get; set; } = DateTime.Now;
 
-        [Column("remark")]
+        [SugarColumn(ColumnName ="remark")]
         public string Remark { get; set; }
     }
 

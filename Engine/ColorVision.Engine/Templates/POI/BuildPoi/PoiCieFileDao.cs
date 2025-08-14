@@ -11,18 +11,18 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
     [SugarTable("t_scgd_algorithm_result_detail_poi_cie_file")]
     public class PoiCieFileModel : ViewModelBase,IPKModel, ISortID, IViewResult
     {
-        [Column("id")]
+        [SugarColumn(ColumnName ="id")]
         public int Id { get; set; }
 
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int Pid  { get; set; }
 
-        [Column("file_name")]
+        [SugarColumn(ColumnName ="file_name")]
         public string FileName { get; set; }
-        [Column("file_url")]
+        [SugarColumn(ColumnName ="file_url")]
         public string FileUrl { get; set; }
 
-        [Column("file_type")]
+        [SugarColumn(ColumnName ="file_type")]
         public int FileType { get; set; }
     }
 
