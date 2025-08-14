@@ -62,6 +62,8 @@ namespace ProjectKB
         public RelayCommand EditConfigCommand { get; set; }
         public RelayCommand ViewReslutsClearCommand { get; set; }
         public RelayCommand QueryCommand { get; set; }
+        public RelayCommand GenericQueryCommand { get; set; }
+
         public RelayCommand SaveCommand { get; set; }
 
         private readonly SqlSugarClient _db;
@@ -72,6 +74,7 @@ namespace ProjectKB
             EditConfigCommand = new RelayCommand(a => EditConfig());
             ViewReslutsClearCommand = new RelayCommand(a => ViewReslutsClear());
             QueryCommand = new RelayCommand(a => Query());
+            GenericQueryCommand = new RelayCommand(a => GenericQuery());
             SaveCommand = new RelayCommand(a => Save());
             _db = new SqlSugarClient(new ConnectionConfig
             {
@@ -166,6 +169,13 @@ namespace ProjectKB
 
         }
 
+        public void GenericQuery()
+        {
+            GenericQuery<KBItemMaster> genericQuery = new GenericQuery<KBItemMaster>(_db,ViewResluts);
+            GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
+            genericQueryWindow.ShowDialog();
+        }
+
         /// <summary>
         /// 根据条件查询，举例：根据SN或Model等
         /// </summary>
@@ -191,8 +201,8 @@ namespace ProjectKB
 
         public void Dispose()
         {
-            GC.SuppressFinalize(this);
             _db?.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

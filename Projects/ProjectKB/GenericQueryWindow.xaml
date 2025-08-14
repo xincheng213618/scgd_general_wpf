@@ -1,0 +1,25 @@
+﻿<Window x:Class="ProjectKB.GenericQueryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ProjectKB"
+        mc:Ignorable="d"
+        Title="GenericQueryWindow" Height="450" Width="600" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+        <ScrollViewer Grid.Row="1">
+            <Grid x:Name="QueryGrid">
+
+            </Grid>
+        </ScrollViewer>
+
+        <Border  Grid.Row="2" Margin="5" >
+            <Button  Height="40"  Content="查询" Background="{DynamicResource PrimaryBrush}" Foreground="White"  FontSize="18"  Click="Query_Click"/>
+        </Border>
+    </Grid>
+</Window>

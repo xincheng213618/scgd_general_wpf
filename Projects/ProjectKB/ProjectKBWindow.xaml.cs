@@ -922,12 +922,17 @@ namespace ProjectKB
             KBItemMaster.Model = FlowTemplate.Text;
             KBItemMaster.SN = SNtextBox.Text;
             KBItemMaster.CreateTime = DateTime.Now;
-            KBItemMaster.FlowStatus = FlowStatus.Completed;
             KBItemMaster.Code = "@2";
-            KBItemMaster.Result = true;
             KBItemMaster.AvgC1 = 1;
 
             var rnd = new Random();
+
+            KBItemMaster.Result = rnd.Next(2) == 0; // true 或 false
+
+            // FlowStatus 随机选择
+            var flowStatusValues = new[] { FlowStatus.Completed, FlowStatus.Runing, FlowStatus.Failed }; // 根据你的枚举实际填写
+            KBItemMaster.FlowStatus = flowStatusValues[rnd.Next(flowStatusValues.Length)];
+
             KBItemMaster.Items.Clear();
 
             for (int i = 0; i < 80; i++)

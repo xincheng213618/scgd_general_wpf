@@ -1,15 +1,17 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.Flow;
 using log4net;
 using Newtonsoft.Json;
 using SqlSugar;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows.Controls;
 
 namespace ProjectKB
 {
     [SugarTable("KBItemMaster")]
-    public class KBItemMaster : ViewModelBase
+    public class KBItemMaster : ViewModelBase,IPKModel
     {
         [SugarColumn(IsIgnore = true)]
         public ContextMenu ContextMenu { get; set; }
@@ -33,6 +35,7 @@ namespace ProjectKB
         [SugarColumn(IsIgnore = true)]
         public ObservableCollection<KBItem> Items { get; set; } = new ObservableCollection<KBItem>();
 
+        [Browsable(false)]
         public string ItemsJson
         {
             get => JsonConvert.SerializeObject(Items);
