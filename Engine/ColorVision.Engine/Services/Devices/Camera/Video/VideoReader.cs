@@ -12,6 +12,11 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
+
+
+    /// <summary>
+    /// 写标志位的方案有问题，会少刷新
+    /// </summary>
     public class VideoReader : IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(VideoReader));

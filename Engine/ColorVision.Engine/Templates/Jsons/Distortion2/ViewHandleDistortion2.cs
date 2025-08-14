@@ -5,6 +5,7 @@ using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.UI.Extension;
 using log4net;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -27,17 +28,46 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
             if (result.Version != "2.0") return false;
             return base.CanHandle1(result);
         }
-
         public override void SideSave(AlgorithmResult result, string selectedPath)
         {
-            var blackMuraViews = result.ViewResults.ToSpecificViewResults<Distortion2View>();
-            if (blackMuraViews.Count == 1)
+            string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
+
+            var sb = new StringBuilder();
+            // 标题
+            sb.AppendLine("OpticDistortion_OpticRatio,OpticDistortion_T,OpticDistortion_Message,OpticDistortion_MaxErrPoint_X,OpticDistortion_MaxErrPoint_Y,Point9Distortion_TopRatio,Point9Distortion_BottomRatio,Point9Distortion_LeftRatio,Point9Distortion_RightRatio,Point9Distortion_KeyStoneHoriRatio,Point9Distortion_KeyStoneVercRatio,Point9Distortion_Message,TVDistortion_HorizontalRatio,TVDistortion_VerticalRatio,TVDistortion_Message");
+
+            foreach (var res in result.ViewResults.ToSpecificViewResults<Distortion2View>())
             {
-                string filePath = selectedPath + "//" + result.Batch + result.ResultType + ".json";
-                File.AppendAllText(filePath, blackMuraViews[0].Result, Encoding.UTF8);
+                sb.AppendLine(string.Join(",",
+                    res.DistortionReslut.OpticDistortion?.OpticRatio.ToString() ?? "",
+                    res.DistortionReslut.OpticDistortion?.T.ToString() ?? "",
+                    EscapeCsv(res.DistortionReslut.OpticDistortion?.Message),
+                    res.DistortionReslut.OpticDistortion?.MaxErrPoint?.X.ToString() ?? "",
+                    res.DistortionReslut.OpticDistortion?.MaxErrPoint?.Y.ToString() ?? "",
+                    res.DistortionReslut.Point9Distortion?.TopRatio.ToString() ?? "",
+                    res.DistortionReslut.Point9Distortion?.BottomRatio.ToString() ?? "",
+                    res.DistortionReslut.Point9Distortion?.LeftRatio.ToString() ?? "",
+                    res.DistortionReslut.Point9Distortion?.RightRatio.ToString() ?? "",
+                    res.DistortionReslut.Point9Distortion?.KeyStoneHoriRatio.ToString() ?? "",
+                    res.DistortionReslut.Point9Distortion?.KeyStoneVercRatio.ToString() ?? "",
+                    EscapeCsv(res.DistortionReslut.Point9Distortion?.Message),
+                    res.DistortionReslut.TVDistortion?.HorizontalRatio.ToString() ?? "",
+                    res.DistortionReslut.TVDistortion?.VerticalRatio.ToString() ?? "",
+                    EscapeCsv(res.DistortionReslut.TVDistortion?.Message)
+                ));
             }
+            File.AppendAllText(fileName, sb.ToString(), Encoding.UTF8);
         }
 
+        private static string EscapeCsv(string? value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            if (value.Contains(",") || value.Contains("\"") || value.Contains("\n"))
+            {
+                return $"\"{value.Replace("\"", "\"\"")}\"";
+            }
+            return value;
+        }
 
         public override void Load(AlgorithmView view, AlgorithmResult result)
         {
@@ -98,6 +128,9 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
                 view.listViewSide.ItemsSource = result.ViewResults;
             }
+
+            view.SideTextBox.Visibility = System.Windows.Visibility.Visible;
+            view.SideTextBox.Text = result.ViewResults.ToSpecificViewResults<Distortion2View>()[0].DistortionReslut.ToJsonN();
         }
 
 

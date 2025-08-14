@@ -152,6 +152,8 @@ namespace ColorVision.Engine.Templates
             createWindow.ShowDialog();
         }
 
+        public virtual bool ExitsTemplateName(string templateName) => TemplateControl.ExitsTemplateName(templateName);
+
         public virtual void Create(string templateCode, string templateName)
         {
 
@@ -255,6 +257,7 @@ namespace ColorVision.Engine.Templates
                 }
             }
         }
+
         ModMasterDao masterDao => new ModMasterDao(TemplateDicId);
 
         public override void Load()

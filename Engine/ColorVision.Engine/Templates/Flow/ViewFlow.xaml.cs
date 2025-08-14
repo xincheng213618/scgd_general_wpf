@@ -410,6 +410,7 @@ namespace ColorVision.Engine.Services.Flow
             if (Batch == null)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
+                return;
             }
             Frame frame = new Frame();
 

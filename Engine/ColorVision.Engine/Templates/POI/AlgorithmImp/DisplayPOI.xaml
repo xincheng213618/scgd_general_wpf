@@ -54,6 +54,10 @@
                     <TextBox  Style="{StaticResource TextBox.Small}" Text="{Binding POIPointFileName}"  Width="150" Margin="0,0,2,0" HorizontalAlignment="Left" />
                     <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Command="{Binding OpenPoiFileCommand}" />
                 </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,2">
+                    <TextBlock Text="计算色温波长" Width="100"/>
+                    <CheckBox IsChecked="{Binding IsCCTWave}" />
+                </StackPanel>
             </StackPanel>
             <TabControl BorderThickness="0" Background="Transparent">
                 <TabItem Background="Transparent" x:Name="LoaclFileTabItem" Header="{x:Static properties:Resources.Local}"  IsSelected="{Binding IsLocalFile}">

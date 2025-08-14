@@ -133,8 +133,8 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
                 int[] ints = new int[pointinfo.Positions.Count * 2];
                 for (int i = 0; i < pointinfo.Positions.Count; i++)
                 {
-                    ints[2 * i] = pointinfo.Positions[i].PixelX;
-                    ints[2 * i + 1] = pointinfo.Positions[i].PixelY;
+                    ints[2 * i] = (int)pointinfo.Positions[i].PixelX;
+                    ints[2 * i + 1] = (int)pointinfo.Positions[i].PixelY;
                 }
                 if (File.Exists(result.FilePath))
                 {
@@ -150,7 +150,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
                         BitmapImage bitmapImage = new BitmapImage(new Uri(result.FilePath));
                         hImage = bitmapImage.ToHImage();
                     }
-                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, pointinfo.HeaderInfo.Height, ints, ints.Length, 1);
+                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, (int)pointinfo.HeaderInfo.Height, ints, ints.Length, 1);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         if (ret == 0)

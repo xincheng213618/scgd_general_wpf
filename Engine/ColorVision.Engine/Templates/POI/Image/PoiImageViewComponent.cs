@@ -245,7 +245,7 @@ namespace ColorVision.Engine.Templates.POI.Image
 
             PoiResultCIEYData GetCVCIEY(POIPoint poiPoint)
             {
-                int x = poiPoint.PixelX; int y = poiPoint.PixelY; int rect = poiPoint.Width; int rect2 = poiPoint.Height;
+                int x = (int)poiPoint.PixelX; int y = (int)poiPoint.PixelY; int rect = (int)poiPoint.Width; int rect2 = (int)poiPoint.Height;
                 PoiResultCIEYData PoiResultCIEYData = new PoiResultCIEYData();
                 PoiResultCIEYData.Point = poiPoint;
                 float dYVal = 0;
@@ -273,7 +273,7 @@ namespace ColorVision.Engine.Templates.POI.Image
 
             PoiResultCIExyuvData GetCVCIE(POIPoint pOIPoint)
             {
-                int x = pOIPoint.PixelX; int y = pOIPoint.PixelY; int rect = pOIPoint.Width; int rect2 = pOIPoint.Height;
+                int x = (int)pOIPoint.PixelX; int y = (int)pOIPoint.PixelY; int rect = (int)pOIPoint.Width; int rect2 = (int)pOIPoint.Height;
                 PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData();
                 poiResultCIExyuvData.Point = pOIPoint;
                 float dXVal = 0;

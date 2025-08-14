@@ -20,13 +20,6 @@ namespace ColorVision.Engine.Templates
         {
         }
 
-        public ParamModBase(int id, string name, List<ModDetailModel> detail) : base(detail)
-        {
-            Id = id;
-            Name = name;
-            ModDetailModels = new ObservableCollection<ModDetailModel>(detail);
-            CreateCommand = new RelayCommand(a => new CreateModeDetail(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(), a => true);
-        }
         [Browsable(false)]
         public ModMasterModel ModMaster { get; set; }
 

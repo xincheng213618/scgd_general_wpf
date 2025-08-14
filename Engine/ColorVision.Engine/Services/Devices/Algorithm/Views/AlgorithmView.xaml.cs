@@ -212,6 +212,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (ResultHandle != null)
             {
                 ImageView.ImageShow.Clear();
+                SideTextBox.Visibility = Visibility.Collapsed;
+                SideTextBox.Clear();
                 ResultHandle.Load(this, result);
                 ResultHandle.Handle(this, result);
                 return;
@@ -245,8 +247,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         }
                     }
 
-                    header = new List<string> { "名称", "位置", "大小", "形状", "Validate" };
-                    bdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "POIPointResultModel.ValidateResult" };
+                    header = new List<string> { "名称", "位置", "大小", "形状" };
+                    bdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes"};
 
                     foreach (var item in result.ViewResults)
                     {

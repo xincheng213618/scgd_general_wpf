@@ -5,6 +5,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Templates.SFR;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using Gu.Wpf.Geometry;
@@ -14,6 +15,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -73,7 +75,7 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
 
             if (File.Exists(ResultFileName))
             {
-                PoiAnalysisResult = JsonConvert.DeserializeObject<AAFindPoint>(File.ReadAllText(ResultFileName));
+                AAFindPoint = JsonConvert.DeserializeObject<AAFindPoint>(File.ReadAllText(ResultFileName));
             }
 
         }
@@ -83,7 +85,7 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
         public int PId { get; set; }
         public string? ResultFileName { get; set; }
 
-        public AAFindPoint? PoiAnalysisResult { get; set; }
+        public AAFindPoint? AAFindPoint { get; set; }
     }
 
 
@@ -101,9 +103,12 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
 
         public override void SideSave(AlgorithmResult result, string selectedPath)
         {
-            //var blackMuraViews = mtfresult.ViewResults.ToSpecificViewResults<GhostView>();
+            string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
+            //var ViewResults = result.ViewResults.ToSpecificViewResults<ViewHandleAAFindPoints>();
+
             //var csvBuilder = new StringBuilder();
-            //if (blackMuraViews.Count == 1)
+
+            //if (ViewResults.Count == 1)
             //{
             //    string filePath = selectedPath + "//" + mtfresult.Batch + mtfresult.ResultType + ".json";
             //    File.AppendAllText(filePath, blackMuraViews[0].Result, Encoding.UTF8);
@@ -157,7 +162,7 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
                 Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / view.ImageView.Zoombox1.ContentMatrix.M11);
                 Polygon.Attribute.Brush = Brushes.Transparent;
 
-                foreach (var item in viewResult.PoiAnalysisResult.Corner)
+                foreach (var item in viewResult.AAFindPoint.Corner)
                 {
                     Polygon.Attribute.Points.Add(new Point() { X =item.X,Y= item.Y});
                 }
@@ -174,7 +179,7 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
                     for (int i = 0; i < header.Count; i++)
                         gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
 
-                    view.listViewSide.ItemsSource = new ObservableCollection<Corner>(viewResult.PoiAnalysisResult.Corner);
+                    view.listViewSide.ItemsSource = new ObservableCollection<Corner>(viewResult.AAFindPoint.Corner);
                 }
             }
             else

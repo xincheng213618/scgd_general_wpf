@@ -33,6 +33,10 @@ namespace ColorVision.Engine.Templates.Flow
         {
             new FlowEngineToolWindow(TemplateParams[index].Value) { Owner = Application.Current.GetActiveWindow() }.Show();
         }
+        public override bool ExitsTemplateName(string templateName)
+        {
+            return Params.Any(a => a.Key.Equals(templateName, StringComparison.OrdinalIgnoreCase));
+        }
 
         private static ModMasterDao masterFlowDao = new ModMasterDao(11);
         public override void Load()

@@ -116,7 +116,6 @@
                             </TextBlock.RenderTransform>
                         </TextBlock>
                     </Button>
-
                 </StackPanel>
 
 
@@ -219,6 +218,7 @@
             </ListView.Resources>
             <ListView.ItemContainerStyle>
                 <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                    <Setter Property="ContextMenu"  Value="{Binding ContextMenu}"/>
                 </Style>
             </ListView.ItemContainerStyle>
             <ListView.View >
@@ -234,6 +234,9 @@
                 </GridView>
             </ListView.View>
         </ListView>
+
+        <TextBox x:Name="SideTextBox" Visibility="Collapsed" Panel.ZIndex="9" Grid.Column="1" Width="{Binding ActualWidth,ElementName=listViewSide}" TextWrapping="WrapWithOverflow" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
+
         <GridSplitter  Grid.Column="1"  Panel.ZIndex="999" Background="#1FFFFFFF"  Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted1"  />
 
     </Grid>

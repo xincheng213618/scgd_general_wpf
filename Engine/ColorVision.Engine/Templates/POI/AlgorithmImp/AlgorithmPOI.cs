@@ -68,6 +68,10 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
         public bool IsUSeFile => POIStorageModel == POIStorageModel.File;
 
+        public bool IsSubPixel { get => _IsSubPixel; set { _IsSubPixel = value; NotifyPropertyChanged(); } }
+        private bool _IsSubPixel;
+        public bool IsCCTWave { get => _IsCCTWave; set { _IsCCTWave = value; NotifyPropertyChanged(); } }
+        private bool _IsCCTWave = true;
 
         public string POIPointFileName { get => _POIPointFileName; set { _POIPointFileName = value; NotifyPropertyChanged(); } }
         private string _POIPointFileName;
@@ -144,6 +148,9 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                 Params.Add("POIStorageType", POIStorageModel);
                 Params.Add("POIPointFileName", POIPointFileName);
             }
+
+            Params.Add("IsSubPixel", IsSubPixel);
+            Params.Add("IsCCTWave", IsCCTWave);
 
             MsgSend msg = new()
             {

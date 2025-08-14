@@ -1,8 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates.Jsons.LargeFlow;
+using System.ComponentModel;
 
-namespace ProjectKB.Config
+namespace ProjectKB
 {
-    public class SPECConfig : ViewModelBase
+    [DisplayName("ARVR上下限判定")]
+    public class KBRecipeConfig : ViewModelBase, IRecipe
     {
         public double MinKeyLv { get => _MinKeyLv; set { _MinKeyLv = value; NotifyPropertyChanged(); } }
         private double _MinKeyLv;
@@ -10,12 +13,12 @@ namespace ProjectKB.Config
         public double MaxKeyLv { get => _MaxKeyLv; set { _MaxKeyLv = value; NotifyPropertyChanged(); } }
         private double _MaxKeyLv;
 
-
         public double MaxAvgLv { get => _MaxAvgLv; set { _MaxAvgLv = value; NotifyPropertyChanged(); } }
         private double _MaxAvgLv;
 
         public double MinAvgLv { get => _MinAvgLv; set { _MinAvgLv = value; NotifyPropertyChanged(); } }
         private double _MinAvgLv;
+
         /// <summary>
         /// 亮度一致性
         /// </summary>

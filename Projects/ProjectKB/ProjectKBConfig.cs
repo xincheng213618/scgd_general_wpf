@@ -3,7 +3,6 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using Newtonsoft.Json;
-using ProjectKB.Config;
 using ProjectKB.Modbus;
 using ProjectKB.Services;
 using System.Collections.ObjectModel;
@@ -17,16 +16,26 @@ namespace ProjectKB
     public class ProjectKBConfig: ViewModelBase, IConfig
     {
         public static ProjectKBConfig Instance => ConfigService.Instance.GetRequiredService<ProjectKBConfig>();
+        [JsonIgnore]
         public RelayCommand OpenTemplateCommand { get; set; }
+        [JsonIgnore]
         public RelayCommand OpenFlowEngineToolCommand { get; set; }
+        [JsonIgnore]
         public RelayCommand OpenLogCommand { get; set; }
+        [JsonIgnore]
         public RelayCommand OpenModbusCommand { get; set; }
-        public RelayCommand OpenConfigCommand { get; set; }
+        [JsonIgnore]
+        public RelayCommand EditConfigCommand { get; set; }
+        [JsonIgnore]
         public RelayCommand OpenSocketConfigCommand { get; set; }
-
+        [JsonIgnore]
         public RelayCommand OpenChangeLogCommand { get; set; }
+        [JsonIgnore]
         public RelayCommand OpenReadMeCommand { get; set; }
 
+        public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
+        public static SummaryManager SummaryManager => SummaryManager.GetInstance();
+        public static RecipeManager RecipeManager => RecipeManager.GetInstance();
 
         public ProjectKBConfig()
         {
@@ -34,13 +43,14 @@ namespace ProjectKB
             OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
             TemplateItemSource = TemplateFlow.Params;
             OpenLogCommand = new RelayCommand(a => OpenLog());
-            OpenModbusCommand = new RelayCommand(a => OpenModbus());
-            OpenConfigCommand = new RelayCommand(a => OpenConfig());
+            EditConfigCommand = new RelayCommand(a => EditConfig());
             OpenChangeLogCommand = new RelayCommand(a => OpenChangeLog());
             OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
+            OpenModbusCommand = new RelayCommand(a => OpenModbus());
             OpenSocketConfigCommand = new RelayCommand(a => OepnSocketConfig());
         }
 
+        [DisplayName("日志开关(重启窗口后生效)")]
         public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; NotifyPropertyChanged(); } }
         private bool _LogControlVisibility = true;
 
@@ -51,25 +61,15 @@ namespace ProjectKB
         [DisplayName("允许测试失败")]
         public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; NotifyPropertyChanged(); } }
         private bool _AllowTestFailures = true;
-
-        [DisplayName("RefreshResult")]
-        public bool RefreshResult { get => _RefreshResult; set { _RefreshResult = value; NotifyPropertyChanged(); } }
-        private bool _RefreshResult = true;
-
-
+        public void EditConfig()
+        {
+            new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(),WindowStartupLocation =WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
         public static void OepnSocketConfig()
         {
-            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(SocketConfig.Instance) { Owner = Application.Current.GetActiveWindow() };
+            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(SocketConfig.Instance) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             propertyEditorWindow.Show();
         }
-
-
-        public static void OpenConfig()
-        {
-            EditProjectKBConfig editProjectKBConfig = new EditProjectKBConfig() { Owner = Application.Current.GetActiveWindow() };
-            editProjectKBConfig.ShowDialog();
-        }
-
         public static void OpenResourceName(string title, string resourceName)
         {
             // 获取当前执行的程序集
@@ -112,9 +112,6 @@ namespace ProjectKB
             OpenResourceName("README",resourceName);
         }
 
-
-
-
         public static void OpenModbus()
         {
             ModbusConnect modbusConnect = new ModbusConnect() { Owner = Application.Current.GetActiveWindow() };
@@ -142,58 +139,28 @@ namespace ProjectKB
         {
             new FlowEngineToolWindow(TemplateFlow.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+        public event EventHandler<string> SNChanged;
+
+        [DisplayName("SN锁")]
+        public bool SNlocked { get => _SNlocked; set { _SNlocked = value; NotifyPropertyChanged(); } }
+        private bool _SNlocked;
 
         [JsonIgnore]
-        public string SN { get => _SN; set
-            {
-                if (!string.IsNullOrEmpty(value) && value.Length > SNMax)
-                {
-                    // 移除最前面的字符，使其长度为 14
-                    _SN = value.Substring(value.Length - SNMax);
-                }
-                else
-                {
-                    _SN = value;
-                }
-                NotifyPropertyChanged(); } }
-        private string _SN;
-
-        public int SNMax { get => _SMMax; set { _SMMax = value; NotifyPropertyChanged(); } }
-        private int _SMMax = 17;
-
-        public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; NotifyPropertyChanged(); } }
-        private bool _IsAutoUploadSn;
-       
-        public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; NotifyPropertyChanged(); } }
-        private string _ResultSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "TestReslut");
-
-
-
-        public string ResultSavePath1 { get => _ResultSavePath1; set { _ResultSavePath1 = value; NotifyPropertyChanged(); } }
-        private string _ResultSavePath1 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "TestReslut");
-
-        public double Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
-        private double _Height = 300;
+        public string SN { get => _SN; set { if (SNlocked) return;  _SN = value; NotifyPropertyChanged(); SNChanged?.Invoke(this, value); } }
+        private string _SN = string.Empty;
 
         public static ModbusControl ModbusControl => ModbusControl.GetInstance();
+
+        [DisplayName("自动连接Modbus"), Category("KB")]
         public bool AutoModbusConnect { get => _AutoModbusConnect; set { _AutoModbusConnect = value; NotifyPropertyChanged(); } }
         private bool _AutoModbusConnect = true;
-
-
+        [DisplayName("KBLVSacle"), Category("KB")]
         public double KBLVSacle { get => _KBLVSacle; set { _KBLVSacle = value; NotifyPropertyChanged(); } }
         private double _KBLVSacle = 0.006583904;
 
-        public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
-        private int _ViewImageReadDelay = 1000;
 
-        public SummaryInfo SummaryInfo { get => _SummaryInfo; set { _SummaryInfo = value; NotifyPropertyChanged(); } }
-        private SummaryInfo _SummaryInfo = new SummaryInfo();
 
-        public static ProjectKBWindowConfig ProjectKBWindowConfig => ProjectKBWindowConfig.Instance;
-        public Dictionary<string, SPECConfig> SPECConfigs { get; set; } = new Dictionary<string, SPECConfig>();
 
-        public SPECConfig SPECConfig { get => _SPECConfig; set { _SPECConfig = value; NotifyPropertyChanged(); } }
-        private SPECConfig _SPECConfig = new SPECConfig();
 
     }
 }

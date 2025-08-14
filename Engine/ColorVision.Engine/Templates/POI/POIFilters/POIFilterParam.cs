@@ -9,9 +9,9 @@ namespace ColorVision.Engine.Templates.POI.POIFilters
 
         }
 
-        public PoiFilterParam(ModMasterModel modMaster, List<ModDetailModel> aoiDetail) : base(modMaster.Id, modMaster.Name ?? string.Empty, aoiDetail)
+        public PoiFilterParam(ModMasterModel modMaster, List<ModDetailModel> aoiDetail) : base(modMaster, aoiDetail)
         {
-
+            ModMaster = modMaster;
         }
 
         public bool NoAreaEnable { get => GetValue(_NoAreaEnable); set { SetProperty(ref _NoAreaEnable, value); NotifyPropertyChanged(); if (value) { Enable = false; XYZEnable = false; } } }

@@ -6,6 +6,7 @@ using log4net;
 using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -75,6 +76,11 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         {
             EditWindow = new EditPoiParam1(Params[index].Value) { Owner = Application.Current.GetActiveWindow() };
             EditWindow.ShowDialog();
+        }
+
+        public override bool ExitsTemplateName(string templateName)
+        {
+            return Params.Any(a => a.Key.Equals(templateName, StringComparison.OrdinalIgnoreCase));
         }
 
         public override void SetUserControlDataContext(int index)

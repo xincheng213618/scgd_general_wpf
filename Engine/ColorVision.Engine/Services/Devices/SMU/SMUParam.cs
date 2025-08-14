@@ -10,21 +10,23 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
     public class TemplateSMUParam : ITemplate<SMUParam>, IITemplateLoad
     {
+        public static ObservableCollection<TemplateModel<SMUParam>> Params { get; set; } = new ObservableCollection<TemplateModel<SMUParam>>();
+
         public TemplateSMUParam()
         {
             Title = "SMUParam设置";
             Code = "SMU";
-            TemplateParams = SMUParam.Params;
+            TemplateParams = Params;
         }
     }
 
+
     public class SMUParam : ParamModBase
     {
-        public static ObservableCollection<TemplateModel<SMUParam>> Params { get; set; } = new ObservableCollection<TemplateModel<SMUParam>>();
 
         public SMUParam() { }
 
-        public SMUParam(ModMasterModel modMaster, List<ModDetailModel> sxDetail) : base(modMaster.Id, modMaster.Name ?? string.Empty, sxDetail) { }
+        public SMUParam(ModMasterModel modMaster, List<ModDetailModel> sxDetail) : base(modMaster, sxDetail) { }
 
         public double StartMeasureVal
         {
