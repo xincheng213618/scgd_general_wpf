@@ -51,7 +51,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = this ;
+            this.DataContext = Config;
             View = new View();
             ImageView.ImageViewModel.ToolBarScaleRuler.ScalRuler.ActualLength = Device.Config.ScaleFactor;
             ImageView.ImageViewModel.ToolBarScaleRuler.ScalRuler.PhysicalUnit = Device.Config.ScaleFactorUnit;
