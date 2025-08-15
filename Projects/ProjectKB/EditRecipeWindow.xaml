@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ProjectKB"
         xmlns:ui ="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
-        Title="EditRecipeWindow" Height="450" Width="600" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="EditRecipeWindow" Height="450" Width="600" Background="{StaticResource GlobalBackground}" PreviewKeyDown="Window_PreviewKeyDown" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>

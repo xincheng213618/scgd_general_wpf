@@ -13,6 +13,7 @@
             <Button Content="Test_Mesh" Click="Test_Mesh_Click"/>
             <Button Content="CheckWIP" Click="Test_Mesh_Upload_Click"/>
             <Button Content="CheckCollect_test" Click="Test_CheckCollect_test_Click"/>
+            <Button Content="CheckCollect_test" Click="Test_CheckCollect_test_Click"/>
 
         </StackPanel>
         

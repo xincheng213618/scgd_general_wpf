@@ -51,9 +51,7 @@ namespace ColorVision.ImageEditor
         public ImageView()
         {
             InitializeComponent();
-            SetConfig(Config);
-            foreach (var item in ComponentManager.GetInstance().IImageComponents)
-                item.Execute(this);
+
         }
 
 
@@ -165,6 +163,10 @@ namespace ColorVision.ImageEditor
                     }
                 }
             }
+
+            SetConfig(Config);
+            foreach (var item in ComponentManager.GetInstance().IImageComponents)
+                item.Execute(this);
 
             ImageViewModel = new ImageViewModel(this,Zoombox1, ImageShow);
             Zoombox1.ContextMenu = ImageViewModel.ContextMenu;

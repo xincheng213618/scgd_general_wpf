@@ -111,5 +111,14 @@ namespace ProjectKB
             RecipeManager.Save();
             this.Close();
         }
+
+        private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Escape)
+            {
+                if (ProjectKBConfig.Instance.SNlocked)
+                    ProjectKBConfig.Instance.SNlocked = false;
+            }
+        }
     }
 }

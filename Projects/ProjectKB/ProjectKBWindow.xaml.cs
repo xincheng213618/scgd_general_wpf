@@ -916,61 +916,6 @@ namespace ProjectKB
             GC.SuppressFinalize(this);
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            KBItemMaster KBItemMaster = CurrentFlowResult ?? new KBItemMaster();
-            KBItemMaster.Model = FlowTemplate.Text;
-            KBItemMaster.SN = SNtextBox.Text;
-            KBItemMaster.CreateTime = DateTime.Now;
-            KBItemMaster.Code = "@2";
-            KBItemMaster.AvgC1 = 1;
-
-            var rnd = new Random();
-
-            KBItemMaster.Result = rnd.Next(2) == 0; // true 或 false
-
-            // FlowStatus 随机选择
-            var flowStatusValues = new[] { FlowStatus.Completed, FlowStatus.Runing, FlowStatus.Failed }; // 根据你的枚举实际填写
-            KBItemMaster.FlowStatus = flowStatusValues[rnd.Next(flowStatusValues.Length)];
-
-            KBItemMaster.Items.Clear();
-
-            for (int i = 0; i < 80; i++)
-            {
-                // 随机生成 6 位英文字母或数字的 Name
-                string name = RandomName(rnd, 6);
-
-                KBItem kBItem = new KBItem
-                {
-                    Name = name,
-                    Lv = rnd.Next(80, 121),
-                    Lc = Math.Round(rnd.NextDouble() * 2, 2),
-                    Result = rnd.Next(0, 2) == 1,
-                    KBKeyRect = new KBKeyRect
-                    {
-                        X = rnd.Next(0, 200),
-                        Y = rnd.Next(0, 200),
-                        Width = rnd.Next(10, 60),
-                        Height = rnd.Next(10, 60),
-                        KBKey = new KBKey
-                        {
-                            Area = rnd.Next(100, 3001),
-                            KeyScale = Math.Round(rnd.NextDouble() * 3, 2)
-                        }
-                    }
-                };
-                KBItemMaster.Items.Add(kBItem);
-            }
-
-            ViewResultManager.Save(KBItemMaster);
-
-        }
-        private string RandomName(Random rnd, int length)
-        {
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-            return new string(Enumerable.Repeat(chars, length)
-                .Select(s => s[rnd.Next(s.Length)]).ToArray());
-        }
         private void Instance_SNChanged(object? sender, string e)
         {
             if (Summary.AutoUploadSN)
@@ -1103,7 +1048,16 @@ namespace ProjectKB
 
         private void ListViewSearch_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (ListViewSearch.SelectedIndex > -1)
+            {
+                Searchbox.Text = string.Empty;
+                filteredResults[ListViewSearch.SelectedIndex].Command?.Execute(this);
+            }
+        }
 
+        private void UnSNlocked_Click(object sender, RoutedEventArgs e)
+        {
+            ProjectKBConfig.Instance.SNlocked = false;
         }
     }
 }
