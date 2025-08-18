@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Pattern.Cross;
 using ColorVision.UI;
 using OpenCvSharp;
 using System.ComponentModel;
