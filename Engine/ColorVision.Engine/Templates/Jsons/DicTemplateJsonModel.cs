@@ -1,11 +1,12 @@
-﻿using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
 using SqlSugar;
 using System;
 
 namespace ColorVision.Engine.Templates.Jsons
 {
     [SugarTable("t_scgd_sys_dictionary_mod_master")]
-    public class DicTemplateJsonModel : VPKModel
+    public class DicTemplateJsonModel : VPKModel, IInitTables
     {
         [SugarColumn(ColumnName ="code")]
         public string Code { get => _Code; set { _Code = value; NotifyPropertyChanged(); } }

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.Abstractions;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using Newtonsoft.Json;
 using SqlSugar;
@@ -16,7 +17,7 @@ namespace ColorVision.Engine.Templates.Ghost
     }
 
     [SugarTable("t_scgd_algorithm_result_detail_ghost")]
-    public class AlgResultGhostModel : VPKModel, IViewResult
+    public class AlgResultGhostModel : VPKModel, IViewResult, IInitTables
     {
         [SugarColumn(ColumnName ="pid")]
         public int Pid { get; set; }

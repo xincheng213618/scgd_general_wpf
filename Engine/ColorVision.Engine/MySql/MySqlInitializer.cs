@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI;
 using System;
 using System.IO;
@@ -9,8 +10,11 @@ using System.Windows;
 namespace ColorVision.Engine.MySql
 {
 
+
+
     public class MySqlInitializer : InitializerBase
     {
+
         private readonly IMessageUpdater _messageUpdater;
 
         public MySqlInitializer(IMessageUpdater messageUpdater)
@@ -83,6 +87,7 @@ namespace ColorVision.Engine.MySql
                     });
                 }
                 
+
             }
         }
     }

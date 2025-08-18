@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1707 // 标识符不应包含下划线
 
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using SqlSugar;
 using System;
@@ -8,17 +9,17 @@ using System.Collections.Generic;
 namespace ColorVision.Engine.Services.Dao
 {
     [@SugarTable("t_scgd_measure_result_img")]
-    public class MeasureImgResultModel : PKModel
+    public class MeasureImgResultModel : PKModel, IInitTables
     {
         [SugarColumn(ColumnName ="batch_id")]
         public int BatchId { get; set; }
-        [SugarColumn(ColumnName ="params")]
-        public string? ReqParams { get; set; }
+        [SugarColumn(ColumnName = "params" ,ColumnDataType ="json")]
+        public string? ReqParams { get; set; } = string.Empty;
         [SugarColumn(ColumnName ="raw_file")]
-        public string? RawFile { get; set; }
+        public string? RawFile { get; set; } = string.Empty;
 
         [SugarColumn(ColumnName ="file_data")]
-        public string? ImgFrameInfo { get; set; }
+        public string? ImgFrameInfo { get; set; } = string.Empty;
 
         [SugarColumn(ColumnName ="file_type")]
         public sbyte? FileType { get; set; }
@@ -29,16 +30,16 @@ namespace ColorVision.Engine.Services.Dao
         public int TotalTime { get; set; }
 
         [SugarColumn(ColumnName ="result")]
-        public string? ResultMsg { get; set; }
+        public string? ResultMsg { get; set; } = string.Empty;
 
         [SugarColumn(ColumnName ="file_data")]
-        public string? FileData { get; set; }
+        public string? FileData { get; set; } = string.Empty;
 
         [SugarColumn(ColumnName ="file_url")]
-        public string? FileUrl { get; set; }
+        public string? FileUrl { get; set; } = string.Empty;
 
         [SugarColumn(ColumnName ="device_code")]
-        public string? DeviceCode { get; set; }
+        public string? DeviceCode { get; set; } = string.Empty;
 
         [SugarColumn(ColumnName ="create_date")]
         public DateTime? CreateDate { get; set; } = DateTime.Now;

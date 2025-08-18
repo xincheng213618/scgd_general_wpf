@@ -122,6 +122,7 @@ namespace ColorVision.Engine.MySql
                     DbType = SqlSugar.DbType.MySql,
                     IsAutoCloseConnection = true
                 });
+                
 
                 return Task.FromResult(true);
             }

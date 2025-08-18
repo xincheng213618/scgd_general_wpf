@@ -1,12 +1,12 @@
 ﻿using ColorVision.Engine.Abstractions;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using Newtonsoft.Json;
 using SqlSugar;
 
 namespace ColorVision.Engine.Templates.Jsons.BlackMura
 {
-    [SugarTable("t_scgd_algorithm_result_detail_blackmura")]
-    public class BlackMuraView: IViewResult
+    public class BlackMuraView: IViewResult,IInitTables
     {
         public BlackMuraView(BlackMuraModel blackMuraModel)
         {
@@ -18,12 +18,9 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
             LvData = JsonConvert.DeserializeObject<LvData>(blackMuraModel.UniformityJson) ?? new LvData();
             AreaJsonVal = blackMuraModel.AreaJsonVal;
         }
-        [SugarColumn(ColumnName ="id")]
         public int Id { get; set; }
-        [SugarColumn(ColumnName ="pid")]
         public int PId { get; set; }
 
-        [SugarColumn(ColumnName ="name")]
         public string Name { get; set; }
 
         public ResultJson ResultJson { get; set; }
@@ -31,8 +28,6 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
         public LvData LvData { get; set; }
 
         public Outputfile Outputfile { get; set; }
-
-        [SugarColumn(ColumnName ="area_json_val")]
         public string AreaJsonVal { get; set; }
 
     }
@@ -40,7 +35,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
 
     [SugarTable("t_scgd_algorithm_result_detail_blackmura")]
-    public class BlackMuraModel : PKModel
+    public class BlackMuraModel : PKModel, IInitTables
     {
         [SugarColumn(ColumnName ="pid")]
         public int PId { get; set; }

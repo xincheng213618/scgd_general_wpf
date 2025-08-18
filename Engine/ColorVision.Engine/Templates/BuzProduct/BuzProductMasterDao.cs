@@ -1,11 +1,12 @@
-﻿using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
 using SqlSugar;
 using System;
 
 namespace ColorVision.Engine.Templates.BuzProduct
 {
     [SugarTable("t_scgd_buz_product_master")]
-    public class BuzProductMasterModel : VPKModel
+    public class BuzProductMasterModel : VPKModel, IInitTables
     {
         [SugarColumn(ColumnName ="code")]
         public string Code { get; set; }

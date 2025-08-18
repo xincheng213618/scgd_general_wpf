@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
@@ -7,12 +8,12 @@ using System.Data;
 namespace ColorVision.Engine.Services.Dao
 {
     [SugarTable("t_scgd_measure_batch")]
-    public class BatchResultMasterModel : PKModel
+    public class BatchResultMasterModel : PKModel, IInitTables
     {
         public BatchResultMasterModel() 
         {
-            Name = null;
-            Code = null;
+            Name = string.Empty;
+            Code = string.Empty;
             TenantId = -1;
             TId = -1;
             CreateDate = DateTime.Now;

@@ -1,11 +1,12 @@
-﻿using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
 using SqlSugar;
 using System;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
 {
     [SugarTable("t_scgd_sys_resource_tpa_dll")]
-    public class SysResourceTpaDLLModel : VPKModel
+    public class SysResourceTpaDLLModel : VPKModel, IInitTables
     {
 
         [SugarColumn(ColumnName ="code")]
@@ -20,7 +21,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
         public string? DLLFileName { get => _DLLFileName; set { _DLLFileName = value; NotifyPropertyChanged(); } }
         private string? _DLLFileName;
 
-        [SugarColumn(ColumnName ="cfg_json")]
+        [SugarColumn(ColumnName ="cfg_json", ColumnDataType ="json")]
         public string? CfgJson { get => _CfgJson; set { _CfgJson = value; NotifyPropertyChanged(); } }
         private string? _CfgJson;
 

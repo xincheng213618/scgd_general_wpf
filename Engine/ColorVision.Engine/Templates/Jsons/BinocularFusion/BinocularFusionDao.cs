@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.Abstractions;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using SqlSugar;
 
@@ -6,7 +7,7 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
 {
 
     [SugarTable("t_scgd_algorithm_result_detail_binocular_fusion")]
-    public class BinocularFusionModel : PKModel, IViewResult
+    public class BinocularFusionModel : PKModel, IViewResult, IInitTables
     {
         [SugarColumn(ColumnName ="pid")]
         public int PId { get; set; }

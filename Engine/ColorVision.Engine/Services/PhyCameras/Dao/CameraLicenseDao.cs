@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS0618
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
@@ -37,7 +38,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
     }
 
     [SugarTable("t_scgd_camera_license")]
-    public class LicenseModel : ViewModelBase,IPKModel, ISortID
+    public class LicenseModel : ViewModelBase,IPKModel, ISortID, IInitTables
     {
         [SugarColumn(ColumnName ="id")]
         public int Id { get; set; }
