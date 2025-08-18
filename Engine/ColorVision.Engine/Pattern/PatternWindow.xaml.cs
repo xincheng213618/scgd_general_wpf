@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Templates;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
@@ -84,9 +85,18 @@ namespace ColorVision.Engine.Pattern
                 PatternManager.TemplatePatternFiles.RemoveAt(ListViewPattern.SelectedIndex);
                 File.Delete(index.FilePath);
             }, (s, e) => { e.CanExecute = ListViewPattern.SelectedIndex > -1; }));
+
+            ListViewPattern.CommandBindings.Add(new CommandBinding(Commands.ReName, (s, e) => ReName(), (s, e) => e.CanExecute = ListViewPattern.SelectedIndex > -1));
+
         }
 
-
+        public void ReName()
+        {
+            if (ListViewPattern.SelectedIndex > -1 && TemplatePatternFiles[ListViewPattern.SelectedIndex] is TemplatePatternFile templateModelBase)
+            {
+                templateModelBase.IsEditMode = true;
+            }
+        }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -246,6 +256,19 @@ namespace ColorVision.Engine.Pattern
             {
                 SetTemplatePattern(TemplatePatternFiles[listView.SelectedIndex].FilePath);
             }
+        }
+
+        private void TextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (sender is TextBox textBox && textBox.Tag is TemplatePatternFile templateModelBase)
+            {
+                templateModelBase.IsEditMode = false;
+            }
+        }
+
+        private void Open_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.UI;
 using log4net;
@@ -28,7 +29,7 @@ namespace ColorVision.Engine.Pattern
         private static readonly object _locker = new();
         public static PatternManager GetInstance() { lock (_locker) { _instance ??= new PatternManager(); return _instance; } }
 
-        public static PatternManagerConfig Config { get; set; } = ConfigService.Instance.GetRequiredService<PatternManagerConfig>();    
+        public PatternManagerConfig Config { get; set; } = ConfigService.Instance.GetRequiredService<PatternManagerConfig>();    
 
         public ObservableCollection<TemplatePatternFile> TemplatePatternFiles { get; set; } = new ObservableCollection<TemplatePatternFile>();
         public List<PatternMeta> Patterns { get; set; } = new List<PatternMeta>();
@@ -36,6 +37,8 @@ namespace ColorVision.Engine.Pattern
         public string PatternPath { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision", "Pattern");
        
         public RelayCommand EditCommand { get; set; }
+        public RelayCommand OpenPatternPathCommand { get; set; }
+        public RelayCommand OpenSaveFilePathCommand { get; set; }
 
 
         private PatternManager()
@@ -82,9 +85,21 @@ namespace ColorVision.Engine.Pattern
                 }
             }
             EditCommand = new RelayCommand(a => Edit());
+            OpenPatternPathCommand = new RelayCommand(a => OpenPatternPath());
+            OpenSaveFilePathCommand = new RelayCommand(a => OpenSaveFilePath());
+
         }
 
-        public static void Edit()
+        public void OpenSaveFilePath()
+        {
+            PlatformHelper.OpenFolder(Config.SaveFilePath);
+        }
+        public void OpenPatternPath()
+        {
+            PlatformHelper.OpenFolder(PatternPath);
+        }
+
+        public void Edit()
         {
             new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
             ConfigService.Instance.SaveConfigs();
