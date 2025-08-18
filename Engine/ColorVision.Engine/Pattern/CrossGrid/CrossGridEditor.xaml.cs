@@ -14,12 +14,12 @@ namespace ColorVision.Engine.Pattern.CrossGrid
     /// </summary>
     public partial class CrossGridEditor : UserControl
     {
-        public CrossGridEditor()
+        public static PatternCrossGridConfig Config { get; set; }
+        public CrossGridEditor(PatternCrossGridConfig patternCrossGridConfig)
         {
+            Config = patternCrossGridConfig;
             InitializeComponent();
         }
-        public static PatternCrossGridConfig Config => ConfigService.Instance.GetRequiredService<PatternCrossGridConfig>();
-        public ViewModelBase GetConfig() => Config;
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {

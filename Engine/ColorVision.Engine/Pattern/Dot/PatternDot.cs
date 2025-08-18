@@ -68,7 +68,7 @@ namespace ColorVision.Engine.Pattern.Dot
     {
         public static PatternDotConfig Config => ConfigService.Instance.GetRequiredService<PatternDotConfig>();
         public override ViewModelBase GetConfig() => Config;
-        public override UserControl GetPatternEditor() => new DotEditor();
+        public override UserControl GetPatternEditor() => new DotEditor(Config);
 
         public override Mat Gen(int height, int width)
         {

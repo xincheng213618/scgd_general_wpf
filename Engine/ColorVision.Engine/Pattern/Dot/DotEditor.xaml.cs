@@ -13,11 +13,13 @@ namespace ColorVision.Engine.Pattern.Dot
     /// </summary>
     public partial class DotEditor : UserControl
     {
-        public DotEditor()
+        public  PatternDotConfig Config { get; set; }
+
+        public DotEditor(PatternDotConfig config)
         {
+            Config = config;
             InitializeComponent();
         }
-        public static PatternDotConfig Config => ConfigService.Instance.GetRequiredService<PatternDotConfig>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -104,7 +106,7 @@ namespace ColorVision.Engine.Pattern.Dot
                 }
                 if (tag == "G")
                 {
-                    Config.AltBrush = Brushes.Green;
+                    Config.AltBrush = Brushes.Lime;
                 }
                 if (tag == "B")
                 {

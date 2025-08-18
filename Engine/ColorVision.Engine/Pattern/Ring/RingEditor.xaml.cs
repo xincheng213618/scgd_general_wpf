@@ -104,7 +104,7 @@ namespace ColorVision.Engine.Pattern.Ring
                 }
                 if (tag == "G")
                 {
-                    Config.AltBrush = Brushes.Green;
+                    Config.AltBrush = Brushes.Lime;
                 }
                 if (tag == "B")
                 {

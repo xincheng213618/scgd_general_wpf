@@ -21,11 +21,13 @@ namespace ColorVision.Engine.Pattern.Checkerboard
     /// </summary>
     public partial class CheckerboardEditor : UserControl
     {
-        public CheckerboardEditor()
+        public static PatternCheckerboardConfig Config { get; set; }
+
+        public CheckerboardEditor(PatternCheckerboardConfig patternCheckerboardConfig)
         {
+            Config = patternCheckerboardConfig;
             InitializeComponent();
         }
-        public static PatternCheckerboardConfig Config => ConfigService.Instance.GetRequiredService<PatternCheckerboardConfig>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -114,7 +116,7 @@ namespace ColorVision.Engine.Pattern.Checkerboard
                 }
                 if (tag == "G")
                 {
-                    Config.AltBrush = Brushes.Green;
+                    Config.AltBrush = Brushes.Lime;
                 }
                 if (tag == "B")
                 {

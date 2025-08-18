@@ -39,7 +39,7 @@ namespace ColorVision.Engine.Pattern.SFR
     {
         public static PatternSFRConfig Config => ConfigService.Instance.GetRequiredService<PatternSFRConfig>();
         public override ViewModelBase GetConfig() => Config;
-        public override UserControl GetPatternEditor() => new SFREditor();
+        public override UserControl GetPatternEditor() => new SFREditor(Config);
 
         public override Mat Gen(int height, int width)
         {

@@ -24,12 +24,11 @@ namespace ColorVision.Engine.Pattern
     }
 
     public abstract class IPatternBase<T> : IPatternBase where T:ViewModelBase,new()
-
     {
         public override void SetConfig(string config)
         {
             var b = JsonConvert.DeserializeObject<T>(config);
-            var Config = GetConfig();
+            T Config =(T) GetConfig();
             Config.CopyFrom(b);
         }
 

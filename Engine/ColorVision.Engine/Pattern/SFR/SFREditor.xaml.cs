@@ -13,11 +13,13 @@ namespace ColorVision.Engine.Pattern.SFR
     /// </summary>
     public partial class SFREditor : UserControl
     {
-        public SFREditor()
+        public PatternSFRConfig Config { get; set; }
+
+        public SFREditor(PatternSFRConfig patternSFRConfig)
         {
+            Config = patternSFRConfig;
             InitializeComponent();
         }
-        public static PatternSFRConfig Config => ConfigService.Instance.GetRequiredService<PatternSFRConfig>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -104,7 +106,7 @@ namespace ColorVision.Engine.Pattern.SFR
                 }
                 if (tag == "G")
                 {
-                    Config.AltBrush = Brushes.Green;
+                    Config.AltBrush = Brushes.Lime;
                 }
                 if (tag == "B")
                 {

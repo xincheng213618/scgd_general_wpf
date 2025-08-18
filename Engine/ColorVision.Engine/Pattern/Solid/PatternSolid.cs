@@ -18,7 +18,7 @@ namespace ColorVision.Engine.Pattern.Solid
     {
         public static PatternSolodConfig Config => ConfigService.Instance.GetRequiredService<PatternSolodConfig>();
         public override ViewModelBase GetConfig() => Config;
-        public override UserControl GetPatternEditor() => new SolidEditor();
+        public override UserControl GetPatternEditor() => new SolidEditor(Config);
 
         public override Mat Gen(int height, int width)
         {

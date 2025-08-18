@@ -14,13 +14,13 @@ namespace ColorVision.Engine.Pattern.Cross
     /// </summary>
     public partial class CrossEditor : UserControl
     {
-        public CrossEditor()
+        public static PatternCrossConfig Config { get; set; }
+
+        public CrossEditor(PatternCrossConfig patternCrossConfig)
         {
+            Config = patternCrossConfig;
             InitializeComponent();
         }
-        public static PatternCrossConfig Config => ConfigService.Instance.GetRequiredService<PatternCrossConfig>();
-        public ViewModelBase GetConfig() => Config;
-
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
@@ -106,7 +106,7 @@ namespace ColorVision.Engine.Pattern.Cross
                 }
                 if (tag == "G")
                 {
-                    Config.AltBrush = Brushes.Green;
+                    Config.AltBrush = Brushes.Lime;
                 }
                 if (tag == "B")
                 {

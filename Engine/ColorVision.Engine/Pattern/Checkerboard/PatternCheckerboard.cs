@@ -39,7 +39,7 @@ namespace ColorVision.Engine.Pattern.Checkerboard
     {
         public static PatternCheckerboardConfig Config => ConfigService.Instance.GetRequiredService<PatternCheckerboardConfig>();
         public override ViewModelBase GetConfig() => Config;
-        public override UserControl GetPatternEditor() => new CheckerboardEditor();
+        public override UserControl GetPatternEditor() => new CheckerboardEditor(Config);
 
 
         public override Mat Gen(int height, int width)

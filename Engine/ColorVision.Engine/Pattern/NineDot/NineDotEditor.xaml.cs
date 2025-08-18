@@ -13,11 +13,13 @@ namespace ColorVision.Engine.Pattern.NineDot
     /// </summary>
     public partial class NineDotEditor : UserControl
     {
-        public NineDotEditor()
+        public PatternNineDotConfig Config { get; set; }
+
+        public NineDotEditor(PatternNineDotConfig patternNineDotConfig)
         {
+            Config = patternNineDotConfig;
             InitializeComponent();
         }
-        public static PatternNineDotConfig Config => ConfigService.Instance.GetRequiredService<PatternNineDotConfig>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -104,7 +106,7 @@ namespace ColorVision.Engine.Pattern.NineDot
                 }
                 if (tag == "G")
                 {
-                    Config.AltBrush = Brushes.Green;
+                    Config.AltBrush = Brushes.Lime;
                 }
                 if (tag == "B")
                 {

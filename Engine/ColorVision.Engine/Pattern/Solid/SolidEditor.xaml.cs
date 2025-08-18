@@ -21,16 +21,20 @@ namespace ColorVision.Engine.Pattern.Solid
     /// </summary>
     public partial class SolidEditor : UserControl
     {
-        public SolidEditor()
+        public PatternSolodConfig Config { get; set; }
+
+        public SolidEditor(PatternSolodConfig patternSolodConfig)
         {
+            Config = patternSolodConfig;
             InitializeComponent();
         }
-        public static PatternSolodConfig Config => ConfigService.Instance.GetRequiredService<PatternSolodConfig>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
         }
+
+
         private void BtnPickMainColor_Click(object sender, RoutedEventArgs e)
         {
             var ColorPicker1 = new HandyControl.Controls.ColorPicker();
@@ -63,7 +67,7 @@ namespace ColorVision.Engine.Pattern.Solid
                 }
                 if (tag == "G")
                 {
-                    Config.MainBrush = Brushes.Green;
+                    Config.MainBrush = Brushes.Lime;
                 }
                 if (tag == "B")
                 {

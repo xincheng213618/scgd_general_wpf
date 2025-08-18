@@ -13,11 +13,13 @@ namespace ColorVision.Engine.Pattern.Stripe
     /// </summary>
     public partial class StripeEditor : UserControl
     {
-        public StripeEditor()
+        public PatternStripeConfig Config { get; set; }
+
+        public StripeEditor(PatternStripeConfig patternStripeConfig)
         {
+            Config = patternStripeConfig;
             InitializeComponent();
         }
-        public static PatternStripeConfig Config => ConfigService.Instance.GetRequiredService<PatternStripeConfig>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -55,7 +57,7 @@ namespace ColorVision.Engine.Pattern.Stripe
                 }
                 if (tag == "G")
                 {
-                    Config.MainBrush = Brushes.Green;
+                    Config.MainBrush = Brushes.Lime;
                 }
                 if (tag == "B")
                 {
@@ -104,7 +106,7 @@ namespace ColorVision.Engine.Pattern.Stripe
                 }
                 if (tag == "G")
                 {
-                    Config.AltBrush = Brushes.Green;
+                    Config.AltBrush = Brushes.Lime;
                 }
                 if (tag == "B")
                 {

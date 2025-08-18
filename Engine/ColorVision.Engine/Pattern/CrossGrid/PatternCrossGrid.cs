@@ -60,7 +60,7 @@ namespace ColorVision.Engine.Pattern.CrossGrid
     {
         public static PatternCrossGridConfig Config => ConfigService.Instance.GetRequiredService<PatternCrossGridConfig>();
         public override ViewModelBase GetConfig() => Config;
-        public override UserControl GetPatternEditor() => new CrossGridEditor(); // 可自定义编辑器
+        public override UserControl GetPatternEditor() => new CrossGridEditor(Config); // 可自定义编辑器
 
         public override Mat Gen(int height, int width)
         {

@@ -40,7 +40,7 @@ namespace ColorVision.Engine.Pattern.NineDot
     {
         public static PatternNineDotConfig Config => ConfigService.Instance.GetRequiredService<PatternNineDotConfig>();
         public override ViewModelBase GetConfig() => Config;
-        public override UserControl GetPatternEditor() => new NineDotEditor();
+        public override UserControl GetPatternEditor() => new NineDotEditor(Config);
         public override Mat Gen(int height, int width)
         {
             Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
