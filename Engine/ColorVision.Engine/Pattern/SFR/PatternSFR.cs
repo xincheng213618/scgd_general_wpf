@@ -35,7 +35,7 @@ namespace ColorVision.Engine.Pattern.SFR
     }
 
     [DisplayName("SFR")]
-    public class PatternSFR : IPatternBase
+    public class PatternSFR : IPatternBase<PatternSFRConfig>
     {
         public static PatternSFRConfig Config => ConfigService.Instance.GetRequiredService<PatternSFRConfig>();
         public override ViewModelBase GetConfig() => Config;

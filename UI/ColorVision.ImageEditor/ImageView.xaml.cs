@@ -163,12 +163,11 @@ namespace ColorVision.ImageEditor
                     }
                 }
             }
-
+            ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow);
             SetConfig(Config);
             foreach (var item in ComponentManager.GetInstance().IImageComponents)
                 item.Execute(this);
 
-            ImageViewModel = new ImageViewModel(this,Zoombox1, ImageShow);
             Zoombox1.ContextMenu = ImageViewModel.ContextMenu;
             ToolBar1.DataContext = ImageViewModel;
             ToolBarRight.DataContext = ImageViewModel;

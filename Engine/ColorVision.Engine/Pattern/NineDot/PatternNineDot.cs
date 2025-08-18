@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Pattern.Ring;
 using ColorVision.UI;
 using NPOI.SS.UserModel;
 using OpenCvSharp;
@@ -35,7 +36,7 @@ namespace ColorVision.Engine.Pattern.NineDot
     }
 
     [DisplayName("九点")]
-    public class PatternNineDot : IPatternBase
+    public class PatternNineDot : IPatternBase<PatternNineDotConfig>
     {
         public static PatternNineDotConfig Config => ConfigService.Instance.GetRequiredService<PatternNineDotConfig>();
         public override ViewModelBase GetConfig() => Config;

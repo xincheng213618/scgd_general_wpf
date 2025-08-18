@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Pattern.Solid
     }
 
     [DisplayName("纯色")]
-    public class PatternSolid : IPatternBase
+    public class PatternSolid : IPatternBase<PatternSolodConfig>
     {
         public static PatternSolodConfig Config => ConfigService.Instance.GetRequiredService<PatternSolodConfig>();
         public override ViewModelBase GetConfig() => Config;

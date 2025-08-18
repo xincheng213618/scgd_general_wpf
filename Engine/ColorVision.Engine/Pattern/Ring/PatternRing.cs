@@ -29,7 +29,7 @@ namespace ColorVision.Engine.Pattern.Ring
     }
 
     [DisplayName("Ring")]
-    public class PatternRing : IPatternBase
+    public class PatternRing : IPatternBase<PatternRingConfig>
     {
         public static PatternRingConfig Config => ConfigService.Instance.GetRequiredService<PatternRingConfig>();
         public override ViewModelBase GetConfig() => Config;

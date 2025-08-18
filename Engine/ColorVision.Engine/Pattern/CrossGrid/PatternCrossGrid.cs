@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Pattern.Dot;
 using ColorVision.UI;
 using OpenCvSharp;
 using System;
@@ -55,7 +56,7 @@ namespace ColorVision.Engine.Pattern.CrossGrid
     }
 
     [DisplayName("十字网格")]
-    public class PatternCrossGrid : IPatternBase
+    public class PatternCrossGrid : IPatternBase<PatternCrossGridConfig>
     {
         public static PatternCrossGridConfig Config => ConfigService.Instance.GetRequiredService<PatternCrossGridConfig>();
         public override ViewModelBase GetConfig() => Config;

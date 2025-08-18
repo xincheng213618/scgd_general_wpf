@@ -1,10 +1,17 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
+using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
+using Dm.util;
+using log4net;
+using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using OpenCvSharp.WpfExtensions;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Resources;
 using System.Windows;
 using System.Windows.Media;
 
@@ -32,13 +39,21 @@ namespace ColorVision.Engine.Pattern
         public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
         private int _Height = 480;
     }
+    public class TemplatePattern:ViewModelBase
+    {
+        public PatternWindowConfig PatternWindowConfig { get; set; }
 
+        public string PatternName { get; set; }
+        public string Config { get; set; }
+    }
 
     /// <summary>
     /// PatternWindow.xaml 的交互逻辑
     /// </summary>
     public partial class PatternWindow : Window,IDisposable
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(PatternManager));
+
         private OpenCvSharp.Mat currentMat;
 
         private readonly string[] imageFormats = {"bmp" ,"tif","png", "jpg"};
@@ -57,6 +72,8 @@ namespace ColorVision.Engine.Pattern
         ImageView imgDisplay { get; set; }
 
         public static List<PatternMeta> Patterns => PatternManager.GetInstance().Patterns;
+
+        public PatternMeta PatternMeta { get; set; }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -81,6 +98,7 @@ namespace ColorVision.Engine.Pattern
                     PatternEditorGrid.Children.Clear();
                     if (selectedPattern.Pattern is IPattern pattern)
                     {
+                        PatternMeta = selectedPattern;
                         PatternEditorGrid.Children.Add(pattern.GetPatternEditor());
                     }
                 }
@@ -153,6 +171,31 @@ namespace ColorVision.Engine.Pattern
             imgDisplay?.Dispose();
         }
 
+        private void TempLoad_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string pattern = File.ReadAllText("TemplatePattern.json");
+                TemplatePattern templatePattern = JsonConvert.DeserializeObject<TemplatePattern>(pattern);
+                PatternMeta = Patterns.Find(p => p.Name == templatePattern.PatternName);
+                cmbPattern1.SelectedItem = PatternMeta;
+                Config.CopyFrom(templatePattern.PatternWindowConfig);
+                PatternMeta.Pattern.SetConfig(templatePattern.Config);
+            }
+            catch(Exception ex)
+            {
+                log.Error(ex);
+            }
 
+        }
+
+        private void TempSave_Click(object sender, RoutedEventArgs e)
+        {
+            TemplatePattern templatePattern = new TemplatePattern();
+            templatePattern.PatternName = PatternMeta.Name;
+            templatePattern.PatternWindowConfig = Config;
+            templatePattern.Config = Patterns[cmbPattern1.SelectedIndex].Pattern.GetConfig().toString();
+            templatePattern.ToJsonNFile("TemplatePattern.json");
+        }
     }
 }
