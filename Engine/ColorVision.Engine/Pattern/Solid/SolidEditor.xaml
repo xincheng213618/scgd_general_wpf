@@ -9,8 +9,8 @@
              d:DesignHeight="100" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <Grid>
         <StackPanel Orientation="Horizontal" Margin="0,0,0,5" VerticalAlignment="Top">
-            <Button Content="主色" Width="55" Margin="0,0,5,0" Click="BtnPickMainColor_Click"/>
-            <Rectangle x:Name="rectMainColor" Width="25" Height="25" Stroke="Black" Fill="{Binding MainBrush}" Margin="0,0,5,0"/>
+            <Button Content="主色" Width="25" Margin="0,0,5,0" Padding="0" Background="{Binding MainBrush}" Click="BtnPickMainColor_Click"/>
+            <Rectangle x:Name="rectMainColor" Width="25" Height="25" Stroke="Black" Fill="{Binding MainBrush}" Margin="0,0,5,0" ButtonBase.Click="BtnPickMainColor_Click"/>
             <Button Content="R" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="R" />
             <Button Content="G" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="G"/>
             <Button Content="B" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="B"/>

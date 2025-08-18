@@ -12,6 +12,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 
 namespace ColorVision.UI
 {
@@ -86,6 +87,8 @@ namespace ColorVision.UI
                 }
             }
         }
+
+
         public static void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
@@ -201,7 +204,6 @@ namespace ColorVision.UI
                 Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
             };
             dockPanel.Children.Add(textBlock);
-
             if (propertyEditorType == PropertyEditorType.TextSelectFile)
             {
                 var button = new Button
@@ -262,7 +264,7 @@ namespace ColorVision.UI
                 button.Click += (s, e) =>
                 {
                     var folderDialog = new System.Windows.Forms.FolderBrowserDialog();
-                    folderDialog.SelectedPath = (string)property.GetValue(obj) ?? string.Empty;
+                    folderDialog.SelectedPath = (string)property.GetValue(obj);
                     if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                     {
                         if (folderDialog.SelectedPath == null) return;
@@ -296,6 +298,73 @@ namespace ColorVision.UI
                 dockPanel.Children.Add(button);
                 dockPanel.Children.Add(textbox);
 
+            }
+            else if (propertyEditorType == PropertyEditorType.TextJson)
+            {
+                RelayCommand relayCommand = new RelayCommand(a =>
+                {
+                    AvalonEditWindow avalonEditWindow = new AvalonEditWindow() { WindowStartupLocation = WindowStartupLocation.CenterOwner, Owner = Application.Current.GetActiveWindow() };
+                    avalonEditWindow.SetJsonText((string)property.GetValue(obj));
+                    avalonEditWindow.Closing += (s, e) =>
+                    {
+                        property.SetValue(obj, avalonEditWindow.GetJsonText());
+                    };
+                    avalonEditWindow.ShowDialog();
+                });
+                Button button = new Button
+                {
+                    Width = 25,
+                    Height = 25,
+                    Margin = new Thickness(5, 1, 5, 0),
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Padding = new Thickness(2),
+                    Command = relayCommand
+                };
+                TextBlock textBlock1 = new TextBlock
+                {
+                    Text = "\uE713",
+                    FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                    FontSize = 16,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    RenderTransformOrigin = new Point(0.5, 0.5),
+                    Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"]
+                };
+
+                RotateTransform rotateTransform = new RotateTransform();
+                textBlock1.RenderTransform = rotateTransform;
+                button.Content = textBlock1;
+                DoubleAnimation rotateAnimation = new DoubleAnimation
+                {
+                    From = 0,
+                    To = 360,
+                    Duration = new Duration(TimeSpan.FromSeconds(0.5)),
+                    FillBehavior = FillBehavior.Stop
+                };
+
+                // Create the storyboard
+                Storyboard storyboard = new Storyboard();
+                storyboard.Children.Add(rotateAnimation);
+                Storyboard.SetTarget(rotateAnimation, rotateTransform);
+                Storyboard.SetTargetProperty(rotateAnimation, new PropertyPath(RotateTransform.AngleProperty));
+
+                // Add the click event handler
+                button.Click += (s, e) => storyboard.Begin();
+
+
+                var textbox = new TextBox
+                {
+                    Margin = new Thickness(5, 0, 0, 0),
+                    Style = (Style)Application.Current.FindResource("TextBox.Small")
+                };
+                var binding = new Binding(property.Name)
+                {
+                    Source = obj,
+                    Mode = BindingMode.TwoWay
+                };
+                textbox.SetBinding(TextBox.TextProperty, binding);
+                DockPanel.SetDock(button, Dock.Right);
+                dockPanel.Children.Add(button);
+                dockPanel.Children.Add(textbox);
             }
             else if (propertyEditorType == PropertyEditorType.CronExpression)
             {
@@ -378,9 +447,106 @@ namespace ColorVision.UI
                 textbox.SetBinding(TextBox.TextProperty, binding);
                 dockPanel.Children.Add(textbox);
             }
+
             return dockPanel;
         }
 
+        public static DockPanel GenBrushProperties(PropertyInfo property, object obj)
+        {
+            ResourceManager? resourceManager = GetResourceManager(obj);
+
+            var displayNameAttr = property.GetCustomAttribute<DisplayNameAttribute>();
+            var descriptionAttr = property.GetCustomAttribute<DescriptionAttribute>();
+
+            string displayName = displayNameAttr?.DisplayName ?? property.Name;
+            displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
+
+            var dockPanel = new DockPanel();
+            var textBlock = new TextBlock
+            {
+                Text = displayName,
+                MinWidth = 120,
+                Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
+            };
+
+            var button = new Button()
+            {
+                Margin = new Thickness(5, 0, 0, 0),
+                Height =20,
+                Width =22
+            };
+
+            if(property.PropertyType == typeof(SolidColorBrush))
+            {
+                button.Click += (s, e) =>
+                {
+                    var ColorPicker1 = new HandyControl.Controls.ColorPicker();
+                    ColorPicker1.SelectedBrush = (SolidColorBrush)property.GetValue(obj);
+                    ColorPicker1.SelectedColorChanged += (s, e) =>
+                    {
+                        property.SetValue(obj, ColorPicker1.SelectedBrush);
+                        button.Background = ColorPicker1.SelectedBrush;
+                    };
+                    Window window = new Window() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Content = ColorPicker1, Width = 250, Height = 400 };
+                    ColorPicker1.Confirmed += (s, e) =>
+                    {
+                        property.SetValue(obj, ColorPicker1.SelectedBrush);
+                        button.Background = ColorPicker1.SelectedBrush;
+                        window.Close();
+                    };
+                    window.Closed += (s, e) =>
+                    {
+                        ColorPicker1.Dispose();
+                    };
+                    window.Show();
+                };
+            }
+
+            var binding = new Binding(property.Name)
+            {
+                Source = obj,
+                Mode = BindingMode.TwoWay
+            };
+            button.SetBinding(ToggleButton.BackgroundProperty, binding);
+            DockPanel.SetDock(button, Dock.Right);
+
+            dockPanel.Children.Add(button);
+            dockPanel.Children.Add(textBlock);
+            return dockPanel;
+        }
+
+
+        public static DockPanel GenCommandProperties(PropertyInfo property, object obj)
+        {
+            ResourceManager? resourceManager = GetResourceManager(obj);
+
+            var displayNameAttr = property.GetCustomAttribute<DisplayNameAttribute>();
+            var descriptionAttr = property.GetCustomAttribute<DescriptionAttribute>();
+
+            string displayName = displayNameAttr?.DisplayName ?? property.Name;
+            displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
+
+            var dockPanel = new DockPanel();
+            var textBlock = new TextBlock
+            {
+                Text = displayName,
+                MinWidth = 120,
+                Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
+            };
+
+            var button = new Button()
+            {
+                Margin = new Thickness(5, 0, 0, 0),
+                Content ="执行",
+                Command = (ICommand)property.GetValue(obj)
+            };
+
+            DockPanel.SetDock(button, Dock.Right);
+
+            dockPanel.Children.Add(button);
+            dockPanel.Children.Add(textBlock);
+            return dockPanel;
+        }
 
 
         public static StackPanel GenPropertyEditorControl(object obj)
