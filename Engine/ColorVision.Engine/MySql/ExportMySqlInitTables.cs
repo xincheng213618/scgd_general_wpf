@@ -21,7 +21,7 @@ namespace ColorVision.Engine.MySql
 
         public override string OwnerGuid => nameof(ExportMySqlMenuItem);
         public override string GuidId => nameof(ExportMySqlInitTables);
-        public override string Header => "MySqlInitTables";
+        public override string Header => "MySqlInitTables(调试)";
         public override int Order => 2;
 
         private static Stopwatch _stopwatch;
@@ -54,20 +54,20 @@ namespace ColorVision.Engine.MySql
                         t.GetConstructor(Type.EmptyTypes) != null); // 类型 t 有公共无参构造函数
 
 
-            //foreach (var item in foundTypes)
-            //{
-            //    try
-            //    {
-            //        await Task.Delay(0); // 模拟异步操作
-            //        log.Info($"正在初始化表：{item.Name}");
-            //        MySqlControl.GetInstance().DB.CodeFirst.InitTables(item);
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        log.Info(item);
-            //        log.Error(ex);
-            //    }
-            //}
+            foreach (var item in foundTypes)
+            {
+                try
+                {
+                    await Task.Delay(0); // 模拟异步操作
+                    log.Info($"正在初始化表：{item.Name}");
+                    MySqlControl.GetInstance().DB.CodeFirst.InitTables(item);
+                }
+                catch (Exception ex)
+                {
+                    log.Info(item);
+                    log.Error(ex);
+                }
+            }
 
             MySqlControl.GetInstance().DB.CodeFirst.InitTables<MeasureImgResultModel>();
             _stopwatch.Stop();

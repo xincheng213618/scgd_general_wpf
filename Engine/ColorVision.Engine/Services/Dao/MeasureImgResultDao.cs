@@ -14,12 +14,12 @@ namespace ColorVision.Engine.Services.Dao
         [SugarColumn(ColumnName ="batch_id")]
         public int BatchId { get; set; }
         [SugarColumn(ColumnName = "params" ,ColumnDataType ="json")]
-        public string? ReqParams { get; set; } = string.Empty;
+        public string? ReqParams { get; set; }
         [SugarColumn(ColumnName ="raw_file")]
-        public string? RawFile { get; set; } = string.Empty;
+        public string? RawFile { get; set; }
 
         [SugarColumn(ColumnName ="file_data")]
-        public string? ImgFrameInfo { get; set; } = string.Empty;
+        public string? ImgFrameInfo { get; set; }
 
         [SugarColumn(ColumnName ="file_type")]
         public sbyte? FileType { get; set; }
@@ -30,19 +30,19 @@ namespace ColorVision.Engine.Services.Dao
         public int TotalTime { get; set; }
 
         [SugarColumn(ColumnName ="result")]
-        public string? ResultMsg { get; set; } = string.Empty;
+        public string? ResultMsg { get; set; } 
 
         [SugarColumn(ColumnName ="file_data")]
-        public string? FileData { get; set; } = string.Empty;
+        public string? FileData { get; set; }
 
         [SugarColumn(ColumnName ="file_url")]
-        public string? FileUrl { get; set; } = string.Empty;
+        public string? FileUrl { get; set; }
 
         [SugarColumn(ColumnName ="device_code")]
-        public string? DeviceCode { get; set; } = string.Empty;
+        public string? DeviceCode { get; set; } 
 
         [SugarColumn(ColumnName ="create_date")]
-        public DateTime? CreateDate { get; set; } = DateTime.Now;
+        public DateTime? CreateDate { get; set; }
     }
 
 
