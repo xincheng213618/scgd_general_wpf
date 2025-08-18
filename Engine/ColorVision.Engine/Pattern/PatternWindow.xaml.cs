@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates.Matching;
 using ColorVision.ImageEditor;
@@ -45,17 +46,6 @@ namespace ColorVision.Engine.Pattern
         public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
         private int _Height = 480;
     }
-    public class TemplatePattern:ViewModelBase
-    {
-        public PatternWindowConfig PatternWindowConfig { get; set; }
-
-        public string PatternName { get; set; }
-        public string Config { get; set; }
-    }
-
-
-
-
 
     /// <summary>
     /// PatternWindow.xaml 的交互逻辑
@@ -208,12 +198,17 @@ namespace ColorVision.Engine.Pattern
                 string pattern = File.ReadAllText(templatePath);
                 TemplatePattern templatePattern = JsonConvert.DeserializeObject<TemplatePattern>(pattern);
                 PatternMeta = Patterns.Find(p => p.Name == templatePattern.PatternName);
-                Config.CopyFrom(templatePattern.PatternWindowConfig);
-                ResolutionStackPanel.DataContext = Config;
+                Config.Width = templatePattern.PatternWindowConfig.Width;
+                Config.Height = templatePattern.PatternWindowConfig.Height;
+
                 PatternMeta.Pattern.SetConfig(templatePattern.Config);
 
                 PatternEditorGrid.Children.Clear();
                 PatternEditorGrid.Children.Add(PatternMeta.Pattern.GetPatternEditor());
+
+                cmbPattern1.SelectedItem = PatternMeta;
+
+
             }
             catch (Exception ex)
             {
@@ -247,6 +242,7 @@ namespace ColorVision.Engine.Pattern
                 string name = Path.GetFileNameWithoutExtension(item.FilePath);
                 currentMat.SaveImage(Path.Combine(PatternManager.Config.SaveFilePath ,name +".bmp"));
             }
+            PlatformHelper.OpenFolder(PatternManager.Config.SaveFilePath);
         }
 
         private void ListViewPattern_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

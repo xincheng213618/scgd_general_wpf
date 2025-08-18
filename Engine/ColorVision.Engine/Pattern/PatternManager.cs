@@ -10,32 +10,9 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace ColorVision.Engine.Pattern
 {
-    public class TemplatePatternFile
-    {
-        public ContextMenu ContextMenu { get; set; }
-        public RelayCommand RestoreCommand { get; set; }
-        public RelayCommand SelectCommand { get; set; }
-        public TemplatePatternFile(string filePath)
-        {
-            FilePath = filePath;
-            Name = Path.GetFileName(filePath);
-
-            ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = "复制", Command = ApplicationCommands.Copy });
-            ContextMenu.Items.Add(new MenuItem() { Header = "删除", Command = ApplicationCommands.Delete });
-            ContextMenu.Items.Add(new MenuItem() { Header = "还原", Command = RestoreCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = "选中", Command = SelectCommand });
-
-        }
-        public string Name { get; set; }
-
-        public string FilePath { get; set; }
-    }
 
     public class PatternManagerConfig:ViewModelBase,IConfig
     {
