@@ -190,7 +190,6 @@ namespace ColorVision.UI
                         {
                             dockPanel = PropertyEditorHelper.GenCommandProperties(property, obj);
                         }
-
                         else if (typeof(ViewModelBase).IsAssignableFrom(property.PropertyType))
                         {
                             // 如果属性是ViewModelBase的子类，递归解析

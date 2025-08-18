@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Pattern.Solid;
 using ColorVision.Engine.Pattern.Stripe;
 using Newtonsoft.Json;
 using System.Windows.Controls;
@@ -25,11 +26,11 @@ namespace ColorVision.Engine.Pattern
 
     public abstract class IPatternBase<T> : IPatternBase where T:ViewModelBase,new()
     {
+        public T Config { get; set; } = new T();
+        public override ViewModelBase GetConfig() => Config;
         public override void SetConfig(string config)
         {
-            var b = JsonConvert.DeserializeObject<T>(config);
-            T Config =(T) GetConfig();
-            Config.CopyFrom(b);
+            Config = JsonConvert.DeserializeObject<T>(config) ?? new T();
         }
 
     }

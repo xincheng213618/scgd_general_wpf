@@ -1,5 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
+using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using OpenCvSharp;
 using System.ComponentModel;
 using System.Windows.Controls;
@@ -16,8 +18,6 @@ namespace ColorVision.Engine.Pattern.Solid
     [DisplayName("纯色")]
     public class PatternSolid : IPatternBase<PatternSolodConfig>
     {
-        public static PatternSolodConfig Config => ConfigService.Instance.GetRequiredService<PatternSolodConfig>();
-        public override ViewModelBase GetConfig() => Config;
         public override UserControl GetPatternEditor() => new SolidEditor(Config);
 
         public override Mat Gen(int height, int width)

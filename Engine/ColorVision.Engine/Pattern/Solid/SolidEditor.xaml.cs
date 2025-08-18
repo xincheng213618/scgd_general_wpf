@@ -42,13 +42,11 @@ namespace ColorVision.Engine.Pattern.Solid
             ColorPicker1.SelectedColorChanged += (s, e) =>
             {
                 Config.MainBrush = ColorPicker1.SelectedBrush;
-                rectMainColor.Fill = Config.MainBrush;
             };
             Window window = new Window() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Content = ColorPicker1, Width = 250, Height = 400 };
             ColorPicker1.Confirmed += (s, e) =>
             {
                 Config.MainBrush = ColorPicker1.SelectedBrush;
-                rectMainColor.Fill = Config.MainBrush;
                 window.Close();
             };
             window.Closed += (s, e) =>
@@ -83,7 +81,6 @@ namespace ColorVision.Engine.Pattern.Solid
                 {
                     Config.MainBrush = Brushes.Black;
                 }
-                rectMainColor.Fill = Config.MainBrush;
             }
         }
     }

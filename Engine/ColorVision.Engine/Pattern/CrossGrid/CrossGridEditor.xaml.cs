@@ -32,13 +32,11 @@ namespace ColorVision.Engine.Pattern.CrossGrid
             ColorPicker1.SelectedColorChanged += (s, e) =>
             {
                 Config.LineBrush = ColorPicker1.SelectedBrush;
-                rectMainColor.Fill = Config.LineBrush;
             };
             Window window = new Window() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Content = ColorPicker1, Width = 250, Height = 400 };
             ColorPicker1.Confirmed += (s, e) =>
             {
                 Config.LineBrush = ColorPicker1.SelectedBrush;
-                rectMainColor.Fill = Config.LineBrush;
                 window.Close();
             };
             window.Closed += (s, e) =>
@@ -73,7 +71,6 @@ namespace ColorVision.Engine.Pattern.CrossGrid
                 {
                     Config.LineBrush = Brushes.Black;
                 }
-                rectMainColor.Fill = Config.LineBrush;
             }
         }
 
@@ -84,13 +81,11 @@ namespace ColorVision.Engine.Pattern.CrossGrid
             ColorPicker1.SelectedColorChanged += (s, e) =>
             {
                 Config.BackgroundBrush = ColorPicker1.SelectedBrush;
-                rectAltColor.Fill = Config.BackgroundBrush;
             };
             Window window = new Window() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Content = ColorPicker1, Width = 250, Height = 400 };
             ColorPicker1.Confirmed += (s, e) =>
             {
                 Config.BackgroundBrush = ColorPicker1.SelectedBrush;
-                rectAltColor.Fill = Config.BackgroundBrush;
                 window.Close();
             };
             window.Closed += (s, e) =>
@@ -125,7 +120,6 @@ namespace ColorVision.Engine.Pattern.CrossGrid
                 {
                     Config.BackgroundBrush = Brushes.Black;
                 }
-                rectAltColor.Fill = Config.BackgroundBrush;
             }
         }
     }

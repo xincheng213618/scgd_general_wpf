@@ -213,7 +213,7 @@ namespace ColorVision.Engine.Pattern
 
         private void TempSave_Click(object sender, RoutedEventArgs e)
         {
-            string json = Path.Combine(PatternManager.GetInstance().PatternPath, PatternMeta.Name + Config.Width + Config.Height +DateTime.Now.ToString("yyyyMMddHHmmss")) +".json";
+            string json = Path.Combine(PatternManager.GetInstance().PatternPath, PatternMeta.Name + "_" +Config.Width + "x"+ Config.Height +"_" + DateTime.Now.ToString("HHmmss")) +".json";
             TemplatePattern templatePattern = new TemplatePattern();
             templatePattern.PatternName = PatternMeta.Name;
             templatePattern.PatternWindowConfig = Config;

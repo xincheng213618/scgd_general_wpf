@@ -13,11 +13,14 @@ namespace ColorVision.Engine.Pattern.Ring
     /// </summary>
     public partial class RingEditor : UserControl
     {
-        public RingEditor()
+        public static PatternRingConfig Config { get; set; }
+
+
+        public RingEditor(PatternRingConfig patternRingConfig)
         {
+			Config = patternRingConfig;
             InitializeComponent();
         }
-        public static PatternRingConfig Config => ConfigService.Instance.GetRequiredService<PatternRingConfig>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -30,13 +33,11 @@ namespace ColorVision.Engine.Pattern.Ring
 			ColorPicker1.SelectedColorChanged += (s, e) =>
 			{
 				Config.MainBrush = ColorPicker1.SelectedBrush;
-				rectMainColor.Fill = Config.MainBrush;
 			};
 			Window window = new Window() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Content = ColorPicker1, Width = 250, Height = 400 };
 			ColorPicker1.Confirmed += (s, e) =>
 			{
 				Config.MainBrush = ColorPicker1.SelectedBrush;
-				rectMainColor.Fill = Config.MainBrush;
 				window.Close();
 			};
 			window.Closed += (s, e) =>
@@ -71,7 +72,6 @@ namespace ColorVision.Engine.Pattern.Ring
 				{
 					Config.MainBrush = Brushes.Black;
 				}
-				rectMainColor.Fill = Config.MainBrush;
 			}
 		}
 
@@ -82,13 +82,11 @@ namespace ColorVision.Engine.Pattern.Ring
 			ColorPicker1.SelectedColorChanged += (s, e) =>
 			{
 				Config.AltBrush = ColorPicker1.SelectedBrush;
-				rectAltColor.Fill = Config.AltBrush;
 			};
 			Window window = new Window() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Content = ColorPicker1, Width = 250, Height = 400 };
 			ColorPicker1.Confirmed += (s, e) =>
 			{
 				Config.AltBrush = ColorPicker1.SelectedBrush;
-				rectAltColor.Fill = Config.AltBrush;
 				window.Close();
 			};
 			window.Closed += (s, e) =>
@@ -123,7 +121,6 @@ namespace ColorVision.Engine.Pattern.Ring
 				{
 					Config.AltBrush = Brushes.Black;
 				}
-				rectAltColor.Fill = Config.AltBrush;
 			}
 		}
 	}

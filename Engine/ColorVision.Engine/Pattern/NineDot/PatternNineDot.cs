@@ -38,8 +38,6 @@ namespace ColorVision.Engine.Pattern.NineDot
     [DisplayName("九点")]
     public class PatternNineDot : IPatternBase<PatternNineDotConfig>
     {
-        public static PatternNineDotConfig Config => ConfigService.Instance.GetRequiredService<PatternNineDotConfig>();
-        public override ViewModelBase GetConfig() => Config;
         public override UserControl GetPatternEditor() => new NineDotEditor(Config);
         public override Mat Gen(int height, int width)
         {

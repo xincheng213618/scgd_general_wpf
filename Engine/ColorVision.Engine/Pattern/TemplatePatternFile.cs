@@ -13,7 +13,7 @@ namespace ColorVision.Engine.Pattern
         public TemplatePatternFile(string filePath)
         {
             FilePath = filePath;
-            Name = Path.GetFileName(filePath);
+            Name = Path.GetFileNameWithoutExtension(filePath);
             SelectCommand = new RelayCommand(a => PlatformHelper.OpenFolderAndSelectFile(FilePath));
 
             ContextMenu = new ContextMenu();

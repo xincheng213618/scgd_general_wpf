@@ -36,10 +36,7 @@ namespace ColorVision.Engine.Pattern.Checkerboard
     [DisplayName("棋盘格")]
     public class PatternCheckerboard : IPatternBase<PatternCheckerboardConfig>
     {
-        public static PatternCheckerboardConfig Config => ConfigService.Instance.GetRequiredService<PatternCheckerboardConfig>();
-        public override ViewModelBase GetConfig() => Config;
         public override UserControl GetPatternEditor() => new CheckerboardEditor(Config);
-
 
         public override Mat Gen(int height, int width)
         {
