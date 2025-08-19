@@ -129,6 +129,22 @@ namespace ColorVision.UI
             dockPanel.Children.Add(textBlock);
             return dockPanel;
         }
+        public static ComboBox GenEnumPropertiesComboBox(PropertyInfo property, object obj)
+        {
+            var rm = GetResourceManager(obj);
+            var comboBox = new ComboBox
+            {
+                Margin = new Thickness(5, 0, 0, 0),
+                MinWidth = ControlMinWidth,
+                Style = ComboBoxSmallStyle,
+                ItemsSource = Enum.GetValues(property.PropertyType)
+            };
+
+            var binding = CreateTwoWayBinding(obj, property.Name);
+            comboBox.SetBinding(Selector.SelectedItemProperty, binding);
+            return comboBox;
+        }
+
 
         public static DockPanel GenEnumProperties(PropertyInfo property, object obj)
         {
@@ -152,6 +168,8 @@ namespace ColorVision.UI
             dockPanel.Children.Add(textBlock);
             return dockPanel;
         }
+
+
 
         public static DockPanel GenTextboxProperties(PropertyInfo property, object obj)
         {

@@ -936,6 +936,7 @@ namespace ProjectKB
                 log.Info(result);
                 if (result != "N")
                 {
+                    IsUploadSNing = false;
                     Application.Current.Dispatcher.BeginInvoke(() =>
                     {
                         MessageBox.Show(Application.Current.GetActiveWindow(), result);

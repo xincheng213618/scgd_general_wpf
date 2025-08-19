@@ -11,6 +11,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="100"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <Grid Margin="5">
@@ -28,7 +29,9 @@
             </StackPanel>
         </ScrollViewer>
 
-        <Border  Grid.Row="2" Margin="5" >
+        <TextBox x:Name="SqlTextBox" TextWrapping="WrapWithOverflow" Text="{Binding Sql}" Grid.Row="2" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
+
+        <Border  Grid.Row="3" Margin="5" >
             <Button  Height="40"  Content="查询" Background="{DynamicResource PrimaryBrush}" Foreground="White"  FontSize="18"  Click="Query_Click"/>
         </Border>
     </Grid>

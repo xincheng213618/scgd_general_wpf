@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.UI;
@@ -8,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,6 +17,30 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine
 {
+    public enum QueryOperator
+    {
+        [Description("=")]
+        Equal,      // =
+        [Description(">")]
+        Greater,    // >
+        [Description("<")]
+        Less,       // <
+        [Description(">=")]
+        GreaterOrEqual, // >=
+        [Description("<=")]
+        LessOrEqual,    // <=
+        [Description("LIKE")]
+        Like        // LIKE
+    }
+
+
+    public class QueryCondition
+    {
+        public PropertyInfo Property { get; set; }
+        public QueryOperator Operator { get; set; } // "=", ">", "<", ">=", "<=", "LIKE"
+        public object Value { get; set; }
+    }
+
     public class GenericQueryBaseConfig:ViewModelBase
     {
         [DisplayName("查询数量"), Category("View")]
@@ -33,6 +59,9 @@ namespace ColorVision.Engine
         public SqlSugarClient Db { get; set; }
 
         public ObservableCollection<KeyValuePair<string, PropertyInfo>> PropertyInfos { get; set; }
+
+        public string Sql { get => _Sql; set { _Sql = value;NotifyPropertyChanged(); } }
+        private string _Sql;
 
         public GenericQueryBase(SqlSugarClient db)
         {
@@ -63,7 +92,7 @@ namespace ColorVision.Engine
         GenericQueryBaseConfig GenericQueryBaseConfig { get; set; }
 
         T QueryValue { get; set; }
-        ObservableCollection<PropertyInfo> QueryPropertyInfos { get; set; }
+        ObservableCollection<QueryCondition> QueryConditions { get; set; }
 
         public GenericQuery(SqlSugarClient db, IList<T> viewResluts) : base(db)
         {
@@ -71,7 +100,7 @@ namespace ColorVision.Engine
             GenericQueryBaseConfig = new GenericQueryBaseConfig();
             QueryValue = new T();
             PropertyInfos = new ObservableCollection<KeyValuePair<string, PropertyInfo>>();
-            QueryPropertyInfos = new ObservableCollection<PropertyInfo>();
+            QueryConditions = new ObservableCollection<QueryCondition>();
 
             foreach (var prop in typeof(T).GetProperties())
             {
@@ -108,6 +137,8 @@ namespace ColorVision.Engine
         }
         public override void AddPropertyInfo(PropertyInfo property)
         {
+            PropertyInfos.Remove(PropertyInfos.First(a => a.Value == property));
+            QueryCondition queryCondition = new QueryCondition() { Property =property };
             DockPanel dockPanel = new DockPanel();
             if (property.PropertyType == typeof(bool))
             {
@@ -121,9 +152,11 @@ namespace ColorVision.Engine
             {
                 dockPanel = PropertyEditorHelper.GenEnumProperties(property, QueryValue);
             }
+            PropertyInfo propertyInfo = typeof(QueryCondition).GetProperty("Operator");
+            dockPanel.Children.Insert(0,PropertyEditorHelper.GenEnumPropertiesComboBox(propertyInfo, queryCondition));
             dockPanel.Margin = new Thickness(0, 0, 0, 5);
             QueryStackPanel.Children.Add(dockPanel);
-            QueryPropertyInfos.Add(property);
+            QueryConditions.Add(queryCondition);
         }
         public override void QueryDB()
         {
@@ -131,40 +164,48 @@ namespace ColorVision.Engine
             var query = Db.Queryable<T>();
 
             // 反射遍历 QueryValue 属性，根据有效值拼接 Where
-            foreach (var prop in QueryPropertyInfos)
+            foreach (var prop in QueryConditions)
             {
-                var value = prop.GetValue(QueryValue);
+                var value = prop.Property.GetValue(QueryValue);
                 if (value == null) continue;
-                string propName = prop.Name;
-                var SugarColumn = prop.GetCustomAttribute<SugarColumn>();
+                string propName = prop.Property.Name;
+                var SugarColumn = prop.Property.GetCustomAttribute<SugarColumn>();
                 if (SugarColumn != null)
                 {
                     if (SugarColumn.IsIgnore) continue;
                     if (SugarColumn.ColumnName != null) propName = SugarColumn.ColumnName;
                 }
-                var Browsable = prop.GetCustomAttribute<BrowsableAttribute>();
+                var Browsable = prop.Property.GetCustomAttribute<BrowsableAttribute>();
                 if (Browsable != null && Browsable.Browsable == false) continue;
-
-                if (prop.PropertyType == typeof(string))
+                if (prop.Property.PropertyType.IsEnum)
+                {
+                    var param = new Dictionary<string, object>();
+                    param[propName] = (int)value; // 强制转int比较保险
+                    query = query.Where($"{propName} {prop.Operator.ToDescription()} @{propName}", param);
+                }
+                else if (prop.Property.PropertyType == typeof(int)|| prop.Property.PropertyType == typeof(int?)|| prop.Property.PropertyType == typeof(double)|| prop.Property.PropertyType == typeof(double?))
+                {
+                    var param = new Dictionary<string, object>();
+                    param[propName] = value;
+                    query = query.Where($"{propName} {prop.Operator.ToDescription()} @{propName}", param);
+                }
+                else if (prop.Property.PropertyType == typeof(string))
                 {
                     string strValue = (string)value;
                     if (!string.IsNullOrWhiteSpace(strValue))
                     {
                         var param = new Dictionary<string, object>();
                         param[propName] = $"%{strValue}%";
-                        query = query.Where($"{propName} LIKE @{propName}", param);
+                        query = query.Where($"{propName} {prop.Operator.ToDescription()} @{propName}", param);
                     }
                 }
-                else if (prop.PropertyType.IsEnum)
-                {
-                    var param = new Dictionary<string, object>();
-                    param[propName] = (int)value; // 强制转int比较保险
-                    query = query.Where($"{propName} == @{propName}", param);
-                }
+
             }
 
             query = query.OrderBy(x => x.Id, GenericQueryBaseConfig.OrderByType);
 
+            Sql = query.ToSqlString(); // 触发SQL生成
+            log.InfoFormat("GenericQuery SQL: {0}", Sql);
             var dbList = GenericQueryBaseConfig.Count > 0 ? query.Take(GenericQueryBaseConfig.Count).ToList() : query.ToList();
 
             foreach (var dbItem in dbList)
@@ -182,7 +223,7 @@ namespace ColorVision.Engine
         GenericQueryBaseConfig GenericQueryBaseConfig { get; set; }
 
         T QueryValue { get; set; }
-        ObservableCollection<PropertyInfo> QueryPropertyInfos { get; set; }
+        ObservableCollection<QueryCondition> QueryConditions { get; set; }
         Func<T, T1> Converter { get; set; }
 
         public GenericQuery(SqlSugarClient db, IList<T1> viewResluts,Func<T, T1> converter) :base (db)
@@ -192,7 +233,7 @@ namespace ColorVision.Engine
             Converter = converter;
             QueryValue = new T();
             PropertyInfos = new ObservableCollection<KeyValuePair<string, PropertyInfo>>();
-            QueryPropertyInfos = new ObservableCollection<PropertyInfo>();
+            QueryConditions = new ObservableCollection<QueryCondition>();
 
             foreach (var prop in typeof(T).GetProperties())
             {
@@ -229,6 +270,8 @@ namespace ColorVision.Engine
         }
         public override void AddPropertyInfo(PropertyInfo property)
         {
+            PropertyInfos.Remove(PropertyInfos.First(a => a.Value == property));
+            QueryCondition queryCondition = new QueryCondition() { Property = property };
             DockPanel dockPanel = new DockPanel();
             if (property.PropertyType == typeof(bool))
             {
@@ -242,9 +285,11 @@ namespace ColorVision.Engine
             {
                 dockPanel = PropertyEditorHelper.GenEnumProperties(property, QueryValue);
             }
+            PropertyInfo propertyInfo = typeof(QueryCondition).GetProperty("Operator");
+            dockPanel.Children.Insert(0, PropertyEditorHelper.GenEnumPropertiesComboBox(propertyInfo, queryCondition));
             dockPanel.Margin = new Thickness(0, 0, 0, 5);
             QueryStackPanel.Children.Add(dockPanel);
-            QueryPropertyInfos.Add(property);
+            QueryConditions.Add(queryCondition);
         }
         public override void QueryDB()
         {
@@ -252,41 +297,47 @@ namespace ColorVision.Engine
             var query = Db.Queryable<T>();
 
             // 反射遍历 QueryValue 属性，根据有效值拼接 Where
-            foreach (var prop in QueryPropertyInfos)
+            foreach (var prop in QueryConditions)
             {
-                var value = prop.GetValue(QueryValue);
+                var value = prop.Property.GetValue(QueryValue);
                 if (value == null) continue;
-                string propName = prop.Name;
-                var SugarColumn = prop.GetCustomAttribute<SugarColumn>();
-                if  (SugarColumn != null)
+                string propName = prop.Property.Name;
+                var SugarColumn = prop.Property.GetCustomAttribute<SugarColumn>();
+                if (SugarColumn != null)
                 {
                     if (SugarColumn.IsIgnore) continue;
-                    if (SugarColumn.ColumnName !=null) propName = SugarColumn.ColumnName;
+                    if (SugarColumn.ColumnName != null) propName = SugarColumn.ColumnName;
                 }
-                var Browsable = prop.GetCustomAttribute<BrowsableAttribute>();
+                var Browsable = prop.Property.GetCustomAttribute<BrowsableAttribute>();
                 if (Browsable != null && Browsable.Browsable == false) continue;
-                 
-                if (prop.PropertyType == typeof(string))
+
+                if (prop.Property.PropertyType.IsEnum)
+                {
+                    var param = new Dictionary<string, object>();
+                    param[propName] = (int)value; // 强制转int比较保险
+                    query = query.Where($"{propName} {prop.Operator.ToDescription()} @{propName}", param);
+                }
+                else if (prop.Property.PropertyType == typeof(int) || prop.Property.PropertyType == typeof(int?) || prop.Property.PropertyType == typeof(double) || prop.Property.PropertyType == typeof(double?))
+                {
+                    var param = new Dictionary<string, object>();
+                    param[propName] = value;
+                    query = query.Where($"{propName} {prop.Operator.ToDescription()} @{propName}", param);
+                }
+                else if (prop.Property.PropertyType == typeof(string))
                 {
                     string strValue = (string)value;
                     if (!string.IsNullOrWhiteSpace(strValue))
                     {
                         var param = new Dictionary<string, object>();
                         param[propName] = $"%{strValue}%";
-                        query = query.Where($"{propName} LIKE @{propName}", param);
+                        query = query.Where($"{propName} {prop.Operator.ToDescription()} @{propName}", param);
                     }
                 }
-                else if (prop.PropertyType.IsEnum)
-                {
-                    var param = new Dictionary<string, object>();
-                    param[propName] = (int)value; // 强制转int比较保险
-                    query = query.Where($"{propName} = @{propName}", param);
-                }
             }
-            
+
             query = query.OrderBy(x => x.Id, GenericQueryBaseConfig.OrderByType);
-            string sql = query.ToSqlString(); // 触发SQL生成
-            log.InfoFormat("GenericQuery SQL: {0}", sql);
+            Sql = query.ToSqlString(); // 触发SQL生成
+            log.InfoFormat("GenericQuery SQL: {0}", Sql);
             var dbList = GenericQueryBaseConfig.Count > 0 ? query.Take(GenericQueryBaseConfig.Count).ToList() : query.ToList();
 
             foreach (var dbItem in dbList)
