@@ -149,6 +149,13 @@
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
+                                    <GridViewColumn Header="RunTime" Width="150">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                                <TextBlock Text="{Binding RunTime}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
                                 </GridView>
                             </ListView.View>
 
@@ -196,7 +203,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Margin="5,0,5,5">
                         <hc:StepBar Grid.Row="0" StepIndex="{Binding StepIndex}" Margin="-5,3,0,2">
@@ -219,7 +226,7 @@
                         </FlowDocument>
                     </RichTextBox>
 
-                    <Grid Grid.Row="2" x:Name="LogGrid">
+                    <Grid Grid.Row="2" x:Name="LogGrid"  Height="250">
 
                     </Grid>
                 </Grid>

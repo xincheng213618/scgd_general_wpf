@@ -40,8 +40,6 @@ namespace ProjectARVRLite
         public RelayCommand OpenReadMeCommand { get; set; }
 
         [JsonIgnore]
-        public RelayCommand EditSPECConfigcommand { get; set; }
-        [JsonIgnore]
         public RelayCommand InitTestCommand { get; set; }
 
         public ProjectARVRLiteConfig()
@@ -80,11 +78,6 @@ namespace ProjectARVRLite
         [DisplayName("允许测试失败")]
         public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; NotifyPropertyChanged(); } }
         private bool _AllowTestFailures = true;
-
-        [DisplayName("RefreshResult")]
-        public bool RefreshResult { get => _RefreshResult; set { _RefreshResult = value; NotifyPropertyChanged(); } }
-        private bool _RefreshResult = true;
-
 
         public void OpenConfig()
         {

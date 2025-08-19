@@ -911,6 +911,8 @@ namespace ProjectKB
 
         public void Dispose()
         {
+            STNodeEditorMain.Dispose();
+            timer?.Change(Timeout.Infinite, 500); // 停止定时器
             timer?.Dispose();
             logOutput?.Dispose();
             GC.SuppressFinalize(this);

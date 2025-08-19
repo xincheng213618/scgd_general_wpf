@@ -6,16 +6,12 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.1.2.1</VersionPrefix>
+		<VersionPrefix>1.1.2.13</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
 	  <None Remove="CHANGELOG.md" />
 	  <None Remove="README.md" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Page Remove="EditFixWindow.xaml" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
@@ -44,12 +40,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Include="EditFixWindow.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </None>
-	</ItemGroup>
-
-	<ItemGroup>
 	  <Compile Update="EditRecipeWindow.xaml.cs">
 	    <SubType>Code</SubType>
 	  </Compile>
@@ -75,6 +65,12 @@
 
 	<ItemGroup>
 	  <Folder Include="Assets\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Page Update="EditFixWindow.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </Page>
 	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">

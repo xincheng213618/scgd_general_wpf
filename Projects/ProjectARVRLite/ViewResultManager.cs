@@ -5,7 +5,6 @@ using SqlSugar;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -32,6 +31,7 @@ namespace ProjectARVRLite
         [DisplayName("打开图像延迟"), Category("View")]
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;
+
 
         [DisplayName("Csv保存路径"), PropertyEditorType(PropertyEditorType.TextSelectFolder), Category("ARVR")]
         public string SavePathCsv { get => _SavePathCsv; set { _SavePathCsv = value; NotifyPropertyChanged(); } }
@@ -85,6 +85,11 @@ namespace ProjectARVRLite
             // 确保表存在
             _db.CodeFirst.InitTables<ProjectARVRReuslt>();
             LoadAll(Config.Count);
+
+            if (!Directory.Exists(Config.SavePathCsv))
+                Directory.CreateDirectory(Config.SavePathCsv);
+            if (!Directory.Exists(Config.SavePathText))
+                Directory.CreateDirectory(Config.SavePathText);
         }
 
 
