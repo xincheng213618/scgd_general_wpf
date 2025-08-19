@@ -34,12 +34,18 @@
                 <Grid Grid.Row="0">
                     <im:ImageView Grid.Column="1" x:Name="ImageView" ></im:ImageView>
                 </Grid>
-                <Grid x:Name="Grid1" Grid.Row="1" Height="{Binding Height}">
+                <Grid x:Name="Grid1" Grid.Row="1" Height="{Binding ViewResultManager.Config.Height}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="32"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <Grid Visibility="Visible" >
+                        <ToolBarTray  Grid.Row="0" IsLocked="True">
+                            <ToolBar Padding="3,2">
+                                <Button  Content="查询" Command="{Binding ViewResultManager.QueryCommand}" Margin="2,0,0,0"/>
+                                <Button  Content="通用查询" Command="{Binding ViewResultManager.GenericQueryCommand}" Margin="2,0,0,0"/>
+                            </ToolBar>
+                        </ToolBarTray>
                         <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
                             <Button Command="{Binding ViewResultManager.SaveCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
                                 <Rectangle Width="16" Height="16" Fill="{StaticResource DISave}" />
@@ -80,13 +86,6 @@
                         </StackPanel>
                     </Grid>
                     <Grid  Grid.Row="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="200"/>
-                        </Grid.ColumnDefinitions>
-                        <Border Grid.Column="1"  Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" >
-                            <TextBox x:FieldModifier="public"  x:Name="logTextBox" TextWrapping="WrapWithOverflow" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
-                        </Border>
                         <ListView x:Name="listView1" BorderThickness="0" Padding="0"  SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" Grid.RowSpan="2" >
                             <ListView.Resources >
                                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
@@ -167,65 +166,59 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0" Margin="5">
-                    <StackPanel>
-                        <DockPanel  Margin="0,0,0,0">
-                            <ComboBox  x:Name="FlowTemplate" Height="10" SelectedIndex="{Binding TemplateSelectedIndex}" ItemsSource="{Binding TemplateItemSource}" SelectedValuePath="Value" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
-                            <Grid Width="30" Margin="5,0"  HorizontalAlignment="Left">
-                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
-                                <Button  Width="30" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding  OpenTemplateCommand}"/>
-                            </Grid>
-                            <Grid Width="30" >
-                                <Image Source="{StaticResource  DrawingImageEdit}" Width="15" Margin="0" />
-                                <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding OpenFlowEngineToolCommand}"/>
-                            </Grid>
-                            <DockPanel DockPanel.Dock="Left" HorizontalAlignment="Right" Margin="20,0,0,0">
-                                <TextBlock Text="SN" Margin="0,0,5,0"/>
-                                <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
-                            </DockPanel>
-                            <Button  Command="{Binding EditSPECConfigcommand}"  DockPanel.Dock="Right"  Padding="0" Height="25" Width="25" Margin="5,0,0,0">
-                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" RenderTransformOrigin="0.5,0.5"  Foreground="{DynamicResource GlobalTextBrush}">
-                                    <TextBlock.RenderTransform>
-                                        <RotateTransform x:Name="rotateTransform101"/>
-                                    </TextBlock.RenderTransform>
-                                </TextBlock>
-                                <Button.Triggers>
-                                    <EventTrigger RoutedEvent="Button.Click">
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="rotateTransform101" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </EventTrigger>
-                                </Button.Triggers>
-                            </Button>
-                            <Button Content="测试"  DockPanel.Dock="Right" Background="Pink"  Click="TestClick" />
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="75"/>
+                    </Grid.RowDefinitions>
+                    <DockPanel  Margin="0,0,0,5">
+                        <ComboBox  x:Name="FlowTemplate" Height="10" SelectedIndex="{Binding TemplateSelectedIndex}" ItemsSource="{Binding TemplateItemSource}" SelectedValuePath="Value" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
+                        <Grid Width="30" Margin="5,0"  HorizontalAlignment="Left">
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <Button  Width="30" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding  OpenTemplateCommand}"/>
+                        </Grid>
+                        <Grid Width="30" >
+                            <Image Source="{StaticResource  DrawingImageEdit}" Width="15" Margin="0" />
+                            <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding OpenFlowEngineToolCommand}"/>
+                        </Grid>
+                        <DockPanel DockPanel.Dock="Left" HorizontalAlignment="Right" Margin="20,0,0,0">
+                            <TextBlock Text="SN" Margin="0,0,5,0"/>
+                            <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
                         </DockPanel>
-                    </StackPanel>
+                        <Button Content="测试"  DockPanel.Dock="Right" Background="Pink"  Click="TestClick" Margin="5,0,0,0" />
+                    </DockPanel>
+
+                    <Border Grid.Row="1" Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Margin="0,0,0,0">
+                        <TextBox x:FieldModifier="public"  x:Name="logTextBox" TextWrapping="WrapWithOverflow" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
+                    </Border>
+
                 </Grid>
-                <Grid Grid.Row="1" Margin="0,0,0,5">
+                <Grid Grid.Row="1" Margin="0,0,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <RichTextBox x:Name="outputText"  Grid.Row="1"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Margin="5,0,5,5">
+                        <hc:StepBar Grid.Row="0" StepIndex="{Binding StepIndex}" Margin="-5,3,0,2">
+                            <hc:StepBarItem Content="初始化"/>
+                            <hc:StepBarItem Content="W51"/>
+                            <hc:StepBarItem Content="W255"/>
+                            <hc:StepBarItem Content="Black"/>
+                            <hc:StepBarItem Content="W25"/>
+                            <hc:StepBarItem Content="Chessboard"/>
+                            <hc:StepBarItem Content="MTFHV"/>
+                            <hc:StepBarItem Content="Distortion"/>
+                            <hc:StepBarItem Content="OpticCenter"/>
+                        </hc:StepBar>
+                    </Border>
+                    <RichTextBox x:Name="outputText"  Grid.Row="1"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0,5,0">
                         <FlowDocument>
                             <Paragraph>
 
                             </Paragraph>
                         </FlowDocument>
                     </RichTextBox>
-                    <hc:StepBar Grid.Row="0" StepIndex="{Binding StepIndex}" Margin="-10,0">
-                        <hc:StepBarItem Content="初始化"/>
-                        <hc:StepBarItem Content="W51"/>
-                        <hc:StepBarItem Content="W255"/>
-                        <hc:StepBarItem Content="Black"/>
-                        <hc:StepBarItem Content="W25"/>
-                        <hc:StepBarItem Content="Chessboard"/>
-                        <hc:StepBarItem Content="MTFHV"/>
-                        <hc:StepBarItem Content="Distortion"/>
-                        <hc:StepBarItem Content="OpticCenter"/>
-                    </hc:StepBar>
+
                     <Grid Grid.Row="2" x:Name="LogGrid">
 
                     </Grid>
@@ -243,19 +236,22 @@
                 <Button Content="日志" Command="{Binding OpenLogCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="更新记录" Command="{Binding OpenChangeLogCommand}"/>
+                <Button Content="InitTest" Command="{Binding InitTestCommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="Recipe" Command="{Binding RecipeManager.EditCommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="Summary" Command="{Binding SummaryManager.EditCommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="EditFix" Command="{Binding FixManager.EditCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="自述文件" Command="{Binding OpenReadMeCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="InitTest" Command="{Binding InitTestCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="Recipe" Command="{Binding EditSPECConfigcommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="EditFix" Command="{Binding EditObjectiveTestResultFixCommand}"/>
+                <Button Content="变更日志" Command="{Binding OpenChangeLogCommand}"/>
             </StatusBarItem>
         </StatusBar>
 

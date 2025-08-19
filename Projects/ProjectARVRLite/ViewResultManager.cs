@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ProjectKB
+namespace ProjectARVRLite
 {
     public class ViewResultManagerConfig : ViewModelBase, IConfig
     {
@@ -33,13 +33,13 @@ namespace ProjectKB
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;
 
-        [DisplayName("Csv保存路径"), PropertyEditorType(PropertyEditorType.TextSelectFolder), Category("KB")]
+        [DisplayName("Csv保存路径"), PropertyEditorType(PropertyEditorType.TextSelectFolder), Category("ARVR")]
         public string SavePathCsv { get => _SavePathCsv; set { _SavePathCsv = value; NotifyPropertyChanged(); } }
-        private string _SavePathCsv = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "KB");
+        private string _SavePathCsv = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");
 
-        [DisplayName("Text保存路径"), PropertyEditorType(PropertyEditorType.TextSelectFolder), Category("KB")]
+        [DisplayName("Text保存路径"), PropertyEditorType(PropertyEditorType.TextSelectFolder), Category("ARVR")]
         public string SavePathText { get => _SavePathText; set { _SavePathText = value; NotifyPropertyChanged(); } }
-        private string _SavePathText = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "KB");
+        private string _SavePathText = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");
     }
 
     public class ViewResultManager : ViewModelBase,IDisposable
@@ -49,11 +49,11 @@ namespace ProjectKB
         public static ViewResultManager GetInstance() { lock (_locker) { _instance ??= new ViewResultManager(); return _instance; } }
         public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
 
-        public static string SqliteDbPath { get; set; } = DirectoryPath + "ProjectKB.db";
+        public static string SqliteDbPath { get; set; } = DirectoryPath + "ProjectARVRLite.db";
 
         public ViewResultManagerConfig Config { get; set; }
 
-        public ObservableCollection<KBItemMaster> ViewResluts { get; set; } = new ObservableCollection<KBItemMaster>();
+        public ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = new ObservableCollection<ProjectARVRReuslt>();
 
         public int ViewReslutsSelectedIndex { get => _ViewReslutsSelectedIndex; set { _ViewReslutsSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _ViewReslutsSelectedIndex = -1;
@@ -83,7 +83,7 @@ namespace ProjectKB
                 IsAutoCloseConnection = true
             });
             // 确保表存在
-            _db.CodeFirst.InitTables<KBItemMaster>();
+            _db.CodeFirst.InitTables<ProjectARVRReuslt>();
             LoadAll(Config.Count);
         }
 
@@ -112,19 +112,19 @@ namespace ProjectKB
         {
             if (ViewResluts.Count >0 &&  ViewReslutsSelectedIndex > -1)
             {
-                if (ViewResluts[ViewReslutsSelectedIndex] is KBItemMaster kbItemMaster)
-                {
-                    string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
-                    string regexPattern = $"[{Regex.Escape(invalidChars)}]";
-                    string csvpath = Config.SavePathCsv + $"\\{Regex.Replace(kbItemMaster.Model, regexPattern, "")}_{kbItemMaster.CreateTime:yyyyMMdd}.csv";
+                //if (ViewResluts[ViewReslutsSelectedIndex] is ProjectARVRReuslt kbItemMaster)
+                //{
+                //    string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
+                //    string regexPattern = $"[{Regex.Escape(invalidChars)}]";
+                //    string csvpath = Config.SavePathCsv + $"\\{Regex.Replace(kbItemMaster.Model, regexPattern, "")}_{kbItemMaster.CreateTime:yyyyMMdd}.csv";
                     
-                    using var dialog = new System.Windows.Forms.SaveFileDialog();
-                    dialog.Filter = "CSV files (*.csv) | *.csv";
-                    dialog.FileName = csvpath;
-                    dialog.RestoreDirectory = true;
-                    if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                    kbItemMaster.SaveCsv(dialog.FileName);
-                }
+                //    using var dialog = new System.Windows.Forms.SaveFileDialog();
+                //    dialog.Filter = "CSV files (*.csv) | *.csv";
+                //    dialog.FileName = csvpath;
+                //    dialog.RestoreDirectory = true;
+                //    if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+                //    kbItemMaster.SaveCsv(dialog.FileName);
+                //}
             }
 
         }
@@ -135,7 +135,7 @@ namespace ProjectKB
         public void LoadAll(int count = 100)
         {
             ViewResluts.Clear();
-            var query = _db.Queryable<KBItemMaster>().OrderBy(x => x.Id, Config.OrderByType);
+            var query = _db.Queryable<ProjectARVRReuslt>().OrderBy(x => x.Id, Config.OrderByType);
             var dbList = count > 0 ? query.Take(count).ToList() : query.ToList();
             foreach (var dbItem in dbList)
             {
@@ -143,7 +143,7 @@ namespace ProjectKB
             }
         }
 
-        public void Save(KBItemMaster item)
+        public void Save(ProjectARVRReuslt item)
         {
             if (item == null) return;
             int id = _db.Insertable(item).ExecuteReturnIdentity();
@@ -171,7 +171,7 @@ namespace ProjectKB
 
         public void GenericQuery()
         {
-            GenericQuery<KBItemMaster> genericQuery = new GenericQuery<KBItemMaster>(_db,ViewResluts);
+            GenericQuery<ProjectARVRReuslt> genericQuery = new GenericQuery<ProjectARVRReuslt>(_db,ViewResluts);
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
         }
@@ -183,7 +183,7 @@ namespace ProjectKB
         {
             ViewResluts.Clear();
 
-            var query = _db.Queryable<KBItemMaster>();
+            var query = _db.Queryable<ProjectARVRReuslt>();
             query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = count > 0 ? query.Take(count).ToList() : query.ToList();
 

@@ -1,4 +1,4 @@
-﻿<Window x:Class="ProjectARVRLite.ObjectiveTestResultFixWindow"
+﻿<Window x:Class="ProjectARVRLite.EditFixWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ProjectARVRLite"
          xmlns:ui ="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
-        Title="ObjectiveTestResultFixWindow" Height="450" Width="600" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="EditFixWindow" Height="450" Width="600" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>

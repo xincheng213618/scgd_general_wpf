@@ -39,7 +39,6 @@ using Newtonsoft.Json.Linq;
 using Org.BouncyCastle.Asn1.Ocsp;
 using Panuon.WPF.UI;
 using ProjectARVRLite;
-using ProjectARVRLite.Config;
 using ProjectARVRLite.Services;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
@@ -105,9 +104,8 @@ namespace ProjectARVRLite
         BKscreeenDefectDetection,
     }
 
-    public class ProjectARVRReuslt : ViewModelBase
+    public class ProjectARVRReuslt : VPKModel
     {
-        public int Id { get; set; }
         public string Model { get; set; }
 
         public DateTime CreateTime { get; set; } = DateTime.Now;
@@ -283,8 +281,6 @@ namespace ProjectARVRLite
     public class ARVRWindowConfig : WindowConfig
     {
         public static ARVRWindowConfig Instance => ConfigService.Instance.GetRequiredService<ARVRWindowConfig>();
-        public ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = new ObservableCollection<ProjectARVRReuslt>();
-
     }
 
     public partial class ARVRWindow : Window, IDisposable
@@ -294,9 +290,11 @@ namespace ProjectARVRLite
 
         public static ProjectARVRLiteConfig ProjectConfig => ProjectARVRLiteConfig.Instance;
 
-        public ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = Config.ViewResluts;
+        public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
 
-        public static ObjectiveTestResultFix ObjectiveTestResultFix => ObjectiveTestResultFixManager.GetInstance().ObjectiveTestResultFix;
+        public static ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = ViewResultManager.ViewResluts;
+
+        public static ObjectiveTestResultFix ObjectiveTestResultFix => FixManager.GetInstance().ObjectiveTestResultFix;
 
         public ARVRWindow()
         {
@@ -1189,22 +1187,6 @@ namespace ProjectARVRLite
                         }
                     }
 
-                    try
-                    {
-                        string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                        string filePath = Path.Combine(ProjectARVRLiteConfig.Instance.ResultSavePath, $"Chessboard_{timeStr}.csv");
-                        PoiResultCIExyuvData.SaveCsv(result.ViewReslutCheckerboard.PoiResultCIExyuvDatas, filePath);
-
-                        var csvBuilder = new StringBuilder();
-                        csvBuilder.AppendLine();
-                        csvBuilder.AppendLine($"Chessboard");
-                        csvBuilder.AppendLine($"{result.ViewReslutCheckerboard.ChessboardContrast.Value}");
-                        File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Error(ex);
-                    }
                 }
             }
             else if (result.Model.Contains("MTF_HV"))
@@ -1460,7 +1442,7 @@ namespace ProjectARVRLite
                         try
                         {
                             string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                            string filePath = Path.Combine(ProjectARVRLiteConfig.Instance.ResultSavePath, $"MTF_H_{timeStr}.csv");
+                            string filePath = Path.Combine(ViewResultManager.Config.SavePathCsv, $"MTF_H_{timeStr}.csv");
                             var csvBuilder = new StringBuilder();
                             csvBuilder.AppendLine($"name,x,y,w,h,mtfValue");
                             var mtfs = result.ViewRelsultMTFH.MTFDetailViewReslut.MTFResult?.result;
@@ -1703,7 +1685,7 @@ namespace ProjectARVRLite
                             log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
 
                             string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                            string filePath = Path.Combine(ProjectARVRLiteConfig.Instance.ResultSavePath, $"ObjectiveTestResults_{timeStr}.csv");
+                            string filePath = Path.Combine(ViewResultManager.Config.SavePathCsv, $"ObjectiveTestResults_{timeStr}.csv");
 
                             List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
 
@@ -1764,10 +1746,9 @@ namespace ProjectARVRLite
         }
 
 
-
         private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
-            ProjectARVRLiteConfig.Instance.Height = row2.ActualHeight;
+            ViewResultManager.Config.Height = row2.ActualHeight;
             row2.Height = GridLength.Auto;
         }
 
@@ -1813,7 +1794,7 @@ namespace ProjectARVRLite
                         catch
                         {
                             log.Debug("文件还在写入");
-                            await Task.Delay(ProjectARVRLiteConfig.Instance.ViewImageReadDelay);
+                            await Task.Delay(ViewResultManager.Config.ViewImageReadDelay);
                             OpenImage(result);
                         }
                     }
@@ -2040,16 +2021,15 @@ namespace ProjectARVRLite
                 Task.Run(async () =>
                 {
                     await Task.Delay(200);
-
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         if (IsSavePicture)
                         {
                             IsSavePicture = false;
                             string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                            if (Directory.Exists(ProjectARVRLiteConfig.Instance.ResultSavePath))
+                            if (Directory.Exists(ViewResultManager.Config.SavePathCsv))
                             {
-                                string filePath = Path.Combine(ProjectARVRLiteConfig.Instance.ResultSavePath, $"{result.TestType}_{timeStr}.png");
+                                string filePath = Path.Combine(ViewResultManager.Config.SavePathCsv, $"{result.TestType}_{timeStr}.png");
                                 ImageView.ImageViewModel.Save(filePath);
                             }
                         }

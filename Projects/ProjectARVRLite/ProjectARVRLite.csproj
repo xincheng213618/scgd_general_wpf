@@ -6,12 +6,16 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.1.1.14</VersionPrefix>
+		<VersionPrefix>1.1.2.1</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
 	  <None Remove="CHANGELOG.md" />
 	  <None Remove="README.md" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Page Remove="EditFixWindow.xaml" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
@@ -31,16 +35,18 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="Assets\" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <EmbeddedResource Include="CHANGELOG.md">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </EmbeddedResource>
 	  <EmbeddedResource Include="README.md">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="EditFixWindow.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </None>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -65,6 +71,10 @@
 	  <None Update="manifest.json">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Assets\" />
 	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
