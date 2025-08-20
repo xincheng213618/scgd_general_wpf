@@ -500,9 +500,9 @@ namespace ColorVision.UI
 
             var propertyPanel = new StackPanel();
             CollectProperties(obj);
-
+            // 选择是否排序类别
             // Sort categories and properties (by display name if available)
-            foreach (var categoryGroup in categoryGroups.OrderBy(kv => kv.Key, StringComparer.Ordinal))
+            foreach (var categoryGroup in categoryGroups)
             {
                 var border = new Border
                 {
@@ -516,7 +516,7 @@ namespace ColorVision.UI
                 border.Child = stackPanel;
                 propertyPanel.Children.Add(border);
 
-                foreach (var property in categoryGroup.Value.OrderBy(p => GetDisplayName(GetResourceManager(obj), p), StringComparer.CurrentCulture))
+                foreach (var property in categoryGroup.Value)
                 {
                     DockPanel dockPanel;
 

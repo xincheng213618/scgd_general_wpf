@@ -94,7 +94,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 default:
                     List<AlgResultMasterModel> resultMaster = new List<AlgResultMasterModel>();
                     // 判断 msg.Data 不为 null 并且包含 MasterId 属性
-                    if (msg.Data != null && ((IDictionary<string, object>)msg.Data).ContainsKey("MasterId") && msg.Data.MasterId > 0)
+                    if (msg.Data != null && msg.Data.MasterId != null && msg.Data.MasterId > 0)
                     {
                         int MasterId = msg.Data.MasterId;
                         AlgResultMasterModel model = AlgResultMasterDao.Instance.GetById(MasterId);
