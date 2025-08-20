@@ -123,6 +123,7 @@ namespace ProjectARVRLite
         public ARVR1TestType TestType { get; set; }
 
         public long RunTime { get; set; }
+        public string Msg { get; set; } = string.Empty;
 
         public DateTime CreateTime { get; set; } = DateTime.Now;
 

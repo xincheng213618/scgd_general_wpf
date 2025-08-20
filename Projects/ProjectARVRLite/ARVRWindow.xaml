@@ -86,7 +86,7 @@
                         </StackPanel>
                     </Grid>
                     <Grid  Grid.Row="1">
-                        <ListView x:Name="listView1" BorderThickness="0" Padding="0"  SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" Grid.RowSpan="2" >
+                        <ListView x:Name="listView1" BorderThickness="0" Padding="0" SelectedIndex="{Binding ViewResultManager.ViewReslutsSelectedIndex}"  SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" Grid.RowSpan="2" >
                             <ListView.Resources >
                                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                             </ListView.Resources>
@@ -153,6 +153,13 @@
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
                                                 <TextBlock Text="{Binding RunTime}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="RunTime" Width="150">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                                <TextBlock Text="{Binding Msg}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>

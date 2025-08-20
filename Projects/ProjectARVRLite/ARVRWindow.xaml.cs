@@ -475,9 +475,10 @@ namespace ProjectARVRLite
             CurrentFlowResult.RunTime  = stopwatch.ElapsedMilliseconds;
             logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
 
-
             if (FlowControlData.EventName == "Completed")
             {
+                CurrentFlowResult.Msg = "Completed";
+
                 try
                 {
                     //如果没有执行完，先切换PG，并且提前设置流程
@@ -505,6 +506,7 @@ namespace ProjectARVRLite
             {
                 log.Info("流程运行超时，正在重新尝试");
                 CurrentFlowResult.FlowStatus = FlowStatus.OverTime;
+                CurrentFlowResult.Msg = logTextBox.Text;
                 ViewResultManager.Save(CurrentFlowResult);
 
                 flowEngine.LoadFromBase64(string.Empty);
@@ -545,8 +547,8 @@ namespace ProjectARVRLite
                 TryCount = 0;
                 log.Error("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
+                CurrentFlowResult.Msg = FlowControlData.Params;
                 ViewResultManager.Save(CurrentFlowResult);
-
                 logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
                 if (ProjectARVRLiteConfig.Instance.AllowTestFailures)
                 {

@@ -20,25 +20,42 @@ namespace ColorVision.Common.Utilities
             try
             {
                 // 归一化路径
-                folder = NormalizePath(folder);
-                if (!Directory.Exists(folder)) return;
+                string  norfolder = NormalizePath(folder);
+                if (!Directory.Exists(norfolder))
+                {
+                    if (OperatingSystem.IsWindows())
+                    {
+                        Process.Start("explorer.exe", $"{folder}");
+                    }
+
+                    if (OperatingSystem.IsMacOS())
+                    {
+                        Process.Start("open", $"\"{folder}\"");
+                    }
+
+                    if (OperatingSystem.IsLinux())
+                    {
+                        Process.Start("xdg-open", $"\"{folder}\"");
+                    }
+                    return;
+                }
 
                 if (OperatingSystem.IsWindows())
                 {
-                    OpenOrActivateOnWindows(folder);
+                    OpenOrActivateOnWindows(norfolder);
                     return;
                 }
 
                 if (OperatingSystem.IsMacOS())
                 {
-                    OpenOrActivateOnMac(folder);
+                    OpenOrActivateOnMac(norfolder);
                     return;
                 }
 
                 if (OperatingSystem.IsLinux())
                 {
                     // Linux 桌面环境及文件管理器多样，无法可靠检测“已打开”的窗口，采用最佳努力打开
-                    Process.Start("xdg-open", folder);
+                    Process.Start("xdg-open", norfolder);
                     return;
                 }
             }

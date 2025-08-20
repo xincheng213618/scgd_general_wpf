@@ -515,7 +515,8 @@ namespace ProjectKB
             KBItemMaster.MinLv = minLKey.Lv;
             KBItemMaster.DrakestKey = minLKey.Name;
             KBItemMaster.AvgLv = KBItemMaster.Items.Any() ? KBItemMaster.Items.Average(item => item.Lv) : 0;
-            KBItemMaster.LvUniformity = KBItemMaster.MaxLv ==0 ?0:  KBItemMaster.MinLv / KBItemMaster.MaxLv;
+
+            KBItemMaster.LvUniformity = KBItemMaster.MaxLv ==0 ? 0: KBItemMaster.MinLv / KBItemMaster.MaxLv;
             KBItemMaster.SN = SNtextBox.Text;
             KBItemMaster.NbrFailPoints = KBItemMaster.Items.Count(item => !item.Result);
 
@@ -630,7 +631,7 @@ namespace ProjectKB
                     IntPtr a = MesDll.Collect_test(Summary.Stage, ProjectKBConfig.Instance.SN, Barcode_Result, Summary.MachineNO, Summary.LineNO, Summary.Opno, Barcode_Result, string.Empty);
                     var Collect_test = MesDll.PtrToString(a);
                     logTextBox.Text += Collect_test;
-                    log.Info(Collect_test);
+                    log.Info("Collect_test result" + Collect_test);
                 }
                 catch (Exception ex)
                 {
@@ -911,8 +912,6 @@ namespace ProjectKB
 
         public void Dispose()
         {
-            STNodeEditorMain.Dispose();
-            timer?.Change(Timeout.Infinite, 500); // 停止定时器
             timer?.Dispose();
             logOutput?.Dispose();
             GC.SuppressFinalize(this);
@@ -935,14 +934,17 @@ namespace ProjectKB
                 log.Info($"CheckWIP Stage{SummaryManager.GetInstance().Summary.Stage},SN:{ProjectKBConfig.Instance.SN}");
                 IntPtr a = MesDll.CheckWIP(SummaryManager.GetInstance().Summary.Stage, ProjectKBConfig.Instance.SN);
                 var result = MesDll.PtrToString(a);
-                log.Info(result);
+                log.Info("CheckWIP Stage result" + result);
                 if (result != "N")
                 {
-                    IsUploadSNing = false;
+                    IsUploadSNing =false;
                     Application.Current.Dispatcher.BeginInvoke(() =>
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), result);
+                        MessageBox.Show(Application.Current.GetActiveWindow(), result,"CheckWIP Stage Fail");
+                        SNtextBox.Focus();
+                        SNtextBox.SelectAll();
                     });
+
                     return;
                 }
                 ProjectKBConfig.Instance.SNlocked = true;
