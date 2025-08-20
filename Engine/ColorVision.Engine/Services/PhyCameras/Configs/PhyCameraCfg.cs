@@ -103,28 +103,28 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         /// FindLightArea X
         /// </summary>
         [JsonProperty("ex")]
-        [DisplayName("ROI X"),Browsable(false)]
+        [DisplayName("ROI X"),Browsable(true)]
         public int PointX { get => _PointX; set { _PointX = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ROIRect)); } }
         private int _PointX;
         /// <summary>
         /// FindLightArea Y
         /// </summary>
         [JsonProperty("ey")]
-        [DisplayName("ROI Y"), Browsable(false)]
+        [DisplayName("ROI Y"), Browsable(true)]
         public int PointY { get => _PointY; set { _PointY = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ROIRect)); } }
         private int _PointY;
         /// <summary>
         /// FindLightArea W
         /// </summary>
         [JsonProperty("ew")]
-        [DisplayName("ROI W"), Browsable(false)]
+        [DisplayName("ROI W"), Browsable(true)]
         public int Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ROIRect)); } }
         private int _Width;
         /// <summary>
         /// FindLightArea H
         /// </summary>
         [JsonProperty("eh")]
-        [DisplayName("ROI H"), Browsable(false)]
+        [DisplayName("ROI H"), Browsable(true)]
         public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ROIRect)); } }
         private int _Height;
 
