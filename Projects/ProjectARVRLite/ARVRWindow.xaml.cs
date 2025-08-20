@@ -29,6 +29,7 @@ using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.UI.LogImp;
 using CVCommCore.CVAlgorithm;
+using Dm.util;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using LiveChartsCore.Kernel;
@@ -114,10 +115,13 @@ namespace ProjectARVRLite
                     ProjectARVRLiteConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
                 });
             }
-            Application.Current.Dispatcher.BeginInvoke(() =>
+            if (ViewResultManager.Config.PreSwitchFlow)
             {
-                SwitchPGCompleted(false);
-            });
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    SwitchPGCompleted(false);
+                });
+            }
         }
 
         bool IsSwitchRun = false;
@@ -485,10 +489,14 @@ namespace ProjectARVRLite
                     if (!IsTestTypeCompleted())
                     {
                         SwitchPG();
-                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        if (ViewResultManager.Config.PreSwitchFlow)
                         {
-                            SwitchPGCompleted(false);
-                        });
+                            Application.Current.Dispatcher.BeginInvoke(() =>
+                            {
+                                SwitchPGCompleted(false);
+                            });
+                        }
+
                     }
 
                     Application.Current.Dispatcher.BeginInvoke(() =>
@@ -548,6 +556,21 @@ namespace ProjectARVRLite
                 log.Error("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                 CurrentFlowResult.Msg = FlowControlData.Params;
+
+                if (CurrentFlowResult.Msg.Contains("SDK return failed"))
+                {
+                    BatchResultMasterModel Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
+                    if (Batch != null)
+                    {
+                        var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
+                        if (values.Count > 0)
+                        {
+                            CurrentFlowResult.FileName = values[0].FileUrl;
+                        }
+                    }
+                }
+
+
                 ViewResultManager.Save(CurrentFlowResult);
                 logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
                 if (ProjectARVRLiteConfig.Instance.AllowTestFailures)
@@ -556,10 +579,13 @@ namespace ProjectARVRLite
                     if (!IsTestTypeCompleted())
                     {
                         SwitchPG();
-                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        if (ViewResultManager.Config.PreSwitchFlow)
                         {
-                            SwitchPGCompleted(false);
-                        });
+                            Application.Current.Dispatcher.BeginInvoke(() =>
+                            {
+                                SwitchPGCompleted(false);
+                            });
+                        }
                     }
                     else
                     {
@@ -964,31 +990,28 @@ namespace ProjectARVRLite
                             result.ViewResultBlack.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                         }
 
-                        try
+                        if (result.ViewResultWhite != null && result.ViewResultWhite.PoiResultCIExyuvDatas != null && result.ViewResultWhite.PoiResultCIExyuvDatas.Count == 9 && result.ViewResultBlack.PoiResultCIExyuvDatas.Count == 1)
                         {
-                            if (result.ViewResultWhite != null && result.ViewResultWhite.PoiResultCIExyuvDatas.Count == 9 && result.ViewResultBlack.PoiResultCIExyuvDatas.Count == 1)
+                            var contrast1 = result.ViewResultWhite.PoiResultCIExyuvDatas[5].Y / result.ViewResultBlack.PoiResultCIExyuvDatas[0].Y;
+
+                            contrast1 = contrast1 * ObjectiveTestResultFix.FOFOContrast;
+
+                            var FOFOContrast = new ObjectiveTestItem()
                             {
-                                var contrast1 = result.ViewResultWhite.PoiResultCIExyuvDatas[5].Y / result.ViewResultBlack.PoiResultCIExyuvDatas[0].Y;
+                                Name = "FOFOContrast",
+                                LowLimit = recipeConfig.FOFOContrastMin,
+                                UpLimit = recipeConfig.FOFOContrastMax,
+                                Value = contrast1,
+                                TestValue = contrast1.ToString("F2")
+                            };
 
-                                contrast1 = contrast1 * ObjectiveTestResultFix.FOFOContrast;
-
-                                var FOFOContrast = new ObjectiveTestItem()
-                                {
-                                    Name = "FOFOContrast",
-                                    LowLimit = recipeConfig.FOFOContrastMin,
-                                    UpLimit = recipeConfig.FOFOContrastMax,
-                                    Value = contrast1,
-                                    TestValue = contrast1.ToString("F2")
-                                };
-
-                                ObjectiveTestResult.FOFOContrast = FOFOContrast;
-                                result.ViewResultBlack.FOFOContrast = FOFOContrast;
-                                result.Result = result.Result &&  FOFOContrast.TestResult;
-                            }
+                            ObjectiveTestResult.FOFOContrast = FOFOContrast;
+                            result.ViewResultBlack.FOFOContrast = FOFOContrast;
+                            result.Result = result.Result && FOFOContrast.TestResult;
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            log.Info($"找不到白画面对应的黑画面{ex}");
+                            log.Info($"计算对比度前需要白画面的亮度");
                         }
 
                     }

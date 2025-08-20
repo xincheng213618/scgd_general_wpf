@@ -92,6 +92,7 @@
                             </ListView.Resources>
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                                    <Setter Property="ContextMenu" Value="{Binding ContextMenu}" />
                                 </Style>
                             </ListView.ItemContainerStyle>
                             <ListView.View>
@@ -156,7 +157,7 @@
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn Header="RunTime" Width="150">
+                                    <GridViewColumn Header="RunMsg" Width="150">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
                                                 <TextBlock Text="{Binding Msg}" />

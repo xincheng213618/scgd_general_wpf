@@ -107,6 +107,24 @@ namespace ProjectARVRLite
     [SugarTable("ARVRReuslt")]
     public class ProjectARVRReuslt : VPKModel
     {
+        [SqlSugar.SugarColumn(IsIgnore =true)]
+        public ContextMenu ContextMenu { get; set; }
+
+        public ProjectARVRReuslt()
+        {
+            ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Command = System.Windows.Input.ApplicationCommands.Delete });
+            ContextMenu.Items.Add(new MenuItem() { Command = System.Windows.Input.ApplicationCommands.Copy, Header = "复制" });
+
+            RelayCommand openFolderAndSelectFile = new RelayCommand(a => 
+            {
+                PlatformHelper.OpenFolderAndSelectFile(FileName);
+            },e=>File.Exists(FileName));
+
+            ContextMenu.Items.Add(new MenuItem() { Command = openFolderAndSelectFile, Header = "OpenFolderAndSelectFile" });
+
+        }
+
         public int BatchId { get => _BatchId; set { _BatchId = value; NotifyPropertyChanged(); } }
         private int _BatchId;
 
