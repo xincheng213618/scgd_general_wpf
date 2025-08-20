@@ -23,6 +23,11 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
 
     public class DFovView : IViewResult
     {
+        public DFovView()
+        {
+
+        }
+
         public DFovView(DetailCommonModel detail)
         {
             var restfile = JsonConvert.DeserializeObject<ResultFile>(detail.ResultJson);

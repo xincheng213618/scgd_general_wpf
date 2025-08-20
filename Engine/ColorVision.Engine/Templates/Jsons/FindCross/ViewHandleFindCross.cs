@@ -60,6 +60,10 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
     {
         public DetailCommonModel DetailCommonModel { get; set; }
 
+        public FindCrossDetailViewReslut()
+        {
+
+        }
         public FindCrossDetailViewReslut(DetailCommonModel detailCommonModel)
         {
             DetailCommonModel = detailCommonModel;

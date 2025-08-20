@@ -66,6 +66,11 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
     {
         public DetailCommonModel DetailCommonModel { get; set; }
 
+        public AAFindPointsViewReslut()
+        {
+
+        }
+
         public AAFindPointsViewReslut(DetailCommonModel detailCommonModel)
         {
             DetailCommonModel = detailCommonModel;

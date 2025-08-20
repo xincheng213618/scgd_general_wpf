@@ -515,7 +515,7 @@ namespace ProjectKB
             KBItemMaster.MinLv = minLKey.Lv;
             KBItemMaster.DrakestKey = minLKey.Name;
             KBItemMaster.AvgLv = KBItemMaster.Items.Any() ? KBItemMaster.Items.Average(item => item.Lv) : 0;
-            KBItemMaster.LvUniformity = KBItemMaster.MinLv / KBItemMaster.MaxLv;
+            KBItemMaster.LvUniformity = KBItemMaster.MaxLv ==0 ?0:  KBItemMaster.MinLv / KBItemMaster.MaxLv;
             KBItemMaster.SN = SNtextBox.Text;
             KBItemMaster.NbrFailPoints = KBItemMaster.Items.Count(item => !item.Result);
 
