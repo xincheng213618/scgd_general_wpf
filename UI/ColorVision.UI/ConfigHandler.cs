@@ -206,7 +206,7 @@ namespace ColorVision.UI
                 var files = Directory.GetFiles(BackupFolderPath, "ConfigBackup_*.json")
                     .OrderByDescending(f => f)
                     .ToList();
-                if (files.Any())
+                if (files.Count !=0)
                 {
                     LoadConfigs(files.First());
                     File.Copy(files.First(), ConfigFilePath, true);

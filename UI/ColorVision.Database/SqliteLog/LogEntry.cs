@@ -1,7 +1,7 @@
 ﻿using SqlSugar;
 using System;
 
-namespace ColorVision.Engine.SqliteLog
+namespace ColorVision.Database.SqliteLog
 {
     public class LogEntry
     {

@@ -50,6 +50,8 @@
 
 24.现在支持独立的SqliteLog，可以手动启用和关闭
 
+25.从Engine中独立ColorVision.Database
+
 ## [1.3.7.1] 2025.08.11
 
 1.AA区布点参数初始化调整

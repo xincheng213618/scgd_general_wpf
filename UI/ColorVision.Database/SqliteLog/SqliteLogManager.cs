@@ -1,4 +1,5 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.Database.SqliteLog;
+using ColorVision.UI;
 using log4net;
 using log4net.Appender;
 using log4net.Core;
@@ -10,7 +11,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 
-namespace ColorVision.Engine.SqliteLog
+namespace ColorVision.Database.SqliteLog
 {
     public class SqliteLogManager : AppenderSkeleton, IDisposable
     {

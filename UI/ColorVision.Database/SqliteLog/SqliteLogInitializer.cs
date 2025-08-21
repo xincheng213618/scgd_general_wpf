@@ -1,7 +1,7 @@
 ﻿using ColorVision.UI;
 using System.Threading.Tasks;
 
-namespace ColorVision.Engine.SqliteLog
+namespace ColorVision.Database.SqliteLog
 {
     public class SqliteLogInitializer : InitializerBase
     {

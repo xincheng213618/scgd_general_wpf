@@ -1,7 +1,7 @@
 ﻿using ColorVision.UI;
 using System.Collections.Generic;
 
-namespace ColorVision.Engine.SqliteLog
+namespace ColorVision.Database.SqliteLog
 {
     public class SqliteLogManagerConfigProvider : IConfigSettingProvider
     {

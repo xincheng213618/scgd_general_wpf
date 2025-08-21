@@ -2,7 +2,7 @@
 using ColorVision.UI;
 using System;
 
-namespace ColorVision.Engine.SqliteLog
+namespace ColorVision.Database.SqliteLog
 {
     /// <summary>
     /// 管理 SqliteLogManager 的启用和关闭。
