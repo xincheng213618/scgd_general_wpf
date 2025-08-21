@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32804.467
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Spectrum", "Plugins\Spectrum\Spectrum.csproj", "{679268FB-7CCA-49BA-897B-CC7EDE2A3577}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5EDBDB3F-8043-43B1-8948-E63B957BA72B}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|ARM64 = Debug|ARM64
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|ARM64 = Release|ARM64
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{679268FB-7CCA-49BA-897B-CC7EDE2A3577}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{679268FB-7CCA-49BA-897B-CC7EDE2A3577}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{679268FB-7CCA-49BA-897B-CC7EDE2A3577}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{679268FB-7CCA-49BA-897B-CC7EDE2A3577}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{679268FB-7CCA-49BA-897B-CC7EDE2A3577}.Debug|x64.ActiveCfg = Debug|x64
+		{679268FB-7CCA-49BA-897B-CC7EDE2A3577}.Debug|x64.Build.0 = Debug|x64
+		{679268FB-7CCA-49BA-897B-CC7EDE2A3577}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{679268FB-7CCA-49BA-897B-CC7EDE2A3577}.Debug|x86.Build.0 = Debug|Any CPU
+		{679268FB-7CCA-49BA-897B-CC7EDE2A3577}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{679268FB-7CCA-49BA-897B-CC7EDE2A3577}.Release|Any CPU.Build.0 = Release|Any CPU
+		{679268FB-7CCA-49BA-897B-CC7EDE2A3577}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{679268FB-7CCA-49BA-897B-CC7EDE2A3577}.Release|ARM64.Build.0 = Release|Any CPU
+		{679268FB-7CCA-49BA-897B-CC7EDE2A3577}.Release|x64.ActiveCfg = Release|x64
+		{679268FB-7CCA-49BA-897B-CC7EDE2A3577}.Release|x64.Build.0 = Release|x64
+		{679268FB-7CCA-49BA-897B-CC7EDE2A3577}.Release|x86.ActiveCfg = Release|Any CPU
+		{679268FB-7CCA-49BA-897B-CC7EDE2A3577}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F8A451AE-DC69-4745-B38C-F950B4EC30C1}
+	EndGlobalSection
+EndGlobal
