@@ -635,8 +635,9 @@ namespace ProjectKB
                 ModbusControl.GetInstance().SetRegisterValue(0);
             });
 
-            ///回传MEs
-            if (Summary.UseMes)
+            ///回传MEs 确保Mes配置
+            log.Info($"UseMes{Summary.UseMes} IsCheckWIP{IsCheckWIP}");
+            if (Summary.UseMes && IsCheckWIP)
             {
                 try
                 {
@@ -653,6 +654,7 @@ namespace ProjectKB
                 }
 
             }
+            IsCheckWIP = false;
             SNtextBox.Text = string.Empty;
             SNtextBox.Focus();
         }
@@ -938,11 +940,13 @@ namespace ProjectKB
                 DebounceTimer.AddOrResetTimer("KBUploadSN", 500, e => UploadSN(), 0);
             }
         }
+        private bool IsCheckWIP = false;
         private bool IsUploadSNing { get; set; }
         private void UploadSN()
         {
             if (IsUploadSNing) return;
             IsUploadSNing = true;
+            IsCheckWIP = false;
             if (Summary.UseMes)
             {
                 log.Info($"CheckWIP Stage{SummaryManager.GetInstance().Summary.Stage},SN:{ProjectKBConfig.Instance.SN}");
@@ -961,6 +965,7 @@ namespace ProjectKB
 
                     return;
                 }
+                IsCheckWIP = true;
                 ProjectKBConfig.Instance.SNlocked = true;
             }
             else
