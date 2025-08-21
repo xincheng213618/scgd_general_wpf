@@ -7,7 +7,6 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using Newtonsoft.Json;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -53,9 +52,6 @@ namespace ColorVision.Engine.Services.Terminal
             SysResourceModel = sysResourceModel;
             Config = ServiceObjectBaseExtensions.TryDeserializeConfig<TerminalServiceConfig>(SysResourceModel.Value);
 
-            Config.Code = Code;
-            Config.Name = Name;
-
             RefreshCommand = new RelayCommand(a => MqttRCService.GetInstance().RestartServices(Config.ServiceType.ToString(),sysResourceModel.Code ??string.Empty));
             EditCommand = new RelayCommand(a =>
             {
@@ -76,36 +72,29 @@ namespace ColorVision.Engine.Services.Terminal
             switch (ServiceType)
             {
                 case ServiceTypes.Camera:
-                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.Algorithm:
                     this.SetIconResource("DrawingImageAlgorithm");
-                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.SMU:
                     this.SetIconResource("SMUDrawingImage");
-                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.Motor:
                     this.SetIconResource("COMDrawingImage");
-                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.FilterWheel:
                     this.SetIconResource("CfwPortDrawingImage");
-                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.Calibration:
                     this.SetIconResource("DICalibrationIcon");
-                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.Spectrum:
                     this.SetIconResource("DISpectrumIcon");
-                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 default:
-                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
             }
+            MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
 
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Create, Command = OpenCreateWindowCommand });
@@ -126,22 +115,6 @@ namespace ColorVision.Engine.Services.Terminal
             ServiceManager.GetInstance().TerminalServices.Remove(this);
         }
 
-        public List<string> ServicesCodes
-        {
-            get
-            {
-                List<string> codes = new();
-                foreach (var item in VisualChildren)
-                {
-                    if (item is DeviceService baseChannel)
-                    {
-                        if (!string.IsNullOrWhiteSpace(baseChannel.SysResourceModel.Code))
-                            codes.Add(baseChannel.SysResourceModel.Code);
-                    }
-                }
-                return codes;
-            }
-        }
 
         public override UserControl GenDeviceControl() => new TerminalServiceControl(this);
 

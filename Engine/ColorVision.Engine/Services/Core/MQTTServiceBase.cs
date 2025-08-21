@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
 using CVCommCore;
 using log4net;
@@ -25,19 +25,19 @@ namespace ColorVision.Engine.Services.Core
         public event EventHandler Connected;
         public event EventHandler DisConnected;
 
-        private Timer timer;
+        private Timer _heartbeatTimer;
 
         public MQTTServiceBase()
         {
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.ApplicationMessageReceivedAsync += Processing;
-             timer = new Timer
+             _heartbeatTimer = new Timer
             {
                 Interval = TimeSpan.FromMilliseconds(30).TotalMilliseconds,
                 AutoReset = true,
             };
-            timer.Elapsed += Timer_Elapsed;
-            timer.Start();
+            _heartbeatTimer.Elapsed += Timer_Elapsed;
+            _heartbeatTimer.Start();
         }
 
         public void SubscribeCache() => MQTTControl.SubscribeCache(SubscribeTopic);
@@ -84,10 +84,10 @@ namespace ColorVision.Engine.Services.Core
                     bool msgee = false;
                     lock (_locker)
                     {
-                        if (timers.TryGetValue(json.MsgID, out var value))
+                        if (_msgTimers.TryGetValue(json.MsgID, out var value))
                         {
                             value.Enabled = false;
-                            timers.Remove(json.MsgID);
+                            _msgTimers.Remove(json.MsgID);
                             msgee = true;
                             try
                             {
@@ -95,26 +95,26 @@ namespace ColorVision.Engine.Services.Core
                             }
                             catch(Exception ex)
                             {
-                                MsgRecord foundMsgRecord1 = MsgRecords.FirstOrDefault(record => record.MsgID == json.MsgID);
+                                MsgRecord foundMsgRecord1 = _msgRecords.FirstOrDefault(record => record.MsgID == json.MsgID);
                                 if (foundMsgRecord1 != null)
                                 {
                                     foundMsgRecord1.ReciveTime = DateTime.Now;
                                     foundMsgRecord1.MsgReturn = json;
                                     foundMsgRecord1.ErrorMsg = ex.Message;
                                     foundMsgRecord1.MsgRecordState = json.Code == 0 ? MsgRecordState.Success : MsgRecordState.Fail;
-                                    MsgRecords.Remove(foundMsgRecord1);
+                                    _msgRecords.Remove(foundMsgRecord1);
                                 }
                             }
                         }
                         Application.Current?.Dispatcher.BeginInvoke(() =>
                         {
-                            MsgRecord foundMsgRecord = MsgRecords.FirstOrDefault(record => record.MsgID == json.MsgID);
+                            MsgRecord foundMsgRecord = _msgRecords.FirstOrDefault(record => record.MsgID == json.MsgID);
                             if (foundMsgRecord != null)
                             {
                                 foundMsgRecord.ReciveTime = DateTime.Now;
                                 foundMsgRecord.MsgReturn = json;
                                 foundMsgRecord.MsgRecordState = json.Code == 0 ? MsgRecordState.Success : MsgRecordState.Fail;
-                                MsgRecords.Remove(foundMsgRecord);
+                                _msgRecords.Remove(foundMsgRecord);
                             }
                         });
                     }
@@ -162,24 +162,23 @@ namespace ColorVision.Engine.Services.Core
 
         public virtual bool IsAlive { get; set; }
 
-        private  Dictionary<string, Timer> timers = new();
+        private  Dictionary<string, Timer> _msgTimers = new();
 
         private  readonly object _locker = new();
 
-        private List<MsgRecord> MsgRecords = new();
+        private List<MsgRecord> _msgRecords = new();
 
         /// <summary>
         /// 这里修改成可以继承的
         /// </summary>
         /// <param name="msg"></param>
-        internal virtual MsgRecord PublishAsyncClient(MsgSend msg,double Timeout = 30000)
+        internal virtual MsgRecord PublishAsyncClient(MsgSend msg,double timeout = 30000)
         {
-            if (Timeout == 30000)
+            if (timeout == 30000)
             {
-                Timeout =MQTTSetting.Instance.DefaultTimeout;
+                timeout =MQTTSetting.Instance.DefaultTimeout;
             }
             Guid guid = Guid.NewGuid();
-            //这里修改成 如果在上一级已经赋值就不在这里强制修改
             msg.MsgID ??= guid.ToString();
             msg.DeviceCode ??= DeviceCode;
             msg.Token ??= ServiceToken;
@@ -191,23 +190,35 @@ namespace ColorVision.Engine.Services.Core
 
             MsgRecord msgRecord = new() { SendTopic = SendTopic, SubscribeTopic = SubscribeTopic, MsgID = msg.MsgID, SendTime = DateTime.Now, MsgSend = msg, MsgRecordState = MsgRecordState.Sended };
 
-            Application.Current.Dispatcher.Invoke(() =>
+            Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
-                MsgConfig.Instance.MsgRecords.Insert(0, msgRecord);
-                MsgRecords.Add(msgRecord);
-            });
+                lock (_locker)
+                {
+                    MsgConfig.Instance.MsgRecords.Insert(0, msgRecord);
+                    _msgRecords.Add(msgRecord);
+                }
+            }));
 
-            Timer timer = new(Timeout);
+            var timer = new Timer(timeout)
+            {
+                AutoReset = false,
+                Enabled = true,
+            };
             timer.Elapsed += (s, e) =>
             {
                 timer.Enabled = false;
-                lock (_locker) { timers.Remove(msg.MsgID); }
-                msgRecord.MsgRecordState = MsgRecordState.Timeout;
-                MsgRecords.Remove(msgRecord);
+                timer.Dispose();
+                lock (_locker)
+                {
+                    _msgTimers.Remove(msg.MsgID);
+                    msgRecord.MsgRecordState = MsgRecordState.Timeout;
+                    _msgRecords.Remove(msgRecord);
+                }
             };
-            timer.AutoReset = false;
-            timer.Enabled = true;
-            timers.Add(msg.MsgID, timer);
+            lock (_locker)
+            {
+                _msgTimers.Add(msg.MsgID, timer);
+            }
             timer.Start();
             return msgRecord;
         }
@@ -215,7 +226,17 @@ namespace ColorVision.Engine.Services.Core
         public virtual void Dispose()
         {
             MQTTControl.ApplicationMessageReceivedAsync -= Processing;
-            timer.Dispose();
+            _heartbeatTimer?.Stop();
+            _heartbeatTimer?.Dispose();
+
+            lock (_locker)
+            {
+                foreach (var timer in _msgTimers.Values)
+                    timer.Dispose();
+                _msgTimers.Clear();
+                _msgRecords.Clear();
+            }
+
             GC.SuppressFinalize(this);
         }
     }
