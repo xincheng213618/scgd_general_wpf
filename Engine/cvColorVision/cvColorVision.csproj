@@ -5,7 +5,7 @@
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<SignAssembly>True</SignAssembly>
 		<AssemblyOriginatorKeyFile>$(SolutionDir)ColorVision.snk</AssemblyOriginatorKeyFile>
-		<VersionPrefix>2025.8.9.3</VersionPrefix>
+		<VersionPrefix>2025.8.9.4</VersionPrefix>
 		<TargetFrameworks>net8.0-windows;net6.0-windows;net48</TargetFrameworks>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<IncludeSymbols>True</IncludeSymbols>
@@ -101,17 +101,17 @@
 		<None Include="libusb0.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/lib</PackagePath>
+			<PackagePath>lib/net8.0-windows7.0</PackagePath>
 		</None>
 		<None Include="SpectraArsenal.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/lib</PackagePath>
+			<PackagePath>lib/net8.0-windows7.0</PackagePath>
 		</None>
 		<None Include="USB_Driver.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/lib</PackagePath>
+			<PackagePath>lib/net8.0-windows7.0</PackagePath>
 		</None>
 	</ItemGroup>
 
