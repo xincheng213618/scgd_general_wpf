@@ -267,6 +267,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="MySql\ORM\" />
     <Folder Include="Rbac\Users\" />
     <Folder Include="Rbac\Roles\" />
     <Folder Include="Rbac\Tenants\" />
