@@ -343,6 +343,8 @@ namespace ProjectARVRLite
             {
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                     item.nodeRunEvent -= UpdateMsg;
+
+                flowEngine.FlowClear();
                 flowEngine.LoadFromBase64(Refreshdata, MqttRCService.GetInstance().ServiceTokens);
 
                 for (int i = 0; i < 200; i++)
