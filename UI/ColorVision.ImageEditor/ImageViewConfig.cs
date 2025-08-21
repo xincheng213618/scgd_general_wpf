@@ -13,8 +13,6 @@ namespace ColorVision.ImageEditor
         [JsonIgnore]
         public Dictionary<string, object?> Properties { get; set; } = new Dictionary<string, object?>();
 
-        public Dictionary<string, object?> EditProperties { get; set; } = new Dictionary<string, object?>();
-
         public void AddProperties(string Key,object? Value)
         {
             if (!Properties.TryAdd(Key, Value))
@@ -90,6 +88,7 @@ namespace ColorVision.ImageEditor
 
         public bool IsShowColorBar { get => _IsShowColorBar; set { _IsShowColorBar = value; NotifyPropertyChanged(); } }
         private bool _IsShowColorBar = true;
+
 
         public event EventHandler BalanceChanged;
 

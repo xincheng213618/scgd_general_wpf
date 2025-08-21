@@ -1,27 +1,28 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System;
 
 namespace ColorVision.Engine.Services.Dao
 {
     public class SysDeviceModel : PKModel
     {
-        [Column("name")]
+        [SugarColumn(ColumnName ="name")]
         public string? Name { get; set; }
-        [Column("code")]
+        [SugarColumn(ColumnName ="code")]
         public string? Code { get; set; }
-        [Column("type_code")]
+        [SugarColumn(ColumnName ="type_code")]
         public string? TypeCode { get; set; }
-        [Column("type")]
+        [SugarColumn(ColumnName ="type")]
         public int Type { get; set; }
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int? Pid { get; set; }
-        [Column("pcode")]
+        [SugarColumn(ColumnName ="pcode")]
         public string? PCode { get; set; }
-        [Column("txt_value")]
+        [SugarColumn(ColumnName ="txt_value")]
         public string? Value { get; set; }
-        [Column("create_date")]
+        [SugarColumn(ColumnName ="create_date")]
         public DateTime CreateDate { get; set; }
-        [Column("tenant_id")]
+        [SugarColumn(ColumnName ="tenant_id")]
         public int TenantId { get; set; }
     }
     public class VSysDeviceDao : BaseViewDao<SysDeviceModel>

@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Solution.Searches;
 using ColorVision.UI.Sorts;
@@ -28,6 +30,10 @@ namespace ColorVision.Engine.Archive.Dao
     public class ViewBatchResult : ViewModelBase,ISortID
     {
         public BatchResultMasterModel BatchResultMasterModel { get; set; }
+        public ViewBatchResult()
+        {
+
+        }
         public ViewBatchResult(BatchResultMasterModel batchResultMasterModel)
         {
             BatchResultMasterModel = batchResultMasterModel;
@@ -76,19 +82,19 @@ namespace ColorVision.Engine.Archive.Dao
         }
         BatchResultMasterDao batchResultMasterDao = new();
 
-        public ObservableCollection<ViewBatchResult> ViewBatchResults { get; set; } = new ObservableCollection<ViewBatchResult>();
+        public ObservableCollection<ViewBatchResult> ViewResults { get; set; } = new ObservableCollection<ViewBatchResult>();
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
-            ViewBatchResults.Clear();
+            ViewResults.Clear();
             var BatchResultMasterModels = batchResultMasterDao.GetAll();
             foreach (var item in BatchResultMasterModels)
             {
-                ViewBatchResults.Add(new ViewBatchResult(item));
+                ViewResults.Add(new ViewBatchResult(item));
             }
         }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            listView1.ItemsSource = ViewBatchResults;
+            listView1.ItemsSource = ViewResults;
             if (listView1.View is GridView gridView)
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilities);
         }
@@ -99,20 +105,20 @@ namespace ColorVision.Engine.Archive.Dao
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             var BatchResultMasterModels = batchResultMasterDao.ConditionalQuery(SearchBox.Text);
-            ViewBatchResults.Clear();
+            ViewResults.Clear();
             foreach (var item in BatchResultMasterModels)
             {
-                ViewBatchResults.AddUnique(new ViewBatchResult(item));
+                ViewResults.AddUnique(new ViewBatchResult(item));
             }
         }
 
         private void Query_Click(object sender, RoutedEventArgs e)
         {
             var BatchResultMasterModels = batchResultMasterDao.ConditionalQuery(SearchBox.Text);
-            ViewBatchResults.Clear();
+            ViewResults.Clear();
             foreach (var item in BatchResultMasterModels)
             {
-                ViewBatchResults.AddUnique(new ViewBatchResult(item));
+                ViewResults.AddUnique(new ViewBatchResult(item));
             }
         }
 
@@ -148,7 +154,7 @@ namespace ColorVision.Engine.Archive.Dao
                             if (item != null)
                             {
                                 item.IsSortD = !item.IsSortD;
-                                ViewBatchResults.SortByProperty(property.Name, item.IsSortD);
+                                ViewResults.SortByProperty(property.Name, item.IsSortD);
                             }
                         }
                     }
@@ -160,7 +166,7 @@ namespace ColorVision.Engine.Archive.Dao
         {
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
-                Frame.Navigate(new BatchDataHistory(Frame, ViewBatchResults[listView.SelectedIndex]));
+                Frame.Navigate(new BatchDataHistory(Frame, ViewResults[listView.SelectedIndex]));
             }
         }
         private void Arch_Click(object sender, RoutedEventArgs e)
@@ -177,6 +183,13 @@ namespace ColorVision.Engine.Archive.Dao
         {
             MqttRCService.GetInstance().ArchivedAll();
             MessageBox.Show("全部归档指令已经发送");
+        }
+
+        private void AdvanceQuery_Click(object sender, RoutedEventArgs e)
+        {
+            GenericQuery<BatchResultMasterModel, ViewBatchResult> genericQuery = new GenericQuery<BatchResultMasterModel, ViewBatchResult>(MySqlControl.GetInstance().DB, ViewResults, t => new ViewBatchResult(t));
+            GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
+            genericQueryWindow.ShowDialog();
         }
     }
 }

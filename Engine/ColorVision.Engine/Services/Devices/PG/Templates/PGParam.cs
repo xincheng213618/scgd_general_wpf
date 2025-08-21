@@ -13,7 +13,7 @@ namespace ColorVision.Engine.Services.Devices.PG.Templates
         {
         }
 
-        public PGParam(ModMasterModel modMaster, List<ModDetailModel> pgDetail) : base(modMaster.Id, modMaster.Name ?? string.Empty, pgDetail)
+        public PGParam(ModMasterModel modMaster, List<ModDetailModel> pgDetail) : base(modMaster, pgDetail)
         {
 
         }

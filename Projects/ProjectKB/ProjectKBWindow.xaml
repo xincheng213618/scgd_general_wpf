@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
         xmlns:local="clr-namespace:ProjectKB"
-        xmlns:properties ="clr-namespace:ProjectKB.Properties"
+        xmlns:properties ="clr-namespace:ProjectKB.Properties" xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ProjectKBConfig}"
         Title="键盘测试" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" Icon="/ProjectKB;component/Assets/ProjectKB.png">
@@ -24,7 +24,7 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="600"/>
             </Grid.ColumnDefinitions>
-            <Grid Grid.Column="0">
+            <Grid Grid.Column="0" Background="{DynamicResource BorderBrush}">
                 <Grid.RowDefinitions>
                     <RowDefinition x:Name="row1" Height="*"/>
                     <RowDefinition x:Name="row2" Height="Auto"/>
@@ -34,86 +34,108 @@
                         <ColumnDefinition x:Name="col1" Width="Auto"/>
                         <ColumnDefinition x:Name="col2"   Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Grid x:Name="SummaryGrid" Visibility="{Binding SummaryInfo.IsShowSummary,Converter={StaticResource bool2VisibilityConverter}}" Width="{Binding SummaryInfo.Width}">
+                    <Grid x:Name="SummaryGrid" Visibility="{Binding SummaryManager.Summary.IsShowSummary,Converter={StaticResource bool2VisibilityConverter}}" Width="{Binding SummaryManager.Summary.Width}">
                         <StackPanel Margin="5">
                             <TextBlock Text="Summary" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"  Margin="0,0,0,5"/>
                             <DockPanel  Margin="0,0,0,5">
                                 <TextBlock Text="线别: "/>
-                                <TextBlock Text="{Binding SummaryInfo.LineNumber}"/>
+                                <TextBlock Text="{Binding SummaryManager.Summary.LineNO}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <TextBlock Text="工号: "/>
-                                <TextBlock Text="{Binding SummaryInfo.WorkerNumber}"/>
+                                <TextBlock Text="{Binding SummaryManager.Summary.WorkerNO}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <TextBlock Text="目标产量: "/>
-                                <TextBlock Text="{Binding SummaryInfo.TargetProduction}"/>
+                                <TextBlock Text="{Binding SummaryManager.Summary.TargetProduction}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <TextBlock Text="已经生产产量: "/>
-                                <TextBlock Text="{Binding SummaryInfo.ActualProduction}"/>
+                                <TextBlock Text="{Binding SummaryManager.Summary.ActualProduction}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <TextBlock Text="良品数量: "/>
-                                <TextBlock Text="{Binding SummaryInfo.GoodProductCount}"/>
+                                <TextBlock Text="{Binding SummaryManager.Summary.GoodProductCount}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <TextBlock Text="不良品数量: "/>
-                                <TextBlock Text="{Binding SummaryInfo.DefectiveProductCount}"/>
+                                <TextBlock Text="{Binding SummaryManager.Summary.DefectiveProductCount}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <TextBlock Text="良品率: "/>
-                                <TextBlock Text="{Binding SummaryInfo.GoodProductRate, StringFormat={}{0:P1}}"/>
+                                <TextBlock Text="{Binding SummaryManager.Summary.GoodProductRate, StringFormat={}{0:P1}}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <TextBlock Text="不良频率: "/>
-                                <TextBlock Text="{Binding SummaryInfo.DefectiveProductRate ,StringFormat={}{0:P1}}"/>
+                                <TextBlock Text="{Binding SummaryManager.Summary.DefectiveProductRate ,StringFormat={}{0:P1}}"/>
                             </DockPanel>
                         </StackPanel>
 
                         <Border VerticalAlignment="Bottom">
-                            <TextBox x:Name="NGResult"  Text="" FontSize="80" HorizontalAlignment="Center"  BorderThickness="0"/>
+                            <TextBox x:Name="NGResult"  Text="" FontSize="80" HorizontalAlignment="Center" Background="Transparent"  BorderThickness="0"/>
                         </Border>
                     </Grid>
                     <im:ImageView Grid.Column="1" x:Name="ImageView" ></im:ImageView>
                     <GridSplitter  Grid.Column="0"  Background="#1FFFFFFF" Panel.ZIndex="999" Width="2" HorizontalAlignment="Right"   DragCompleted="GridSplitter_DragCompleted1"  />
                 </Grid>
-                <Grid x:Name="Grid1" Grid.Row="1" Height="{Binding Height}">
+                <Grid x:Name="Grid1" Grid.Row="1" Height="{Binding ViewResultManager.Config.Height}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="32"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <Grid Visibility="Visible" >
-                        <StackPanel Orientation="Horizontal" Background="{DynamicResource RegionBrush}">
-                            <Button  Command="{Binding OpenConfigCommand}" Padding="0" Height="25" Width="25" Margin="5,0,0,0"> 
-                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" RenderTransformOrigin="0.5,0.5"  Foreground="{DynamicResource GlobalTextBrush}">
-                                    <TextBlock.RenderTransform>
-                                        <RotateTransform x:Name="rotateTransform21"/>
-                                    </TextBlock.RenderTransform>
-                                </TextBlock>
+                        <ToolBarTray  Grid.Row="0" IsLocked="True">
+                            <ToolBar Padding="3,2">
+                                <Button  Content="查询" Command="{Binding ViewResultManager.QueryCommand}" Margin="2,0,0,0"/>
+                                <Button  Content="通用查询" Command="{Binding ViewResultManager.GenericQueryCommand}" Margin="2,0,0,0"/>
+                            </ToolBar>
+                        </ToolBarTray>
+                        <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
+                            <Button Command="{Binding ViewResultManager.SaveCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
+                                <Rectangle Width="16" Height="16" Fill="{StaticResource DISave}" />
+                            </Button>
+                            <Button  Click="Button_Click_Clear" Command="{Binding ViewResultManager.ViewReslutsClearCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0" >
                                 <Button.Triggers>
                                     <EventTrigger RoutedEvent="Button.Click">
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="rotateTransform21" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                                <DoubleAnimation  Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX" To="0.7" Duration="0:0:0.1" AutoReverse="True" />
+                                                <DoubleAnimation  Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY" To="0.7" Duration="0:0:0.1" AutoReverse="True" />
                                             </Storyboard>
                                         </BeginStoryboard>
                                     </EventTrigger>
                                 </Button.Triggers>
+                                <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" RenderTransformOrigin="0.5,0.5">
+                                    <Image.RenderTransform>
+                                        <ScaleTransform x:Name="ScaleTransform" ScaleX="1" ScaleY="1" />
+                                    </Image.RenderTransform>
+                                </Image>
                             </Button>
-                            <Button Click="Button_Click_Clear"  Padding="0" Height="25" Width="25" Margin="5,0,0,0">
-                                <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" Margin="2" />
+                            <Button Grid.Column="1" Margin="0,1,5,0" HorizontalAlignment="Left" Command="{Binding ViewResultManager.EditConfigCommand}" Padding="2" Height="25" Width="25" >
+                                <Button.Triggers>
+                                    <EventTrigger RoutedEvent="Button.Click">
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Button.Triggers>
+                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                                    <TextBlock.RenderTransform>
+                                        <RotateTransform x:Name="rotateTransform2" CenterX="8" CenterY="8"/>
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
                             </Button>
-
                         </StackPanel>
                     </Grid>
-
-                    <ListView  x:Name="listView1" Grid.Row="1"   BorderThickness="0" Padding="0"  SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" Grid.RowSpan="2" >
+                    <ListView  x:Name="listView1" Grid.Row="1"  SelectedIndex="{Binding ViewResultManager.ViewReslutsSelectedIndex}" BorderThickness="0" Padding="0"  SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" Grid.RowSpan="2" >
                         <ListView.Resources >
                             <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                         </ListView.Resources>
                         <ListView.ItemContainerStyle>
                             <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                                <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
                             </Style>
                         </ListView.ItemContainerStyle>
                         <ListView.View>
@@ -126,7 +148,6 @@
                                         <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                     </Style>
                                 </GridView.ColumnHeaderContainerStyle>
-
                                 <GridViewColumn Header="Id" >
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:KBItemMaster}">
@@ -138,6 +159,13 @@
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:KBItemMaster}">
                                             <TextBlock Text="{Binding Model}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="FlowStatus" >
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:KBItemMaster}">
+                                            <TextBlock Text="{Binding FlowStatus}" />
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
@@ -183,11 +211,30 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
+                                <GridViewColumn Header="RunTime">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:KBItemMaster}">
+                                            <TextBlock Text="{Binding RunTime}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Msg">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:KBItemMaster}">
+                                            <TextBlock Text="{Binding Msg}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Time" Width="150">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:KBItemMaster}">
+                                            <TextBlock Text="{Binding CreateTime,StringFormat=yyyy/MM//dd HH:mm:ss}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
                             </GridView>
                         </ListView.View>
-
                     </ListView>
-
                 </Grid>
                 <GridSplitter Grid.Row="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
 
@@ -195,12 +242,14 @@
             <Grid Grid.Column="1">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
+                    <RowDefinition Height="75"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0" Margin="5">
                     <StackPanel>
-                        <DockPanel  Margin="0,0,0,5">
-                            <ComboBox  x:Name="FlowTemplate" Height="10" SelectedIndex="{Binding TemplateSelectedIndex}" ItemsSource="{Binding TemplateItemSource}" SelectedValuePath="Value" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <hc:ComboBox x:Name="FlowTemplate"  Width="200" SelectedIndex="{Binding TemplateSelectedIndex}" ItemsSource="{Binding TemplateItemSource}"  SelectedValuePath="Value" DisplayMemberPath="Key" HorizontalAlignment="Left"  IsEditable="True"  hc:InfoElement.Necessary="True" hc:InfoElement.ShowClearButton="True"  hc:InfoElement.Symbol="*"  />
                             <Grid Width="30" Margin="5,0"  HorizontalAlignment="Left">
                                 <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
                                 <Button  Width="30" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding  OpenTemplateCommand}"/>
@@ -209,16 +258,84 @@
                                 <Image Source="{StaticResource  DrawingImageEdit}" Width="15" Margin="0" />
                                 <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding OpenFlowEngineToolCommand}"/>
                             </Grid>
-                            <DockPanel DockPanel.Dock="Left" HorizontalAlignment="Right" Margin="20,0,0,0">
-                                <TextBlock Text="SN" Margin="0,0,5,0"/>
-                                <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
-                            </DockPanel>
+                            <Grid x:Name="SearchGrid" Margin="10,0" Width="210" HorizontalAlignment="Left" VerticalAlignment="Center" >
+                                <hc:TextBox x:Name="Searchbox"   Padding="25,1,2,1"  BorderThickness="1" GotFocus="Searchbox_GotFocus" hc:InfoElement.Placeholder="Search" BorderBrush="#CCCEDB" MaxLength="15"  VerticalContentAlignment="Center" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged"  />
+                                <Viewbox Width="16 " Height="16" HorizontalAlignment="Left" Margin="4,0,0,0">
+                                    <Rectangle Width="16 " Height="16" >
+                                        <Rectangle.Resources>
+                                            <SolidColorBrush x:Key="canvas" Opacity="0" />
+                                            <SolidColorBrush x:Key="light-defaultgrey-10" Color="{DynamicResource defaultgreyColor}" Opacity=" 0.1" />
+                                            <SolidColorBrush x:Key="light-defaultgrey" Color="{DynamicResource defaultgreyColor}" Opacity="1" />
+                                        </Rectangle.Resources>
+                                        <Rectangle.Fill>
+                                            <DrawingBrush Stretch="None">
+                                                <DrawingBrush.Drawing>
+                                                    <DrawingGroup>
+                                                        <DrawingGroup x:Name="canvas">
+                                                            <GeometryDrawing Brush="{DynamicResource canvas}" Geometry="F1M0,0H16V16H0Z" />
+                                                        </DrawingGroup>
+                                                        <DrawingGroup x:Name="level_1">
+                                                            <GeometryDrawing Brush="{DynamicResource light-defaultgrey-10}" Geometry="F1M11.5,6.5a5,5,0,1,1-5-5A5,5,0,0,1,11.5,6.5Z" />
+                                                            <GeometryDrawing Brush="{DynamicResource light-defaultgrey}" Geometry="F1M1,6.5a5.5,5.5,0,0,0,9.017,4.224l5.129,5.13.708-.708-5.13-5.129A5.5,5.5,0,1,0,1,6.5Zm1,0A4.5,4.5,0,1,1,6.5,11,4.505,4.505,0,0,1,2,6.5Z" />
+                                                        </DrawingGroup>
+                                                    </DrawingGroup>
+                                                </DrawingBrush.Drawing>
+                                            </DrawingBrush>
+                                        </Rectangle.Fill>
+                                    </Rectangle>
+                                </Viewbox>
+                            </Grid>
+                            <Popup x:Name="SearchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Searchbox}">
+                                <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="210" Height="500">
+                                    <ListView  x:Name="ListViewSearch" Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionChanged="ListViewSearch_SelectionChanged" MouseDoubleClick="ListViewSearch_MouseDoubleClick">
+                                        <ListView.ItemContainerStyle>
+                                            <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                                                <Setter Property="Background" Value="Transparent"/>
+                                            </Style>
+                                        </ListView.ItemContainerStyle>
+                                        <ListView.View>
+                                            <GridView>
+                                                <GridView.ColumnHeaderContainerStyle>
+                                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Setter Property="Background" Value="Transparent"/>
+                                                        <Setter Property="BorderThickness" Value="0"/>
+                                                    </Style>
+                                                </GridView.ColumnHeaderContainerStyle>
+                                                <GridViewColumn Width="240">
+                                                    <GridViewColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="{Binding Header}" Foreground="{DynamicResource Foreground}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,0"/>
+                                                            </StackPanel>
+                                                        </DataTemplate>
+                                                    </GridViewColumn.CellTemplate>
+                                                </GridViewColumn>
+                                            </GridView>
+                                        </ListView.View>
+                                    </ListView>
+                                </Border>
+                            </Popup>
+
+                        </StackPanel>
+                        <DockPanel>
+                            <Button Content="Test KeyBorder"  DockPanel.Dock="Right" Background="Pink" Click="TestClick" Width="200" />
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox x:Name="SNtextBox" IsEnabled="{Binding SNlocked,Converter={StaticResource Boolean2BooleanReConverter}}" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown" Margin="0,0,5,0"/>
+                                <Button Content="上传" Click="UploadSN_Click" Visibility="{Binding SummaryManager.Summary.UseMes,Converter={StaticResource bool2VisibilityConverter}}"  Margin="0,0,5,0"/>
+                                <Button Content="解锁" Click="UnSNlocked_Click" Visibility="{Binding SNlocked,Converter={StaticResource bool2VisibilityConverter}}"  Margin="0,0,5,0"/>
+                            </StackPanel>
                         </DockPanel>
-                        <Button Content="Test KeyBorder"  DockPanel.Dock="Right" Background="Pink" Height="70" Click="TestClick" />
                     </StackPanel>
                 </Grid>
-                <RichTextBox x:Name="outputText" Grid.Row="1" Margin="5,0"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                    <FlowDocument>
+                <Border Grid.Row="1"  Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Margin="5,0,5,5">
+                    <TextBox x:FieldModifier="public"  x:Name="logTextBox" TextWrapping="WrapWithOverflow" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
+                </Border>
+                <Grid Grid.Row="2" x:Name="LogGrid" Height="250">
+
+                </Grid>
+                <RichTextBox x:Name="outputText" Grid.Row="3" Margin="5,0"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <FlowDocument>  
                         <Paragraph>
 
                         </Paragraph>
@@ -227,7 +344,9 @@
             </Grid>
         </Grid>
         <StatusBar Grid.Row="2">
-            
+            <StatusBarItem>
+                <Button Content="设置" Command="{Binding EditConfigCommand}"/>
+            </StatusBarItem>
             <StatusBarItem>
                 <Button Content="日志" Command="{Binding OpenLogCommand}"/>
             </StatusBarItem>
@@ -241,19 +360,22 @@
                 </DockPanel>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="设置" Command="{Binding OpenConfigCommand}"/>
+                <Button Content="Socket" Command="{Binding OpenSocketConfigCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="socket" Command="{Binding OpenSocketConfigCommand}"/>
+                <Button Content="Recipe" Command="{Binding RecipeManager.EditCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="更新记录" Command="{Binding OpenChangeLogCommand}"/>
+                <Button Content="Summary" Command="{Binding SummaryManager.EditCommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="Test" Click="Button_Click"/>
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="自述文件" Command="{Binding OpenReadMeCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="Test" Click="Button_Click"/>
+                <Button Content="变更日志" Command="{Binding OpenChangeLogCommand}"/>
             </StatusBarItem>
         </StatusBar>
 

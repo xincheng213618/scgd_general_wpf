@@ -31,7 +31,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Org.BouncyCastle.Asn1.Ocsp;
 using Panuon.WPF.UI;
-using ProjectARVRLite.Config;
 using ProjectARVRLite.Services;
 using ST.Library.UI.NodeEditor;
 using System;
@@ -59,6 +58,7 @@ namespace ProjectARVRLite
                 .ToList();
 
             // CSV 列头（每项后缀可自定义，比如 TestValue/Name/LowLimit/UpLimit/TestResult 均输出）
+
             var headers = new List<string>();
             foreach (var prop in itemProps)
             {
@@ -101,6 +101,34 @@ namespace ProjectARVRLite
         }
     }
 
+    public class PoixyuvData
+    {
+        public int Id { get; set; }
+
+        public string Name { get; set; }
+
+        public double CCT { get; set; }
+
+        public double Wave { get; set; }
+
+        public double X { get; set; }
+
+        public double Y { get; set; }
+
+        public double Z { get; set; }
+
+        public double u { get; set; }
+
+
+        public double v { get; set; }
+
+        public double x { get; set; }
+
+
+        public double y { get; set; }
+
+    }
+
     public class ObjectiveTestItem
     {
         public string Name { get; set; }         // 项目名称
@@ -130,6 +158,22 @@ namespace ProjectARVRLite
     /// </summary>
     public class ObjectiveTestResult:ViewModelBase
     {
+        /// <summary>
+        /// 水平视场角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem W51HorizontalFieldOfViewAngle { get; set; }
+
+        /// <summary>
+        /// 垂直视场角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem W51VerticalFieldOfViewAngle { get; set; }
+
+        /// <summary>
+        /// 对角线视场角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem W51DiagonalFieldOfViewAngle { get; set; }
+
+
         /// <summary>
         /// 亮度均匀性(%) 测试项
         /// </summary>
@@ -161,26 +205,12 @@ namespace ProjectARVRLite
         /// </summary>
         public ObjectiveTestItem W255CenterCIE1976ChromaticCoordinatesv { get; set; }
 
-
         /// <summary>
         /// 中心相关色温(K) 测试项
         /// </summary>
         public ObjectiveTestItem BlackCenterCorrelatedColorTemperature { get; set; }
 
-        /// <summary>
-        /// 水平视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem W255HorizontalFieldOfViewAngle { get; set; }
-
-        /// <summary>
-        /// 垂直视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem W255VerticalFieldOfViewAngle { get; set; }
-
-        /// <summary>
-        /// 对角线视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem W255DiagonalFieldOfViewAngle { get; set; }
+        public List<PoixyuvData> W255PoixyuvDatas { get; set; } = new List<PoixyuvData>();
 
         /// <summary>
         /// FOFO对比度 测试项
@@ -225,109 +255,143 @@ namespace ProjectARVRLite
         public ObjectiveTestItem VerticalTVDistortion { get; set; }
 
         /// <summary>
-        /// MTF_H 中心_0F 测试项
+        /// MTF_HV_H 中心_0F 测试项
         /// </summary>
-        public ObjectiveTestItem MTF_H_Center_0F { get; set; }
+        public ObjectiveTestItem MTF_HV_H_Center_0F { get; set; }
 
         /// <summary>
-        /// MTF_H 左上_0.5F 测试项
+        /// MTF_HV_H 左上_0.5F 测试项
         /// </summary>
-        public ObjectiveTestItem MTF_H_LeftUp_0_5F { get; set; }
+        public ObjectiveTestItem MTF_HV_H_LeftUp_0_4F { get; set; }
 
         /// <summary>
-        /// MTF_H 右上_0.5F 测试项
+        /// MTF_HV_H 右上_0.5F 测试项
         /// </summary>
-        public ObjectiveTestItem MTF_H_RightUp_0_5F { get; set; }
+        public ObjectiveTestItem MTF_HV_H_RightUp_0_4F { get; set; }
 
         /// <summary>
-        /// MTF_H 右下_0.5F 测试项
+        /// MTF_HV_H 右下_0.5F 测试项
         /// </summary>
-        public ObjectiveTestItem MTF_H_RightDown_0_5F { get; set; }
+        public ObjectiveTestItem MTF_HV_H_RightDown_0_4F { get; set; }
 
         /// <summary>
-        /// MTF_H 左下_0.5F 测试项
+        /// MTF_HV_H 左下_0.5F 测试项
         /// </summary>
-        public ObjectiveTestItem MTF_H_LeftDown_0_5F { get; set; }
+        public ObjectiveTestItem MTF_HV_H_LeftDown_0_4F { get; set; }
 
         /// <summary>
-        /// MTF_H 左上_0.8F 测试项
+        /// MTF_HV_H 左上_0.8F 测试项
         /// </summary>
-        public ObjectiveTestItem MTF_H_LeftUp_0_8F { get; set; }
+        public ObjectiveTestItem MTF_HV_H_LeftUp_0_8F { get; set; }
 
         /// <summary>
-        /// MTF_H 右上_0.8F 测试项
+        /// MTF_HV_H 右上_0.8F 测试项
         /// </summary>
-        public ObjectiveTestItem MTF_H_RightUp_0_8F { get; set; }
+        public ObjectiveTestItem MTF_HV_H_RightUp_0_8F { get; set; }
 
         /// <summary>
-        /// MTF_H 右下_0.8F 测试项
+        /// MTF_HV_H 右下_0.8F 测试项
         /// </summary>
-        public ObjectiveTestItem MTF_H_RightDown_0_8F { get; set; }
+        public ObjectiveTestItem MTF_HV_H_RightDown_0_8F { get; set; }
 
         /// <summary>
-        /// MTF_H 左下_0.8F 测试项
+        /// MTF_HV_H 左下_0.8F 测试项
         /// </summary>
-        public ObjectiveTestItem MTF_H_LeftDown_0_8F { get; set; }
+        public ObjectiveTestItem MTF_HV_H_LeftDown_0_8F { get; set; }
 
         /// <summary>
-        /// MTF_V 中心_0F 测试项
+        /// MTF_HV_V 中心_0F 测试项
         /// </summary>
-        public ObjectiveTestItem MTF_V_Center_0F { get; set; }
+        public ObjectiveTestItem MTF_HV_V_Center_0F { get; set; }
 
         /// <summary>
-        /// MTF_V 左上_0.5F 测试项
+        /// MTF_HV_V 左上_0.5F 测试项
         /// </summary>
-        public ObjectiveTestItem MTF_V_LeftUp_0_5F { get; set; }
+        public ObjectiveTestItem MTF_HV_V_LeftUp_0_4F { get; set; }
 
         /// <summary>
-        /// MTF_V 右上_0.5F 测试项
+        /// MTF_HV_V 右上_0.5F 测试项
         /// </summary>
-        public ObjectiveTestItem MTF_V_RightUp_0_5F { get; set; }
+        public ObjectiveTestItem MTF_HV_V_RightUp_0_4F { get; set; }
 
         /// <summary>
-        /// MTF_V 右下_0.5F 测试项
+        /// MTF_HV_V 右下_0.5F 测试项
         /// </summary>
-        public ObjectiveTestItem MTF_V_RightDown_0_5F { get; set; }
+        public ObjectiveTestItem MTF_HV_V_RightDown_0_4F { get; set; }
 
         /// <summary>
-        /// MTF_V 左下_0.5F 测试项
+        /// MTF_HV_V 左下_0.5F 测试项
         /// </summary>
-        public ObjectiveTestItem MTF_V_LeftDown_0_5F { get; set; }
+        public ObjectiveTestItem MTF_HV_V_LeftDown_0_4F { get; set; }
 
         /// <summary>
-        /// MTF_V 左上_0.8F 测试项
+        /// MTF_HV_V 左上_0.8F 测试项
         /// </summary>
-        public ObjectiveTestItem MTF_V_LeftUp_0_8F { get; set; }
+        public ObjectiveTestItem MTF_HV_V_LeftUp_0_8F { get; set; }
 
         /// <summary>
-        /// MTF_V 右上_0.8F 测试项
+        /// MTF_HV_V 右上_0.8F 测试项
         /// </summary>
-        public ObjectiveTestItem MTF_V_RightUp_0_8F { get; set; }
+        public ObjectiveTestItem MTF_HV_V_RightUp_0_8F { get; set; }
 
         /// <summary>
-        /// MTF_V 右下_0.8F 测试项
+        /// MTF_HV_V 右下_0.8F 测试项
         /// </summary>
-        public ObjectiveTestItem MTF_V_RightDown_0_8F { get; set; }
+        public ObjectiveTestItem MTF_HV_V_RightDown_0_8F { get; set; }
 
         /// <summary>
-        /// MTF_V 左下_0.8F 测试项
+        /// MTF_HV_V 左下_0.8F 测试项
         /// </summary>
-        public ObjectiveTestItem MTF_V_LeftDown_0_8F { get; set; }
+        public ObjectiveTestItem MTF_HV_V_LeftDown_0_8F { get; set; }
+
+
+        // 平均值
+        //public ObjectiveTestItem MTF_HV_Center_OF { get; set; }
+        //public ObjectiveTestItem MTF_HV_LeftUp_0_4F { get; set; }
+        //public ObjectiveTestItem MTF_HV_RightUp_0_4F { get; set; }
+
+        //public ObjectiveTestItem MTF_HV_RightDown_0_4F { get; set; }
+
+        //public ObjectiveTestItem MTF_HV_LeftDown_0_4F { get; set; }
+
+        //public ObjectiveTestItem MTF_HV_LeftUp_0_8F { get; set; }
+
+        //public ObjectiveTestItem MTF_HV_RightUp_0_8F { get; set; }
+
+        //public ObjectiveTestItem MTF_HV_RightDown_0_8F { get; set; }
+
+        //public ObjectiveTestItem MTF_HV_LeftDown_0_8F { get; set; }
+
 
         /// <summary>
         /// X轴倾斜角(°) 测试项
         /// </summary>
-        public ObjectiveTestItem XTilt { get; set; }
+        public ObjectiveTestItem ImageCenterXTilt { get; set; }
 
         /// <summary>
         /// Y轴倾斜角(°) 测试项
         /// </summary>
-        public ObjectiveTestItem YTilt { get; set; }
+        public ObjectiveTestItem ImageCenterYTilt { get; set; }
 
         /// <summary>
         /// 旋转角(°) 测试项
         /// </summary>
-        public ObjectiveTestItem Rotation { get; set; }
+        public ObjectiveTestItem ImageCenterRotation { get; set; }
+
+        /// <summary>
+        /// 旋转角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem OptCenterRotation { get; set; }
+
+        /// <summary>
+        /// X轴倾斜角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem OptCenterXTilt { get; set; }
+
+        /// <summary>
+        /// Y轴倾斜角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem OptCenterYTilt { get; set; }
 
         /// <summary>
         /// 鬼影(%) 测试项
@@ -344,5 +408,16 @@ namespace ProjectARVRLite
         /// 总体测试结果字符串（如“pass”或“fail”）
         /// </summary>
         public string TotalResultString => TotalResult?"PASS":"Fail";
+
+        public bool FlowW51TestReslut { get; set; } = false;
+        public bool FlowWhiteTestReslut { get; set; } = false;
+        public bool FlowBlackTestReslut { get; set; } = false;
+        public bool FlowW25TestReslut { get; set; } = false;
+        public bool FlowChessboardTestReslut { get; set; } = false;
+        public bool FlowMTFHVTestReslut { get; set; } = false;
+        public bool FlowDistortionTestReslut { get; set; } = false;
+        public bool FlowOpticCenterTestReslut { get; set; } = false;
     }
+
+
 }

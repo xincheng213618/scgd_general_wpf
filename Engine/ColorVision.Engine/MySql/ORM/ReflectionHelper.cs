@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SqlSugar;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -6,37 +7,6 @@ using System.Reflection;
 
 namespace ColorVision.Engine.MySql.ORM
 {
-    [AttributeUsage(AttributeTargets.Property)]
-    public class ColumnAttribute : Attribute
-    {
-        public string Name { get; set; }
-
-        public string Comment { get; set; }
-
-        public ColumnAttribute(string name)
-        {
-            Name = name;
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class ColumnIgnoreAttribute : Attribute
-    {
-    }
-
-    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
-    public class TableAttribute : Attribute
-    {
-        public string TableName { get; set; }
-        //默认是id
-        public string PrimaryKey { get; set; } = "id";
-
-        public TableAttribute(string tableName)
-        {
-            TableName = tableName;
-        }
-    }
-
     public static class ReflectionHelper
     {
         public static BaseTableDao<T>? Create<T>() where T : IPKModel, new()
@@ -148,24 +118,32 @@ namespace ColorVision.Engine.MySql.ORM
 
         public static string GetColumnName(PropertyInfo prop)
         {
-            var attribute = prop.GetCustomAttributes(typeof(ColumnAttribute), false).FirstOrDefault() as ColumnAttribute;
-            return attribute?.Name ?? prop.Name;
+            var attribute = prop.GetCustomAttributes(typeof(SugarColumn), false).FirstOrDefault() as SugarColumn;
+            return attribute?.ColumnName ?? prop.Name;
         }
 
         public static string GetTableName(Type type)
         {
-            var attribute = type.GetCustomAttributes(typeof(TableAttribute), false).FirstOrDefault() as TableAttribute;
+            var attribute = type.GetCustomAttributes(typeof(SugarTable), false).FirstOrDefault() as SugarTable;
             return attribute?.TableName ?? type.Name;
         }
         public static string GetPrimaryKey(Type type)
         {
-            var attribute = type.GetCustomAttributes(typeof(TableAttribute), false).FirstOrDefault() as TableAttribute;
-            return attribute?.PrimaryKey ?? "id";
+            foreach (var prop in type.GetProperties())
+            {
+                var SugarColumn = prop.GetCustomAttribute<SugarColumn>();
+                if (SugarColumn != null)
+                {
+                    if (SugarColumn.IsPrimaryKey)
+                        return SugarColumn.ColumnName;
+                }
+            }
+            return "id";
         }
 
         private static bool ShouldIgnoreProperty(PropertyInfo prop)
         {
-            return prop.GetCustomAttributes(typeof(ColumnIgnoreAttribute), false).Length != 0;
+            return prop.GetCustomAttribute<SugarColumn>()?.IsIgnore ?? false;
         }
     }
 

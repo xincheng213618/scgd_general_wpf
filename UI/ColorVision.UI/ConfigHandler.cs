@@ -1,14 +1,28 @@
 ﻿#pragma warning disable CS8604
+using ColorVision.Common.MVVM;
 using ColorVision.UI.Authorizations;
 using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Windows;
+using static System.Windows.Forms.Design.AxImporter;
 
 namespace ColorVision.UI
 {
+    [DisplayName("配置相关参数")]
+    public class ConfigOptions:ViewModelBase, IConfig
+    {
+        [DisplayName("是否启用定时备份")]
+        public bool EnableBackup { get => _EnableBackup; set { _EnableBackup = value; NotifyPropertyChanged(); } }
+        private bool _EnableBackup = true;
+
+        [DisplayName("最大备份数量"),Description("超过则自动清理旧备份")]
+        public int MaxBackupFiles { get => _MaxBackupFiles; set { _MaxBackupFiles = value; NotifyPropertyChanged(); } }
+        private int _MaxBackupFiles;
+    }
     /// <summary>
     /// 加载插件
     /// </summary>
@@ -28,15 +42,23 @@ namespace ColorVision.UI
                 return _instance; 
             }
         }
+        public ConfigOptions Options => GetRequiredService<ConfigOptions>();
 
         public string ConfigFilePath { get; set; }
+        public string BackupFolderPath { get; set; }
+
+        public DateTime InitDateTime { get; set; }
+
         public ConfigHandler()
         {
+            InitDateTime = DateTime.Now;
             string AssemblyCompany = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "ColorVision";
             string ConfigDIFileName = $"{AssemblyCompany}Config.json";
+            string backupDirName = "Backup";
             if (Directory.Exists("Config"))
             {
                 ConfigFilePath = $"Config\\{ConfigDIFileName}";
+                BackupFolderPath = $"Config\\{backupDirName}\\";
             }
             else
             {
@@ -44,20 +66,33 @@ namespace ColorVision.UI
                 if (!Directory.Exists(DirectoryPath))
                     Directory.CreateDirectory(DirectoryPath);
                 ConfigFilePath = DirectoryPath + ConfigDIFileName;
+                BackupFolderPath = DirectoryPath + backupDirName + "\\";
             }
+            if (!Directory.Exists(BackupFolderPath))
+                Directory.CreateDirectory(BackupFolderPath);
 
             LoadConfigs(ConfigFilePath);
-            //Application.Current.SessionEnding += (s, e) =>
-            //{
-            //    SaveConfigs(ConfigFilePath);
-            //};
+
+            Task.Delay(30000).ContinueWith(t =>
+            {
+                if (Options.EnableBackup)
+                {
+                    BackupConfigs();
+                }
+            });
+            Authorization.Instance = GetRequiredService<Authorization>();
+
             AppDomain.CurrentDomain.ProcessExit += (s, e) =>
             {
-                if (IsAutoSave)
-                    SaveConfigs(ConfigFilePath);
+                if (DateTime.Now - InitDateTime > TimeSpan.FromSeconds(10))
+                {
+                    if (IsAutoSave)
+                        SaveConfigs(ConfigFilePath);
+                }
             };
-            Authorization.Instance = GetRequiredService<Authorization>();
         }
+
+
         public bool IsAutoSave { get; set; } = true;
 
         public void Reload()
@@ -166,22 +201,81 @@ namespace ColorVision.UI
 
         public void LoadDefaultConfigs()
         {
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            try
             {
-                try
+                var files = Directory.GetFiles(BackupFolderPath, "ConfigBackup_*.json")
+                    .OrderByDescending(f => f)
+                    .ToList();
+                if (files.Any())
                 {
-                    foreach (var type in assembly.GetTypes().Where(t => typeof(IConfig).IsAssignableFrom(t) && !t.IsAbstract))
+                    LoadConfigs(files.First());
+                    File.Copy(files.First(), ConfigFilePath, true);
+                    MessageBox.Show("配置文件已从最近备份恢复", "恢复成功");
+                }
+                else
+                {
+                    foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
                     {
-                        if (Activator.CreateInstance(type) is IConfig config)
+                        try
                         {
-                            Configs[type] = config;
+                            foreach (var type in assembly.GetTypes().Where(t => typeof(IConfig).IsAssignableFrom(t) && !t.IsAbstract))
+                            {
+                                if (Activator.CreateInstance(type) is IConfig config)
+                                {
+                                    Configs[type] = config;
+                                }
+                            }
+                        }
+                        catch
+                        {
+
                         }
                     }
                 }
-                catch
-                {
+            }
+            catch (Exception ex)
+            {
+                log.Error("恢复配置文件失败", ex);
+                MessageBox.Show("恢复配置文件失败");
+            }
 
+
+        }
+
+        public void BackupConfigs()
+        {
+            try
+            {
+                string backupFileName = $"ConfigBackup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+                string backupPath = Path.Combine(BackupFolderPath, backupFileName);
+                SaveConfigs(backupPath);
+                CleanupOldBackups();
+            }
+            catch (Exception ex)
+            {
+                log.Error("备份配置文件失败", ex);
+            }
+        }
+
+        private void CleanupOldBackups()
+        {
+            try
+            {
+                if (Options.MaxBackupFiles <= 0) return;
+                var files = Directory.GetFiles(BackupFolderPath, "ConfigBackup_*.json")
+                    .OrderByDescending(f => f)
+                    .ToList();
+                if (files.Count > Options.MaxBackupFiles)
+                {
+                    foreach (var file in files.Skip(Options.MaxBackupFiles))
+                    {
+                        File.Delete(file);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                log.Warn("清理备份文件失败", ex);
             }
         }
 

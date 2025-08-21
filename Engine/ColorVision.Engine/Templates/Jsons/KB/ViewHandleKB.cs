@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8604,CS8602
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
@@ -67,14 +68,15 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
         public override void Load(AlgorithmView view, AlgorithmResult result)
         {
-            result.ViewResults ??= new ObservableCollection<IViewResult>(PoiPointResultDao.Instance.GetAllByPid(result.Id));
+            if (result.ViewResults == null)
+            {
+                result.ViewResults ??= new ObservableCollection<IViewResult>(PoiPointResultDao.Instance.GetAllByPid(result.Id));
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmKB), ImageFilePath = result.FilePath })) });
+            }
         }
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
-            view.ImageView.ImageShow.Clear();
-
-
             if (File.Exists(result.ResultImagFile))
             {
                 Task.Run(async () =>
@@ -112,9 +114,6 @@ namespace ColorVision.Engine.Templates.Jsons.KB
                 if (File.Exists(result.FilePath))
                     view.ImageView.OpenImage(result.FilePath);
             }
-
-
-            Load(view, result);
 
             List<POIPoint> DrawPoiPoint = new();
             foreach (var item in result.ViewResults)

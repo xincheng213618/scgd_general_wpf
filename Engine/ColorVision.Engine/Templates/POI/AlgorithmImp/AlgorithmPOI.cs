@@ -16,6 +16,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
+
+    [DisplayAlgorithm(1, "POI", "数据提取算法")]
     public class AlgorithmPoi : DisplayAlgorithmBase
     {
 
@@ -34,11 +36,6 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
         public AlgorithmPoi(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "POI";
-            Order = 1;
-			Group = "数据提取算法";
-
-
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePOIFilterCommand = new RelayCommand(a => OpenTemplatePOIFilter());
@@ -71,6 +68,10 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
         public bool IsUSeFile => POIStorageModel == POIStorageModel.File;
 
+        public bool IsSubPixel { get => _IsSubPixel; set { _IsSubPixel = value; NotifyPropertyChanged(); } }
+        private bool _IsSubPixel;
+        public bool IsCCTWave { get => _IsCCTWave; set { _IsCCTWave = value; NotifyPropertyChanged(); } }
+        private bool _IsCCTWave = true;
 
         public string POIPointFileName { get => _POIPointFileName; set { _POIPointFileName = value; NotifyPropertyChanged(); } }
         private string _POIPointFileName;
@@ -147,6 +148,9 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                 Params.Add("POIStorageType", POIStorageModel);
                 Params.Add("POIPointFileName", POIPointFileName);
             }
+
+            Params.Add("IsSubPixel", IsSubPixel);
+            Params.Add("IsCCTWave", IsCCTWave);
 
             MsgSend msg = new()
             {

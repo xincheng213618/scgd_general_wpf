@@ -26,7 +26,10 @@ namespace ColorVision.Engine.Services.Dao
         public RelayCommand OpenContainingFolderCommand { get; set; }
         public RelayCommand CreateToPoiCommand { get; set; }
 
+        public ViewResultCamera()
+        {
 
+        }
         public ViewResultCamera(MeasureImgResultModel measureImgResultModel)
         {
             Id = measureImgResultModel.Id;
@@ -155,8 +158,11 @@ namespace ColorVision.Engine.Services.Dao
 
         public string? Batch { get => _Batch; set { _Batch = value; NotifyPropertyChanged(); } }
         private string? _Batch;
+
+        [DisplayName("FileUrl")]
         public string? FileUrl { get => _FileUrl; set { _FileUrl = value; NotifyPropertyChanged(); } }
         private string? _FileUrl;
+
         [DisplayName("File")]
         public string? FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); } }
         private string? _FilePath;

@@ -68,6 +68,7 @@ namespace ColorVision.Engine.Templates.POI
                 saveFileDialog.Filter = "标定文件 (*.dat)|*.dat";
                 saveFileDialog.Title = "选择标定文件";
                 saveFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                saveFileDialog.RestoreDirectory = true;
                 if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
                     LuminFile = saveFileDialog.FileName;
@@ -79,8 +80,7 @@ namespace ColorVision.Engine.Templates.POI
             using (System.Windows.Forms.FolderBrowserDialog folderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog())
             {
                 folderBrowserDialog.Description = "Select Folder";
-                folderBrowserDialog.SelectedPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-
+                folderBrowserDialog.SelectedPath = SaveFolderPath;
                 if (folderBrowserDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
                     SaveFolderPath = folderBrowserDialog.SelectedPath;
@@ -1239,6 +1239,27 @@ namespace ColorVision.Engine.Templates.POI
                 BaseProperties drawAttributeBase = item.BaseAttribute;
                if (drawAttributeBase is RectangleTextProperties rectangle)
                 {
+                    if (rectangle.Rect.X <= 0)
+                    {
+                        MessageBox.Show($"{rectangle.Text} X为0{rectangle.Rect.X}");
+                        return;
+                    }
+                    if (rectangle.Rect.Y <= 0)
+                    {
+                        MessageBox.Show($"{rectangle.Text} Y为0{rectangle.Rect.Y}");
+                        return;
+                    }
+                    if (rectangle.Rect.Width <= 0)
+                    {
+                        MessageBox.Show($"{rectangle.Text} width为0{rectangle.Rect.Width}");
+                        return;
+                    }
+                    if (rectangle.Rect.Height <= 0)
+                    {
+                        MessageBox.Show($"{rectangle.Text} Height为0{rectangle.Rect.Height}");
+                        return;
+                    }
+
                     Rect rect1 = new Rect(rectangle.Rect.X, rectangle.Rect.Y, rectangle.Rect.Width, rectangle.Rect.Height);
                     if (!rect.Contains(rect1))
                         continue;
@@ -1512,15 +1533,6 @@ namespace ColorVision.Engine.Templates.POI
 
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
         {
-            RenderPseudo();
-        }
-        private void Pseudo_MouseDoubleClick(object sender, RoutedEventArgs e)
-        {
-            PseudoColor pseudoColor = new PseudoColor(new ImageViewConfig());
-            pseudoColor.ShowDialog();
-            var Colormapes = PseudoColor.GetColormapDictionary().First(x => x.Key == ColormapTypes.COLORMAP_JET);
-            string valuepath = Colormapes.Value;
-            ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative));
             RenderPseudo();
         }
         private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)

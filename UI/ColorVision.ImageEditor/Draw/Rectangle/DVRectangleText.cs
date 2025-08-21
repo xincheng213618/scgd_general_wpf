@@ -60,20 +60,22 @@ namespace ColorVision.ImageEditor.Draw
         {
             using DrawingContext dc = RenderOpen();
             TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
+            double size = 0;
 
             if (IsShowText)
             {
                 Brush brush = Brushes.Red;
                 double fontSize = Attribute.Pen.Thickness * 10;
-                FormattedText formattedText = new(TextAttribute.Text, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-                dc.DrawText(formattedText, new Point(Attribute.Rect.X + Attribute.Rect.Width /2 - formattedText.Width / 2, Attribute.Rect.Y+ Attribute.Rect.Height / 2 - formattedText.Height / 2));
+                FormattedText formattedText = new(TextAttribute.Text, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, DefalutTextAttribute.Defalut.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                size = formattedText.Width / 2;
+                dc.DrawText(formattedText, new Point(Attribute.Rect.X + Attribute.Rect.Width /2 - size, Attribute.Rect.Y+ Attribute.Rect.Height / 2 - formattedText.Height / 2));
             }
             dc.DrawRectangle(Attribute.Brush, Attribute.Pen, Attribute.Rect);
 
             if (!string.IsNullOrWhiteSpace(Attribute.Msg))
             {
-                FormattedText formattedText = new FormattedText(Attribute.Msg, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-                dc.DrawText(formattedText, new Point(Attribute.Rect.X + formattedText.Width / 2 + Attribute.Rect.Width / 2 + Attribute.Pen.Thickness, Attribute.Rect.Y + Attribute.Rect.Height / 2 - formattedText.Height / 2));
+                FormattedText formattedText = new FormattedText(Attribute.Msg, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, DefalutTextAttribute.Defalut.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                dc.DrawText(formattedText, new Point(Attribute.Rect.X + size + Attribute.Rect.Width / 2 + Attribute.Pen.Thickness, Attribute.Rect.Y + Attribute.Rect.Height / 2 - formattedText.Height / 2));
             }
         }
         public override Rect GetRect()

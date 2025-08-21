@@ -5,12 +5,24 @@ using FlowEngineLib;
 using log4net;
 using Newtonsoft.Json;
 using System;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.Templates.Flow
 {
+    public enum FlowStatus
+    {
+        Ready,
+        Runing,
+        Paused,
+        Failed,
+        Canceled,
+        OverTime,
+        Completed
+    }
+
     public class FlowControlData : ViewModelBase
     {
         public string Version { get => _Version; set { _Version = value; NotifyPropertyChanged(); } }
@@ -34,6 +46,8 @@ namespace ColorVision.Engine.Templates.Flow
         public dynamic Params { get => _Params; set { _Params = value; NotifyPropertyChanged(); } }
         private dynamic _Params;
     }
+
+
     public class FlowControl : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowControl));
@@ -113,6 +127,7 @@ namespace ColorVision.Engine.Templates.Flow
             data.SerialNumber =e.SerialNumber;
             Application.Current.Dispatcher.Invoke(() => FlowCompleted?.Invoke(this,data));
         }
+
 
 
         public event EventHandler<FlowControlData> FlowCompleted;

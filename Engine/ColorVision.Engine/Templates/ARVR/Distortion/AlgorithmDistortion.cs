@@ -11,6 +11,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Distortion
 {
+
+    [DisplayAlgorithmAttribute(55, "畸变评价", "畸变评价")]
     public class AlgorithmDistortion : DisplayAlgorithmBase
     {
 
@@ -21,9 +23,6 @@ namespace ColorVision.Engine.Templates.Distortion
 
         public AlgorithmDistortion(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "畸变评价";
-            Order = 55;
-            Group = "畸变评价";
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

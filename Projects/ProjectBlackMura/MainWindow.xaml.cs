@@ -318,7 +318,7 @@ namespace ProjectBlackMura
             if (flowControl != null && flowControl.IsFlowRun) return;
 
             TryCount++;
-            LastFlowTime = FlowConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
+            LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
 
             CurrentFlowResult = new BlackMuraResult();
             CurrentFlowResult.SN = SNtextBox.Text;
@@ -366,7 +366,7 @@ namespace ProjectBlackMura
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
-            FlowConfig.Instance.FlowRunTime[FlowTemplate.Text] = stopwatch.ElapsedMilliseconds;
+            FlowEngineConfig.Instance.FlowRunTime[FlowTemplate.Text] = stopwatch.ElapsedMilliseconds;
 
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
 

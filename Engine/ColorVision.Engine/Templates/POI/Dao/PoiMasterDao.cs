@@ -1,10 +1,11 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System;
 using System.Data;
 
 namespace ColorVision.Engine.Templates.POI.Dao
 {
-    [Table("t_scgd_algorithm_poi_template_master")]
+    [SugarTable("t_scgd_algorithm_poi_template_master")]
     public class PoiMasterModel : PKModel
     {
         public PoiMasterModel()
@@ -57,61 +58,61 @@ namespace ColorVision.Engine.Templates.POI.Dao
             LeftBottomY = poiParam.LeftBottomY;
         }
 
-        [Column("name")]
+        [SugarColumn(ColumnName ="name")]
         public string? Name { get; set; }
 
-        [Column("type")]
+        [SugarColumn(ColumnName ="type")]
         public int? Type { get; set; }
 
-        [Column("width")]
+        [SugarColumn(ColumnName ="width")]
         public int? Width { get; set; }
 
-        [Column("height")]
+        [SugarColumn(ColumnName ="height")]
         public int? Height { get; set; }
 
-        [Column("left_top_x")]
+        [SugarColumn(ColumnName ="left_top_x")]
         public int? LeftTopX { get; set; }
 
-        [Column("left_top_y")]
+        [SugarColumn(ColumnName ="left_top_y")]
         public int? LeftTopY { get; set; }
 
-        [Column("right_top_x")]
+        [SugarColumn(ColumnName ="right_top_x")]
         public int? RightTopX { get; set; }
 
-        [Column("right_top_y")]
+        [SugarColumn(ColumnName ="right_top_y")]
         public int? RightTopY { get; set; }
 
-        [Column("right_bottom_x")]
+        [SugarColumn(ColumnName ="right_bottom_x")]
         public int? RightBottomX { get; set; }
 
-        [Column("right_bottom_y")]
+        [SugarColumn(ColumnName ="right_bottom_y")]
         public int? RightBottomY { get; set; }
 
-        [Column("left_bottom_x")]
+        [SugarColumn(ColumnName ="left_bottom_x")]
         public int? LeftBottomX { get; set; }
 
-        [Column("left_bottom_y")]
+        [SugarColumn(ColumnName ="left_bottom_y")]
         public int? LeftBottomY { get; set; }
 
-        [Column("dynamics")]
+        [SugarColumn(ColumnName ="dynamics")]
         public bool? IsDynamics { get; set; } = false;
 
-        [Column("cfg_json")]
+        [SugarColumn(ColumnName ="cfg_json")]
         public string? CfgJson { get; set; }
 
-        [Column("create_date")]
+        [SugarColumn(ColumnName ="create_date")]
         public DateTime? CreateDate { get; set; } = DateTime.Now;
 
-        [Column("is_enable")]
+        [SugarColumn(ColumnName ="is_enable")]
         public bool? IsEnable { get; set; } = true;
 
-        [Column("is_delete")]
+        [SugarColumn(ColumnName ="is_delete")]
         public bool? IsDelete { get; set; } = false;
 
-        [Column("remark")]
+        [SugarColumn(ColumnName ="remark")]
         public string? Remark { get; set; }
 
-        [Column("tenant_id")]
+        [SugarColumn(ColumnName ="tenant_id")]
         public int TenantId { get; set; }
     }
 

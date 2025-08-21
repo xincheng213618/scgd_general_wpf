@@ -95,7 +95,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
             DService.ScanResultEvent += SMUService_ScanResultHandler;
             DService.ResultEvent += SMUService_ResultHandler;
 
-            ComboxVITemplate.ItemsSource = SMUParam.Params;
+            ComboxVITemplate.ItemsSource = TemplateSMUParam.Params;
             ComboxVITemplate.SelectionChanged += (s, e) =>
             {
                 if (ComboxVITemplate.SelectedItem is TemplateModel<SMUParam> KeyValue && KeyValue.Value is SMUParam SxParm)

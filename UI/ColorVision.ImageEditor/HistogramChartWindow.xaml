@@ -12,8 +12,13 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <StackPanel Grid.Row="0" x:Name="ToolStackPanel" Orientation="Horizontal" VerticalAlignment="Top" Margin="5">
-            
+        
+        <StackPanel Grid.Row="0"  Orientation="Horizontal" VerticalAlignment="Top" Margin="5">
+            <Button Content="Log" Click="Button_Click"/>
+            <StackPanel x:Name="ToolStackPanel" Orientation="Horizontal"  Margin="5,0">
+                
+            </StackPanel>
+
         </StackPanel>
         
         <lvc:CartesianChart Grid.Row="1" Name="HistogramChart" Foreground="{StaticResource GlobalTextBrush}" ZoomMode ="Y"  ZoomingSpeed="0.5"/>

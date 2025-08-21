@@ -1,9 +1,12 @@
 ﻿#pragma warning disable CA1720,CS8602
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.Archive.Dao;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using ColorVision.UI.Views;
+using FlowEngineLib;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.ObjectModel;
@@ -23,7 +26,7 @@ namespace ColorVision.Engine.Services.Flow
         public event PropertyChangedEventHandler? PropertyChanged;
         public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-        public FlowEngineLib.FlowEngineControl FlowEngineControl { get; set; }
+        public  FlowEngineControl FlowEngineControl { get; set; }
         public View View { get; set; }
         public RelayCommand AutoSizeCommand { get; set; }
 
@@ -38,16 +41,16 @@ namespace ColorVision.Engine.Services.Flow
 
         public RelayCommand OpenFlowTemplateCommand { get; set; }
 
-        public static FlowConfig FlowConfig => FlowConfig.Instance;
+        public static FlowEngineConfig FlowConfig => FlowEngineConfig.Instance;
 
         public bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; NotifyPropertyChanged(); } }
         private bool _IsEditMode = true;
 
         public DisplayFlow DisplayFlow { get; set; }
 
-        public ViewFlow()
+        public ViewFlow(FlowEngineControl flowEngineControl)
         {
-            FlowEngineControl = new FlowEngineLib.FlowEngineControl(false);
+            FlowEngineControl = flowEngineControl;
             InitializeComponent();
             AutoSizeCommand = new RelayCommand(a => AutoSize());
             RefreshCommand = new RelayCommand(a => Refresh());
@@ -75,8 +78,6 @@ namespace ColorVision.Engine.Services.Flow
                     e.CanExecute = DisplayFlow.flowControl.IsFlowRun;
             }));
         }
-
-
 
         #region ActionCommand
 
@@ -159,11 +160,8 @@ namespace ColorVision.Engine.Services.Flow
         {
             this.DataContext = this;
             STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
-
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
-
             STNodeEditorMain.ActiveChanged +=(s,e) => SignStackBorder.Visibility = STNodeEditorMain.ActiveNode != null ? Visibility.Visible : Visibility.Collapsed;
-
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {
                 if (e.KeyCode == System.Windows.Forms.Keys.Delete)
@@ -186,6 +184,7 @@ namespace ColorVision.Engine.Services.Flow
             };
 
             FlowEngineControl.AttachNodeEditor(STNodeEditorMain);
+
 
             View = new View();
             ViewGridManager.GetInstance().AddView(0, this);
@@ -399,7 +398,38 @@ namespace ColorVision.Engine.Services.Flow
         public void Dispose()
         {
             STNodeEditorMain?.Dispose();
+            STNodeTreeView1?.Dispose();
+            winf1?.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            var Batch = BatchResultMasterDao.Instance.GetByCode(FlowEngineManager.GetInstance().CurrentFlowMsg.SerialNumber);
+            if (Batch == null)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
+                return;
+            }
+            Frame frame = new Frame();
+
+            BatchDataHistory batchDataHistory = new BatchDataHistory(frame, new ViewBatchResult(Batch));
+
+            Window window = new Window();
+            window.Content = batchDataHistory;
+            window.Show();
+
+        }
+
+        private void Button1_Click(object sender, RoutedEventArgs e)
+        {
+            Frame frame = new Frame();
+
+            DataSummaryPage batchDataHistory = new DataSummaryPage(frame);
+
+            Window window = new Window();
+            window.Content = batchDataHistory;
+            window.Show();
         }
     }
 }

@@ -37,7 +37,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         /// 不参与计算的区域，Top
         /// </summary>
         [JsonProperty("obT")]
-        [DisplayName("ObT")]
+        [DisplayName("obT")]
         public int ObT { get => _ObT; set { _ObT = value; NotifyPropertyChanged();} }
         private int _ObT;
 
@@ -45,7 +45,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         /// 不参与计算的区域，下
         /// </summary>
         [JsonProperty("obB")]
-        [DisplayName("ObB")]
+        [DisplayName("obB")]
         public int ObB { get => _ObB; set { _ObB = value; NotifyPropertyChanged(); } }
         private int _ObB;
 
@@ -95,37 +95,33 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public int Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
         private int _Gain = 10;
 
-        [JsonIgnore]
-        [DisplayName("ROIRect")]
-        public Rect ROIRect { get => new Rect(PointX, PointY, Width, Height); set { PointX = (int)value.X; PointY = (int)value.Y; Width = (int)value.Width; Height = (int)value.Height; NotifyPropertyChanged(nameof(ROIRect)); } }
-          
         /// <summary>
         /// FindLightArea X
         /// </summary>
         [JsonProperty("ex")]
-        [DisplayName("ROI X"),Browsable(false)]
-        public int PointX { get => _PointX; set { _PointX = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ROIRect)); } }
+        [DisplayName("ROI X"),Browsable(true)]
+        public int PointX { get => _PointX; set { _PointX = value; NotifyPropertyChanged();  } }
         private int _PointX;
         /// <summary>
         /// FindLightArea Y
         /// </summary>
         [JsonProperty("ey")]
-        [DisplayName("ROI Y"), Browsable(false)]
-        public int PointY { get => _PointY; set { _PointY = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ROIRect)); } }
+        [DisplayName("ROI Y"), Browsable(true)]
+        public int PointY { get => _PointY; set { _PointY = value; NotifyPropertyChanged();  } }
         private int _PointY;
         /// <summary>
         /// FindLightArea W
         /// </summary>
         [JsonProperty("ew")]
-        [DisplayName("ROI W"), Browsable(false)]
-        public int Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ROIRect)); } }
+        [DisplayName("ROI W"), Browsable(true)]
+        public int Width { get => _Width; set { _Width = value; NotifyPropertyChanged();  } }
         private int _Width;
         /// <summary>
         /// FindLightArea H
         /// </summary>
         [JsonProperty("eh")]
-        [DisplayName("ROI H"), Browsable(false)]
-        public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ROIRect)); } }
+        [DisplayName("ROI H"), Browsable(true)]
+        public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
         private int _Height;
 
 

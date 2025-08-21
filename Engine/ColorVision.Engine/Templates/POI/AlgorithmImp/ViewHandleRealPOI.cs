@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Abstractions;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using CVCommCore.CVAlgorithm;
@@ -40,7 +41,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
     public class ViewHandleRealPOI : IResultHandleBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleRealPOI));
-        public override List<AlgorithmResultType> CanHandle { get;  } = new List<AlgorithmResultType>() { AlgorithmResultType.POI_XYZ_V2, AlgorithmResultType.POI_Y_V2 , AlgorithmResultType.KB_Output_Lv, AlgorithmResultType.KB_Output_CIE };
+        public override List<AlgorithmResultType> CanHandle { get;  } = new List<AlgorithmResultType>() { AlgorithmResultType.RealPOI, AlgorithmResultType.POI_XYZ_V2, AlgorithmResultType.POI_Y_V2 , AlgorithmResultType.KB_Output_Lv, AlgorithmResultType.KB_Output_CIE };
 
         public override void SideSave(AlgorithmResult result, string selectedPath)
         {
@@ -101,19 +102,18 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         }
         public override void Load(AlgorithmView view, AlgorithmResult result)
         {
-            result.ViewResults ??= new ObservableCollection<IViewResult>(PoiPointResultDao.Instance.GetAllByPid(result.Id));
+            if (result.ViewResults ==null)
+            {
+                result.ViewResults = new ObservableCollection<IViewResult>(PoiPointResultDao.Instance.GetAllByPid(result.Id));
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmPoi), ImageFilePath = result.FilePath })) });
+            }
+
         }
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
-            view.ImageView.ImageShow.Clear();
-
-
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
-
-            Load(view,result);
-
 
             if (result.ViewResults.Count < 1000)
             {

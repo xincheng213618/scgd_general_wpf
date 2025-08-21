@@ -1,5 +1,6 @@
-﻿using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.SMU.Configs;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -8,32 +9,32 @@ using System.Linq;
 namespace ColorVision.Engine.Services.Devices.SMU.Dao
 {
 
-    [Table("t_scgd_measure_result_smu")]
-    public class SMUResultModel : PKModel
+    [SugarTable("t_scgd_measure_result_smu")]
+    public class SMUResultModel : PKModel, IInitTables
     {
 
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int? Pid { get; set; }
 
-        [Column("batch_id")]
+        [SugarColumn(ColumnName ="batch_id")]
         public string? Bid { get; set; }
 
-        [Column("is_source_v")]
+        [SugarColumn(ColumnName ="is_source_v")]
         public bool IsSourceV { get; set; }
 
-        [Column("src_value")]
+        [SugarColumn(ColumnName ="src_value")]
         public float SrcValue { get; set; }
 
-        [Column("limit_value")]
+        [SugarColumn(ColumnName ="limit_value")]
         public float LimitValue { get; set; }
 
-        [Column("v_result")]
+        [SugarColumn(ColumnName ="v_result")]
         public float VResult { get; set; }
 
-        [Column("i_result")]
+        [SugarColumn(ColumnName ="i_result")]
         public float IResult { get; set; }
 
-        [Column("create_date")]
+        [SugarColumn(ColumnName ="create_date")]
         public DateTime? CreateDate { get; set; }
     }
 

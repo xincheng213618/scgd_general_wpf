@@ -8,8 +8,6 @@ using System.Windows;
 
 namespace ColorVision.Engine.MQTT
 {
-    public delegate void UseMQTTHandler(bool IsUseMQTT);
-
     public class MQTTSettingProvider : IConfigSettingProvider, IStatusBarProvider
     {
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()

@@ -12,6 +12,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.LEDStripDetection
 {
+
+    [DisplayAlgorithm(10, "灯带检测", "定位算法")]
     public class AlgorithmLEDStripDetection : DisplayAlgorithmBase
     {
 
@@ -22,10 +24,6 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
 
         public AlgorithmLEDStripDetection(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "灯带检测";
-            Order = 10;
-			Group = "定位算法";
-
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

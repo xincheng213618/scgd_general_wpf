@@ -1,11 +1,13 @@
 ﻿#pragma warning disable CS8602,CS8604
 
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.ImageEditor;
+using ColorVision.Engine.Templates.FOV;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -89,11 +91,8 @@ namespace ColorVision.Engine.Templates.Ghost
             }
             return field;
         }
-
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Load(AlgorithmView view, AlgorithmResult result)
         {
-            view.ImageView.ImageShow.Clear();
-
             if (result.ViewResults == null)
             {
                 result.ViewResults = new ObservableCollection<IViewResult>();
@@ -102,7 +101,12 @@ namespace ColorVision.Engine.Templates.Ghost
                 {
                     result.ViewResults.Add(item);
                 }
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmGhost), ImageFilePath = result.FilePath })) });
             }
+        }
+
+        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        {
             if (result.ViewResults.Count != 0 && result.ViewResults[0] is AlgResultGhostModel viewResultGhost)
             {
                 try

@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8604,CS8602,CS8629
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
@@ -73,17 +74,14 @@ namespace ColorVision.Engine.Templates.Distortion
                 result.ViewResults = new ObservableCollection<IViewResult>();
                 foreach (var item in AlgResultDistortionDao.Instance.GetAllByPid(result.Id))
                     result.ViewResults.Add(new ViewResultDistortion(item));
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmDistortion), ImageFilePath = result.FilePath })) });
             }
         }
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
-            view.ImageView.ImageShow.Clear();
-
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
-
-            Load(view, result);
 
             int id = 0;
             foreach (var item in result.ViewResults.ToSpecificViewResults<ViewResultDistortion>())

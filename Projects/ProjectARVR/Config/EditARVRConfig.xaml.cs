@@ -73,5 +73,11 @@ namespace ProjectARVR
         {
             ColorVision.Common.Utilities.PlatformHelper.OpenFolder(ProjectARVRConfig.Instance.ResultSavePath1);
         }
+
+        private void Save_Click(object sender, RoutedEventArgs e)
+        {
+            ConfigService.Instance.SaveConfigs();
+            this.Close();
+        }
     }
 }

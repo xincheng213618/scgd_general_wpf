@@ -6,6 +6,7 @@ using ColorVision.ImageEditor;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using ProjectARVR.Config;
+using ProjectARVR.PluginConfig;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -36,6 +37,12 @@ namespace ProjectARVR
 
         [JsonIgnore]
         public RelayCommand EditSPECConfigcommand { get; set; }
+        [JsonIgnore]
+        public RelayCommand InitTestCommand { get; set; }
+
+        [JsonIgnore]
+        public RelayCommand EditObjectiveTestResultFixCommand { get; set; }
+
 
         public ProjectARVRConfig()
         {
@@ -52,21 +59,49 @@ namespace ProjectARVR
             OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
 
             EditSPECConfigcommand = new RelayCommand(a => EditSPECConfig());
+            InitTestCommand = new RelayCommand(a => InitTest());
+
+            EditObjectiveTestResultFixCommand = new RelayCommand(a => EditObjectiveTestResultFix());
         }
+
+        public void EditObjectiveTestResultFix()
+        {
+            ObjectiveTestResultFixWindow objectiveTestResultFixWindow = new ObjectiveTestResultFixWindow() { Owner = Application.Current.GetActiveWindow() };
+            objectiveTestResultFixWindow.ShowDialog();
+        }
+
+
+        public void InitTest()
+        {
+            ProjectWindowInstance.WindowInstance.InitTest(string.Empty);
+        }
+
+
+        public int StepIndex { get => _StepIndex; set { _StepIndex = value; NotifyPropertyChanged(); } }
+        private int _StepIndex;
+
+        public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; NotifyPropertyChanged(); } }
+        private bool _LogControlVisibility = true;
+
 
         [DisplayName("重试次数")]
         public int TryCountMax { get => _TryCountMax; set { _TryCountMax = value; NotifyPropertyChanged(); } }
         private int _TryCountMax = 2;
 
+        [DisplayName("允许测试失败")]
+        public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; NotifyPropertyChanged(); } }
+        private bool _AllowTestFailures = true;
+
+        [DisplayName("RefreshResult")]
+        public bool RefreshResult { get => _RefreshResult; set { _RefreshResult = value; NotifyPropertyChanged(); } }
+        private bool _RefreshResult = true;
+
 
         public void EditSPECConfig()
         {
-            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(SPECConfig ,false) { Owner = Application.Current.GetActiveWindow() };
-            propertyEditorWindow.ShowDialog();
+            EditRecipeWindow EditRecipeWindow = new EditRecipeWindow() { Owner = Application.Current.GetActiveWindow() };
+            EditRecipeWindow.ShowDialog();
         }
-
-
-        public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig() { IsLayoutUpdated = true };
 
         public static void OpenConfig()
         {
@@ -154,32 +189,18 @@ namespace ProjectARVR
 
 
         [JsonIgnore]
-        public string SN { get => _SN; set
-            {
-                if (!string.IsNullOrEmpty(value) && value.Length > SNMax)
-                {
-                    // 移除最前面的字符，使其长度为 14
-                    _SN = value.Substring(value.Length - SNMax);
-                }
-                else
-                {
-                    _SN = value;
-                }
-                NotifyPropertyChanged(); } }
+        public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }
         private string _SN;
-
-        public int SNMax { get => _SMMax; set { _SMMax = value; NotifyPropertyChanged(); } }
-        private int _SMMax = 17;
 
         public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; NotifyPropertyChanged(); } }
         private bool _IsAutoUploadSn;
 
         public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; NotifyPropertyChanged(); } }
-        private string _ResultSavePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        private string _ResultSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop),"TestReslut");
 
 
         public string ResultSavePath1 { get => _ResultSavePath1; set { _ResultSavePath1 = value; NotifyPropertyChanged(); } }
-        private string _ResultSavePath1 = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        private string _ResultSavePath1 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "TestReslut");
 
         public double Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
         private double _Height = 300;
@@ -193,10 +214,6 @@ namespace ProjectARVR
         private SummaryInfo _SummaryInfo = new SummaryInfo();
 
         public static ARVRWindowConfig ProjectKBWindowConfig => ARVRWindowConfig.Instance;
-        public Dictionary<string, SPECConfig> SPECConfigs { get; set; } = new Dictionary<string, SPECConfig>();
-
-        public SPECConfig SPECConfig { get => _SPECConfig; set { _SPECConfig = value; NotifyPropertyChanged(); } }
-        private SPECConfig _SPECConfig = new SPECConfig();
 
     }
 }

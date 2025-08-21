@@ -1,10 +1,8 @@
 ﻿#pragma warning disable CS8602,CS8603,CS8601
-using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Templates.FOV;
 using ColorVision.Scheduler;
 using ColorVision.SocketProtocol;
 using ColorVision.UI;
@@ -17,7 +15,6 @@ using ST.Library.UI.NodeEditor;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
@@ -78,13 +75,16 @@ namespace ColorVision.Engine.Templates.Flow
         private static readonly object _locker = new();
         public static DisplayFlow GetInstance() { lock (_locker) { return _instance ??= new DisplayFlow(); } }
 
-        public ViewFlow View { get; set; }
+        public static ViewFlow View => FlowEngineManager.GetInstance().View;
+
         public string DisPlayName => "Flow";
-        public static FlowConfig Config => FlowConfig.Instance;
+        public static FlowEngineConfig Config => FlowEngineConfig.Instance;
 
         private Timer timer;
         Stopwatch stopwatch = new Stopwatch();
         IPendingHandler handler { get; set; }
+
+        static FlowEngineControl FlowEngineControl => FlowEngineManager.GetInstance().FlowEngineControl;
 
         public DisplayFlow()
         {
@@ -104,56 +104,53 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = Config;
+            this.DataContext = FlowEngineManager.GetInstance();
             this.ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = "开始执行(_S)", Command = EngineCommands.StartExecutionCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "停止执行(_S)", Command = EngineCommands.StopExecutionCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "属性", Command = Config.EditCommand });
 
-
-            View = new ViewFlow();
-            View.View.Title = $"流程窗口 ";
             this.SetIconResource("DrawingImageFlow", View.View);
 
             this.AddViewConfig(View, ComboxView);
             View.DisplayFlow = this;
-            ComboBoxFlow.ItemsSource = TemplateFlow.Params;
+
             ComboBoxFlow.SelectionChanged += (s, e) =>
             {
                 if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
                 {
-                    FlowConfig.Instance.LastSelectFlow = flowParam.Id;
-                    if (FlowConfig.Instance.FlowRunTime.TryGetValue(flowParam.Name, out long time))
+                    FlowEngineConfig.Instance.LastSelectFlow = flowParam.Id;
+                    if (FlowEngineConfig.Instance.FlowRunTime.TryGetValue(flowParam.Name, out long time))
                         LastFlowTime = time;
 
                 }
-                Refresh();
+                _ = Refresh();
             };
             MqttRCService.GetInstance().ServiceTokensInitialized +=(s,e) => 
             {
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
-                Refresh();
+                _ = Refresh();
             };
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
-
-            timer = new Timer(UpdateMsg, null, 0, 500);
-            timer.Change(Timeout.Infinite, 500); // 停止定时器
 
             this.Loaded += FlowDisplayControl_Loaded;
             View.RefreshFlow += (s, e) =>
             {
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
-                Refresh();
+                _=Refresh();
             };
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
+
+            timer = new Timer(UpdateMsg, null, 0, 100);
+            timer.Change(Timeout.Infinite, 100); // 停止定时器
 
         }
 
 
         private void FlowDisplayControl_Loaded(object sender, RoutedEventArgs e)
         {
-            var s = TemplateFlow.Params.FirstOrDefault(a => a.Id == FlowConfig.Instance.LastSelectFlow);
+            var s = TemplateFlow.Params.FirstOrDefault(a => a.Id == FlowEngineConfig.Instance.LastSelectFlow);
             if (s != null)
             {
                 ComboBoxFlow.SelectedItem = s;
@@ -166,7 +163,7 @@ namespace ColorVision.Engine.Templates.Flow
         }
 
 
-        private async Task Refresh()
+        public async Task Refresh()
         {
             if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
                 MqttRCService.GetInstance().QueryServices();
@@ -190,10 +187,12 @@ namespace ColorVision.Engine.Templates.Flow
                     item.nodeRunEvent -= UpdateMsg;
                     item.nodeEndEvent -= nodeEndEvent;
                 }
+                View.FlowEngineControl.FlowClear();
                 View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
 
                 for (int i = 0; i < 20; i++)
                 {
+                    Config.IsReady = View.FlowEngineControl.IsReady;
                     if (View.FlowEngineControl.IsReady)
                         break;
                      await Task.Delay(10);
@@ -212,7 +211,11 @@ namespace ColorVision.Engine.Templates.Flow
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                log.Error(ex);
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
+                });
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
             }
             return;
@@ -224,7 +227,7 @@ namespace ColorVision.Engine.Templates.Flow
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
-        public FlowControl flowControl { get; set; }
+        public FlowControl flowControl { get; set; } 
 
 
         private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
@@ -232,10 +235,20 @@ namespace ColorVision.Engine.Templates.Flow
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
-            FlowConfig.Instance.FlowRunTime[ComboBoxFlow.Text] = stopwatch.ElapsedMilliseconds;
-
+            FlowEngineConfig.Instance.FlowRunTime[ComboBoxFlow.Text] = stopwatch.ElapsedMilliseconds;
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
-            handler?.Close();
+
+            FlowEngineManager.GetInstance().CurrentFlowMsg = FlowControlData;
+
+
+            if (Config.IsNewMsgUI)
+            {
+                View.logTextBox.Text = FlowName +  Environment.NewLine+ FlowControlData.EventName;
+            }
+            else
+            {
+                handler?.Close();
+            }
 
             ButtonRun.Visibility = Visibility.Visible;
             ButtonStop.Visibility = Visibility.Collapsed;
@@ -244,41 +257,28 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 ErrorSign();
             }
-
             if (FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
             {
-                Application.Current.Dispatcher.BeginInvoke(() =>
+                if (Config.IsNewMsgUI)
+                {
+                    View.logTextBox.Text = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}节点:{Msg1}{Environment.NewLine}{FlowControlData.Params}";
+                }
+                else
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
-                });
+                }
             }
         }
 
         public ImageSource Icon { get => _Icon; set { _Icon = value; } }
         private ImageSource _Icon;
 
-        private static void CheckDiskSpace(string driveLetter = "C")
-        {
-            if (!Config.ShowWarning) return;
-            DriveInfo drive = new DriveInfo(driveLetter);
-            if (drive.IsReady)
-            {
-                long availableSpace = drive.AvailableFreeSpace;
-                long threshold = Config.Capacity; //10 GB in bytes
-
-                if (availableSpace < threshold)
-                {
-                    MessageBox.Show($"警告: {driveLetter}盘空间不足。剩余空间为 {availableSpace / (1024 * 1024 * 1024)} GB", "空间不足", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-            }
-        }
 
         private long LastFlowTime;
 
         string Msg1;
         private void UpdateMsg(object? sender)
         {
-            if (!FlowConfig.Instance.FlowPreviewMsg) return;
             if (flowControl.IsFlowRun)
             {
                 long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
@@ -287,7 +287,7 @@ namespace ColorVision.Engine.Templates.Flow
                 string msg;
                 if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
                 {
-                    msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
+                    msg = $"{FlowName}{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}";
                 }
                 else
                 {
@@ -295,12 +295,21 @@ namespace ColorVision.Engine.Templates.Flow
                     TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                     string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                    msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{LastFlowTime} ms, 预计还需要：{remainingTime}";
+                    msg = $"{FlowName} 上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
                 }
-                Application.Current.Dispatcher.BeginInvoke(() =>
+                Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
                     if (flowControl.IsFlowRun)
-                        handler.UpdateMessage(msg);
+                    {
+                        if (Config.IsNewMsgUI)
+                        {
+                            View.logTextBox.Text = msg;
+                        }
+                        else
+                        {
+                            handler.UpdateMessage(msg);
+                        }
+                    }
                 });
             }
         }
@@ -356,12 +365,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 algorithmNode.IsSelected = true;
                 Msg1 = algorithmNode.Title;
-
-                if (FlowConfig.Instance.FlowPreviewMsg)
-                {
-                    UpdateMsg(sender);
-                }
-
+                UpdateMsg(sender);
             }
         }
 
@@ -370,8 +374,7 @@ namespace ColorVision.Engine.Templates.Flow
         {
             RunFlow();
         }
-
-
+        string FlowName;
         public async void RunFlow()
         {
             if (!MqttRCService.GetInstance().IsConnect)
@@ -388,21 +391,22 @@ namespace ColorVision.Engine.Templates.Flow
             if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
             {
                 MqttRCService.GetInstance().QueryServices();
+                View.logTextBox.Text = $"Token为空，正在刷新token,请重试";
                 MessageBox.Show(Application.Current.GetActiveWindow(), "Token为空，正在刷新token,请重试");
                 return;
             }
-
+            View.logTextBox.Text = $"IsReady{View.FlowEngineControl.IsReady}";
             log.Info($"IsReady{View.FlowEngineControl.IsReady}");
+            Config.IsReady = View.FlowEngineControl.IsReady;
             if (!View.FlowEngineControl.IsReady)
             {
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
                 await Refresh();
                 log.Info($"IsReady{View.FlowEngineControl.IsReady}");
+                Config.IsReady = View.FlowEngineControl.IsReady;
             }
-
-            CheckDiskSpace("C");
-            CheckDiskSpace("D");
-            LastFlowTime = FlowConfig.Instance.FlowRunTime.TryGetValue(ComboBoxFlow.Text, out long time) ? time : 0;
+            FlowName = ComboBoxFlow.Text;
+            LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(ComboBoxFlow.Text, out long time) ? time : 0;
 
             string startNode = View.FlowEngineControl.GetStartNodeName();
             if (string.IsNullOrWhiteSpace(startNode))
@@ -425,9 +429,13 @@ namespace ColorVision.Engine.Templates.Flow
                 }
             }
 
-
-            if (FlowConfig.Instance.FlowPreviewMsg)
+            if (Config.IsNewMsgUI)
             {
+                View.logTextBox.Text = "Run " + ComboBoxFlow.Text;
+            }
+            else
+            {
+
                 handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
                 handler.Cancelling -= Handler_Cancelling; ;
                 handler.Cancelling += Handler_Cancelling; ;
@@ -439,7 +447,8 @@ namespace ColorVision.Engine.Templates.Flow
             ButtonStop.Visibility = Visibility.Visible;
             stopwatch.Restart();
             stopwatch.Start();
-            timer.Change(0, 500); // 启动定时器
+
+            timer.Change(0, 100); // 启动定时器
             BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = sn, Code = sn, CreateDate = DateTime.Now });
             flowControl.Start(sn);
         }
@@ -477,7 +486,19 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 flowControl?.Stop();
             });
-            handler?.Close();
+
+            if (Config.IsNewMsgUI)
+            {
+                View.logTextBox.Text = "已经取消执行";
+            }
+            else
+            {
+
+                handler?.Close();
+            }
+
+
+
         }
 
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -485,27 +506,16 @@ namespace ColorVision.Engine.Templates.Flow
             ToggleButton0.IsChecked =!ToggleButton0.IsChecked;
         }
 
-        private void Button_Click_Refresh(object sender, RoutedEventArgs e)
-        {
-            Refresh();
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            new TemplateEditorWindow(new TemplateFlow(), ComboBoxFlow.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-            Refresh();
-        }
-
-        private void ButtonEdit_Click(object sender, RoutedEventArgs e)
-        {
-            new FlowEngineToolWindow(TemplateFlow.Params[ComboBoxFlow.SelectedIndex].Value) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
-            Refresh();
-        }
 
         public void Dispose()
         {
             timer.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        private void Button_Click_Refresh(object sender, RoutedEventArgs e)
+        {
+            Refresh();
         }
     }
 }

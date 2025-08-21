@@ -7,10 +7,11 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
 {
     public class Distortion2View : IViewResult
     {
+        public Distortion2View()
+        {
+        }
         public Distortion2View(DetailCommonModel detail)
         {
-            Id = detail.Id;
-            PId = detail.PId;
             var restfile = JsonConvert.DeserializeObject<ResultFile>(detail.ResultJson);
             if (restfile != null)
             {
@@ -26,12 +27,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
                 Result = detail.ResultJson;
             }
         }
-        [Column("id")]
-        public int Id { get; set; }
-        [Column("pid")]
-        public int PId { get; set; }
 
-        [Column("result")]
         public string Result { get; set; }
 
         public DistortionReslut DistortionReslut { get; set; }

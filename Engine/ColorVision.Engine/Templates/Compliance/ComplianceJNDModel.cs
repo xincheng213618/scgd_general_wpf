@@ -1,30 +1,32 @@
 ﻿using ColorVision.Engine.Abstractions;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using CVCommCore;
 using Newtonsoft.Json;
+using SqlSugar;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Templates.Compliance
 {
-    [Table("t_scgd_algorithm_result_detail_compliance_jnd")]
-    public class ComplianceJNDModel : PKModel, IViewResult
+    [SugarTable("t_scgd_algorithm_result_detail_compliance_jnd")]
+    public class ComplianceJNDModel : PKModel, IViewResult, IInitTables
     {
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int PId { get; set; }
 
-        [Column("name")]
+        [SugarColumn(ColumnName ="name")]
         public string Name { get; set; }
 
-        [Column("data_type")]
+        [SugarColumn(ColumnName ="data_type")]
         public int DataType { get; set; }
 
-        [Column("data_val_h")]
+        [SugarColumn(ColumnName ="data_val_h")]
         public float DataValueH { get; set; }
 
-        [Column("data_val_v")]
+        [SugarColumn(ColumnName ="data_val_v")]
         public float DataValueV { get; set; }
 
-        [Column("validate_result")]
+        [SugarColumn(ColumnName ="validate_result")]
         public string? ValidateResult { get; set; }
 
         public ObservableCollection<ValidateRuleResult>? ValidateSingles

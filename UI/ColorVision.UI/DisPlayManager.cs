@@ -1,12 +1,12 @@
 ﻿using ColorVision.Adorners;
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
+using ColorVision.UI.Views;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using ColorVision.Common.MVVM;
-using ColorVision.UI.Views;
 
 namespace ColorVision.UI
 {
@@ -75,6 +75,7 @@ namespace ColorVision.UI
                         }
                     }
                 };
+
             }
 
         }
@@ -104,7 +105,6 @@ namespace ColorVision.UI
             disPlayControl.SelectChanged += (s, e) => UpdateDisPlayBorder();
             ThemeManager.Current.CurrentUIThemeChanged += (s) => UpdateDisPlayBorder();
             UpdateDisPlayBorder();
-
             if (disPlayControl is UserControl userControl)
             {
                 userControl.Focusable = true;
@@ -118,9 +118,9 @@ namespace ColorVision.UI
                         disPlayControl.IsSelected = true;
                     }
                     userControl.Focus();
+                    DisPlayManagerConfig.Instance.LastSelectIndex = DisPlayManager.GetInstance().IDisPlayControls.IndexOf(disPlayControl);
                 };
             }
-
         }
     }
 
@@ -134,6 +134,9 @@ namespace ColorVision.UI
         public Dictionary<string, int> StoreIndex { get; set; } = new Dictionary<string, int>();
         public bool IsRetore { get => _IsRetore; set { _IsRetore = value; NotifyPropertyChanged(); } }
         private bool _IsRetore = true;
+
+        public int LastSelectIndex { get => _LastSelectIndex; set { _LastSelectIndex = value; NotifyPropertyChanged(); } }
+        private int _LastSelectIndex ;
     }
 
 
@@ -230,8 +233,16 @@ namespace ColorVision.UI
 
             if (IDisPlayControls.Count > 0)
             {
-                IDisPlayControls[0].IsSelected = true;
-                StackPanel.Tag = IDisPlayControls[0];
+                int index = DisPlayManagerConfig.Instance.LastSelectIndex;
+                if (index < 0 || index >= IDisPlayControls.Count)
+                {
+                    index = 0;
+                    DisPlayManagerConfig.Instance.LastSelectIndex = index;
+                }
+
+                var selectedControl = IDisPlayControls[index];
+                selectedControl.IsSelected = true;
+                StackPanel.Tag = selectedControl;
             }
 
         }

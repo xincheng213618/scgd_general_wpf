@@ -4,7 +4,7 @@ using System.Windows;
 namespace ProjectARVRLite.PluginConfig
 {
 
-    public class ProjectARVRPlugin : IProjectBase
+    public class ProjectARVRLitePlugin : IProjectBase
     {
         public override string? Header => "ARVRLite检测";
 

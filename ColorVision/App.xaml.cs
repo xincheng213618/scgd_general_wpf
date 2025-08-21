@@ -149,8 +149,6 @@ namespace ColorVision
 
 
 
-
-
             log.Info(UI.ACE.License.GetMachineCode());
             if (!UI.ACE.License.Check())
             {
@@ -158,6 +156,7 @@ namespace ColorVision
                 UI.ACE.License.Create();
             }
             bool result = StartupRegistryChecker.CheckAndSet();
+
             if (!result)
             {
                 if (MessageBox.Show("检测到软件上次没有成功打开，是否禁用插件", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
@@ -167,13 +166,14 @@ namespace ColorVision
                 else
                 {
                     PluginManager.LoadPlugins("Plugins");
+                    AssemblyHandler.GetInstance().RefreshAssemblies();
                 }
             }
             else
             {
                 PluginManager.LoadPlugins("Plugins");
+                AssemblyHandler.GetInstance().RefreshAssemblies();
             }
-
 
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
             System.Windows.Forms.Application.EnableVisualStyles();

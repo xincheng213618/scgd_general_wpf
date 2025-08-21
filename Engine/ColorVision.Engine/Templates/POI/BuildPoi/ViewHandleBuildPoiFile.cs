@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8604,CS8603
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
@@ -16,6 +17,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi
 {
@@ -106,13 +108,8 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
             return poiInfo;
         }
 
-
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Load(AlgorithmView view, AlgorithmResult result)
         {
-            view.ImageView.ImageShow.Clear();
-            List<string> header = new();
-            List<string> bdHeader = new();
-
             if (result.ViewResults == null)
             {
                 result.ViewResults = new ObservableCollection<IViewResult>();
@@ -121,52 +118,59 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
                 {
                     result.ViewResults.Add(item);
                 }
-                if (models.Count > 0)
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmBuildPoi), ImageFilePath = result.FilePath })) });
+
+            }
+        }
+
+
+        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        {
+
+            if (result.ViewResults.Count > 0 && result.ViewResults[0] is PoiCieFileModel model)
+            {
+                POIPointInfo pointinfo = ReadPOIPointFromCSV(model.FileUrl);
+                int[] ints = new int[pointinfo.Positions.Count * 2];
+                for (int i = 0; i < pointinfo.Positions.Count; i++)
                 {
-                    POIPointInfo pointinfo = ReadPOIPointFromCSV(models[0].FileUrl);
-                    int[] ints = new int[pointinfo.Positions.Count*2];
-                    for (int i = 0; i < pointinfo.Positions.Count; i++)
+                    ints[2 * i] = (int)pointinfo.Positions[i].PixelX;
+                    ints[2 * i + 1] = (int)pointinfo.Positions[i].PixelY;
+                }
+                if (File.Exists(result.FilePath))
+                {
+                    HImage hImage;
+                    if (CVFileUtil.IsCIEFile(result.FilePath))
                     {
-                        ints[2*i] = pointinfo.Positions[i].PixelX;
-                        ints[2*i+1] = pointinfo.Positions[i].PixelY;
-                    }
-                    if (File.Exists(result.FilePath))
-                    {
-                        HImage hImage;
-                        if (CVFileUtil.IsCIEFile(result.FilePath))
-                        {
-                            CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(result.FilePath);
-                            hImage = cVCIEFile.ToWriteableBitmap().ToHImage();
-
-                        }
-                        else
-                        {
-                            BitmapImage bitmapImage = new BitmapImage(new Uri(result.FilePath));
-                            hImage = bitmapImage.ToHImage();
-                        }
-                        int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, pointinfo.HeaderInfo.Height, ints, ints.Length,1);
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            if (ret == 0)
-                            {
-                                var image = hImageProcessed.ToWriteableBitmap();
-
-                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                hImageProcessed.pData = IntPtr.Zero;
-                                view.ImageView.FunctionImage = image;
-                                view.ImageView.ImageShow.Source = view.ImageView.FunctionImage;
-                            }
-                        });
+                        CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(result.FilePath);
+                        hImage = cVCIEFile.ToWriteableBitmap().ToHImage();
 
                     }
+                    else
+                    {
+                        BitmapImage bitmapImage = new BitmapImage(new Uri(result.FilePath));
+                        hImage = bitmapImage.ToHImage();
+                    }
+                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, (int)pointinfo.HeaderInfo.Height, ints, ints.Length, 1);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        if (ret == 0)
+                        {
+                            var image = hImageProcessed.ToWriteableBitmap();
 
+                            OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                            hImageProcessed.pData = IntPtr.Zero;
+                            view.ImageView.FunctionImage = image;
+                            view.ImageView.ImageShow.Source = view.ImageView.FunctionImage;
+                        }
+                    });
 
                 }
 
 
-                header = new List<string> { "id", "file_name", "file_url", "fileType" };
-                bdHeader = new List<string> { "Id", "FileName", "FileUrl", "file_type" };
             }
+
+            var header = new List<string> { "id", "file_name", "file_url", "fileType" };
+            var bdHeader = new List<string> { "Id", "FileName", "FileUrl", "file_type" };
             if (view.listViewSide.View is GridView gridView)
             {
                 view.LeftGridViewColumnVisibilitys.Clear();

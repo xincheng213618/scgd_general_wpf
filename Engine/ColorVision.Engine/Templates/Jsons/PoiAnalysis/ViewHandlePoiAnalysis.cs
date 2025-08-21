@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -33,6 +34,11 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
     {
         public DetailCommonModel DetailCommonModel { get; set; }
 
+        public PoiAnalysisDetailViewReslut()
+        {
+
+        }
+
         public PoiAnalysisDetailViewReslut(DetailCommonModel detailCommonModel)
         {
             DetailCommonModel = detailCommonModel;
@@ -46,10 +52,6 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
             }
 
         }
-        [Column("id")]
-        public int Id { get; set; }
-        [Column("pid")]
-        public int PId { get; set; }
         public string? ResultFileName { get; set; }
 
         public PoiAnalysisResult? PoiAnalysisResult { get; set; }
@@ -70,13 +72,19 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
 
         public override void SideSave(AlgorithmResult result, string selectedPath)
         {
-            //var blackMuraViews = mtfresult.ViewResults.ToSpecificViewResults<GhostView>();
-            //var csvBuilder = new StringBuilder();
-            //if (blackMuraViews.Count == 1)
-            //{
-            //    string filePath = selectedPath + "//" + mtfresult.Batch + mtfresult.ResultType + ".json";
-            //    File.AppendAllText(filePath, blackMuraViews[0].Result, Encoding.UTF8);
-            //}
+            string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
+            var ViewResults = result.ViewResults.ToSpecificViewResults<PoiAnalysisDetailViewReslut>();
+
+            var csvBuilder = new StringBuilder();
+
+            if (ViewResults.Count == 1)
+            {
+                var PoiAnalysisResult = ViewResults[0].PoiAnalysisResult;
+                csvBuilder.AppendLine("Content,Value");
+                csvBuilder.AppendLine(string.Join( PoiAnalysisResult.result.Content,PoiAnalysisResult.result.Value));
+
+                File.AppendAllText(fileName, csvBuilder.ToString(), Encoding.UTF8);
+            }
         }
 
 
@@ -107,21 +115,14 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
                     result.ContextMenu.Items.Add(new MenuItem() { Header = "选中2.0结果集", Command = SelectrelayCommand });
                     result.ContextMenu.Items.Add(new MenuItem() { Header = "打开2.0结果集", Command = OpenrelayCommand });
                 }
-
-
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmPoiAnalysis), ImageFilePath = result.FilePath })) });
             }
         }
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
-            view.ImageView.ImageShow.Clear();
-
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
-
-            Load(view, result);
-
-
 
             if (result.ViewResults.Count == 1)
             {

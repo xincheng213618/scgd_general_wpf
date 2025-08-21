@@ -125,28 +125,31 @@
                             <Button DockPanel.Dock="Right" Margin="2,0" Content="设置" Click="PoiFix_Create_Click"/>
                         </StackPanel>
 
-
                         <DockPanel  Margin="2">
-                            <TextBlock  Text="LeftTop"  MinWidth="70" />
+                            <TextBlock  Text="左上"  MinWidth="70" />
                             <TextBox  Text="{Binding  LeftTopX}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                             <TextBox   Text="{Binding LeftTopY}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                         </DockPanel>
 
                         <DockPanel  Margin="2">
-                            <TextBlock Text="RightTop"   MinWidth="70"/>
+                            <TextBlock Text="右上"   MinWidth="70"/>
                             <TextBox  Text="{Binding RightTopX}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                             <TextBox   Text="{Binding RightTopY}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                         </DockPanel>
                         <DockPanel  Margin="2">
-                            <TextBlock Text="LeftBottom"   MinWidth="70"/>
-                            <TextBox Text="{Binding LeftBottomX}" Width="80" Margin="5,0" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                            <TextBox   Text="{Binding LeftBottomY}" Width="80" Margin="5,0"   BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
-                        </DockPanel>
-                        <DockPanel  Margin="2">
-                            <TextBlock Text="RightBottom"  MinWidth="70"/>
+                            <TextBlock Text="右下"  MinWidth="70"/>
                             <TextBox  Text="{Binding RightBottomX}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                             <TextBox   Text="{Binding RightBottomY}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                         </DockPanel>
+                        <DockPanel  Margin="2">
+                            <TextBlock Text="左下"   MinWidth="70"/>
+                            <TextBox Text="{Binding LeftBottomX}" Width="80" Margin="5,0" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                            <TextBox   Text="{Binding LeftBottomY}" Width="80" Margin="5,0"   BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                        </DockPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="设置到全局缓存" Click="Button_Click_4"/>
+                            <Button Content="应用缓存" Click="Button_Click_3"/>
+                        </StackPanel>
                     </StackPanel>
                     <CheckBox Content="启用发光区4个角点" IsChecked="{Binding PoiConfig.IsPointInt}" Margin="2"/>
                     <StackPanel Visibility="{Binding PoiConfig.IsPointInt,Converter={StaticResource bool2VisibilityConverter}}">
@@ -170,6 +173,9 @@
                             <TextBox  Text="{Binding PoiConfig.PointInt4.X}" Width="55" Margin="5,0"  />
                             <TextBox  Text="{Binding PoiConfig.PointInt4.Y}" Width="55" Margin="5,0"  />
                         </DockPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="设置到全局缓存" Click="Button_Click_5"/>
+                        </StackPanel>
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -302,6 +308,26 @@
                                 <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaMask,Converter={StaticResource bool2VisibilityConverter}}">
                                     <Grid>
                                         <StackPanel>
+                                            <DockPanel Margin="0,2" >
+                                                <Button Content="寻找发光区角点" Margin="5,0,0,0" ToolTip="一次"  Click="FindLuminousAreaCorner_Click"   />
+                                                <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding PoiConfig.FindLuminousAreaCornerEditCommand}" Padding="2" Height="25" Width="25" >
+                                                    <Button.Triggers>
+                                                        <EventTrigger RoutedEvent="Button.Click">
+                                                            <BeginStoryboard>
+                                                                <Storyboard>
+                                                                    <DoubleAnimation Storyboard.TargetName="rotateTransform121" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </EventTrigger>
+                                                    </Button.Triggers>
+                                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                                                        <TextBlock.RenderTransform>
+                                                            <RotateTransform x:Name="rotateTransform121"/>
+                                                        </TextBlock.RenderTransform>
+                                                    </TextBlock>
+                                                </Button>
+
+                                            </DockPanel>
                                             <DockPanel Margin="2" HorizontalAlignment="Left">
                                                 <TextBlock Text="左上"   MinWidth="20"/>
                                                 <TextBox Text="{Binding PoiConfig.Polygon1X}" Width="55" Margin="5,0" />
@@ -541,10 +567,6 @@
                         <ToggleButton x:Name="Pseudo"  Click="ToggleButton_Click"  Margin="0,0,0,2" >
                             <Image  Style="{StaticResource ToolBarImage}"   Source="/ColorVision.ImageEditor;component/Assets/png/PowerToy.png" Margin="-5"/>
                         </ToggleButton>
-                        <Grid Width="20" Margin="0,0,0,2" HorizontalAlignment="Center" Visibility="Collapsed" >
-                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
-                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="Calibration"  Click="Pseudo_MouseDoubleClick"/>
-                        </Grid>
                         <Grid  Height="200"  Visibility="{Binding ElementName=Pseudo,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>

@@ -7,20 +7,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:UpdateService}"
-        Title="服务升级窗口" Height="450" Width="800"  Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
-    <Window.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/HandyControl;component/Themes/basic/colors/colors.xaml"/>
-                <ResourceDictionary Source="/HandyControl;component/Themes/Theme.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/White.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Base.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Menu.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/GroupBox.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Icons.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </Window.Resources>
+        Title="服务管理窗口" Height="450" Width="800"  Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>

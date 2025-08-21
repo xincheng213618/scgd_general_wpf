@@ -1,5 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
+using SqlSugar;
+using System.ComponentModel;
 using System.Windows;
 
 
@@ -27,7 +29,14 @@ namespace ColorVision.Engine.Abstractions
         private bool _AutoRefreshView = true;
         public bool InsertAtBeginning { get => _InsertAtBeginning; set { _InsertAtBeginning = value; NotifyPropertyChanged(); } }
         private bool _InsertAtBeginning = true;
-        public int SearchLimit { get => _SearchLimit; set { _SearchLimit = value; NotifyPropertyChanged(); } }
-        private int _SearchLimit = 50;
+
+        [DisplayName("查询数量"), Category("View")]
+        public int Count { get => _Count; set { _Count = value; NotifyPropertyChanged(); } }
+        private int _Count = 50;
+        [DisplayName("按类型排序"), Category("View")]
+        public OrderByType OrderByType { get => _OrderByType; set { _OrderByType = value; NotifyPropertyChanged(); } }
+        private OrderByType _OrderByType = OrderByType.Desc;
+
+
     }
 }

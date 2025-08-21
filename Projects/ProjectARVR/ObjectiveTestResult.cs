@@ -146,6 +146,23 @@ namespace ProjectARVR
         public ObjectiveTestItem CenterCorrelatedColorTemperature { get; set; }
 
         /// <summary>
+        /// 新增中心相关色温(K) 测试项
+        /// </summary>
+        public ObjectiveTestItem White1CenterCorrelatedColorTemperature { get; set; }
+
+        /// <summary>
+        /// 白画面的中心亮度
+        /// </summary>
+        public ObjectiveTestItem CenterLuminace { get; set; }
+
+        /// <summary>
+        /// 新增白画面的中心亮度
+        /// </summary>
+        public ObjectiveTestItem White1CenterLuminace { get; set; }
+
+
+
+        /// <summary>
         /// 水平视场角(°) 测试项
         /// </summary>
         public ObjectiveTestItem HorizontalFieldOfViewAngle { get; set; }
@@ -300,5 +317,16 @@ namespace ProjectARVR
         /// 总体测试结果字符串（如“pass”或“fail”）
         /// </summary>
         public string TotalResultString => TotalResult?"PASS":"Fail";
+
+        public bool FlowWhiteTestReslut { get; set; } = false;
+        public bool FlowWhite1TestReslut { get; set; } = false;
+
+        public bool FlowBlackTestReslut { get; set; } = false;
+        public bool FlowChessboardTestReslut { get; set; } = false;
+        public bool FlowMTFHTestReslut { get; set; } = false;
+
+        public bool FlowMTFVTestReslut { get; set; } = false;
+        public bool FlowDistortionTestReslut { get; set; } = false;
+        public bool FlowOpticCenterTestReslut { get; set; } = false;
     }
 }

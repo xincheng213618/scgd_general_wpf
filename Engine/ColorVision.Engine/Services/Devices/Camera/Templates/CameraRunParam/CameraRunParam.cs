@@ -6,7 +6,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam
 {
     public class CameraRunParam : ParamModBase
     {
-        public CameraRunParam() : base()
+        public CameraRunParam()
         {
 
         }

@@ -630,7 +630,7 @@ namespace ColorVision.Projects.ProjectShiYuan
         }
 
         private void ListViewJND_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
+        { 
             if (sender is ListView listView && listView.SelectedItem is ComplianceJNDModel complianceJNDModel)
             {
                 List<string> header = new() { "规则", "结果","值"  , "Max" ,"Min"};

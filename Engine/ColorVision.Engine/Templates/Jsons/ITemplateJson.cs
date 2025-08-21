@@ -262,6 +262,7 @@ namespace ColorVision.Engine.Templates.Jsons
                     templateJson.Name = templateName;
                     templateJson.DicCode = dictemplate.Code;
                     templateJson.DicId = dictemplate.Id;
+                    templateJson.Id = -1;
                 }
                 else
                 {

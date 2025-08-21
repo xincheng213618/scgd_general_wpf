@@ -11,8 +11,12 @@
              xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance local:ImageView}"
              d:DesignHeight="600" d:DesignWidth="1000" Initialized="UserControl_Initialized" AllowDrop="True">
     <UserControl.Resources>
+        <Style TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}">
+            <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
+        </Style>
         <GeometryDrawing x:Key="GridSquare"
                  Brush="{DynamicResource GlobalTextBrush}"
                  Geometry="M0,0 L0,1 1,1 1,0 Z" />
@@ -81,11 +85,7 @@
                     <draw:DrawCanvas x:Name="ImageShow"  x:FieldModifier="public" Initialized="ImageShow_Initialized"  FocusVisualStyle="{x:Null}"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto" MouseMove="ImageShow_MouseMove">
                     </draw:DrawCanvas>
                 </draw:ZoomboxSub>
-                <ToolBarTray  x:Name="ToolBarLayers"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Right" Visibility="Collapsed">
-                    <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True" >
-                        <ComboBox x:Name="ComboBoxLayers"  x:FieldModifier="public"  SelectedIndex="0"/>
-                    </ToolBar>
-                </ToolBarTray>
+                <ComboBox x:Name="ComboBoxLayers" HorizontalAlignment="Right" VerticalAlignment="Top"  Style="{StaticResource ComboBox.Small}" x:FieldModifier="public"  SelectedIndex="0" Margin="5"/>
 
                 <ToolBarTray  x:Name="ToolBarAl"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Left" Visibility="Collapsed">
                     <ToolBar Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" >
@@ -127,6 +127,7 @@
                                     <Button Content="十字准线" Command="{Binding ToolConcentricCircle.Select2Command}" Click="reference1_Click" Width="80" Tag="2"/>
                                     <Button Content="同心圆" Command="{Binding ToolConcentricCircle.Select0Command}" Click="reference1_Click" Width="80" Tag="0"/>
                                     <Button Content="单十字准线" Command="{Binding ToolConcentricCircle.Select1Command}" Click="reference1_Click" Width="80"  Tag="1"/>
+                                    <Button Content="锁定" Command="{Binding ToolConcentricCircle.LockCommand}" Click="reference1_Click" Width="80"  Tag="1"/>
                                 </StackPanel>
                             </Popup>
                         </StackPanel>
@@ -277,19 +278,26 @@
                                 <TextBlock Text="自动刷新绘图" Width="100" HorizontalAlignment="Left"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
+                                <TextBlock Text="MaxZoom" Width="100"/>
+                                <TextBox  Text="{Binding Config.MaxZoom}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock Text="MinZoom" Width="100"/>
+                                <TextBox  Text="{Binding Config.MinZoom}" />
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
                                 <TextBlock Text="伪彩色" Width="100"/>
                                 <ComboBox x:Name="ComColormapTypes" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" Text="{Binding  Config.ColormapTypes}" DisplayMemberPath="Key"/>
                             </DockPanel>
-                            <DockPanel Margin="0,0,0,5">
+                            <DockPanel Margin="0,5,0,5">
                                 <TextBlock Text="CVICE范围" Width="100"/>
-                                <TextBox  Text="{Binding ImageViewModel.MouseMagnifier.Radius}" Style="{StaticResource TextBox.Small}"/>
+                                <TextBox  Text="{Binding ImageViewModel.MouseMagnifier.Radius}"/>
                             </DockPanel>
-                            <TextBlock Text="设置为圆的时候，输入的值是半径"/>
-
-                            <DockPanel Margin="0,2">
+                            <DockPanel Margin="0,0,0,5">
                                 <TextBlock Text="CVICE Type:" Width="100"/>
-                                <hc:ComboBox x:Name="ComboxeType"  SelectedValue="{Binding ImageViewModel.MouseMagnifier.MagnigifierType}" SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,10,0"/>
+                                <hc:ComboBox x:Name="ComboxeType"  SelectedValue="{Binding ImageViewModel.MouseMagnifier.MagnigifierType}"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  />
                             </DockPanel>
+                            <TextBlock Text="设置为圆的时候，输入的值是半径" HorizontalAlignment="Right"/>
                         </StackPanel>
                     </Border>
 

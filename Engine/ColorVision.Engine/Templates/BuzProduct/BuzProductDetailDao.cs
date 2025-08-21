@@ -1,35 +1,37 @@
-﻿using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 
 namespace ColorVision.Engine.Templates.BuzProduct
 {
-    [Table("t_scgd_buz_product_detail")]
-    public class BuzProductDetailModel : VPKModel
+    [SugarTable("t_scgd_buz_product_detail")]
+    public class BuzProductDetailModel : VPKModel, IInitTables
     {
-        [Column("code")]
+        [SugarColumn(ColumnName ="code")]
         public string Code { get=> _Code; set { _Code = value; NotifyPropertyChanged();  } }
         private string _Code;
 
-        [Column("name")]
+        [SugarColumn(ColumnName ="name")]
         public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string _Name;
 
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int? Pid { get => _Pid; set { _Pid = value; NotifyPropertyChanged(); } }
         private int? _Pid;
 
-        [Column("poi_id")]
+        [SugarColumn(ColumnName ="poi_id")]
         public int? PoiId { get => _PoiId; set { _PoiId = value; NotifyPropertyChanged(); } }
         private int? _PoiId;
 
-        [Column("order_index")]
+        [SugarColumn(ColumnName ="order_index")]
         public int? OrderIndex { get => _OrderIndex; set { _OrderIndex = value; NotifyPropertyChanged(); } }
         private int? _OrderIndex;
 
-        [Column("cfg_json")]
+        [SugarColumn(ColumnName ="cfg_json")]
         public string CfgJson { get => _CfgJson; set { _CfgJson = value; NotifyPropertyChanged(); } }
         private string _CfgJson;
 
-        [Column("val_rule_temp_id")]
+        [SugarColumn(ColumnName ="val_rule_temp_id")]
         public int? ValRuleTempId { get => _ValRuleTempId; set { _ValRuleTempId = value; NotifyPropertyChanged(); } }
         private int? _ValRuleTempId;
     }

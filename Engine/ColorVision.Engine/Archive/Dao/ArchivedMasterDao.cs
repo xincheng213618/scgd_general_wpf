@@ -4,6 +4,7 @@ using ColorVision.Engine.MySql.ORM;
 using log4net;
 using MySql.Data.MySqlClient;
 using NPOI.SS.Formula.Functions;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -12,22 +13,22 @@ namespace ColorVision.Engine.Archive.Dao
 {
 
 
-    [Table("t_scgd_archived_master")]
-    public class ArchivedMasterModel : PKModel
+    [SugarTable("t_scgd_archived_master")]
+    public class ArchivedMasterModel : PKModel, IInitTables
     {
-        [Column("code"),DisplayName("Code")]
+        [SugarColumn(ColumnName = "code"),DisplayName("Code")]
         public string Code { get; set; }
-        [Column("name"),DisplayName("名称")]
+        [SugarColumn(ColumnName ="name"),DisplayName("名称")]
         public string Name { get; set; }
-        [Column("data"),DisplayName("Data")]
+        [SugarColumn(ColumnName ="data"),DisplayName("Data")]
         public string Data { get; set; }
-        [Column("remark")]
+        [SugarColumn(ColumnName ="remark")]
         public string Remark { get; set; }
-        [Column("tenant_id")]
+        [SugarColumn(ColumnName ="tenant_id")]
         public int? TenantId { get; set; }
-        [Column("create_date"),DisplayName("创建日期")]
+        [SugarColumn(ColumnName ="create_date"),DisplayName("创建日期")]
         public DateTime? CreateDate { get; set; } = DateTime.Now;
-        [Column("arch_date"),DisplayName("归档日期")]
+        [SugarColumn(ColumnName ="arch_date"),DisplayName("归档日期")]
         public DateTime? ArchDate { get; set; } = DateTime.Now;
 
     }

@@ -5,6 +5,7 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
+using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -39,8 +40,11 @@ namespace ColorVision.Engine.Media
     public partial class WindowCVCIE : Window
     {
         public ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
+
+        bool IsPoiResultCIExyuvDatas = true;
         public WindowCVCIE(ObservableCollection<PoiResultCIExyuvData> poiResultCIExyuvDatas)
         {
+            IsPoiResultCIExyuvDatas = true;
             PoiResultCIExyuvDatas = poiResultCIExyuvDatas;  
             InitializeComponent();
             this.ApplyCaption();
@@ -57,12 +61,15 @@ namespace ColorVision.Engine.Media
             }
             listViewSide.ItemsSource = PoiResultCIExyuvDatas;
         }
+        public ObservableCollection<PoiResultCIEYData> PoiResultCIEYDatas { get; set; }
 
         public WindowCVCIE(ObservableCollection<PoiResultCIEYData> poiResultCIEYDatas)
         {
+            IsPoiResultCIExyuvDatas = false;
+            PoiResultCIEYDatas = poiResultCIEYDatas;
             InitializeComponent();
             this.ApplyCaption();
-
+              
             var cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "Y"};
             var cieHeader = new List<string> { Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape, "Y" };
 
@@ -100,7 +107,14 @@ namespace ColorVision.Engine.Media
             dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-            PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, dialog.FileName);
+            if (IsPoiResultCIExyuvDatas)
+            {
+                PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, dialog.FileName);
+            }
+            else
+            {
+                PoiResultCIEYData.SaveCsv(PoiResultCIEYDatas, dialog.FileName);
+            }
         }
 
 

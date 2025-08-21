@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8602
 
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
@@ -53,14 +54,8 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
 
         }
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Load(AlgorithmView view, AlgorithmResult result)
         {
-            view.ImageView.ImageShow.Clear();
-
-            if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
-
-
             if (result.ViewResults == null)
             {
                 result.ViewResults = new ObservableCollection<IViewResult>();
@@ -69,7 +64,15 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
                 {
                     result.ViewResults.Add(item);
                 }
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmBinocularFusion), ImageFilePath = result.FilePath })) });
             }
+
+        }
+
+        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        {
+            if (File.Exists(result.FilePath))
+                view.ImageView.OpenImage(result.FilePath);
 
             List<string> header = new() { "中心点x", "中心点y", "x Tilte(°)", "Y tilte(°)", "Rotation" };
             List<string> bdHeader = new() { "CrossMarkCenterX", "CrossMarkCenterY", "XDegree" , "YDegree", "ZDegree" };

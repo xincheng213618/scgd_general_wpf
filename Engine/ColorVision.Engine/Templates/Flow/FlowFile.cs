@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Templates.Flow
         public FlowFile(FileInfo fileInfo)
         {
             FileInfo = fileInfo;
-            Name = FileInfo.Name;
+            Name = FileInfo.Name;  
             Icon = FileIcon.GetFileIconImageSource(fileInfo.FullName);
         }
     }

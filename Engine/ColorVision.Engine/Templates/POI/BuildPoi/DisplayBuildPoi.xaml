@@ -163,10 +163,10 @@
 
             
             <TabControl BorderThickness="0" Background="Transparent">
-                <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" >
+                <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" IsSelected="{Binding IsLocalFile}" >
                     <StackPanel Orientation="Horizontal" Margin="0,2">
                         <TextBlock Text="文件" Margin="0,0,10,0" Width="40"/>
-                        <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}"  Width="150" Margin="0,0,2,0" HorizontalAlignment="Left" />
+                        <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}"  Width="150" Text="{Binding ImageFilePath}" Margin="0,0,2,0" HorizontalAlignment="Left" />
                         <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open_File" />
                         <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_OpenLocal_Click" />
                     </StackPanel>

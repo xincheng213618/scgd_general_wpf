@@ -156,6 +156,8 @@ namespace ColorVision.Plugins
 
                             try
                             {
+                                ConfigService.Instance.SaveConfigs();
+
                                 // 解压缩 ZIP 文件到临时目录
                                 string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionPluginsUpdate");
                                 if (Directory.Exists(tempDirectory))
@@ -218,6 +220,7 @@ del ""%~f0"" & exit
         public void Delete()
         {
             if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否确认删除插件{Name}", Resources.PluginManagerWindow, MessageBoxButton.YesNo) == MessageBoxResult.No) return;
+            ConfigService.Instance.SaveConfigs();
 
             string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionPluginsUpdate");
             if (Directory.Exists(tempDirectory))

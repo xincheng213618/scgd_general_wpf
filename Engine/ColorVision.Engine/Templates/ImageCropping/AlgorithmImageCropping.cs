@@ -12,6 +12,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.ImageCropping
 {
+
+    [DisplayAlgorithm(50, "发光区裁剪", "数据提取算法")]
     public class AlgorithmImageCropping : DisplayAlgorithmBase
     {
 
@@ -22,10 +24,6 @@ namespace ColorVision.Engine.Templates.ImageCropping
 
         public AlgorithmImageCropping(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "发光区裁剪";
-            Order = 5;
-			Group = "数据提取算法";
-
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

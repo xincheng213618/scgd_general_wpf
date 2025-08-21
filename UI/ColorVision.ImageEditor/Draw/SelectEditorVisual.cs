@@ -1,11 +1,12 @@
 ﻿#pragma warning disable CS8625,CS8602,CS8607,CS0103,CS0067
+using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class SelectEditorVisual : DrawingVisual
+    public class SelectEditorVisual : DrawingVisual,IDisposable
     {
         public DrawCanvas DrawCanvas { get; set; }
 
@@ -15,6 +16,7 @@ namespace ColorVision.ImageEditor.Draw
         {
             DrawCanvas = drawCanvas;
             ZoomboxSub = zoomboxSub;
+            DrawCanvas.AddVisual(this, false);
         }
 
         private void ZoomboxSub_LayoutUpdated(object? sender, System.EventArgs e)
@@ -25,8 +27,11 @@ namespace ColorVision.ImageEditor.Draw
         public Rect Rect { get => _Rect; set {  _Rect = value; }  }
         private Rect _Rect;
 
-        public ISelectVisual SelectVisual { get => _SelectVisual; set
-            { _SelectVisual = value;
+        public ISelectVisual SelectVisual 
+        { get => _SelectVisual;
+            set
+            { 
+                _SelectVisual = value;
                 if (value != null)
                 {
                     ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
@@ -136,11 +141,6 @@ namespace ColorVision.ImageEditor.Draw
         public void SetRender(ISelectVisual selectVisual)
         {
             SelectVisual = selectVisual;
-            if (selectVisual == null)
-            {
-                DrawCanvas.RemoveVisual(this, false);
-                return;
-            }
             if (selectVisual != null)
             {
                 _Rect = selectVisual.GetRect();
@@ -150,11 +150,9 @@ namespace ColorVision.ImageEditor.Draw
 
         public void Render()
         {
-            DrawCanvas.RemoveVisual(this, false);
-            DrawCanvas.AddVisual(this, false);
+            using DrawingContext dc = this.RenderOpen();
             if (SelectVisual == null)
                 return;
-            using DrawingContext dc = this.RenderOpen();
             double thickness = 1 / ZoomboxSub.ContentMatrix.M11;
             dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), Rect);
             // 小矩形的尺寸
@@ -195,5 +193,13 @@ namespace ColorVision.ImageEditor.Draw
             dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.White, thickness), end, iconSize / 2, iconSize / 2);
         }
 
+        public void Dispose()
+        {
+            DrawCanvas?.RemoveVisual(this, false);
+            if (ZoomboxSub != null)
+                ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
+
+            GC.SuppressFinalize(this);
+        }
     }
 }

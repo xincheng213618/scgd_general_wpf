@@ -15,6 +15,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Templates.POI.BuildPoi
 {
 
+    [DisplayAlgorithm(2, "关注点布点", "定位算法")]
     public class AlgorithmBuildPoi : DisplayAlgorithmBase
     {
 
@@ -27,10 +28,6 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
 
         public AlgorithmBuildPoi(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "关注点布点";
-            Order = 2;
-            Group = "定位算法";
-
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenCADFileCommand = new RelayCommand(a => OpenCADFile());

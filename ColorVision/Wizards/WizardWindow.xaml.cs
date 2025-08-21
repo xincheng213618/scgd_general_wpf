@@ -52,9 +52,6 @@ namespace ColorVision.Wizards
             }
             IWizardSteps = IWizardSteps.OrderBy(handler => handler.Order).ToList();
         }
-
-
-
     }
 
         /// <summary>

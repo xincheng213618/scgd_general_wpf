@@ -89,6 +89,32 @@ namespace ColorVision.UI
         }
 
 
+        public Assembly[] RefreshAssemblies()
+        {
+            List<Assembly> assemblies = new List<Assembly>();
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                try
+                {
+                    var name = assembly.GetName().Name;
+
+                    ///这里这么些可以优化一个数量级，一个接口反射全部大概要2ms,现在只需要0.2ms ，聊胜于无
+                    if (!string.IsNullOrWhiteSpace(name) && IsCustomAssembly(name, assembly))
+                    {
+                        assembly.GetTypes(); // try load
+                        assemblies.Add(assembly);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    log.Error($"Failed to unload assembly: {ex.Message}", ex);
+                }
+            }
+            Assemblies = assemblies.ToArray();
+            return Assemblies;
+        }
+
+
         public Assembly[] GetAssemblies()
         {
             if (Assemblies == null)

@@ -7,7 +7,7 @@
 		<ImplicitUsings>disable</ImplicitUsings>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<VersionPrefix>1.3.2.2</VersionPrefix>
+		<VersionPrefix>1.3.4.1</VersionPrefix>
 		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -24,7 +24,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="HandyControl" Version="3.5.1" />
-		<PackageReference Include="WPF-UI" Version="4.0.2" />
+		<PackageReference Include="WPF-UI" Version="4.0.3" />
 	</ItemGroup>
 
 	<ItemGroup>

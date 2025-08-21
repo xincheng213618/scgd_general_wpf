@@ -6,8 +6,10 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
+using ColorVision.UI.Extension;
 using log4net;
 using Newtonsoft.Json;
+using SqlSugar;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -105,7 +107,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
             // 递归构建头部
             foreach (var prop in properties)
             {
-                var columnName = prop.GetCustomAttribute<ColumnAttribute>()?.Name ?? prop.Name;
+                var columnName = prop.GetCustomAttribute<SugarColumn>()?.ColumnName ?? prop.Name;
                 if (prop.PropertyType.IsClass && prop.PropertyType != typeof(string))
                 {
                     var nestedProperties = prop.PropertyType.GetProperties();
@@ -270,13 +272,14 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                 ContextMenu.Items.Add(new MenuItem() { Header = "切分示意图", Command = relayCommand });
                 RelayCommand relayCommand1 = new RelayCommand(a => OpenAA());
                 ContextMenu.Items.Add(new MenuItem() { Header = "AA区", Command = relayCommand1 });
+
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmBlackMura), ImageFilePath = result.FilePath })) });
+
             }
         }
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
-            view.ImageView.ImageShow.Clear();
-
             void OpenSource()
             {
                 view.ImageView.ImageShow.Clear();
@@ -310,8 +313,6 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                     }
                 }
             }
-
-            Load(view, result);
             OpenSource();
 
             List<string> header = new() { "LvAvg", "LvMax", "LvMin", "Uniformity(%)", "ZaRelMax", "AreaJsonVal" };
@@ -325,6 +326,9 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
                 view.listViewSide.ItemsSource = result.ViewResults;
             }
+
+            view.SideTextBox.Visibility = System.Windows.Visibility.Visible;
+            view.SideTextBox.Text = result.ViewResults.ToSpecificViewResults<BlackMuraView>()[0].ToJsonN();
         }
 
 

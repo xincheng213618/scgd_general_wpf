@@ -25,7 +25,7 @@
             <StackPanel>
                 <Image x:Name="ImageLogo" Source="Assets/Image/ColorVision.png" Width="200" Margin="20" PreviewMouseDown="Image_PreviewMouseDown">
                 </Image>
-                <TextBlock x:Name="LogoText" Margin="5,15,5,30"  FontWeight="Bold" Text="视彩（上海）光电技术有限公司" HorizontalAlignment="Center"/>
+                <TextBlock x:Name="LogoText" Margin="5,15,5,20"  FontWeight="Bold" Text="" HorizontalAlignment="Center"/>
                 <Button  x:Name="CloseButton" Background="Transparent"  BorderThickness="0"  MouseLeave="CloseButton_MouseLeave"  MouseEnter="CloseButton_MouseEnter" Click="Button_Click_1"  HorizontalAlignment="Center" >
                     <Button.Content>
                         <Viewbox Width="200">

@@ -23,7 +23,6 @@ namespace ColorVision.Engine.Templates.Flow
         {
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
-            MQTTControl.GetInstance().SubscribeCache("RC_Xincheng/Camera/SVR.Camera.Default/CMD");
             MQTTControl.GetInstance().SubscribeCache("RC_local/Camera/SVR.Camera.Default/CMD");
             return Task.CompletedTask;
         }

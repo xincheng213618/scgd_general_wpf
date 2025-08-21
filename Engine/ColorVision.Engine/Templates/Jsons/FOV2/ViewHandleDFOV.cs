@@ -1,9 +1,11 @@
 ﻿#pragma warning disable CS8602
 
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using log4net;
+using SqlSugar;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -48,7 +50,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
             // 递归构建头部
             foreach (var prop in properties)
             {
-                var columnName = prop.GetCustomAttribute<ColumnAttribute>()?.Name ?? prop.Name;
+                var columnName = prop.GetCustomAttribute<SugarColumn>()?.ColumnName ?? prop.Name;
                 if (prop.PropertyType.IsClass && prop.PropertyType != typeof(string))
                 {
                     var nestedProperties = prop.PropertyType.GetProperties();
@@ -124,17 +126,14 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
                     DFovView view1 = new DFovView(item);
                     result.ViewResults.Add(view1);
                 }
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmFOV2), ImageFilePath = result.FilePath })) });
             }
         }
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
-            view.ImageView.ImageShow.Clear();
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
-
-            Load(view, result);
-
 
             List<string> header = new() { "D_Fov", "H_Fov", "V_FOV", "ClolorVisionH_Fov", "ClolorVisionV_Fov", "LeftDownToRightUp", "LeftUpToRightDown" };
             List<string> bdHeader = new() { "D_Fov", "H_Fov", "V_FOV", "ClolorVisionH_Fov", "ClolorVisionV_Fov", "LeftDownToRightUp" , "LeftUpToRightDown" };

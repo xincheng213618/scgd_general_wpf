@@ -89,11 +89,15 @@ namespace ColorVision.Util.Draw.Special
 
                 if (MagnigifierType ==MagnigifierType.Circle)
                 {
-                    dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.Black, 3 / ZoomboxSub.ContentMatrix.M11), new Point(actPoint.X, actPoint.Y), Radius, Radius);
+                    dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), new Point(actPoint.X, actPoint.Y), Radius, Radius);
                     dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11), new Point(actPoint.X, actPoint.Y), Radius, Radius);
+                }else if (MagnigifierType == MagnigifierType.Rect)
+                {
+                    dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), new Rect(actPoint.X - Radius / 2, actPoint.Y - Radius / 2, Radius, Radius));
+                    dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11),new Rect(actPoint.X - Radius/2, actPoint.Y -Radius/2, Radius,Radius));
                 }
 
-                var transform = new MatrixTransform(1 / ZoomboxSub.ContentMatrix.M11, ZoomboxSub.ContentMatrix.M12, ZoomboxSub.ContentMatrix.M21, 1 / ZoomboxSub.ContentMatrix.M22, (1 - 1 / ZoomboxSub.ContentMatrix.M11) * actPoint.X, (1 - 1 / ZoomboxSub.ContentMatrix.M22) * actPoint.Y);
+                    var transform = new MatrixTransform(1 / ZoomboxSub.ContentMatrix.M11, ZoomboxSub.ContentMatrix.M12, ZoomboxSub.ContentMatrix.M21, 1 / ZoomboxSub.ContentMatrix.M22, (1 - 1 / ZoomboxSub.ContentMatrix.M11) * actPoint.X, (1 - 1 / ZoomboxSub.ContentMatrix.M22) * actPoint.Y);
                 dc.PushTransform(transform);
 
                 double x1 = actPoint.X;

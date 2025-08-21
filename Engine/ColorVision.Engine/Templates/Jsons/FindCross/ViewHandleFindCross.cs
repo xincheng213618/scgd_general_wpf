@@ -60,6 +60,10 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
     {
         public DetailCommonModel DetailCommonModel { get; set; }
 
+        public FindCrossDetailViewReslut()
+        {
+
+        }
         public FindCrossDetailViewReslut(DetailCommonModel detailCommonModel)
         {
             DetailCommonModel = detailCommonModel;
@@ -81,11 +85,6 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
                 }
             }
         }
-
-        [Column("id")]
-        public int Id { get; set; }
-        [Column("pid")]
-        public int PId { get; set; }
         public string? ResultFileName { get; set; }
 
         public FindCrossResult? FindCrossResult { get; set; }
@@ -154,17 +153,15 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
                     result.ContextMenu.Items.Add(new MenuItem() { Header = "选中1.0结果集", Command = SelectrelayCommand });
                     result.ContextMenu.Items.Add(new MenuItem() { Header = "打开1.0结果集", Command = OpenrelayCommand });
                 }
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmFindCross), ImageFilePath = result.FilePath })) });
+
             }
         }
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
-            view.ImageView.ImageShow.Clear();
-
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
-
-            Load(view, result);
 
             if (result.ViewResults.Count == 1)
             {

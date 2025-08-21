@@ -100,7 +100,7 @@ namespace ColorVision.Engine.MySql
         public RelayCommand BackupResourcesCommand { get; set; }
         public RelayCommand BackupAllResourcesCommand { get; set; }
 
-        public MySqlLocalServicesManager()
+        public MySqlLocalServicesManager()   
         {
             try
             {
@@ -110,11 +110,11 @@ namespace ColorVision.Engine.MySql
                     log.Info("找不到本地的mysql 服务");
                     if (File.Exists(MySqlLocalConfig.Instance.MysqldPath))
                     {
-                        MessageBox.Show("系统更新，找不到本地的Mysql服务,请将数据库重新安装");
+                        log.Info("系统更新，找不到本地的Mysql服务,请将数据库重新安装");
                     }
                     else
                     {
-                        MessageBox.Show("找不到本地的Mysql服务");
+                        log.Info("找不到本地的Mysql服务");
                     }
                 }
             }

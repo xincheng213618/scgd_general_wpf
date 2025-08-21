@@ -12,6 +12,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
 {
+    [DisplayAlgorithm(53, "寻找AA区", "Json")]
     public class AlgorithmAAFindPoints : DisplayAlgorithmBase
     {
 
@@ -22,9 +23,6 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
 
         public AlgorithmAAFindPoints(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "寻找AA区";
-            Order = 53;
-            Group = "FindLightArea";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

@@ -41,7 +41,7 @@ namespace ColorVision.Engine.Templates
     }
 
     /// <summary>
-    /// TemplateManagerWindow.xaml 的交互逻辑
+    /// ConfigManagerWindow.xaml 的交互逻辑
     /// </summary>
     public partial class TemplateManagerWindow : Window
     {

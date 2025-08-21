@@ -1,8 +1,25 @@
-﻿using System.Collections.ObjectModel;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 
 namespace ColorVision.Engine.Templates
 {
+    public enum InsertMode
+    {
+        Default,
+        SortedByName
+    }
+
+
+    public class TemplateConfig:ViewModelBase,IConfig
+    {
+        public static TemplateConfig Instance => ConfigService.Instance.GetRequiredService<TemplateConfig>();
+
+        public InsertMode InsertMode { get => _InsertMode; set { _InsertMode = value;  NotifyPropertyChanged(); } } 
+        private InsertMode _InsertMode = InsertMode.Default;
+    }
+
     public static class Extension
     {
         public static ObservableCollection<TemplateModel<T>> CreateDefault<T>(this ObservableCollection<TemplateModel<T>>? templateModels) where T : ParamBase, new()
@@ -81,7 +98,18 @@ namespace ColorVision.Engine.Templates
             return templateModels1;
         }
 
+        public static ObservableCollection<TemplateModel<T>> Create<T>(this ObservableCollection<TemplateModel<T>>? templateModels) where T : ParamBase, new()
+        {
+            if (TemplateConfig.Instance.InsertMode == InsertMode.Default)
+            {
+                return templateModels;
+            }
+            else
+            {
 
+            }
+            return CreateTemplateModelEmpty(templateModels);
+        }
 
         public static ObservableCollection<TemplateModel<T>> CreateEmpty<T>(this ObservableCollection<TemplateModel<T>>? templateModels) where T : ParamBase, new()
         {

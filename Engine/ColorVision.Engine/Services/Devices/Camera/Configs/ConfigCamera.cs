@@ -75,7 +75,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         private bool _IsAutoExpose;
 
         public double ExpTime { get => _ExpTime; set { _ExpTime = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeLog)); } }
-        private double _ExpTime = 10;
+        private double _ExpTime = 100;
 
         public double ExpTimeLog { get => Math.Log(ExpTime); set { ExpTime = Math.Pow(Math.E, value); } }
 
@@ -90,16 +90,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public double ExpTimeMinLog { get => Math.Log(ExpTimeMin); set { ExpTimeMin = Math.Pow(Math.E, value); } }
 
         public double ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeRLog)); } }
-        private double _ExpTimeR = 10;
+        private double _ExpTimeR = 100;
 
         public double ExpTimeRLog { get => Math.Log(ExpTimeR); set { ExpTimeR = Math.Pow(Math.E, value); } }
 
         public double ExpTimeG { get => _ExpTimeG; set { _ExpTimeG = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeGLog)); } }
-        private double _ExpTimeG = 10;
+        private double _ExpTimeG = 100;
         public double ExpTimeGLog { get => Math.Log(ExpTimeG); set { ExpTimeG = Math.Pow(Math.E, value); } }
 
         public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeBLog)); } }
-        private double _ExpTimeB = 10;
+        private double _ExpTimeB = 100;
 
         public double ExpTimeBLog { get => Math.Log(ExpTimeB); set { ExpTimeB = Math.Pow(Math.E, value); } }
 

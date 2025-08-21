@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.3.8.2</VersionPrefix>
+		<VersionPrefix>1.4.7.9</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -14,7 +14,7 @@
 	  <None Remove="README.md" />
 	</ItemGroup>
 
-	<ItemGroup>
+	<ItemGroup>  
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
 		<ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
 	</ItemGroup>
@@ -45,6 +45,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Compile Update="EditRecipeWindow.xaml.cs">
+	    <SubType>Code</SubType>
+	  </Compile>
 	  <Compile Update="Properties\Resources.Designer.cs">
 	    <DesignTime>True</DesignTime>
 	    <AutoGen>True</AutoGen>

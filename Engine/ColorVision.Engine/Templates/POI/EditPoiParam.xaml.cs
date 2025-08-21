@@ -86,6 +86,8 @@ namespace ColorVision.Engine.Templates.POI
 
         public BulkObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new BulkObservableCollection<IDrawingVisual>();
         public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
+
+        public ImageViewConfig Config { get; set; } = new ImageViewConfig();
         private void Window_Initialized(object sender, EventArgs e)
         {
             DataContext = PoiParam;
@@ -390,12 +392,41 @@ namespace ColorVision.Engine.Templates.POI
             {
                 HImageCache?.Dispose();
                 HImageCache = null;
-            };
+            }
+            ;
             if (imageSource is WriteableBitmap writeableBitmap)
             {
+                Config.AddProperties("PixelFormat", writeableBitmap.Format);
                 Task.Run(() => Application.Current.Dispatcher.Invoke((() =>
                 {
                     HImageCache = writeableBitmap.ToHImage();
+                    if (HImageCache is HImage hImage)
+                    {
+                        Config.AddProperties("Cols", hImage.cols);
+                        Config.AddProperties("Rows", hImage.rows);
+                        Config.AddProperties("Channel", hImage.channels);
+                        Config.AddProperties("Depth", hImage.depth);
+                        Config.AddProperties("Stride", hImage.stride);
+
+                        Config.Channel = hImage.channels;
+                        Config.Ochannel = Config.Channel;
+
+                        if (hImage.depth == 16)
+                        {
+                            PseudoSlider.Maximum = 65535;
+                            PseudoSlider.ValueEnd = 65535;
+                            Config.AddProperties("Max", 65535);
+
+                        }
+                        else
+                        {
+                            Config.AddProperties("Max", 255);
+
+                            PseudoSlider.Maximum = 255;
+                            PseudoSlider.ValueEnd = 255;
+
+                        }
+                    }
                 })));
             }
             PoiParam.Width = imageSource.PixelWidth;
@@ -1187,6 +1218,8 @@ namespace ColorVision.Engine.Templates.POI
             if (MessageBox.Show("清空关注点", "ColorVision", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
                 return;
             ClearRender();
+            //清空关注点的时候重置计数
+            No = 0;
         }
 
         public void ClearRender()
@@ -1675,20 +1708,11 @@ namespace ColorVision.Engine.Templates.POI
             }
         }
 
-        public ImageSource PseudoImage { get; set; }
+        public ImageSource FunctionImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
 
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
         {
-            RenderPseudo();
-        }
-        private void Pseudo_MouseDoubleClick(object sender, RoutedEventArgs e)
-        {
-            PseudoColor pseudoColor = new PseudoColor(new ImageViewConfig());
-            pseudoColor.ShowDialog();
-            var Colormapes = PseudoColor.GetColormapDictionary().First(x => x.Key == ColormapTypes.COLORMAP_JET);
-            string valuepath = Colormapes.Value;
-            ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative));
             RenderPseudo();
         }
         private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
@@ -1705,7 +1729,7 @@ namespace ColorVision.Engine.Templates.POI
                 if (Pseudo.IsChecked == false)
                 {
                     ImageShow.Source = this.ViewBitmapSource;
-                    PseudoImage = null;
+                    FunctionImage = null;
                     return;
                 }
 
@@ -1724,16 +1748,16 @@ namespace ColorVision.Engine.Templates.POI
                         {
                             if (ret == 0)
                             {
-                                if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                                if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                                 {
                                     var image = hImageProcessed.ToWriteableBitmap();
                                     OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                                     hImageProcessed.pData = nint.Zero;
-                                    PseudoImage = image;
+                                    FunctionImage = image;
                                 }
                                 if (Pseudo.IsChecked == true)
                                 {
-                                    ImageShow.Source = PseudoImage;
+                                    ImageShow.Source = FunctionImage;
                                 }
                             }
                         });
@@ -1750,10 +1774,10 @@ namespace ColorVision.Engine.Templates.POI
             {
                 if (HImageCache != null)
                 {
-                    string re = PoiConfig.FindLuminousArea.ToJsonN();
+                    string FindLuminousAreajson = PoiConfig.FindLuminousArea.ToJsonN();
                     Task.Run(() =>
                     {
-                        int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)HImageCache, re,out IntPtr resultPtr);
+                        int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)HImageCache, FindLuminousAreajson,out IntPtr resultPtr);
                         if (length > 0)
                         {
                             string result = Marshal.PtrToStringAnsi(resultPtr);
@@ -1858,6 +1882,119 @@ namespace ColorVision.Engine.Templates.POI
             PoiConfig.DefaultRectWidth = PoiConfig.AreaRectWidth / PoiConfig.AreaRectRow;
             PoiConfig.DefaultRectHeight = PoiConfig.AreaRectHeight / PoiConfig.AreaRectCol;
         }
+
+        private void Button_Click_3(object sender, RoutedEventArgs e)
+        {
+            PoiParam.LeftBottomX = PoiEditRectCache.Instance.LeftBottomX;
+            PoiParam.LeftBottomY = PoiEditRectCache.Instance.LeftBottomY;
+            PoiParam.LeftTopX = PoiEditRectCache.Instance.LeftTopX;
+            PoiParam.LeftTopY = PoiEditRectCache.Instance.LeftTopY;
+            PoiParam.RightBottomX = PoiEditRectCache.Instance.RightBottomX;
+            PoiParam.RightBottomY = PoiEditRectCache.Instance.RightBottomY;
+            PoiParam.RightTopX = PoiEditRectCache.Instance.RightTopX;
+            PoiParam.RightTopY = PoiEditRectCache.Instance.RightTopY;
+        }
+
+        private void Button_Click_4(object sender, RoutedEventArgs e)
+        {
+            PoiEditRectCache.Instance.LeftBottomX = PoiParam.LeftBottomX;
+            PoiEditRectCache.Instance.LeftBottomY = PoiParam.LeftBottomY;
+            PoiEditRectCache.Instance.LeftTopX = PoiParam.LeftTopX;
+            PoiEditRectCache.Instance.LeftTopY = PoiParam.LeftTopY;
+            PoiEditRectCache.Instance.RightBottomX = PoiParam.RightBottomX;
+            PoiEditRectCache.Instance.RightBottomY = PoiParam.RightBottomY;
+            PoiEditRectCache.Instance.RightTopX = PoiParam.RightTopX;
+            PoiEditRectCache.Instance.RightTopY = PoiParam.RightTopY;
+        }
+
+        private void Button_Click_5(object sender, RoutedEventArgs e)
+        {
+            PoiEditRectCache.Instance.LeftTopX = PoiConfig.PointInt1.X;
+            PoiEditRectCache.Instance.LeftTopY = PoiConfig.PointInt1.Y;
+            PoiEditRectCache.Instance.RightTopX = PoiConfig.PointInt2.X;
+            PoiEditRectCache.Instance.RightTopY = PoiConfig.PointInt2.Y;
+            PoiEditRectCache.Instance.RightBottomX = PoiConfig.PointInt3.X;
+            PoiEditRectCache.Instance.RightBottomY = PoiConfig.PointInt3.Y;
+            PoiEditRectCache.Instance.LeftBottomX = PoiConfig.PointInt4.X;
+            PoiEditRectCache.Instance.LeftBottomY = PoiConfig.PointInt4.Y;
+
+        }
+
+        private void FindLuminousAreaCorner_Click(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Dispatcher.BeginInvoke((Action)(() =>
+            {
+                if (HImageCache != null)
+                {
+                    string FindLuminousAreaCornerjson = PoiConfig.FindLuminousAreaCorner.ToJsonN();
+                    Task.Run(() =>
+                    {
+                        int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)HImageCache, FindLuminousAreaCornerjson, out IntPtr resultPtr);
+                        if (length > 0)
+                        {
+                            string result = Marshal.PtrToStringAnsi(resultPtr);
+                            log.Info(result);
+                            OpenCVMediaHelper.FreeResult(resultPtr);
+
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                if (PoiConfig.FindLuminousAreaCorner.UseRotatedRect)
+                                {
+                                    var jObj = Newtonsoft.Json.Linq.JObject.Parse(result);
+                                    var corners = jObj["Corners"].ToObject<List<List<float>>>();
+                                    if (corners.Count == 4)
+                                    {
+                                        PoiConfig.Polygon1X = (int)corners[0][0];
+                                        PoiConfig.Polygon1Y = (int)corners[0][1];
+                                        PoiConfig.Polygon2X = (int)corners[1][0];
+                                        PoiConfig.Polygon2Y = (int)corners[1][1];
+                                        PoiConfig.Polygon3X = (int)corners[2][0];
+                                        PoiConfig.Polygon3Y = (int)corners[2][1];
+                                        PoiConfig.Polygon4X = (int)corners[3][0];
+                                        PoiConfig.Polygon4Y = (int)corners[3][1];
+                                    }
+
+
+
+                                }
+                                else
+                                {
+                                    MRect rect = Newtonsoft.Json.JsonConvert.DeserializeObject<MRect>(result);
+                                    PoiConfig.Polygon1X = rect.X;
+                                    PoiConfig.Polygon1Y = rect.Y;
+                                    PoiConfig.Polygon2X = rect.X + rect.Width;
+                                    PoiConfig.Polygon2Y = rect.Y;
+                                    PoiConfig.Polygon3X = rect.X + rect.Width;
+                                    PoiConfig.Polygon3Y = rect.Y + rect.Height;
+                                    PoiConfig.Polygon4X = rect.X;
+                                    PoiConfig.Polygon4Y = rect.Y + rect.Height;
+                                }
+                                RenderPoiConfig();
+                            });
+
+                        }
+                        else
+                        {
+                            Console.WriteLine("Error occurred, code: " + length);
+                        }
+                    });
+                }
+                ;
+            }));
+        }
+    }
+
+    public class PoiEditRectCache:IConfig
+    {
+        public static PoiEditRectCache Instance => ConfigService.Instance.GetRequiredService<PoiEditRectCache>();
+        public int? LeftTopX { get; set; }
+        public int? LeftTopY { get; set; }
+        public int? RightTopX { get; set; }
+        public int? RightTopY { get; set; }
+        public int? RightBottomX { get; set; }
+        public int? RightBottomY { get; set; }
+        public int? LeftBottomX { get; set; }
+        public int? LeftBottomY { get; set; }
     }
 
 }

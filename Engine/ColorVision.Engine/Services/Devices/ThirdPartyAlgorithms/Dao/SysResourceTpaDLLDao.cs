@@ -1,41 +1,43 @@
-﻿using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
 {
-    [Table("t_scgd_sys_resource_tpa_dll")]
-    public class SysResourceTpaDLLModel : VPKModel
+    [SugarTable("t_scgd_sys_resource_tpa_dll")]
+    public class SysResourceTpaDLLModel : VPKModel, IInitTables
     {
 
-        [Column("code")]
+        [SugarColumn(ColumnName ="code")]
         public string? Code { get => _Code; set { _Code = value; NotifyPropertyChanged(); } }
         private string? _Code;
 
-        [Column("name")]
+        [SugarColumn(ColumnName ="name")]
         public string? Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string? _Name;
 
-        [Column("dll_file_name")]
+        [SugarColumn(ColumnName ="dll_file_name")]
         public string? DLLFileName { get => _DLLFileName; set { _DLLFileName = value; NotifyPropertyChanged(); } }
         private string? _DLLFileName;
 
-        [Column("cfg_json")]
+        [SugarColumn(ColumnName ="cfg_json", ColumnDataType ="json")]
         public string? CfgJson { get => _CfgJson; set { _CfgJson = value; NotifyPropertyChanged(); } }
         private string? _CfgJson;
 
-        [Column("tenant_id")]
+        [SugarColumn(ColumnName ="tenant_id")]
         public string? TenantId { get; set; }
 
-        [Column("is_enable")]
+        [SugarColumn(ColumnName ="is_enable")]
         public bool? IsEnable { get; set; }
 
-        [Column("is_delete")]
+        [SugarColumn(ColumnName ="is_delete")]
         public bool? IsDelete { get; set; }
 
-        [Column("create_date")]
+        [SugarColumn(ColumnName ="create_date")]
         public DateTime? CreateDate { get; set; } = DateTime.Now;
 
-        [Column("remark")]
+        [SugarColumn(ColumnName ="remark")]
         public string? Remark { get; set; }
 
 

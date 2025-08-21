@@ -13,6 +13,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.MTF2
 {
+
+    [DisplayAlgorithm(53, "MTF2.0", "Json")]
     public class AlgorithmMTF2 : DisplayAlgorithmBase
     {
 
@@ -23,9 +25,6 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
 
         public AlgorithmMTF2(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "MTF2.0";
-            Order = 53;
-            Group = "MTF";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
@@ -67,6 +66,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
 
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
+
             if(TemplatePoiSelectedIndex > -1)
             {
                 var poi_pm = TemplatePoi.Params[TemplatePoiSelectedIndex].Value;

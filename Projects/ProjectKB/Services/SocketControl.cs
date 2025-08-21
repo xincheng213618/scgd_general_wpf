@@ -53,7 +53,9 @@ namespace ProjectKB.Services
 
         public SocketControl()
         {
+            StartServer();
         }
+
 
         public void StartServer()
         {

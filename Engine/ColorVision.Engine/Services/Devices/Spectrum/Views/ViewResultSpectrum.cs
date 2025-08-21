@@ -44,11 +44,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             {
                 SpectralData SpectralData = new();
                 SpectralData.Wavelength = i / 10 + 380;
-                SpectralData.RelativeSpectrum = fPL[i];
+                SpectralData.RelativeSpectrum = fPL[i] > 0 ? fPL[i] : 0;
                 SpectralData.AbsoluteSpectrum = fPL[i] * fPlambda;
                 SpectralDatas.Add(SpectralData);
             }
 
+            fSpect1 = 380;
+            fSpect2 = 780;
             double[] xs = new double[fPL.Length];
             double[] ys = new double[fPL.Length];
             for (int i = 0; i < fPL.Length; i++)

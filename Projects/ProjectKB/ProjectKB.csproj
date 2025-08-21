@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Assets\ProjectKB.ico</ApplicationIcon>
-	  <VersionPrefix>1.2.1.1</VersionPrefix>
+	<VersionPrefix>1.2.2.11</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,7 +16,7 @@
     <None Remove="CHANGELOG.md" />
     <None Remove="README.md" />
   </ItemGroup>
-
+  
   <ItemGroup>
     <Content Include="Assets\ProjectKB.ico" />
   </ItemGroup>
@@ -57,6 +57,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="EditRecipeWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -72,6 +75,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="FunTestDll.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="FunTestDllConfig.INI">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="manifest.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -23,10 +23,10 @@ namespace ColorVision.Engine.Templates.BuzProduct
         public EditTemplateBuzProduct()
         {
             InitializeComponent();
-            this.Width = EditTemplateJsonConfig.Instance.Width;
+            this.Width = EditTemplateBuzProductConfig.Instance.Width;
             this.SizeChanged += (s, e) =>
             {
-                EditTemplateJsonConfig.Instance.Width = this.ActualWidth;
+                EditTemplateBuzProductConfig.Instance.Width = this.ActualWidth;
             };
         }
         public void SetParam(object param)

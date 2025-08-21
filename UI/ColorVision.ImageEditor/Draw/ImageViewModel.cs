@@ -59,7 +59,7 @@ namespace ColorVision.ImageEditor.Draw
 
         public RelayCommand OpenImageCommand { get; set; }
 
-        private ZoomboxSub ZoomboxSub { get; set; }
+        public ZoomboxSub ZoomboxSub { get; set; }
 
         private DrawCanvas Image { get; set; }
 
@@ -1047,7 +1047,6 @@ namespace ColorVision.ImageEditor.Draw
         private string _LastChoice { get; set; }
 
         private bool _EraseVisual;
-        private bool disposedValue;
 
         public bool EraseVisual {  get => _EraseVisual;
             set
@@ -1079,6 +1078,7 @@ namespace ColorVision.ImageEditor.Draw
 
         public void Dispose()
         {
+            SelectEditorVisual.Dispose();
             Parent = null;
             ZoomboxSub = null;
             Image = null;

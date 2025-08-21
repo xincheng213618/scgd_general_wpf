@@ -74,13 +74,16 @@ namespace ColorVision.SocketProtocol
         public static SocketManager GetInstance() { lock (_locker) { return _instance ??= new SocketManager(); } }
 
         private static TcpListener tcpListener;
-        public static SocketConfig Config => SocketConfig.Instance;
+        public SocketConfig Config { get; set; } = SocketConfig.Instance;
+
+        public RelayCommand EditCommand { get; set; } 
 
         public SocketEventDispatcher Dispatcher { get; set; }
 
         public SocketManager()
         {
             Dispatcher = new SocketEventDispatcher();
+            EditCommand = new RelayCommand(a =>  new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
 
 

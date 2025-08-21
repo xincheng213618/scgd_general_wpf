@@ -14,12 +14,16 @@
   <ItemGroup>
     <Compile Remove="Controls\**" />
     <Compile Remove="libs\**" />
+    <Compile Remove="Services\Devices\Spectrum\Templates\**" />
     <EmbeddedResource Remove="Controls\**" />
     <EmbeddedResource Remove="libs\**" />
+    <EmbeddedResource Remove="Services\Devices\Spectrum\Templates\**" />
     <None Remove="Controls\**" />
     <None Remove="libs\**" />
+    <None Remove="Services\Devices\Spectrum\Templates\**" />
     <Page Remove="Controls\**" />
     <Page Remove="libs\**" />
+    <Page Remove="Services\Devices\Spectrum\Templates\**" />
   </ItemGroup>
 
 	<ItemGroup>
@@ -30,17 +34,18 @@
 		<PackageReference Include="itext" Version="9.2.0" />
 		<PackageReference Include="itext.bouncy-castle-adapter" Version="9.2.0" />
 		<PackageReference Include="MathNet.Numerics" Version="5.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.5" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
 		<PackageReference Include="MQTTnet" Version="4.3.4.1084" />
-		<PackageReference Include="MySql.Data" Version="9.3.0" />
+		<PackageReference Include="MySql.Data" Version="9.4.0" />
 		<PackageReference Include="MySqlConnector" Version="2.4.0" />
 		<PackageReference Include="OpenCvSharp4.Extensions" Version="4.11.0.20250507" />
 		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.11.0.20250507" />
 		<PackageReference Include="QRCoder.Xaml" Version="1.6.0" />
 		<PackageReference Include="ScottPlot.WPF" Version="5.0.55" />
-		<PackageReference Include="System.IO.Ports" Version="9.0.5" />
-		<PackageReference Include="System.ServiceProcess.ServiceController" Version="9.0.5" />
+		<PackageReference Include="SqlSugarCore" Version="5.1.4.199" />
+		<PackageReference Include="System.IO.Ports" Version="9.0.8" />
+		<PackageReference Include="System.ServiceProcess.ServiceController" Version="9.0.8" />
 		<PackageReference Include="YamlDotNet" Version="16.3.0" />
 	</ItemGroup>
 
@@ -55,10 +60,6 @@
 		</Reference>
 		<Reference Include="MQTTMessageLib">
 			<HintPath>..\..\DLL\MQTTMessageLib.dll</HintPath>
-			<Private>True</Private>
-		</Reference>
-		<Reference Include="OpenH264Lib">
-			<HintPath>..\..\DLL\OpenH264Lib.dll</HintPath>
 			<Private>True</Private>
 		</Reference>
 		<Reference Include="ST.Library.UI">
@@ -88,7 +89,6 @@
     <ProjectReference Include="..\..\UI\ColorVision.SocketProtocol\ColorVision.SocketProtocol.csproj" />
     <ProjectReference Include="..\ColorVision.FileIO\ColorVision.FileIO.csproj" />
     <ProjectReference Include="..\cvColorVision\cvColorVision.csproj" />
-    <ProjectReference Include="..\CVImageChannelLib\CVImageChannelLib.csproj" />
     <ProjectReference Include="..\..\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
     <ProjectReference Include="..\..\UI\ColorVision.Scheduler\ColorVision.Scheduler.csproj" />
     <ProjectReference Include="..\..\UI\ColorVision.Solution\ColorVision.Solution.csproj" />
@@ -113,6 +113,33 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Pattern\CrossGrid\CrossGridEditor.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Pattern\NineDot\NineDotEditor.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Pattern\Cross\CrossEditor.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Pattern\Ring\RingEditor.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Pattern\SFR\SFREditor.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Pattern\Ring\RingEditor.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Pattern\Stripe\StripeEditor.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Pattern\Dot\DotEditor.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Pattern\Checkerboard\CheckerboardEditor.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -243,7 +270,6 @@
     <Folder Include="Rbac\Roles\" />
     <Folder Include="Rbac\Tenants\" />
     <Folder Include="Rbac\Account\" />
-    <Folder Include="Services\Devices\Spectrum\Templates\" />
   </ItemGroup>
 
 </Project>

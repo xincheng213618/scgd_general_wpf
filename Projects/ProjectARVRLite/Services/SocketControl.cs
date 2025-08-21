@@ -1,5 +1,6 @@
 ﻿using ColorVision.Engine.Templates.Flow;
 using ColorVision.SocketProtocol;
+using log4net;
 using ProjectARVRLite.PluginConfig;
 using System.Net.Sockets;
 using System.Windows;
@@ -21,19 +22,20 @@ namespace ProjectARVRLite.Services
             SocketControl.Current.Stream = stream;
             if (ProjectWindowInstance.WindowInstance != null)
             {
-                ProjectWindowInstance.WindowInstance.InitTest();
+                ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
                 //现在先切换PG
-                return new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVR1TestType.White } };
+                return new SocketResponse() { MsgID = request.MsgID, EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVR1TestType.W51 } };
             }
             else
             {
-                return new SocketResponse { Code = -3, Msg = $"ProjectARVR Wont Open", EventName = EventName };
+                return new SocketResponse { Code = -3,MsgID = request.MsgID, Msg = $"ProjectARVR Wont Open", EventName = EventName };
             }
         }
     }
 
     public class SwitchPGSocket: ISocketEventHandler
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(SwitchPGSocket));
         public string EventName => "SwitchPGCompleted";
 
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
@@ -41,6 +43,7 @@ namespace ProjectARVRLite.Services
             SocketControl.Current.Stream = stream;
             if (ProjectWindowInstance.WindowInstance != null)
             {
+                log.Info("PG切换结束");
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     ProjectWindowInstance.WindowInstance.SwitchPGCompleted();
@@ -49,7 +52,7 @@ namespace ProjectARVRLite.Services
             }
             else
             {
-                return new SocketResponse { Code = -3, Msg = $"ProjectARVR Wont Open", EventName = EventName };
+                return new SocketResponse { MsgID = request.MsgID, SerialNumber =request.SerialNumber,Code = -3, Msg = $"ProjectARVR Wont Open", EventName = EventName };
             }
         }
     }
@@ -59,7 +62,7 @@ namespace ProjectARVRLite.Services
 
     public class FlowSocketMsgHandle : ISocketEventHandler
     {
-        public string EventName => "ProjectARVR";
+        public string EventName => "  ";
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
             SocketControl.Current.Stream = stream;
@@ -71,17 +74,16 @@ namespace ProjectARVRLite.Services
                     {
                         ProjectWindowInstance.WindowInstance.RunTemplate();
                     });
-
-                    return new SocketResponse { Code = 0, Msg = $"Run {request.Params}", EventName = EventName};
+                    return new SocketResponse { MsgID = request.MsgID, EventName = EventName, Code = 0, Msg = $"Run {request.Params}"};
                 }
                 else
                 {
-                    return new SocketResponse { Code = -2, Msg = $"Cant Find Flow {request.Params}", EventName = EventName };
+                    return new SocketResponse { MsgID = request.MsgID, EventName = EventName, Code = -2, Msg = $"Cant Find Flow {request.Params}" };
                 }
             }
             else
             {
-                return new SocketResponse { Code = -3, Msg = $"ProjectARVR Wont Open", EventName = EventName };
+                return new SocketResponse { MsgID = request.MsgID, EventName = EventName, Code = -3, Msg = $"ProjectARVR Wont Open" };
             }
         }
     }

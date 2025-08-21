@@ -12,6 +12,7 @@ namespace ColorVision
         public int Height { get; set; }
     }
 
+
     public static class OpenCVMediaHelper
     {
         private const string LibPath = "opencv_helper.dll";

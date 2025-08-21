@@ -29,10 +29,6 @@ namespace ColorVision.ImageEditor.Draw.Ruler
             }
             CalPopup.IsOpen = false;
         }
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            Close();
-        }
 
         private void Calculate_Click(object sender, RoutedEventArgs e)
         {

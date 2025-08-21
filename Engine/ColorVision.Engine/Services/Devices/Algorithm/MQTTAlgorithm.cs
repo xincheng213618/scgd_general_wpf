@@ -92,25 +92,21 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     }
                     break;
                 default:
-                    switch (msg.Code)
+                    List<AlgResultMasterModel> resultMaster = new List<AlgResultMasterModel>();
+                    // 判断 msg.Data 不为 null 并且包含 MasterId 属性
+                    if (msg.Data != null && msg.Data.MasterId != null && msg.Data.MasterId > 0)
                     {
-                        default:
-                            List<AlgResultMasterModel> resultMaster = new List<AlgResultMasterModel>();
-                            if (msg.Data.MasterId > 0)
-                            {
-                                int MasterId = msg.Data.MasterId;
-                                AlgResultMasterModel model = AlgResultMasterDao.Instance.GetById(MasterId);
-                                if (model != null)
-                                    resultMaster.Add(model);
-                            }
-                            foreach (AlgResultMasterModel result in resultMaster)
-                            {
-                                Application.Current.Dispatcher.BeginInvoke(() =>
-                                {
-                                    Device.View.AlgResultMasterModelDataDraw(result);
-                                });
-                            }
-                            break;
+                        int MasterId = msg.Data.MasterId;
+                        AlgResultMasterModel model = AlgResultMasterDao.Instance.GetById(MasterId);
+                        if (model != null)
+                            resultMaster.Add(model);
+                    }
+                    foreach (AlgResultMasterModel result in resultMaster)
+                    {
+                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        {
+                            Device.View.AlgResultMasterModelDataDraw(result);
+                        });
                     }
 
                     break;
