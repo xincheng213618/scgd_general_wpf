@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Pattern.NineDot;
 using ColorVision.UI;
 using NPOI.SS.UserModel;
 using OpenCvSharp;
@@ -63,11 +64,11 @@ namespace ColorVision.Engine.Pattern.Dot
     }
 
     [DisplayName("点阵")]
-    public class PatternDot : IPatternBase
+    public class PatternDot : IPatternBase<PatternDotConfig>
     {
         public static PatternDotConfig Config => ConfigService.Instance.GetRequiredService<PatternDotConfig>();
         public override ViewModelBase GetConfig() => Config;
-        public override UserControl GetPatternEditor() => new DotEditor();
+        public override UserControl GetPatternEditor() => new DotEditor(Config);
 
         public override Mat Gen(int height, int width)
         {

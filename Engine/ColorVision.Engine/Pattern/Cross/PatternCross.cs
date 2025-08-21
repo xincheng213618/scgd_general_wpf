@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Pattern.CrossGrid;
 using ColorVision.UI;
 using OpenCvSharp;
 using System.ComponentModel;
@@ -25,11 +26,11 @@ namespace ColorVision.Engine.Pattern.Cross
     }
 
     [DisplayName("十字")]
-    public class PatternCross : IPatternBase
+    public class PatternCross : IPatternBase<PatternCrossConfig>
     {
         public static PatternCrossConfig Config => ConfigService.Instance.GetRequiredService<PatternCrossConfig>();
         public override ViewModelBase GetConfig() => Config;
-        public override UserControl GetPatternEditor() => new CrossEditor();
+        public override UserControl GetPatternEditor() => new CrossEditor(Config);
         public override Mat Gen(int height, int width)
         {
             Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());

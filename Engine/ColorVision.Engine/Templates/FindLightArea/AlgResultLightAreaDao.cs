@@ -3,6 +3,7 @@ using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor.Draw;
+using SqlSugar;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -14,16 +15,16 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.FindLightArea
 {
-    [Table("t_scgd_algorithm_result_detail_light_area")]
+    [SugarTable("t_scgd_algorithm_result_detail_light_area")]
     public class AlgResultLightAreaModel : PKModel, IViewResult
     {
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int Pid { get; set; }
 
-        [Column("pos_x")]
+        [SugarColumn(ColumnName ="pos_x")]
         public float PosX { get; set; }
 
-        [Column("pos_y")]
+        [SugarColumn(ColumnName ="pos_y")]
         public float PosY { get; set; }
 
     }

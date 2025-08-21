@@ -1,6 +1,7 @@
 ﻿#pragma warning disable 
 using ColorVision;
 using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -8,100 +9,100 @@ using System.Linq;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
 {
-    [Table("t_scgd_measure_result_spectrometer")]
+    [SugarTable("t_scgd_measure_result_spectrometer")]
     public class SpectumResultModel : PKModel
     {
-        [Column("fIntTime")]
+        [SugarColumn(ColumnName ="fIntTime")]
         public float? IntTime { get; set; }
 
-        [Column("iAveNum")]
+        [SugarColumn(ColumnName ="iAveNum")]
         public int iAveNum { get; set; }
 
-        [Column("self_adaption_init_dark")]
+        [SugarColumn(ColumnName ="self_adaption_init_dark")]
         public bool IsUseAutoIntTime { get; set; }
 
-        [Column("auto_init_dark")]
+        [SugarColumn(ColumnName ="auto_init_dark")]
         public bool IsUseAutoDark { get; set; }
 
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int? Pid { get; set; }
 
-        [Column("batch_id")]
+        [SugarColumn(ColumnName ="batch_id")]
         public int? BatchId { get; set; }
 
-        [Column("fPL")]
+        [SugarColumn(ColumnName ="fPL")]
         public string? fPL { get; set; }
 
-        [Column("fRi")]
+        [SugarColumn(ColumnName ="fRi")]
         public string? fRi { get; set; }
 
-        [Column("fx")]
+        [SugarColumn(ColumnName ="fx")]
         public float? fx { get; set; }
 
-        [Column("fy")]
+        [SugarColumn(ColumnName ="fy")]
         public float? fy { get; set; }
 
-        [Column("fu")]
+        [SugarColumn(ColumnName ="fu")]
         public float? fu { get; set; }
 
-        [Column("fv")]
+        [SugarColumn(ColumnName ="fv")]
         public float? fv { get; set; }
 
-        [Column("fCCT")]
+        [SugarColumn(ColumnName ="fCCT")]
         public float? fCCT { get; set; }
 
-        [Column("dC")]
+        [SugarColumn(ColumnName ="dC")]
         public float? dC { get; set; }
 
-        [Column("fLd")]
+        [SugarColumn(ColumnName ="fLd")]
         public float? fLd { get; set; }
 
-        [Column("fPur")]
+        [SugarColumn(ColumnName ="fPur")]
         public float? fPur { get; set; }
 
-        [Column("fLp")]
+        [SugarColumn(ColumnName ="fLp")]
         public float? fLp { get; set; }
 
-        [Column("fHW")]
+        [SugarColumn(ColumnName ="fHW")]
         public float? fHW { get; set; }
 
-        [Column("fLav")]
+        [SugarColumn(ColumnName ="fLav")]
         public float? fLav { get; set; }
 
-        [Column("fRa")]
+        [SugarColumn(ColumnName ="fRa")]
         public float? fRa { get; set; }
 
-        [Column("fRR")]
+        [SugarColumn(ColumnName ="fRR")]
         public float? fRR { get; set; }
 
-        [Column("fGR")]
+        [SugarColumn(ColumnName ="fGR")]
         public float? fGR { get; set; }
 
-        [Column("fBR")]
+        [SugarColumn(ColumnName ="fBR")]
         public float? fBR { get; set; }
 
-        [Column("fIp")]
+        [SugarColumn(ColumnName ="fIp")]
         public float? fIp { get; set; }
 
-        [Column("fPh")]
+        [SugarColumn(ColumnName ="fPh")]
         public float? fPh { get; set; }
 
-        [Column("fPhe")]
+        [SugarColumn(ColumnName ="fPhe")]
         public float? fPhe { get; set; }
 
-        [Column("fPlambda")]
+        [SugarColumn(ColumnName ="fPlambda")]
         public float? fPlambda { get; set; }
 
-        [Column("fSpect1")]
+        [SugarColumn(ColumnName ="fSpect1")]
         public float? fSpect1 { get; set; }
 
-        [Column("fSpect2")]
+        [SugarColumn(ColumnName ="fSpect2")]
         public float? fSpect2 { get; set; }
 
-        [Column("fInterval")]
+        [SugarColumn(ColumnName ="fInterval")]
         public float? fInterval { get; set; }
 
-        [Column("create_date")]
+        [SugarColumn(ColumnName ="create_date")]
         public DateTime? CreateDate { get; set; } = DateTime.Now;
     }
 

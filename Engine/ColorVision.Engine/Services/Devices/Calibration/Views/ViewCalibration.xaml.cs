@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -53,10 +54,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = this;
+            this.DataContext = Config;
             View = new View();
-            ImageView.SetConfig(new ImageViewConfig());
-
             listView1.ItemsSource = ViewResults;
 
             if (listView1.View is GridView gridView)
@@ -205,44 +204,23 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
-            List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.GetAllDevice(Device.Code, Config.SearchLimit);
-            if (!Config.InsertAtBeginning)
-                algResults.Reverse();
-            foreach (var item in algResults)
+            var query = MySqlControl.GetInstance().DB.Queryable<MeasureImgResultModel>();
+            query = query.OrderBy(x => x.Id, Config.OrderByType);
+            var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
+            foreach (var item in dbList)
             {
                 ViewResultCamera algorithmResult = new(item);
                 ViewResults.AddUnique(algorithmResult);
             }
         }
 
+
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
-            AdvanceSearchConfig.Instance.Limit = Config.SearchLimit;
-            AdvanceSearch advanceSearch = new AdvanceSearch(MeasureImgResultDao.Instance) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            advanceSearch.Closed += (s, e) =>
-            {
-                if (Config.InsertAtBeginning)
-                    advanceSearch.SearchResults.Reverse();
-                ViewResults.Clear();
-
-                foreach (var item in advanceSearch.SearchResults)
-                {
-                    ViewResultCamera algorithmResult = new ViewResultCamera(item);
-                    ViewResults.AddUnique(algorithmResult);
-                }
-            };
-            advanceSearch.Show();
+            GenericQuery<MeasureImgResultModel, ViewResultCamera> genericQuery = new GenericQuery<MeasureImgResultModel, ViewResultCamera>(MySqlControl.GetInstance().DB, ViewResults, t => new ViewResultCamera(t));
+            GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
+            genericQueryWindow.ShowDialog();
         }
-
-        private void MenuItem_Delete_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCamera viewResult)
-            {
-                ViewResults.Remove(viewResult);
-                ImageView.Clear();
-            }
-        }
-
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {

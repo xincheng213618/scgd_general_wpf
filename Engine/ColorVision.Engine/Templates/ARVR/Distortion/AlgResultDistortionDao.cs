@@ -1,30 +1,31 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using CVCommCore.CVAlgorithm;
+using SqlSugar;
 
 namespace ColorVision.Engine.Templates.Distortion
 {
-    [Table("t_scgd_algorithm_result_detail_distortion")]
+    [SugarTable("t_scgd_algorithm_result_detail_distortion")]
     public class AlgResultDistortionModel : PKModel
     {
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int? Pid { get; set; }
-        [Column("type")]
+        [SugarColumn(ColumnName ="type")]
         public DistortionType Type { get; set; }
-        [Column("layout_type")]
+        [SugarColumn(ColumnName ="layout_type")]
         public DisLayoutType LayoutType { get; set; }
-        [Column("slope_type")]
+        [SugarColumn(ColumnName ="slope_type")]
         public DisSlopeType SlopeType { get; set; }
-        [Column("corner_type")]
+        [SugarColumn(ColumnName ="corner_type")]
         public DisCornerType CornerType { get; set; }
-        [Column("point_x")]
+        [SugarColumn(ColumnName ="point_x")]
         public double PointX { get; set; }
-        [Column("point_y")]
+        [SugarColumn(ColumnName ="point_y")]
         public double PointY { get; set; }
-        [Column("max_ratio")]
+        [SugarColumn(ColumnName ="max_ratio")]
         public double MaxRatio { get; set; }
-        [Column("rotation_angle")]
+        [SugarColumn(ColumnName ="rotation_angle")]
         public double RotationAngle { get; set; }
-        [Column("final_points")]
+        [SugarColumn(ColumnName ="final_points")]
         public string? FinalPoints { get; set; }
     }
 

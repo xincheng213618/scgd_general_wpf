@@ -9,7 +9,7 @@
              xmlns:hc="https://handyorg.github.io/handycontrol" 
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance local:AlgorithmView}"
+             d:DataContext="{d:DesignInstance local:ViewAlgorithmConfig}"
              d:DesignHeight="600" d:DesignWidth="1280" Background="{DynamicResource BorderBrush}" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
@@ -38,44 +38,14 @@
                 </Grid.RowDefinitions>
                 <ToolBarTray  Grid.Row="0" IsLocked="True">
                     <ToolBar Padding="3,2">
-                        <ToggleButton  Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding Config.IsShowListView, Converter={StaticResource Boolean2BooleanReConverter}}"/>
-                        <ToggleButton  Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding Config.IsShowSideListView, Converter={StaticResource Boolean2BooleanReConverter}}"/>
+                        <ToggleButton  Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsShowListView, Converter={StaticResource Boolean2BooleanReConverter}}"/>
+                        <ToggleButton  Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding IsShowSideListView, Converter={StaticResource Boolean2BooleanReConverter}}"/>
 
                         <Button  Content="{x:Static properties:Resources.Exchange}" Click="Exchange_Click" Margin="2,0,0,0"/>
 
-                        <Button x:Name="Search" Content="{x:Static properties:Resources.Inquire}" PreviewMouseRightButtonUp="Search_PreviewMouseRightButtonUp" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
-                        <Popup  x:Name="SerchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Search}">
-                            <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="227">
-                                <StackPanel Margin="5">
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="{x:Static properties:Resources.SerialNumber1}" Width="60"/>
-                                        <TextBox  x:Name="TextBoxId" Style="{StaticResource TextBox.Small}" Text=""/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="{x:Static properties:Resources.BatchNumber}" Width="60"/>
-                                        <TextBox x:Name="TextBoxBatch"  Style="{StaticResource TextBox.Small}" Text=""/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="{x:Static properties:Resources.AlgorithmView_类型}" Width="60"/>
-                                        <ComboBox x:Name="TextBoxType"  Style="{StaticResource ComboBox.Small}" Text="" SelectedValuePath="Key"  DisplayMemberPath="Value" />
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="{x:Static properties:Resources.File}" Width="60"/>
-                                        <TextBox  x:Name="TextBoxFile" Style="{StaticResource TextBox.Small}"  Text=""/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="{x:Static properties:Resources.StartTime}" Width="60"/>
-                                        <hc:DateTimePicker x:Name="SearchTimeSart" SelectedDateTime="{x:Static sys:DateTime.MinValue}" Style="{StaticResource DateTimePicker.Small}" />
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="{x:Static properties:Resources.Deadline}" Width="60"/>
-                                        <hc:DateTimePicker x:Name="SearchTimeEnd" SelectedDateTime="{x:Static sys:DateTime.Now}" Style="{StaticResource DateTimePicker.Small}"  />
-                                    </DockPanel>
-                                    <Button Content="{x:Static properties:Resources.Inquire}" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
-                                </StackPanel>
-                            </Border>
-                        </Popup>
-                        
+                        <Button Content="{x:Static properties:Resources.Inquire}" Click="Inquire_Click" Margin="2,0,0,0"/>
+                        <Button  Content="{x:Static properties:Resources.AdvanceSearch}"  Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
+
                         <Button x:Name="Button222" Content="{x:Static properties:Resources.SaveDataColumn}" Click="SideSave_Click"/>
                     </ToolBar>
                 </ToolBarTray>
@@ -83,7 +53,7 @@
                     <Button Click="Button_Click" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
                         <Rectangle Width="16" Height="16" Fill="{StaticResource DISave}" />
                     </Button>
-                    <Button  Command="{Binding Config.ClearListCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0" >
+                    <Button  Command="{Binding ClearListCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0" >
                         <Button.Triggers>
                             <EventTrigger RoutedEvent="Button.Click">
                                 <BeginStoryboard>
@@ -100,7 +70,7 @@
                             </Image.RenderTransform>
                         </Image>
                     </Button>
-                    <Button Grid.Column="1" Margin="0,1,5,0" HorizontalAlignment="Left" Command="{Binding Config.EditCommand}" Padding="2" Height="25" Width="25" >
+                    <Button Grid.Column="1" Margin="0,1,5,0" HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="25" Width="25" >
                         <Button.Triggers>
                             <EventTrigger RoutedEvent="Button.Click">
                                 <BeginStoryboard>
@@ -120,7 +90,7 @@
 
 
 
-                <ListView Grid.Row="1" x:Name="listView1" Height="200" Visibility="{Binding Config.IsShowListView, Converter={StaticResource bool2VisibilityConverter}}"  BorderThickness="0"  Padding="0" ScrollViewer.VerticalScrollBarVisibility="Visible" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                <ListView Grid.Row="1" x:Name="listView1" Height="{Binding Height}" Visibility="{Binding IsShowListView, Converter={StaticResource bool2VisibilityConverter}}"  BorderThickness="0"  Padding="0" ScrollViewer.VerticalScrollBarVisibility="Visible" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.Resources >
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                     </ListView.Resources>
@@ -212,7 +182,7 @@
             </Grid>
             <GridSplitter Grid.Row="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
         </Grid>
-        <ListView x:Name="listViewSide" Visibility="{Binding Config.IsShowSideListView, Converter={StaticResource bool2VisibilityConverter}}"  Width="250" BorderThickness="0" Padding="0" Grid.Column="1">
+        <ListView x:Name="listViewSide" Visibility="{Binding IsShowSideListView, Converter={StaticResource bool2VisibilityConverter}}"  Width="250" BorderThickness="0" Padding="0" Grid.Column="1">
             <ListView.Resources >
                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" />
             </ListView.Resources>

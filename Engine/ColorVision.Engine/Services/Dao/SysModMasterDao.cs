@@ -1,24 +1,25 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System;
 
 namespace ColorVision.Engine.Services.Dao
 {
-    [Table("t_scgd_sys_dictionary_mod_master")]
+    [SugarTable("t_scgd_sys_dictionary_mod_master")]
     public class SysModMasterModel : PKModel
     {
-        [Column("name")]
+        [SugarColumn(ColumnName ="name")]
         public string? Name { get; set; }
-        [Column("code")]
+        [SugarColumn(ColumnName ="code")]
         public string? Code { get; set; }
-        [Column("create_date")]
+        [SugarColumn(ColumnName ="create_date")]
         public DateTime? CreateDate { get; set; } = DateTime.Now;
-        [Column("is_enable")]
+        [SugarColumn(ColumnName ="is_enable")]
         public bool IsEnable { get; set; } = true;
-        [Column("is_delete")]
+        [SugarColumn(ColumnName ="is_delete")]
         public bool? IsDelete { get; set; } = false;
-        [Column("remark")]
+        [SugarColumn(ColumnName ="remark")]
         public string? Remark { get; set; }
-        [Column("tenant_id")]
+        [SugarColumn(ColumnName ="tenant_id")]
         public int TenantId { get; set; }
     }
 

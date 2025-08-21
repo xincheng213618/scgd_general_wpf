@@ -4,6 +4,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 
@@ -35,10 +36,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
         public string LicenseeSignature { get; set; }
     }
 
-    [Table("t_scgd_camera_license")]
+    [SugarTable("t_scgd_camera_license")]
     public class LicenseModel : ViewModelBase,IPKModel, ISortID
     {
-        [Column("id")]
+        [SugarColumn(ColumnName ="id")]
         public int Id { get; set; }
         public LicenseModel()
         {
@@ -46,30 +47,30 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
             ExpiryDate = DateTime.Now;
         }
 
-        [Column("res_dev_cam_pid")]
+        [SugarColumn(ColumnName ="res_dev_cam_pid")]
         public int? DevCameraId { get; set; }
-        [Column("res_dev_cali_pid")]
+        [SugarColumn(ColumnName ="res_dev_cali_pid")]
         public int? DevCaliId { get; set; }
 
-        [Column("lic_type")]
+        [SugarColumn(ColumnName ="lic_type")]
         public int LiceType { get; set; } = 0;
 
-        [Column("value")]
+        [SugarColumn(ColumnName ="value")]
         public string? LicenseValue { get; set; }
 
-        [ColumnIgnore]
+        [@SugarColumn(IsIgnore = true)]
         public string? LicenseContent { get => Tool.Base64Decode(LicenseValue?? string.Empty); }
-        [ColumnIgnore]
+        [@SugarColumn(IsIgnore = true)]
         public ColorVisionLicense ColorVisionLicense { get => JsonConvert.DeserializeObject<ColorVisionLicense>(LicenseContent??string.Empty)?? new ColorVisionLicense(); }
-        [Column("model")]
+        [SugarColumn(ColumnName ="model")]
         public string? Model { get; set; }
-        [Column("mac_sn")]
+        [SugarColumn(ColumnName ="mac_sn")]
         public string? MacAddress { get; set; }
-        [Column("expired")]
+        [SugarColumn(ColumnName ="expired")]
         public DateTime? ExpiryDate { get; set; }
-        [Column("customer_name")]
+        [SugarColumn(ColumnName ="customer_name")]
         public string? CusTomerName { get; set; }
-        [Column("create_date")]
+        [SugarColumn(ColumnName ="create_date")]
         public DateTime? CreateDate { get; set; }
     }
 

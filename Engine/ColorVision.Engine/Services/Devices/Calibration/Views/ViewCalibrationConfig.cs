@@ -26,9 +26,14 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
 
-        [Category("Control")]
+        [DisplayName("显示列表"), Category("View")]
         public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; NotifyPropertyChanged(); } }
         private bool _IsShowListView = true;
+        [DisplayName("列表高度"), Category("View")]
+        public double Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
+        private double _Height = 200;
+
+
 
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;

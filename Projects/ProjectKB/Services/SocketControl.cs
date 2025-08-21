@@ -56,6 +56,7 @@ namespace ProjectKB.Services
             StartServer();
         }
 
+
         public void StartServer()
         {
             Task.Run(() => CheckUpdate());

@@ -1,11 +1,12 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Data;
 
 namespace ColorVision.Engine.Services.Dao
 {
-    [Table("t_scgd_measure_batch")]
+    [SugarTable("t_scgd_measure_batch")]
     public class BatchResultMasterModel : PKModel
     {
         public BatchResultMasterModel() 
@@ -17,22 +18,22 @@ namespace ColorVision.Engine.Services.Dao
             CreateDate = DateTime.Now;
             TotalTime = 0;
         }
-
-        [Column("t_id")]
+        [SugarColumn(ColumnName ="t_id")]
         public int? TId { get; set; }
-        [Column("name")]
+        [SugarColumn(ColumnName ="name")]
         public string? Name { get; set; }
-        [Column("code")]
+        [SugarColumn(ColumnName ="code")]
         public string? Code { get; set; }
-        [Column("create_date")]
+        [SugarColumn(ColumnName ="create_date")]
         public DateTime? CreateDate { get; set; }
-        [Column("total_time")]
+        [SugarColumn(ColumnName ="total_time")]
         public int? TotalTime { get; set; }
-        [Column("result")]
+        [SugarColumn(ColumnName ="result")]
         public string? Result { get; set; }
-        [Column("archived_flag")]
+        [SugarColumn(ColumnName ="archived_flag")]
         public short ArchivedFlag { get; set; }
-        [Column("tenant_id")]
+
+        [SugarColumn(ColumnName ="tenant_id")]
         public int TenantId { get; set; }
     }
 
@@ -60,11 +61,5 @@ namespace ColorVision.Engine.Services.Dao
             return (d_info !=null && d_info.Rows.Count == 1) ? GetModelFromDataRow(d_info.Rows[0]) : default;
         }
 
-        public int UpdateEnd(string bid, int totalTime, string result)
-        {
-            int result_code = (result == "Completed") ? 0 : -1;
-            string sql = $"update {TableName} set result='{result}',result_code={result_code},total_time={totalTime} where code='{bid}'";
-            return ExecuteNonQuery(sql);
-        }
     }
 }

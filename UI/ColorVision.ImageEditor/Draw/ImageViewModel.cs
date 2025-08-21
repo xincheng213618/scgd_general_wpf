@@ -1047,7 +1047,6 @@ namespace ColorVision.ImageEditor.Draw
         private string _LastChoice { get; set; }
 
         private bool _EraseVisual;
-        private bool disposedValue;
 
         public bool EraseVisual {  get => _EraseVisual;
             set

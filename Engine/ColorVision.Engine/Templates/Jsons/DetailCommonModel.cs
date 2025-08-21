@@ -1,6 +1,7 @@
 ﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using Newtonsoft.Json;
+using SqlSugar;
 
 namespace ColorVision.Engine.Templates.Jsons
 {
@@ -20,21 +21,21 @@ namespace ColorVision.Engine.Templates.Jsons
             var restfile = JsonConvert.DeserializeObject<ResultFile>(detailCommonModel.ResultJson);
             ResultFileName = restfile?.ResultFileName;
         }
-        [Column("id")]
+        [SugarColumn(ColumnName ="id")]
         public int Id { get; set; }
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int PId { get; set; }
         public string? ResultFileName { get; set; }
     }
 
 
-    [Table("t_scgd_algorithm_result_detail_common")]
+    [SugarTable("t_scgd_algorithm_result_detail_common")]
     public class DetailCommonModel : PKModel
     {
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int PId { get; set; }
 
-        [Column("result")]
+        [SugarColumn(ColumnName ="result")]
         public string ResultJson { get; set; }
     }
 

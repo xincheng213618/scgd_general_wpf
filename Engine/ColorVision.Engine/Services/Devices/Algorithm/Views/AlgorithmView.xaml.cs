@@ -1,12 +1,13 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Abstractions;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
-using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using CVCommCore.CVAlgorithm;
@@ -49,10 +50,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = this;
+            this.DataContext = Config;
 
             View = new View();
-            ImageView.SetConfig(Config.ImageViewConfig);
             if (listView1.View is GridView gridView)
             {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
@@ -61,11 +61,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
             listView1.ItemsSource = ViewResults;
-            var keyValuePairs =
-            TextBoxType.ItemsSource = Enum.GetValues(typeof(AlgorithmResultType))
-                .Cast<AlgorithmResultType>()
-                .Select(e1 => new KeyValuePair<AlgorithmResultType, string>(e1, e1.ToString()))
-                .ToList();
 
             netFileUtil = new NetFileUtil();
             netFileUtil.handler += NetFileUtil_handler;
@@ -314,50 +309,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             ViewResults.Clear();
         }
 
-        private void Search_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            SerchPopup.IsOpen = true;
-            TextBoxType.SelectedIndex = -1;
-            TextBoxId.Text = string.Empty;
-            TextBoxBatch.Text = string.Empty;
-            TextBoxFile.Text = string.Empty;
-        }
-
-        private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrEmpty(TextBoxId.Text)&& string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxType.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
-            {
-                ViewResults.Clear();
-                List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.GetAll(Config.SearchLimit);
-                if (!Config.InsertAtBeginning)
-                    algResults.Reverse();
-                foreach (var item in algResults)
-                {
-                    AlgorithmResult algorithmResult = new(item);
-                    ViewResults.AddUnique(algorithmResult);
-                }
-                SerchPopup.IsOpen = false;
-                return;
-            }
-            else
-            {
-                string altype = string.Empty;
-                if (TextBoxType.SelectedValue is AlgorithmResultType algorithmResultType)
-                    altype = ((int)algorithmResultType).ToString();
-                ViewResults.Clear();
-                List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, altype.ToString(), TextBoxFile.Text ,SearchTimeSart.SelectedDateTime,SearchTimeEnd.SelectedDateTime, Config.SearchLimit);
-                if (!Config.InsertAtBeginning)
-                    algResults.Reverse();
-                foreach (var item in algResults)
-                {
-                    AlgorithmResult algorithmResult = new(item);
-                    ViewResults.AddUnique(algorithmResult);
-                }
-            }
-            SerchPopup.IsOpen = false;
-        }
-
-
         public async void AddPOIPoint(List<POIPoint> PoiPoints)
         {
             ImageView.ImageShow.Clear();
@@ -516,6 +467,26 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             ImageView?.Dispose();
 
             GC.SuppressFinalize(this);
+        }
+
+        private void Inquire_Click(object sender, RoutedEventArgs e)
+        {
+            ViewResults.Clear();
+            var query = MySqlControl.GetInstance().DB.Queryable<AlgResultMasterModel>();
+            query = query.OrderBy(x => x.Id, Config.OrderByType);
+            var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
+            foreach (var item in dbList)
+            {
+                AlgorithmResult algorithmResult = new AlgorithmResult(item);
+                ViewResults.AddUnique(algorithmResult);
+            }
+        }
+
+        private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
+        {
+            GenericQuery<AlgResultMasterModel, AlgorithmResult> genericQuery = new GenericQuery<AlgResultMasterModel, AlgorithmResult>(MySqlControl.GetInstance().DB, ViewResults, t => new AlgorithmResult(t));
+            GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
+            genericQueryWindow.ShowDialog();
         }
     }
 }

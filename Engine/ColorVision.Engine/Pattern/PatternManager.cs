@@ -1,13 +1,26 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.MySql;
+using ColorVision.UI;
 using log4net;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Windows;
 
 namespace ColorVision.Engine.Pattern
 {
+
+    public class PatternManagerConfig:ViewModelBase,IConfig
+    {
+        [DisplayName("图卡生成路径"), PropertyEditorType(PropertyEditorType.TextSelectFolder)]
+        public string SaveFilePath { get => _SaveFilePath; set { _SaveFilePath = value; NotifyPropertyChanged(); } }
+        private string _SaveFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Pattern");
+    }
+
     public class PatternManager
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PatternManager));
@@ -15,7 +28,16 @@ namespace ColorVision.Engine.Pattern
         private static readonly object _locker = new();
         public static PatternManager GetInstance() { lock (_locker) { _instance ??= new PatternManager(); return _instance; } }
 
+        public static PatternManagerConfig Config { get; set; } = ConfigService.Instance.GetRequiredService<PatternManagerConfig>();    
+
+        public ObservableCollection<TemplatePatternFile> TemplatePatternFiles { get; set; } = new ObservableCollection<TemplatePatternFile>();
         public List<PatternMeta> Patterns { get; set; } = new List<PatternMeta>();
+
+        public string PatternPath { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision", "Pattern");
+       
+        public RelayCommand EditCommand { get; set; }
+
+
         private PatternManager()
         {
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
@@ -49,6 +71,23 @@ namespace ColorVision.Engine.Pattern
 
                 }
             }
+
+            if (!Directory.Exists(PatternPath))
+                Directory.CreateDirectory(PatternPath);
+            foreach (var item in Directory.GetFiles(PatternPath))
+            {
+                if (item.EndsWith(".json", StringComparison.CurrentCulture))
+                {
+                    TemplatePatternFiles.Add(new TemplatePatternFile(item));
+                }
+            }
+            EditCommand = new RelayCommand(a => Edit());
+        }
+
+        public static void Edit()
+        {
+            new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            ConfigService.Instance.SaveConfigs();
         }
     }
 }

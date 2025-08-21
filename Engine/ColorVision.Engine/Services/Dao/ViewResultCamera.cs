@@ -26,7 +26,10 @@ namespace ColorVision.Engine.Services.Dao
         public RelayCommand OpenContainingFolderCommand { get; set; }
         public RelayCommand CreateToPoiCommand { get; set; }
 
+        public ViewResultCamera()
+        {
 
+        }
         public ViewResultCamera(MeasureImgResultModel measureImgResultModel)
         {
             Id = measureImgResultModel.Id;

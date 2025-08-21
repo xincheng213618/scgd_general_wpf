@@ -19,11 +19,8 @@ namespace ColorVision.UI
     {
         public static ConcurrentDictionary<Type, Lazy<ResourceManager?>> ResourceManagerCache { get; set; } = new ConcurrentDictionary<Type, Lazy<ResourceManager?>>();
 
-
-        public static void GenCommand(object obj, UniformGrid uniformGrid)
+        public static ResourceManager? GetResourceManager(object obj)
         {
-            uniformGrid.SizeChanged +=(s,e) => uniformGrid.AutoUpdateLayout();
-
             Type type = obj.GetType();
             var lazyResourceManager = ResourceManagerCache.GetOrAdd(type, t => new Lazy<ResourceManager?>(() =>
             {
@@ -42,7 +39,15 @@ namespace ColorVision.UI
 
                 return null;
             }));
-            ResourceManager? resourceManager = lazyResourceManager.Value;
+            return lazyResourceManager.Value;
+        }
+
+        public static void GenCommand(object obj, UniformGrid uniformGrid)
+        {
+            uniformGrid.SizeChanged +=(s,e) => uniformGrid.AutoUpdateLayout();
+
+            Type type = obj.GetType();
+            ResourceManager? resourceManager = GetResourceManager(obj);
 
             var commandDisplayAttributes = new List<(CommandDisplayAttribute, PropertyInfo)>();
             var properties = type.GetProperties();
@@ -80,43 +85,306 @@ namespace ColorVision.UI
                     uniformGrid.Children.Add(button);
                 }
             }
+        }
+        public static void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                Common.NativeMethods.Keyboard.PressKey(0x09);
+                e.Handled = true;
+            }
+        }
+
+        public static DockPanel GenBoolProperties(PropertyInfo property, object obj)
+        {
+            ResourceManager? resourceManager = GetResourceManager(obj);
+
+            var displayNameAttr = property.GetCustomAttribute<DisplayNameAttribute>();
+            var descriptionAttr = property.GetCustomAttribute<DescriptionAttribute>();
+
+            string displayName = displayNameAttr?.DisplayName ?? property.Name;
+            displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
+
+            var dockPanel = new DockPanel();
+            var textBlock = new TextBlock
+            {
+                Text = displayName,
+                MinWidth = 120,
+                Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
+            };
+
+            var toggleSwitch = new Wpf.Ui.Controls.ToggleSwitch
+            {
+                Margin = new Thickness(5, 0, 0, 0),
+            };
+            var binding = new Binding(property.Name)
+            {
+                Source = obj,
+                Mode = BindingMode.TwoWay
+            };
+            toggleSwitch.SetBinding(ToggleButton.IsCheckedProperty, binding);
+            DockPanel.SetDock(toggleSwitch, Dock.Right);
+
+            dockPanel.Children.Add(toggleSwitch);
+            dockPanel.Children.Add(textBlock);
+            return dockPanel;
+        }
+
+        public static DockPanel GenEnumProperties(PropertyInfo property, object obj)
+        {
+            ResourceManager? resourceManager = GetResourceManager(obj);
 
 
+            var displayNameAttr = property.GetCustomAttribute<DisplayNameAttribute>();
+            var descriptionAttr = property.GetCustomAttribute<DescriptionAttribute>();
+            var PropertyEditorTypeAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
+
+            PropertyEditorType propertyEditorType = PropertyEditorTypeAttr?.PropertyEditorType ?? PropertyEditorType.Default;
+
+            string displayName = displayNameAttr?.DisplayName ?? property.Name;
+            displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
+            var dockPanel = new DockPanel();
+
+            var textBlock = new TextBlock
+            {
+                Text = displayName,
+                MinWidth = 120,
+                Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
+            };
+
+            var comboBox = new ComboBox
+            {
+                Margin = new Thickness(5, 0, 0, 0),
+                MinWidth = 150,
+                Style = (Style)Application.Current.FindResource("ComboBox.Small"),
+            };
+
+            // Populate ComboBox with Enum values
+            var enumValues = Enum.GetValues(property.PropertyType);
+            foreach (var value in enumValues)
+            {
+                comboBox.Items.Add(value);
+            }
+            // Bind selected value to property
+            var binding = new Binding(property.Name)
+            {
+                Source = obj,
+                Mode = BindingMode.TwoWay
+            };
+            comboBox.SetBinding(ComboBox.SelectedItemProperty, binding);
+            DockPanel.SetDock(comboBox, Dock.Right);
+
+            dockPanel.Children.Add(comboBox);
+            dockPanel.Children.Add(textBlock);
+            return dockPanel;
 
         }
+
+        public static DockPanel GenTextboxProperties(PropertyInfo property, object obj)
+        {
+            ResourceManager? resourceManager = GetResourceManager(obj);
+
+            var displayNameAttr = property.GetCustomAttribute<DisplayNameAttribute>();
+            var descriptionAttr = property.GetCustomAttribute<DescriptionAttribute>();
+            var PropertyEditorTypeAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
+
+            PropertyEditorType propertyEditorType = PropertyEditorTypeAttr?.PropertyEditorType ?? PropertyEditorType.Default;
+
+            string displayName = displayNameAttr?.DisplayName ?? property.Name;
+            displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
+            var dockPanel = new DockPanel();
+
+            var textBlock = new TextBlock
+            {
+                Text = displayName,
+                MinWidth = 120,
+                Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
+            };
+            dockPanel.Children.Add(textBlock);
+
+            if (propertyEditorType == PropertyEditorType.TextSelectFile)
+            {
+                var button = new Button
+                {
+                    Content = "...",
+                    Margin = new Thickness(5, 0, 0, 0)
+                };
+                button.Click += (s, e) =>
+                {
+                    var openFileDialog = new Microsoft.Win32.OpenFileDialog();
+                    string Filepath = (string)property.GetValue(obj);
+#if NET8_0
+                    ///8.0才有这个属性
+                    if (File.Exists(Filepath))
+                    {
+                        openFileDialog.DefaultDirectory = Directory.GetDirectoryRoot(Filepath);
+                    }
+#endif
+                    if (openFileDialog.ShowDialog() == true)
+                    {
+                        property.SetValue(obj, openFileDialog.FileName);
+                    }
+                };
+
+                var textbox = new TextBox
+                {
+                    Margin = new Thickness(5, 0, 0, 0),
+                    Style = (Style)Application.Current.FindResource("TextBox.Small")
+                };
+                var binding = new Binding(property.Name)
+                {
+                    Source = obj,
+                    Mode = BindingMode.TwoWay
+                };
+                textbox.SetBinding(TextBox.TextProperty, binding);
+                DockPanel.SetDock(button, Dock.Right);
+                var button1 = new Button
+                {
+                    Content = "🗁",
+                    Margin = new Thickness(5, 0, 0, 0),
+                };
+                button1.Click += (s, e) =>
+                {
+                    Common.Utilities.PlatformHelper.OpenFolder((string)property.GetValue(obj));
+                };
+                DockPanel.SetDock(button1, Dock.Right);
+                dockPanel.Children.Add(button1);
+                dockPanel.Children.Add(button);
+                dockPanel.Children.Add(textbox);
+            }
+            else if (propertyEditorType == PropertyEditorType.TextSelectFolder)
+            {
+                var button = new Button
+                {
+                    Content = "...",
+                    Margin = new Thickness(5, 0, 0, 0)
+                };
+                button.Click += (s, e) =>
+                {
+                    var folderDialog = new System.Windows.Forms.FolderBrowserDialog();
+                    folderDialog.SelectedPath = (string)property.GetValue(obj) ?? string.Empty;
+                    if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                    {
+                        if (folderDialog.SelectedPath == null) return;
+                        property.SetValue(obj, folderDialog.SelectedPath);
+                    }
+                };
+
+                var textbox = new TextBox
+                {
+                    Margin = new Thickness(5, 0, 0, 0),
+                    Style = (Style)Application.Current.FindResource("TextBox.Small")
+                };
+                var binding = new Binding(property.Name)
+                {
+                    Source = obj,
+                    Mode = BindingMode.TwoWay
+                };
+                textbox.SetBinding(TextBox.TextProperty, binding);
+                DockPanel.SetDock(button, Dock.Right);
+                var button1 = new Button
+                {
+                    Content = "🗁",
+                    Margin = new Thickness(5, 0, 0, 0),
+                };
+                button1.Click += (s, e) =>
+                {
+                    Common.Utilities.PlatformHelper.OpenFolder((string)property.GetValue(obj));
+                };
+                DockPanel.SetDock(button1, Dock.Right);
+                dockPanel.Children.Add(button1);
+                dockPanel.Children.Add(button);
+                dockPanel.Children.Add(textbox);
+
+            }
+            else if (propertyEditorType == PropertyEditorType.CronExpression)
+            {
+                var cronButton = new Button
+                {
+                    Content = "在线Cron表达式生成器",
+                    Margin = new Thickness(5, 0, 0, 0),
+                };
+                DockPanel.SetDock(cronButton, Dock.Right);
+                cronButton.Click += (s, e) =>
+                {
+                    PlatformHelper.Open("https://cron.qqe2.com/");
+                };
+                var cronTextBox = new TextBox
+                {
+                    Margin = new Thickness(5, 0, 0, 0),
+                    Style = (Style)Application.Current.FindResource("TextBox.Small")
+                };
+                var cronBinding = new Binding(property.Name)
+                {
+                    Source = obj,
+                    Mode = BindingMode.TwoWay
+                };
+                cronTextBox.SetBinding(TextBox.TextProperty, cronBinding);
+                dockPanel.Children.Add(cronButton);
+                dockPanel.Children.Add(cronTextBox);
+            }
+            else if (propertyEditorType == PropertyEditorType.TextSerialPort)
+            {
+                List<string> Serials = new List<string>() { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10", "COM11", "COM12", "COM13", "COM14", "COM15", "COM16" };
+                HandyControl.Controls.ComboBox serialPortComboBox = new HandyControl.Controls.ComboBox
+                {
+                    Margin = new Thickness(5, 0, 0, 0),
+                    Style = (Style)Application.Current.FindResource("ComboBox.Small"),
+                    IsEditable = true,
+                };
+                serialPortComboBox.ItemsSource = Serials;
+                var baudRateBinding = new Binding(property.Name)
+                {
+                    Source = obj,
+                    Mode = BindingMode.TwoWay
+                };
+                HandyControl.Controls.InfoElement.SetShowClearButton(serialPortComboBox, true);
+                serialPortComboBox.SetBinding(ComboBox.TextProperty, baudRateBinding);
+                dockPanel.Children.Add(serialPortComboBox);
+
+            }
+            else if (propertyEditorType == PropertyEditorType.TextBaudRate)
+            {
+                List<int> BaudRates = new() { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600, 230400, 460800, 921600 };
+                HandyControl.Controls.ComboBox baudRateComboBox = new HandyControl.Controls.ComboBox
+                {
+                    Margin = new Thickness(5, 0, 0, 0),
+                    Style = (Style)Application.Current.FindResource("ComboBox.Small"),
+                    IsEditable = true,
+                };
+                baudRateComboBox.ItemsSource = BaudRates;
+                var baudRateBinding = new Binding(property.Name)
+                {
+                    Source = obj,
+                    Mode = BindingMode.TwoWay
+                };
+                HandyControl.Controls.InfoElement.SetShowClearButton(baudRateComboBox, true);
+                baudRateComboBox.SetBinding(ComboBox.TextProperty, baudRateBinding);
+                dockPanel.Children.Add(baudRateComboBox);
+            }
+            else
+            {
+                var textbox = new TextBox
+                {
+                    Margin = new Thickness(5, 0, 0, 0),
+                    Style = (Style)Application.Current.FindResource("TextBox.Small")
+                };
+                textbox.PreviewKeyDown += TextBox_PreviewKeyDown;
+                var binding = new Binding(property.Name)
+                {
+                    Source = obj,
+                    Mode = BindingMode.TwoWay
+                };
+                textbox.SetBinding(TextBox.TextProperty, binding);
+                dockPanel.Children.Add(textbox);
+            }
+            return dockPanel;
+        }
+
 
 
         public static StackPanel GenPropertyEditorControl(object obj)
         {
-            Type type = obj.GetType();
-            var lazyResourceManager = ResourceManagerCache.GetOrAdd(type, t => new Lazy<ResourceManager?>(() =>
-            {
-                string namespaceName = t.Assembly.GetName().Name;
-                string resourceClassName = $"{namespaceName}.Properties.Resources";
-                Type resourceType = t.Assembly.GetType(resourceClassName);
-
-                if (resourceType != null)
-                {
-                    var resourceManagerProperty = resourceType.GetProperty("ResourceManager", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-                    if (resourceManagerProperty != null)
-                    {
-                        return (ResourceManager)resourceManagerProperty.GetValue(null);
-                    }
-                }
-
-                return null;
-            }));
-            ResourceManager? resourceManager = lazyResourceManager.Value;
-
-
-            void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
-            {
-                if (e.Key == Key.Enter)
-                {
-                    Common.NativeMethods.Keyboard.PressKey(0x09);
-                    e.Handled = true;
-                }
-            }
             Dictionary<string, List<PropertyInfo>> categoryGroups = new Dictionary<string, List<PropertyInfo>>();
             void GenCategoryGroups(object source)
             {
@@ -155,285 +423,6 @@ namespace ColorVision.UI
                         }
                     }
                 }
-            }
-
-            DockPanel GenBoolProperties(PropertyInfo property, object obj)
-            {
-                var displayNameAttr = property.GetCustomAttribute<DisplayNameAttribute>();
-                var descriptionAttr = property.GetCustomAttribute<DescriptionAttribute>();
-
-                string displayName = displayNameAttr?.DisplayName ?? property.Name;
-                displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
-
-                var dockPanel = new DockPanel();
-                var textBlock = new TextBlock
-                {
-                    Text = displayName,
-                    MinWidth = 120,
-                    Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
-                };
-
-                var toggleSwitch = new Wpf.Ui.Controls.ToggleSwitch
-                {
-                    Margin = new Thickness(5, 0, 0, 0),
-                };
-                var binding = new Binding(property.Name)
-                {
-                    Source = obj,
-                    Mode = BindingMode.TwoWay
-                };
-                toggleSwitch.SetBinding(ToggleButton.IsCheckedProperty, binding);
-                DockPanel.SetDock(toggleSwitch, Dock.Right);
-
-                dockPanel.Children.Add(toggleSwitch);
-                dockPanel.Children.Add(textBlock);
-                return dockPanel;
-            }
-
-            DockPanel GenEnumProperties(PropertyInfo property, object obj)
-            {
-                var displayNameAttr = property.GetCustomAttribute<DisplayNameAttribute>();
-                var descriptionAttr = property.GetCustomAttribute<DescriptionAttribute>();
-                var PropertyEditorTypeAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
-
-                PropertyEditorType propertyEditorType = PropertyEditorTypeAttr?.PropertyEditorType ?? PropertyEditorType.Default;
-
-                string displayName = displayNameAttr?.DisplayName ?? property.Name;
-                displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
-                var dockPanel = new DockPanel();
-
-                var textBlock = new TextBlock
-                {
-                    Text = displayName,
-                    MinWidth = 120,
-                    Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
-                };
-
-                var comboBox = new ComboBox
-                {
-                    Margin = new Thickness(5, 0, 0, 0),
-                    MinWidth = 150,
-                    Style = (Style)Application.Current.FindResource("ComboBox.Small"),
-                };
-
-                // Populate ComboBox with Enum values
-                var enumValues = Enum.GetValues(property.PropertyType);
-                foreach (var value in enumValues)
-                {
-                    comboBox.Items.Add(value);
-                }
-                // Bind selected value to property
-                var binding = new Binding(property.Name)
-                {
-                    Source = obj,
-                    Mode = BindingMode.TwoWay
-                };
-                comboBox.SetBinding(ComboBox.SelectedItemProperty, binding);
-                DockPanel.SetDock(comboBox, Dock.Right);
-
-                dockPanel.Children.Add(comboBox);
-                dockPanel.Children.Add(textBlock);
-                return dockPanel;
-
-            }
-
-            DockPanel GenTextboxProperties(PropertyInfo property, object obj)
-            {
-                var displayNameAttr = property.GetCustomAttribute<DisplayNameAttribute>();
-                var descriptionAttr = property.GetCustomAttribute<DescriptionAttribute>();
-                var PropertyEditorTypeAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
-
-                PropertyEditorType propertyEditorType = PropertyEditorTypeAttr?.PropertyEditorType ?? PropertyEditorType.Default;
-
-                string displayName = displayNameAttr?.DisplayName ?? property.Name;
-                displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
-                var dockPanel = new DockPanel();
-
-                var textBlock = new TextBlock
-                {
-                    Text = displayName,
-                    MinWidth = 120,
-                    Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
-                };
-                dockPanel.Children.Add(textBlock);
-
-                if (propertyEditorType == PropertyEditorType.TextSelectFile)
-                {
-                    var button = new Button
-                    {
-                        Content = "...",
-                        Margin = new Thickness(5, 0, 0, 0)
-                    };
-                    button.Click += (s, e) =>
-                    {
-                        var openFileDialog = new Microsoft.Win32.OpenFileDialog();
-                        string Filepath = (string)property.GetValue(obj);
-#if NET8_0
-                        ///8.0才有这个属性
-                        if (File.Exists(Filepath))
-                        {
-                            openFileDialog.DefaultDirectory = Directory.GetDirectoryRoot(Filepath);
-                        }
-#endif
-                        if (openFileDialog.ShowDialog() == true)
-                        {
-                            property.SetValue(obj, openFileDialog.FileName);
-                        }
-                    };
-
-                    var textbox = new TextBox
-                    {
-                        Margin = new Thickness(5, 0, 0, 0),
-                        Style = (Style)Application.Current.FindResource("TextBox.Small")
-                    };
-                    var binding = new Binding(property.Name)
-                    {
-                        Source = obj,
-                        Mode = BindingMode.TwoWay
-                    };
-                    textbox.SetBinding(TextBox.TextProperty, binding);
-                    DockPanel.SetDock(button, Dock.Right);
-                    var button1 = new Button
-                    {
-                        Content = "🗁",
-                        Margin = new Thickness(5, 0, 0, 0),
-                    };
-                    button1.Click += (s, e) =>
-                    {
-                        Common.Utilities.PlatformHelper.OpenFolder((string)property.GetValue(obj));
-                    };
-                    DockPanel.SetDock(button1, Dock.Right);
-                    dockPanel.Children.Add(button1);
-                    dockPanel.Children.Add(button);
-                    dockPanel.Children.Add(textbox);
-                }
-                else if (propertyEditorType == PropertyEditorType.TextSelectFolder)
-                {
-                    var button = new Button
-                    {
-                        Content = "...",
-                        Margin = new Thickness(5, 0, 0, 0)
-                    };
-                    button.Click += (s, e) =>
-                    {
-                        var folderDialog = new System.Windows.Forms.FolderBrowserDialog();
-                        folderDialog.SelectedPath = (string)property.GetValue(obj) ?? string.Empty;
-                        if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                        {
-                            if (folderDialog.SelectedPath == null) return;
-                            property.SetValue(obj, folderDialog.SelectedPath);
-                        }
-                    };
-
-                    var textbox = new TextBox
-                    {
-                        Margin = new Thickness(5, 0, 0, 0),
-                        Style = (Style)Application.Current.FindResource("TextBox.Small")
-                    };
-                    var binding = new Binding(property.Name)
-                    {
-                        Source = obj,
-                        Mode = BindingMode.TwoWay
-                    };
-                    textbox.SetBinding(TextBox.TextProperty, binding);
-                    DockPanel.SetDock(button, Dock.Right);
-                    var button1 = new Button
-                    {
-                        Content = "🗁",
-                        Margin = new Thickness(5, 0, 0, 0),
-                    };
-                    button1.Click += (s, e) =>
-                    {
-                        Common.Utilities.PlatformHelper.OpenFolder((string)property.GetValue(obj));
-                    };
-                    DockPanel.SetDock(button1, Dock.Right);
-                    dockPanel.Children.Add(button1);
-                    dockPanel.Children.Add(button);
-                    dockPanel.Children.Add(textbox);
-
-                }
-                else if (propertyEditorType == PropertyEditorType.CronExpression)
-                {
-                    var cronButton = new Button
-                    {
-                        Content = "在线Cron表达式生成器",
-                        Margin = new Thickness(5, 0, 0, 0),
-                    };
-                    DockPanel.SetDock(cronButton, Dock.Right);
-                    cronButton.Click += (s, e) =>
-                    {
-                        PlatformHelper.Open("https://cron.qqe2.com/");
-                    };
-                    var cronTextBox = new TextBox
-                    {
-                        Margin = new Thickness(5, 0, 0, 0),
-                        Style = (Style)Application.Current.FindResource("TextBox.Small")
-                    };
-                    var cronBinding = new Binding(property.Name)
-                    {
-                        Source = obj,
-                        Mode = BindingMode.TwoWay
-                    };
-                    cronTextBox.SetBinding(TextBox.TextProperty, cronBinding);
-                    dockPanel.Children.Add(cronButton);
-                    dockPanel.Children.Add(cronTextBox);
-                }
-                else if (propertyEditorType == PropertyEditorType.TextSerialPort)
-                {
-                    List<string> Serials = new List<string>() { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10", "COM11", "COM12", "COM13" , "COM14", "COM15", "COM16" };
-                    HandyControl.Controls.ComboBox serialPortComboBox = new HandyControl.Controls.ComboBox
-                    {
-                        Margin = new Thickness(5, 0, 0, 0),
-                        Style = (Style)Application.Current.FindResource("ComboBox.Small"),
-                        IsEditable = true,
-                    };
-                    serialPortComboBox.ItemsSource = Serials;
-                    var baudRateBinding = new Binding(property.Name)
-                    {
-                        Source = obj,
-                        Mode = BindingMode.TwoWay
-                    };
-                    HandyControl.Controls.InfoElement.SetShowClearButton(serialPortComboBox, true);
-                    serialPortComboBox.SetBinding(ComboBox.TextProperty, baudRateBinding);
-                    dockPanel.Children.Add(serialPortComboBox);
-
-                }
-                else if (propertyEditorType == PropertyEditorType.TextBaudRate)
-                {
-                    List<int> BaudRates = new() { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 ,230400,460800,921600};
-                    HandyControl.Controls.ComboBox baudRateComboBox = new HandyControl.Controls.ComboBox
-                    {
-                        Margin = new Thickness(5, 0, 0, 0),
-                        Style = (Style)Application.Current.FindResource("ComboBox.Small"),
-                        IsEditable = true,
-                    };
-                    baudRateComboBox.ItemsSource = BaudRates;
-                    var baudRateBinding = new Binding(property.Name)
-                    {
-                        Source = obj,
-                        Mode = BindingMode.TwoWay
-                    };
-                    HandyControl.Controls.InfoElement.SetShowClearButton(baudRateComboBox, true);
-                    baudRateComboBox.SetBinding(ComboBox.TextProperty, baudRateBinding);
-                    dockPanel.Children.Add(baudRateComboBox);
-                }
-                else
-                {
-                    var textbox = new TextBox
-                    {
-                        Margin = new Thickness(5, 0, 0, 0),
-                        Style = (Style)Application.Current.FindResource("TextBox.Small")
-                    };
-                    textbox.PreviewKeyDown += TextBox_PreviewKeyDown;
-                    var binding = new Binding(property.Name)
-                    {
-                        Source = obj,
-                        Mode = BindingMode.TwoWay
-                    };
-                    textbox.SetBinding(TextBox.TextProperty, binding);
-                    dockPanel.Children.Add(textbox);
-                }
-                return dockPanel;
             }
 
             StackPanel PropertyPanel = new StackPanel();

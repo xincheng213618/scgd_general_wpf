@@ -21,16 +21,20 @@ namespace ColorVision.Engine.Pattern.Solid
     /// </summary>
     public partial class SolidEditor : UserControl
     {
-        public SolidEditor()
+        public PatternSolodConfig Config { get; set; }
+
+        public SolidEditor(PatternSolodConfig patternSolodConfig)
         {
+            Config = patternSolodConfig;
             InitializeComponent();
         }
-        public static PatternSolodConfig Config => ConfigService.Instance.GetRequiredService<PatternSolodConfig>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
         }
+
+
         private void BtnPickMainColor_Click(object sender, RoutedEventArgs e)
         {
             var ColorPicker1 = new HandyControl.Controls.ColorPicker();
@@ -38,11 +42,13 @@ namespace ColorVision.Engine.Pattern.Solid
             ColorPicker1.SelectedColorChanged += (s, e) =>
             {
                 Config.MainBrush = ColorPicker1.SelectedBrush;
+                rectMainColor.Fill = Config.MainBrush;
             };
             Window window = new Window() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Content = ColorPicker1, Width = 250, Height = 400 };
             ColorPicker1.Confirmed += (s, e) =>
             {
                 Config.MainBrush = ColorPicker1.SelectedBrush;
+                rectMainColor.Fill = Config.MainBrush;
                 window.Close();
             };
             window.Closed += (s, e) =>
@@ -63,7 +69,7 @@ namespace ColorVision.Engine.Pattern.Solid
                 }
                 if (tag == "G")
                 {
-                    Config.MainBrush = Brushes.Green;
+                    Config.MainBrush = Brushes.Lime;
                 }
                 if (tag == "B")
                 {
@@ -77,6 +83,7 @@ namespace ColorVision.Engine.Pattern.Solid
                 {
                     Config.MainBrush = Brushes.Black;
                 }
+                rectMainColor.Fill = Config.MainBrush;
             }
         }
     }

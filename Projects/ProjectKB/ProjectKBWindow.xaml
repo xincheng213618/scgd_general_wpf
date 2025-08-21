@@ -86,7 +86,8 @@
                     <Grid Visibility="Visible" >
                         <ToolBarTray  Grid.Row="0" IsLocked="True">
                             <ToolBar Padding="3,2">
-                                <Button x:Name="Search" Content="查询" Command="{Binding ViewResultManager.QueryCommand}" Margin="2,0,0,0"/>
+                                <Button  Content="查询" Command="{Binding ViewResultManager.QueryCommand}" Margin="2,0,0,0"/>
+                                <Button  Content="通用查询" Command="{Binding ViewResultManager.GenericQueryCommand}" Margin="2,0,0,0"/>
                             </ToolBar>
                         </ToolBarTray>
                         <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
@@ -304,11 +305,14 @@
                             </Popup>
 
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBox x:Name="SNtextBox" IsEnabled="{Binding SNlocked,Converter={StaticResource Boolean2BooleanReConverter}}" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown" Margin="0,0,5,0"/>
-                            <Button Content="上传" Click="UploadSN_Click" Visibility="{Binding SummaryManager.Summary.UseMes,Converter={StaticResource bool2VisibilityConverter}}"  Margin="0,0,5,0"/>
+                        <DockPanel>
                             <Button Content="Test KeyBorder"  DockPanel.Dock="Right" Background="Pink" Click="TestClick" Width="200" />
-                        </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox x:Name="SNtextBox" IsEnabled="{Binding SNlocked,Converter={StaticResource Boolean2BooleanReConverter}}" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown" Margin="0,0,5,0"/>
+                                <Button Content="上传" Click="UploadSN_Click" Visibility="{Binding SummaryManager.Summary.UseMes,Converter={StaticResource bool2VisibilityConverter}}"  Margin="0,0,5,0"/>
+                                <Button Content="解锁" Click="UnSNlocked_Click" Visibility="{Binding SNlocked,Converter={StaticResource bool2VisibilityConverter}}"  Margin="0,0,5,0"/>
+                            </StackPanel>
+                        </DockPanel>
                     </StackPanel>
                 </Grid>
                 <Border Grid.Row="1"  Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Margin="5,0,5,5">
@@ -355,10 +359,10 @@
                 <Button Content="Test" Click="Button_Click"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="更新记录" Command="{Binding OpenChangeLogCommand}"/>
+                <Button Content="自述文件" Command="{Binding OpenReadMeCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="自述文件" Command="{Binding OpenReadMeCommand}"/>
+                <Button Content="变更日志" Command="{Binding OpenChangeLogCommand}"/>
             </StatusBarItem>
         </StatusBar>
 

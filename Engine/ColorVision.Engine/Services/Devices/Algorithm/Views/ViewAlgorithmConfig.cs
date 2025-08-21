@@ -27,12 +27,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
-        [Browsable(false)]
-        public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();
-
-        [Category("Control")]
+        [DisplayName("显示列表"), Category("View")]
         public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; NotifyPropertyChanged(); } }
         private bool _IsShowListView = true;
+        [DisplayName("列表高度"), Category("View")]
+        public double Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
+        private double _Height = 200;
 
         [DisplayName("显示侧边栏"), Category("Control")]
         public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; NotifyPropertyChanged(); } }

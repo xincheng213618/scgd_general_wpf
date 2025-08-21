@@ -1,5 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Pattern.Solid;
 using ColorVision.UI;
+using Newtonsoft.Json;
 using OpenCvSharp;
 using System;
 using System.ComponentModel;
@@ -39,12 +41,16 @@ namespace ColorVision.Engine.Pattern.Stripe
         private int _VerticalWidth = 1;
     }
 
+    /// <summary>
+    /// https://stackoverflow.com/questions/24682797/python-opencv-drawing-line-width
+    /// </summary>
     [DisplayName("隔行点亮")]
-    public class PatternStripe : IPatternBase
+    public class PatternStripe : IPatternBase<PatternStripeConfig>
     {
         public static PatternStripeConfig Config => ConfigService.Instance.GetRequiredService<PatternStripeConfig>();
         public override ViewModelBase GetConfig() => Config;
-        public override UserControl GetPatternEditor() => new StripeEditor();
+
+        public override UserControl GetPatternEditor() => new StripeEditor(Config);
         public override Mat Gen(int height, int width)
         {
             Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
@@ -56,7 +62,11 @@ namespace ColorVision.Engine.Pattern.Stripe
 
                 for (int y = 0; y < height; y += hSpacing)
                 {
-                    OpenCvSharp.Cv2.Line(mat, new OpenCvSharp.Point(0, y), new OpenCvSharp.Point(width, y), Config.AltBrush.ToScalar(), hWidth);
+                    for (int dy = 0; dy < hWidth; dy++)
+                    {
+                        if (y + dy < height)
+                            mat.Row(y + dy).SetTo(Config.AltBrush.ToScalar());
+                    }
                 }
             }
             else
@@ -67,12 +77,14 @@ namespace ColorVision.Engine.Pattern.Stripe
 
                 for (int x = 0; x < width; x += vSpacing)
                 {
-                    OpenCvSharp.Cv2.Line(mat, new OpenCvSharp.Point(x, 0), new OpenCvSharp.Point(x, height), Config.AltBrush.ToScalar(), vWidth);
+                    for (int dx = 0; dx < vWidth; dx++)
+                    {
+                        if (x + dx < width)
+                            mat.Col(x + dx).SetTo(Config.AltBrush.ToScalar());
+                    }
                 }
             }
             return mat;
         }
-
-
     }
 }

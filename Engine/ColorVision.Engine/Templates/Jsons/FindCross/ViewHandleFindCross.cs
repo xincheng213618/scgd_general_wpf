@@ -81,11 +81,6 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
                 }
             }
         }
-
-        [Column("id")]
-        public int Id { get; set; }
-        [Column("pid")]
-        public int PId { get; set; }
         public string? ResultFileName { get; set; }
 
         public FindCrossResult? FindCrossResult { get; set; }

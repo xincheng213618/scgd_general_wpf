@@ -13,11 +13,13 @@ namespace ColorVision.Engine.Pattern.NineDot
     /// </summary>
     public partial class NineDotEditor : UserControl
     {
-        public NineDotEditor()
+        public PatternNineDotConfig Config { get; set; }
+
+        public NineDotEditor(PatternNineDotConfig patternNineDotConfig)
         {
+            Config = patternNineDotConfig;
             InitializeComponent();
         }
-        public static PatternNineDotConfig Config => ConfigService.Instance.GetRequiredService<PatternNineDotConfig>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -30,11 +32,13 @@ namespace ColorVision.Engine.Pattern.NineDot
             ColorPicker1.SelectedColorChanged += (s, e) =>
             {
                 Config.MainBrush = ColorPicker1.SelectedBrush;
+                rectMainColor.Fill = Config.MainBrush;
             };
             Window window = new Window() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Content = ColorPicker1, Width = 250, Height = 400 };
             ColorPicker1.Confirmed += (s, e) =>
             {
                 Config.MainBrush = ColorPicker1.SelectedBrush;
+                rectMainColor.Fill = Config.MainBrush;
                 window.Close();
             };
             window.Closed += (s, e) =>
@@ -55,7 +59,7 @@ namespace ColorVision.Engine.Pattern.NineDot
                 }
                 if (tag == "G")
                 {
-                    Config.MainBrush = Brushes.Green;
+                    Config.MainBrush = Brushes.Lime;
                 }
                 if (tag == "B")
                 {
@@ -69,6 +73,7 @@ namespace ColorVision.Engine.Pattern.NineDot
                 {
                     Config.MainBrush = Brushes.Black;
                 }
+                rectMainColor.Fill = Config.MainBrush;
             }
         }
 
@@ -79,11 +84,13 @@ namespace ColorVision.Engine.Pattern.NineDot
             ColorPicker1.SelectedColorChanged += (s, e) =>
             {
                 Config.AltBrush = ColorPicker1.SelectedBrush;
+                rectAltColor.Fill = Config.AltBrush;
             };
             Window window = new Window() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Content = ColorPicker1, Width = 250, Height = 400 };
             ColorPicker1.Confirmed += (s, e) =>
             {
                 Config.AltBrush = ColorPicker1.SelectedBrush;
+                rectAltColor.Fill = Config.AltBrush;
                 window.Close();
             };
             window.Closed += (s, e) =>
@@ -104,7 +111,7 @@ namespace ColorVision.Engine.Pattern.NineDot
                 }
                 if (tag == "G")
                 {
-                    Config.AltBrush = Brushes.Green;
+                    Config.AltBrush = Brushes.Lime;
                 }
                 if (tag == "B")
                 {
@@ -118,6 +125,7 @@ namespace ColorVision.Engine.Pattern.NineDot
                 {
                     Config.AltBrush = Brushes.Black;
                 }
+                rectAltColor.Fill = Config.AltBrush;
             }
         }
     }

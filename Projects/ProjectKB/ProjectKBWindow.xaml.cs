@@ -14,7 +14,6 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.LogImp;
-using ColorVision.UI.Serach;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
@@ -32,7 +31,6 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using static Azure.Core.HttpHeader;
 
 namespace ProjectKB
 {
@@ -55,8 +53,6 @@ namespace ProjectKB
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectKBWindow));
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
         public static ObservableCollection<KBItemMaster> ViewResluts => ViewResultManager.ViewResluts;
-
-
         public static ProjectKBWindowConfig Config => ProjectKBWindowConfig.Instance;
 
         public static Summary Summary => SummaryManager.GetInstance().Summary;
@@ -920,56 +916,6 @@ namespace ProjectKB
             GC.SuppressFinalize(this);
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            KBItemMaster KBItemMaster = CurrentFlowResult ?? new KBItemMaster();
-            KBItemMaster.Model = FlowTemplate.Text;
-            KBItemMaster.SN = SNtextBox.Text;
-            KBItemMaster.CreateTime = DateTime.Now;
-            KBItemMaster.FlowStatus = FlowStatus.Completed;
-            KBItemMaster.Code = "@2";
-            KBItemMaster.Result = true;
-            KBItemMaster.AvgC1 = 1;
-
-            var rnd = new Random();
-            KBItemMaster.Items.Clear();
-
-            for (int i = 0; i < 80; i++)
-            {
-                // 随机生成 6 位英文字母或数字的 Name
-                string name = RandomName(rnd, 6);
-
-                KBItem kBItem = new KBItem
-                {
-                    Name = name,
-                    Lv = rnd.Next(80, 121),
-                    Lc = Math.Round(rnd.NextDouble() * 2, 2),
-                    Result = rnd.Next(0, 2) == 1,
-                    KBKeyRect = new KBKeyRect
-                    {
-                        X = rnd.Next(0, 200),
-                        Y = rnd.Next(0, 200),
-                        Width = rnd.Next(10, 60),
-                        Height = rnd.Next(10, 60),
-                        KBKey = new KBKey
-                        {
-                            Area = rnd.Next(100, 3001),
-                            KeyScale = Math.Round(rnd.NextDouble() * 3, 2)
-                        }
-                    }
-                };
-                KBItemMaster.Items.Add(kBItem);
-            }
-
-            ViewResultManager.Save(KBItemMaster);
-
-        }
-        private string RandomName(Random rnd, int length)
-        {
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-            return new string(Enumerable.Repeat(chars, length)
-                .Select(s => s[rnd.Next(s.Length)]).ToArray());
-        }
         private void Instance_SNChanged(object? sender, string e)
         {
             if (Summary.AutoUploadSN)
@@ -1102,7 +1048,16 @@ namespace ProjectKB
 
         private void ListViewSearch_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (ListViewSearch.SelectedIndex > -1)
+            {
+                Searchbox.Text = string.Empty;
+                filteredResults[ListViewSearch.SelectedIndex].Command?.Execute(this);
+            }
+        }
 
+        private void UnSNlocked_Click(object sender, RoutedEventArgs e)
+        {
+            ProjectKBConfig.Instance.SNlocked = false;
         }
     }
 }

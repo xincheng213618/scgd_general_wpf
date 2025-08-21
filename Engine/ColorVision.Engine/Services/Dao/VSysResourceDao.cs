@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -6,7 +7,7 @@ using System.Linq;
 
 namespace ColorVision.Engine.Services.Dao
 {
-    [Table("t_scgd_sys_resource")]
+    [SugarTable("t_scgd_sys_resource")]
     public class SysResourceModel : PKModel
     {
         public SysResourceModel(SysDeviceModel sysDeviceModel)
@@ -23,19 +24,19 @@ namespace ColorVision.Engine.Services.Dao
 
         public SysResourceModel() { Id = -1; }
 
-        [Column("name")]
+        [SugarColumn(ColumnName ="name")]
         public string? Name { get; set; }
-        [Column("code")]
+        [SugarColumn(ColumnName ="code")]
         public string? Code { get; set; }
-        [Column("type")]
+        [SugarColumn(ColumnName ="type")]
         public int Type { get; set; }
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int? Pid { get; set; }
-        [Column("txt_value")]
+        [SugarColumn(ColumnName ="txt_value")]
         public string? Value { get; set; }
-        [Column("create_date")]
+        [SugarColumn(ColumnName ="create_date")]
         public DateTime CreateDate { get; set; } = DateTime.Now;
-        [Column("tenant_id")]
+        [SugarColumn(ColumnName ="tenant_id")]
         public int TenantId { get; set; }
 
 

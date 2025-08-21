@@ -10,7 +10,7 @@
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:hc="https://handyorg.github.io/handycontrol" 
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance local:ViewCamera}"
+             d:DataContext="{d:DesignInstance local:ViewCameraConfig}"
              d:DesignHeight="450" d:DesignWidth="800" Background="{DynamicResource BorderBrush}" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
@@ -33,7 +33,7 @@
             </Grid.RowDefinitions>
             <ToolBarTray  Grid.Row="0" IsLocked="True"  Background="Transparent">
                 <ToolBar Band="0" BandIndex="0" Padding="3,2" >
-                    <ToggleButton  Style="{StaticResource ToggleButtonSwitch}" Margin="0,0,2,0" IsChecked="{Binding Config.IsShowListView, Converter={StaticResource Boolean2BooleanReConverter}}"/>
+                    <ToggleButton  Style="{StaticResource ToggleButtonSwitch}" Margin="0,0,2,0" IsChecked="{Binding IsShowListView, Converter={StaticResource Boolean2BooleanReConverter}}"/>
                     <Button Content="{x:Static properties:Resources.Inquire}" Click="Search_Click" Margin="0,0,2,0"/>
                     <Button x:Name="Search" Content="{x:Static properties:Resources.AdvanceSearch}" Click="Search1_Click" Margin="0,0,2,0"/>
                 </ToolBar>
@@ -42,7 +42,7 @@
                 <Button Click="Button_Click_Export" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
                     <Rectangle Width="16" Height="16" Fill="{StaticResource DISave}" />
                 </Button>
-                <Button  Command="{Binding Config.ClearListCommand}" Padding="2" Height="25" Width="25">
+                <Button  Command="{Binding ClearListCommand}" Padding="2" Height="25" Width="25">
                     <Button.Triggers>
                         <EventTrigger RoutedEvent="Button.Click">
                             <BeginStoryboard>
@@ -59,7 +59,7 @@
                         </Image.RenderTransform>
                     </Image>
                 </Button>
-                <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding Config.EditCommand}" Padding="2" Height="25" Width="25" >
+                <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="25" Width="25" >
                     <Button.Triggers>
                         <EventTrigger RoutedEvent="Button.Click">
                             <BeginStoryboard>
@@ -79,7 +79,7 @@
             </StackPanel>
 
 
-            <ListView  x:Name="listView1" Height="200" Visibility="{Binding Config.IsShowListView, Converter={StaticResource bool2VisibilityConverter}}" Grid.Row="1"   BorderThickness="0" Padding="0" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" Grid.RowSpan="2" >
+            <ListView  x:Name="listView1" Height="{Binding Height}"  Visibility="{Binding IsShowListView, Converter={StaticResource bool2VisibilityConverter}}" Grid.Row="1"   BorderThickness="0" Padding="0" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" Grid.RowSpan="2" >
                 <ListView.Resources >
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                 </ListView.Resources>

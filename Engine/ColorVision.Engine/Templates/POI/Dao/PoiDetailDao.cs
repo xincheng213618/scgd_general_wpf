@@ -1,25 +1,26 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 
 namespace ColorVision.Engine.Templates.POI.Dao
 {
-    [Table("t_scgd_algorithm_poi_template_detail")]
+    [SugarTable("t_scgd_algorithm_poi_template_detail")]
     public class PoiDetailModel : PKModel
     {
-        [Column("name")]
+        [SugarColumn(ColumnName ="name")]
         public string? Name { get; set; }
-        [Column("pid")]
+        [SugarColumn(ColumnName ="pid")]
         public int? Pid { get; set; }
-        [Column("pt_type")]
+        [SugarColumn(ColumnName ="pt_type")]
         public RiPointTypes Type { get; set; }
-        [Column("pix_x")]
+        [SugarColumn(ColumnName ="pix_x")]
         public int? PixX { get; set; }
-        [Column("pix_y")]
+        [SugarColumn(ColumnName ="pix_y")]
         public int? PixY { get; set; }
-        [Column("pix_width")]
+        [SugarColumn(ColumnName ="pix_width")]
         public int? PixWidth { get; set; }
-        [Column("pix_height")]
+        [SugarColumn(ColumnName ="pix_height")]
         public int? PixHeight { get; set; }
-        [Column("remark")]
+        [SugarColumn(ColumnName ="remark")]
         public string? Remark { get; set; }
 
         public PoiDetailModel()

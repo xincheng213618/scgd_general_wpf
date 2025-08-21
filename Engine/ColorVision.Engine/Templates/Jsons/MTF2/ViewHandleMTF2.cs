@@ -11,6 +11,7 @@ using ColorVision.UI;
 using log4net;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
+using SqlSugar;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -78,12 +79,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
             }
 
         }
-        [Column("id")]
-        public int Id { get; set; }
-        [Column("pid")]
-        public int PId { get; set; }
         public string? ResultFileName { get; set; }
-
         public MTFResult? MTFResult { get; set; }
     }
 

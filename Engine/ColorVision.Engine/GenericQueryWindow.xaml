@@ -1,0 +1,35 @@
+﻿<Window x:Class="ColorVision.Engine.GenericQueryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Engine"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:GenericQueryBase}"
+        Title="GenericQueryWindow" Height="450" Width="600" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+        <Grid Margin="5">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="添加查询" Click="AddPropertyInfo_Click" Margin="5,0,0,0"/>
+                <ComboBox  x:Name="PropertyInfoCB" DisplayMemberPath="Key" SelectedValuePath="Value"/>
+            </DockPanel>
+        </Grid>
+        <ScrollViewer Grid.Row="1" Margin="5,0,5,5">
+            <StackPanel>
+
+                <Grid x:Name="QueryGrid" >
+
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border  Grid.Row="2" Margin="5" >
+            <Button  Height="40"  Content="查询" Background="{DynamicResource PrimaryBrush}" Foreground="White"  FontSize="18"  Click="Query_Click"/>
+        </Border>
+    </Grid>
+</Window>

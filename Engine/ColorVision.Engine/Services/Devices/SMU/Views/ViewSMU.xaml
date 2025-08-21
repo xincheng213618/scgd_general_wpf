@@ -133,7 +133,7 @@
                 </StackPanel>
 
 
-                <ListView  Height="200" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" BorderThickness="0" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                <ListView  Height="{Binding Config.Height}"  Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" BorderThickness="0" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.Resources>
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
                         </ContextMenu>
