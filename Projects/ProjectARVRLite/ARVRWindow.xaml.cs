@@ -344,7 +344,10 @@ namespace ProjectARVRLite
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                     item.nodeRunEvent -= UpdateMsg;
 
+                log.Info("清理流程中");
                 flowEngine.FlowClear();
+                await Task.Delay(100);
+                log.Info("清理流程执行完毕");
                 flowEngine.LoadFromBase64(Refreshdata, MqttRCService.GetInstance().ServiceTokens);
 
                 for (int i = 0; i < 200; i++)
@@ -480,6 +483,9 @@ namespace ProjectARVRLite
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
             CurrentFlowResult.RunTime  = stopwatch.ElapsedMilliseconds;
             logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
+
+            log.Info("清理流程中");
+            flowEngine.FlowClear();
 
             if (FlowControlData.EventName == "Completed")
             {
