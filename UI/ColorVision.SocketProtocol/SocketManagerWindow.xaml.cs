@@ -8,7 +8,7 @@ namespace ColorVision.SocketProtocol
     {
         public override string OwnerGuid => MenuItemConstants.Help;
         public override int Order => 9000;
-        public override string Header => "SocketManagerWindow";
+        public override string Header => "Socket管理窗口";
 
         public override void Execute()
         {

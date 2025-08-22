@@ -2,10 +2,8 @@
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons.LargeFlow;
-using ColorVision.ImageEditor;
 using ColorVision.UI;
 using Newtonsoft.Json;
-using ProjectARVRLite.Config;
 using ProjectARVRLite.PluginConfig;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -18,6 +16,12 @@ namespace ProjectARVRLite
     public class ProjectARVRLiteConfig: ViewModelBase, IConfig
     {
         public static ProjectARVRLiteConfig Instance => ConfigService.Instance.GetRequiredService<ProjectARVRLiteConfig>();
+
+        public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
+        public static RecipeManager RecipeManager => RecipeManager.GetInstance();
+        public static FixManager FixManager => FixManager.GetInstance();
+        public static SummaryManager SummaryManager => SummaryManager.GetInstance();
+
         [JsonIgnore]
         public RelayCommand OpenTemplateCommand { get; set; }
         [JsonIgnore]
@@ -36,13 +40,7 @@ namespace ProjectARVRLite
         public RelayCommand OpenReadMeCommand { get; set; }
 
         [JsonIgnore]
-        public RelayCommand EditSPECConfigcommand { get; set; }
-        [JsonIgnore]
         public RelayCommand InitTestCommand { get; set; }
-
-        [JsonIgnore]
-        public RelayCommand EditObjectiveTestResultFixCommand { get; set; }
-
 
         public ProjectARVRLiteConfig()
         {
@@ -57,26 +55,14 @@ namespace ProjectARVRLite
             OpenConfigCommand = new RelayCommand(a => OpenConfig());
             OpenChangeLogCommand = new RelayCommand(a => OpenChangeLog());
             OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
-
-            EditSPECConfigcommand = new RelayCommand(a => EditSPECConfig());
             InitTestCommand = new RelayCommand(a => InitTest());
 
-            EditObjectiveTestResultFixCommand = new RelayCommand(a => EditObjectiveTestResultFix());
         }
-
-        public void EditObjectiveTestResultFix()
-        {
-            ObjectiveTestResultFixWindow objectiveTestResultFixWindow = new ObjectiveTestResultFixWindow() { Owner = Application.Current.GetActiveWindow() };
-            objectiveTestResultFixWindow.ShowDialog();
-        }
-
 
         public void InitTest()
         {
             ProjectWindowInstance.WindowInstance.InitTest(string.Empty);
         }
-
-
 
         public int StepIndex { get => _StepIndex; set { _StepIndex = value; NotifyPropertyChanged(); } }
         private int _StepIndex;
@@ -93,20 +79,10 @@ namespace ProjectARVRLite
         public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; NotifyPropertyChanged(); } }
         private bool _AllowTestFailures = true;
 
-        [DisplayName("RefreshResult")]
-        public bool RefreshResult { get => _RefreshResult; set { _RefreshResult = value; NotifyPropertyChanged(); } }
-        private bool _RefreshResult = true;
-
-        public void EditSPECConfig()
+        public void OpenConfig()
         {
-            EditRecipeWindow EditRecipeWindow = new EditRecipeWindow() { Owner = Application.Current.GetActiveWindow() };
-            EditRecipeWindow.ShowDialog();
-        }
-
-        public static void OpenConfig()
-        {
-            EditARVRConfig editProjectKBConfig = new EditARVRConfig() { Owner = Application.Current.GetActiveWindow() };
-            editProjectKBConfig.ShowDialog();
+            new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            ConfigService.Instance.SaveConfigs();
         }
 
         public static void OpenResourceName(string title, string resourceName)
@@ -187,30 +163,14 @@ namespace ProjectARVRLite
         }
 
 
+        public event EventHandler<string> SNChanged;
+
+        [DisplayName("SN锁")]
+        public bool SNlocked { get => _SNlocked; set { _SNlocked = value; NotifyPropertyChanged(); } }
+        private bool _SNlocked;
 
         [JsonIgnore]
-        public string SN { get => _SN; set{ _SN = value; NotifyPropertyChanged(); } }
-        private string _SN;
-
-
-        public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; NotifyPropertyChanged(); } }
-        private bool _IsAutoUploadSn;
-
-        public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; NotifyPropertyChanged(); } }
-        private string _ResultSavePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-
-
-        public string ResultSavePath1 { get => _ResultSavePath1; set { _ResultSavePath1 = value; NotifyPropertyChanged(); } }
-        private string _ResultSavePath1 = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-
-        public double Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
-        private double _Height = 300;
-        public bool AutoModbusConnect { get => _AutoModbusConnect; set { _AutoModbusConnect = value; NotifyPropertyChanged(); } }
-        private bool _AutoModbusConnect = true;
-
-        public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
-        private int _ViewImageReadDelay = 1000;
-
-        public static ARVRWindowConfig ProjectKBWindowConfig => ARVRWindowConfig.Instance;
+        public string SN { get => _SN; set { if (SNlocked) return; _SN = value; NotifyPropertyChanged(); SNChanged?.Invoke(this, value); } }
+        private string _SN = string.Empty;
     }
 }

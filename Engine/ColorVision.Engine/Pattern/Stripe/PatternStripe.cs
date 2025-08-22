@@ -47,9 +47,6 @@ namespace ColorVision.Engine.Pattern.Stripe
     [DisplayName("隔行点亮")]
     public class PatternStripe : IPatternBase<PatternStripeConfig>
     {
-        public static PatternStripeConfig Config => ConfigService.Instance.GetRequiredService<PatternStripeConfig>();
-        public override ViewModelBase GetConfig() => Config;
-
         public override UserControl GetPatternEditor() => new StripeEditor(Config);
         public override Mat Gen(int height, int width)
         {

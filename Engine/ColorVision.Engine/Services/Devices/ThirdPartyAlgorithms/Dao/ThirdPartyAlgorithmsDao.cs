@@ -1,10 +1,11 @@
-﻿using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
 using SqlSugar;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
 {
     [SugarTable("t_scgd_sys_third_party_algorithms")]
-    public class ThirdPartyAlgorithmsModel : VPKModel
+    public class ThirdPartyAlgorithmsModel : VPKModel, IInitTables
     {
         [SugarColumn(ColumnName ="pid")]
         public int? Pid { get => _Pid; set { _Pid = value; NotifyPropertyChanged(); } }

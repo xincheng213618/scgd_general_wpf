@@ -29,6 +29,7 @@ using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.UI.LogImp;
 using CVCommCore.CVAlgorithm;
+using Dm.util;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using LiveChartsCore.Kernel;
@@ -36,11 +37,11 @@ using log4net;
 using log4net.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Org.BouncyCastle.Asn1.Ocsp;
+
 using Panuon.WPF.UI;
 using ProjectARVRLite;
-using ProjectARVRLite.Config;
 using ProjectARVRLite.Services;
+using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -58,221 +59,6 @@ using System.Windows.Media;
 
 namespace ProjectARVRLite
 {
-    public enum ARVR1TestType
-    {
-        None = 0,
-        W51,
-        /// <summary>
-        /// 白画面绿图
-        /// </summary>
-        White,
-        /// <summary>
-        /// 黑画面25
-        /// </summary>
-        Black,
-        /// <summary>
-        /// 25的图像
-        /// </summary>
-        W25,
-        /// <summary>
-        /// 棋盘格
-        /// </summary>
-        Chessboard,
-        /// <summary>
-        /// MTFHV 
-        /// </summary>
-        MTFHV,
-        /// <summary>
-        /// 畸变，9点
-        /// </summary>
-        Distortion,
-        /// <summary>
-        /// 光轴偏角
-        /// </summary>
-        OpticCenter,
-        Ghost,
-        /// <summary>
-        /// 屏幕定位
-        /// </summary>
-        DotMatrix,
-        /// <summary>
-        /// 白画面瑕疵检测
-        /// </summary>
-        WscreeenDefectDetection,
-        /// <summary>
-        /// 黑画面瑕疵检测
-        /// </summary>
-        BKscreeenDefectDetection,
-    }
-
-    public class ProjectARVRReuslt : ViewModelBase
-    {
-        public int Id { get; set; }
-        public string Model { get; set; }
-
-        public DateTime CreateTime { get; set; } = DateTime.Now;
-
-        public string FileName { get; set; }
-
-        public string SN { get; set; }
-
-        public string Code { get; set; }
-
-        public FlowStatus FlowStatus { get; set; } = FlowStatus.Ready;
-
-        public bool Result { get; set; } = true;
-
-        public ARVR1TestType TestType { get; set; }
-
-        public ViewResultW25 ViewResultW25 { get; set; } = new ViewResultW25();
-
-        public ViewReslutW51 ViewReslutW51 { get; set; } = new ViewReslutW51();
-
-        public ViewResultWhite ViewResultWhite { get; set; } = new ViewResultWhite();
-        public ViewResultBlack ViewResultBlack { get; set; } = new ViewResultBlack();
-
-        public ViewReslutCheckerboard ViewReslutCheckerboard { get; set; } = new ViewReslutCheckerboard();
-
-        public ViewRelsultMTFHV ViewRelsultMTFH { get; set; } = new ViewRelsultMTFHV();
-
-        public ViewReslutDistortionGhost ViewReslutDistortionGhost { get; set; } = new ViewReslutDistortionGhost();
-
-        public ViewResultOpticCenter ViewResultOpticCenter { get; set; } = new ViewResultOpticCenter();
-
-    }
-
-
-
-    public class ViewResultOpticCenter
-    {
-        public FindCrossDetailViewReslut FindCrossDetailViewReslut { get; set; }
-
-        public FindCrossDetailViewReslut FindCrossDetailViewReslut1 { get; set; }
-
-        /// <summary>
-        /// X轴倾斜角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem OptCenterXTilt { get; set; }
-
-        /// <summary>
-        /// Y轴倾斜角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem OptCenterYTilt { get; set; }
-
-        /// <summary>
-        /// 旋转角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem OptCenterRotation { get; set; }
-
-        /// <summary>
-        /// X轴倾斜角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem ImageCenterXTilt { get; set; }
-
-        /// <summary>
-        /// Y轴倾斜角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem ImageCenterYTilt { get; set; }
-
-        /// <summary>
-        /// 旋转角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem ImageCenterRotation { get; set; }
-    }
-
-    public class ViewReslutDistortionGhost
-    {
-        public ColorVision.Engine.Templates.Jsons.Distortion2.Distortion2View Distortion2View { get; set; }
-
-        /// <summary>
-        /// 水平TV畸变(%) 测试项
-        /// </summary>
-        public ObjectiveTestItem HorizontalTVDistortion { get; set; }
-
-        /// <summary>
-        /// 垂直TV畸变(%) 测试项
-        /// </summary>
-        public ObjectiveTestItem VerticalTVDistortion { get; set; }
-
-    }
-
-    public class ViewRelsultMTFHV
-    {
-        public MTFDetailViewReslut MTFDetailViewReslut { get; set; }
-
-    }
-
-    public class ViewResultBlack
-    {
-        public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
-
-        /// <summary>
-        /// FOFO对比度 测试项
-        /// </summary>
-        public ObjectiveTestItem FOFOContrast { get; set; }
-
-
-    }
-
-    public class ViewReslutW51
-    {
-        public List<AlgResultLightAreaModel> AlgResultLightAreaModels { get; set; }
-        /// <summary>
-        /// 水平视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem HorizontalFieldOfViewAngle { get; set; }
-
-        /// <summary>
-        /// 垂直视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem VerticalFieldOfViewAngle { get; set; }
-
-        /// <summary>
-        /// 对角线视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem DiagonalFieldOfViewAngle { get; set; }
-
-    }
-
-    public class ViewResultW25
-    {
-        public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
-
-    }
-
-
-    public class ViewResultWhite
-    {
-        public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
-
-        public DFovView DFovView { get; set; }
-        /// <summary>
-        /// 中心相关色温(K) 测试项
-        /// </summary>
-        public ObjectiveTestItem CenterCorrelatedColorTemperature { get; set; } = new ObjectiveTestItem();
-
-        /// <summary>
-        /// 亮度均匀性(%) 测试项
-        /// </summary>
-        public ObjectiveTestItem W255LuminanceUniformity { get; set; } = new ObjectiveTestItem();
-
-        /// <summary>
-        /// 色彩均匀性 测试项
-        /// </summary>
-        public ObjectiveTestItem W255ColorUniformity { get; set; } = new ObjectiveTestItem();
-
-    }
-
-    public class ViewReslutCheckerboard
-    {
-        public ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
-
-        /// <summary>
-        /// 棋盘格对比度 测试项
-        /// </summary>
-        public ObjectiveTestItem ChessboardContrast { get; set; }
-    }
-
 
     public class SwitchPG
     {
@@ -283,8 +69,6 @@ namespace ProjectARVRLite
     public class ARVRWindowConfig : WindowConfig
     {
         public static ARVRWindowConfig Instance => ConfigService.Instance.GetRequiredService<ARVRWindowConfig>();
-        public ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = new ObservableCollection<ProjectARVRReuslt>();
-
     }
 
     public partial class ARVRWindow : Window, IDisposable
@@ -294,9 +78,11 @@ namespace ProjectARVRLite
 
         public static ProjectARVRLiteConfig ProjectConfig => ProjectARVRLiteConfig.Instance;
 
-        public ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = Config.ViewResluts;
+        public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
 
-        public static ObjectiveTestResultFix ObjectiveTestResultFix => ObjectiveTestResultFixManager.GetInstance().ObjectiveTestResultFix;
+        public static ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = ViewResultManager.ViewResluts;
+
+        public static ObjectiveTestResultFix ObjectiveTestResultFix => FixManager.GetInstance().ObjectiveTestResultFix;
 
         public ARVRWindow()
         {
@@ -315,7 +101,7 @@ namespace ProjectARVRLite
             ProjectConfig.StepIndex = 0;
             ObjectiveTestResult = new ObjectiveTestResult();
             CurrentTestType = ARVR1TestType.None;
-            if (string.IsNullOrWhiteSpace(SN ))
+            if (string.IsNullOrWhiteSpace(SN))
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -329,10 +115,17 @@ namespace ProjectARVRLite
                     ProjectARVRLiteConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
                 });
             }
+            if (ViewResultManager.Config.PreSwitchFlow)
+            {
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    SwitchPGCompleted(false);
+                });
+            }
         }
 
         bool IsSwitchRun = false;
-        public void SwitchPGCompleted()
+        public void SwitchPGCompleted(bool run =true)
         {
             if (IsSwitchRun)
             {
@@ -346,70 +139,115 @@ namespace ProjectARVRLite
                 log.Info("PG切换错误，正在执行流程");
                 return;
             }
-            log.Info("PG切换结束");
             var values = Enum.GetValues(typeof(ARVR1TestType));
             int currentIndex = Array.IndexOf(values, CurrentTestType);
             int nextIndex = (currentIndex + 1) % values.Length;
             // 跳过 None（假设 None 是第一个）
             if ((ARVR1TestType)values.GetValue(nextIndex) == ARVR1TestType.None)
                 nextIndex = (nextIndex + 1) % values.Length;
-            CurrentTestType = (ARVR1TestType)values.GetValue(nextIndex);
+            var TestType = (ARVR1TestType)values.GetValue(nextIndex);
 
-            if (CurrentTestType == ARVR1TestType.W51)
+            try
             {
-                ProjectConfig.StepIndex = 1;
-                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White51")).Value;
-                RunTemplate();
-            }
-            if (CurrentTestType == ARVR1TestType.White)
-            {
-                ProjectConfig.StepIndex = 2;
-                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White255")).Value;
-                RunTemplate();
-            }
-            if (CurrentTestType == ARVR1TestType.Black)
-            {
-                ProjectConfig.StepIndex = 3;
-                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Black")).Value;
-                RunTemplate();
-            }
-            if (CurrentTestType == ARVR1TestType.W25)
-            {
-                ProjectConfig.StepIndex = 4;
+                if (TestType == ARVR1TestType.W51)
+                {
+                    ProjectConfig.StepIndex = 1;
+                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White51")).Value;
+                    if (run)
+                    {
+                        CurrentTestType = TestType;
+                        RunTemplate();
+                    }
+                }
+                if (TestType == ARVR1TestType.White)
+                {
+                    ProjectConfig.StepIndex = 2;
+                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White255")).Value;
+                    if (run)
+                    {
+                        CurrentTestType = TestType;
+                        RunTemplate();
+                    }
+                }
+                if (TestType == ARVR1TestType.Black)
+                {
+                    ProjectConfig.StepIndex = 3;
+                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Black")).Value;
+                    if (run)
+                    {
+                        CurrentTestType = TestType;
+                        RunTemplate();
+                    }
+                }
+                if (TestType == ARVR1TestType.W25)
+                {
+                    ProjectConfig.StepIndex = 4;
 
-                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White25")).Value;
-                RunTemplate();
-            }
-            if (CurrentTestType == ARVR1TestType.Chessboard)
-            {
-                ProjectConfig.StepIndex = 5;
+                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White25")).Value;
+                    if (run)
+                    {
+                        CurrentTestType = TestType;
+                        RunTemplate();
+                    }
+                }
+                if (TestType == ARVR1TestType.Chessboard)
+                {
+                    ProjectConfig.StepIndex = 5;
 
-                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Chessboard")).Value;
-                RunTemplate();
-            }
-            if (CurrentTestType == ARVR1TestType.MTFHV)
-            {
-                ProjectConfig.StepIndex = 6;
+                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Chessboard")).Value;
+                    if (run)
+                    {
+                        CurrentTestType = TestType;
+                        RunTemplate();
+                    }
+                }
+                if (TestType == ARVR1TestType.MTFHV)
+                {
+                    ProjectConfig.StepIndex = 6;
 
-                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("MTF_HV")).Value;
-                RunTemplate();
-            }
-            if (CurrentTestType == ARVR1TestType.Distortion)
-            {
-                ProjectConfig.StepIndex = 7;
+                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("MTF_HV")).Value;
+                    if (run)
+                    {
+                        CurrentTestType = TestType;
+                        RunTemplate();
+                    }
+                }
+                if (TestType == ARVR1TestType.Distortion)
+                {
+                    ProjectConfig.StepIndex = 7;
 
-                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Distortion")).Value;
-                RunTemplate();
-            }
-            if (CurrentTestType == ARVR1TestType.OpticCenter)
+                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Distortion")).Value;
+                    if (run)
+                    {
+                        CurrentTestType = TestType;
+                        RunTemplate();
+                    }
+                }
+                if (TestType == ARVR1TestType.OpticCenter)
+                {
+                    ProjectConfig.StepIndex = 8;
+                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("OpticCenter")).Value;
+                    if (run)
+                    {
+                        CurrentTestType = TestType;
+                        RunTemplate();
+                    }
+                }
+
+            }catch(Exception ex)
             {
-                ProjectConfig.StepIndex = 8;
-                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("OpticCenter")).Value;
-                RunTemplate();
+                log.Error(ex);
             }
+
             IsSwitchRun = false;
+
+            if (!run)
+            {
+                Refresh();
+            }
         }
 
+       
         public STNodeEditor STNodeEditorMain { get; set; }
         private FlowEngineControl flowEngine;
         private Timer timer;
@@ -445,17 +283,27 @@ namespace ProjectARVRLite
             timer = new Timer(TimeRun, null, 0, 100);
             timer.Change(Timeout.Infinite, 100); // 停止定时器
 
+
             if (ProjectARVRLiteConfig.Instance.LogControlVisibility)
             {
                 logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
                 LogGrid.Children.Add(logOutput);
             }
+            else
+            {
+                LogGrid.Visibility = Visibility.Collapsed;
+            }
+
 
             this.Closed += (s, e) =>
             {
+
+
                 this.Dispose();
             };
 
+
+            ViewResultManager.ListView = listView1;
             listView1.ItemsSource = ViewResluts;
 
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
@@ -490,13 +338,14 @@ namespace ProjectARVRLite
         public async Task Refresh()
         {
             if (FlowTemplate.SelectedIndex < 0) return;
-
+            string Refreshdata = TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64;
             try
             {
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                     item.nodeRunEvent -= UpdateMsg;
 
-                flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+                flowEngine.FlowClear();
+                flowEngine.LoadFromBase64(Refreshdata, MqttRCService.GetInstance().ServiceTokens);
 
                 for (int i = 0; i < 200; i++)
                 {
@@ -506,11 +355,13 @@ namespace ProjectARVRLite
                 }
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                     item.nodeRunEvent += UpdateMsg;
+
             }
             catch (Exception ex)
             {
                 flowEngine.LoadFromBase64(string.Empty);
             }
+            log.Info($"IsReady{flowEngine.IsReady}");
         }
 
 
@@ -582,7 +433,12 @@ namespace ProjectARVRLite
             LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
 
             CurrentFlowResult = new ProjectARVRReuslt();
-            CurrentFlowResult.SN = SNtextBox.Name;
+            CurrentFlowResult.SN = ProjectARVRLiteConfig.Instance.SN;
+            CurrentFlowResult.Model = FlowTemplate.Text;
+            ;
+
+            CurrentFlowResult.TestType = CurrentTestType;
+
             FlowName = FlowTemplate.Text;
             CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
 
@@ -590,7 +446,6 @@ namespace ProjectARVRLite
 
             if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info( "找不到完整流程，运行失败");return; }
 
-            log.Info($"IsReady{flowEngine.IsReady}");
             if (!flowEngine.IsReady)
             {
                 string base64 = string.Empty;
@@ -623,13 +478,29 @@ namespace ProjectARVRLite
             FlowEngineConfig.Instance.FlowRunTime[FlowTemplate.Text] = stopwatch.ElapsedMilliseconds;
 
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
+            CurrentFlowResult.RunTime  = stopwatch.ElapsedMilliseconds;
             logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
-
 
             if (FlowControlData.EventName == "Completed")
             {
+                CurrentFlowResult.Msg = "Completed";
+
                 try
                 {
+                    //如果没有执行完，先切换PG，并且提前设置流程
+                    if (!IsTestTypeCompleted())
+                    {
+                        SwitchPG();
+                        if (ViewResultManager.Config.PreSwitchFlow)
+                        {
+                            Application.Current.Dispatcher.BeginInvoke(() =>
+                            {
+                                SwitchPGCompleted(false);
+                            });
+                        }
+
+                    }
+
                     Application.Current.Dispatcher.BeginInvoke(() =>
                     {
                         Processing(FlowControlData.SerialNumber);
@@ -645,7 +516,9 @@ namespace ProjectARVRLite
             {
                 log.Info("流程运行超时，正在重新尝试");
                 CurrentFlowResult.FlowStatus = FlowStatus.OverTime;
-                ViewResluts.Insert(0, CurrentFlowResult); //倒序插入
+                CurrentFlowResult.Msg = logTextBox.Text;
+                ViewResultManager.Save(CurrentFlowResult);
+
                 flowEngine.LoadFromBase64(string.Empty);
                 Refresh();
 
@@ -684,13 +557,42 @@ namespace ProjectARVRLite
                 TryCount = 0;
                 log.Error("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
-                ViewResluts.Insert(0, CurrentFlowResult); //倒序插入
+                CurrentFlowResult.Msg = FlowControlData.Params;
+
+                if (CurrentFlowResult.Msg.Contains("SDK return failed"))
+                {
+                    BatchResultMasterModel Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
+                    if (Batch != null)
+                    {
+                        var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
+                        if (values.Count > 0)
+                        {
+                            CurrentFlowResult.FileName = values[0].FileUrl;
+                        }
+                    }
+                }
 
 
+                ViewResultManager.Save(CurrentFlowResult);
                 logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
                 if (ProjectARVRLiteConfig.Instance.AllowTestFailures)
                 {
-                    SwithchSocket();
+                    //如果允许失败，则切换PG，并且提前设置流程,执行结束时直接发送结束
+                    if (!IsTestTypeCompleted())
+                    {
+                        SwitchPG();
+                        if (ViewResultManager.Config.PreSwitchFlow)
+                        {
+                            Application.Current.Dispatcher.BeginInvoke(() =>
+                            {
+                                SwitchPGCompleted(false);
+                            });
+                        }
+                    }
+                    else
+                    {
+                        TestCompleted();
+                    }
                 }
                 else
                 {
@@ -714,12 +616,8 @@ namespace ProjectARVRLite
             }
         }
 
-        private bool IsSavePicture = false;
-        
-
         private void Processing(string SerialNumber)
         {
-            IsSavePicture = true;
             BatchResultMasterModel Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
 
 
@@ -730,17 +628,14 @@ namespace ProjectARVRLite
             }
             ProjectARVRReuslt result = CurrentFlowResult ?? new ProjectARVRReuslt();
 
-
-            result.Model = FlowTemplate.Text;
-            result.Id = Batch.Id;
-            result.SN = ProjectARVRLiteConfig.Instance.SN;
+            result.BatchId = Batch.Id;
             result.FlowStatus = FlowStatus.Completed;
             result.CreateTime = DateTime.Now;
             result.Result = true;
             if (result.Model.Contains("White51"))
             {
                 log.Info("正在解析White51的流程");
-                result.TestType = ARVR1TestType.W51;
+
                 ObjectiveTestResult.FlowW51TestReslut = true;
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
@@ -811,7 +706,6 @@ namespace ProjectARVRLite
             if (result.Model.Contains("White255"))
             {
                 log.Info("正在解析白画面的流程");
-                result.TestType = ARVR1TestType.White;
                 ObjectiveTestResult.FlowWhiteTestReslut = true;
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
@@ -982,7 +876,6 @@ namespace ProjectARVRLite
             else if (result.Model.Contains("White25"))
             {
                 log.Info("正在解析White25画面的流程");
-                result.TestType = ARVR1TestType.W25;
                 ObjectiveTestResult.FlowW25TestReslut = true;
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
@@ -1073,7 +966,6 @@ namespace ProjectARVRLite
             else if (result.Model.Contains("Black"))
             {
                 log.Info("正在解析黑画面的流程");
-                result.TestType = ARVR1TestType.Black;
                 ObjectiveTestResult.FlowBlackTestReslut = true;
                 if (ViewResluts.FirstOrDefault(a => a.SN == ProjectARVRLiteConfig.Instance.SN) is ProjectARVRReuslt result1)
                 {
@@ -1100,31 +992,28 @@ namespace ProjectARVRLite
                             result.ViewResultBlack.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                         }
 
-                        try
+                        if (result.ViewResultWhite != null && result.ViewResultWhite.PoiResultCIExyuvDatas != null && result.ViewResultWhite.PoiResultCIExyuvDatas.Count == 9 && result.ViewResultBlack.PoiResultCIExyuvDatas.Count == 1)
                         {
-                            if (result.ViewResultWhite != null && result.ViewResultWhite.PoiResultCIExyuvDatas.Count == 9 && result.ViewResultBlack.PoiResultCIExyuvDatas.Count == 1)
+                            var contrast1 = result.ViewResultWhite.PoiResultCIExyuvDatas[5].Y / result.ViewResultBlack.PoiResultCIExyuvDatas[0].Y;
+
+                            contrast1 = contrast1 * ObjectiveTestResultFix.FOFOContrast;
+
+                            var FOFOContrast = new ObjectiveTestItem()
                             {
-                                var contrast1 = result.ViewResultWhite.PoiResultCIExyuvDatas[5].Y / result.ViewResultBlack.PoiResultCIExyuvDatas[0].Y;
+                                Name = "FOFOContrast",
+                                LowLimit = recipeConfig.FOFOContrastMin,
+                                UpLimit = recipeConfig.FOFOContrastMax,
+                                Value = contrast1,
+                                TestValue = contrast1.ToString("F2")
+                            };
 
-                                contrast1 = contrast1 * ObjectiveTestResultFix.FOFOContrast;
-
-                                var FOFOContrast = new ObjectiveTestItem()
-                                {
-                                    Name = "FOFOContrast",
-                                    LowLimit = recipeConfig.FOFOContrastMin,
-                                    UpLimit = recipeConfig.FOFOContrastMax,
-                                    Value = contrast1,
-                                    TestValue = contrast1.ToString("F2")
-                                };
-
-                                ObjectiveTestResult.FOFOContrast = FOFOContrast;
-                                result.ViewResultBlack.FOFOContrast = FOFOContrast;
-                                result.Result = result.Result &&  FOFOContrast.TestResult;
-                            }
+                            ObjectiveTestResult.FOFOContrast = FOFOContrast;
+                            result.ViewResultBlack.FOFOContrast = FOFOContrast;
+                            result.Result = result.Result && FOFOContrast.TestResult;
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            log.Info($"找不到白画面对应的黑画面{ex}");
+                            log.Info($"计算对比度前需要白画面的亮度");
                         }
 
                     }
@@ -1133,7 +1022,6 @@ namespace ProjectARVRLite
             else if (result.Model.Contains("Chessboard"))
             {
                 log.Info("正在解析棋盘格画面的流程");
-                result.TestType = ARVR1TestType.Chessboard;
                 ObjectiveTestResult.FlowChessboardTestReslut = true;
 
 
@@ -1189,28 +1077,11 @@ namespace ProjectARVRLite
                         }
                     }
 
-                    try
-                    {
-                        string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                        string filePath = Path.Combine(ProjectARVRLiteConfig.Instance.ResultSavePath, $"Chessboard_{timeStr}.csv");
-                        PoiResultCIExyuvData.SaveCsv(result.ViewReslutCheckerboard.PoiResultCIExyuvDatas, filePath);
-
-                        var csvBuilder = new StringBuilder();
-                        csvBuilder.AppendLine();
-                        csvBuilder.AppendLine($"Chessboard");
-                        csvBuilder.AppendLine($"{result.ViewReslutCheckerboard.ChessboardContrast.Value}");
-                        File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Error(ex);
-                    }
                 }
             }
             else if (result.Model.Contains("MTF_HV"))
             {
                 log.Info("正在解析MTF_HV画面的流程");
-                result.TestType = ARVR1TestType.MTFHV;
                 ObjectiveTestResult.FlowMTFHVTestReslut = true;
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
@@ -1460,7 +1331,7 @@ namespace ProjectARVRLite
                         try
                         {
                             string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                            string filePath = Path.Combine(ProjectARVRLiteConfig.Instance.ResultSavePath, $"MTF_H_{timeStr}.csv");
+                            string filePath = Path.Combine(ViewResultManager.Config.SavePathCsv, $"MTF_H_{timeStr}.csv");
                             var csvBuilder = new StringBuilder();
                             csvBuilder.AppendLine($"name,x,y,w,h,mtfValue");
                             var mtfs = result.ViewRelsultMTFH.MTFDetailViewReslut.MTFResult?.result;
@@ -1485,7 +1356,6 @@ namespace ProjectARVRLite
             else if (result.Model.Contains("Distortion"))
             {
                 log.Info("正在解析Distortion画面的流程");
-                result.TestType = ARVR1TestType.Distortion;
                 ObjectiveTestResult.FlowDistortionTestReslut = true;
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
@@ -1541,7 +1411,6 @@ namespace ProjectARVRLite
             else if (result.Model.Contains("OpticCenter"))
             {
                 log.Info("正在解析OpticCenter画面的流程");
-                result.TestType = ARVR1TestType.OpticCenter;
                 ObjectiveTestResult.FlowOpticCenterTestReslut = true;
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
@@ -1661,113 +1530,111 @@ namespace ProjectARVRLite
                 }
             }
 
+            ViewResultManager.Save(result);
 
-            ViewResluts.Insert(0,result); //倒序插入
-            if (ProjectARVRLiteConfig.Instance.RefreshResult)
-            {
-                listView1.SelectedIndex = 0;
-            }
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
-            SwithchSocket();
+
+            if (IsTestTypeCompleted())
+            {
+                TestCompleted();
+            }
         }
 
-        private void SwithchSocket()
+        private bool IsTestTypeCompleted()
         {
-            if (SocketManager.GetInstance().TcpClients.Count > 0)
-            {
-                log.Info("Socket已经链接 ");
-                try
-                {
-                    if (SocketControl.Current.Stream != null)
-                    {
-                        var values = Enum.GetValues(typeof(ARVR1TestType));
-                        int currentIndex = Array.IndexOf(values, CurrentTestType);
-                        int nextIndex = (currentIndex + 1) % values.Length;
-                        // 跳过 None（假设 None 是第一个）
-                        if ((ARVR1TestType)values.GetValue(nextIndex) == ARVR1TestType.None)
-                            nextIndex = (nextIndex + 1) % values.Length;
-                        ARVR1TestType aRVRTestType = (ARVR1TestType)values.GetValue(nextIndex);
+            var values = Enum.GetValues(typeof(ARVR1TestType));
+            int currentIndex = Array.IndexOf(values, CurrentTestType);
+            int nextIndex = (currentIndex + 1) % values.Length;
+            // 跳过 None（假设 None 是第一个）
+            if ((ARVR1TestType)values.GetValue(nextIndex) == ARVR1TestType.None)
+                nextIndex = (nextIndex + 1) % values.Length;
+            ARVR1TestType aRVRTestType = (ARVR1TestType)values.GetValue(nextIndex);
 
-                        if (aRVRTestType >= ARVR1TestType.Ghost)
-                        {
+            return aRVRTestType >= ARVR1TestType.Ghost;
+        }
 
-                            ObjectiveTestResult.TotalResult = true;
-                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowW51TestReslut;
-                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowWhiteTestReslut;
-                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowBlackTestReslut;
-                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowW25TestReslut;
-                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowChessboardTestReslut;
-                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowMTFHVTestReslut;
-                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowDistortionTestReslut;
-                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowOpticCenterTestReslut;
-                            log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
-
-                            string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                            string filePath = Path.Combine(ProjectARVRLiteConfig.Instance.ResultSavePath, $"ObjectiveTestResults_{timeStr}.csv");
-
-                            List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
-
-                            objectiveTestResults.Add(ObjectiveTestResult);
-                            ObjectiveTestResultCsvExporter.ExportToCsv(objectiveTestResults, filePath);
-                            var response = new SocketResponse
-                            {
-                                Version = "1.0",
-                                MsgID = string.Empty,
-                                EventName = "ProjectARVRResult",
-                                Code = 0,
-                                SerialNumber =SNtextBox.Text,
-                                Msg = "ARVR Test Completed",
-                                Data = ObjectiveTestResult
-                            };
-                            string respString = JsonConvert.SerializeObject(response);
-                            log.Info(respString);
-                            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
-                        }
-                        else
-                        {
-
-                            var response = new SocketResponse
-                            {
-                                Version = "1.0",
-                                MsgID = string.Empty,
-                                EventName = "SwitchPG",
-                                Code = 0,
-                                Msg = "Switch PG",
-                                SerialNumber = SNtextBox.Text,
-                                Data = new SwitchPG
-                                {
-                                    ARVRTestType = aRVRTestType
-                                },
-                            };
-                            string respString = JsonConvert.SerializeObject(response);
-                            log.Info(respString);
-                            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
-                        }
-
-                    }
-                    else
-                    {
-                        log.Info("Socket流为空，无法发送数据");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    log.ErrorExt(ex);
-                }
-
-            }
-            else
+        private void SwitchPG()
+        {
+            if (SocketManager.GetInstance().TcpClients.Count <= 0 || SocketControl.Current.Stream == null)
             {
                 log.Info("找不到连接的Socket");
+                return;
             }
+            log.Info("Socket已经链接 ");
+
+            var values = Enum.GetValues(typeof(ARVR1TestType));
+            int currentIndex = Array.IndexOf(values, CurrentTestType);
+            int nextIndex = (currentIndex + 1) % values.Length;
+            // 跳过 None（假设 None 是第一个）
+            if ((ARVR1TestType)values.GetValue(nextIndex) == ARVR1TestType.None)
+                nextIndex = (nextIndex + 1) % values.Length;
+            ARVR1TestType aRVRTestType = (ARVR1TestType)values.GetValue(nextIndex);
+
+            var response = new SocketResponse
+            {
+                Version = "1.0",
+                MsgID = string.Empty,
+                EventName = "SwitchPG",
+                Code = 0,
+                Msg = "Switch PG",
+                SerialNumber = SNtextBox.Text,
+                Data = new SwitchPG
+                {
+                    ARVRTestType = aRVRTestType
+                },
+            };
+            string respString = JsonConvert.SerializeObject(response);
+            log.Info(respString);
+            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
 
         }
 
+        private void TestCompleted()
+        {
+            if (SocketManager.GetInstance().TcpClients.Count <= 0 || SocketControl.Current.Stream == null)
+            {
+                log.Info("找不到连接的Socket");
+                return;
+            }
+            ObjectiveTestResult.TotalResult = true;
+            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowW51TestReslut;
+            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowWhiteTestReslut;
+            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowBlackTestReslut;
+            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowW25TestReslut;
+            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowChessboardTestReslut;
+            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowMTFHVTestReslut;
+            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowDistortionTestReslut;
+            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowOpticCenterTestReslut;
+            log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
 
+            string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
+
+
+            string filePath = Path.Combine(ViewResultManager.Config.SavePathCsv, $"ObjectiveTestResults_{timeStr}.csv");
+
+            List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
+
+            objectiveTestResults.Add(ObjectiveTestResult);
+            ObjectiveTestResultCsvExporter.ExportToCsv(objectiveTestResults, filePath);
+            var response = new SocketResponse
+            {
+                Version = "1.0",
+                MsgID = string.Empty,
+                EventName = "ProjectARVRResult",
+                Code = 0,
+                SerialNumber = SNtextBox.Text,
+                Msg = "ARVR Test Completed",
+                Data = ObjectiveTestResult
+            };
+            string respString = JsonConvert.SerializeObject(response);
+            log.Info(respString);
+            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+        }
 
         private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
-            ProjectARVRLiteConfig.Instance.Height = row2.ActualHeight;
+            ViewResultManager.Config.Height = row2.ActualHeight;
             row2.Height = GridLength.Auto;
         }
 
@@ -1784,6 +1651,8 @@ namespace ProjectARVRLite
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
                 var result = ViewResluts[listView.SelectedIndex];
+                if (result.FlowStatus != FlowStatus.Completed)
+                    return;
                 try
                 {
                     GenoutputText(result);
@@ -1813,7 +1682,7 @@ namespace ProjectARVRLite
                         catch
                         {
                             log.Debug("文件还在写入");
-                            await Task.Delay(ProjectARVRLiteConfig.Instance.ViewImageReadDelay);
+                            await Task.Delay(ViewResultManager.Config.ViewImageReadDelay);
                             OpenImage(result);
                         }
                     }
@@ -2037,24 +1906,6 @@ namespace ProjectARVRLite
                         }
                     }
                 }
-                Task.Run(async () =>
-                {
-                    await Task.Delay(200);
-
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        if (IsSavePicture)
-                        {
-                            IsSavePicture = false;
-                            string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                            if (Directory.Exists(ProjectARVRLiteConfig.Instance.ResultSavePath))
-                            {
-                                string filePath = Path.Combine(ProjectARVRLiteConfig.Instance.ResultSavePath, $"{result.TestType}_{timeStr}.png");
-                                ImageView.ImageViewModel.Save(filePath);
-                            }
-                        }
-                    });
-                });
 
             });
 

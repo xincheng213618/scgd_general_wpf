@@ -305,16 +305,18 @@ namespace ProjectKB
             FlowEngineConfig.Instance.FlowRunTime[FlowTemplate.Text] = stopwatch.ElapsedMilliseconds;
 
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
-            });
+            CurrentFlowResult.RunTime = stopwatch.ElapsedMilliseconds;
+
+            logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
+            CurrentFlowResult.Msg = FlowControlData.EventName;
+
 
             ProjectKBConfig.Instance.SNlocked = false;
             SNtextBox.Focus();
 
             if (FlowControlData.EventName == "Completed")
             {
+
                 try
                 {
                     Application.Current.Dispatcher.BeginInvoke(() =>
@@ -351,14 +353,26 @@ namespace ProjectKB
             }
             else
             {
-                Application.Current.Dispatcher.BeginInvoke(() =>
+                TryCount = 0;
+                log.Error("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
+                CurrentFlowResult.FlowStatus = FlowStatus.Failed;
+                CurrentFlowResult.Msg = FlowControlData.Params;
+
+                if (CurrentFlowResult.Msg.Contains("SDK return failed"))
                 {
-                    TryCount = 0;
-                    log.Error("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
-                    CurrentFlowResult.FlowStatus = FlowStatus.Failed;
-                    ViewResluts.Insert(0, CurrentFlowResult); //倒序插入
-                    logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
-                });
+                    BatchResultMasterModel Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
+                    if (Batch != null)
+                    {
+                        var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
+                        if (values.Count > 0)
+                        {
+                            CurrentFlowResult.ResultImagFile = values[0].FileUrl;
+                        }
+                    }
+                }
+
+                ViewResluts.Insert(0, CurrentFlowResult); //倒序插入
+                logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
             }
         }
 
@@ -515,7 +529,8 @@ namespace ProjectKB
             KBItemMaster.MinLv = minLKey.Lv;
             KBItemMaster.DrakestKey = minLKey.Name;
             KBItemMaster.AvgLv = KBItemMaster.Items.Any() ? KBItemMaster.Items.Average(item => item.Lv) : 0;
-            KBItemMaster.LvUniformity = KBItemMaster.MinLv / KBItemMaster.MaxLv;
+
+            KBItemMaster.LvUniformity = KBItemMaster.MaxLv ==0 ? 0: KBItemMaster.MinLv / KBItemMaster.MaxLv;
             KBItemMaster.SN = SNtextBox.Text;
             KBItemMaster.NbrFailPoints = KBItemMaster.Items.Count(item => !item.Result);
 
@@ -620,8 +635,9 @@ namespace ProjectKB
                 ModbusControl.GetInstance().SetRegisterValue(0);
             });
 
-            ///回传MEs
-            if (Summary.UseMes)
+            ///回传MEs 确保Mes配置
+            log.Info($"UseMes{Summary.UseMes} IsCheckWIP{IsCheckWIP}");
+            if (Summary.UseMes && IsCheckWIP)
             {
                 try
                 {
@@ -630,7 +646,7 @@ namespace ProjectKB
                     IntPtr a = MesDll.Collect_test(Summary.Stage, ProjectKBConfig.Instance.SN, Barcode_Result, Summary.MachineNO, Summary.LineNO, Summary.Opno, Barcode_Result, string.Empty);
                     var Collect_test = MesDll.PtrToString(a);
                     logTextBox.Text += Collect_test;
-                    log.Info(Collect_test);
+                    log.Info("Collect_test result" + Collect_test);
                 }
                 catch (Exception ex)
                 {
@@ -638,6 +654,7 @@ namespace ProjectKB
                 }
 
             }
+            IsCheckWIP = false;
             SNtextBox.Text = string.Empty;
             SNtextBox.Focus();
         }
@@ -923,25 +940,32 @@ namespace ProjectKB
                 DebounceTimer.AddOrResetTimer("KBUploadSN", 500, e => UploadSN(), 0);
             }
         }
+        private bool IsCheckWIP = false;
         private bool IsUploadSNing { get; set; }
         private void UploadSN()
         {
             if (IsUploadSNing) return;
             IsUploadSNing = true;
+            IsCheckWIP = false;
             if (Summary.UseMes)
             {
                 log.Info($"CheckWIP Stage{SummaryManager.GetInstance().Summary.Stage},SN:{ProjectKBConfig.Instance.SN}");
                 IntPtr a = MesDll.CheckWIP(SummaryManager.GetInstance().Summary.Stage, ProjectKBConfig.Instance.SN);
                 var result = MesDll.PtrToString(a);
-                log.Info(result);
+                log.Info("CheckWIP Stage result" + result);
                 if (result != "N")
                 {
+                    IsUploadSNing =false;
                     Application.Current.Dispatcher.BeginInvoke(() =>
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), result);
+                        MessageBox.Show(Application.Current.GetActiveWindow(), result,"CheckWIP Stage Fail");
+                        SNtextBox.Focus();
+                        SNtextBox.SelectAll();
                     });
+
                     return;
                 }
+                IsCheckWIP = true;
                 ProjectKBConfig.Instance.SNlocked = true;
             }
             else

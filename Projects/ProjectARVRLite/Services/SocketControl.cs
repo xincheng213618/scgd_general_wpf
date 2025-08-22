@@ -1,5 +1,6 @@
 ﻿using ColorVision.Engine.Templates.Flow;
 using ColorVision.SocketProtocol;
+using log4net;
 using ProjectARVRLite.PluginConfig;
 using System.Net.Sockets;
 using System.Windows;
@@ -34,6 +35,7 @@ namespace ProjectARVRLite.Services
 
     public class SwitchPGSocket: ISocketEventHandler
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(SwitchPGSocket));
         public string EventName => "SwitchPGCompleted";
 
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
@@ -41,6 +43,7 @@ namespace ProjectARVRLite.Services
             SocketControl.Current.Stream = stream;
             if (ProjectWindowInstance.WindowInstance != null)
             {
+                log.Info("PG切换结束");
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     ProjectWindowInstance.WindowInstance.SwitchPGCompleted();

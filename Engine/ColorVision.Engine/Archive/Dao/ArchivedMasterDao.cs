@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Archive.Dao
 
 
     [SugarTable("t_scgd_archived_master")]
-    public class ArchivedMasterModel : PKModel
+    public class ArchivedMasterModel : PKModel, IInitTables
     {
         [SugarColumn(ColumnName = "code"),DisplayName("Code")]
         public string Code { get; set; }

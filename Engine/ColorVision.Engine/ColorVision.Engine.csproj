@@ -14,12 +14,16 @@
   <ItemGroup>
     <Compile Remove="Controls\**" />
     <Compile Remove="libs\**" />
+    <Compile Remove="Services\Devices\Spectrum\Templates\**" />
     <EmbeddedResource Remove="Controls\**" />
     <EmbeddedResource Remove="libs\**" />
+    <EmbeddedResource Remove="Services\Devices\Spectrum\Templates\**" />
     <None Remove="Controls\**" />
     <None Remove="libs\**" />
+    <None Remove="Services\Devices\Spectrum\Templates\**" />
     <Page Remove="Controls\**" />
     <Page Remove="libs\**" />
+    <Page Remove="Services\Devices\Spectrum\Templates\**" />
   </ItemGroup>
 
 	<ItemGroup>
@@ -266,7 +270,6 @@
     <Folder Include="Rbac\Roles\" />
     <Folder Include="Rbac\Tenants\" />
     <Folder Include="Rbac\Account\" />
-    <Folder Include="Services\Devices\Spectrum\Templates\" />
   </ItemGroup>
 
 </Project>

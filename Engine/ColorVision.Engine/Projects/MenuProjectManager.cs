@@ -7,7 +7,7 @@ namespace ColorVision.Projects
 {
     public class MenuProjectManager : MenuItemBase
     {
-        public override string OwnerGuid => MenuItemConstants.Help;
+        public override string OwnerGuid => MenuItemConstants.Tool;
         public override int Order => 9000;
         public override string Header => Resources.ProjectManagerWindow;
 

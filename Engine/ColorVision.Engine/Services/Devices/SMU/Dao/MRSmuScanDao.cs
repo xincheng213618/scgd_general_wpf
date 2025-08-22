@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
@@ -6,7 +7,7 @@ using System.Collections.Generic;
 namespace ColorVision.Engine.Services.Devices.SMU.Dao
 {
     [SugarTable("t_scgd_measure_result_smu_scan")]
-    public class SmuScanModel : PKModel
+    public class SmuScanModel : PKModel, IInitTables
     {
         [SugarColumn(ColumnName ="device_code")]
         public string? DeviceCode { get; set; }

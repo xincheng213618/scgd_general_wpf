@@ -1,5 +1,5 @@
-﻿using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.SMU.Configs;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Dao
 {
 
     [SugarTable("t_scgd_measure_result_smu")]
-    public class SMUResultModel : PKModel
+    public class SMUResultModel : PKModel, IInitTables
     {
 
         [SugarColumn(ColumnName ="pid")]

@@ -14,17 +14,20 @@ namespace ProjectARVRLite
         public static RecipeManager GetInstance() { lock (_locker) { _instance ??= new RecipeManager(); return _instance; } }
         public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
 
-        public static string ObjectiveTestResultFixPath { get; set; } = DirectoryPath + "ProjectARVRLiteRecipe.json";
+        public static string RecipeFixPath { get; set; } = DirectoryPath + "ProjectARVRLiteRecipe.json";
         public Dictionary<string, ARVRRecipeConfig> RecipeConfigs { get; set; }
+        public RelayCommand EditCommand { get; set; }
 
         public ARVRRecipeConfig RecipeConfig { get; set; } = new ARVRRecipeConfig();
 
         public RecipeManager()
         {
+            EditCommand = new RelayCommand(a => Edit());
+
             if (!Directory.Exists(DirectoryPath))
                 Directory.CreateDirectory(DirectoryPath);
 
-            if (LoadFromFile(ObjectiveTestResultFixPath) is Dictionary<string, ARVRRecipeConfig> fix)
+            if (LoadFromFile(RecipeFixPath) is Dictionary<string, ARVRRecipeConfig> fix)
             {
                 RecipeConfigs = fix;
             }
@@ -35,7 +38,11 @@ namespace ProjectARVRLite
             }
 
         }
-
+        public static void Edit()
+        {
+            EditRecipeWindow EditRecipeWindow = new EditRecipeWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            EditRecipeWindow.ShowDialog();
+        }
         public void Save()
         {
             try
@@ -44,7 +51,7 @@ namespace ProjectARVRLite
                     Directory.CreateDirectory(DirectoryPath);
 
                 string json = JsonConvert.SerializeObject(RecipeConfigs, Formatting.Indented);
-                File.WriteAllText(ObjectiveTestResultFixPath, json);
+                File.WriteAllText(RecipeFixPath, json);
             }
             catch
             {

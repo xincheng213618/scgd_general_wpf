@@ -66,6 +66,11 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
     {
         public DetailCommonModel DetailCommonModel { get; set; }
 
+        public MTFDetailViewReslut()
+        {
+
+        }
+
         public MTFDetailViewReslut(DetailCommonModel detailCommonModel)
         {
             DetailCommonModel = detailCommonModel;

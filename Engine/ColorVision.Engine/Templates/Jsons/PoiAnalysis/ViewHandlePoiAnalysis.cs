@@ -34,6 +34,11 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
     {
         public DetailCommonModel DetailCommonModel { get; set; }
 
+        public PoiAnalysisDetailViewReslut()
+        {
+
+        }
+
         public PoiAnalysisDetailViewReslut(DetailCommonModel detailCommonModel)
         {
             DetailCommonModel = detailCommonModel;

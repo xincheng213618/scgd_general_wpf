@@ -1,11 +1,12 @@
-﻿using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
 using NPOI.SS.Formula.Functions;
 using SqlSugar;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
 {
     [SugarTable("t_scgd_measure_result_third_party_algorithm")]
-    public class ThirdPartyAlgorithmsResultModel : VPKModel
+    public class ThirdPartyAlgorithmsResultModel : VPKModel, IInitTables
     {
 
         [SugarColumn(ColumnName ="img_file")]

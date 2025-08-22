@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine;
 using ColorVision.UI;
-using NPOI.SS.Formula.Functions;
 using SqlSugar;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -16,7 +15,7 @@ namespace ProjectKB
     {
         [DisplayName("查询数量"), Category("View")]
         public int Count { get => _Count; set { _Count = value; NotifyPropertyChanged(); } }
-        private int _Count = -1;
+        private int _Count = 50;
 
         [DisplayName("按类型排序"), Category("View")]
         public OrderByType OrderByType { get => _OrderByType; set { _OrderByType = value; NotifyPropertyChanged(); } }

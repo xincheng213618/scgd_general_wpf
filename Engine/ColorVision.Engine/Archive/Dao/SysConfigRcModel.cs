@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.Archive.Dao;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
@@ -12,10 +13,8 @@ using System.Windows;
 namespace ColorVision.Engine.Sys.Dao
 {
     [SugarTable("t_scgd_sys_config_rc")]
-    public class SysConfigRcModel : VPKModel
+    public class SysConfigRcModel : VPKModel, IInitTables
     {
-        [SugarColumn(ColumnName = "code", IsPrimaryKey = true)]
-
         [DisplayName("Code")]
         public string Code { get; set; }
 

@@ -10,7 +10,9 @@ namespace ColorVision.Themes
         {
             if (e.Key == Key.Enter)
             {
-                Common.NativeMethods.Keyboard.PressKey(0x09);
+                if (sender is UIElement uie)
+                    uie.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+
                 e.Handled = true;
             }
         }
@@ -19,6 +21,9 @@ namespace ColorVision.Themes
         {
             if (e.Key == Key.Enter || e.Key == Key.Back || e.Key == Key.Left || e.Key == Key.Right)
             {
+                if (sender is UIElement uie)
+                    uie.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+
                 e.Handled = false;
                 return;
             }

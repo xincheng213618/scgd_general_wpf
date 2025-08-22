@@ -7,19 +7,22 @@ using System.Windows;
 namespace ProjectARVRLite
 {
 
-    public class ObjectiveTestResultFixManager
+    public class FixManager
     {
-        private static ObjectiveTestResultFixManager _instance;
+        private static FixManager _instance;
         private static readonly object _locker = new();
-        public static ObjectiveTestResultFixManager GetInstance() { lock (_locker) { _instance ??= new ObjectiveTestResultFixManager(); return _instance; } }
+        public static FixManager GetInstance() { lock (_locker) { _instance ??= new FixManager(); return _instance; } }
         public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
 
         public static string ObjectiveTestResultFixPath { get; set; } = DirectoryPath + "ObjectiveTestResultFix.json";
+        public RelayCommand EditCommand { get; set; }
 
         public ObjectiveTestResultFix ObjectiveTestResultFix { get; set; }
 
-        public ObjectiveTestResultFixManager()
+        public FixManager()
         {
+            EditCommand = new RelayCommand(a => Edit());
+
             if (!Directory.Exists(DirectoryPath))
                 Directory.CreateDirectory(DirectoryPath);
 
@@ -33,6 +36,11 @@ namespace ProjectARVRLite
                 Save();
             }
 
+        }
+        public static void Edit()
+        {
+            EditFixWindow EditFixWindow = new EditFixWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            EditFixWindow.ShowDialog();
         }
         public void Save()
         {
@@ -67,39 +75,40 @@ namespace ProjectARVRLite
 
     }
 
+
     /// <summary>
-    /// ObjectiveTestResultFixWindow.xaml 的交互逻辑
+    /// EditFixWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class ObjectiveTestResultFixWindow : Window
+    public partial class EditFixWindow : Window
     {
-        ObjectiveTestResultFixManager ObjectiveTestResultFixManager { get; set; }
-        public ObjectiveTestResultFixWindow()
+        FixManager FixManager { get; set; }
+        public EditFixWindow()
         {
             InitializeComponent();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            ObjectiveTestResultFixManager = ObjectiveTestResultFixManager.GetInstance();
-            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(ObjectiveTestResultFixManager.ObjectiveTestResultFix));
+            FixManager = FixManager.GetInstance();
+            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(FixManager.ObjectiveTestResultFix));
         }
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
-            ObjectiveTestResultFixManager.Save();
+            FixManager.Save();
             this.Close();
         }
 
         private void Reset_Click(object sender, RoutedEventArgs e)
         {
             var ObjectiveTestResultFix  = new ObjectiveTestResultFix();
-            ObjectiveTestResultFixManager.ObjectiveTestResultFix.CopyFrom(ObjectiveTestResultFix);
-            ObjectiveTestResultFixManager.Save();
+            FixManager.ObjectiveTestResultFix.CopyFrom(ObjectiveTestResultFix);
+            FixManager.Save();
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)
         {
-            ObjectiveTestResultFixManager.Save();
+            FixManager.Save();
             this.Close();
         }
     }

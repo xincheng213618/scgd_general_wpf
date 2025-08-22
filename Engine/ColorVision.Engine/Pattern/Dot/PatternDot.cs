@@ -66,8 +66,6 @@ namespace ColorVision.Engine.Pattern.Dot
     [DisplayName("点阵")]
     public class PatternDot : IPatternBase<PatternDotConfig>
     {
-        public static PatternDotConfig Config => ConfigService.Instance.GetRequiredService<PatternDotConfig>();
-        public override ViewModelBase GetConfig() => Config;
         public override UserControl GetPatternEditor() => new DotEditor(Config);
 
         public override Mat Gen(int height, int width)

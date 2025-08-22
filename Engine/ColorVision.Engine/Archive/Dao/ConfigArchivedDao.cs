@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Archive.Dao
 {
 
     [DisplayName("归档配置"),SugarTable("t_scgd_sys_config_archived")]
-    public class ConfigArchivedModel : ViewModelBase, IPKModel
+    public class ConfigArchivedModel : ViewModelBase, IPKModel, IInitTables
     {
         [SugarColumn(ColumnName ="id"), Browsable(false)]
         public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }

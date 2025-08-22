@@ -3,7 +3,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using ProjectARVRLite;
 using ProjectARVRLite;
-using ProjectARVRLite.Config;
 using System.ComponentModel;
 
 namespace ProjectARVRLite

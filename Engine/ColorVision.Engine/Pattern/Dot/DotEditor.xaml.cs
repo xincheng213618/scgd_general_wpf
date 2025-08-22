@@ -32,13 +32,13 @@ namespace ColorVision.Engine.Pattern.Dot
             ColorPicker1.SelectedColorChanged += (s, e) =>
             {
                 Config.MainBrush = ColorPicker1.SelectedBrush;
-                rectMainColor.Fill = Config.MainBrush;
+
             };
             Window window = new Window() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Content = ColorPicker1, Width = 250, Height = 400 };
             ColorPicker1.Confirmed += (s, e) =>
             {
                 Config.MainBrush = ColorPicker1.SelectedBrush;
-                rectMainColor.Fill = Config.MainBrush;
+
                 window.Close();
             };
             window.Closed += (s, e) =>
@@ -73,7 +73,7 @@ namespace ColorVision.Engine.Pattern.Dot
                 {
                     Config.MainBrush = Brushes.Black;
                 }
-                rectMainColor.Fill = Config.MainBrush;
+
             }
         }
 
@@ -84,13 +84,11 @@ namespace ColorVision.Engine.Pattern.Dot
             ColorPicker1.SelectedColorChanged += (s, e) =>
             {
                 Config.AltBrush = ColorPicker1.SelectedBrush;
-                rectAltColor.Fill = Config.AltBrush;
             };
             Window window = new Window() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Content = ColorPicker1, Width = 250, Height = 400 };
             ColorPicker1.Confirmed += (s, e) =>
             {
                 Config.AltBrush = ColorPicker1.SelectedBrush;
-                rectAltColor.Fill = Config.AltBrush;
                 window.Close();
             };
             window.Closed += (s, e) =>
@@ -125,7 +123,6 @@ namespace ColorVision.Engine.Pattern.Dot
                 {
                     Config.AltBrush = Brushes.Black;
                 }
-                rectAltColor.Fill = Config.AltBrush;
             }
         }
     }

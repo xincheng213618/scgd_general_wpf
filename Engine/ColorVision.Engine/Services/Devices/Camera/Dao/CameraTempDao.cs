@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ using System.Linq;
 namespace ColorVision.Engine.Services.Dao
 {
     [SugarTable("t_scgd_camera_temp")]
-    public class CameraTempModel : VPKModel
+    public class CameraTempModel : VPKModel, IInitTables
     {
         [SugarColumn(ColumnName ="temp_value")]
         public float? TempValue { get; set; }

@@ -122,6 +122,7 @@ namespace ColorVision.Engine.MySql
                     DbType = SqlSugar.DbType.MySql,
                     IsAutoCloseConnection = true
                 });
+                
 
                 return Task.FromResult(true);
             }
@@ -200,7 +201,7 @@ namespace ColorVision.Engine.MySql
                     }
                 }
             }
-            var prefixes = new[] { "t_scgd_sys_config", "t_scgd_sys_globle_cfg", "t_scgd_rc", "t_scgd_sys_version" };
+            var prefixes = new[] { "t_scgd_sys_config", "t_scgd_sys_globle_cfg", "t_scgd_sys_mqtt_cfg", "t_scgd_rc", "t_scgd_sys_version" };
 
             tableNames = tableNames
                 .Where(name => !prefixes.Any(prefix => name.StartsWith(prefix,StringComparison.CurrentCulture)))

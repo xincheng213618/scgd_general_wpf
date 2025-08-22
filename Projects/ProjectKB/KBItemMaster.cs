@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.Flow;
 using log4net;
@@ -6,6 +7,7 @@ using Newtonsoft.Json;
 using SqlSugar;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Windows.Controls;
 
 namespace ProjectKB
@@ -20,6 +22,14 @@ namespace ProjectKB
         {
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Command = System.Windows.Input.ApplicationCommands.Delete });
+            ContextMenu.Items.Add(new MenuItem() { Command = System.Windows.Input.ApplicationCommands.Copy, Header = "复制" });
+
+            RelayCommand openFolderAndSelectFile = new RelayCommand(a =>
+            {
+                PlatformHelper.OpenFolderAndSelectFile(ResultImagFile);
+            }, e => File.Exists(ResultImagFile));
+
+            ContextMenu.Items.Add(new MenuItem() { Command = openFolderAndSelectFile, Header = "OpenFolderAndSelectFile" });
         }
 
 
@@ -95,6 +105,9 @@ namespace ProjectKB
 
         public bool Result { get => _Result; set { _Result = value; NotifyPropertyChanged(); } }
         private bool _Result;
+
+        public long RunTime { get; set; }
+        public string Msg { get; set; } = string.Empty;
 
         public DateTime CreateTime { get => _CreateTime; set { _CreateTime = value; NotifyPropertyChanged(); } }
         private DateTime _CreateTime = DateTime.Now;

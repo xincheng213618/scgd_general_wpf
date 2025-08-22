@@ -48,8 +48,6 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
     {
         public GhostView(DetailCommonModel detail)
         {
-            Id = detail.Id;
-            PId = detail.PId;
             var restfile = JsonConvert.DeserializeObject<ResultFile>(detail.ResultJson);
             if (restfile != null)
             {
@@ -69,17 +67,8 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
 
 
         }
-        [SugarColumn(ColumnName ="id")]
-        public int Id { get; set; }
-        [SugarColumn(ColumnName ="pid")]
-        public int PId { get; set; }
-
-        [SugarColumn(ColumnName ="result")]
         public string Result { get; set; }
-
-        [SugarColumn(IsIgnore = true)]
         public string? ResultFileName { get; set; }
-        [SugarColumn(IsIgnore = true)]
         public GhostReslut GhostReslut { get; set; }
     }
 

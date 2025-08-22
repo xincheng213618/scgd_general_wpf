@@ -6,14 +6,14 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Pattern
 {
-    public class TemplatePatternFile
+    public class TemplatePatternFile:ViewModelBase
     {
         public ContextMenu ContextMenu { get; set; }
         public RelayCommand SelectCommand { get; set; }
         public TemplatePatternFile(string filePath)
         {
             FilePath = filePath;
-            Name = Path.GetFileName(filePath);
+            Name = Path.GetFileNameWithoutExtension(filePath);
             SelectCommand = new RelayCommand(a => PlatformHelper.OpenFolderAndSelectFile(FilePath));
 
             ContextMenu = new ContextMenu();
@@ -22,7 +22,24 @@ namespace ColorVision.Engine.Pattern
             ContextMenu.Items.Add(new MenuItem() { Header = "选中", Command = SelectCommand });
 
         }
-        public string Name { get; set; }
+        public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        private string _Name;
+
+        public  bool IsEditMode { get => _IsEditMode; set {
+                if (_IsEditMode == value) return;
+                _IsEditMode = value;
+                NotifyPropertyChanged();
+                if (!value)
+                {
+                    string newpath = Path.Combine(Path.GetDirectoryName(FilePath), Name+ Path.GetExtension(FilePath));
+                    if (newpath !=FilePath)
+                    File.Move(FilePath, newpath);
+                    FilePath = newpath;
+                }
+
+            } 
+        }
+        private bool _IsEditMode;
 
         public string FilePath { get; set; }
     }

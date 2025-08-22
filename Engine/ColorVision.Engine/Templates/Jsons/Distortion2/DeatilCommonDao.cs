@@ -7,6 +7,9 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
 {
     public class Distortion2View : IViewResult
     {
+        public Distortion2View()
+        {
+        }
         public Distortion2View(DetailCommonModel detail)
         {
             var restfile = JsonConvert.DeserializeObject<ResultFile>(detail.ResultJson);
