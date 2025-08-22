@@ -25,35 +25,6 @@ namespace ColorVision.Engine.Services.Terminal
         public override string ServiceToken { get => Config.ServiceToken; set => Config.ServiceToken = value; }
 
 
-
-        public void UpdateServiceConfig(IServiceConfig config)
-        {
-            Task.Run(() => MQTTControl.UnsubscribeAsyncClientAsync(Config.SubscribeTopic));
-
-            Config.SendTopic = config.SendTopic;
-            Config.SubscribeTopic = config.SubscribeTopic;
-            MQTTControl.SubscribeCache(Config.SubscribeTopic);
-        }
-
-        public void UpdateServiceConfig(string SendTopic,string SubscribeTopic)
-        {
-            Task.Run(() => MQTTControl.UnsubscribeAsyncClientAsync(Config.SubscribeTopic));
-
-            Config.SendTopic = SendTopic;
-            Config.SubscribeTopic = SubscribeTopic;
-            MQTTControl.SubscribeCache(Config.SubscribeTopic);
-        }
-
-        public void UpdateServiceConfig(T config)
-        {
-            Task.Run(() => MQTTControl.UnsubscribeAsyncClientAsync(Config.SubscribeTopic));
-
-            Config.SendTopic = config.SendTopic;
-            Config.SubscribeTopic = config.SubscribeTopic;
-            MQTTControl.SubscribeCache(Config.SubscribeTopic);
-        }
-
-
         public MQTTServiceTerminalBase(T Config) : base()
         {
             this.Config = Config;

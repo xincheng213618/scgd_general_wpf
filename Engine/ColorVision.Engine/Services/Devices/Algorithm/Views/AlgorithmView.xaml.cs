@@ -1,5 +1,6 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Common.Utilities;
+using ColorVision.Database;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;

@@ -71,6 +71,9 @@ namespace ColorVision
                 Assembly.LoadFrom("ColorVision.Solution.dll"); ;
             if (File.Exists("ColorVision.SocketProtocol.dll"))
                 Assembly.LoadFrom("ColorVision.SocketProtocol.dll"); ;
+            if (File.Exists("ColorVision.Database.dll"))
+                Assembly.LoadFrom("ColorVision.Database.dll"); ;
+            
 
             ConfigHandler.GetInstance();
             ConfigHandler.GetInstance().IsAutoSave = false;

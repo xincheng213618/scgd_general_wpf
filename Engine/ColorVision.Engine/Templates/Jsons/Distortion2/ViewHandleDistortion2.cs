@@ -98,7 +98,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
 
             foreach (var item in result.ViewResults.ToSpecificViewResults<Distortion2View>())
             {
-                if (item.DistortionReslut.TVDistortion !=null)
+                if (item.DistortionReslut !=null && item.DistortionReslut.TVDistortion !=null)
                 {
                     if (item.DistortionReslut.TVDistortion.FinalPoints != null)
                     {

@@ -1,10 +1,11 @@
-﻿#pragma warning disable  CA1051,CA1707,CA1711,CA1401,CA2101
+﻿#pragma warning disable  CA1051,CA1707,CA1711,CA1401,CA2101,CA1838
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace cvColorVision
 {
+
     [StructLayoutAttribute(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
     public struct COLOR_PARA
     {
@@ -12,10 +13,19 @@ namespace cvColorVision
         public float fCIEy;
         public float fCIEz;
 
+        public float fCIEx_2015;       //2015色坐标
+        public float fCIEy_2015;
+        public float fCIEz_2015;
+
         public float fx;        //色度x
         public float fy;        //色度y
         public float fu;
         public float fv;
+
+        public float fx_2015;          //2015色度x
+        public float fy_2015;          //色度y
+        public float fu_2015;          //色度u'
+        public float fv_2015;			//色度v'
 
         public float fCCT;      //相关色温(K)
         public float dC;        //色差dC
