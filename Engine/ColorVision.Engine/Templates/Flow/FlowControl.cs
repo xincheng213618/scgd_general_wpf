@@ -98,20 +98,21 @@ namespace ColorVision.Engine.Templates.Flow
 
             flowEngine.StopNode(SerialNumber);
             IsFlowRun = false;
-            MQTTControl.ApplicationMessageReceivedAsync -= MQTTControl_ApplicationMessageReceivedAsync;
+
+            //MQTTControl.ApplicationMessageReceivedAsync -= MQTTControl_ApplicationMessageReceivedAsync;
         }
 
         public void Start(string sn)
         {
             IsFlowRun = true;
             SerialNumber = sn;
-            SendTopic = "MQTTRCService/Flow/" + RCSetting.Instance.Config.RCName;
-            SubscribeTopic = "FLOW/STATUS/" + flowEngine.GetStartNodeName();
-            MQTTControl.SubscribeCache(SendTopic);
+            //SendTopic = "MQTTRCService/Flow/" + RCSetting.Instance.Config.RCName;
+            //SubscribeTopic = "FLOW/STATUS/" + flowEngine.GetStartNodeName();
+            //MQTTControl.SubscribeCache(SendTopic);
 
-            MQTTControl.SubscribeCache(SubscribeTopic);
-            MQTTControl.ApplicationMessageReceivedAsync -= MQTTControl_ApplicationMessageReceivedAsync;
-            MQTTControl.ApplicationMessageReceivedAsync += MQTTControl_ApplicationMessageReceivedAsync;
+            //MQTTControl.SubscribeCache(SubscribeTopic);
+            //MQTTControl.ApplicationMessageReceivedAsync -= MQTTControl_ApplicationMessageReceivedAsync;
+            //MQTTControl.ApplicationMessageReceivedAsync += MQTTControl_ApplicationMessageReceivedAsync;
 
             var tol = MqttRCService.GetInstance().ServiceTokens;
             flowEngine.Finished -= Finished;
