@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Services.Devices.FileServer
 
         public ImageView View { get; set; }
 
-        public DeviceFileServer(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceFileServer(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTFileServer(Config);
             View = new ImageView();

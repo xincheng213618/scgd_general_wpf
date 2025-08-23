@@ -27,7 +27,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         public ViewCalibration View{ get; set; }
 
-        public DeviceCalibration(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceCalibration(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTCalibration(Config);
             View = new ViewCalibration(this);

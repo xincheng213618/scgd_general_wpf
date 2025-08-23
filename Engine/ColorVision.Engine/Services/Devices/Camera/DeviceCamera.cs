@@ -37,7 +37,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public RelayCommand DisPlaySaveCommand { get; set; }
 
 
-        public DeviceCamera(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTCamera(Config);
 

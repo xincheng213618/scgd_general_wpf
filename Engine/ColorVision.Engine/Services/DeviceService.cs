@@ -1,11 +1,13 @@
 ﻿#pragma warning disable CS8604,CS8631
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Abstractions;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
+using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -59,7 +61,7 @@ namespace ColorVision.Engine.Services
         public RelayCommand UpdateFilecfgCommand { get; set; }
 
         public virtual ImageSource Icon { get; set; }
-        public SysDeviceModel SysResourceModel { get; set; }
+        public SysResourceModel SysResourceModel { get; set; }
 
         public virtual UserControl GetDeviceInfo()
         {
@@ -106,7 +108,7 @@ namespace ColorVision.Engine.Services
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
 
-        public DeviceService(SysDeviceModel sysResourceModel) : base()
+        public DeviceService(SysResourceModel sysResourceModel) : base()
         {
             SysResourceModel = sysResourceModel;
             ContextMenu = new ContextMenu();
@@ -201,8 +203,6 @@ namespace ColorVision.Engine.Services
 
         public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; NotifyPropertyChanged(); } }
         public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; NotifyPropertyChanged(); } }
-        public override bool IsAlive { get => Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); } }
-        public override DateTime LastAliveTime { get => Config.LastAliveTime; set { Config.LastAliveTime = value; NotifyPropertyChanged(); } }
         public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; NotifyPropertyChanged(); } }
 
         public event EventHandler ConfigChanged;
@@ -212,7 +212,7 @@ namespace ColorVision.Engine.Services
             SysResourceModel.Code = Config.Code;
             SysResourceModel.Name = Config.Name;
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            VSysResourceDao.Instance.Save(new SysResourceModel(SysResourceModel));
+            VSysResourceDao.Instance.Save(SysResourceModel);
         }
 
         public override void Save()
@@ -233,7 +233,10 @@ namespace ColorVision.Engine.Services
 
         public void RestartRCService()
         {
-            MqttRCService.GetInstance().RestartServices(SysResourceModel.TypeCode, SysResourceModel.PCode, Config.Code);
+            string TypeCode =MySqlControl.GetInstance().DB.Queryable<SysDictionaryModel>().Where(x=>x.Pid ==1 && x.Value ==SysResourceModel.Pid).First().Key;
+            string PCode = MySqlControl.GetInstance().DB.Queryable<SysResourceModel>().InSingle(SysResourceModel.Type).Code;
+
+            MqttRCService.GetInstance().RestartServices(TypeCode, PCode, Config.Code);
         }
 
 

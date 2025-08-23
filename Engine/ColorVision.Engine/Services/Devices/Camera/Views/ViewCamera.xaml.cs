@@ -47,7 +47,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             Device = device;
             InitializeComponent();
-            CommandBindings.Add(new CommandBinding(EngineCommands.TakePhotoCommand, (s,e) => device.DisplayCameraControlLazy.Value.GetData_Click(s,e), (s, e) => e.CanExecute = Device.Config.DeviceStatus == DeviceStatusType.Opened));
+            CommandBindings.Add(new CommandBinding(EngineCommands.TakePhotoCommand, (s,e) => device.DisplayCameraControlLazy.Value.GetData_Click(s,e), (s, e) => e.CanExecute = Device.DService.DeviceStatus == DeviceStatusType.Opened));
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)

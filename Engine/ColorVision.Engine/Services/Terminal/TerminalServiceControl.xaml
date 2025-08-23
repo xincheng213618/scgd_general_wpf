@@ -39,7 +39,7 @@
                     <Border Background ="{DynamicResource RegionBrush}" CornerRadius="5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="5,0">
-                                <ToggleButton DockPanel.Dock="Right"  Style="{StaticResource ButtonMQTTConnect}"  Height="20" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
+                                <ToggleButton DockPanel.Dock="Right"  Style="{StaticResource ButtonMQTTConnect}"  Height="20" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  DService.IsAlive,Mode=OneWay}" IsEnabled="False" />
                                 <Grid  Height="18"   HorizontalAlignment="Left"  Margin="0,0,4,0">
                                     <Image Source="{Binding Icon}"/>
                                 </Grid>

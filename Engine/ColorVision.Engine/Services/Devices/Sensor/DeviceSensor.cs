@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
     {
         public MQTTSensor DService { get; set; }
 
-        public DeviceSensor(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceSensor(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTSensor(Config);
             EditCommand = new RelayCommand(a =>

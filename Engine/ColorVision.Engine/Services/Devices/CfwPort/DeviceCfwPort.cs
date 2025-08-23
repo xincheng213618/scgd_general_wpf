@@ -12,7 +12,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
     {
         public MQTTCfwPort DService { get; set; }
 
-        public DeviceCfwPort(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceCfwPort(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTCfwPort(Config);
 

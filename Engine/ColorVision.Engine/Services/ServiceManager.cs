@@ -21,6 +21,7 @@ using ColorVision.Engine.Services.Types;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.UI;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -36,6 +37,8 @@ namespace ColorVision.Engine.Services
         private static readonly object _locker = new();
         public static ServiceManager GetInstance() { lock (_locker) { return _instance ??= new ServiceManager(); } }
         public static UserConfig UserConfig => UserConfig.Instance;
+
+        public static SqlSugarClient Db => MySqlControl.GetInstance().DB;
 
         public ObservableCollection<TypeService> TypeServices { get; set; } = new ObservableCollection<TypeService>();
         public ObservableCollection<TerminalService> TerminalServices { get; set; } = new ObservableCollection<TerminalService>();
@@ -137,12 +140,11 @@ namespace ColorVision.Engine.Services
                 }
             }
 
-            List<SysDeviceModel> sysResourceModelDevices = VSysDeviceDao.Instance.GetAll(UserConfig.TenantId);
             DeviceServices.Clear();
 
             foreach (var terminalService in TerminalServices)
             {
-                var sysResourceModels = sysResourceModelDevices.FindAll((x) => x.Pid == (int)terminalService.SysResourceModel.Id);
+                var sysResourceModels = Db.Queryable<SysResourceModel>().Where(it => it.Pid == terminalService.SysResourceModel.Id && it.TenantId == UserConfig.TenantId && it.IsEnable == true && it.IsDelete == false).ToList();
                 foreach (var sysResourceModel in sysResourceModels)
                 {
                     DeviceService deviceService =null;

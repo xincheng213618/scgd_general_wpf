@@ -238,10 +238,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             Device.DService.DeviceStatusChanged += UpdateUI;
         }
 
-        private void DisplayAlgorithm_SelectTypeChanged(object? sender, Type e)
-        {
-            throw new NotImplementedException();
-        }
 
         public event RoutedEventHandler Selected;
         public event RoutedEventHandler Unselected;

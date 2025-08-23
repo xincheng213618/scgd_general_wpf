@@ -20,7 +20,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
     public class MQTTCamera : MQTTDeviceService<ConfigCamera>
     {
-        public override bool IsAlive {get =>  Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); }}
 
         public MQTTCamera(ConfigCamera CameraConfig) : base(CameraConfig)
         {

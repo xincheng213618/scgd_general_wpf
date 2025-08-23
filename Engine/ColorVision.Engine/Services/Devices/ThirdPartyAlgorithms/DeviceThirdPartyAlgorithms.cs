@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         [CommandDisplay("配置第三方算法")]
         public RelayCommand ThirdPartyAlgorithmsManagerCommand { get; set; }
 
-        public DeviceThirdPartyAlgorithms(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceThirdPartyAlgorithms(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTThirdPartyAlgorithms(this, Config);
 

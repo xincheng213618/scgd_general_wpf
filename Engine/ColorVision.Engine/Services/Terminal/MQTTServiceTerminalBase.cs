@@ -18,10 +18,6 @@ namespace ColorVision.Engine.Services.Terminal
 
         public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; NotifyPropertyChanged(); } }
 
-        public override bool IsAlive { get => Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); } }
-
-        public override DateTime LastAliveTime { get => Config.LastAliveTime; set => Config.LastAliveTime = value; }
-
         public override string ServiceToken { get => Config.ServiceToken; set => Config.ServiceToken = value; }
 
 

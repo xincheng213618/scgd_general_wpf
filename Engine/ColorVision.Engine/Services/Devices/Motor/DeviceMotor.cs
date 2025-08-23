@@ -12,7 +12,7 @@ namespace ColorVision.Engine.Services.Devices.Motor
     {
         public MQTTMotor DService { get; set; }
 
-        public DeviceMotor(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceMotor(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTMotor(Config);
             this.SetIconResource("COMDrawingImage");

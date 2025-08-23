@@ -18,7 +18,7 @@ namespace ColorVision.Engine.Templates.SysDictionary
 
         [SugarColumn(ColumnName ="pid")]
         public int Pid { get; set; }
-        [SugarColumn(ColumnName ="val")]
+        [SugarColumn(ColumnName ="val",IsNullable =true)]
         public int Value { get; set; }
 
         [SugarColumn(ColumnName ="tenant_id")]

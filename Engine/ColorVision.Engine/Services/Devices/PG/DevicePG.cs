@@ -20,7 +20,7 @@ namespace ColorVision.Engine.Services.Devices.PG
         public RelayCommand EditPGTemplateCommand { get; set; }
 
 
-        public DevicePG(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        public DevicePG(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTPG(Config);
 

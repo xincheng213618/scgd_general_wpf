@@ -10,19 +10,10 @@ namespace ColorVision.Engine.Services.Dao
     [SugarTable("t_scgd_sys_resource")]
     public class SysResourceModel : PKModel
     {
-        public SysResourceModel(SysDeviceModel sysDeviceModel)
-        {
-            Code = sysDeviceModel.Code; 
-            Id = sysDeviceModel.Id;
-            Name = sysDeviceModel.Name;
-            Pid = sysDeviceModel.Pid;
-            Type = sysDeviceModel.Type; 
-            TenantId = sysDeviceModel.TenantId; 
-            Value = sysDeviceModel.Value;
-            CreateDate = sysDeviceModel.CreateDate;
-        }
 
-        public SysResourceModel() { Id = -1; }
+        public SysResourceModel() 
+        {
+        }
 
         [SugarColumn(ColumnName ="name")]
         public string? Name { get; set; }
@@ -30,16 +21,26 @@ namespace ColorVision.Engine.Services.Dao
         public string? Code { get; set; }
         [SugarColumn(ColumnName ="type")]
         public int Type { get; set; }
-        [SugarColumn(ColumnName ="pid")]
+
+        [SugarColumn(ColumnName ="pid",IsNullable =true)]
         public int? Pid { get; set; }
-        [SugarColumn(ColumnName ="txt_value")]
+
+        [SugarColumn(ColumnName ="txt_value", ColumnDataType = "longtext", IsNullable = true)]
         public string? Value { get; set; }
-        [SugarColumn(ColumnName ="create_date")]
+
+        [SugarColumn(ColumnName = "create_date", IsNullable = true)]
         public DateTime CreateDate { get; set; } = DateTime.Now;
+
+        [SugarColumn(ColumnName = "is_enable")]
+        public bool IsEnable { get; set; } = true;
+
+        [SugarColumn(ColumnName = "is_delete")]
+        public bool IsDelete { get; set; }
+
         [SugarColumn(ColumnName ="tenant_id")]
         public int TenantId { get; set; }
 
-
+        [SugarColumn(ColumnName = "remark",ColumnDataType ="text",IsNullable = true)]
         public string? Remark { get; set; }
     }
 

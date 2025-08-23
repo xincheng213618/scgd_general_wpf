@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Services.Devices.FlowDevice
     public class DeviceFlowDevice : DeviceService<ConfigFlowDevice>
     {
         public MQTTFlowDevice DService { get; set; }
-        public DeviceFlowDevice(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceFlowDevice(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTFlowDevice(Config);
             EditCommand = new RelayCommand(a =>

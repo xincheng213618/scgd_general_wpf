@@ -20,7 +20,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
         public ViewSMU View { get; set; }
 
-        public DeviceSMU(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceSMU(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTSMU(Config);
             View = new ViewSMU();

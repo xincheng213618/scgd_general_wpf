@@ -46,7 +46,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public RelayCommand EmissionSP100SettingCommand { get; set; }
 
 
-        public DeviceSpectrum(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTSpectrum(this);
             View = new ViewSpectrum(this);

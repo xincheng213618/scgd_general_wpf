@@ -16,7 +16,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.Core
 {
-    public class MQTTServiceBase : ViewModelBase, IHeartbeat, IServiceConfig, IDisposable
+    public class MQTTServiceBase : ViewModelBase, IServiceConfig, IDisposable
     {
         internal static readonly ILog log = LogManager.GetLogger(typeof(MQTTServiceBase));
         public MQTTControl MQTTControl { get; set; }
@@ -160,7 +160,8 @@ namespace ColorVision.Engine.Services.Core
 
         public virtual DateTime LastAliveTime { get; set; }
 
-        public virtual bool IsAlive { get; set; }
+        public  bool IsAlive { get => _IsAlive; set { _IsAlive = value; NotifyPropertyChanged(); } }
+        private bool _IsAlive;
 
         private  Dictionary<string, Timer> _msgTimers = new();
 

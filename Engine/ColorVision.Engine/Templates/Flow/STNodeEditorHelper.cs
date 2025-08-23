@@ -703,7 +703,7 @@ namespace ColorVision.Engine.Templates.Flow
                 IsEnabled = false
             };
             // Create the binding for IsChecked
-            var binding = new Binding("Config.IsAlive")
+            var binding = new Binding("DService.IsAlive")
             {
                 Mode = BindingMode.OneWay
             };
