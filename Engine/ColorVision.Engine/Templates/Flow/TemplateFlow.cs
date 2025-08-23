@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.UI.Extension;
 using CVCommCore;
+using Dm.util;
 using Newtonsoft.Json;
 using SqlSugar;
 using System;
@@ -16,6 +17,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Windows;
+using static iText.StyledXmlParser.Jsoup.Select.Evaluator;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -51,8 +53,8 @@ namespace ColorVision.Engine.Templates.Flow
                 List<ModMasterModel> flows = masterFlowDao.GetAll(UserConfig.Instance.TenantId);
                 foreach (var dbModel in flows)
                 {
-                    var details = Db.Queryable<ModFlowDetailModel>().Where(x=>x.Pid == dbModel.Id)
-                        .Select(it => new ModFlowDetailModel
+                    var details = Db.Queryable<ModDetailModel>().Where(x=>x.Pid == dbModel.Id)
+                        .Select(it => new ModDetailModel
                         {
                             SysPid = it.SysPid,
                             Pid = it.Pid,
@@ -108,7 +110,7 @@ namespace ColorVision.Engine.Templates.Flow
             ModMasterDao modMasterDao = new ModMasterDao(11);
             modMasterDao.Save(flowParam.ModMaster);
 
-            List<ModDetailModel> details = new();
+            List<Templates.ModDetailModel> details = new();
             flowParam.GetDetail(details);
             if (details.Count > 0)
             {
@@ -275,41 +277,47 @@ namespace ColorVision.Engine.Templates.Flow
         }
         public FlowParam? AddFlowParam(string templateName)
         {
-            ModMasterModel flowMaster = new ModMasterModel(11, templateName, UserConfig.Instance.TenantId);
-            ModMasterDao.Instance.Save(flowMaster);
-            //var flowMaster = new ModMasterModel(11, templateName, UserConfig.Instance.TenantId);
-            //Db.Insertable(flowMaster).ExecuteCommand(); // 自增id自动回写
 
-            List<ModDetailModel> list = new();
+            var flowMaster = new ModMasterModel(11, templateName, UserConfig.Instance.TenantId);
+            int id =Db.Insertable(flowMaster).ExecuteReturnIdentity(); // 自增id自动回写
+            flowMaster.Id = id;
+
+            List<Templates.ModDetailModel> list = new();
             List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(flowMaster.Pid);
             foreach (var item in sysDic)
             {
-                list.Add(new ModDetailModel(item.Id, flowMaster.Id, item.DefaultValue));
+                list.Add(new Templates.ModDetailModel(item.Id, flowMaster.Id, item.DefaultValue));
             }
             ModDetailDao.Instance.SaveByPid(flowMaster.Id, list);
 
             int pkId = flowMaster.Id;
             if (pkId > 0)
             {
-                List<ModFlowDetailModel> flowDetail = ModFlowDetailDao.Instance.GetAllByPid(pkId);
-                if (int.TryParse(flowDetail[0].ValueA, out int id))
+                var flowDetail = Db.Queryable<ModDetailModel>()
+                    .Where(it => it.Pid == pkId)
+                    .ToList();
+
+                if (flowDetail.Count > 0 && int.TryParse(flowDetail[0].ValueA, out int sid))
                 {
-                    SysResourceModel sysResourceModeldefault = VSysResourceDao.Instance.GetById(id);
+                    var sysResourceModeldefault = Db.Queryable<SysResourceModel>().InSingle(sid);
                     if (sysResourceModeldefault != null)
                     {
-                        SysResourceModel sysResourceModel = new SysResourceModel();
-                        sysResourceModel.Name = flowMaster.Name;
-                        sysResourceModel.Code = pkId.ToString()+ sysResourceModeldefault.Code;
-                        sysResourceModel.Type = sysResourceModeldefault.Type;
-                        sysResourceModel.Value = sysResourceModeldefault.Value;
-                        SysResourceDao.Instance.Save(sysResourceModel);
+                        flowDetail[0].Value = sysResourceModeldefault.Value;
+                        var sysResourceModel = new SysResourceModel
+                        {
+                            Name = flowMaster.Name,
+                            Code = pkId.ToString() + sysResourceModeldefault.Code,
+                            Type = sysResourceModeldefault.Type,
+                            Value = sysResourceModeldefault.Value
+                        };
+                        id = Db.Insertable(sysResourceModel).ExecuteReturnIdentity();
 
-                        flowDetail[0].ValueA = sysResourceModel.Id.ToString();
-                        ModFlowDetailDao.Instance.Save(flowDetail[0]);
+                        flowDetail[0].ValueA = id.toString();
+                        Db.Updateable(flowDetail[0]).ExecuteCommand();
+
                     }
                 }
-                if (flowMaster != null) return new FlowParam(flowMaster, flowDetail);
-                else return null;
+                return new FlowParam(flowMaster, flowDetail);
             }
             return null;
         }

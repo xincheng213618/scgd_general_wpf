@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Templates
         [SugarColumn(ColumnName = "cfg_json",IsNullable =true)]
         public string? JsonVal { get; set; } 
 
-        [SugarColumn(ColumnName = "name", IsNullable = true)]
+        [SugarColumn(ColumnName = "create_date")]
         public DateTime? CreateDate { get; set; } = DateTime.Now;
 
         [SugarColumn(ColumnName = "is_enable")]
