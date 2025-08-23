@@ -1,8 +1,4 @@
 ﻿#pragma warning disable CA1822
-using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.Dao;
-using CVCommCore;
 using System.Collections.Generic;
 
 namespace ColorVision.Engine.Templates.Flow
@@ -12,12 +8,12 @@ namespace ColorVision.Engine.Templates.Flow
     /// </summary>
     public class FlowParam : ParamModBase
     {
-        public FlowParam()
+        public FlowParam() 
         {
 
         }
 
-        public FlowParam(ModMasterModel dbModel, List<ModDetailModel> flowDetail) : base()
+        public FlowParam(ModMasterModel dbModel, List<ModDetailModel> flowDetail) : base(dbModel, flowDetail)
         {
             ModMaster = dbModel;
             Id = dbModel.Id;
@@ -29,7 +25,7 @@ namespace ColorVision.Engine.Templates.Flow
                 modDetailModels.Add(mod);
                 _DataBase64 = model.Value ?? string.Empty;
             }
-            AddDetail(modDetailModels);
+
         }
 
         private string _DataBase64;

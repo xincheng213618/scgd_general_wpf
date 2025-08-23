@@ -286,7 +286,7 @@ namespace ColorVision.Engine.Templates.Flow
             List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(flowMaster.Pid);
             foreach (var item in sysDic)
             {
-                list.Add(new Templates.ModDetailModel(item.Id, flowMaster.Id, item.DefaultValue));
+                list.Add(new ModDetailModel() { SysPid = item.Id ,Pid =flowMaster.Pid ,ValueA = item.DefaultValue });
             }
             ModDetailDao.Instance.SaveByPid(flowMaster.Id, list);
 

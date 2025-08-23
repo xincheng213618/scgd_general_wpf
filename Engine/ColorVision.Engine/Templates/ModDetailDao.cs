@@ -1,36 +1,33 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using SqlSugar;
 using System.Data;
 
 namespace ColorVision.Engine.Templates
 {
-    public class ModDetailModel : VPKModel
+    [SugarTable("t_scgd_mod_param_detail")]
+    public class ModDetailModel : PKModel
     {
-        public ModDetailModel()
-        { 
-        }
 
-        public ModDetailModel(int sysPid, int pid, string? val)
-        {
-            SysPid = sysPid;
-            Pid = pid;
-            ValueA = val;
-        }
-        public int SysPid { get => _SysPid; set { _SysPid = value; NotifyPropertyChanged(); } }
-        private int _SysPid;
-        public int Pid { get => _Pid; set { _Pid = value; NotifyPropertyChanged(); } }
-        private int _Pid;
-          
-        public string? ValueA { get => _ValueA; set { _ValueA = value; NotifyPropertyChanged(); } }
-        private string? _ValueA;
-        public string? ValueB { get => _ValueB; set { _ValueB = value; NotifyPropertyChanged(); } }
-        private string? _ValueB;
-        public string? Symbol { get => _Symbol; set { _Symbol = value; NotifyPropertyChanged(); } }
-        private string? _Symbol;
-        public string? SymbolName { get => _SymbolName; set { _SymbolName = value; NotifyPropertyChanged(); } }
-        private string? _SymbolName;
+        [SugarColumn(ColumnName = "cc_pid", Length = 11)]
+        public int SysPid { get; set; }
 
-        public bool? IsEnable { get; set; } = true;
-        public bool? IsDelete { get; set; } = false;
+        [SugarColumn(ColumnName = "pid", Length = 11)]
+        public int Pid { get; set; }
+
+        [@SugarColumn(IsIgnore = true)]
+        public string? Value { get; set; }
+
+        [SugarColumn(ColumnName = "value_a", IsNullable = true)]
+        public string? ValueA { get; set; }
+
+        [SugarColumn(ColumnName = "value_b", IsNullable = true)]
+        public string? ValueB { get; set; }
+
+        [SugarColumn(ColumnName = "is_enable")]
+        public bool IsEnable { get; set; } = true;
+
+        [SugarColumn(ColumnName = "is_delete")]
+        public bool IsDelete { get; set; }
     }
 
 
@@ -51,10 +48,8 @@ namespace ColorVision.Engine.Templates
                 Pid = item.Field<int>("pid"),
                 ValueA = item.Field<string>("value_a"),
                 ValueB = item.Field<string>("value_b"),
-                Symbol = item.Field<string>("symbol"),
                 IsEnable = item.Field<bool>("is_enable"),
                 IsDelete = item.Field<bool>("is_delete"),
-                SymbolName = item.Field<string>("name")
             };
             return model;
         }

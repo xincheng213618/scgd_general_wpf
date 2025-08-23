@@ -1,5 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.MySql;
+using ColorVision.Engine.Templates.SysDictionary;
+using Org.BouncyCastle.Ocsp;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
@@ -21,6 +25,22 @@ namespace ColorVision.Engine.Templates
     }
 
 
+    public class SymbolCache
+    {
+        public static SymbolCache Instance { get; set; } =  new SymbolCache();
+
+        public ConcurrentDictionary<int, SysDictionaryModDetaiModel> Cache { get; set; } = new ConcurrentDictionary<int, SysDictionaryModDetaiModel>();
+
+        public SymbolCache() 
+        {
+            MySqlControl.GetInstance().DB.Queryable<SysDictionaryModDetaiModel>().ToList().ForEach(item =>
+            {
+                Cache.TryAdd(item.Id, item);
+            });
+        }
+
+
+    }
 
     public class ModelBase : ParamBase
     {
@@ -33,19 +53,12 @@ namespace ColorVision.Engine.Templates
 
         public ModelBase(List<ModDetailModel> detail) : this()
         {
-            AddDetail(detail);
-        }
-
-        public void AddDetail(List<ModDetailModel> detail)
-        {
-            if (detail != null)
+            foreach (var flowDetailModel in detail)
             {
-                foreach (var flowDetailModel in detail)
+                SymbolCache.Instance.Cache.TryGetValue(flowDetailModel.SysPid, out SysDictionaryModDetaiModel? dicModel);
+                if (dicModel != null && dicModel.Symbol != null)
                 {
-                    if (flowDetailModel.Symbol != null && !parameters.ContainsKey(flowDetailModel.Symbol))
-                    {
-                        parameters.Add(flowDetailModel.Symbol, flowDetailModel);
-                    }
+                    parameters.TryAdd(dicModel.Symbol, flowDetailModel);
                 }
             }
         }

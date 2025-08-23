@@ -80,8 +80,6 @@ namespace ColorVision.Engine.Templates
             if (sender is ComboBox comboBox && comboBox.SelectedIndex > -1)
             {
                 CreateConfig.ValueA = SysDictionaryModDetaiModels[comboBox.SelectedIndex].DefaultValue;
-                CreateConfig.Symbol = SysDictionaryModDetaiModels[comboBox.SelectedIndex].Symbol;
-                CreateConfig.SymbolName = SysDictionaryModDetaiModels[comboBox.SelectedIndex].Name;
             }
         }
     }

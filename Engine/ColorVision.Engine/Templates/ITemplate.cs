@@ -218,7 +218,7 @@ namespace ColorVision.Engine.Templates
             List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(TemplateDicId, true, false);
             foreach (var item in sysDic)
             {
-                list.Add(new ModDetailModel(item.Id, -1, item.DefaultValue) { Symbol = item.Symbol });
+                list.Add(new ModDetailModel() { SysPid = item.Id, Pid = -1, ValueA = item.DefaultValue });
             }
 
             ModMasterModel modMaster = new ModMasterModel(TemplateDicId, "", UserConfig.Instance.TenantId);
@@ -447,7 +447,7 @@ namespace ColorVision.Engine.Templates
             List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(TemplateDicId);
             foreach (var item in sysDic)
             {
-                list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
+                list.Add(new ModDetailModel() { SysPid = item.Id, Pid = -1, ValueA = item.DefaultValue });
             }
             ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
 
@@ -483,7 +483,7 @@ namespace ColorVision.Engine.Templates
                     List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(TemplateDicId, true, false);
                     foreach (var item in sysDic)
                     {
-                        list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
+                        list.Add(new ModDetailModel() { SysPid = item.Id, Pid = -1, ValueA = item.DefaultValue });
                     }
                 }
                 ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
