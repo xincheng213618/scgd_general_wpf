@@ -15,21 +15,12 @@ namespace ColorVision.Engine.Templates.Flow
 
         public FlowParam(ModMasterModel dbModel, List<ModDetailModel> flowDetail) : base(dbModel, flowDetail)
         {
-            ModMaster = dbModel;
-            Id = dbModel.Id;
-            Name = dbModel.Name ?? string.Empty;
-            List<Templates.ModDetailModel> modDetailModels = new();
-            foreach (var model in flowDetail)
-            {
-                Templates.ModDetailModel mod = new() { Id = model.Id, Pid = model.Pid, IsDelete = model.IsDelete, IsEnable = model.IsEnable, SysPid = model.SysPid, ValueA = model.ValueA, ValueB = model.ValueB };
-                modDetailModels.Add(mod);
-                _DataBase64 = model.Value ?? string.Empty;
-            }
-
+            _DataBase64 = flowDetail.Count >0 ? flowDetail[0].Value ?? string.Empty : string.Empty;
         }
 
-        private string _DataBase64;
         public string DataBase64 { get => _DataBase64; set { _DataBase64 = value; } }
+        private string _DataBase64;
+
 
         private const string propertyName = "filename";
 
