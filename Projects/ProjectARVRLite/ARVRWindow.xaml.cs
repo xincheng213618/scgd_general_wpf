@@ -6,8 +6,10 @@ using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.FindLightArea;
@@ -23,6 +25,7 @@ using ColorVision.Engine.Templates.MTF;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Templates.POI.Image;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.Scheduler;
 using ColorVision.SocketProtocol;
 using ColorVision.Themes;
 using ColorVision.UI;
@@ -40,7 +43,9 @@ using Newtonsoft.Json.Linq;
 
 using Panuon.WPF.UI;
 using ProjectARVRLite;
+using ProjectARVRLite.PluginConfig;
 using ProjectARVRLite.Services;
+using Quartz;
 using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
@@ -59,6 +64,25 @@ using System.Windows.Media;
 
 namespace ProjectARVRLite
 {
+    public class ProjectARVRLitetestJob : IJob
+    {
+        public Task Execute(IJobExecutionContext context)
+        {
+            var schedulerInfo = QuartzSchedulerManager.GetInstance().TaskInfos.First(x => x.JobName == context.JobDetail.Key.Name && x.GroupName == context.JobDetail.Key.Group);
+            schedulerInfo.RunCount++;
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                schedulerInfo.Status = SchedulerStatus.Running;
+            });
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                ProjectWindowInstance.WindowInstance.RunTemplate();
+
+                schedulerInfo.Status = SchedulerStatus.Ready;
+            });
+            return Task.CompletedTask;
+        }
+    }
 
     public class SwitchPG
     {
@@ -344,10 +368,10 @@ namespace ProjectARVRLite
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                     item.nodeRunEvent -= UpdateMsg;
 
-                log.Info("清理流程中");
-                flowEngine.FlowClear();
-                await Task.Delay(100);
-                log.Info("清理流程执行完毕");
+                //log.Info("清理流程中");
+                //flowEngine.FlowClear();
+                //await Task.Delay(100);
+                //log.Info("清理流程执行完毕");
                 flowEngine.LoadFromBase64(Refreshdata, MqttRCService.GetInstance().ServiceTokens);
 
                 for (int i = 0; i < 200; i++)
@@ -490,7 +514,6 @@ namespace ProjectARVRLite
             if (FlowControlData.EventName == "Completed")
             {
                 CurrentFlowResult.Msg = "Completed";
-
                 try
                 {
                     //如果没有执行完，先切换PG，并且提前设置流程
@@ -560,12 +583,11 @@ namespace ProjectARVRLite
             }
             else
             {
-                TryCount = 0;
                 log.Error("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                 CurrentFlowResult.Msg = FlowControlData.Params;
 
-                if (CurrentFlowResult.Msg.Contains("SDK return failed"))
+                if (CurrentFlowResult.Msg.Contains("SDK return failed")|| CurrentFlowResult.Msg.Contains("Not get cie file"))
                 {
                     BatchResultMasterModel Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
                     if (Batch != null)
@@ -581,6 +603,24 @@ namespace ProjectARVRLite
 
                 ViewResultManager.Save(CurrentFlowResult);
                 logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
+
+                if(CurrentFlowResult.Msg.Contains("Not get cie file"))
+                {
+                    if (TryCount < ProjectARVRLiteConfig.Instance.TryCountMax)
+                    {
+                        Task.Delay(200).ContinueWith(t =>
+                        {
+                            log.Info("重新尝试运行流程");
+                            Application.Current.Dispatcher.BeginInvoke(() =>
+                            {
+                                RunTemplate();
+                            });
+                        });
+                        return;
+                    }
+                }
+                TryCount = 0;
+
                 if (ProjectARVRLiteConfig.Instance.AllowTestFailures)
                 {
                     //如果允许失败，则切换PG，并且提前设置流程,执行结束时直接发送结束
@@ -1657,11 +1697,19 @@ namespace ProjectARVRLite
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
                 var result = ViewResluts[listView.SelectedIndex];
-                if (result.FlowStatus != FlowStatus.Completed)
-                    return;
+
                 try
                 {
-                    GenoutputText(result);
+                    if (result.FlowStatus == FlowStatus.Completed)
+                    {
+                        GenoutputText(result);
+                    }
+                    else
+                    {
+                        outputText.Background = Brushes.White;
+                        outputText.Document.Blocks.Clear(); // 清除之前的内容
+                    }
+
                 }
                 catch (Exception ex)
                 {
@@ -1703,6 +1751,9 @@ namespace ProjectARVRLite
             {
                 ImageView.OpenImage(result.FileName);
                 ImageView.ImageShow.Clear();
+
+                if (result.FlowStatus != FlowStatus.Completed)
+                    return;
 
                 if (result.TestType == ARVR1TestType.W51)
                 {
