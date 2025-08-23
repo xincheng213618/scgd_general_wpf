@@ -22,9 +22,6 @@ namespace ColorVision.Engine.Templates.Flow
 
         [SugarColumn(ColumnName ="value_b" ,IsNullable =true)]
         public string? ValueB { get; set; }
-        [SugarColumn(ColumnName ="symbol")]
-        public string? Symbol { get; set; }
-
 
         [SugarColumn(ColumnName ="is_enable")]
         public bool IsEnable { get; set; } = true;
@@ -51,7 +48,6 @@ namespace ColorVision.Engine.Templates.Flow
                 Value = item.Field<string>("value"),
                 ValueA = item.Field<string>("value_a"),
                 ValueB = item.Field<string>("value_b"),
-                Symbol = item.Field<string>("symbol"),
                 IsEnable = item.Field<bool>("is_enable"),
                 IsDelete = item.Field<bool>("is_delete"),
             };

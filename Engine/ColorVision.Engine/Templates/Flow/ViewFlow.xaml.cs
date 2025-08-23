@@ -135,7 +135,7 @@ namespace ColorVision.Engine.Services.Flow
         {
             if (!STNodeEditorHelper.CheckFlow()) return;
             FlowParam.DataBase64 = Convert.ToBase64String(STNodeEditorMain.GetCanvasData());
-            FlowParam.Save();
+            TemplateFlow.Save2DB(FlowParam);
             MessageBox.Show(Application.Current.GetActiveWindow(),"保存成功","Flow");
         }
 

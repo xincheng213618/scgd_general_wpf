@@ -121,4 +121,8 @@
 		</None>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <ProjectReference Include="..\ColorVision.FileIO\ColorVision.FileIO.csproj" />
+	</ItemGroup>
+
 </Project>

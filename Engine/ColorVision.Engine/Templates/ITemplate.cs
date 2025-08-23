@@ -9,6 +9,7 @@ using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.Solution;
 using ColorVision.UI.Extension;
 using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -23,6 +24,7 @@ namespace ColorVision.Engine.Templates
 {
     public class ITemplate
     {
+        public static SqlSugarClient Db => MySqlControl.GetInstance().DB;
         public ITemplate()
         {
             Application.Current.Dispatcher.BeginInvoke(() =>

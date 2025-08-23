@@ -353,7 +353,7 @@ namespace ColorVision.Engine.Templates.Flow
                 if (!STNodeEditorHelper.CheckFlow()) return;
                 var data = STNodeEditorMain.GetCanvasData();
                 FlowParam.DataBase64 = Convert.ToBase64String(data);
-                FlowParam.Save2DB(FlowParam);
+                TemplateFlow.Save2DB(FlowParam);
                 MessageBox.Show("保存成功");
             }
         }

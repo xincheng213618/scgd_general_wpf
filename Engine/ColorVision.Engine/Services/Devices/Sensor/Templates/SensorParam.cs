@@ -130,12 +130,10 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
                     var modMasterModel = ModMasterDao.Instance.GetById(item.Value.Id);
 
-                    if (modMasterModel?.Pcode != null)
-                    {
-                        modMasterModel.Name = item.Value.Name;
-                        var modMasterDao = new ModMasterDao(modMasterModel.Pcode);
-                        modMasterDao.Save(modMasterModel);
-                    }
+                    modMasterModel.Name = item.Value.Name;
+                    var modMasterDao = new ModMasterDao(modMasterModel.Pid);
+                    modMasterDao.Save(modMasterModel);
+
                     ModDetailDao.Instance.UpdateByPid(item.Value.Id, item.Value.ModDetailModels.ToList());
                 }
             }

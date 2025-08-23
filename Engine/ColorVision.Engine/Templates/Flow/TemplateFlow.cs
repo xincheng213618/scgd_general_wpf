@@ -6,7 +6,9 @@ using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.UI.Extension;
+using CVCommCore;
 using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -20,6 +22,7 @@ namespace ColorVision.Engine.Templates.Flow
     public class TemplateFlow : ITemplate<FlowParam>, IITemplateLoad
     {
         public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
+
 
         public TemplateFlow()
         {
@@ -41,16 +44,31 @@ namespace ColorVision.Engine.Templates.Flow
         private static ModMasterDao masterFlowDao = new ModMasterDao(11);
         public override void Load()
         {
+            
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
                 List<ModMasterModel> flows = masterFlowDao.GetAll(UserConfig.Instance.TenantId);
                 foreach (var dbModel in flows)
                 {
-                    List<ModFlowDetailModel> flowDetails = ModFlowDetailDao.Instance.GetAllByPid(dbModel.Id);
+                    var details = Db.Queryable<ModFlowDetailModel>().Where(x=>x.Pid == dbModel.Id)
+                        .Select(it => new ModFlowDetailModel
+                        {
+                            SysPid = it.SysPid,
+                            Pid = it.Pid,
+                            ValueA = it.ValueA,
+                            ValueB = it.ValueB,
+                            IsEnable = it.IsEnable,
+                            IsDelete = it.IsDelete,
+                            Value = SqlFunc.Subqueryable<SysResourceModel>()
+                                .Where(r => r.Id == SqlFunc.ToInt32(it.ValueA))
+                                .Select(r => r.Value)     
+                        })
+                        .ToList();
 
 
-                    var param = new FlowParam(dbModel, flowDetails);
+
+                    var param = new FlowParam(dbModel, details);
 
                     if (backup.TryGetValue(param.Id, out var model))
                     {
@@ -77,10 +95,65 @@ namespace ColorVision.Engine.Templates.Flow
                 if (index > -1 && index < TemplateParams.Count)
                 {
                     var item = TemplateParams[index];
-                    FlowParam.Save2DB(item.Value);
+                    Save2DB(item.Value);
                 }
             }
         }
+
+        public static void Save2DB(FlowParam flowParam)
+        {
+            var db = MySqlControl.GetInstance().DB;
+
+            flowParam.ModMaster.Name = flowParam.Name;
+            ModMasterDao modMasterDao = new ModMasterDao(11);
+            modMasterDao.Save(flowParam.ModMaster);
+
+            List<ModDetailModel> details = new();
+            flowParam.GetDetail(details);
+            if (details.Count > 0)
+            {
+                var model = details[0];
+                SysResourceModel res = null;
+                int id = 0;
+                bool hasId = int.TryParse(model.ValueA, out id);
+                if (hasId)
+                {
+                    res = db.Queryable<SysResourceModel>().InSingle(id);
+                }
+
+                if (res != null)
+                {
+                    // 资源已存在，更新
+                    res.Code = flowParam.Id + Cryptography.GetMd5Hash(flowParam.DataBase64);
+                    res.Name = flowParam.Name;
+                    res.Value = flowParam.DataBase64;
+                    db.Updateable(res).ExecuteCommand();
+                    model.ValueA = res.Id.ToString();
+                }
+                else
+                {
+                    // 新建资源
+                    res = new SysResourceModel
+                    {
+                        Name = flowParam.Name,
+                        Type = (int)PhysicalResourceType.FlowFile,
+                        Value = flowParam.DataBase64,
+                        Code = hasId
+                            ? (flowParam.Id + Cryptography.GetMd5Hash(flowParam.DataBase64))
+                            : Cryptography.GetMd5Hash(flowParam.DataBase64)
+                    };
+                    db.Insertable(res).ExecuteCommand();
+                    // 获取新资源id（SqlSugar自动回写Id）
+                    model.ValueA = res.Id.ToString();
+                }
+
+                // 3. 更新明细表
+                db.Updateable(details)
+                    .Where(md => md.Pid == flowParam.Id)
+                    .ExecuteCommand();
+            }
+        }
+
 
         public override void Export(int index)
         {
@@ -189,7 +262,7 @@ namespace ColorVision.Engine.Templates.Flow
                 if (ImportTemp != null)
                 {
                     param.DataBase64 = ImportTemp.DataBase64;
-                    param.Save();
+                    Save2DB(param);
                     ImportTemp = null;
                 }
                 var a = new TemplateModel<FlowParam>(templateName, param);
@@ -204,6 +277,9 @@ namespace ColorVision.Engine.Templates.Flow
         {
             ModMasterModel flowMaster = new ModMasterModel(11, templateName, UserConfig.Instance.TenantId);
             ModMasterDao.Instance.Save(flowMaster);
+            //var flowMaster = new ModMasterModel(11, templateName, UserConfig.Instance.TenantId);
+            //Db.Insertable(flowMaster).ExecuteCommand(); // 自增id自动回写
+
             List<ModDetailModel> list = new();
             List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(flowMaster.Pid);
             foreach (var item in sysDic)
@@ -237,8 +313,5 @@ namespace ColorVision.Engine.Templates.Flow
             }
             return null;
         }
-
-
-
     }
 }
