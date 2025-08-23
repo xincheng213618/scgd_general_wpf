@@ -68,8 +68,10 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         {
             SensorParam? AddParamMode()
             {
-                ModMasterModel modMaster = new ModMasterModel(TemplateDicId, templateName, UserConfig.Instance.TenantId);
-                ModMasterDao.Instance.Save(modMaster);
+                ModMasterModel modMaster = new ModMasterModel() { Pid = TemplateDicId, Name =templateName, TenantId = UserConfig.Instance.TenantId };
+                int id = Db.Insertable(modMaster).ExecuteReturnIdentity();
+                modMaster.Id = id;
+
                 List<ModDetailModel> details = new List<ModDetailModel>();
                 if (CreateTemp != null)
                 {

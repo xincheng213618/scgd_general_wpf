@@ -224,7 +224,7 @@ namespace ColorVision.Engine.Templates
                 list.Add(new ModDetailModel() { SysPid = item.Id, Pid = -1, ValueA = item.DefaultValue });
             }
 
-            ModMasterModel modMaster = new ModMasterModel(TemplateDicId, "", UserConfig.Instance.TenantId);
+            ModMasterModel modMaster = new ModMasterModel() { Pid = TemplateDicId, Name = "", TenantId = UserConfig.Instance.TenantId };
             CreateTemp = (T)Activator.CreateInstance(typeof(T), new object[] { modMaster, list });
 
             if (ImportTemp != null)
@@ -442,11 +442,12 @@ namespace ColorVision.Engine.Templates
 
         public T? AddParamMode(string Name, int resourceId = -1)
         {
-            ModMasterModel modMaster = new ModMasterModel(TemplateDicId, Name, UserConfig.Instance.TenantId);
+            ModMasterModel modMaster = new ModMasterModel() { Pid = TemplateDicId, Name = Name, TenantId = UserConfig.Instance.TenantId };
             if (resourceId > 0)
                 modMaster.ResourceId = resourceId;
+            int id = Db.Insertable(modMaster).ExecuteReturnIdentity();
+            modMaster.Id = id;
 
-            ModMasterDao.Instance.Save(modMaster);
             List<ModDetailModel> details = new();
             foreach (var item in SysDictionaryModDetailDao.Instance.GetAllByPid(TemplateDicId))
             {
@@ -470,7 +471,7 @@ namespace ColorVision.Engine.Templates
         {
             T? AddParamMode()
             {
-                ModMasterModel modMaster = new ModMasterModel(TemplateDicId, templateName, UserConfig.Instance.TenantId);
+                ModMasterModel modMaster = new ModMasterModel() { Pid = TemplateDicId, Name = templateName, TenantId = UserConfig.Instance.TenantId };
                 masterDao.Save(modMaster);
                 List<ModDetailModel> details = new();
                 if (CreateTemp != null)

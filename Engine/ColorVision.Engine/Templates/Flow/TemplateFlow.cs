@@ -277,7 +277,7 @@ namespace ColorVision.Engine.Templates.Flow
         }
         public FlowParam? AddFlowParam(string templateName)
         {
-            var flowMaster = new ModMasterModel(11, templateName, UserConfig.Instance.TenantId);
+            var flowMaster = new ModMasterModel() { Pid = 11, Name = templateName, TenantId = UserConfig.Instance.TenantId };
             int id = Db.Insertable(flowMaster).ExecuteReturnIdentity(); // 自增id自动回写
             flowMaster.Id = id;
 

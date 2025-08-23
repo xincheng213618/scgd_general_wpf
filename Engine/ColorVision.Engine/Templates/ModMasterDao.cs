@@ -14,13 +14,6 @@ namespace ColorVision.Engine.Templates
         {
         }
 
-        public ModMasterModel(int pid, string text, int tenantId)
-        {
-            Pid = pid;
-            Name = text;
-            TenantId = tenantId;
-        }
-
 
         [SugarColumn(ColumnName = "code", IsNullable = true)]
         public string? Code { get; set; }
@@ -56,8 +49,6 @@ namespace ColorVision.Engine.Templates
     public class ModMasterDao : BaseViewDao<ModMasterModel>
     {
         public static ModMasterDao Instance { get; set; } = new ModMasterDao();
-
-        private static Dictionary<string,int> keyValuePairs = new Dictionary<string,int>();
 
         public int Pid { get; set; }
 
