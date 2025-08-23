@@ -239,10 +239,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             if (!MySqlSetting.IsConnect)
                 return;
             var existingParams = ResourceParams.ToDictionary(rp => rp.Id, rp => rp);
-            ModMasterDao masterFlowDao = new ModMasterDao(2);
 
-            List<ModMasterModel> smus = masterFlowDao.GetResourceAll(UserConfig.Instance.TenantId, resourceId);
-
+            List<ModMasterModel> smus = MySqlControl.GetInstance().DB.Queryable<ModMasterModel>().Where(x=>x.Pid ==2).Where(x => x.ResourceId == resourceId).Where(x=>x.TenantId == UserConfig.Instance.TenantId).Where(x => x.IsDelete == false).ToList();
             foreach (var dbModel in smus)
             {
 

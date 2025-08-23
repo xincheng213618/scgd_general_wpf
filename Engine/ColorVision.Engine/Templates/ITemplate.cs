@@ -236,8 +236,7 @@ namespace ColorVision.Engine.Templates
         public virtual void Save(TemplateModel<T> item)
         {
             item.Value.ModMaster.Name = item.Value.Name;
-            masterDao.Save(item.Value.ModMaster);
-
+            Db.Updateable(item.Value.ModMaster).ExecuteCommand();
             var details = new List<ModDetailModel>();
             item.Value.GetDetail(details);
             Db.Updateable(details).ExecuteCommand();
@@ -254,7 +253,7 @@ namespace ColorVision.Engine.Templates
                     var item = TemplateParams[index];
 
                     item.Value.ModMaster.Name = item.Value.Name;
-                    masterDao.Save(item.Value.ModMaster);
+                    Db.Updateable(item.Value.ModMaster).ExecuteCommand();
 
                     var details = new List<ModDetailModel>();
                     item.Value.GetDetail(details);
@@ -263,8 +262,6 @@ namespace ColorVision.Engine.Templates
             }
         }
 
-        ModMasterDao masterDao => new ModMasterDao(TemplateDicId);
-
         public override void Load()
         { 
             SaveIndex.Clear();
@@ -272,7 +269,7 @@ namespace ColorVision.Engine.Templates
 
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                List<ModMasterModel> smus = masterDao.GetAll(UserConfig.Instance.TenantId);
+                List<ModMasterModel> smus = Db.Queryable<ModMasterModel>().Where(x => x.Pid == TemplateDicId).Where(x => x.TenantId == UserConfig.Instance.TenantId).Where(x => x.IsDelete == false).ToList();
                 foreach (var dbModel in smus)
                 {
                     
@@ -305,7 +302,8 @@ namespace ColorVision.Engine.Templates
             void DeleteSingle(int id)
             {
                 List<ModDetailModel> de = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id).ToList();
-                int ret = masterDao.DeleteById(id);
+                int ret = Db.Deleteable<ModMasterModel>().Where(x => x.Id == id).ExecuteCommand();
+
                 Db.Deleteable<ModDetailModel>().Where(x => x.Pid == id).ExecuteCommand();
                 foreach (ModDetailModel model in de)
                 {
@@ -459,7 +457,7 @@ namespace ColorVision.Engine.Templates
 
             if (modMaster.Id > 0)
             {
-                ModMasterModel modMasterModel = ModMasterDao.Instance.GetById(modMaster.Id);
+                ModMasterModel modMasterModel = Db.Queryable<ModMasterModel>().InSingle(modMaster.Id);
                 List<ModDetailModel> modDetailModels = Db.Queryable<ModDetailModel>().Where(x => x.Pid == modMaster.Id).ToList();
                 if (modMasterModel != null)
                     return (T)Activator.CreateInstance(typeof(T), new object[] { modMasterModel, modDetailModels });
@@ -472,7 +470,9 @@ namespace ColorVision.Engine.Templates
             T? AddParamMode()
             {
                 ModMasterModel modMaster = new ModMasterModel() { Pid = TemplateDicId, Name = templateName, TenantId = UserConfig.Instance.TenantId };
-                masterDao.Save(modMaster);
+                int id = Db.Insertable(modMaster).ExecuteReturnIdentity();
+                modMaster.Id = id;
+
                 List<ModDetailModel> details = new();
                 if (CreateTemp != null)
                 {
@@ -494,14 +494,9 @@ namespace ColorVision.Engine.Templates
                 Db.Deleteable<ModDetailModel>().Where(x => x.Pid == modMaster.Id).ExecuteCommand();
                 Db.Insertable(details).ExecuteCommand();
 
-                if (modMaster.Id > 0)
-                {
-                    ModMasterModel modMasterModel = masterDao.GetById(modMaster.Id);
-                    List<ModDetailModel> modDetailModels = Db.Queryable<ModDetailModel>().Where(x => x.Pid == modMaster.Id).ToList();
-                    if (modMasterModel != null)
-                        return (T)Activator.CreateInstance(typeof(T), new object[] { modMasterModel, modDetailModels });
-                }
-                return null;
+                List<ModDetailModel> modDetailModels = Db.Queryable<ModDetailModel>().Where(x => x.Pid == modMaster.Id).ToList();
+                return (T)Activator.CreateInstance(typeof(T), new object[] { modMaster, modDetailModels });
+
             }
             T? param = AddParamMode();
             if (ImportTemp != null) ImportTemp = null;

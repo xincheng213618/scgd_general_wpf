@@ -43,14 +43,13 @@ namespace ColorVision.Engine.Templates.Flow
             return Params.Any(a => a.Key.Equals(templateName, StringComparison.OrdinalIgnoreCase));
         }
 
-        private static ModMasterDao masterFlowDao = new ModMasterDao(11);
         public override void Load()
         {
             
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                List<ModMasterModel> flows = masterFlowDao.GetAll(UserConfig.Instance.TenantId);
+                List<ModMasterModel> flows = MySqlControl.GetInstance().DB.Queryable<ModMasterModel>().Where(x => x.Pid == 11).Where(x => x.TenantId == UserConfig.Instance.TenantId).Where(x => x.IsDelete == false).ToList();
                 foreach (var dbModel in flows)
                 {
                     var details = Db.Queryable<ModDetailModel>().Where(x=>x.Pid == dbModel.Id)
@@ -107,8 +106,7 @@ namespace ColorVision.Engine.Templates.Flow
             var db = MySqlControl.GetInstance().DB;
 
             flowParam.ModMaster.Name = flowParam.Name;
-            ModMasterDao modMasterDao = new ModMasterDao(11);
-            modMasterDao.Save(flowParam.ModMaster);
+            db.Updateable(flowParam.ModMaster).ExecuteCommand();
 
             List<Templates.ModDetailModel> details = new();
             flowParam.GetDetail(details);

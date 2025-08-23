@@ -86,7 +86,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
                 if (modMaster.Id > 0)
                 {
-                    ModMasterModel modMasterModel = ModMasterDao.Instance.GetById(modMaster.Id);
+                    ModMasterModel modMasterModel = Db.Queryable<ModMasterModel>().InSingle(modMaster.Id);
                     var modDetailModels = Db.Queryable<ModDetailModel>().Where(it => it.Pid == modMaster.Id).ToList(); 
                     if (modMasterModel != null)
                         return (SensorParam)Activator.CreateInstance(typeof(SensorParam), new object[] { modMasterModel, modDetailModels });
@@ -133,11 +133,10 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                 {
                     var item = TemplateParams[index];
 
-                    var modMasterModel = ModMasterDao.Instance.GetById(item.Value.Id);
+                    item.Value.ModMaster.Name = item.Value.Name;
+                    Db.Updateable(item.Value.ModMaster).ExecuteCommand();
 
-                    modMasterModel.Name = item.Value.Name;
-                    var modMasterDao = new ModMasterDao(modMasterModel.Pid);
-                    modMasterDao.Save(modMasterModel);
+
                     Db.Updateable(item.Value.ModDetailModels.ToList()).ExecuteCommand();
 
                 }

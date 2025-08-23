@@ -241,11 +241,12 @@ namespace ColorVision.Engine.Services.PhyCameras
                 Task.Run(() =>
                 {
                     SysResourceDao.Instance.DeleteAllByPid(Id ,false);
-                    foreach (var item in ModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "res_pid", Id } }))
+                    var ModMasterModels = Db.Queryable<ModMasterModel>().Where(x => x.ResourceId == Id).ToList();
+                    foreach (var item in ModMasterModels)
                     {
                         Db.Deleteable<ModDetailModel>().Where(x => x.Pid == item.Id).ExecuteCommand();
                     }
-                    ModMasterDao.Instance.DeleteAllByParam(new Dictionary<string, object>() { { "res_pid", Id } }, false);
+                    Db.Deleteable<ModMasterModel>().Where(x => x.ResourceId == Id).ExecuteCommand();
                 });
             }
         }
@@ -256,11 +257,12 @@ namespace ColorVision.Engine.Services.PhyCameras
             CalibrationParams.Clear();
             this.VisualChildren.Clear();
             SysResourceDao.Instance.DeleteAllByPid(Id, false);
-            foreach (var item in ModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "res_pid", Id } }))
+
+            var ModMasterModels = Db.Queryable<ModMasterModel>().Where(x => x.ResourceId == Id).ToList();
+            foreach (var item in ModMasterModels)
             {
                 Db.Deleteable<ModDetailModel>().Where(x => x.Pid == item.Id).ExecuteCommand();
             }
-
             Db.Deleteable<ModMasterModel>().Where(x => x.ResourceId == Id).ExecuteCommand();
 
             SysResourceModel.Value = null;
