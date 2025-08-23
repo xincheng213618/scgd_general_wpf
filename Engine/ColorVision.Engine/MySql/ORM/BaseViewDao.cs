@@ -11,6 +11,7 @@ namespace ColorVision.Engine.MySql.ORM
     {
         public string ViewName { get; set; }
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseViewDao<T>));
+
         public BaseViewDao(string viewName, string tableName, string pkField, bool isLogicDel) : base(tableName, pkField, isLogicDel)
         {
             ViewName = viewName;

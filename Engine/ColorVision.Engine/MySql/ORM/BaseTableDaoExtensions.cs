@@ -1,4 +1,5 @@
 ﻿using MySql.Data.MySqlClient;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 
@@ -21,21 +22,11 @@ namespace ColorVision.Engine.MySql.ORM
             return dao.GetAllByParam(new Dictionary<string, object>() { { "pid", pid }, { "is_enable", isEnable }, { "is_delete", isDelete } });
         }
          
-        public static List<T> GetAllByTenantId<T>(this BaseTableDao<T> dao, int tenantId) where T : IPKModel, new()
-        {
-            return dao.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", tenantId } });
-        }
 
         public static T? GetById<T>(this BaseTableDao<T> dao, int? id) where T : IPKModel, new()
         {
             if (id == null) return default;
             return dao.GetByParam(new Dictionary<string, object> { { "id", id } });
-        }
-
-        public static T? GetByCode<T>(this BaseTableDao<T> dao, string? code) where T : IPKModel, new()
-        {
-            if (code == null) return default;
-            return dao.GetByParam(new Dictionary<string, object> { { "code", code } });
         }
 
         public static List<T> GetAllByBatchId<T>(this BaseTableDao<T> dao, int batchid) where T : IPKModel, new()
@@ -44,19 +35,9 @@ namespace ColorVision.Engine.MySql.ORM
         }
 
         public static int GetNextAvailableId<T>(this BaseTableDao<T> dao) where T : IPKModel, new()
-        {
-            int nextId = 1;
-            string query = $"SELECT MAX(id) FROM {dao.TableName}";
-            var conn = new MySqlConnection(MySqlControl.GetConnectionString());
-            conn.Open();
-            using MySqlCommand cmd = new MySqlCommand(query, conn);
-            object result = cmd.ExecuteScalar();
-            if (result != DBNull.Value && result != null)
-            {
-                int maxId = Convert.ToInt32(result);
-                nextId = maxId + 1;
-            }
-            return nextId;
+        {   
+            int maxId = MySqlControl.GetInstance().DB.Queryable<T>().Max(it => it.Id); // 这里假设 IPKModel 有 Id 属性
+            return maxId > 0 ? maxId + 1 : 1;
         }
 
     }
