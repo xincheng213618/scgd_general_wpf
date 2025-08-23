@@ -25,6 +25,9 @@ namespace ColorVision.Engine.Services.Dao
         [SugarColumn(ColumnName ="tenant_id")]
         public int TenantId { get; set; }
     }
+
+
+
     public class VSysDeviceDao : BaseViewDao<SysDeviceModel>
     {
         public static VSysDeviceDao Instance { get; set; } = new VSysDeviceDao();

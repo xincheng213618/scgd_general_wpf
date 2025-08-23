@@ -23,6 +23,7 @@ using ColorVision.Util.Draw.Rectangle;
 using log4net;
 using MQTTMessageLib.FileServer;
 using OpenCvSharp.WpfExtensions;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -1448,28 +1449,34 @@ namespace ColorVision.Engine.Templates.POI
         }
         private void Service_Click(object sender, RoutedEventArgs e)
         {
-            if (MeasureImgResultDao.Instance.GetLatestResult() is MeasureImgResultModel measureImgResultModel)
+            var db = MySqlControl.GetInstance().DB;
+
+            var recentItems = db.Queryable<MeasureImgResultModel>()
+                   .OrderBy(it => it.CreateDate, OrderByType.Desc)
+                   .Take(6)
+                   .ToList();
+
+            if (recentItems.Count == 0)
             {
-                try
-                {
-                    if (measureImgResultModel.FileUrl != null)
-                    {
-                        OpenImage(new NetFileUtil().OpenLocalCVFile(measureImgResultModel.FileUrl));
-                        PoiConfig.BackgroundFilePath = measureImgResultModel.FileUrl;
-                    }
-                    else
-                    {
-                        MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址" );
-                    }
-                }
-                catch(Exception ex)
-                {
-                    MessageBox.Show("打开最近服务拍摄的图像失败",ex.Message);
-                }
+                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到刚拍摄的图像");
+                return;
             }
-            else
+            try
             {
-                MessageBox.Show(this, "找不到刚拍摄的图像");
+                foreach (var item in recentItems)
+                {
+                    if (File.Exists(item.FileUrl))
+                    {
+                        OpenImage(new NetFileUtil().OpenLocalCVFile(item.FileUrl));
+                        PoiConfig.BackgroundFilePath = item.FileUrl;
+                        return;
+                    }
+                }
+                MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("打开最近服务拍摄的图像失败", ex.Message);
             }
         }
 

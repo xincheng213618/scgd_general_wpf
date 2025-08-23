@@ -4,6 +4,7 @@ using ColorVision.Common.Collections;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Dao;
@@ -12,10 +13,10 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;
+using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Tif;
-using ColorVision.FileIO;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
@@ -26,6 +27,7 @@ using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using OpenCvSharp.WpfExtensions;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -1379,37 +1381,37 @@ namespace ColorVision.Engine.Templates.POI
         }
         private void Service_Click(object sender, RoutedEventArgs e)
         {
-            if (MeasureImgResultDao.Instance.GetLatestResult() is MeasureImgResultModel measureImgResultModel)
+            var db = MySqlControl.GetInstance().DB;
+
+            var recentItems = db.Queryable<MeasureImgResultModel>()
+                   .OrderBy(it => it.CreateDate, OrderByType.Desc)
+                   .Take(6)
+                   .ToList();
+
+            if (recentItems.Count == 0)
             {
-                try
+                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到刚拍摄的图像");
+                return;
+            }
+            try
+            {
+                foreach (var item in recentItems)
                 {
-                    if (measureImgResultModel.FileUrl != null)
+                    if (File.Exists(item.FileUrl))
                     {
-                        foreach (var item in MeasureImgResultDao.Instance.GetByCreateDate(6))
-                        {
-                            if (!item.FileUrl.Contains("result"))
-                            {
-                                OpenImage(new NetFileUtil().OpenLocalCVFile(item.FileUrl));
-                                PoiConfig.BackgroundFilePath = item.FileUrl;
-                                return;
-                            }
-                        }
-                        MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
-                    }
-                    else
-                    {
-                        MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址" );
+                        OpenImage(new NetFileUtil().OpenLocalCVFile(item.FileUrl));
+                        PoiConfig.BackgroundFilePath = item.FileUrl;
+                        return;
                     }
                 }
-                catch(Exception ex)
-                {
-                    MessageBox.Show("打开最近服务拍摄的图像失败",ex.Message);
-                }
+                MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show(this, "找不到刚拍摄的图像");
+                MessageBox.Show("打开最近服务拍摄的图像失败", ex.Message);
             }
+
+
         }
 
 

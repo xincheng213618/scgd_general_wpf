@@ -233,30 +233,5 @@ namespace ColorVision.Engine.MySql.ORM
 
         public int DeleteById(int id, bool IsLogicDel = true) => DeleteAllByParam(new Dictionary<string, object>() { { "id", id } }, IsLogicDel);
 
-
-        public T? GetLatestResult()
-        {
-            return GetByCreateDate(limit: 1).FirstOrDefault();
-        }
-
-        public List<T> GetByCreateDate(int limit = 1)
-        {
-            List<T> list = new();
-            string sql = $"select * from {TableName} ORDER BY create_date DESC LIMIT @Limit";
-            var parameters = new Dictionary<string, object>
-            {
-                {"@Limit", limit}
-            };
-            DataTable d_info = GetData(sql, parameters);
-            foreach (var item in d_info.AsEnumerable())
-            {
-                T? model = GetModelFromDataRow(item);
-                if (model != null)
-                {
-                    list.Add(model);
-                }
-            }
-            return list;
-        }
     }
 }

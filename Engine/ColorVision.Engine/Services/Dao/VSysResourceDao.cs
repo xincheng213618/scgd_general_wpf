@@ -87,6 +87,7 @@ namespace ColorVision.Engine.Services.Dao
         }
 
         public List<SysResourceModel> GetAllCameraId() => GetAllByParam(new Dictionary<string, object>() { { "type", 101 } });
+
         public List<SysResourceModel> GetAllEmptyCameraId() => GetAllByParam(new Dictionary<string, object>() { { "type", 101 }}).Where(a =>string.IsNullOrWhiteSpace(a.Value)).ToList();
       
         public SysResourceModel? GetByCode(string code) => GetByParam(new Dictionary<string, object>() { { "code", code } });
