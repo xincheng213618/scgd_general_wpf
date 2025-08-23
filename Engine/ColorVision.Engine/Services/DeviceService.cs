@@ -212,7 +212,7 @@ namespace ColorVision.Engine.Services
             SysResourceModel.Code = Config.Code;
             SysResourceModel.Name = Config.Name;
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            VSysResourceDao.Instance.Save(SysResourceModel);
+            MySqlControl.GetInstance().DB.Updateable(SysResourceModel).ExecuteCommand();
         }
 
         public override void Save()

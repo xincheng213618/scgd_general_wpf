@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.RC;
@@ -60,10 +61,12 @@ namespace ColorVision.Engine.Services.Terminal
             RefreshCommand = new RelayCommand(a => MqttRCService.GetInstance().RestartServices(Config.ServiceType.ToString(),sysResourceModel.Code ??string.Empty));
             EditCommand = new RelayCommand(a =>
             {
-                EditTerminal window = new(this);
+                PropertyEditorWindow window = new PropertyEditorWindow(Config);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
+
+
             }, a => AccessControl.Check(PermissionMode.Administrator));
 
             OpenCreateWindowCommand = new RelayCommand(a =>
@@ -114,8 +117,10 @@ namespace ColorVision.Engine.Services.Terminal
             Parent.RemoveChild(this);
             if (SysResourceModel != null)
             {
-                VSysResourceDao.Instance.DeleteById(SysResourceModel.Id);
-                VSysResourceDao.Instance.DeleteAllByPid(SysResourceModel.Id);
+
+                MySqlControl.GetInstance().DB.Deleteable<SysResourceModel>().Where(x => x.Pid == SysResourceModel.Id).ExecuteCommand();
+                MySqlControl.GetInstance().DB.Deleteable<SysResourceModel>().Where(x => x.Id == SysResourceModel.Id).ExecuteCommand();
+
             }
             ServiceManager.GetInstance().TerminalServices.Remove(this);
         }
@@ -129,8 +134,7 @@ namespace ColorVision.Engine.Services.Terminal
             SysResourceModel.Name = Config.Name;
             SysResourceModel.Code = Config.Code;
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            VSysResourceDao.Instance.Save(SysResourceModel);
-           
+            MySqlControl.GetInstance().DB.Updateable<SysResourceModel>().ExecuteCommand();
             MqttRCService.GetInstance().RestartServices(Config.ServiceType.ToString());
         }
     }

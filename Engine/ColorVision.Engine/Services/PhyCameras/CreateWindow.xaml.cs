@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.PhyCameras.Configs;
@@ -7,6 +8,7 @@ using ColorVision.Themes;
 using ColorVision.UI;
 using cvColorVision;
 using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,7 +43,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 CFW = new CFWPORT() { BaudRate = 9600, CFWNum = 1, ChannelCfgs = new List<Configs.ChannelCfg>() },
 
             };
-            var list = SysResourceDao.Instance.GetAllEmptyCameraId();
+            var list = MySqlControl.GetInstance().DB.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).ToList();
 
             if (list != null)
             {
@@ -157,6 +159,12 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            if (string.IsNullOrWhiteSpace(CreateConfig.Code))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "不允许创建没有Code的相机", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             if (CreateConfig.CFW.CFWNum > 1)
             {
                 CreateConfig.CFW.ChannelCfgs[3].Chtype = CreateConfig.CFW.ChannelCfgs[0].Chtype;
@@ -177,22 +185,33 @@ namespace ColorVision.Engine.Services.PhyCameras
                 CreateConfig.CFW.ChannelCfgs = CreateConfig.CFW.ChannelCfgs.GetRange(0, 9);
 
 
-            SysResourceModel? sysResourceModel = SysResourceDao.Instance.GetByCode(CreateConfig.Code);
+            var sysResourceModel = MySqlControl.GetInstance().DB.Queryable<SysResourceModel>().Where(x => x.Code == CreateConfig.Code) .First();
+            // 不存在则新建
             if (sysResourceModel == null)
             {
-                sysResourceModel = new SysResourceModel();
-                sysResourceModel.Name = CreateConfig.CameraID;
-                sysResourceModel.Code = CreateConfig.Code;
-                sysResourceModel.Type = 101;
-                sysResourceModel.TenantId = UserConfig.Instance.TenantId;
+                sysResourceModel = new SysResourceModel
+                {
+                    Name = CreateConfig.CameraID,
+                    Code = CreateConfig.Code,
+                    Type = 101,
+                    TenantId = UserConfig.Instance.TenantId,
+                };
+            }
 
-            }
+            // 赋值并保存
             sysResourceModel.Value = JsonConvert.SerializeObject(CreateConfig);
-            int ret = SysResourceDao.Instance.Save(sysResourceModel);
-            if (ret < 0)
+
+            // 推荐用 InsertOrUpdate（SqlSugar5+），否则判断主键再决定 insert/update
+            int ret;
+            if (sysResourceModel.Id > 0)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "不允许创建没有Code的相机", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                ret = MySqlControl.GetInstance().DB.Updateable(sysResourceModel).ExecuteCommand();
             }
+            else
+            {
+                ret = MySqlControl.GetInstance().DB.Insertable(sysResourceModel).ExecuteCommand();
+            }
+
             PhyCameraManager.CreatePhysicalCameraFloder(CreateConfig.Code);
             PhyCameraManager.LoadPhyCamera();
             Close();

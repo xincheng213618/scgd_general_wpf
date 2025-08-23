@@ -61,8 +61,8 @@ namespace ColorVision.Engine.Services.Terminal
                 deviceConfig.SendTopic = TerminalService.Config.SendTopic;
                 deviceConfig.SubscribeTopic = TerminalService.Config.SubscribeTopic;
                 sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
-                int id = MySqlControl.GetInstance().DB.Insertable(sysResource).ExecuteReturnIdentity();
-                int pkId = sysResource.Id;
+                int pkId = MySqlControl.GetInstance().DB.Insertable(sysResource).ExecuteReturnIdentity();
+                sysResource.Id = pkId;
                 return sysResource;
             }
 

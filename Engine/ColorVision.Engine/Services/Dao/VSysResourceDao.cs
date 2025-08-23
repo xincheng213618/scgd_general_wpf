@@ -86,10 +86,6 @@ namespace ColorVision.Engine.Services.Dao
                 parameters.Add("@groupId", groupId);
             ExecuteNonQuery(sql, parameters);
         }
-
-        public List<SysResourceModel> GetAllCameraId() => GetAllByParam(new Dictionary<string, object>() { { "type", 101 } });
-
-        public List<SysResourceModel> GetAllEmptyCameraId() => GetAllByParam(new Dictionary<string, object>() { { "type", 101 }}).Where(a =>string.IsNullOrWhiteSpace(a.Value)).ToList();
       
         public SysResourceModel? GetByCode(string code) => GetByParam(new Dictionary<string, object>() { { "code", code } });
 
@@ -124,47 +120,4 @@ namespace ColorVision.Engine.Services.Dao
         public List<SysResourceModel> GetAllType(int type) => GetAllByParam(new Dictionary<string, object>() { { "type", type },{ "is_delete",0 } });
     }
 
-
-
-
-    public class VSysResourceDao : BaseViewDao<SysResourceModel>
-    {
-        public static VSysResourceDao Instance { get; set; } = new VSysResourceDao();
-
-        public VSysResourceDao() : base("v_scgd_sys_resource", "t_scgd_sys_resource", "id", true)
-        {
-
-        }
-        public override SysResourceModel GetModelFromDataRow(DataRow item)
-        {
-            SysResourceModel model = new()
-            {
-                Id = item.Field<int>("id"),
-                Name = item.Field<string>("name"),
-                Code = item.Field<string>("code"),
-                Type = item.Field<int>("type"),
-                Pid = item.Field<int?>("pid"),
-                Value = item.Field<string>("txt_value"),
-                CreateDate = item.Field<DateTime>("create_date"),
-                TenantId = item.Field<int>("tenant_id"),
-            };
-            return model;
-        }
-
-        public override DataRow Model2Row(SysResourceModel item, DataRow row)
-        {
-            if (item != null)
-            {
-                if (item.Id > 0) row["id"] = item.Id;
-                if (item.Name != null) row["name"] = item.Name;
-                if (item.Code != null) row["code"] = item.Code;
-                if (item.Pid != null) row["pid"] = item.Pid;
-                if (item.Value != null) row["txt_value"] = item.Value;
-                if (item.Type >= 0) row["type"] = item.Type;
-                row["tenant_id"] = item.TenantId;
-                row["create_date"] = item.CreateDate;
-            }
-            return row;
-        }
-    }
 }
