@@ -66,20 +66,6 @@ namespace ColorVision.Engine.Templates
             Pid = -1;
         }
 
-        public ModMasterDao(string code) : base("v_scgd_mod_master", "t_scgd_mod_param_master", "id", true)
-        {
-            if (keyValuePairs.TryGetValue(code, out int pid))
-            {
-                Pid = pid;
-            }
-            else
-            {
-                pid = string.IsNullOrWhiteSpace(code) ? -1 : SysDictionaryModMasterDao.Instance.GetByCode(code, 0)?.Id ?? -1;
-                keyValuePairs.Add(code, pid);
-                Pid = pid;
-            }
-        }
-
         public ModMasterDao(int pid) : base("v_scgd_mod_master", "t_scgd_mod_param_master", "id", true)
         {
             Pid = pid;

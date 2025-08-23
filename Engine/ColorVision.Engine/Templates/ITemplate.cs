@@ -5,6 +5,8 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.Templates.POI.Dao;
 using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.Solution;
 using ColorVision.UI.Extension;
@@ -19,6 +21,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace ColorVision.Engine.Templates
 {
@@ -237,7 +240,7 @@ namespace ColorVision.Engine.Templates
 
             var details = new List<ModDetailModel>();
             item.Value.GetDetail(details);
-            ModDetailDao.Instance.UpdateByPid(item.Value.Id, details);
+            Db.Updateable(details).ExecuteCommand();
         }
 
         public override void Save()
@@ -255,7 +258,7 @@ namespace ColorVision.Engine.Templates
 
                     var details = new List<ModDetailModel>();
                     item.Value.GetDetail(details);
-                    ModDetailDao.Instance.UpdateByPid(item.Value.Id, details);
+                    Db.Updateable(details).ExecuteCommand();
                 }
             }
         }
@@ -443,15 +446,14 @@ namespace ColorVision.Engine.Templates
                 modMaster.ResourceId = resourceId;
 
             ModMasterDao.Instance.Save(modMaster);
-            List<ModDetailModel> list = new();
-            List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(TemplateDicId);
-            foreach (var item in sysDic)
+            List<ModDetailModel> details = new();
+            foreach (var item in SysDictionaryModDetailDao.Instance.GetAllByPid(TemplateDicId))
             {
-                list.Add(new ModDetailModel() { SysPid = item.Id, Pid = -1, ValueA = item.DefaultValue });
+                details.Add(new ModDetailModel() { SysPid = item.Id, Pid = -1, ValueA = item.DefaultValue });
             }
-            ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
+            Db.Deleteable<ModDetailModel>().Where(x => x.Pid == modMaster.Id).ExecuteCommand();
+            Db.Insertable(details).ExecuteCommand();
 
-            MySqlControl.GetInstance().DB.Fastest<ModDetailModel>().BulkCopy(list);
 
             if (modMaster.Id > 0)
             {
@@ -469,11 +471,11 @@ namespace ColorVision.Engine.Templates
             {
                 ModMasterModel modMaster = new ModMasterModel(TemplateDicId, templateName, UserConfig.Instance.TenantId);
                 masterDao.Save(modMaster);
-                List<ModDetailModel> list = new();
+                List<ModDetailModel> details = new();
                 if (CreateTemp != null)
                 {
-                    CreateTemp.GetDetail(list);
-                    foreach (var item in list)
+                    CreateTemp.GetDetail(details);
+                    foreach (var item in details)
                     {
                         item.Pid = modMaster.Id;
                     }
@@ -483,10 +485,12 @@ namespace ColorVision.Engine.Templates
                     List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(TemplateDicId, true, false);
                     foreach (var item in sysDic)
                     {
-                        list.Add(new ModDetailModel() { SysPid = item.Id, Pid = -1, ValueA = item.DefaultValue });
+                        details.Add(new ModDetailModel() { SysPid = item.Id, Pid = -1, ValueA = item.DefaultValue });
                     }
                 }
-                ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
+
+                Db.Deleteable<ModDetailModel>().Where(x => x.Pid == modMaster.Id).ExecuteCommand();
+                Db.Insertable(details).ExecuteCommand();
 
                 if (modMaster.Id > 0)
                 {

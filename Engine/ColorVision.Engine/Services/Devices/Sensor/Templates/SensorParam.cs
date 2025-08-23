@@ -14,6 +14,7 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
@@ -69,20 +70,22 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             {
                 ModMasterModel modMaster = new ModMasterModel(TemplateDicId, templateName, UserConfig.Instance.TenantId);
                 ModMasterDao.Instance.Save(modMaster);
-                List<ModDetailModel> list = new List<ModDetailModel>();
+                List<ModDetailModel> details = new List<ModDetailModel>();
                 if (CreateTemp != null)
                 {
-                    CreateTemp.GetDetail(list);
-                    foreach (var item in list)
+                    CreateTemp.GetDetail(details);
+                    foreach (var item in details)
                     {
                         item.Pid = modMaster.Id;
                     }
                 }
-                ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
+                Db.Deleteable<ModDetailModel>().Where(x => x.Pid == modMaster.Id).ExecuteCommand();
+                Db.Insertable(details).ExecuteCommand();
+
                 if (modMaster.Id > 0)
                 {
                     ModMasterModel modMasterModel = ModMasterDao.Instance.GetById(modMaster.Id);
-                    List<ModDetailModel> modDetailModels = ModDetailDao.Instance.GetAllByPid(modMaster.Id);
+                    var modDetailModels = Db.Queryable<ModDetailModel>().Where(it => it.Pid == modMaster.Id).ToList(); 
                     if (modMasterModel != null)
                         return (SensorParam)Activator.CreateInstance(typeof(SensorParam), new object[] { modMasterModel, modDetailModels });
                 }
@@ -133,8 +136,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                     modMasterModel.Name = item.Value.Name;
                     var modMasterDao = new ModMasterDao(modMasterModel.Pid);
                     modMasterDao.Save(modMasterModel);
+                    Db.Updateable(item.Value.ModDetailModels.ToList()).ExecuteCommand();
 
-                    ModDetailDao.Instance.UpdateByPid(item.Value.Id, item.Value.ModDetailModels.ToList());
                 }
             }
         }
