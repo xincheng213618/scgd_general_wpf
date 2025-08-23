@@ -277,25 +277,21 @@ namespace ColorVision.Engine.Templates.Flow
         }
         public FlowParam? AddFlowParam(string templateName)
         {
-
             var flowMaster = new ModMasterModel(11, templateName, UserConfig.Instance.TenantId);
-            int id =Db.Insertable(flowMaster).ExecuteReturnIdentity(); // 自增id自动回写
+            int id = Db.Insertable(flowMaster).ExecuteReturnIdentity(); // 自增id自动回写
             flowMaster.Id = id;
 
-            List<Templates.ModDetailModel> list = new();
-            List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(flowMaster.Pid);
-            foreach (var item in sysDic)
-            {
-                list.Add(new ModDetailModel() { SysPid = item.Id ,Pid =flowMaster.Id ,ValueA = item.DefaultValue });
-            }
-            ModDetailDao.Instance.SaveByPid(flowMaster.Id, list);
+            List<ModDetailModel> list = new List<ModDetailModel>();
+            foreach (var item in SysDictionaryModDetailDao.Instance.GetAllByPid(flowMaster.Pid))
+                list.Add(new ModDetailModel() { SysPid = item.Id, Pid = flowMaster.Id, ValueA = item.DefaultValue });
+
+            Db.Deleteable<ModDetailModel>().Where(x => x.Pid == flowMaster.Id).ExecuteCommand();
+            Db.Insertable(list).ExecuteCommand();
 
             int pkId = flowMaster.Id;
             if (pkId > 0)
             {
-                var flowDetail = Db.Queryable<ModDetailModel>()
-                    .Where(it => it.Pid == pkId)
-                    .ToList();
+                var flowDetail = Db.Queryable<ModDetailModel>().Where(it => it.Pid == pkId).ToList();
 
                 if (flowDetail.Count > 0 && int.TryParse(flowDetail[0].ValueA, out int sid))
                 {
