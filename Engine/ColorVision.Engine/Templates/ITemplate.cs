@@ -275,7 +275,8 @@ namespace ColorVision.Engine.Templates
                 List<ModMasterModel> smus = masterDao.GetAll(UserConfig.Instance.TenantId);
                 foreach (var dbModel in smus)
                 {
-                    List<ModDetailModel> smuDetails = ModDetailDao.Instance.GetAllByPid(dbModel.Id);
+                    
+                    List<ModDetailModel> smuDetails = Db.Queryable<ModDetailModel>().Where(x => x.Pid == dbModel.Id).ToList();
                     if (dbModel != null && smuDetails != null)
                     {
                         if (Activator.CreateInstance(typeof(T), new object[] { dbModel, smuDetails }) is T t)
@@ -303,9 +304,9 @@ namespace ColorVision.Engine.Templates
 
             void DeleteSingle(int id)
             {
-                List<ModDetailModel> de = ModDetailDao.Instance.GetAllByPid(id);
+                List<ModDetailModel> de = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id).ToList();
                 int ret = masterDao.DeleteById(id);
-                ModDetailDao.Instance.DeleteAllByPid(id);
+                Db.Deleteable<ModDetailModel>().Where(x => x.Pid == id).ExecuteCommand();
                 foreach (ModDetailModel model in de)
                 {
                     string code = Cryptography.GetMd5Hash(model.ValueA + model.Id);
@@ -458,7 +459,7 @@ namespace ColorVision.Engine.Templates
             if (modMaster.Id > 0)
             {
                 ModMasterModel modMasterModel = ModMasterDao.Instance.GetById(modMaster.Id);
-                List<ModDetailModel> modDetailModels = ModDetailDao.Instance.GetAllByPid(modMaster.Id);
+                List<ModDetailModel> modDetailModels = Db.Queryable<ModDetailModel>().Where(x => x.Pid == modMaster.Id).ToList();
                 if (modMasterModel != null)
                     return (T)Activator.CreateInstance(typeof(T), new object[] { modMasterModel, modDetailModels });
             }
@@ -495,7 +496,7 @@ namespace ColorVision.Engine.Templates
                 if (modMaster.Id > 0)
                 {
                     ModMasterModel modMasterModel = masterDao.GetById(modMaster.Id);
-                    List<ModDetailModel> modDetailModels = ModDetailDao.Instance.GetAllByPid(modMaster.Id);
+                    List<ModDetailModel> modDetailModels = Db.Queryable<ModDetailModel>().Where(x => x.Pid == modMaster.Id).ToList();
                     if (modMasterModel != null)
                         return (T)Activator.CreateInstance(typeof(T), new object[] { modMasterModel, modDetailModels });
                 }

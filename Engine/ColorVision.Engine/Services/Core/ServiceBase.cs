@@ -1,4 +1,7 @@
-﻿using ColorVision.Engine.Services.Dao;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Templates;
+using SqlSugar;
 
 namespace ColorVision.Engine.Services.Core
 {
@@ -13,6 +16,8 @@ namespace ColorVision.Engine.Services.Core
 
     public class ServiceBase : ServiceObjectBase
     {
+        public static SqlSugarClient Db => MySqlControl.GetInstance().DB;
+
         public SysResourceModel SysResourceModel { get; set; }
         public int Id { get => SysResourceModel.Id; set { } }
 

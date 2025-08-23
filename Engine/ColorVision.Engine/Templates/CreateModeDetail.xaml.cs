@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.Themes;
 using System;
@@ -54,8 +55,9 @@ namespace ColorVision.Engine.Templates
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            int i = ModDetailDao.Instance.Save(CreateConfig);
-            if (i > 0)
+            int id  = MySqlControl.GetInstance().DB.Insertable(CreateConfig).ExecuteReturnIdentity();
+            CreateConfig.Id = id;
+            if (id > 0)
             {
                 Param.ModDetailModels.Add(CreateConfig);
                 this.Close();

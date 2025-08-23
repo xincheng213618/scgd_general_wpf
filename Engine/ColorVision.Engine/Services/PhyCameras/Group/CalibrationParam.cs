@@ -245,7 +245,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
             foreach (var dbModel in smus)
             {
-                List<ModDetailModel> smuDetails = ModDetailDao.Instance.GetAllByPid(dbModel.Id);
+
+                List<ModDetailModel> smuDetails = MySqlControl.GetInstance().DB.Queryable<ModDetailModel>() .Where(x => x.Pid == dbModel.Id).ToList();
                 foreach (var dbDetail in smuDetails)
                 {
                     dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
