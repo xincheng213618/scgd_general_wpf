@@ -426,9 +426,9 @@ namespace ColorVision.Engine.Services.Flow
             Frame frame = new Frame();
 
             DataSummaryPage batchDataHistory = new DataSummaryPage(frame);
-
+            frame.Navigate(batchDataHistory);
             Window window = new Window();
-            window.Content = batchDataHistory;
+            window.Content = frame;
             window.Show();
         }
     }

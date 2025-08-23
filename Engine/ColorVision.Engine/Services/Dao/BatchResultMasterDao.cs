@@ -1,5 +1,6 @@
 ﻿using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Templates.Flow;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
@@ -7,6 +8,14 @@ using System.Data;
 
 namespace ColorVision.Engine.Services.Dao
 {
+    public enum ArchiveStatus
+    {
+        NotArchived = -1,
+        Pending = 0,
+        Archived = 1,
+        Failed = -2
+    }
+
     [SugarTable("t_scgd_measure_batch")]
     public class BatchResultMasterModel : PKModel, IInitTables
     {
@@ -29,13 +38,17 @@ namespace ColorVision.Engine.Services.Dao
         public DateTime? CreateDate { get; set; }
         [SugarColumn(ColumnName ="total_time")]
         public int? TotalTime { get; set; }
+
         [SugarColumn(ColumnName ="result")]
         public string? Result { get; set; }
+
+
         [SugarColumn(ColumnName ="archived_flag")]
-        public short ArchivedFlag { get; set; }
+        public ArchiveStatus ArchiveStatus { get; set; }
 
         [SugarColumn(ColumnName ="tenant_id")]
         public int TenantId { get; set; }
+
     }
 
 

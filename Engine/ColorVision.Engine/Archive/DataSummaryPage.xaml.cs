@@ -3,7 +3,6 @@ using ColorVision.Database;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Solution.Searches;
 using ColorVision.UI.Sorts;
@@ -20,13 +19,6 @@ using System.Windows.Input;
 namespace ColorVision.Engine.Archive.Dao
 {
 
-    public enum ArchiveStatus
-    {
-        NotArchived = -1,
-        Pending = 0,
-        Archived = 1,
-        Failed = -2
-    }
 
     public class ViewBatchResult : ViewModelBase,ISortID
     {
@@ -48,7 +40,8 @@ namespace ColorVision.Engine.Archive.Dao
         public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
 
-        public ArchiveStatus ArchiveStatus { get => (ArchiveStatus)BatchResultMasterModel.ArchivedFlag; }
+        public ArchiveStatus ArchiveStatus { get => _ArchiveStatus; set { _ArchiveStatus = value; } }
+        private ArchiveStatus _ArchiveStatus;
 
         public bool IshowArch => ArchiveStatus == ArchiveStatus.Pending || ArchiveStatus == ArchiveStatus.NotArchived;
 
@@ -58,9 +51,11 @@ namespace ColorVision.Engine.Archive.Dao
         [DisplayName("BatchCode")]
         public string? BatchCode { get { return _BatchCode; } set { _BatchCode = value; NotifyPropertyChanged(); } }
         private string? _BatchCode;
+
         [DisplayName("测量时间")]
         public DateTime? CreateTime { get=> _CreateTime;  set { _CreateTime = value; NotifyPropertyChanged(); } }
         private DateTime? _CreateTime;
+
         [DisplayName("TotalTime")]
         public TimeSpan? TotalTime { get => _TotalTime; set { _TotalTime = value; NotifyPropertyChanged(); } }
         private TimeSpan? _TotalTime;

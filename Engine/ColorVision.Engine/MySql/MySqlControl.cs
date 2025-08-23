@@ -150,66 +150,6 @@ namespace ColorVision.Engine.MySql
         }
 
 
-        public List<string> GetTableNames()
-        {
-            List<string> tableNames = new List<string>();
-
-            string connectionString = $"Server={MySqlSetting.Instance.MySqlConfig.Host};Database={MySqlSetting.Instance.MySqlConfig.Database};User ID={MySqlSetting.Instance.MySqlConfig.UserName};Password={MySqlSetting.Instance.MySqlConfig.UserPwd};";
-
-            string query = @"
-            SELECT TABLE_NAME 
-            FROM INFORMATION_SCHEMA.TABLES 
-            WHERE TABLE_SCHEMA = @databaseName AND TABLE_TYPE = 'BASE TABLE'";
-
-            using (MySqlCommand command = new MySqlCommand(query, MySqlConnection))
-            {
-                command.Parameters.AddWithValue("@databaseName", MySqlSetting.Instance.MySqlConfig.Database);
-
-                using (MySqlDataReader reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        string tableName = reader.GetString(0);
-                        tableNames.Add(tableName);
-                    }
-                }
-            }
-            return tableNames;
-        }
-
-        public List<string> GetFilteredResourceTableNames()
-        {
-            List<string> tableNames = new List<string>();
-
-            string connectionString = $"Server={MySqlSetting.Instance.MySqlConfig.Host};Database={MySqlSetting.Instance.MySqlConfig.Database};User ID={MySqlSetting.Instance.MySqlConfig.UserName};Password={MySqlSetting.Instance.MySqlConfig.UserPwd};";
-
-            string query = @"
-            SELECT TABLE_NAME 
-            FROM INFORMATION_SCHEMA.TABLES 
-            WHERE TABLE_SCHEMA = @databaseName AND TABLE_TYPE = 'BASE TABLE'";
-
-            using (MySqlCommand command = new MySqlCommand(query, MySqlConnection))
-            {
-                command.Parameters.AddWithValue("@databaseName", MySqlSetting.Instance.MySqlConfig.Database);
-
-                using (MySqlDataReader reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        string tableName = reader.GetString(0);
-                        tableNames.Add(tableName);
-                    }
-                }
-            }
-            var prefixes = new[] { "t_scgd_sys_config", "t_scgd_sys_globle_cfg", "t_scgd_sys_mqtt_cfg", "t_scgd_rc", "t_scgd_sys_version" };
-
-            tableNames = tableNames
-                .Where(name => !prefixes.Any(prefix => name.StartsWith(prefix,StringComparison.CurrentCulture)))
-                .ToList();
-
-            return tableNames;
-        }
-
 
         public static string GetConnectionString() => GetConnectionString(Config);
 
@@ -301,125 +241,67 @@ namespace ColorVision.Engine.MySql
             MySqlConnection.Close();
         }
 
+
+        public List<string> GetTableNames()
+        {
+            var dbName = MySqlSetting.Instance.MySqlConfig.Database;
+            var sql = @"SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @dbName AND TABLE_TYPE = 'BASE TABLE'";
+            var result = DB.Ado.SqlQuery<string>(sql, new { dbName });
+            return result;
+        }
+
+        public List<string> GetFilteredResourceTableNames()
+        {
+            var tableNames = GetTableNames();
+            var prefixes = new[] { "t_scgd_sys_config", "t_scgd_sys_globle_cfg", "t_scgd_sys_mqtt_cfg", "t_scgd_rc", "t_scgd_sys_version" };
+            return tableNames
+                .Where(name => !prefixes.Any(prefix => name.StartsWith(prefix, StringComparison.CurrentCulture)))
+                .ToList();
+        }
+
+
         public int ExecuteNonQuery(string sql, Dictionary<string, object>? param = null)
         {
-            int count = -1;
             try
             {
-                MySqlCommand command = new(sql, MySqlConnection);
-                if (param != null)
-                {
-                    foreach (var item in param)
-                    {
-                        command.Parameters.AddWithValue(item.Key, item.Value);
-                    }
-                }
-                count = command.ExecuteNonQuery();
+                return param == null
+                    ? DB.Ado.ExecuteCommand(sql)
+                    : DB.Ado.ExecuteCommand(sql, param);
             }
             catch (Exception ex)
             {
                 log.Error(ex);
-            }
-            return count;
-        }
-        public void BatchExecuteQuery(string sqlBatch)
-        {
-            // Split the entire SQL batch into individual SQL statements
-            var statements = sqlBatch.Split(';', StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (var sql in statements)
-            {
-                try
-                {
-                    // Trim whitespace from the SQL statement
-                    string trimmedSql = sql.Trim();
-                    if (string.IsNullOrEmpty(trimmedSql))
-                        continue;
-
-                    using (MySqlCommand command = new(trimmedSql, MySqlConnection))
-                    {
-                        using (MySqlDataReader reader = command.ExecuteReader())
-                        {
-                            // Print column names
-                            var columnNames = Enumerable.Range(0, reader.FieldCount)
-                                                        .Select(reader.GetName)
-                                                        .ToArray();
-                            log.Info("Column Names: " + string.Join(", ", columnNames));
-
-                            // Print each row
-                            while (reader.Read())
-                            {
-                                var rowValues = Enumerable.Range(0, reader.FieldCount)
-                                                          .Select(reader.GetValue)
-                                                          .ToArray();
-                                log.Info("Row Values: " + string.Join(", ", rowValues));
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // Log the error information without affecting the execution of subsequent statements
-                    log.Error($"SQL execution failed.\nError: {ex.Message}\nFailed SQL: {sql.Trim()}\n");
-                }
+                return -1;
             }
         }
-
         public int BatchExecuteNonQuery(string sqlBatch)
         {
-            // 将整个SQL批次按照分号拆分为单个SQL语句
-            var statements = sqlBatch.Split(separator, StringSplitOptions.RemoveEmptyEntries);
+            var statements = sqlBatch.Split(';', StringSplitOptions.RemoveEmptyEntries);
             int totalCount = 0;
-            foreach (var sql in statements)
+            try
             {
-                try
+                DB.Ado.BeginTran();
+                foreach (var sql in statements)
                 {
-                    // 去除SQL语句两端的空白字符
-                    string trimmedSql = sql.Trim();
+                    var trimmedSql = sql.Trim();
                     if (string.IsNullOrEmpty(trimmedSql))
                         continue;
-
-                    using (MySqlCommand command = new(trimmedSql, MySqlConnection))
-                    {
-                        int count = command.ExecuteNonQuery();
-                        totalCount += count;
-                        log.Info($"SQL执行成功。\n受影响的行数: {count}\n执行的SQL语句: {trimmedSql}\n");
-                    }
+                    int count = DB.Ado.ExecuteCommand(trimmedSql);
+                    totalCount += count;
+                    log.Info($"SQL执行成功。受影响的行数: {count} 执行的SQL语句: {trimmedSql}");
                 }
-                catch (Exception ex)
-                {
-                    // 记录错误信息，但不影响后续语句的执行
-                    log.Info( $"SQL执行失败。\n错误信息: {ex.Message}\n出错的SQL语句: {sql.Trim()}\n");
-                    // 您也可以选择记录到日志或其他处理方式
-                }
+                DB.Ado.CommitTran();
             }
-            log.Info($"总共受影响的行数: {totalCount}\n");
+            catch (Exception ex)
+            {
+                DB.Ado.RollbackTran();
+                log.Error($"SQL批量执行失败: {ex.Message}");
+            }
+            log.Info($"总共受影响的行数: {totalCount}");
             return totalCount;
         }
 
 
-        public void EnsureLocalInfile()
-        {
-            string checkLocalInfile = "SHOW GLOBAL VARIABLES LIKE 'local_infile';";
-            using var cmdCheck = new MySqlCommand(checkLocalInfile, MySqlConnection);
-            using var reader = cmdCheck.ExecuteReader();
-            if (reader.Read())
-            {
-                string localInfileValue = reader["Value"].ToString();
-                log.Info($"Current local_infile Value: {localInfileValue}");
-
-                // 如果local_infile的值为OFF或0，设置为1
-                if (localInfileValue == "OFF" || localInfileValue == "0")
-                {
-                    reader.Close(); // 关闭reader，因为我们要执行另一个命令
-
-                    string setLocalInfile = "SET GLOBAL local_infile = 1;";
-                    using var cmdSet = new MySqlCommand(setLocalInfile, MySqlConnection);
-                    cmdSet.ExecuteNonQuery();
-                    log.Info("local_infile has been set to 1.");
-                }
-            }
-        }
 
         public void Dispose()
         {
