@@ -1369,7 +1369,7 @@ namespace ColorVision.Engine.Templates.POI
             Rect rect = new Rect(0,0, PoiParam.Width, PoiParam.Height);
             foreach (var item in DrawingVisualLists)
             {
-                int index = DBIndex.TryGetValue(item, out int value) ? value : -1;
+                int index = DBIndex.TryGetValue(item, out int value) ? value : 0;
 
                 BaseProperties drawAttributeBase = item.BaseAttribute;
                 if (drawAttributeBase is CircleTextProperties circle)

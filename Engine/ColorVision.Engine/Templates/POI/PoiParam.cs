@@ -1,14 +1,20 @@
-﻿using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.POI.Dao;
+using log4net;
 using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 namespace ColorVision.Engine.Templates.POI
 {
     public static class PoiParamExtension
     {
-        public static void LoadPoiDetailFromDB(this PoiParam poiParam) => PoiParam.LoadPoiDetailFromDB(poiParam);
+        private static readonly ILog log = LogManager.GetLogger(typeof(PoiParamExtension));
+
         public static int Save2DB(this PoiParam poiParam)
         {
             PoiMasterModel poiMasterModel = new(poiParam);
@@ -20,7 +26,22 @@ namespace ColorVision.Engine.Templates.POI
             {
                 poiDetails.Add(new PoiDetailModel(poiParam.Id, pt));
             }
-            return PoiDetailDao.Instance.SaveByPid(poiParam.Id, poiDetails);
+            int count;
+
+            var db = MySqlControl.GetInstance().DB;
+            Stopwatch sw2 = Stopwatch.StartNew();
+            db.Deleteable<PoiDetailModel>().Where(x => x.Pid == poiParam.Id).ExecuteCommand();
+            count = MySqlControl.GetInstance().DB.Fastest<PoiDetailModel>().BulkCopy(poiDetails);
+            sw2.Stop();
+            log.Debug("SqlSugar BulkCopy " + count + " 耗时: " + sw2.ElapsedMilliseconds + " ms");
+
+            //Stopwatch sw3 = Stopwatch.StartNew();
+            //db.Deleteable<PoiDetailModel>().Where(x => x.Pid == poiParam.Id).ExecuteCommand();
+            //count = MySqlControl.GetInstance().DB.Insertable(poiDetails).ExecuteCommand();
+            //sw3.Stop();
+            //log.Debug("SqlSugar Insertable " + count + " 耗时: " + sw3.ElapsedMilliseconds + " ms");
+
+            return  1;
         }
     }
 
@@ -29,14 +50,44 @@ namespace ColorVision.Engine.Templates.POI
     /// </summary>
     public class PoiParam : ParamModBase
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(PoiParam));
         public static void LoadPoiDetailFromDB(PoiParam poiParam)
         {
             poiParam.PoiPoints.Clear();
-            List<PoiDetailModel> poiDetails = PoiDetailDao.Instance.GetAllByPid(poiParam.Id);
-            foreach (var dbModel in poiDetails)
+            log.Debug($"Start loading PoiDetail for pid={poiParam.Id}");
+
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+            List<PoiDetailModel> poiDetails2 = null;
+            try
             {
-                poiParam.PoiPoints.Add(new PoiPoint(dbModel));
+                poiDetails2 = MySqlControl.GetInstance().DB
+                    .Queryable<PoiDetailModel>()
+                    .Where(x => x.Pid == poiParam.Id)
+                    .ToList();
+                log.Debug($"Query finished, count={poiDetails2.Count}");
             }
+            catch (Exception ex)
+            {
+                log.Error("Error querying PoiDetailModel", ex);
+                return;
+            }
+
+            try
+            {
+                foreach (var dbModel in poiDetails2)
+                {
+                    poiParam.PoiPoints.Add(new PoiPoint(dbModel));
+                }
+                log.Debug($"PoiPoints filled, count={poiParam.PoiPoints.Count}");
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error filling PoiPoints", ex);
+            }
+
+            stopwatch.Stop();
+            log.Debug($"LoadPoiDetailFromDB finished in {stopwatch.ElapsedMilliseconds} ms for pid={poiParam.Id}");
         }
 
         public PoiParam()

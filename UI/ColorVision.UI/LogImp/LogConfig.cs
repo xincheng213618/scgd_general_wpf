@@ -63,7 +63,6 @@ namespace ColorVision.UI
 
     public class LogConfig: ViewModelBase, IConfig, IConfigSettingProvider
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(LogConfig));
         public static LogConfig Instance => ConfigService.Instance.GetRequiredService<LogConfig>();
 
         [JsonIgnore]
@@ -76,6 +75,8 @@ namespace ColorVision.UI
         public static IReadOnlyList<Level> GetAllLevels() => TypeLevelCacheHelper.GetAllLevels<Level>(typeof(Level));
 
         private Level _LogLevel = Level.Info;
+
+        [JsonIgnore]
         public Level LogLevel
         {
             get => _LogLevel; set
@@ -83,6 +84,21 @@ namespace ColorVision.UI
                 _LogLevel = value;
                 NotifyPropertyChanged();
                 SetLog();
+            }
+        }
+
+        public string LogLevelString { get => LogLevel.ToString();
+            set 
+            {
+                var found = GetAllLevels().FirstOrDefault(l => l.Name == value);
+                if (found != null)
+                {
+                    _LogLevel = found;
+                }
+                else
+                {
+                    _LogLevel = Level.Info;
+                }
             }
         }
 

@@ -12,28 +12,6 @@ namespace ColorVision.Engine.Templates.POI.Dao
         {
         }
 
-        public PoiMasterModel(string name, int tenantId)
-        {
-            Id = -1;
-            Name = name;
-            Type = 0;
-            Width = 0;
-            Height = 0;
-            LeftTopX = 0;
-            LeftTopY = 0;
-            RightTopX = 0;
-            RightTopY = 0;
-            RightBottomX = 0;
-            RightBottomY = 0;
-            LeftBottomX = 0;
-            LeftBottomY = 0;
-            IsDynamics = false;
-            CreateDate = DateTime.Now;
-            IsEnable = true;
-            IsDelete = false;
-            TenantId = tenantId;
-        }
-
         public PoiMasterModel(PoiParam poiParam)
         {
             Id = poiParam.Id;

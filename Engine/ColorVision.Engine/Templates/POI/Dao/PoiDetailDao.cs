@@ -6,22 +6,6 @@ namespace ColorVision.Engine.Templates.POI.Dao
     [SugarTable("t_scgd_algorithm_poi_template_detail")]
     public class PoiDetailModel : PKModel
     {
-        [SugarColumn(ColumnName ="name")]
-        public string? Name { get; set; }
-        [SugarColumn(ColumnName ="pid")]
-        public int? Pid { get; set; }
-        [SugarColumn(ColumnName ="pt_type")]
-        public RiPointTypes Type { get; set; }
-        [SugarColumn(ColumnName ="pix_x")]
-        public int? PixX { get; set; }
-        [SugarColumn(ColumnName ="pix_y")]
-        public int? PixY { get; set; }
-        [SugarColumn(ColumnName ="pix_width")]
-        public int? PixWidth { get; set; }
-        [SugarColumn(ColumnName ="pix_height")]
-        public int? PixHeight { get; set; }
-        [SugarColumn(ColumnName ="remark")]
-        public string? Remark { get; set; }
 
         public PoiDetailModel()
         {
@@ -39,11 +23,31 @@ namespace ColorVision.Engine.Templates.POI.Dao
             PixWidth = (int)data.PixWidth;
             PixHeight = (int)data.PixHeight;
         }
-    }
 
 
-    public class PoiDetailDao : BaseTableDao<PoiDetailModel>
-    {
-        public static PoiDetailDao Instance { get; } = new PoiDetailDao();
+        [SugarColumn(ColumnName = "name", Length = 255, IsNullable = true)]
+        public string? Name { get; set; }
+        [SugarColumn(ColumnName ="pid", Length = 11, IsNullable = true)]
+        public int? Pid { get; set; }
+        [SugarColumn(ColumnName ="pt_type", Length = 11, IsNullable = true)]
+        public RiPointTypes Type { get; set; }
+        [SugarColumn(ColumnName ="pix_x", Length = 11, IsNullable = true)]
+        public int? PixX { get; set; }
+        [SugarColumn(ColumnName ="pix_y", Length = 11, IsNullable = true)]
+        public int? PixY { get; set; }
+        [SugarColumn(ColumnName ="pix_width", Length = 11, IsNullable = true)]
+        public int? PixWidth { get; set; }
+        [SugarColumn(ColumnName ="pix_height", Length = 11, IsNullable = true)]
+        public int? PixHeight { get; set; }
+
+        [SugarColumn(ColumnName = "is_enable")]
+        public bool IsEnable { get; set; } = true;
+
+        [SugarColumn(ColumnName = "is_delete")]
+        public bool IsDelete { get; set; }
+
+        [SugarColumn(ColumnName ="remark",ColumnDataType = "text", IsNullable =true)]
+        public string? Remark { get; set; }
+
     }
 }

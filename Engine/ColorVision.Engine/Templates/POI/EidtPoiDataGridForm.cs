@@ -41,7 +41,7 @@ namespace ColorVision.Engine.Templates.POI
                 {
                     row["Name"] = text.Text;
                 }
-                if (item.BaseAttribute.Param is PoiPointParam param)
+                if (item.BaseAttribute.Param is KBPoiVMParam param)
                 {
                     row["Area"] = param.Area;
                     row["HaloScale"] = param.HaloScale;
@@ -75,7 +75,7 @@ namespace ColorVision.Engine.Templates.POI
             {
                 text.Text = row.Field<string>("Name");
             }
-            if (drawingVisual.BaseAttribute.Param is PoiPointParam param)
+            if (drawingVisual.BaseAttribute.Param is KBPoiVMParam param)
             {
                 param.Area = row.Field<double>("Area");
                 param.HaloScale = row.Field<double>("HaloScale");

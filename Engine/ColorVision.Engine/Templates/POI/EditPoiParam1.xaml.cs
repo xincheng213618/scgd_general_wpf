@@ -110,6 +110,63 @@ namespace ColorVision.Engine.Templates.POI
 
     }
 
+    public class KBPoiVMParam : ViewModelBase
+    {
+        /// <summary>
+        /// 结果缩放
+        /// </summary>
+        public double KeyScale { get => _KeyScale; set { _KeyScale = value; NotifyPropertyChanged(); } }
+        private double _KeyScale = 1;
+        /// <summary>
+        /// 结果缩放
+        /// </summary>
+        public double HaloScale { get => _HaloScale; set { _HaloScale = value; NotifyPropertyChanged(); } }
+        private double _HaloScale = 1;
+
+        public int HaloThreadV { get => _HaloThreadV; set { _HaloThreadV = value; NotifyPropertyChanged(); } }
+        private int _HaloThreadV = 500;
+
+        public int KeyThreadV { get => _KeyThreadV; set { _KeyThreadV = value; NotifyPropertyChanged(); } }
+        private int _KeyThreadV = 3000;
+
+        public int HaloOutMOVE { get => _HaloOutMOVE; set { _HaloOutMOVE = value; NotifyPropertyChanged(); } }
+        private int _HaloOutMOVE = 20;
+
+        public int KeyOutMOVE { get => _KeyOutMOVE; set { _KeyOutMOVE = value; NotifyPropertyChanged(); } }
+        private int _KeyOutMOVE = 5;
+
+        public int KeyOffsetX { get => _KeyOffsetX; set { _KeyOffsetX = value; NotifyPropertyChanged(); } }
+        private int _KeyOffsetX;
+        public int KeyOffsetY { get => _KeyOffsetY; set { _KeyOffsetY = value; NotifyPropertyChanged(); } }
+        private int _KeyOffsetY;
+
+        public int HaloOffsetX { get => _HaloOffsetX; set { _HaloOffsetX = value; NotifyPropertyChanged(); } }
+        private int _HaloOffsetX;
+
+        public int HaloSize { get => _HaloSize; set { _HaloSize = value; NotifyPropertyChanged(); } }
+        private int _HaloSize;
+
+
+        public int HaloOffsetY { get => _HaloOffsetY; set { _HaloOffsetY = value; NotifyPropertyChanged(); } }
+        private int _HaloOffsetY;
+
+        /// <summary>
+        /// 面积
+        /// </summary>
+        public double Area { get => _Area; set { _Area = value; NotifyPropertyChanged(); } }
+        private double _Area = 1;
+
+        /// <summary>
+        /// 辉度
+        /// </summary>
+        public double Brightness { get => _Brightness; set { _Brightness = value; NotifyPropertyChanged(); } }
+        private double _Brightness;
+    }
+
+
+
+
+
 
     public partial class EditPoiParam1 : Window
     {
@@ -218,7 +275,7 @@ namespace ColorVision.Engine.Templates.POI
                         {
                             if (visual.BaseAttribute is RectangleTextProperties rectangle)
                             {
-                                PoiPointParam poiPointParam = new PoiPointParam();
+                                KBPoiVMParam poiPointParam = new KBPoiVMParam();
                                 visual.BaseAttribute.Param = poiPointParam;
                                 poiPointParam.PropertyChanged += (s, e) =>
                                 {
@@ -612,7 +669,7 @@ namespace ColorVision.Engine.Templates.POI
                     Rectangle.Attribute.Text = item.Name;
                     Rectangle.Attribute.Name = No.ToString();
 
-                    PoiPointParam poiPointParam = new PoiPointParam()
+                    KBPoiVMParam poiPointParam = new KBPoiVMParam()
                     {
                         HaloScale = item.KBHalo.HaloScale,
                         HaloOffsetX = item.KBHalo.OffsetX,
@@ -1234,7 +1291,7 @@ namespace ColorVision.Engine.Templates.POI
             Rect rect = new Rect(0, 0, KBJson.Width, KBJson.Height);
             foreach (var item in DrawingVisualLists)
             {
-                int index = DBIndex.TryGetValue(item, out int value) ? value : -1;
+                int index = DBIndex.TryGetValue(item, out int value) ? value : 0;
 
                 BaseProperties drawAttributeBase = item.BaseAttribute;
                if (drawAttributeBase is RectangleTextProperties rectangle)
@@ -1274,9 +1331,9 @@ namespace ColorVision.Engine.Templates.POI
                         PixHeight = rectangle.Rect.Height,
                     };
                     KBKeyRect kBKeyRect = new KBKeyRect();
-                    if (rectangle.Param is not PoiPointParam param)
+                    if (rectangle.Param is not KBPoiVMParam param)
                     {
-                        param = new PoiPointParam();
+                        param = new KBPoiVMParam();
                     }
                     kBKeyRect.DoHalo = PoiConfig.DefaultDoHalo;
                     kBKeyRect.DoKey = PoiConfig.DefaultDoKey ;
@@ -1660,7 +1717,7 @@ namespace ColorVision.Engine.Templates.POI
         private void CalPoiPointParamB(RectangleTextProperties rectangle)
         {
             if (!IsInitialKB) return;
-            if (rectangle.Param is PoiPointParam poiPointParam)
+            if (rectangle.Param is KBPoiVMParam poiPointParam)
             {
                 IRECT rect = new IRECT((int)rectangle.Rect.X, (int)rectangle.Rect.Y, (int)rectangle.Rect.Width, (int)rectangle.Rect.Height);
                 if (PoiConfig.DefaultDoKey)
@@ -1875,7 +1932,7 @@ namespace ColorVision.Engine.Templates.POI
                 foreach (var drawingVisual in DrawingVisualLists)
                 {
                     BaseProperties drawAttributeBase = drawingVisual.BaseAttribute;
-                    if (drawAttributeBase is RectangleTextProperties rectangle && rectangle.Param is PoiPointParam poiPointParam)
+                    if (drawAttributeBase is RectangleTextProperties rectangle && rectangle.Param is KBPoiVMParam poiPointParam)
                     { 
                         try
                         {

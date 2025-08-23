@@ -448,6 +448,9 @@ namespace ColorVision.Engine.Templates
                 list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
             }
             ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
+
+            MySqlControl.GetInstance().DB.Fastest<ModDetailModel>().BulkCopy(list);
+
             if (modMaster.Id > 0)
             {
                 ModMasterModel modMasterModel = ModMasterDao.Instance.GetById(modMaster.Id);

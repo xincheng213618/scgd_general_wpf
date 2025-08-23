@@ -4,8 +4,10 @@ using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Templates.POI.Dao;
 using ColorVision.UI.Extension;
 using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -91,6 +93,7 @@ namespace ColorVision.Engine.Templates.POI
             return true;
         }
 
+
         public override void Create(string templateName)
         {
             PoiParam? AddPoiParam(string templateName)
@@ -98,21 +101,28 @@ namespace ColorVision.Engine.Templates.POI
                 if(ImportTemp != null)
                 {
                     ImportTemp.Name = templateName;
-                    PoiMasterModel poiMasterModel = new(ImportTemp);
+                    PoiMasterModel poiMasterModel = new PoiMasterModel(ImportTemp);
                     PoiMasterDao.Instance.Save(poiMasterModel);
-                    ImportTemp.Id = poiMasterModel.Id;
-                    List<PoiDetailModel> poiDetails = new();
+                    List<PoiDetailModel> poiDetails = new List<PoiDetailModel>();
                     foreach (PoiPoint pt in ImportTemp.PoiPoints)
                     {
-                        PoiDetailModel poiDetail = new PoiDetailModel(ImportTemp.Id, pt);
+                        PoiDetailModel poiDetail = new PoiDetailModel(poiMasterModel.Id, pt);
                         poiDetails.Add(poiDetail);
                     }
-                    PoiDetailDao.Instance.SaveByPid(ImportTemp.Id, poiDetails);
+
+                    var db = MySqlControl.GetInstance().DB;
+                    Stopwatch sw2 = Stopwatch.StartNew();
+                    db.Deleteable<PoiDetailModel>().Where(x => x.Pid == poiMasterModel.Id).ExecuteCommand();
+                    int count = MySqlControl.GetInstance().DB.Fastest<PoiDetailModel>().BulkCopy(poiDetails);
+                    sw2.Stop();
+
+
+                    ImportTemp.Id = poiMasterModel.Id;
                     return ImportTemp;
                 }
                 else
                 {
-                    PoiMasterModel poiMasterModel = new PoiMasterModel(templateName, UserConfig.Instance.TenantId);
+                    PoiMasterModel poiMasterModel = new PoiMasterModel() { Name =templateName, TenantId = UserConfig.Instance.TenantId };
                     PoiMasterDao.Instance.Save(poiMasterModel);
 
                     int pkId = poiMasterModel.Id;
