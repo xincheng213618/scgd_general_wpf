@@ -442,7 +442,6 @@ namespace ProjectARVR
             if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否删除 {item.SN} 测试结果？", "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 ViewResluts.Remove(item);
-                BatchResultMasterDao.Instance.DeleteById(item.Id);
                 log.Info($"删除测试结果 {item.SN}");
             }
         }

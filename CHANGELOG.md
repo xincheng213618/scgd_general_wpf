@@ -10,6 +10,8 @@
 
 4.修复无法显示服务name的问题
 
+5.移除代码对MysqlView的依赖，移除View的代码
+
 ## [1.3.8.1] 2025.08.21
 
 1.更新第三方库的dll,引入SqlSugar使用Sqllite
