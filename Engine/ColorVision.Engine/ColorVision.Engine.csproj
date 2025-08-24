@@ -37,7 +37,6 @@
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
 		<PackageReference Include="MQTTnet" Version="4.3.4.1084" />
-		<PackageReference Include="MySql.Data" Version="9.4.0" />
 		<PackageReference Include="MySqlConnector" Version="2.4.0" />
 		<PackageReference Include="OpenCvSharp4.Extensions" Version="4.11.0.20250507" />
 		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.11.0.20250507" />

@@ -24,13 +24,11 @@ namespace ColorVision.Engine.MySql
         public static MySqlConfig Config => MySqlSetting.Instance.MySqlConfig;
         private volatile MySqlConnection _conn; // 用于切换
         public MySqlConnection MySqlConnection => _conn;
-        private Timer timer;
 
         public SqlSugarClient DB { get; set; }
 
         public MySqlControl()
         {
-            timer = new Timer(ReConnect, null, 0, 3600000);
             Task.Run(async () => 
             {
                 await Task.Delay(10000); // 等待配置加载完成
@@ -38,58 +36,12 @@ namespace ColorVision.Engine.MySql
             });
 
         }
-        public void ReConnect(object? o)
-        {
-            if (IsConnect)
-            {
-                ReConnect();
-            }
-        }
 
         public event EventHandler MySqlConnectChanged;
 
         public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; NotifyPropertyChanged(); } }
         private bool _IsConnect;
         private static readonly char[] separator = new[] { ';' };
-
-        private Task<bool> ReConnect()
-        {
-            {
-                string connStr = GetConnectionString(Config);
-                try
-                {
-                    IsConnect = false;
-                    MySqlConnection.Dispose();
-                    var newConn = new MySqlConnection() { ConnectionString = connStr };
-                    newConn.Open();
-                    var oldConn = Interlocked.Exchange(ref _conn, newConn); // 原子切换
-
-                    Task.Run(() =>
-                    {
-                        try 
-                        { 
-                            oldConn?.Dispose(); 
-                        } 
-                        catch(Exception ex)
-                        {
-                            log.Error(ex);
-                        }
-                    }); // 延后销毁，避免影响正在用的
-
-                    IsConnect = true;
-                    log.Info($"数据库连接成功:{connStr}");
-
-
-                    return Task.FromResult(true);
-                }
-                catch (Exception ex)
-                {
-                    IsConnect = false;
-                    log.Error(ex);
-                    return Task.FromResult(false);
-                }
-            }
-        }
 
         public string ConnectionString { get; private set; }
 
@@ -159,71 +111,62 @@ namespace ColorVision.Engine.MySql
             return connStr;
         }
 
-        public static void TestConnect(MySqlConfig MySqlConfig)  
+        public static void TestConnect(MySqlConfig mySqlConfig)  
         {
-            string connStr = GetConnectionString(MySqlConfig, 2);
+            string connStr = GetConnectionString(mySqlConfig, 2);
+            log.Info($"Test数据库连接信息:{connStr}");
+
+            if (string.IsNullOrEmpty(mySqlConfig.Database))
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "数据库名不能为空");
+                });
+                return;
+            }
+
             try
             {
-                log.Info($"Test数据库连接信息:{connStr}");
-                using (var mySqlConnection = new MySqlConnection(connStr))
+                var db = new SqlSugar.SqlSugarClient(new SqlSugar.ConnectionConfig
                 {
-                    mySqlConnection.Open();
+                    ConnectionString = connStr,
+                    DbType = SqlSugar.DbType.MySql,
+                    IsAutoCloseConnection = true
+                });
 
-                    if (string.IsNullOrEmpty(MySqlConfig.Database))
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "数据库名不能为空");
-                        });
-                    }
+                // 检查数据库名是否为空
+                db.Ado.ExecuteCommand("SELECT 1");
 
-                    // 查询数据库是否存在
-                    string query = $"SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = @dbName";
-                    using (var command = new MySqlCommand(query, mySqlConnection))
+                // 检查数据库是否存在
+                var dbResult = db.Ado.SqlQuery<string>(
+                    "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = @dbName",
+                    new { dbName = mySqlConfig.Database }
+                );
+
+                if (dbResult == null || dbResult.Count == 0)
+                {
+                    log.Warn("Database does not exist.");
+                    Application.Current.Dispatcher.Invoke(() =>
                     {
-                        command.Parameters.AddWithValue("@dbName", MySqlConfig.Database);
-                        using (var reader = command.ExecuteReader())
-                        {
-                            if (reader.HasRows)
-                            {
-                                log.Info("Database exists.");
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    MessageBox.Show(Application.Current.GetActiveWindow(), "连接成功");
-                                });
-                            }
-                            else
-                            {
-                                log.Warn("Database does not exist.");
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    MessageBox.Show(Application.Current.GetActiveWindow(), "数据库不存在。");
-                                });
-                            }
-                        }
-                    }
+                        MessageBox.Show(Application.Current.GetActiveWindow(), "数据库不存在。");
+                    });
+                    return;
                 }
+
+                log.Info("连接成功，数据库及表（如指定）存在。");
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "连接成功");
+                });
+
             }
-            catch (MySqlException ex)
+            catch (SqlSugarException ex)
             {
                 log.Error(ex);
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    switch (ex.Number)
-                    {
-                        case 1045:
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "账号或密码错误，请检查！");
-                            break;
-                        case 1049:
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "指定的数据库不存在！");
-                            break;
-                        case 2003:
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "无法连接到MySQL服务器，请检查端口和网络！");
-                            break;
-                        default:
-                            MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库连接失败，错误码：{ex.Number}");
-                            break;
-                    }
+                    // SqlSugarException 没有 MySqlException 的 Number 属性，只能提示通用信息
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库连接失败，SqlSugar异常：{ex.Message}");
                 });
             }
             catch (Exception ex)
