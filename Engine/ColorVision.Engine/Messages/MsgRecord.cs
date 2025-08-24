@@ -17,9 +17,9 @@ namespace ColorVision.Engine.Messages
         public string SendTopic { get; set; }
 
         public string MsgID { get; set; }
-        public DateTime SendTime { get => _SendTime; set { _SendTime = value; NotifyPropertyChanged(); } }
+        public DateTime SendTime { get => _SendTime; set { _SendTime = value; OnPropertyChanged(); } }
         private DateTime _SendTime;
-        public DateTime ReciveTime { get => _ReciveTime; set { _ReciveTime = value; NotifyPropertyChanged(); } }
+        public DateTime ReciveTime { get => _ReciveTime; set { _ReciveTime = value; OnPropertyChanged(); } }
         private DateTime _ReciveTime;
         public MsgSend MsgSend { get; set; }
         public MsgReturn MsgReturn { get; set; }
@@ -31,13 +31,13 @@ namespace ColorVision.Engine.Messages
             get => _MsgRecordState; set
             {
                 _MsgRecordState = value;
-                NotifyPropertyChanged();
+                OnPropertyChanged();
 
                 Application.Current.Dispatcher.Invoke(() => MsgRecordStateChanged?.Invoke(MsgRecordState));
                 if (value == MsgRecordState.Success || value == MsgRecordState.Fail)
                 {
-                    NotifyPropertyChanged(nameof(IsRecive));
-                    NotifyPropertyChanged(nameof(MsgReturn));
+                    OnPropertyChanged(nameof(IsRecive));
+                    OnPropertyChanged(nameof(MsgReturn));
                     if (value == MsgRecordState.Success)
                     {
                         Application.Current.Dispatcher.Invoke(() => MsgSucessed?.Invoke(MsgReturn));
@@ -49,14 +49,14 @@ namespace ColorVision.Engine.Messages
                 }
                 else if (value == MsgRecordState.Timeout)
                 {
-                    NotifyPropertyChanged(nameof(IsTimeout));
+                    OnPropertyChanged(nameof(IsTimeout));
                 }
                 else
                 {
-                    NotifyPropertyChanged(nameof(MsgReturn));
+                    OnPropertyChanged(nameof(MsgReturn));
                 }
 
-                NotifyPropertyChanged(nameof(IsSend));
+                OnPropertyChanged(nameof(IsSend));
 
             }
         }

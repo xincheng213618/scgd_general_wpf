@@ -34,10 +34,10 @@ namespace ColorVision.Engine.Services
         public ServiceTypes ServiceTypes => (ServiceTypes)SysResourceModel.Type;
         public virtual int HeartbeatTime { get; set; }
 
-        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; OnPropertyChanged(); } }
         private bool _IsSelected;
 
-        public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
+        public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; OnPropertyChanged(); } }
         private bool _IsExpanded = true;
 
         public ContextMenu ContextMenu { get; set; }
@@ -68,7 +68,7 @@ namespace ColorVision.Engine.Services
             throw new NotImplementedException();
         }
 
-        public bool IsDisplayOpen { get => _IsDisplayOpen; set { _IsDisplayOpen = value; NotifyPropertyChanged(); } }
+        public bool IsDisplayOpen { get => _IsDisplayOpen; set { _IsDisplayOpen = value; OnPropertyChanged(); } }
         private bool _IsDisplayOpen = true;
 
 
@@ -99,13 +99,13 @@ namespace ColorVision.Engine.Services
     {
         public T Config { get; set; }
 
-        public override ImageSource Icon { get => _Icon; set { _Icon = value; NotifyPropertyChanged(); } }
+        public override ImageSource Icon { get => _Icon; set { _Icon = value; OnPropertyChanged(); } }
         private ImageSource _Icon;
 
         public override object GetConfig() => Config;
 
-        public override string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; NotifyPropertyChanged(); } }
-        public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
+        public override string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; OnPropertyChanged(); } }
+        public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; OnPropertyChanged(); } }
 
 
         public DeviceService(SysResourceModel sysResourceModel) : base()
@@ -201,9 +201,9 @@ namespace ColorVision.Engine.Services
             }
         }
 
-        public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; NotifyPropertyChanged(); } }
-        public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; NotifyPropertyChanged(); } }
-        public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; NotifyPropertyChanged(); } }
+        public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; OnPropertyChanged(); } }
+        public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; OnPropertyChanged(); } }
+        public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; OnPropertyChanged(); } }
 
         public event EventHandler ConfigChanged;
 

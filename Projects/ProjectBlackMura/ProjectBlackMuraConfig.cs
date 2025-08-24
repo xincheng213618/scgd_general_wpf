@@ -23,7 +23,7 @@ namespace ProjectBlackMura
 
         public ObservableCollection<BlackMuraResult> ViewResluts { get; set; } = new ObservableCollection<BlackMuraResult>();
         public Dictionary<string, JudgeConfig> JudgeConfigs { get; set; } = new Dictionary<string, JudgeConfig>();
-        public JudgeConfig JudgeConfig { get => _JudgeConfig; set { _JudgeConfig = value; NotifyPropertyChanged(); } }
+        public JudgeConfig JudgeConfig { get => _JudgeConfig; set { _JudgeConfig = value; OnPropertyChanged(); } }
         private JudgeConfig _JudgeConfig = new JudgeConfig();
 
         public RelayCommand OpenTemplateCommand { get; set; }
@@ -47,10 +47,10 @@ namespace ProjectBlackMura
             OpenHYMesConfigCommand = new RelayCommand(a => OpenHYMesConfig());
 
         }
-        public int StepIndex { get => _StepIndex; set { _StepIndex = value; NotifyPropertyChanged(); } }
+        public int StepIndex { get => _StepIndex; set { _StepIndex = value; OnPropertyChanged(); } }
         private int _StepIndex;
 
-        public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; NotifyPropertyChanged(); } }
+        public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; OnPropertyChanged(); } }
         private bool _LogControlVisibility = true;
 
         public void OpenHYMesConfig()
@@ -137,10 +137,10 @@ namespace ProjectBlackMura
         }
 
         [JsonIgnore]
-        public ObservableCollection<TemplateModel<FlowParam>> TemplateItemSource { get => _TemplateItemSource; set { _TemplateItemSource = value; NotifyPropertyChanged(); } }
+        public ObservableCollection<TemplateModel<FlowParam>> TemplateItemSource { get => _TemplateItemSource; set { _TemplateItemSource = value; OnPropertyChanged(); } }
         private ObservableCollection<TemplateModel<FlowParam>> _TemplateItemSource;
 
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
         public void OpenTemplate()
         {
@@ -164,32 +164,32 @@ namespace ProjectBlackMura
                 {
                     _SN = value;
                 }
-                NotifyPropertyChanged(); } }
+                OnPropertyChanged(); } }
         private string _SN;
 
-        public int SNMax { get => _SMMax; set { _SMMax = value; NotifyPropertyChanged(); } }
+        public int SNMax { get => _SMMax; set { _SMMax = value; OnPropertyChanged(); } }
         private int _SMMax = 17;
 
-        public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; NotifyPropertyChanged(); } }
+        public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; OnPropertyChanged(); } }
         private bool _IsAutoUploadSn;
 
        
-        public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; NotifyPropertyChanged(); } }
+        public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; OnPropertyChanged(); } }
         private string _ResultSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "TestReslut");
 
 
 
 
-        public string ResultSavePath1 { get => _ResultSavePath1; set { _ResultSavePath1 = value; NotifyPropertyChanged(); } }
+        public string ResultSavePath1 { get => _ResultSavePath1; set { _ResultSavePath1 = value; OnPropertyChanged(); } }
         private string _ResultSavePath1 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "TestReslut");
-        public double Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
+        public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 300;
 
         [DisplayName("重试次数")]
-        public int TryCountMax { get => _TryCountMax; set { _TryCountMax = value; NotifyPropertyChanged(); } }
+        public int TryCountMax { get => _TryCountMax; set { _TryCountMax = value; OnPropertyChanged(); } }
         private int _TryCountMax = 2;
 
-        public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
+        public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; OnPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;
 
     }

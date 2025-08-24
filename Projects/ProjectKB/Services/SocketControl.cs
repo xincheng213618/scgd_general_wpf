@@ -14,7 +14,7 @@ namespace ProjectKB.Services
 
         public static SocketConfig Instance => ConfigService.Instance.GetRequiredService<SocketConfig>();
 
-        public bool IsUseSocket { get => _IsUseSocket; set { _IsUseSocket = value; NotifyPropertyChanged(); } }
+        public bool IsUseSocket { get => _IsUseSocket; set { _IsUseSocket = value; OnPropertyChanged(); } }
         private bool _IsUseSocket;
 
 
@@ -22,7 +22,7 @@ namespace ProjectKB.Services
         /// IP地址
         /// </summary>
         [DisplayName("IP地址")]
-        public string Host { get => _Host; set { _Host = value; NotifyPropertyChanged(); } }
+        public string Host { get => _Host; set { _Host = value; OnPropertyChanged(); } }
         private string _Host = "127.0.0.1";
 
         /// <summary>
@@ -34,7 +34,7 @@ namespace ProjectKB.Services
             get => _Port; set
             {
                 _Port = value <= 0 ? 0 : value >= 65535 ? 65535 : value;
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
         private int _Port = 6666;

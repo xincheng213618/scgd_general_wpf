@@ -845,7 +845,7 @@ namespace ColorVision.ImageEditor.Draw
             {
                 if (ToolBarScaleRuler.IsShow == value) return;
                 ToolBarScaleRuler.IsShow = value;
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -867,7 +867,7 @@ namespace ColorVision.ImageEditor.Draw
                 if (_Crosshair == value) return;
                 _Crosshair = value;
                 Crosshair.IsShow = value;
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -881,7 +881,7 @@ namespace ColorVision.ImageEditor.Draw
                 _ShowImageInfo = value;
 
                 MouseMagnifier.IsShow = value;
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -912,7 +912,7 @@ namespace ColorVision.ImageEditor.Draw
 
                     LastChoice = string.Empty;
                 }
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -930,7 +930,7 @@ namespace ColorVision.ImageEditor.Draw
                     ImageEditMode = true;
                     LastChoice = nameof(DrawCircle);
                 }
-                NotifyPropertyChanged(); 
+                OnPropertyChanged(); 
             }
         }
 
@@ -950,7 +950,7 @@ namespace ColorVision.ImageEditor.Draw
                     ImageEditMode = true;
                     LastChoice = nameof(DrawRect);
                 }
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -967,7 +967,7 @@ namespace ColorVision.ImageEditor.Draw
                     LastChoice = nameof(Measure);
                 }
                 ToolBarMeasure.Measure = value;
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
         private bool _Measure;
@@ -989,7 +989,7 @@ namespace ColorVision.ImageEditor.Draw
                     LastChoice = nameof(DrawPolygon);
                 }
 
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -1005,7 +1005,7 @@ namespace ColorVision.ImageEditor.Draw
                     ImageEditMode = true;
                     LastChoice = nameof(DrawBezierCurve);
                 }
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -1022,7 +1022,7 @@ namespace ColorVision.ImageEditor.Draw
                     LastChoice = nameof(ConcentricCircle);
                 }
                 ToolConcentricCircle.IsShow = value;
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -1070,7 +1070,7 @@ namespace ColorVision.ImageEditor.Draw
                     ZoomboxSub.Cursor = Cursors.Cross;
                 }
 
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 

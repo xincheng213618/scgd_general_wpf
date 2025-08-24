@@ -217,35 +217,35 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
 
         [DisplayName("SerialNumber1")]
-        public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
+        public int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }
         private int _Id;
         [DisplayName("BatchNumber")]
-        public string? Batch { get { return _Batch; } set { _Batch = value; NotifyPropertyChanged(); } }
+        public string? Batch { get { return _Batch; } set { _Batch = value; OnPropertyChanged(); } }
         private string? _Batch;
         [DisplayName("File")]
-        public string? FilePath { get { return _FilePath; } set { _FilePath = value; NotifyPropertyChanged(); } }
+        public string? FilePath { get { return _FilePath; } set { _FilePath = value; OnPropertyChanged(); } }
         private string? _FilePath;
         [DisplayName("Template")]
-        public string POITemplateName { get { return _POITemplateName; } set { _POITemplateName = value; NotifyPropertyChanged(); } }
+        public string POITemplateName { get { return _POITemplateName; } set { _POITemplateName = value; OnPropertyChanged(); } }
         private string _POITemplateName;
         [DisplayName("CreateTime")]
-        public DateTime? CreateTime { get { return _CreateTime; } set { _CreateTime = value; NotifyPropertyChanged(); } }
+        public DateTime? CreateTime { get { return _CreateTime; } set { _CreateTime = value; OnPropertyChanged(); } }
         private DateTime? _CreateTime;
 
         [DisplayName("ResultType")]
-        public AlgorithmResultType ResultType {get=> _ResultType; set { _ResultType = value; NotifyPropertyChanged(); } }
+        public AlgorithmResultType ResultType {get=> _ResultType; set { _ResultType = value; OnPropertyChanged(); } }
         private AlgorithmResultType _ResultType;
 
         [DisplayName("ResultDesc")]
-        public string ResultDesc { get { return _ResultDesc; } set { _ResultDesc = value; NotifyPropertyChanged(); } }
+        public string ResultDesc { get { return _ResultDesc; } set { _ResultDesc = value; OnPropertyChanged(); } }
         private string _ResultDesc;
         [DisplayName("img_result")]
         public string ResultImagFile { get; set; }
         [DisplayName("Duration")]
-        public long TotalTime { get => _TotalTime; set { _TotalTime = value; NotifyPropertyChanged(); } }
+        public long TotalTime { get => _TotalTime; set { _TotalTime = value; OnPropertyChanged(); } }
         private long _TotalTime;
 
-        public int? ResultCode { get { return _ResultCode; } set { _ResultCode = value; NotifyPropertyChanged(); } }
+        public int? ResultCode { get { return _ResultCode; } set { _ResultCode = value; OnPropertyChanged(); } }
         private int? _ResultCode;
 
 

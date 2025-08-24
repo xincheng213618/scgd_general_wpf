@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Templates.Matching
         }
 
 
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
 
         public void OpenTemplate()
@@ -50,11 +50,11 @@ namespace ColorVision.Engine.Templates.Matching
         {
             new TemplateEditorWindow(new TemplatePoi(), _TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         }
-        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplatePoiSelectedIndex;
 
 
-        public string TemplateFile { get => _TemplateFile; set { _TemplateFile = value; NotifyPropertyChanged(); } }
+        public string TemplateFile { get => _TemplateFile; set { _TemplateFile = value; OnPropertyChanged(); } }
         private string _TemplateFile;
         public static void SetFile(object target, string propertyName)
         {

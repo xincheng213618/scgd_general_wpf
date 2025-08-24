@@ -28,7 +28,7 @@ namespace ColorVision.Projects
         public string? AssemblyPublicKeyToken { get; set; }
         public string? PackageName { get; set; }
 
-        public string InkPath { get => _InkPath; set { _InkPath = value; NotifyPropertyChanged(); } }
+        public string InkPath { get => _InkPath; set { _InkPath = value; OnPropertyChanged(); } }
         private string _InkPath;
 
         public RelayCommand OpenProjectCommand { get; set; }

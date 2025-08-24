@@ -73,10 +73,10 @@ namespace ColorVision.Engine.Abstractions
 
     public abstract class DisplayAlgorithmBase : ViewModelBase, IDisplayAlgorithm
     {
-        public bool IsLocalFile { get => _IsLocalFile; set { _IsLocalFile = value; NotifyPropertyChanged(); } }
+        public bool IsLocalFile { get => _IsLocalFile; set { _IsLocalFile = value; OnPropertyChanged(); } }
         private bool _IsLocalFile;
 
-        public string ImageFilePath { get => _ImageFilePath; set { _ImageFilePath = value; NotifyPropertyChanged(); } }
+        public string ImageFilePath { get => _ImageFilePath; set { _ImageFilePath = value; OnPropertyChanged(); } }
         private string _ImageFilePath;
 
 

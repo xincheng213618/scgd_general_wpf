@@ -14,13 +14,13 @@ namespace ColorVision.Engine.Templates
         public virtual int Id { get; set; }
 
         [JsonIgnore]
-        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; OnPropertyChanged(); } }
         private bool _IsSelected;
 
         public virtual string Key { get; set; }
 
         [JsonIgnore]
-        public virtual bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; NotifyPropertyChanged(); } }
+        public virtual bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; OnPropertyChanged(); } }
         private bool _IsEditMode;
 
         public virtual object GetValue()
@@ -58,7 +58,7 @@ namespace ColorVision.Engine.Templates
             get => Value.Name;
             set
             {
-                Value.Name = value; NotifyPropertyChanged();
+                Value.Name = value; OnPropertyChanged();
             }
         }
 

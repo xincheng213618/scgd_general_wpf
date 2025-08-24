@@ -28,7 +28,7 @@ namespace ColorVision.Engine.Services.Devices
                 _DeviceStatus = value;
 
                 Application.Current?.Dispatcher.BeginInvoke(() => DeviceStatusChanged?.Invoke(value));
-                NotifyPropertyChanged(); NotifyPropertyChanged(nameof(DeviceStatusString));
+                OnPropertyChanged(); OnPropertyChanged(nameof(DeviceStatusString));
             }
         }
 
@@ -48,7 +48,7 @@ namespace ColorVision.Engine.Services.Devices
 
         public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; } }
 
-        public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; NotifyPropertyChanged(); } }
+        public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; OnPropertyChanged(); } }
 
         public override string ServiceToken { get => Config.ServiceToken; set => Config.ServiceToken = value; }
 

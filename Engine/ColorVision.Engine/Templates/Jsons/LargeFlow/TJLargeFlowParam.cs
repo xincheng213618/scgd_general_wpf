@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Templates.Jsons.LargeFlow
             }
             set {
                 JsonValue = JsonConvert.SerializeObject(value);
-                NotifyPropertyChanged(); 
+                OnPropertyChanged(); 
             } }
 
 

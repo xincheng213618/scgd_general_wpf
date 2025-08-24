@@ -14,36 +14,36 @@ namespace ProjectARVRLite
     public class ViewResultManagerConfig : ViewModelBase, IConfig
     {
         [DisplayName("查询数量"), Category("View")]
-        public int Count { get => _Count; set { _Count = value; NotifyPropertyChanged(); } }
+        public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count = 50;
 
         [DisplayName("按类型排序"), Category("View")]
-        public OrderByType OrderByType { get => _OrderByType; set { _OrderByType = value; NotifyPropertyChanged(); } }
+        public OrderByType OrderByType { get => _OrderByType; set { _OrderByType = value; OnPropertyChanged(); } }
         private OrderByType _OrderByType = OrderByType.Desc;
 
         [DisplayName("自动刷新"), Category("View")]
-        public bool AutoRefresh { get => _AutoRefresh; set { _AutoRefresh = value; NotifyPropertyChanged(); } }
+        public bool AutoRefresh { get => _AutoRefresh; set { _AutoRefresh = value; OnPropertyChanged(); } }
         private bool _AutoRefresh = true;
 
         [DisplayName("视图高度"), Category("View")]
-        public double Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
+        public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 300;
 
         [DisplayName("打开图像延迟"), Category("View")]
-        public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
+        public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; OnPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;
 
         [DisplayName("预切换流程"), Category("View")]
-        public bool PreSwitchFlow { get => _PreSwitchFlow; set { _PreSwitchFlow = value; NotifyPropertyChanged(); } }
+        public bool PreSwitchFlow { get => _PreSwitchFlow; set { _PreSwitchFlow = value; OnPropertyChanged(); } }
         private bool _PreSwitchFlow;
 
 
         [DisplayName("Csv保存路径"), PropertyEditorType(PropertyEditorType.TextSelectFolder), Category("ARVR")]
-        public string SavePathCsv { get => _SavePathCsv; set { _SavePathCsv = value; NotifyPropertyChanged(); } }
+        public string SavePathCsv { get => _SavePathCsv; set { _SavePathCsv = value; OnPropertyChanged(); } }
         private string _SavePathCsv = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");
 
         [DisplayName("Text保存路径"), PropertyEditorType(PropertyEditorType.TextSelectFolder), Category("ARVR")]
-        public string SavePathText { get => _SavePathText; set { _SavePathText = value; NotifyPropertyChanged(); } }
+        public string SavePathText { get => _SavePathText; set { _SavePathText = value; OnPropertyChanged(); } }
         private string _SavePathText = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");
     }
 
@@ -60,7 +60,7 @@ namespace ProjectARVRLite
 
         public ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = new ObservableCollection<ProjectARVRReuslt>();
 
-        public int ViewReslutsSelectedIndex { get => _ViewReslutsSelectedIndex; set { _ViewReslutsSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int ViewReslutsSelectedIndex { get => _ViewReslutsSelectedIndex; set { _ViewReslutsSelectedIndex = value; OnPropertyChanged(); } }
         private int _ViewReslutsSelectedIndex = -1;
         public ListView ListView { get; set; }
 

@@ -59,7 +59,7 @@ namespace ColorVision.Database
         public static MySqlControl MySqlControl => MySqlControl.GetInstance();
         public static bool IsConnect => MySqlControl.IsConnect;
 
-        public bool IsUseMySql { get => _IsUseMySql; set { _IsUseMySql = value; NotifyPropertyChanged(); UseMySqlChanged?.Invoke(this,value); } }
+        public bool IsUseMySql { get => _IsUseMySql; set { _IsUseMySql = value; OnPropertyChanged(); UseMySqlChanged?.Invoke(this,value); } }
         private bool _IsUseMySql = true;
 
         public event EventHandler<bool> UseMySqlChanged;

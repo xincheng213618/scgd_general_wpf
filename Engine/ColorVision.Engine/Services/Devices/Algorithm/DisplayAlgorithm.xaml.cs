@@ -28,11 +28,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
     {
         public static DisplayAlgorithmConfig Instance => ConfigService.Instance.GetRequiredService<DisplayAlgorithmConfig>();
 
-        public string LastSelectTemplate { get => _LastSelectTemplate; set { _LastSelectTemplate = value; NotifyPropertyChanged(); } }
+        public string LastSelectTemplate { get => _LastSelectTemplate; set { _LastSelectTemplate = value; OnPropertyChanged(); } }
         private string _LastSelectTemplate = "POI";
 
 
-        public string LastSelectGroup { get => _LastSelectGroup; set { _LastSelectGroup = value; NotifyPropertyChanged(); } }
+        public string LastSelectGroup { get => _LastSelectGroup; set { _LastSelectGroup = value; OnPropertyChanged(); } }
         private string _LastSelectGroup = "All";
 
     }

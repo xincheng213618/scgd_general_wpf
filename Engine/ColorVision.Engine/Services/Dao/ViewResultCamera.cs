@@ -153,40 +153,40 @@ namespace ColorVision.Engine.Services.Dao
         }
 
         [DisplayName("SerialNumber1")]
-        public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
+        public int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }
         private int _Id;
 
-        public string? Batch { get => _Batch; set { _Batch = value; NotifyPropertyChanged(); } }
+        public string? Batch { get => _Batch; set { _Batch = value; OnPropertyChanged(); } }
         private string? _Batch;
 
         [DisplayName("FileUrl")]
-        public string? FileUrl { get => _FileUrl; set { _FileUrl = value; NotifyPropertyChanged(); } }
+        public string? FileUrl { get => _FileUrl; set { _FileUrl = value; OnPropertyChanged(); } }
         private string? _FileUrl;
 
         [DisplayName("File")]
-        public string? FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); } }
+        public string? FilePath { get => _FilePath; set { _FilePath = value; OnPropertyChanged(); } }
         private string? _FilePath;
 
-        public CameraFileType FileType { get => _FileType; set { _FileType = value; NotifyPropertyChanged(); } }
+        public CameraFileType FileType { get => _FileType; set { _FileType = value; OnPropertyChanged(); } }
         private CameraFileType _FileType;
         [DisplayName("Parameter")]
-        public string ReqParams { get => _Params; set { _Params = value; NotifyPropertyChanged(); } }
+        public string ReqParams { get => _Params; set { _Params = value; OnPropertyChanged(); } }
         private string _Params;
         [DisplayName("ImageInfo")]
-        public string ImgFrameInfo { get => _ImgFrameInfo; set { _ImgFrameInfo = value; NotifyPropertyChanged(); } }
+        public string ImgFrameInfo { get => _ImgFrameInfo; set { _ImgFrameInfo = value; OnPropertyChanged(); } }
         private string _ImgFrameInfo;
 
-        public DateTime? CreateTime { get => _RecvTime; set { _RecvTime = value; NotifyPropertyChanged(); } }
+        public DateTime? CreateTime { get => _RecvTime; set { _RecvTime = value; OnPropertyChanged(); } }
         private DateTime? _RecvTime;
 
         [DisplayName("DeviceCode")]
-        public string DeviceCode { get => _DeviceCode; set { _DeviceCode = value; NotifyPropertyChanged(); } }
+        public string DeviceCode { get => _DeviceCode; set { _DeviceCode = value; OnPropertyChanged(); } }
         private string _DeviceCode;
 
         [DisplayName("Info")]
-        public string? ResultMsg { get => _ResultMsg; set { _ResultMsg = value; NotifyPropertyChanged(); } }
+        public string? ResultMsg { get => _ResultMsg; set { _ResultMsg = value; OnPropertyChanged(); } }
         private string? _ResultMsg;
-        public int ResultCode { get => _resultCode; set { _resultCode = value; NotifyPropertyChanged(); } }
+        public int ResultCode { get => _resultCode; set { _resultCode = value; OnPropertyChanged(); } }
         private int _resultCode;
         [DisplayName("Duration")]
         public string TotalTime => string.Format("{0}", TimeSpan.FromMilliseconds(_totalTime).ToString(@"mm\:ss\:fff"));
@@ -196,7 +196,7 @@ namespace ColorVision.Engine.Services.Dao
 
 
 
-        public string ResultDesc { get => _resultDesc; set { _resultDesc = value; NotifyPropertyChanged(); } }
+        public string ResultDesc { get => _resultDesc; set { _resultDesc = value; OnPropertyChanged(); } }
     }
 
 

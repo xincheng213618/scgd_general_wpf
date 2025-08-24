@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Templates
     {
         public static TemplateConfig Instance => ConfigService.Instance.GetRequiredService<TemplateConfig>();
 
-        public InsertMode InsertMode { get => _InsertMode; set { _InsertMode = value;  NotifyPropertyChanged(); } } 
+        public InsertMode InsertMode { get => _InsertMode; set { _InsertMode = value;  OnPropertyChanged(); } } 
         private InsertMode _InsertMode = InsertMode.Default;
     }
 

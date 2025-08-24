@@ -16,10 +16,10 @@ namespace ColorVision.Engine.Services.Terminal
 {
     public class TerminalServiceBase : ServiceObjectBase, ITreeViewItem
     {
-        public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
+        public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; OnPropertyChanged(); } }
         private bool _IsExpanded = true;
 
-        public bool IsSelected { get => _IsChecked; set { _IsChecked = value; NotifyPropertyChanged(); } }
+        public bool IsSelected { get => _IsChecked; set { _IsChecked = value; OnPropertyChanged(); } }
         private bool _IsChecked;
         public ContextMenu ContextMenu { get; set; }
 
@@ -39,9 +39,9 @@ namespace ColorVision.Engine.Services.Terminal
 
         public ServiceTypes ServiceType { get => (ServiceTypes)SysResourceModel.Type; }
 
-        public override string Name { get => SysResourceModel.Name??string.Empty ; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
+        public override string Name { get => SysResourceModel.Name??string.Empty ; set { SysResourceModel.Name = value; OnPropertyChanged(); } }
 
-        public string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; NotifyPropertyChanged(); } }
+        public string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; OnPropertyChanged(); } }
 
         public ImageSource Icon { get; set; }
 

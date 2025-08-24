@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
             set
             {
                 JsonValue = JsonConvert.SerializeObject(value);
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 

@@ -52,16 +52,16 @@ namespace ColorVision.Solution
         /// <summary>
         /// 工程名称
         /// </summary>
-        public string Name { get => _Name; set { IsCanCreate = !(string.IsNullOrWhiteSpace(value)||string.IsNullOrWhiteSpace(DirectoryPath)); _Name = value; NotifyPropertyChanged(); } }
+        public string Name { get => _Name; set { IsCanCreate = !(string.IsNullOrWhiteSpace(value)||string.IsNullOrWhiteSpace(DirectoryPath)); _Name = value; OnPropertyChanged(); } }
         private string _Name = string.Empty;
 
-        public bool IsCanCreate { get => _IsCanCreate; set { _IsCanCreate = value; NotifyPropertyChanged(); } }
+        public bool IsCanCreate { get => _IsCanCreate; set { _IsCanCreate = value; OnPropertyChanged(); } }
         private bool _IsCanCreate = true;
 
         /// <summary>
         /// 工程位置
         /// </summary>
-        public string DirectoryPath { get => _DirectoryPath; set { IsCanCreate = !(string.IsNullOrWhiteSpace(value) || string.IsNullOrWhiteSpace(Name));  _DirectoryPath = value; NotifyPropertyChanged(); } }
+        public string DirectoryPath { get => _DirectoryPath; set { IsCanCreate = !(string.IsNullOrWhiteSpace(value) || string.IsNullOrWhiteSpace(Name));  _DirectoryPath = value; OnPropertyChanged(); } }
         private string _DirectoryPath = string.Empty;
 
         public ObservableCollection<string> RecentNewCreateCacheList { get; set; } = new ObservableCollection<string>();

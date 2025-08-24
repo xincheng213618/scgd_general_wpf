@@ -14,22 +14,22 @@ namespace ColorVision.Engine.Pattern.Checkerboard
     }
     public class PatternCheckerboardConfig:ViewModelBase,IConfig
     {
-        public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; NotifyPropertyChanged(); } }
+        public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _MainBrush = Brushes.White;
 
-        public SolidColorBrush AltBrush { get => _AltBrush; set { _AltBrush = value; NotifyPropertyChanged(); } }
+        public SolidColorBrush AltBrush { get => _AltBrush; set { _AltBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _AltBrush = Brushes.Black;
 
-        public int GridX { get => _GridX; set { _GridX = value; NotifyPropertyChanged(); } }
+        public int GridX { get => _GridX; set { _GridX = value; OnPropertyChanged(); } }
         private int _GridX = 8;
-        public int GridY { get => _GridY; set { _GridY = value; NotifyPropertyChanged(); } }
+        public int GridY { get => _GridY; set { _GridY = value; OnPropertyChanged(); } }
         private int _GridY = 8;
-        public int CellW { get => _CellW; set { _CellW = value; NotifyPropertyChanged(); } }
+        public int CellW { get => _CellW; set { _CellW = value; OnPropertyChanged(); } }
         private int _CellW = 32;
-        public int CellH { get => _CellH; set { _CellH = value; NotifyPropertyChanged(); } }
+        public int CellH { get => _CellH; set { _CellH = value; OnPropertyChanged(); } }
         private int _CellH = 32;
 
-        public CheckerboardSizeMode SizeMode { get => _SizeMode; set { _SizeMode = value; NotifyPropertyChanged(); } }
+        public CheckerboardSizeMode SizeMode { get => _SizeMode; set { _SizeMode = value; OnPropertyChanged(); } }
         private CheckerboardSizeMode _SizeMode = CheckerboardSizeMode.ByGridCount;
     }
 

@@ -38,7 +38,7 @@ namespace ColorVision.Solution
         public event EventHandler SolutionLoaded;
 
         public ObservableCollection<SolutionExplorer> SolutionExplorers { get; set; }
-        public SolutionExplorer CurrentSolutionExplorer { get => _CurrentSolutionExplorer; set { _CurrentSolutionExplorer = value; NotifyPropertyChanged(); } }
+        public SolutionExplorer CurrentSolutionExplorer { get => _CurrentSolutionExplorer; set { _CurrentSolutionExplorer = value; OnPropertyChanged(); } }
         private SolutionExplorer _CurrentSolutionExplorer;
 
         public RelayCommand SettingCommand { get; set; }

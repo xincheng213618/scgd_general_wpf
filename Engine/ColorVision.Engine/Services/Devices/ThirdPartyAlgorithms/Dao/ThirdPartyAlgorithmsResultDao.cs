@@ -10,23 +10,23 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
     {
 
         [SugarColumn(ColumnName ="img_file")]
-        public string? ImageFilePath { get => _ImageFilePath; set { _ImageFilePath = value; NotifyPropertyChanged(); } }
+        public string? ImageFilePath { get => _ImageFilePath; set { _ImageFilePath = value; OnPropertyChanged(); } }
         private string? _ImageFilePath;
 
         [SugarColumn(ColumnName ="result_type")]
-        public int? ResultType { get => _ResultType; set { _ResultType = value; NotifyPropertyChanged(); } }
+        public int? ResultType { get => _ResultType; set { _ResultType = value; OnPropertyChanged(); } }
         private int? _ResultType;
 
         [SugarColumn(ColumnName ="input_param")]
-        public string? InputParam { get => _InputParam; set { _InputParam = value; NotifyPropertyChanged(); } }
+        public string? InputParam { get => _InputParam; set { _InputParam = value; OnPropertyChanged(); } }
         private string? _InputParam;
 
         [SugarColumn(ColumnName ="dyna_param")]
-        public string? DynamicParam { get => _DynamicParam; set { _DynamicParam = value; NotifyPropertyChanged(); } }
+        public string? DynamicParam { get => _DynamicParam; set { _DynamicParam = value; OnPropertyChanged(); } }
         private string? _DynamicParam;
 
         [SugarColumn(ColumnName ="batch_id")]
-        public int? BatchId { get => _BatchId; set { _BatchId = value; NotifyPropertyChanged(); } }
+        public int? BatchId { get => _BatchId; set { _BatchId = value; OnPropertyChanged(); } }
         private int? _BatchId;
     }
 

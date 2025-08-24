@@ -198,26 +198,26 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         public void GenerateRequestString()
         {
             Model.ValueA = $"{Request},{Response},{SensorCmdType},{Timeout}/{Delay},{RetryCount}";
-            NotifyPropertyChanged(nameof(OriginText));
+            OnPropertyChanged(nameof(OriginText));
         }
 
         public string? OriginText { get => Model.ValueA; set { } }
 
-        public SensorCmdType SensorCmdType { get => _SensorCmdType; set { _SensorCmdType = value; NotifyPropertyChanged(); GenerateRequestString(); } }
+        public SensorCmdType SensorCmdType { get => _SensorCmdType; set { _SensorCmdType = value; OnPropertyChanged(); GenerateRequestString(); } }
         private SensorCmdType _SensorCmdType = SensorCmdType.Ascii;
 
-        public string Request { get => _Request; set { _Request = value; NotifyPropertyChanged(); GenerateRequestString(); } }
+        public string Request { get => _Request; set { _Request = value; OnPropertyChanged(); GenerateRequestString(); } }
         private string _Request = string.Empty;
-        public string Response { get => _Response; set { _Response = value; NotifyPropertyChanged(); GenerateRequestString(); } }
+        public string Response { get => _Response; set { _Response = value; OnPropertyChanged(); GenerateRequestString(); } }
         private string _Response = string.Empty;
 
-        public int Timeout { get => _Timeout; set { _Timeout = value; NotifyPropertyChanged(); GenerateRequestString(); } }
+        public int Timeout { get => _Timeout; set { _Timeout = value; OnPropertyChanged(); GenerateRequestString(); } }
         private int _Timeout = 1000;
 
-        public int Delay { get => _Delay; set { _Delay = value; NotifyPropertyChanged(); GenerateRequestString(); } }
+        public int Delay { get => _Delay; set { _Delay = value; OnPropertyChanged(); GenerateRequestString(); } }
         private int _Delay;
 
-        public int RetryCount { get => _RetryCount; set { _RetryCount = value; NotifyPropertyChanged(); GenerateRequestString(); } }
+        public int RetryCount { get => _RetryCount; set { _RetryCount = value; OnPropertyChanged(); GenerateRequestString(); } }
         private int _RetryCount;
     }
 

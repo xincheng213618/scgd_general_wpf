@@ -206,41 +206,41 @@ namespace ColorVision.Engine.Media
         public bool IsChannelOne { get; set; }
 
 
-        public string FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); } }
+        public string FilePath { get => _FilePath; set { _FilePath = value; OnPropertyChanged(); } }
         private string _FilePath;
 
-        public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name;
 
-        public string SavePath { get => _SavePath; set { _SavePath = value; NotifyPropertyChanged(); } }
+        public string SavePath { get => _SavePath; set { _SavePath = value; OnPropertyChanged(); } }
         private string _SavePath;
 
-        public CVType FileExtType { get => _FileExtType; set { _FileExtType = value; NotifyPropertyChanged(); } }
+        public CVType FileExtType { get => _FileExtType; set { _FileExtType = value; OnPropertyChanged(); } }
         private CVType _FileExtType;
 
-        public int Compression { get => _Compression; set { _Compression = value; NotifyPropertyChanged(); } }
+        public int Compression { get => _Compression; set { _Compression = value; OnPropertyChanged(); } }
         private int _Compression ;
 
-        public bool IsExportChannelX { get => _IsExportChannelX; set { _IsExportChannelX = value; NotifyPropertyChanged(); } }
+        public bool IsExportChannelX { get => _IsExportChannelX; set { _IsExportChannelX = value; OnPropertyChanged(); } }
         private bool _IsExportChannelX;
 
-        public bool IsExportChannelY { get => _IsExportChannelY; set { _IsExportChannelY = value; NotifyPropertyChanged(); } }
+        public bool IsExportChannelY { get => _IsExportChannelY; set { _IsExportChannelY = value; OnPropertyChanged(); } }
         private bool _IsExportChannelY;
 
-        public bool IsExportChannelZ { get => _IsExportChannelZ; set { _IsExportChannelZ = value; NotifyPropertyChanged(); } }
+        public bool IsExportChannelZ { get => _IsExportChannelZ; set { _IsExportChannelZ = value; OnPropertyChanged(); } }
         private bool _IsExportChannelZ;
 
         public bool IsCanExportSrc { get; set; }
 
-        public bool IsExportSrc { get => _IsExportSrc; set { _IsExportSrc = value; NotifyPropertyChanged(); } }
+        public bool IsExportSrc { get => _IsExportSrc; set { _IsExportSrc = value; OnPropertyChanged(); } }
         private bool _IsExportSrc = true;
-        public bool IsExportChannelR { get => _IsExportChannelR; set { _IsExportChannelR = value; NotifyPropertyChanged(); } }
+        public bool IsExportChannelR { get => _IsExportChannelR; set { _IsExportChannelR = value; OnPropertyChanged(); } }
         private bool _IsExportChannelR;
 
-        public bool IsExportChannelG { get => _IsExportChannelG; set { _IsExportChannelG = value; NotifyPropertyChanged(); } }
+        public bool IsExportChannelG { get => _IsExportChannelG; set { _IsExportChannelG = value; OnPropertyChanged(); } }
         private bool _IsExportChannelG;
 
-        public bool IsExportChannelB { get => _IsExportChannelB; set { _IsExportChannelB = value; NotifyPropertyChanged(); } }
+        public bool IsExportChannelB { get => _IsExportChannelB; set { _IsExportChannelB = value; OnPropertyChanged(); } }
         private bool _IsExportChannelB;
     }
 }

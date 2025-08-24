@@ -89,7 +89,7 @@ namespace ColorVision.SocketProtocol
 
         public event EventHandler<bool> SocketConnectChanged;
 
-        public bool IsConnect { get => _IsConnect; private set { if (_IsConnect == value) return;  _IsConnect = value; NotifyPropertyChanged(); SocketConnectChanged?.Invoke(this, _IsConnect); } }
+        public bool IsConnect { get => _IsConnect; private set { if (_IsConnect == value) return;  _IsConnect = value; OnPropertyChanged(); SocketConnectChanged?.Invoke(this, _IsConnect); } }
         private bool _IsConnect;
 
 

@@ -65,12 +65,12 @@ namespace ColorVision.Engine.Templates.LedCheck
 
         [Category("LedCheck"), DisplayName("灯珠宽方向数量"), Description("灯珠宽方向数量 picwid")]
         [JsonProperty("picwid")]
-        public int Picwid { get => GetValue(_Picwid); set { SetProperty(ref _Picwid, value); NotifyPropertyChanged(nameof(PointNum)); } }
+        public int Picwid { get => GetValue(_Picwid); set { SetProperty(ref _Picwid, value); OnPropertyChanged(nameof(PointNum)); } }
         private int _Picwid = 32;
 
         [Category("LedCheck"), DisplayName("灯珠高方向数量"), Description("灯珠高方向数量 pichig")]
         [JsonProperty("pichig")]
-        public int Pichig { get => GetValue(_Pichig); set { SetProperty(ref _Pichig, value); NotifyPropertyChanged(nameof(PointNum)); } }
+        public int Pichig { get => GetValue(_Pichig); set { SetProperty(ref _Pichig, value); OnPropertyChanged(nameof(PointNum)); } }
         private int _Pichig = 24;
 
         [Browsable(false),]

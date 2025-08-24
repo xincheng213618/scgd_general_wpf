@@ -82,7 +82,7 @@ namespace ColorVision.UI
             get => _LogLevel; set
             {
                 _LogLevel = value;
-                NotifyPropertyChanged();
+                OnPropertyChanged();
                 SetLog();
             }
         }
@@ -109,26 +109,26 @@ namespace ColorVision.UI
             log4net.Config.BasicConfigurator.Configure(hierarchy);
         }
 
-        public bool AutoScrollToEnd { get => _AutoScrollToEnd; set { _AutoScrollToEnd = value; NotifyPropertyChanged(); } }
+        public bool AutoScrollToEnd { get => _AutoScrollToEnd; set { _AutoScrollToEnd = value; OnPropertyChanged(); } }
         private bool _AutoScrollToEnd = true;
 
-        public bool AutoRefresh { get => _AutoRefresh; set { _AutoRefresh = value; NotifyPropertyChanged(); } }
+        public bool AutoRefresh { get => _AutoRefresh; set { _AutoRefresh = value; OnPropertyChanged(); } }
         private bool _AutoRefresh;
 
-        public int LogFlushIntervalMs { get => _LogFlushIntervalMs; set { _LogFlushIntervalMs = value; NotifyPropertyChanged(); } }
+        public int LogFlushIntervalMs { get => _LogFlushIntervalMs; set { _LogFlushIntervalMs = value; OnPropertyChanged(); } }
         private int _LogFlushIntervalMs;
 
 
-        public LogLoadState LogLoadState { get => _LogLoadState; set { _LogLoadState = value; NotifyPropertyChanged(); } }
+        public LogLoadState LogLoadState { get => _LogLoadState; set { _LogLoadState = value; OnPropertyChanged(); } }
         private LogLoadState _LogLoadState = LogLoadState.SinceStartup;
 
-        public bool LogReserve { get => _LogReserve; set { _LogReserve = value; NotifyPropertyChanged(); } }
+        public bool LogReserve { get => _LogReserve; set { _LogReserve = value; OnPropertyChanged(); } }
         private bool _LogReserve;
 
-        public TextWrapping TextWrapping { get => _TextWrapping; set { _TextWrapping = value; NotifyPropertyChanged(); } }
+        public TextWrapping TextWrapping { get => _TextWrapping; set { _TextWrapping = value; OnPropertyChanged(); } }
         private TextWrapping _TextWrapping = TextWrapping.NoWrap;
 
-        public int MaxChars { get => _MaxChars; set { _MaxChars = value; NotifyPropertyChanged(); } }
+        public int MaxChars { get => _MaxChars; set { _MaxChars = value; OnPropertyChanged(); } }
         private int _MaxChars = -1;
 
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()

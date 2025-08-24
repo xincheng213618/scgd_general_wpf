@@ -90,24 +90,24 @@ namespace ColorVision.Engine.Templates.POI
             }
         }
 
-        public bool DefaultDoKey { get => _DefaultDoKey; set { _DefaultDoKey = value; NotifyPropertyChanged(); } }
+        public bool DefaultDoKey { get => _DefaultDoKey; set { _DefaultDoKey = value; OnPropertyChanged(); } }
         private bool _DefaultDoKey = true;
-        public bool DefaultDoHalo { get => _DefaultDoHalo; set { _DefaultDoHalo = value; NotifyPropertyChanged(); } }
+        public bool DefaultDoHalo { get => _DefaultDoHalo; set { _DefaultDoHalo = value; OnPropertyChanged(); } }
         private bool _DefaultDoHalo;
 
         /// <summary>
         /// 校正文件
         /// </summary>
-        public string LuminFile { get => _LuminFile; set { _LuminFile = value; NotifyPropertyChanged(); } }
+        public string LuminFile { get => _LuminFile; set { _LuminFile = value; OnPropertyChanged(); } }
         private string _LuminFile = string.Empty;
 
-        public int SaveProcessData { get => _saveProcessData; set { _saveProcessData = value; NotifyPropertyChanged(); } }
+        public int SaveProcessData { get => _saveProcessData; set { _saveProcessData = value; OnPropertyChanged(); } }
         private int _saveProcessData;
 
-        public float Exp { get => _Exp; set { _Exp = value; NotifyPropertyChanged(); } }
+        public float Exp { get => _Exp; set { _Exp = value; OnPropertyChanged(); } }
         private float _Exp = 600;
 
-        public string SaveFolderPath { get => _SaveFolderPath; set { _SaveFolderPath = value; NotifyPropertyChanged(); } }
+        public string SaveFolderPath { get => _SaveFolderPath; set { _SaveFolderPath = value; OnPropertyChanged(); } }
         private string _SaveFolderPath =Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
 
     }
@@ -117,51 +117,51 @@ namespace ColorVision.Engine.Templates.POI
         /// <summary>
         /// 结果缩放
         /// </summary>
-        public double KeyScale { get => _KeyScale; set { _KeyScale = value; NotifyPropertyChanged(); } }
+        public double KeyScale { get => _KeyScale; set { _KeyScale = value; OnPropertyChanged(); } }
         private double _KeyScale = 1;
         /// <summary>
         /// 结果缩放
         /// </summary>
-        public double HaloScale { get => _HaloScale; set { _HaloScale = value; NotifyPropertyChanged(); } }
+        public double HaloScale { get => _HaloScale; set { _HaloScale = value; OnPropertyChanged(); } }
         private double _HaloScale = 1;
 
-        public int HaloThreadV { get => _HaloThreadV; set { _HaloThreadV = value; NotifyPropertyChanged(); } }
+        public int HaloThreadV { get => _HaloThreadV; set { _HaloThreadV = value; OnPropertyChanged(); } }
         private int _HaloThreadV = 500;
 
-        public int KeyThreadV { get => _KeyThreadV; set { _KeyThreadV = value; NotifyPropertyChanged(); } }
+        public int KeyThreadV { get => _KeyThreadV; set { _KeyThreadV = value; OnPropertyChanged(); } }
         private int _KeyThreadV = 3000;
 
-        public int HaloOutMOVE { get => _HaloOutMOVE; set { _HaloOutMOVE = value; NotifyPropertyChanged(); } }
+        public int HaloOutMOVE { get => _HaloOutMOVE; set { _HaloOutMOVE = value; OnPropertyChanged(); } }
         private int _HaloOutMOVE = 20;
 
-        public int KeyOutMOVE { get => _KeyOutMOVE; set { _KeyOutMOVE = value; NotifyPropertyChanged(); } }
+        public int KeyOutMOVE { get => _KeyOutMOVE; set { _KeyOutMOVE = value; OnPropertyChanged(); } }
         private int _KeyOutMOVE = 5;
 
-        public int KeyOffsetX { get => _KeyOffsetX; set { _KeyOffsetX = value; NotifyPropertyChanged(); } }
+        public int KeyOffsetX { get => _KeyOffsetX; set { _KeyOffsetX = value; OnPropertyChanged(); } }
         private int _KeyOffsetX;
-        public int KeyOffsetY { get => _KeyOffsetY; set { _KeyOffsetY = value; NotifyPropertyChanged(); } }
+        public int KeyOffsetY { get => _KeyOffsetY; set { _KeyOffsetY = value; OnPropertyChanged(); } }
         private int _KeyOffsetY;
 
-        public int HaloOffsetX { get => _HaloOffsetX; set { _HaloOffsetX = value; NotifyPropertyChanged(); } }
+        public int HaloOffsetX { get => _HaloOffsetX; set { _HaloOffsetX = value; OnPropertyChanged(); } }
         private int _HaloOffsetX;
 
-        public int HaloSize { get => _HaloSize; set { _HaloSize = value; NotifyPropertyChanged(); } }
+        public int HaloSize { get => _HaloSize; set { _HaloSize = value; OnPropertyChanged(); } }
         private int _HaloSize;
 
 
-        public int HaloOffsetY { get => _HaloOffsetY; set { _HaloOffsetY = value; NotifyPropertyChanged(); } }
+        public int HaloOffsetY { get => _HaloOffsetY; set { _HaloOffsetY = value; OnPropertyChanged(); } }
         private int _HaloOffsetY;
 
         /// <summary>
         /// 面积
         /// </summary>
-        public double Area { get => _Area; set { _Area = value; NotifyPropertyChanged(); } }
+        public double Area { get => _Area; set { _Area = value; OnPropertyChanged(); } }
         private double _Area = 1;
 
         /// <summary>
         /// 辉度
         /// </summary>
-        public double Brightness { get => _Brightness; set { _Brightness = value; NotifyPropertyChanged(); } }
+        public double Brightness { get => _Brightness; set { _Brightness = value; OnPropertyChanged(); } }
         private double _Brightness;
     }
 

@@ -79,9 +79,9 @@ namespace ColorVision.Engine.Services.PhyCameras
         [CommandDisplay("校正生成工具")]
         public RelayCommand OepnCalibrationToolCommand { get; set; }
 
-        public ImageSource? QRIcon { get => _QRIcon; set { _QRIcon = value; NotifyPropertyChanged(); } }
+        public ImageSource? QRIcon { get => _QRIcon; set { _QRIcon = value; OnPropertyChanged(); } }
         private ImageSource? _QRIcon;
-        public ImageSource Icon { get => _Icon; set{ _Icon = value; NotifyPropertyChanged(); } }
+        public ImageSource Icon { get => _Icon; set{ _Icon = value; OnPropertyChanged(); } }
         private ImageSource _Icon;
 
         public ContextMenu ContextMenu { get; set; }
@@ -344,7 +344,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         #region License
 
-        public LicenseModel? CameraLicenseModel { get => _CameraLicenseModel; set { _CameraLicenseModel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsLicensed)); NotifyPropertyChanged(nameof(LicenseSolidColorBrush)); } }
+        public LicenseModel? CameraLicenseModel { get => _CameraLicenseModel; set { _CameraLicenseModel = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsLicensed)); OnPropertyChanged(nameof(LicenseSolidColorBrush)); } }
         private LicenseModel? _CameraLicenseModel;
 
         public LicenseState LicenseState { get 
@@ -569,7 +569,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             uploadwindow.ShowDialog();
         }
 
-        public string Msg { get => _Msg; set { _Msg = value; Application.Current.Dispatcher.Invoke(() => NotifyPropertyChanged()); } }
+        public string Msg { get => _Msg; set { _Msg = value; Application.Current.Dispatcher.Invoke(() => OnPropertyChanged()); } }
         private string _Msg;
 
         public event EventHandler UploadClosed;

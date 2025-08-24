@@ -42,11 +42,11 @@ namespace ColorVision.Database
     public class GenericQueryBaseConfig:ViewModelBase
     {
         [DisplayName("查询数量"), Category("View")]
-        public int Count { get => _Count; set { _Count = value; NotifyPropertyChanged(); } }
+        public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count = -1;
 
         [DisplayName("按类型排序"), Category("View")]
-        public OrderByType OrderByType { get => _OrderByType; set { _OrderByType = value; NotifyPropertyChanged(); } }
+        public OrderByType OrderByType { get => _OrderByType; set { _OrderByType = value; OnPropertyChanged(); } }
         private OrderByType _OrderByType = OrderByType.Desc;
     }
 
@@ -58,7 +58,7 @@ namespace ColorVision.Database
 
         public ObservableCollection<KeyValuePair<string, PropertyInfo>> PropertyInfos { get; set; }
 
-        public string Sql { get => _Sql; set { _Sql = value;NotifyPropertyChanged(); } }
+        public string Sql { get => _Sql; set { _Sql = value;OnPropertyChanged(); } }
         private string _Sql;
 
         public GenericQueryBase(SqlSugarClient db)

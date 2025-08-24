@@ -34,7 +34,7 @@ namespace ColorVision.Engine.Messages
             timer.Start();
         }
 
-        public int CacheLength { get => _CacheLength; set { _CacheLength = value; NotifyPropertyChanged(); } }
+        public int CacheLength { get => _CacheLength; set { _CacheLength = value; OnPropertyChanged(); } }
         private int _CacheLength = 1000;
 
         [JsonIgnore]

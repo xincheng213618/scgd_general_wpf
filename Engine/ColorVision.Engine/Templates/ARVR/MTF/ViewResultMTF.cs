@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Templates.MTF
 {
     public class ViewResultMTF : PoiResultData, IViewResult
     {
-        public double Articulation { get { return _Articulation; } set { _Articulation = value; NotifyPropertyChanged(); } }
+        public double Articulation { get { return _Articulation; } set { _Articulation = value; OnPropertyChanged(); } }
 
         private double _Articulation;
 

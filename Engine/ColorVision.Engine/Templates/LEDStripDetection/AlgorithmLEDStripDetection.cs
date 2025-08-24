@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
             new TemplateEditorWindow(new TemplateLEDStripDetection(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
 
 
@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
         }
         public UserControl UserControl { get; set; }
 
-        public bool IsInversion { get => _IsInversion; set { _IsInversion = value; NotifyPropertyChanged(); } }
+        public bool IsInversion { get => _IsInversion; set { _IsInversion = value; OnPropertyChanged(); } }
         private bool _IsInversion;
 
 

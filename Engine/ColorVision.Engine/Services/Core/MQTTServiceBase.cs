@@ -155,12 +155,12 @@ namespace ColorVision.Engine.Services.Core
         public string ServiceName { get; set; }
         public virtual string ServiceToken { get; set; }
 
-        public virtual int HeartbeatTime { get => _HeartbeatTime; set { _HeartbeatTime = value; NotifyPropertyChanged(); } }
+        public virtual int HeartbeatTime { get => _HeartbeatTime; set { _HeartbeatTime = value; OnPropertyChanged(); } }
         private int _HeartbeatTime = 2000;
 
         public virtual DateTime LastAliveTime { get; set; }
 
-        public  bool IsAlive { get => _IsAlive; set { _IsAlive = value; NotifyPropertyChanged(); } }
+        public  bool IsAlive { get => _IsAlive; set { _IsAlive = value; OnPropertyChanged(); } }
         private bool _IsAlive;
 
         private  Dictionary<string, Timer> _msgTimers = new();

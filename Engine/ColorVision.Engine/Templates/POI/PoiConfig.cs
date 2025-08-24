@@ -55,27 +55,27 @@ namespace ColorVision.Engine.Templates.POI
 
     public class POIFilter : ViewModelBase
     {
-        public bool NoAreaEnable { get => _NoAreaEnable; set { _NoAreaEnable = value; NotifyPropertyChanged(); if (value) { Enable = false; XYZEnable = false; } } }
+        public bool NoAreaEnable { get => _NoAreaEnable; set { _NoAreaEnable = value; OnPropertyChanged(); if (value) { Enable = false; XYZEnable = false; } } }
         private bool _NoAreaEnable;
-        public bool Enable { get => _Enable; set { _Enable = value; NotifyPropertyChanged(); if (value) { NoAreaEnable = false; XYZEnable = false; } } }
+        public bool Enable { get => _Enable; set { _Enable = value; OnPropertyChanged(); if (value) { NoAreaEnable = false; XYZEnable = false; } } }
         private bool _Enable;
 
-        public bool XYZEnable { get => _XYZEnable; set { _XYZEnable = value; NotifyPropertyChanged(); if (value) { NoAreaEnable = false; Enable = false; } } }
+        public bool XYZEnable { get => _XYZEnable; set { _XYZEnable = value; OnPropertyChanged(); if (value) { NoAreaEnable = false; Enable = false; } } }
         private bool _XYZEnable;
-        public XYZType XYZType { get => _XYZType; set { _XYZType = value; NotifyPropertyChanged(); } }
+        public XYZType XYZType { get => _XYZType; set { _XYZType = value; OnPropertyChanged(); } }
         private XYZType _XYZType;
 
-        public float Threshold { get => _Threshold; set { _Threshold = value; NotifyPropertyChanged(); } }
+        public float Threshold { get => _Threshold; set { _Threshold = value; OnPropertyChanged(); } }
         private float _Threshold = 50;
     }
 
 
     public class PointInt : ViewModelBase
     {
-        public int X { get => _X; set { _X = value; NotifyPropertyChanged(); } }
+        public int X { get => _X; set { _X = value; OnPropertyChanged(); } }
         private int _X;
 
-        public int Y { get => _Y; set { _Y = value; NotifyPropertyChanged(); } }
+        public int Y { get => _Y; set { _Y = value; OnPropertyChanged(); } }
         private int _Y;
     }
 
@@ -84,18 +84,18 @@ namespace ColorVision.Engine.Templates.POI
     public class FindLuminousArea : ViewModelBase
     {
         [DisplayName("Threshold")]
-        public int Threshold { get => _Threshold; set { if (value > 255) value = 255; if (value < 0) value = 0; _Threshold = value;NotifyPropertyChanged(); } }
+        public int Threshold { get => _Threshold; set { if (value > 255) value = 255; if (value < 0) value = 0; _Threshold = value;OnPropertyChanged(); } }
         private int _Threshold = 100;
     }
 
     public class FindLuminousAreaCorner : ViewModelBase
     {
         [DisplayName("Threshold")]
-        public int Threshold { get => _Threshold; set { if (value > 255) value = 255; if (value < 0) value = 0; _Threshold = value; NotifyPropertyChanged(); } }
+        public int Threshold { get => _Threshold; set { if (value > 255) value = 255; if (value < 0) value = 0; _Threshold = value; OnPropertyChanged(); } }
         private int _Threshold = 100;
 
         [DisplayName("UseRotatedRect")]
-        public bool UseRotatedRect { get => _UseRotatedRect; set { _UseRotatedRect = value; NotifyPropertyChanged(); } }
+        public bool UseRotatedRect { get => _UseRotatedRect; set { _UseRotatedRect = value; OnPropertyChanged(); } }
         private bool _UseRotatedRect = true;
     }
 
@@ -151,110 +151,110 @@ namespace ColorVision.Engine.Templates.POI
 
 
 
-        public bool LockDeafult { get => _LockDeafult; set { _LockDeafult = value; NotifyPropertyChanged(); } }
+        public bool LockDeafult { get => _LockDeafult; set { _LockDeafult = value; OnPropertyChanged(); } }
         private bool _LockDeafult;
-        public bool UseCenter { get => _UseCenter; set { _UseCenter = value; NotifyPropertyChanged(); } }
+        public bool UseCenter { get => _UseCenter; set { _UseCenter = value; OnPropertyChanged(); } }
         private bool _UseCenter = false;
 
-        public double DefalutWidth { get => _DefalutWidth; set { if (LockDeafult) return;  _DefalutWidth = value; NotifyPropertyChanged(); } } 
+        public double DefalutWidth { get => _DefalutWidth; set { if (LockDeafult) return;  _DefalutWidth = value; OnPropertyChanged(); } } 
         private double _DefalutWidth = 30;
 
-        public double DefalutHeight { get => _DefalutHeight; set { if (LockDeafult) return; _DefalutHeight = value; NotifyPropertyChanged(); } }
+        public double DefalutHeight { get => _DefalutHeight; set { if (LockDeafult) return; _DefalutHeight = value; OnPropertyChanged(); } }
         private double _DefalutHeight = 30;
-        public double DefalutRadius { get => _DefalutRadius; set { if (LockDeafult) return; _DefalutRadius = value; NotifyPropertyChanged(); } }
+        public double DefalutRadius { get => _DefalutRadius; set { if (LockDeafult) return; _DefalutRadius = value; OnPropertyChanged(); } }
         private double _DefalutRadius = 30;
 
 
 
 
         [JsonIgnore]
-        public bool IsPointCircle { get => DefaultPointType == RiPointTypes.Circle; set { if (value) DefaultPointType = RiPointTypes.Circle; NotifyPropertyChanged(); } }
+        public bool IsPointCircle { get => DefaultPointType == RiPointTypes.Circle; set { if (value) DefaultPointType = RiPointTypes.Circle; OnPropertyChanged(); } }
         [JsonIgnore]
-        public bool IsPointRect { get => DefaultPointType == RiPointTypes.Rect; set { if (value) DefaultPointType = RiPointTypes.Rect; NotifyPropertyChanged(); } }
+        public bool IsPointRect { get => DefaultPointType == RiPointTypes.Rect; set { if (value) DefaultPointType = RiPointTypes.Rect; OnPropertyChanged(); } }
         [JsonIgnore]
-        public bool IsPointMask { get => DefaultPointType == RiPointTypes.Mask; set { if (value) DefaultPointType = RiPointTypes.Rect; NotifyPropertyChanged(); } }
+        public bool IsPointMask { get => DefaultPointType == RiPointTypes.Mask; set { if (value) DefaultPointType = RiPointTypes.Rect; OnPropertyChanged(); } }
         public RiPointTypes DefaultPointType { set; get; }
 
         public FindLuminousArea FindLuminousArea { get; set; } = new FindLuminousArea();
 
         public FindLuminousAreaCorner FindLuminousAreaCorner { get; set; } = new FindLuminousAreaCorner();
 
-        public string BackgroundFilePath { get => _BackgroundFilePath; set { _BackgroundFilePath = value; NotifyPropertyChanged(); } }
+        public string BackgroundFilePath { get => _BackgroundFilePath; set { _BackgroundFilePath = value; OnPropertyChanged(); } }
         private string _BackgroundFilePath;
 
-        public string? PoiFixFilePath { get => _PoiFixFilePath; set { _PoiFixFilePath =value; NotifyPropertyChanged(); } }
+        public string? PoiFixFilePath { get => _PoiFixFilePath; set { _PoiFixFilePath =value; OnPropertyChanged(); } }
         private string? _PoiFixFilePath;
 
 
-        public bool IsShowDatum { get => _IsShowDatum; set { _IsShowDatum = value; NotifyPropertyChanged(); } }
+        public bool IsShowDatum { get => _IsShowDatum; set { _IsShowDatum = value; OnPropertyChanged(); } }
         private bool _IsShowDatum;
 
-        public bool IsShowText { get => _IsShowText; set { _IsShowText = value; NotifyPropertyChanged(); } }
+        public bool IsShowText { get => _IsShowText; set { _IsShowText = value; OnPropertyChanged(); } }
         private bool _IsShowText = true;
 
-        public bool IsShowPoiConfig { get => _IsShowPoiConfig; set { _IsShowPoiConfig = value; NotifyPropertyChanged(); } }
+        public bool IsShowPoiConfig { get => _IsShowPoiConfig; set { _IsShowPoiConfig = value; OnPropertyChanged(); } }
         private bool _IsShowPoiConfig;
 
-        public bool IsLayoutUpdated { get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; NotifyPropertyChanged(); } }
+        public bool IsLayoutUpdated { get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; OnPropertyChanged(); } }
         private bool _IsLayoutUpdated = true;
 
         public Point Center { get; set; } = new Point() { X = 200, Y = 200 };
 
 
         [JsonIgnore]
-        public int CenterX { get => (int)Center.X; set { Center = new Point(value, Center.Y); NotifyPropertyChanged(); } }
+        public int CenterX { get => (int)Center.X; set { Center = new Point(value, Center.Y); OnPropertyChanged(); } }
         [JsonIgnore]
-        public int CenterY { get => (int)Center.Y; set { Center = new Point(Center.X, value); NotifyPropertyChanged(); } }
+        public int CenterY { get => (int)Center.Y; set { Center = new Point(Center.X, value); OnPropertyChanged(); } }
 
         public RiPointTypes PointType { set; get; }
 
         [JsonIgnore]
-        public bool IsAreaCircle { get => PointType == RiPointTypes.Circle; set { if (value) PointType = RiPointTypes.Circle; NotifyPropertyChanged(); } }
+        public bool IsAreaCircle { get => PointType == RiPointTypes.Circle; set { if (value) PointType = RiPointTypes.Circle; OnPropertyChanged(); } }
         [JsonIgnore]
-        public bool IsAreaRect { get => PointType == RiPointTypes.Rect; set { if (value) PointType = RiPointTypes.Rect; NotifyPropertyChanged(); } }
+        public bool IsAreaRect { get => PointType == RiPointTypes.Rect; set { if (value) PointType = RiPointTypes.Rect; OnPropertyChanged(); } }
         [JsonIgnore]
-        public bool IsAreaMask { get => PointType == RiPointTypes.Mask; set { if (value) PointType = RiPointTypes.Mask; NotifyPropertyChanged(); } }
+        public bool IsAreaMask { get => PointType == RiPointTypes.Mask; set { if (value) PointType = RiPointTypes.Mask; OnPropertyChanged(); } }
 
         [JsonIgnore]
-        public bool IsAreaPolygon { get => PointType == RiPointTypes.Polygon; set { if (value) PointType = RiPointTypes.Polygon; NotifyPropertyChanged(); } }
+        public bool IsAreaPolygon { get => PointType == RiPointTypes.Polygon; set { if (value) PointType = RiPointTypes.Polygon; OnPropertyChanged(); } }
 
-        public bool IsUserDraw { get => _IsUserDraw; set { _IsUserDraw = value; NotifyPropertyChanged(); } }
+        public bool IsUserDraw { get => _IsUserDraw; set { _IsUserDraw = value; OnPropertyChanged(); } }
         private bool _IsUserDraw;
 
 
 
-        public int AreaCircleRadius { get => _AreaCircleRadius; set { _AreaCircleRadius = value; NotifyPropertyChanged(); } }
+        public int AreaCircleRadius { get => _AreaCircleRadius; set { _AreaCircleRadius = value; OnPropertyChanged(); } }
         private int _AreaCircleRadius = 100;
 
-        public int AreaCircleNum { get => _AreaCircleNum; set { _AreaCircleNum = value; NotifyPropertyChanged(); } }
+        public int AreaCircleNum { get => _AreaCircleNum; set { _AreaCircleNum = value; OnPropertyChanged(); } }
         private int _AreaCircleNum = 6;
 
-        public int AreaCircleAngle { get => _AreaCircleAngle; set { _AreaCircleAngle = value; NotifyPropertyChanged(); } }
+        public int AreaCircleAngle { get => _AreaCircleAngle; set { _AreaCircleAngle = value; OnPropertyChanged(); } }
         private int _AreaCircleAngle;
 
-        public int AreaRectWidth { get => _AreaRectWidth; set { _AreaRectWidth = value; NotifyPropertyChanged(); } }
+        public int AreaRectWidth { get => _AreaRectWidth; set { _AreaRectWidth = value; OnPropertyChanged(); } }
         private int _AreaRectWidth = 200;
 
-        public int AreaRectHeight { get => _AreaRectHeight; set { _AreaRectHeight = value; NotifyPropertyChanged(); } }
+        public int AreaRectHeight { get => _AreaRectHeight; set { _AreaRectHeight = value; OnPropertyChanged(); } }
         private int _AreaRectHeight = 200;
 
-        public int AreaRectRow { get => _AreaRectRow; set { _AreaRectRow = value; NotifyPropertyChanged(); } }
+        public int AreaRectRow { get => _AreaRectRow; set { _AreaRectRow = value; OnPropertyChanged(); } }
         private int _AreaRectRow = 3;
 
-        public int AreaRectCol { get => _AreaRectCol; set { _AreaRectCol = value; NotifyPropertyChanged(); } }
+        public int AreaRectCol { get => _AreaRectCol; set { _AreaRectCol = value; OnPropertyChanged(); } }
         private int _AreaRectCol = 3;
 
 
-        public int AreaPolygonRow { get => _AreaPolygonRow; set { _AreaPolygonRow = value; NotifyPropertyChanged(); } }
+        public int AreaPolygonRow { get => _AreaPolygonRow; set { _AreaPolygonRow = value; OnPropertyChanged(); } }
         private int _AreaPolygonRow = 3;
 
-        public int AreaPolygonCol { get => _AreaPolygonCol; set { _AreaPolygonCol = value; NotifyPropertyChanged(); } }
+        public int AreaPolygonCol { get => _AreaPolygonCol; set { _AreaPolygonCol = value; OnPropertyChanged(); } }
         private int _AreaPolygonCol = 3;
 
-        public int AreaPolygonLenNum { get => _AreaPolygonLenNum; set { _AreaPolygonLenNum = value; NotifyPropertyChanged(); foreach (var item in Polygons) item.SplitNumber = value; } }
+        public int AreaPolygonLenNum { get => _AreaPolygonLenNum; set { _AreaPolygonLenNum = value; OnPropertyChanged(); foreach (var item in Polygons) item.SplitNumber = value; } }
         private int _AreaPolygonLenNum;
 
-        public bool AreaPolygonUsNode { get => _AreaPolygonUsNode; set { _AreaPolygonUsNode = value; NotifyPropertyChanged(); } }
+        public bool AreaPolygonUsNode { get => _AreaPolygonUsNode; set { _AreaPolygonUsNode = value; OnPropertyChanged(); } }
         private bool _AreaPolygonUsNode = true;
 
 
@@ -265,23 +265,23 @@ namespace ColorVision.Engine.Templates.POI
 
 
         [JsonIgnore()]
-        public int Polygon1X { get => (int)Polygon1.X; set { Polygon1 = new Point(value, Polygon1.Y); NotifyPropertyChanged(); } }
+        public int Polygon1X { get => (int)Polygon1.X; set { Polygon1 = new Point(value, Polygon1.Y); OnPropertyChanged(); } }
         [JsonIgnore]
-        public int Polygon1Y { get => (int)Polygon1.Y; set { Polygon1 = new Point(Polygon1.X, value); NotifyPropertyChanged(); } }
+        public int Polygon1Y { get => (int)Polygon1.Y; set { Polygon1 = new Point(Polygon1.X, value); OnPropertyChanged(); } }
         [JsonIgnore]
-        public int Polygon2X { get => (int)Polygon2.X; set { Polygon2 = new Point(value, Polygon2.Y); NotifyPropertyChanged(); } }
+        public int Polygon2X { get => (int)Polygon2.X; set { Polygon2 = new Point(value, Polygon2.Y); OnPropertyChanged(); } }
         [JsonIgnore]
-        public int Polygon2Y { get => (int)Polygon2.Y; set { Polygon2 = new Point(Polygon2.X, value); NotifyPropertyChanged(); } }
+        public int Polygon2Y { get => (int)Polygon2.Y; set { Polygon2 = new Point(Polygon2.X, value); OnPropertyChanged(); } }
         [JsonIgnore]
-        public int Polygon3X { get => (int)Polygon3.X; set { Polygon3 = new Point(value, Polygon3.Y); NotifyPropertyChanged(); } }
+        public int Polygon3X { get => (int)Polygon3.X; set { Polygon3 = new Point(value, Polygon3.Y); OnPropertyChanged(); } }
         [JsonIgnore]
-        public int Polygon3Y { get => (int)Polygon3.Y; set { Polygon3 = new Point(Polygon3.X, value); NotifyPropertyChanged(); } }
+        public int Polygon3Y { get => (int)Polygon3.Y; set { Polygon3 = new Point(Polygon3.X, value); OnPropertyChanged(); } }
         [JsonIgnore]
-        public int Polygon4X { get => (int)Polygon4.X; set { Polygon4 = new Point(value, Polygon4.Y); NotifyPropertyChanged(); } }
+        public int Polygon4X { get => (int)Polygon4.X; set { Polygon4 = new Point(value, Polygon4.Y); OnPropertyChanged(); } }
         [JsonIgnore]
-        public int Polygon4Y { get => (int)Polygon4.Y; set { Polygon4 = new Point(Polygon4.X, value); NotifyPropertyChanged(); } }
+        public int Polygon4Y { get => (int)Polygon4.Y; set { Polygon4 = new Point(Polygon4.X, value); OnPropertyChanged(); } }
 
-        public bool IsPointInt { get => _IsPointInt; set { _IsPointInt = value; NotifyPropertyChanged(); } }
+        public bool IsPointInt { get => _IsPointInt; set { _IsPointInt = value; OnPropertyChanged(); } }
         private bool _IsPointInt;
 
         public PointInt PointInt1 { get => _PointInt1; set { _PointInt1 = value; } }
@@ -299,36 +299,36 @@ namespace ColorVision.Engine.Templates.POI
 
         public ObservableCollection<PolygonPoint> Polygons { get; set; } = new ObservableCollection<PolygonPoint>();
 
-        public int DefaultCircleRadius { get => _DefaultCircleRadius; set { _DefaultCircleRadius = value; NotifyPropertyChanged(); } }
+        public int DefaultCircleRadius { get => _DefaultCircleRadius; set { _DefaultCircleRadius = value; OnPropertyChanged(); } }
         private int _DefaultCircleRadius = 10;
 
-        public int DefaultRectWidth { get => _DefaultRectWidth; set { _DefaultRectWidth = value; NotifyPropertyChanged(); } }
+        public int DefaultRectWidth { get => _DefaultRectWidth; set { _DefaultRectWidth = value; OnPropertyChanged(); } }
         private int _DefaultRectWidth = 20;
 
-        public int DefaultRectHeight { get => _DefaultRectHeight; set { _DefaultRectHeight = value; NotifyPropertyChanged(); } }
+        public int DefaultRectHeight { get => _DefaultRectHeight; set { _DefaultRectHeight = value; OnPropertyChanged(); } }
         private int _DefaultRectHeight = 20;
 
-        public double LedLen1 { get => _LedLen1; set { _LedLen1 = value; NotifyPropertyChanged(); } }
+        public double LedLen1 { get => _LedLen1; set { _LedLen1 = value; OnPropertyChanged(); } }
         private double _LedLen1;
 
-        public double LedLen2 { get => _LedLen2; set { _LedLen2 = value; NotifyPropertyChanged(); } }
+        public double LedLen2 { get => _LedLen2; set { _LedLen2 = value; OnPropertyChanged(); } }
         private double _LedLen2;
 
-        public double LedLen3 { get => _LedLen3; set { _LedLen3 = value; NotifyPropertyChanged(); } }
+        public double LedLen3 { get => _LedLen3; set { _LedLen3 = value; OnPropertyChanged(); } }
         private double _LedLen3;
 
-        public double LedLen4 { get => _LedLen4; set { _LedLen4 = value; NotifyPropertyChanged(); } }
+        public double LedLen4 { get => _LedLen4; set { _LedLen4 = value; OnPropertyChanged(); } }
         private double _LedLen4;
 
         public POIFilter Filter { get; set; } = new POIFilter();
 
-        public bool IsPoiCIEFile { get => _IsPoiCIEFile; set { _IsPoiCIEFile = value; NotifyPropertyChanged(); } }
+        public bool IsPoiCIEFile { get => _IsPoiCIEFile; set { _IsPoiCIEFile = value; OnPropertyChanged(); } }
         private bool _IsPoiCIEFile;
 
-        public string PoiCIEFileName { get => _PoiCIEFileName; set { _PoiCIEFileName = value; NotifyPropertyChanged(); } }
+        public string PoiCIEFileName { get => _PoiCIEFileName; set { _PoiCIEFileName = value; OnPropertyChanged(); } }
         private string _PoiCIEFileName;
 
-        public int Thickness { get => _Thickness; set { _Thickness = value; NotifyPropertyChanged(); } }
+        public int Thickness { get => _Thickness; set { _Thickness = value; OnPropertyChanged(); } }
         private int _Thickness = 1;
 
         public void OpenPoiCIEFile()
@@ -366,7 +366,7 @@ namespace ColorVision.Engine.Templates.POI
             Y = y;
         }
 
-        public int SplitNumber { get => _SplitNumber; set { _SplitNumber = value; NotifyPropertyChanged(); } }
+        public int SplitNumber { get => _SplitNumber; set { _SplitNumber = value; OnPropertyChanged(); } }
         private int _SplitNumber = 1;
 
 

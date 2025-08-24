@@ -1,63 +1,75 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.Menus;
-using System.Windows.Controls;
+
 
 namespace ColorVision.UI.Dump
 {
-    public class MenuDump : IMenuItemMeta
+
+    public class MenuDump : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Help;
-
-        public override string GuidId => "MenuDumpConfig";
-
         public override int Order => 10000;
-
         public override string Header => "转储文件设置";
+    }
 
-        DumpConfig DumpConfig = new DumpConfig();
-        public override MenuItem MenuItem
+
+    public class MenuThemeProvider : IMenuItemProvider
+    {
+        public IEnumerable<MenuItemMetadata> GetMenuItems()
         {
-            get
+
+            List<MenuItemMetadata> menuItemMetas = new List<MenuItemMetadata>();
+            DumpConfig DumpConfig = new DumpConfig();
+
+            foreach (var item in Enum.GetValues(typeof(DumpType)).Cast<DumpType>())
             {
-                MenuItem MenuDump = new() { Header = Header };
-                MenuItem Open = new MenuItem() { Header = "打开Dump文件夹", Command = Command };
-                MenuDump.Items.Add(Open);
-
-                foreach (var item in Enum.GetValues(typeof(DumpType)).Cast<DumpType>())
+                RelayCommand relayCommand = new RelayCommand(a =>
                 {
-                    MenuItem ThemeItem = new();
-                    ThemeItem.Header = item;
-                    ThemeItem.Click += (s, e) =>
-                    {
-                        DumpConfig.DumpType = item;
-                        DumpConfig.SetDump();
-                    };
-                    ThemeItem.Tag = item;
-                    ThemeItem.IsChecked = DumpConfig.DumpType == item;
-                    MenuDump.Items.Add(ThemeItem);
-                }
+                    DumpConfig.DumpType = item;
+                    DumpConfig.SetDump();
 
+                    ColorVision.UI.Menus.MenuManager.GetInstance().RefreshMenuItemsByGuid("MenuDump");
+                });
 
-                RelayCommand relayCommand = new RelayCommand(A => DumpConfig.ClearDump());
-                MenuItem Clear = new MenuItem() { Header = "设置为默认", Command = relayCommand };
-                MenuDump.Items.Add(Clear);
-
-
-
-                MenuItem Save = new MenuItem() { Header = "保存为", Command = new RelayCommand(A => DumpConfig.SaveDump()) };
-                MenuDump.Items.Add(Save);
-
-                MenuDump.Loaded += (s, e) =>
+                MenuItemMetadata menuItemMeta = new MenuItemMetadata
                 {
-                    foreach (var item in MenuDump.Items.OfType<MenuItem>())
-                    {
-                        if (item.Tag is DumpType DumpType)
-                            item.IsChecked = DumpConfig.DumpType == DumpType;
-                    }
+                    OwnerGuid = nameof(MenuDump),
+                    GuidId = item.ToString(),
+                    Header = item.ToString(),
+                    Icon = null, // Set your icon here if needed
+                    Order = 1000 + (int)item, // Adjust order based on the enum value
+                    Command = relayCommand,
+                    IsChecked = DumpConfig.DumpType == item
                 };
-                return MenuDump;
+                menuItemMetas.Add(menuItemMeta);
             }
-        }
 
+
+            RelayCommand clearCommand = new RelayCommand(A => DumpConfig.ClearDump());
+            RelayCommand saveCommand = new RelayCommand(A => DumpConfig.SaveDump());
+
+
+            MenuItemMetadata menuItemMetaclear = new MenuItemMetadata
+            {
+                OwnerGuid = nameof(MenuDump),
+                Header = "清空Dmp",
+                Icon = null, // Set your icon here if needed
+                Order = 10000, // Adjust order based on the enum value
+                Command = clearCommand,
+            };
+            menuItemMetas.Add(menuItemMetaclear);
+
+            MenuItemMetadata menuItemMetasave = new MenuItemMetadata
+            {
+                OwnerGuid = nameof(MenuDump),
+                Header = "保存Dmp",
+                Icon = null, // Set your icon here if needed
+                Order = 10000, // Adjust order based on the enum value
+                Command = clearCommand,
+            };
+            menuItemMetas.Add(menuItemMetasave);
+
+            return menuItemMetas;
+        }
     }
 }

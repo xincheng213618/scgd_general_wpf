@@ -27,15 +27,15 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
 
         [DisplayName("显示列表"), Category("View")]
-        public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; NotifyPropertyChanged(); } }
+        public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; OnPropertyChanged(); } }
         private bool _IsShowListView = true;
         [DisplayName("列表高度"), Category("View")]
-        public double Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
+        public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 200;
 
 
 
-        public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
+        public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; OnPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;
 
     }

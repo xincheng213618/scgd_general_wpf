@@ -10,70 +10,70 @@ namespace ProjectKB
     public class Summary : ViewModelBase
     {
         [DisplayName("启用ShopFloor"), Category("KB")]
-        public bool UseMes { get => _UseMesh; set { _UseMesh = value; NotifyPropertyChanged(); } }
+        public bool UseMes { get => _UseMesh; set { _UseMesh = value; OnPropertyChanged(); } }
         private bool _UseMesh = true;
 
         [DisplayName("自动上传SN"), Category("KB")]
-        public bool AutoUploadSN { get => _AutoUploadSN; set { _AutoUploadSN = value; NotifyPropertyChanged(); } }
+        public bool AutoUploadSN { get => _AutoUploadSN; set { _AutoUploadSN = value; OnPropertyChanged(); } }
         private bool _AutoUploadSN;
 
         /// <summary>
         /// 线别
         /// </summary>
         [DisplayName("站别")]
-        public string Stage { get => _Stage; set { _Stage = value; NotifyPropertyChanged(); } }
+        public string Stage { get => _Stage; set { _Stage = value; OnPropertyChanged(); } }
         private string _Stage = "F100";
 
         /// <summary>
         /// 线别
         /// </summary>
         [DisplayName("线别")]
-        public string LineNO { get => _LineNO; set { _LineNO = value; NotifyPropertyChanged(); } }
+        public string LineNO { get => _LineNO; set { _LineNO = value; OnPropertyChanged(); } }
         private string _LineNO = string.Empty;
         /// <summary>
         /// 工号
         /// </summary>
         [DisplayName("工号")]
-        public string WorkerNO { get => _WorkerNO; set { _WorkerNO = value; NotifyPropertyChanged(); } }
+        public string WorkerNO { get => _WorkerNO; set { _WorkerNO = value; OnPropertyChanged(); } }
         private string _WorkerNO = string.Empty;
 
         [DisplayName("Opno")]
-        public string Opno { get => _Opno; set { _Opno = value; NotifyPropertyChanged(); } }
+        public string Opno { get => _Opno; set { _Opno = value; OnPropertyChanged(); } }
         private string _Opno = string.Empty;
 
         
         [DisplayName("设备号")]
-        public string MachineNO { get => _MachineNO; set { _MachineNO = value; NotifyPropertyChanged(); } }
+        public string MachineNO { get => _MachineNO; set { _MachineNO = value; OnPropertyChanged(); } }
         private string _MachineNO = string.Empty;
 
         [DisplayName("是否显示总结信息")]
-        public bool IsShowSummary { get => _IsShowSummary; set { _IsShowSummary = value; NotifyPropertyChanged(); } }
+        public bool IsShowSummary { get => _IsShowSummary; set { _IsShowSummary = value; OnPropertyChanged(); } }
         private bool _IsShowSummary;
-        public double Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); } }
+        public double Width { get => _Width; set { _Width = value; OnPropertyChanged(); } }
         private double _Width = 300;
         /// <summary>
         /// 目标生产
         /// </summary>
         [DisplayName("目标生产")]
-        public int TargetProduction { get => _TargetProduction; set { _TargetProduction = value; NotifyPropertyChanged(); } }
+        public int TargetProduction { get => _TargetProduction; set { _TargetProduction = value; OnPropertyChanged(); } }
         private int _TargetProduction;
 
         /// <summary>
         /// 已生产
         /// </summary>
         [DisplayName("已生产")]
-        public int ActualProduction { get => _ActualProduction; set { _ActualProduction = value; NotifyPropertyChanged(); } }
+        public int ActualProduction { get => _ActualProduction; set { _ActualProduction = value; OnPropertyChanged(); } }
         private int _ActualProduction;
 
         [DisplayName("良品数量")]
-        public int GoodProductCount { get => _GoodProductCount; set { _GoodProductCount = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(GoodProductRate)); } }
+        public int GoodProductCount { get => _GoodProductCount; set { _GoodProductCount = value; OnPropertyChanged(); OnPropertyChanged(nameof(GoodProductRate)); } }
         private int _GoodProductCount;
 
         /// <summary>
         /// 不良品数量
         /// </summary>
         [DisplayName("不良品数量")]
-        public int DefectiveProductCount { get => _DefectiveProductCount; set { _DefectiveProductCount = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(DefectiveProductRate)); } }
+        public int DefectiveProductCount { get => _DefectiveProductCount; set { _DefectiveProductCount = value; OnPropertyChanged(); OnPropertyChanged(nameof(DefectiveProductRate)); } }
         private int _DefectiveProductCount;
 
         /// <summary>

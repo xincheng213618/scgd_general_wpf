@@ -18,7 +18,7 @@ namespace ColorVision.Engine.Pattern
     public class PatternManagerConfig:ViewModelBase,IConfig
     {
         [DisplayName("图卡生成路径"), PropertyEditorType(PropertyEditorType.TextSelectFolder)]
-        public string SaveFilePath { get => _SaveFilePath; set { _SaveFilePath = value; NotifyPropertyChanged(); } }
+        public string SaveFilePath { get => _SaveFilePath; set { _SaveFilePath = value; OnPropertyChanged(); } }
         private string _SaveFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Pattern");
     }
 

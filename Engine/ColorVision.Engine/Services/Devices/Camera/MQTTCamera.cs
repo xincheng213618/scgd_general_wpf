@@ -199,7 +199,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             };
             return PublishAsyncClient(msg);
         }
-        public bool IsVideoOpen { get => _IsVideoOpen; set { _IsVideoOpen = value;NotifyPropertyChanged();
+        public bool IsVideoOpen { get => _IsVideoOpen; set { _IsVideoOpen = value;OnPropertyChanged();
                 if (value)
                 {
                     Application.Current.MainWindow.Closing += (s, e) =>

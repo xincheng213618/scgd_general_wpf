@@ -45,7 +45,7 @@ namespace ColorVision.Plugins
         /// <summary>
         /// 是否自动更新插件
         /// </summary>
-        public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; NotifyPropertyChanged(); } }
+        public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; OnPropertyChanged(); } }
         private bool _IsAutoUpdate = true;
     }
 
@@ -104,7 +104,7 @@ namespace ColorVision.Plugins
             new ViewDllVersionsWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
-        public string SearchName { get => _SearchName; set { _SearchName = value; NotifyPropertyChanged(); }}
+        public string SearchName { get => _SearchName; set { _SearchName = value; OnPropertyChanged(); }}
         private string _SearchName;
         public async void DownloadPackage()
         {

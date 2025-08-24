@@ -12,26 +12,26 @@ namespace ColorVision.Engine.Pattern.NineDot
 {
     public class PatternNineDotConfig:ViewModelBase,IConfig
     {
-        public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; NotifyPropertyChanged(); } }
+        public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _MainBrush = Brushes.Black;
 
-        public SolidColorBrush AltBrush { get => _AltBrush; set { _AltBrush = value; NotifyPropertyChanged(); } }
+        public SolidColorBrush AltBrush { get => _AltBrush; set { _AltBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _AltBrush = Brushes.White;
 
 
-        public int Radius { get => _Radius; set { _Radius = value; NotifyPropertyChanged(); } }
+        public int Radius { get => _Radius; set { _Radius = value; OnPropertyChanged(); } }
         private int _Radius = 50;
 
-        public int StartX { get => _StartX; set { _StartX = value; NotifyPropertyChanged(); } }
+        public int StartX { get => _StartX; set { _StartX = value; OnPropertyChanged(); } }
         private int _StartX = -1;
 
-        public int StartY { get => _StartY; set { _StartY = value; NotifyPropertyChanged(); } }
+        public int StartY { get => _StartY; set { _StartY = value; OnPropertyChanged(); } }
         private int _StartY = -1;
 
-        public int Cols { get => _Cols; set { _Cols = value; NotifyPropertyChanged(); } }
+        public int Cols { get => _Cols; set { _Cols = value; OnPropertyChanged(); } }
         private int _Cols =3;
 
-        public int Rows { get => _Rows; set { _Rows = value; NotifyPropertyChanged(); } }
+        public int Rows { get => _Rows; set { _Rows = value; OnPropertyChanged(); } }
         private int _Rows = 3;
     }
 

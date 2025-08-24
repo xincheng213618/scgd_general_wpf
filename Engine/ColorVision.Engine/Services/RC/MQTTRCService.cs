@@ -49,7 +49,7 @@ namespace ColorVision.Engine.Services.RC
         private NodeToken? Token;
         private bool TryTestRegist;
 
-        public bool IsConnect { get => _IsConnect; set { if (_IsConnect == value) return;  _IsConnect = value; if (value) initialized = false; NotifyPropertyChanged(); } }
+        public bool IsConnect { get => _IsConnect; set { if (_IsConnect == value) return;  _IsConnect = value; if (value) initialized = false; OnPropertyChanged(); } }
         private bool _IsConnect ;
 
         public List<MQTTServiceInfo> ServiceTokens { get; set; } = new List<MQTTServiceInfo>();

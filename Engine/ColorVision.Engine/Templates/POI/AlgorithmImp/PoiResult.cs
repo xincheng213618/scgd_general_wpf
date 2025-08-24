@@ -17,11 +17,11 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         private AlgorithmResultType _ResultType;
         private ObservableCollection<PoiResultData> _PoiData;
 
-        public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
-        public string SerialNumber { get { return _SerialNumber; } set { _SerialNumber = value; NotifyPropertyChanged(); } }
-        public string ImgFileName { get { return _ImgFileName; } set { _ImgFileName = value; NotifyPropertyChanged(); } }
-        public string POITemplateName { get { return _POITemplateName; } set { _POITemplateName = value; NotifyPropertyChanged(); } }
-        public string RecvTime { get { return _RecvTime; } set { _RecvTime = value; NotifyPropertyChanged(); } }
+        public int Id { get { return _Id; } set { _Id = value; OnPropertyChanged(); } }
+        public string SerialNumber { get { return _SerialNumber; } set { _SerialNumber = value; OnPropertyChanged(); } }
+        public string ImgFileName { get { return _ImgFileName; } set { _ImgFileName = value; OnPropertyChanged(); } }
+        public string POITemplateName { get { return _POITemplateName; } set { _POITemplateName = value; OnPropertyChanged(); } }
+        public string RecvTime { get { return _RecvTime; } set { _RecvTime = value; OnPropertyChanged(); } }
 
         public string ResultTypeDis
         {
@@ -47,7 +47,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             get { return _ResultType; }
             set { _ResultType = value; }
         }
-        public ObservableCollection<PoiResultData> PoiData { get { return _PoiData; } set { _PoiData = value; NotifyPropertyChanged(); } }
+        public ObservableCollection<PoiResultData> PoiData { get { return _PoiData; } set { _PoiData = value; OnPropertyChanged(); } }
 
         public PoiResult()
         {

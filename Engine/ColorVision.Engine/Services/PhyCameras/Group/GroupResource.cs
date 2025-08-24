@@ -17,22 +17,22 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
     public class ConfigGroup : ViewModelBase
     {
-        public bool IsInit { get => _IsInit; set { _IsInit = value; NotifyPropertyChanged(); } }
+        public bool IsInit { get => _IsInit; set { _IsInit = value; OnPropertyChanged(); } }
         private bool _IsInit;
 
         /// <summary>
         /// 增益
         /// </summary>
-        public int Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
+        public int Gain { get => _Gain; set { _Gain = value; OnPropertyChanged(); } }
         private int _Gain;
 
-        public int ExpTime { get => _ExpTime; set { _ExpTime = value; NotifyPropertyChanged(); } }
+        public int ExpTime { get => _ExpTime; set { _ExpTime = value; OnPropertyChanged(); } }
         private int _ExpTime = 10;
 
         /// <summary>
         /// 光圈 
         /// </summary>
-        public double Aperture{ get => _Aperture; set { _Aperture = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ApertureShow)); } }
+        public double Aperture{ get => _Aperture; set { _Aperture = value; OnPropertyChanged(); OnPropertyChanged(nameof(ApertureShow)); } }
         private double _Aperture;
 
         public string ApertureShow { get => $"F{_Aperture}";  set { } } 
@@ -40,34 +40,34 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         /// <summary>
         ///  ND 滤镜
         /// </summary>
-        public double ND { get => _ND; set { _ND = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(NDShow)); } }
+        public double ND { get => _ND; set { _ND = value; OnPropertyChanged(); OnPropertyChanged(nameof(NDShow)); } }
         private double _ND;
         public string NDShow { get => $"ND{_ND}"; set { } }
 
 
-        public double ShotType { get => _ShotType; set { _ShotType = value; NotifyPropertyChanged(); } }
+        public double ShotType { get => _ShotType; set { _ShotType = value; OnPropertyChanged(); } }
         private double _ShotType;
 
         /// <summary>
         /// 焦距
         /// </summary>
-        public double FocalLength { get => _FocalLength; set { _FocalLength = value; NotifyPropertyChanged(); } }
+        public double FocalLength { get => _FocalLength; set { _FocalLength = value; OnPropertyChanged(); } }
         private double _FocalLength = 95;
         public string FocalLengthShow { get => $"{_FocalLength}mm"; set { } }
 
         /// <summary>
         /// 对焦距离 
         /// </summary>
-        public double? FocusDistance { get => _FocusDistance; set { _FocusDistance = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(FocusDistanceShow)); } }
+        public double? FocusDistance { get => _FocusDistance; set { _FocusDistance = value; OnPropertyChanged(); OnPropertyChanged(nameof(FocusDistanceShow)); } }
         private double? _FocusDistance;
         public string FocusDistanceShow { get => $"{_FocusDistance}m"; set { } } 
 
 
 
-        public double GetImgMode { get => _GetImgMode; set { _GetImgMode = value; NotifyPropertyChanged(); } }
+        public double GetImgMode { get => _GetImgMode; set { _GetImgMode = value; OnPropertyChanged(); } }
         private double _GetImgMode;
 
-        public double ImgBpp { get => _ImgBpp; set { _ImgBpp = value; NotifyPropertyChanged(); } }
+        public double ImgBpp { get => _ImgBpp; set { _ImgBpp = value; OnPropertyChanged(); } }
         private double _ImgBpp;
     }
 
@@ -121,7 +121,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         public ConfigGroup Config { get; set; }
 
-        public virtual bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; NotifyPropertyChanged(); } }
+        public virtual bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; OnPropertyChanged(); } }
         private bool _IsEditMode;
 
         public RelayCommand ReNameCommand { get; set; }
@@ -233,30 +233,30 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         }
 
 
-        public CalibrationResource DarkNoise { get => _DarkNoise; set { _DarkNoise = value; NotifyPropertyChanged(); } }
+        public CalibrationResource DarkNoise { get => _DarkNoise; set { _DarkNoise = value; OnPropertyChanged(); } }
         private CalibrationResource _DarkNoise;
-        public CalibrationResource DefectPoint { get => _DefectPoint; set { _DefectPoint = value; NotifyPropertyChanged(); } }
+        public CalibrationResource DefectPoint { get => _DefectPoint; set { _DefectPoint = value; OnPropertyChanged(); } }
         private CalibrationResource _DefectPoint;
-        public CalibrationResource DSNU { get => _DSNU; set { _DSNU = value; NotifyPropertyChanged(); } }
+        public CalibrationResource DSNU { get => _DSNU; set { _DSNU = value; OnPropertyChanged(); } }
         private CalibrationResource _DSNU;
-        public CalibrationResource Uniformity { get => _Uniformity; set { _Uniformity = value; NotifyPropertyChanged();  } }
+        public CalibrationResource Uniformity { get => _Uniformity; set { _Uniformity = value; OnPropertyChanged();  } }
         private CalibrationResource _Uniformity;
-        public CalibrationResource Distortion { get => _Distortion; set { _Distortion = value; NotifyPropertyChanged(); } }
+        public CalibrationResource Distortion { get => _Distortion; set { _Distortion = value; OnPropertyChanged(); } }
         private CalibrationResource _Distortion;
-        public CalibrationResource ColorShift { get => _ColorShift; set { _ColorShift = value; NotifyPropertyChanged(); } }
+        public CalibrationResource ColorShift { get => _ColorShift; set { _ColorShift = value; OnPropertyChanged(); } }
         private CalibrationResource _ColorShift;
-        public CalibrationResource LineArity { get => _LineArity; set { _LineArity = value; NotifyPropertyChanged(); } }
+        public CalibrationResource LineArity { get => _LineArity; set { _LineArity = value; OnPropertyChanged(); } }
         private CalibrationResource _LineArity;
-        public CalibrationResource ColorDiff { get => _ColorDiff; set { _ColorDiff = value; NotifyPropertyChanged(); } }
+        public CalibrationResource ColorDiff { get => _ColorDiff; set { _ColorDiff = value; OnPropertyChanged(); } }
         private CalibrationResource _ColorDiff;
         
-        public CalibrationResource Luminance { get => _Luminance; set { _Luminance = value; NotifyPropertyChanged(); } }
+        public CalibrationResource Luminance { get => _Luminance; set { _Luminance = value; OnPropertyChanged(); } }
         private CalibrationResource _Luminance;
-        public CalibrationResource LumOneColor { get => _LumOneColor; set { _LumOneColor = value; NotifyPropertyChanged(); } }
+        public CalibrationResource LumOneColor { get => _LumOneColor; set { _LumOneColor = value; OnPropertyChanged(); } }
         private CalibrationResource _LumOneColor;
-        public CalibrationResource LumFourColor { get => _LumFourColor; set { _LumFourColor = value; NotifyPropertyChanged(); } }
+        public CalibrationResource LumFourColor { get => _LumFourColor; set { _LumFourColor = value; OnPropertyChanged(); } }
         private CalibrationResource _LumFourColor;
-        public CalibrationResource LumMultiColor { get => _LumMultiColor; set {    _LumMultiColor = value;  NotifyPropertyChanged(); } }
+        public CalibrationResource LumMultiColor { get => _LumMultiColor; set {    _LumMultiColor = value;  OnPropertyChanged(); } }
         private CalibrationResource _LumMultiColor;
 
         
