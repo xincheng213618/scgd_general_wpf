@@ -1,6 +1,7 @@
 ﻿using AvalonDock.Layout;
 using ColorVision.Common.Utilities;
 using ColorVision.Solution.Searches;
+using ColorVision.UI;
 using Microsoft.Web.WebView2.Wpf;
 using System.IO;
 using System.Windows;
@@ -12,7 +13,7 @@ namespace ColorVision.Solution.Editor
     [GenericEditor("WebView2编辑器"), FolderEditor("WebView2编辑器")]
     public class WebView2Editor : EditorBase
     {
-        public override void Open(string filePath)
+        public override  void Open(string filePath)
         {
             string GuidId = Tool.GetMD5(filePath);
             var existingDocument = SolutionViewExtensions.FindDocumentById(SolutionViewExtensions.layoutRoot, GuidId.ToString());
@@ -39,11 +40,19 @@ namespace ColorVision.Solution.Editor
 
                 WebView2 webView2 = new WebView2();
 
-                if (!Uri.IsWellFormedUriString(filePath, UriKind.Absolute))
+                Application.Current.Dispatcher.Invoke(async () =>
                 {
-                    filePath = "file:///" + filePath.Replace("\\", "/");
-                }
-                webView2.Source = new Uri(filePath, UriKind.Absolute);
+                    await WebViewService.EnsureWebViewInitializedAsync(webView2);
+
+                    if (!Uri.IsWellFormedUriString(filePath, UriKind.Absolute))
+                    {
+                        filePath = "file:///" + filePath.Replace("\\", "/");
+                    }
+                    webView2.Source = new Uri(filePath, UriKind.Absolute);
+
+                });
+
+
 
                 LayoutDocument layoutDocument = new LayoutDocument() { ContentId = GuidId, Title = Path.GetFileName(filePath) };
 
