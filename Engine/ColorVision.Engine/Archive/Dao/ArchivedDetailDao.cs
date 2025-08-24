@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CA1720,CS8601,CS8602,CS8603
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
+using ColorVision.Database;
 using log4net;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json.Linq;

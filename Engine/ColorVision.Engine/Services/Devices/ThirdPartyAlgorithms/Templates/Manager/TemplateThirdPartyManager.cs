@@ -1,5 +1,5 @@
-﻿using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.MySql;
+﻿using ColorVision.Database;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Templates;
 using System;

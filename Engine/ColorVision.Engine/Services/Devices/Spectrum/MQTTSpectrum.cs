@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;

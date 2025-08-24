@@ -5,7 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 
-namespace ColorVision.Engine.MySql.ORM
+namespace ColorVision.Database
 {
     public static class ReflectionHelper
     {

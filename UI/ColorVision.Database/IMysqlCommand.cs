@@ -1,4 +1,4 @@
-﻿namespace ColorVision.Engine.MySql
+﻿namespace ColorVision.Database
 {
     public interface IMysqlCommand
     {

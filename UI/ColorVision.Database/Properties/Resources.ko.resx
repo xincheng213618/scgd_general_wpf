@@ -120,4 +120,46 @@
   <data name="EnableDatabase" xml:space="preserve">
     <value>데이터베이스 활성화</value>
   </data>
+  <data name="MysqlConnection" xml:space="preserve">
+    <value>MySql 연결</value>
+  </data>
+  <data name="MysqlConnectionConfiguration" xml:space="preserve">
+    <value>MySql 연결 구성</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>삭제</value>
+  </data>
+  <data name="CreateNewConfigurationFile" xml:space="preserve">
+    <value>새 구성 파일 만들기</value>
+  </data>
+  <data name="Host" xml:space="preserve">
+    <value>주인</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>포트</value>
+  </data>
+  <data name="CopyConfigurationFile" xml:space="preserve">
+    <value>구성 파일 복사</value>
+  </data>
+  <data name="ConnectionName" xml:space="preserve">
+    <value>연결 이름</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>사용자</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>비밀번호</value>
+  </data>
+  <data name="Database" xml:space="preserve">
+    <value>데이터베이스 이름 지정</value>
+  </data>
+  <data name="TesConnection" xml:space="preserve">
+    <value>연결 테스트</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>취소</value>
+  </data>
 </root>

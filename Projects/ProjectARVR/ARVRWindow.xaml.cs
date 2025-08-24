@@ -5,7 +5,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;

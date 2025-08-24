@@ -120,4 +120,46 @@
   <data name="EnableDatabase" xml:space="preserve">
     <value>Activer la base de données</value>
   </data>
+  <data name="MysqlConnection" xml:space="preserve">
+    <value>Connexion MySql</value>
+  </data>
+  <data name="MysqlConnectionConfiguration" xml:space="preserve">
+    <value>Configuration de la connexion MySql</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="CreateNewConfigurationFile" xml:space="preserve">
+    <value>Créer un nouveau fichier de configuration</value>
+  </data>
+  <data name="Host" xml:space="preserve">
+    <value>Hôte</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>port</value>
+  </data>
+  <data name="CopyConfigurationFile" xml:space="preserve">
+    <value>Copier le fichier de configuration</value>
+  </data>
+  <data name="ConnectionName" xml:space="preserve">
+    <value>nom de connexion</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>utilisateur</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>mot de passe</value>
+  </data>
+  <data name="Database" xml:space="preserve">
+    <value>Base de données de noms</value>
+  </data>
+  <data name="TesConnection" xml:space="preserve">
+    <value>tester la connexion</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>Bien sûr</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
 </root>

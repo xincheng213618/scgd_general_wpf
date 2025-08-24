@@ -22,7 +22,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.IO;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {

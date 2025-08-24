@@ -1,5 +1,5 @@
-﻿using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Database;
+using ColorVision.Database;
 using SqlSugar;
 
 namespace ColorVision.Engine.Templates.FOV

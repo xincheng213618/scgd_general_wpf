@@ -7,7 +7,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.MySql
+namespace ColorVision.Database
 {
     public class ExportMySqlTool : MenuItemBase
     {

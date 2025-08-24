@@ -333,12 +333,6 @@
   <data name="Name" xml:space="preserve">
     <value>nom</value>
   </data>
-  <data name="MysqlConnectionConfiguration" xml:space="preserve">
-    <value>Configuration de la connexion MySql</value>
-  </data>
-  <data name="MysqlConnection" xml:space="preserve">
-    <value>Connexion MySql</value>
-  </data>
   <data name="MyLicense_R" xml:space="preserve">
     <value>Ma licence(R)</value>
   </data>
@@ -436,7 +430,7 @@
     <value>Paramètres du modèle fantôme (G)</value>
   </data>
   <data name="MenuFOV" xml:space="preserve">
-    <value>Paramètres du modèle FOV (B)" ;</value>
+    <value>Paramètres du modèle FOV (B)</value>
   </data>
   <data name="MenuFocusPoints" xml:space="preserve">
     <value>Paramètres du modèle de détection de zone lumineuse (F)</value>

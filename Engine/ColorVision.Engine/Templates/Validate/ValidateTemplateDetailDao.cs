@@ -1,5 +1,5 @@
 ﻿#pragma warning disable CS8601
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
 using SqlSugar;
 using System.Data;
 

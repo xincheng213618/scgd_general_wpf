@@ -1519,24 +1519,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 Mysql连接 的本地化字符串。
-        /// </summary>
-        public static string MysqlConnection {
-            get {
-                return ResourceManager.GetString("MysqlConnection", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Mysql连接配置 的本地化字符串。
-        /// </summary>
-        public static string MysqlConnectionConfiguration {
-            get {
-                return ResourceManager.GetString("MysqlConnectionConfiguration", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 名称 的本地化字符串。
         /// </summary>
         public static string Name {

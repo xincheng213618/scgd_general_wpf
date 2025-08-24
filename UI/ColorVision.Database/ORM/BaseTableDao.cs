@@ -1,12 +1,10 @@
-﻿using ColorVision.Engine.Services.Dao;
-using log4net;
+﻿using log4net;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Reflection;
 
-namespace ColorVision.Engine.MySql.ORM
+namespace ColorVision.Database
 {
     public class BaseTableDao<T> : BaseDao where T : IPKModel ,new()
     {

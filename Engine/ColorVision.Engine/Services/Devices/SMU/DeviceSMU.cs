@@ -8,7 +8,7 @@ using ColorVision.UI;
 using System.Windows;
 using System.Windows.Controls;
 using System.ComponentModel;
-using ColorVision.Engine.MySql;
+using ColorVision.Database;
 using ColorVision.Themes.Controls;
 using ColorVision.Engine.Templates;
 

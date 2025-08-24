@@ -1,6 +1,6 @@
 ﻿#pragma warning disable CS8601,CS8603
 using ColorVision.Engine.Abstractions;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
 using SqlSugar;
 using System;
 

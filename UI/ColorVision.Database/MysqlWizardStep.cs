@@ -1,7 +1,7 @@
 ﻿using ColorVision.UI;
 using System.Windows;
 
-namespace ColorVision.Engine.MySql
+namespace ColorVision.Database
 {
     public class MysqlWizardStep : WizardStepBase
     {

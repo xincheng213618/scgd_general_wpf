@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Services.Dao;
-using ColorVision.UI.Menus;
+﻿using ColorVision.UI.Menus;
 using log4net;
 using System;
 using System.Diagnostics;
@@ -8,7 +7,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.Engine.MySql
+namespace ColorVision.Database
 {
     public interface IInitTables
     {
@@ -47,7 +46,7 @@ namespace ColorVision.Engine.MySql
         public  async Task InitTablesAsync()
         {
             _stopwatch = Stopwatch.StartNew();
-            var foundTypes = Assembly.GetAssembly(typeof(MySqlInitializer)).GetTypes()
+            var foundTypes = Assembly.GetAssembly(typeof(IInitTables)).GetTypes()
             .Where(t => typeof(IInitTables).IsAssignableFrom(t) && // 类型 t 实现了接口 T
                         !t.IsInterface &&                         // 类型 t 本身不是接口
                         !t.IsAbstract &&                          // 类型 t 不是抽象类
@@ -68,8 +67,6 @@ namespace ColorVision.Engine.MySql
                     log.Error(ex);
                 }
             }
-
-            MySqlControl.GetInstance().DB.CodeFirst.InitTables<MeasureImgResultModel>();
             _stopwatch.Stop();
             log.Info($"InitTables：{_stopwatch.Elapsed.TotalSeconds} 秒");
         }

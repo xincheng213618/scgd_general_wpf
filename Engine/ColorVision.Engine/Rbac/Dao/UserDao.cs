@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Database;
 using ColorVision.UI.Authorizations;
 using log4net;
 using SqlSugar;

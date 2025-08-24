@@ -120,4 +120,46 @@
   <data name="EnableDatabase" xml:space="preserve">
     <value>啟用資料庫</value>
   </data>
+  <data name="MysqlConnection" xml:space="preserve">
+    <value>Mysql連接</value>
+  </data>
+  <data name="MysqlConnectionConfiguration" xml:space="preserve">
+    <value>Mysql連線配置</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>刪除</value>
+  </data>
+  <data name="CreateNewConfigurationFile" xml:space="preserve">
+    <value>新建設定檔</value>
+  </data>
+  <data name="Host" xml:space="preserve">
+    <value>主機</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>端口</value>
+  </data>
+  <data name="CopyConfigurationFile" xml:space="preserve">
+    <value>複製設定檔</value>
+  </data>
+  <data name="ConnectionName" xml:space="preserve">
+    <value>連接名</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>用戶</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>密碼</value>
+  </data>
+  <data name="Database" xml:space="preserve">
+    <value>資料庫名稱</value>
+  </data>
+  <data name="TesConnection" xml:space="preserve">
+    <value>測試連接</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>確定</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
 </root>

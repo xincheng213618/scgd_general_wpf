@@ -1,5 +1,5 @@
-﻿using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Database;
+using ColorVision.Database;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Sys.Dao;
 using ColorVision.Solution.Searches;

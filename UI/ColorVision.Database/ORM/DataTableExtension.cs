@@ -3,7 +3,7 @@ using System;
 using System.Data;
 using System.Linq;
 
-namespace ColorVision.Engine.MySql.ORM
+namespace ColorVision.Database
 {
     public static class DataTableExtension
     {

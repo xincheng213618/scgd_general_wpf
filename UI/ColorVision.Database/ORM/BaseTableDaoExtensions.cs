@@ -1,9 +1,6 @@
-﻿using MySql.Data.MySqlClient;
-using SqlSugar;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace ColorVision.Engine.MySql.ORM
+namespace ColorVision.Database
 {
     public static class BaseTableDaoExtensions
     {

@@ -7,7 +7,7 @@ using System.Data;
 using System.Linq;
 using System.Threading;
 
-namespace ColorVision.Engine.MySql.ORM
+namespace ColorVision.Database
 {
     /// <summary>
     /// 因为项目中本身包含Service,所以这里取消Service层的设置，直接从Dao层

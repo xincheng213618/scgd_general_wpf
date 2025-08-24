@@ -13,7 +13,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.MySql
+namespace ColorVision.Database
 {
 
     public class MySqlLocalConfig : IConfig
@@ -27,11 +27,7 @@ namespace ColorVision.Engine.MySql
         public string MysqlPath { get; set; }
 
         public string MysqldumpPath { get; set; }
-
-
     }
-
-
 
     public class MysqlBack : ViewModelBase
     {

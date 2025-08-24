@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CA1707 // 标识符不应包含下划线
 
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
+using ColorVision.Database;
 using SqlSugar;
 using System;
 using System.Collections.Generic;

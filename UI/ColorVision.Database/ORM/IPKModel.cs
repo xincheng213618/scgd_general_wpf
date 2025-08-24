@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using SqlSugar;
 
-namespace ColorVision.Engine.MySql.ORM
+namespace ColorVision.Database
 {
     public interface IPKModel
     {

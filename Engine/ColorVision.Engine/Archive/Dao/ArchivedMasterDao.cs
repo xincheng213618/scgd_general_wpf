@@ -1,12 +1,6 @@
 ﻿#pragma warning disable CS8603
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
-using log4net;
-using MySql.Data.MySqlClient;
-using NPOI.SS.Formula.Functions;
 using SqlSugar;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 
 namespace ColorVision.Engine.Archive.Dao

@@ -1,11 +1,11 @@
-﻿<Window x:Class="ColorVision.Engine.MySql.MySqlConnect"
+﻿<Window x:Class="ColorVision.Database.MySqlConnect"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision.Engine.MySql"
+        xmlns:local="clr-namespace:ColorVision.Database"
         xmlns:hc ="https://handyorg.github.io/handycontrol"
-        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+        xmlns:properties="clr-namespace:ColorVision.Database.Properties"
         mc:Ignorable="d"
         Title="{x:Static properties:Resources.MysqlConnectionConfiguration}" Background="{DynamicResource GlobalBackground}"  Height="500" Width="400" Initialized="Window_Initialized">
     <Window.Resources>

@@ -1,6 +1,6 @@
 ﻿#pragma warning disable CS8601
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Jsons;

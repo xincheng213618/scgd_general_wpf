@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using System.Windows;
 
 
-namespace ColorVision.Engine.MySql
+namespace ColorVision.Database
 {
 
     public class MySqlControl: ViewModelBase, IDisposable

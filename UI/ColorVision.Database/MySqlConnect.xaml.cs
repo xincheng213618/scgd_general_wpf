@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Properties;
+using ColorVision.Database.Properties;
 using ColorVision.Themes;
 using ColorVision.UI.Menus;
 using System;
@@ -9,7 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.MySql
+namespace ColorVision.Database
 {
     public class ExportMySqlMenuItem : MenuItemBase
     {

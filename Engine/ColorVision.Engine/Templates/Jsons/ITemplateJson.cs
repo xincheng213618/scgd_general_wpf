@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
+using ColorVision.Database;
 using ColorVision.UI.Extension;
 using log4net;
 using Newtonsoft.Json;

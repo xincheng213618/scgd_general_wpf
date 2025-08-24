@@ -9,7 +9,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.UI.Authorizations;
-using ColorVision.Engine.MySql;
+using ColorVision.Database;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using System.ComponentModel;

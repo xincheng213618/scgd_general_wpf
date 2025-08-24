@@ -1,5 +1,5 @@
 ﻿using ColorVision.Engine.Abstractions;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
 using CVCommCore.CVAlgorithm;
 using SqlSugar;
 

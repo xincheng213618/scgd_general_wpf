@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
 using ColorVision.UI;
 using System;
 using System.IO;
@@ -7,11 +7,8 @@ using System.ServiceProcess;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.Engine.MySql
+namespace ColorVision.Engine.Mysql
 {
-
-
-
     public class MySqlInitializer : InitializerBase
     {
 

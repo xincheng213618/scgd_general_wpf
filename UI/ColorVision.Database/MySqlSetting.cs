@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace ColorVision.Engine.MySql
+namespace ColorVision.Database
 {
     public class MySqlSettingProvider : IConfigSettingProvider,IStatusBarProvider
     {

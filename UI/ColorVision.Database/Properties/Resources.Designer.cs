@@ -22,7 +22,7 @@ namespace ColorVision.Database.Properties {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    internal class Resources {
+    public class Resources {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
@@ -36,7 +36,7 @@ namespace ColorVision.Database.Properties {
         ///   返回此类使用的缓存的 ResourceManager 实例。
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Resources.ResourceManager ResourceManager {
+        public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("ColorVision.Database.Properties.Resources", typeof(Resources).Assembly);
@@ -51,7 +51,7 @@ namespace ColorVision.Database.Properties {
         ///   使用此强类型资源类的所有资源查找执行重写。
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Globalization.CultureInfo Culture {
+        public static global::System.Globalization.CultureInfo Culture {
             get {
                 return resourceCulture;
             }
@@ -61,11 +61,137 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
+        ///   查找类似 取消 的本地化字符串。
+        /// </summary>
+        public static string Cancel {
+            get {
+                return ResourceManager.GetString("Cancel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 连接名 的本地化字符串。
+        /// </summary>
+        public static string ConnectionName {
+            get {
+                return ResourceManager.GetString("ConnectionName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 复制配置文件 的本地化字符串。
+        /// </summary>
+        public static string CopyConfigurationFile {
+            get {
+                return ResourceManager.GetString("CopyConfigurationFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 新建配置文件 的本地化字符串。
+        /// </summary>
+        public static string CreateNewConfigurationFile {
+            get {
+                return ResourceManager.GetString("CreateNewConfigurationFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 数据库名称 的本地化字符串。
+        /// </summary>
+        public static string Database {
+            get {
+                return ResourceManager.GetString("Database", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 删除 的本地化字符串。
+        /// </summary>
+        public static string Delete {
+            get {
+                return ResourceManager.GetString("Delete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 启用数据库 的本地化字符串。
         /// </summary>
-        internal static string EnableDatabase {
+        public static string EnableDatabase {
             get {
                 return ResourceManager.GetString("EnableDatabase", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 主机 的本地化字符串。
+        /// </summary>
+        public static string Host {
+            get {
+                return ResourceManager.GetString("Host", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Mysql连接 的本地化字符串。
+        /// </summary>
+        public static string MysqlConnection {
+            get {
+                return ResourceManager.GetString("MysqlConnection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Mysql连接配置 的本地化字符串。
+        /// </summary>
+        public static string MysqlConnectionConfiguration {
+            get {
+                return ResourceManager.GetString("MysqlConnectionConfiguration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确定 的本地化字符串。
+        /// </summary>
+        public static string OK {
+            get {
+                return ResourceManager.GetString("OK", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 密码 的本地化字符串。
+        /// </summary>
+        public static string Password {
+            get {
+                return ResourceManager.GetString("Password", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 端口 的本地化字符串。
+        /// </summary>
+        public static string Port {
+            get {
+                return ResourceManager.GetString("Port", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 测试连接 的本地化字符串。
+        /// </summary>
+        public static string TesConnection {
+            get {
+                return ResourceManager.GetString("TesConnection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户 的本地化字符串。
+        /// </summary>
+        public static string UserName {
+            get {
+                return ResourceManager.GetString("UserName", resourceCulture);
             }
         }
     }
