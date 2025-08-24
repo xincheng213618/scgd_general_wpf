@@ -52,13 +52,40 @@ namespace ColorVision.UI
             try
             {
                 await webView.EnsureCoreWebView2Async(env);
+
+                webView.CoreWebView2.Profile.PreferredColorScheme = ThemeManager.Current.CurrentUITheme == Theme.Dark ? CoreWebView2PreferredColorScheme.Dark : CoreWebView2PreferredColorScheme.Light;
+                // 先移除已注册的处理器，避免重复注册
+                ThemeManager.Current.CurrentUIThemeChanged -= OnThemeChanged;
+                ThemeManager.Current.CurrentUIThemeChanged += OnThemeChanged;
+
+                // 内部事件处理器
+                void OnThemeChanged(Theme sender)
+                {
+                    if (webView?.CoreWebView2 != null)
+                    {
+                        SetWebViewColorScheme(webView);
+                    }
+                    else
+                    {
+                        ThemeManager.Current.CurrentUIThemeChanged -= OnThemeChanged;
+                    }
+                }
+
             }
             catch (Exception ex)
             {
                 LogManager.GetLogger(typeof(WebViewService)).Error("WebView2 初始化失败", ex);
             }
         }
-
+        // 抽取设置主题方法
+        private static void SetWebViewColorScheme(WebView2 webView)
+        {
+            if (webView?.CoreWebView2?.Profile == null) return;
+            webView.CoreWebView2.Profile.PreferredColorScheme =
+                ThemeManager.Current.CurrentUITheme == Theme.Dark
+                    ? CoreWebView2PreferredColorScheme.Dark
+                    : CoreWebView2PreferredColorScheme.Light;
+        }
         // 渲染 Markdown 到 WebView2
         public static void RenderMarkdown(WebView2 webView, string html)
         {

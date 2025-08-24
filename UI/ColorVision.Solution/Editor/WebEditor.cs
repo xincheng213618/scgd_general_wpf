@@ -1,5 +1,6 @@
 ﻿using AvalonDock.Layout;
 using ColorVision.Common.Utilities;
+using ColorVision.ImageEditor;
 using ColorVision.Solution.Searches;
 using ColorVision.UI;
 using Microsoft.Web.WebView2.Wpf;
@@ -66,7 +67,11 @@ namespace ColorVision.Solution.Editor
                         SolutionViewExtensions.OnContentIdSelected(filePath);
                     }
                 };
-                bool isclear = true;
+                layoutDocument.Closing += (s, e) =>
+                {
+                    webView2?.Dispose();
+                };
+
             }
         }
     }
