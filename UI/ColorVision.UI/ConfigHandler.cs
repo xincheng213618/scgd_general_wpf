@@ -107,6 +107,53 @@ namespace ColorVision.UI
 
         public Dictionary<Type, IConfig> Configs { get; set; }
 
+        public IConfig GetRequiredService(Type type)
+        {
+            ArgumentNullException.ThrowIfNull(type);
+            if (!typeof(IConfig).IsAssignableFrom(type))
+                throw new ArgumentException("Type must implement IConfig.", nameof(type));
+
+            if (Configs.TryGetValue(type, out var service))
+            {
+                return (IConfig)service;
+            }
+
+            var configName = type.Name;
+            try
+            {
+                if (jsonObject.TryGetValue(configName, out JToken configToken))
+                {
+                    var config = configToken.ToObject(type, new JsonSerializer { Formatting = Formatting.Indented });
+                    if (config is IConfigSecure configSecure)
+                    {
+                        configSecure.Decrypt();
+                        Configs[type] = configSecure;
+                    }
+                    else if (config is IConfig configInstance)
+                    {
+                        Configs[type] = configInstance;
+                    }
+                }
+                else
+                {
+                    if (Activator.CreateInstance(type) is IConfig defaultConfig)
+                    {
+                        Configs[type] = defaultConfig;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warn(ex);
+                if (Activator.CreateInstance(type) is IConfig defaultConfig)
+                {
+                    Configs[type] = defaultConfig;
+                }
+            }
+            // 此处递归调用是为了确保缓存和异常处理逻辑一致
+            return GetRequiredService(type);
+        }
+
         public T1 GetRequiredService<T1>() where T1 : IConfig
         {
             var type = typeof(T1);

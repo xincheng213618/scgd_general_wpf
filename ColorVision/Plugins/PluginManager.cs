@@ -64,6 +64,7 @@ namespace ColorVision.Plugins
         public RelayCommand InstallPackageCommand { get; set; }
         public RelayCommand DownloadPackageCommand { get; set; }
         public RelayCommand OpenViewDllViersionCommand { get; set; }
+        public RelayCommand RestartCommand { get; set; }
 
         private DownloadFile DownloadFile { get; set; }
         public PluginManager()
@@ -78,26 +79,6 @@ namespace ColorVision.Plugins
                     Plugins.Add(info);
                 }
             }
-
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-            {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IPlugin).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is IPlugin plugin)
-                    {
-                        if (Plugins.Any(a => a.Name == plugin.Header))
-                            continue;
-                        PluginInfoVM info = new PluginInfoVM(plugin, assembly);
-                        info.AssemblyVersion = assembly.GetName().Version;
-                        info.AssemblyBuildDate = File.GetLastWriteTime(assembly.Location);
-                        Plugins.Add(info);
-                        log.Info($"找到外加插件：{plugin} 名称：{info.AssemblyName} 版本：{info.AssemblyVersion} " +
-                                 $"日期：{info.AssemblyBuildDate} 路径：{info.AssemblyPath} 文化：{info.AssemblyCulture} " +
-                                 $"公钥标记：{info.AssemblyPublicKeyToken}");
-
-                    }
-                }
-            }
  
             OpenStoreCommand = new RelayCommand(a => OpenStore());
             InstallPackageCommand = new RelayCommand(a => InstallPackage());
@@ -105,8 +86,18 @@ namespace ColorVision.Plugins
             DownloadFile = new DownloadFile();
             EditConfigCommand = new RelayCommand(a => new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             OpenViewDllViersionCommand = new RelayCommand(a => OpenViewDllViersion());
+            RestartCommand = new RelayCommand(a => Restart());
+
         }
 
+        public void Restart()
+        {
+            ConfigService.Instance.SaveConfigs();
+
+            Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"), "-c MenuPluginManager");
+
+            Application.Current.Shutdown();
+        }
 
         public void OpenViewDllViersion()
         {
@@ -299,7 +290,7 @@ del ""%~f0"" & exit
 
         public static void OpenStore()
         {
-            PlatformHelper.Open("http://xc213618.ddns.me:9999/D%3A/ColorVision/Plugins");
+            PlatformHelper.Open("http://xc213618.ddns.me:9998/upload/ColorVision/Plugins/");
         }
     }
 }

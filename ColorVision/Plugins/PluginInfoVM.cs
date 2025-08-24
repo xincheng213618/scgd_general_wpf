@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Properties;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
@@ -46,6 +47,8 @@ namespace ColorVision.Plugins
 
         public RelayCommand DeleteCommand { get; set; }
         public RelayCommand UpdateCommand { get; set; }
+        public RelayCommand OpenLocalPathCommand { get; set; }
+
         DownloadFile DownloadFile { get; set; }
         public PluginInfoVM(PluginInfo pluginInfo)
         {
@@ -60,6 +63,7 @@ namespace ColorVision.Plugins
 
             DeleteCommand = new RelayCommand(a => Delete());
             UpdateCommand = new RelayCommand(a => Update());
+            OpenLocalPathCommand = new RelayCommand(a => OpenLocalPath());
             ContextMenu = new ContextMenu();
 
             DownloadFile = new DownloadFile();
@@ -73,38 +77,16 @@ namespace ColorVision.Plugins
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = ApplicationCommands.Delete });
             ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Properties.Resources.Update, Command = UpdateCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "OpenLocalPath", Command = OpenLocalPathCommand });
+
+
+
         }
-        public PluginInfoVM(IPlugin plugin, Assembly assembly)
+
+
+        public void OpenLocalPath()
         {
-            Name = plugin.Header;
-            Description = plugin.Description;
-            try
-            {
-                AssemblyName = assembly.GetName().Name;
-                AssemblyVersion = assembly.GetName().Version;
-                AssemblyBuildDate = File.GetLastWriteTime(assembly.Location);
-                AssemblyPath = assembly.Location;
-                AssemblyCulture = assembly.GetName().CultureInfo?.Name ?? "neutral";
-                AssemblyPublicKeyToken = BitConverter.ToString(assembly.GetName().GetPublicKeyToken() ?? Array.Empty<byte>());
-                PackageName = Path.GetFileNameWithoutExtension(assembly.Location);
-            }
-            catch (Exception ex)
-            {
-                // 记录错误日志
-                LogManager.GetLogger(typeof(PluginInfo)).Error("Error retrieving assembly info", ex);
-            }
-
-            DeleteCommand = new RelayCommand(a => Delete());
-            UpdateCommand = new RelayCommand(a => Update());
-            ContextMenu = new ContextMenu();
-
-            DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = ColorVision.Properties.Resources.Update + Name;
-            Task.Run(() => CheckVersion());
-
-            ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = ApplicationCommands.Delete });
-            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Properties.Resources.Update, Command = UpdateCommand });
+            PlatformHelper.OpenFolder($"Plugins//{PackageName}");
         }
 
         public async void CheckVersion()

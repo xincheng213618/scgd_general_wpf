@@ -1,7 +1,17 @@
-﻿using ColorVision.Themes;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Extension;
+using ColorVision.UI.Menus;
+using NetTaste;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Resources;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 
 namespace ColorVision.Plugins
@@ -57,7 +67,69 @@ namespace ColorVision.Plugins
                         await WebViewService.EnsureWebViewInitializedAsync(webViewChangeLog);
                         WebViewService.RenderMarkdown(webViewChangeLog, htm2);
                     }
+                    if (TabControl1.SelectedIndex == 2)
+                    {
+                        InitDetailInfo(pluginInfoVM);
+                    }
                 });
+            }
+        }
+
+
+        private void InitDetailInfo(PluginInfoVM pluginInfoVM)
+        {
+            DetailInfo.Children.Clear();
+
+            if (pluginInfoVM.PluginInfo.Assembly != null)
+            {
+                void GenIMenuItem(StackPanel stackPanel,Assembly assembly)
+                {
+                    UniformGrid uniformGrid = new UniformGrid() { Margin = new Thickness(5) };
+                    uniformGrid.SizeChanged += (_, __) => uniformGrid.AutoUpdateLayout();
+                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))
+                    {
+                        if (Activator.CreateInstance(type) is IMenuItem menuItems)
+                        {
+                            var button = new Button
+                            {
+                                Style = PropertyEditorHelper.ButtonCommandStyle,
+                                Content = menuItems.Header,
+                                Command = menuItems.Command
+                            };
+                            uniformGrid.Children.Add(button);
+                        }
+                    }
+                    stackPanel.Children.Add(uniformGrid);
+                }
+                void GenIConfig(StackPanel stackPanel, Assembly assembly)
+                {
+                    UniformGrid uniformGrid = new UniformGrid() { Margin = new Thickness(5) };
+                    uniformGrid.SizeChanged += (_, __) => uniformGrid.AutoUpdateLayout();
+                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IConfig).IsAssignableFrom(t) && !t.IsAbstract))
+                    {
+                        IConfig config = ConfigHandler.GetInstance().GetRequiredService(type);
+
+                        RelayCommand relayCommand = new RelayCommand(a =>
+                        {
+                            new PropertyEditorWindow(config).Show();
+                        });
+
+
+                        var button = new Button
+                        {
+                            Style = PropertyEditorHelper.ButtonCommandStyle,
+                            Content = type.Name,
+                            Command = relayCommand
+                        };
+                        uniformGrid.Children.Add(button);
+                    }
+                    stackPanel.Children.Add(uniformGrid);
+                }
+
+
+                GenIMenuItem(DetailInfo, pluginInfoVM.PluginInfo.Assembly);
+                GenIConfig(DetailInfo, pluginInfoVM.PluginInfo.Assembly);
+
             }
         }
 
@@ -83,6 +155,10 @@ namespace ColorVision.Plugins
                         string htm2 = Markdig.Markdown.ToHtml(pluginInfoVM.PluginInfo?.ChangeLog ?? string.Empty);
                         await WebViewService.EnsureWebViewInitializedAsync(webViewChangeLog);
                         WebViewService.RenderMarkdown(webViewChangeLog, htm2);
+                    }
+                    if (TabControl1.SelectedIndex == 2)
+                    {
+                        InitDetailInfo(pluginInfoVM);
                     }
                 });
             }
