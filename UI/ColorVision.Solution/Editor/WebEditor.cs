@@ -8,7 +8,8 @@ using System.Windows;
 
 namespace ColorVision.Solution.Editor
 {
-    [GenericEditor("浏览器编辑器")]
+
+    [GenericEditor("WebView2编辑器"), FolderEditor("WebView2编辑器")]
     public class WebView2Editor : EditorBase
     {
         public override void Open(string filePath)
@@ -38,6 +39,11 @@ namespace ColorVision.Solution.Editor
 
                 WebView2 webView2 = new WebView2();
 
+                if (!Uri.IsWellFormedUriString(filePath, UriKind.Absolute))
+                {
+                    filePath = "file:///" + filePath.Replace("\\", "/");
+                }
+                webView2.Source = new Uri(filePath, UriKind.Absolute);
 
                 LayoutDocument layoutDocument = new LayoutDocument() { ContentId = GuidId, Title = Path.GetFileName(filePath) };
 

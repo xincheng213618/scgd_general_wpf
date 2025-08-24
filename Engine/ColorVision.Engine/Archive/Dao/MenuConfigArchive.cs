@@ -6,6 +6,7 @@ using ColorVision.Solution.Searches;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Engine.Archive.Dao
 {
@@ -19,21 +20,7 @@ namespace ColorVision.Engine.Archive.Dao
         public override string Header => "归档";
     }
 
-    public class MenuArchiveManager : MenuItemBase
-    {
-        public override string OwnerGuid => nameof(MenuArchive);
 
-
-        public override string Header => "归档管理";
-
-        public override void Execute()
-        {
-            SolutionView solutionView = new SolutionView();
-            Window window = new Window();
-            window.Content = solutionView;
-            window.Show();
-        }
-    }
 
     public class MenuGlobleCfg : MenuItemBase
     {

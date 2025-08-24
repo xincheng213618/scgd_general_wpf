@@ -43,34 +43,6 @@ namespace ColorVision.Engine.MySql.ORM
             }
             return count;
         }
-        public virtual MySqlConnection CreateConnection()
-        {
-            const int maxRetry = 2;
-            int attempt = 0;
-            Exception? lastException = null;
-            while (attempt < maxRetry)
-            {
-                try
-                {
-                    var conn = new MySqlConnection(MySqlControl.GetConnectionString());
-                    conn.Open();
-                    return conn;
-                }
-                catch (Exception ex)
-                {
-                    lastException = ex;
-                    log.Warn($"数据库连接第{attempt + 1}次失败: {ex.Message}");
-                    attempt++;
-                    if (attempt < maxRetry)
-                    {
-                        System.Threading.Thread.Sleep(100); // 间隔100ms再试
-                    }
-                }
-            }
-            log.Error("数据库连接重试2次均失败", lastException);
-            return null;
-        }
-
         public int ExecuteNonQuery(string sql, Dictionary<string, object>? param)
         {
             int count = -1;

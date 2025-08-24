@@ -63,8 +63,6 @@ namespace ColorVision.Solution.Searches
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            MainFrame.Navigate(SolutionPageManager.Instance.GetPage("HomePage", MainFrame));
-
             if (Application.Current.FindResource("MenuItem4FrameStyle") is Style style)
             {
                 ContextMenu content1 = new() { ItemContainerStyle = style };

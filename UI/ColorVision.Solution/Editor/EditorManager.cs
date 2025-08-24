@@ -136,7 +136,7 @@ namespace ColorVision.Solution
         {
             if (Directory.Exists(folderPath))
             {
-                var defaultType = typeof(ProjectEditor);
+                var defaultType = typeof(WebView2Editor);
                 if (defaultType != null)
                     return Activator.CreateInstance(defaultType) as IEditor;
             }

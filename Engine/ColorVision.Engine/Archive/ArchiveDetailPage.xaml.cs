@@ -3,6 +3,9 @@ using ColorVision.UI;
 
 #pragma warning disable CS8602
 using ColorVision.UI.Sorts;
+using SqlSugar;
+using NPOI.SS.Formula.Functions;
+using Panuon.WPF.UI;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -29,16 +32,28 @@ namespace ColorVision.Engine.Archive.Dao
             InitializeComponent();
         }
 
-
         public ObservableCollection<ArchivedDetailModel> ViewResults { get; set; } = new ObservableCollection<ArchivedDetailModel>();
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
-            if (ArchivedMasterModel.Code == null) return;
-            foreach (var item in ArchivedDetailDao.Instance.GetAllByParam(new System.Collections.Generic.Dictionary<string, object>() { { "p_guid", ArchivedMasterModel.Code} }))
+            var MySqlConfig = GlobleCfgdDao.Instance.GetArchMySqlConfig();
+            if (MySqlConfig != null)
             {
-                ViewResults.Add(item);
+                string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={3};SSL Mode =None;Pooling=true";
+                SqlSugarClient DB = new SqlSugarClient(new ConnectionConfig
+                {
+                    ConnectionString = connStr,
+                    DbType = SqlSugar.DbType.MySql,
+                    IsAutoCloseConnection = true
+                });
+
+                var list = DB.Queryable<T>();
+                foreach (var item in DB.Queryable<ArchivedDetailModel>().Where(x => x.PGuid == ArchivedMasterModel.Code).ToList())
+                {
+                    ViewResults.Add(item);
+                }
             }
+
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)

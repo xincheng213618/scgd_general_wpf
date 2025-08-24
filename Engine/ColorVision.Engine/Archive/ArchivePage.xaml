@@ -23,6 +23,7 @@
                 <DockPanel Margin="5" >
                     <Button  Content="保存到本地" DockPanel.Dock="Right" Click="Save_Click" Margin="10,0"/>
                     <Button  Content="设置" DockPanel.Dock="Right" Click="Setting_Click" Margin="10,0"/>
+                    <Button  Content="高级搜索" DockPanel.Dock="Right" Click="AdvanceQuery_Click" Margin="5,0,0,0"/>
                     <Button  Content="搜索" DockPanel.Dock="Right" Click="Query_Click" Margin="10,0"/>
                     <TextBox x:Name="SearchBox" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="0"  VerticalContentAlignment="Center"  VerticalAlignment="Center" Text="" TextChanged="SearchBox_TextChanged"  InputMethod.IsInputMethodEnabled="True"  KeyDown="KeyEnter"  />
                 </DockPanel>
