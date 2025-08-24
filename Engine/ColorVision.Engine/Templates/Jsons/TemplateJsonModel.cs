@@ -8,43 +8,43 @@ namespace ColorVision.Engine.Templates.Jsons
     public class TemplateJsonModel: VPKModel
     {
         [SugarColumn(ColumnName ="name")]
-        public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name;
 
         [SugarColumn(ColumnName ="mm_id")]
-        public int? DicId  { get => _DicId; set { _DicId = value; NotifyPropertyChanged(); } }
+        public int? DicId  { get => _DicId; set { _DicId = value; OnPropertyChanged(); } }
         private int? _DicId;
 
         [SugarColumn(ColumnName ="code")]
-        public string? DicCode { get => _DicCode; set { _DicCode = value; NotifyPropertyChanged(); } }
+        public string? DicCode { get => _DicCode; set { _DicCode = value; OnPropertyChanged(); } }
         private string? _DicCode;
 
         [SugarColumn(ColumnName ="res_pid")]
-        public int? ResourceId { get => _ResourceId; set { _ResourceId = value; NotifyPropertyChanged(); } }
+        public int? ResourceId { get => _ResourceId; set { _ResourceId = value; OnPropertyChanged(); } }
         private int? _ResourceId;
 
         [SugarColumn(ColumnName ="cfg_json")]
-        public string? JsonVal { get => _JsonVal; set { _JsonVal = value; NotifyPropertyChanged(); } }
+        public string? JsonVal { get => _JsonVal; set { _JsonVal = value; OnPropertyChanged(); } }
         private string? _JsonVal;
 
         [SugarColumn(ColumnName ="is_enable")]
-        public bool IsEnable { get => _IsEnable; set { _IsEnable = value; NotifyPropertyChanged(); } }
+        public bool IsEnable { get => _IsEnable; set { _IsEnable = value; OnPropertyChanged(); } }
         private bool _IsEnable =true;
 
         [SugarColumn(ColumnName ="is_delete")]
-        public bool IsDelete { get => _IsDelete; set { _IsDelete = value; NotifyPropertyChanged(); } }
+        public bool IsDelete { get => _IsDelete; set { _IsDelete = value; OnPropertyChanged(); } }
         private bool _IsDelete;
 
         [SugarColumn(ColumnName ="tenant_id")]
-        public int TenantId { get => _TenantId; set { _TenantId = value; NotifyPropertyChanged(); } }
+        public int TenantId { get => _TenantId; set { _TenantId = value; OnPropertyChanged(); } }
         private int _TenantId;
 
         [SugarColumn(ColumnName ="create_date")]
-        public DateTime CreateDate { get => _CreateDate; set { _CreateDate = value; NotifyPropertyChanged(); } }
+        public DateTime CreateDate { get => _CreateDate; set { _CreateDate = value; OnPropertyChanged(); } }
         private DateTime _CreateDate = DateTime.Now;
 
         [SugarColumn(ColumnName ="remark")]
-        public string? Remark { get => _Remark; set { _Remark = value; NotifyPropertyChanged(); } }
+        public string? Remark { get => _Remark; set { _Remark = value; OnPropertyChanged(); } }
         private string? _Remark;
     }
 

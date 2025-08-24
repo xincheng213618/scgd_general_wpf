@@ -21,22 +21,22 @@ namespace ColorVision.Solution
         }
 
 
-        public string DefaultCreatName { get => _DefaultCreatName; set { _DefaultCreatName = value; NotifyPropertyChanged(); } }
+        public string DefaultCreatName { get => _DefaultCreatName; set { _DefaultCreatName = value; OnPropertyChanged(); } }
         private string _DefaultCreatName = "新建工程";
          
-        public string DefaultSaveName { get => _DefaultSaveName; set { _DefaultSaveName = value; NotifyPropertyChanged(); } }
+        public string DefaultSaveName { get => _DefaultSaveName; set { _DefaultSaveName = value; OnPropertyChanged(); } }
         private string _DefaultSaveName = "yyyy/dd/MM HH:mm:ss";
 
-        public string DefaultImageSaveName { get => _DefaultImageSaveName; set { _DefaultImageSaveName = value; NotifyPropertyChanged(); } }
+        public string DefaultImageSaveName { get => _DefaultImageSaveName; set { _DefaultImageSaveName = value; OnPropertyChanged(); } }
         private string _DefaultImageSaveName = "yyyyddMMHHmmss";
 
-        public bool IsMemoryLackWarning{ get => _IsMemoryLackWarning; set { _IsMemoryLackWarning = value; NotifyPropertyChanged(); } }
+        public bool IsMemoryLackWarning{ get => _IsMemoryLackWarning; set { _IsMemoryLackWarning = value; OnPropertyChanged(); } }
         private bool _IsMemoryLackWarning = true;
 
-        public bool IsLackWarning { get => _IsLackWarning; set { _IsLackWarning = value; NotifyPropertyChanged(); } }
+        public bool IsLackWarning { get => _IsLackWarning; set { _IsLackWarning = value; OnPropertyChanged(); } }
         private bool _IsLackWarning = true;
 
-        public bool IsShowLackWarning { get => _IsShowLackWarning; set { _IsShowLackWarning = value; NotifyPropertyChanged(); } }
+        public bool IsShowLackWarning { get => _IsShowLackWarning; set { _IsShowLackWarning = value; OnPropertyChanged(); } }
         private bool _IsShowLackWarning = true;
 
     }

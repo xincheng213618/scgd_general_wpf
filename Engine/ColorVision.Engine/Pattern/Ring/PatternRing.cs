@@ -11,20 +11,20 @@ namespace ColorVision.Engine.Pattern.Ring
 {
     public class PatternRingConfig:ViewModelBase,IConfig
     {
-        public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; NotifyPropertyChanged(); } }
+        public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _MainBrush = Brushes.Black;
 
-        public SolidColorBrush AltBrush { get => _AltBrush; set { _AltBrush = value; NotifyPropertyChanged(); } }
+        public SolidColorBrush AltBrush { get => _AltBrush; set { _AltBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _AltBrush = Brushes.White;
 
-        public int RingWidth { get => _RingWidth; set { _RingWidth = value; NotifyPropertyChanged(); } }
+        public int RingWidth { get => _RingWidth; set { _RingWidth = value; OnPropertyChanged(); } }
         private int _RingWidth = 30;
 
-        public List<int> RingOffsets { get => _RingOffsets; set { _RingOffsets = value; NotifyPropertyChanged(); } }
+        public List<int> RingOffsets { get => _RingOffsets; set { _RingOffsets = value; OnPropertyChanged(); } }
         private List<int> _RingOffsets = new List<int> { 0, 100, 200, 400 };
 
         [DisplayName("是否绘制中心线")]
-        public bool DrawCenterLine { get => _DrawCenterLine; set { _DrawCenterLine = value; NotifyPropertyChanged(); } }
+        public bool DrawCenterLine { get => _DrawCenterLine; set { _DrawCenterLine = value; OnPropertyChanged(); } }
         private bool _DrawCenterLine = true;
     }
 

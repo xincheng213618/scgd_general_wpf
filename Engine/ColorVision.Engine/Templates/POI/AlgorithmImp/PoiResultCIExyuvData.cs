@@ -136,30 +136,30 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             File.WriteAllText(FileName, csvBuilder.ToString(), Encoding.UTF8);
         }
 
-        public double CCT { get { return _CCT; } set { _CCT = value; NotifyPropertyChanged(); } }
+        public double CCT { get { return _CCT; } set { _CCT = value; OnPropertyChanged(); } }
         private double _CCT;
 
-        public double Wave { get { return _Wave; } set { _Wave = value; NotifyPropertyChanged(); } }
+        public double Wave { get { return _Wave; } set { _Wave = value; OnPropertyChanged(); } }
         private double _Wave;
 
-        public double X { get { return _X; } set { _X = value; NotifyPropertyChanged(); } }
+        public double X { get { return _X; } set { _X = value; OnPropertyChanged(); } }
         private double _X;
 
-        public double Y { get { return _Y; } set { _Y = value; NotifyPropertyChanged(); } }
+        public double Y { get { return _Y; } set { _Y = value; OnPropertyChanged(); } }
         private double _Y;
 
-        public double Z { get { return _Z; } set { _Z = value; NotifyPropertyChanged(); } }
+        public double Z { get { return _Z; } set { _Z = value; OnPropertyChanged(); } }
         private double _Z;
 
-        public double u { get { return _u; } set { _u = value; NotifyPropertyChanged(); } }
+        public double u { get { return _u; } set { _u = value; OnPropertyChanged(); } }
         private double _u;
 
-        public double v { get { return _v; } set { _v = value; NotifyPropertyChanged(); } }
+        public double v { get { return _v; } set { _v = value; OnPropertyChanged(); } }
         private double _v;
-        public double x { get { return _x; } set { _x = value; NotifyPropertyChanged(); } }
+        public double x { get { return _x; } set { _x = value; OnPropertyChanged(); } }
         private double _x;
 
-        public double y { get { return _y; } set { _y = value; NotifyPropertyChanged(); } }
+        public double y { get { return _y; } set { _y = value; OnPropertyChanged(); } }
         private double _y;
 
 

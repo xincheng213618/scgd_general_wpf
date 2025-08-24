@@ -76,7 +76,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
             private set
             {
                 _DevID = value;
-                NotifyPropertyChanged(nameof(IsOpen));
+                OnPropertyChanged(nameof(IsOpen));
             }
         }
 
@@ -87,37 +87,37 @@ namespace ColorVision.Engine.Services.Devices.SMU
             private set
             {
                 _Version = value;
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
-        public bool IsSourceV { get => _IsSourceV; set { _IsSourceV = value; SetSource(value); NotifyPropertyChanged(); } }
+        public bool IsSourceV { get => _IsSourceV; set { _IsSourceV = value; SetSource(value); OnPropertyChanged(); } }
         private bool _IsSourceV = true;
 
-        public string DevName { get => _DevName; set { _DevName = value; NotifyPropertyChanged(); } }
+        public string DevName { get => _DevName; set { _DevName = value; OnPropertyChanged(); } }
         private string _DevName;
 
-        public bool IsNet { get => _IsNet; set { _IsNet = value; NotifyPropertyChanged(); } }
+        public bool IsNet { get => _IsNet; set { _IsNet = value; OnPropertyChanged(); } }
         private bool _IsNet = true;
 
-        public double StartMeasureVal { get => _startMeasureVal; set { _startMeasureVal = value; NotifyPropertyChanged(); } }
+        public double StartMeasureVal { get => _startMeasureVal; set { _startMeasureVal = value; OnPropertyChanged(); } }
         private double _startMeasureVal;
-        public double StopMeasureVal { get => _stopMeasureVal; set { _stopMeasureVal = value; NotifyPropertyChanged(); } }
+        public double StopMeasureVal { get => _stopMeasureVal; set { _stopMeasureVal = value; OnPropertyChanged(); } }
         private double _stopMeasureVal;
-        public int Number { get => _number; set { _number = value; NotifyPropertyChanged(); } }
+        public int Number { get => _number; set { _number = value; OnPropertyChanged(); } }
         private int _number;
 
-        public double LimitVal { get => _limitVal; set { _limitVal = value; NotifyPropertyChanged(); } }
+        public double LimitVal { get => _limitVal; set { _limitVal = value; OnPropertyChanged(); } }
         private double _limitVal;
 
-        public double MeasureVal { get => _MeasureVal; set { _MeasureVal = value; NotifyPropertyChanged(); } }
+        public double MeasureVal { get => _MeasureVal; set { _MeasureVal = value; OnPropertyChanged(); } }
         private double _MeasureVal;
 
-        public double LmtVal { get => _lmtVal; set { _lmtVal = value; NotifyPropertyChanged(); } }
+        public double LmtVal { get => _lmtVal; set { _lmtVal = value; OnPropertyChanged(); } }
         private double _lmtVal;
 
-        public double? V { get => _V; set { _V = value; NotifyPropertyChanged(); } }
+        public double? V { get => _V; set { _V = value; OnPropertyChanged(); } }
         private double? _V;
-        public double? I { get => _I; set { _I = value; NotifyPropertyChanged(); } }
+        public double? I { get => _I; set { _I = value; OnPropertyChanged(); } }
         private double? _I;
 
 

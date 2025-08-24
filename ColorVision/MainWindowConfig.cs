@@ -15,20 +15,20 @@ namespace ColorVision
     {
         public static MainWindowConfig Instance => ConfigService.Instance.GetRequiredService<MainWindowConfig>();
 
-        public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; NotifyPropertyChanged(); } }
+        public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; OnPropertyChanged(); } }
         private bool _IsOpenStatusBar = true;
 
         [JsonIgnore]
-        public bool IsOpenSidebar { get => _IsOpenSidebar; set { _IsOpenSidebar = value; NotifyPropertyChanged(); } }
+        public bool IsOpenSidebar { get => _IsOpenSidebar; set { _IsOpenSidebar = value; OnPropertyChanged(); } }
         private bool _IsOpenSidebar = true;
         [JsonIgnore]
-        public bool IsFull { get => _IsFull; set { _IsFull = value; NotifyPropertyChanged(); } }
+        public bool IsFull { get => _IsFull; set { _IsFull = value; OnPropertyChanged(); } }
         private bool _IsFull;
 
-        public Version? LastOpenVersion { get => _Version; set { _Version = value; NotifyPropertyChanged(); } }
+        public Version? LastOpenVersion { get => _Version; set { _Version = value; OnPropertyChanged(); } }
         private Version? _Version = new Version(0, 0, 0, 0);
 
-        public bool OpenFloatingBall { get => _OpenFloatingBall; set { _OpenFloatingBall = value; NotifyPropertyChanged(); FloatingBall(); } }
+        public bool OpenFloatingBall { get => _OpenFloatingBall; set { _OpenFloatingBall = value; OnPropertyChanged(); FloatingBall(); } }
         private bool _OpenFloatingBall;
 
         FloatingBallWindow floatingBallWindow;
@@ -54,11 +54,11 @@ namespace ColorVision
         public const string AutoRunRegPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
         public const string AutoRunName = "ColorVisionAutoRun";
 
-        public int LeftTabControlSelectedIndex { get => _LeftTabControlSelectedIndex; set { _LeftTabControlSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int LeftTabControlSelectedIndex { get => _LeftTabControlSelectedIndex; set { _LeftTabControlSelectedIndex = value; OnPropertyChanged(); } }
         private int _LeftTabControlSelectedIndex = 1;
 
         [JsonIgnore]
-        public bool IsAutoRun { get => Tool.IsAutoRun(AutoRunName, AutoRunRegPath); set { Tool.SetAutoRun(value, AutoRunName, AutoRunRegPath); NotifyPropertyChanged(); } }
+        public bool IsAutoRun { get => Tool.IsAutoRun(AutoRunName, AutoRunRegPath); set { Tool.SetAutoRun(value, AutoRunName, AutoRunRegPath); OnPropertyChanged(); } }
 
         [JsonIgnore]
         public bool IsWindows10ContextMenu { get => !Tool.IsWindows11ContextMenu(); set
@@ -68,7 +68,7 @@ namespace ColorVision
                     Tool.SwitchToWindows10ContextMenu();
                 else
                     Tool.SwitchToWindows11ContextMenu();
-                NotifyPropertyChanged(nameof(IsWindows10ContextMenu));
+                OnPropertyChanged(nameof(IsWindows10ContextMenu));
             } 
         }
 

@@ -10,10 +10,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
             _ChannelCfgs = new List<ChannelCfg> { };
         }
 
-        public bool IsUseCFW { get => _IsUseCFW; set { _IsUseCFW = value; NotifyPropertyChanged(); } }
+        public bool IsUseCFW { get => _IsUseCFW; set { _IsUseCFW = value; OnPropertyChanged(); } }
         private bool _IsUseCFW;
 
-        public bool IsCOM { get => _IsCOM; set { _IsCOM = value; NotifyPropertyChanged(); } }
+        public bool IsCOM { get => _IsCOM; set { _IsCOM = value; OnPropertyChanged(); } }
         private bool _IsCOM;
 
         public int CFWNum { get => _CFWNum; set {
@@ -21,21 +21,21 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
                 if (value > 3)
                 {
                     _CFWNum = 3;
-                    NotifyPropertyChanged();
+                    OnPropertyChanged();
                     return;
                 }
 
                 if (value < 1)
                 {
                     _CFWNum = 1;
-                    NotifyPropertyChanged();
+                    OnPropertyChanged();
                     return;
                 }
                 _CFWNum = value;
-                NotifyPropertyChanged();
-                NotifyPropertyChanged(nameof(IsCFWNum1));
-                NotifyPropertyChanged(nameof(IsCFWNum2));
-                NotifyPropertyChanged(nameof(IsCFWNum3));
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsCFWNum1));
+                OnPropertyChanged(nameof(IsCFWNum2));
+                OnPropertyChanged(nameof(IsCFWNum3));
             } }
         private int _CFWNum = 1;
 
@@ -44,13 +44,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public bool IsCFWNum3 => CFWNum >= 3;
 
 
-        public string SzComName { get => _szComName; set { _szComName = value; NotifyPropertyChanged(); } }
+        public string SzComName { get => _szComName; set { _szComName = value; OnPropertyChanged(); } }
         private string _szComName = "COM1";
 
-        public int BaudRate { get => _BaudRate; set { _BaudRate = value; NotifyPropertyChanged(); } }
+        public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
         private int _BaudRate = 115200;
 
-        public List<ChannelCfg> ChannelCfgs { get => _ChannelCfgs; set { _ChannelCfgs = value; NotifyPropertyChanged(); } }
+        public List<ChannelCfg> ChannelCfgs { get => _ChannelCfgs; set { _ChannelCfgs = value; OnPropertyChanged(); } }
 
         private List<ChannelCfg> _ChannelCfgs;
     }

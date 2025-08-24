@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             OpenPoiFileCommand = new RelayCommand(a => OpenPoiFile());
         }
 
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
         public void OpenTemplate()
         {
@@ -52,7 +52,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         }
 
 
-        public int TemplatePOIFilterSelectedIndex { get => _TemplatePOIFilterSelectedIndex; set { _TemplatePOIFilterSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplatePOIFilterSelectedIndex { get => _TemplatePOIFilterSelectedIndex; set { _TemplatePOIFilterSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplatePOIFilterSelectedIndex;
 
         public void OpenTemplatePOIFilter()
@@ -60,20 +60,20 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             new TemplateEditorWindow(new TemplatePoiFilterParam(), TemplatePOIFilterSelectedIndex - 1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
-        public int TemplatePoiReviseSelectedIndex { get => _TemplatePoiReviseSelectedIndex; set { _TemplatePoiReviseSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplatePoiReviseSelectedIndex { get => _TemplatePoiReviseSelectedIndex; set { _TemplatePoiReviseSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplatePoiReviseSelectedIndex;
 
-        public POIStorageModel POIStorageModel { get => _POIStorageModel; set { _POIStorageModel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsUSeFile)); } }
+        public POIStorageModel POIStorageModel { get => _POIStorageModel; set { _POIStorageModel = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsUSeFile)); } }
         private POIStorageModel _POIStorageModel = POIStorageModel.Db;
 
         public bool IsUSeFile => POIStorageModel == POIStorageModel.File;
 
-        public bool IsSubPixel { get => _IsSubPixel; set { _IsSubPixel = value; NotifyPropertyChanged(); } }
+        public bool IsSubPixel { get => _IsSubPixel; set { _IsSubPixel = value; OnPropertyChanged(); } }
         private bool _IsSubPixel;
-        public bool IsCCTWave { get => _IsCCTWave; set { _IsCCTWave = value; NotifyPropertyChanged(); } }
+        public bool IsCCTWave { get => _IsCCTWave; set { _IsCCTWave = value; OnPropertyChanged(); } }
         private bool _IsCCTWave = true;
 
-        public string POIPointFileName { get => _POIPointFileName; set { _POIPointFileName = value; NotifyPropertyChanged(); } }
+        public string POIPointFileName { get => _POIPointFileName; set { _POIPointFileName = value; OnPropertyChanged(); } }
         private string _POIPointFileName;
 
         public void OpenPoiFile()
@@ -94,7 +94,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             new TemplateEditorWindow(new TemplatePoiReviseParam(), TemplatePoiReviseSelectedIndex - 1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
-        public int TemplatePoiOutputSelectedIndex { get => _TemplatePoiOutputSelectedIndex; set { _TemplatePoiOutputSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplatePoiOutputSelectedIndex { get => _TemplatePoiOutputSelectedIndex; set { _TemplatePoiOutputSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplatePoiOutputSelectedIndex;
 
         public void OpenTemplatePoiOutput()

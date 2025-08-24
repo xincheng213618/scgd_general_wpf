@@ -52,13 +52,13 @@ namespace ColorVision.ImageEditor
             return sb.ToString();
 
         }
-        public double MaxZoom { get => _MaxZoom; set { _MaxZoom = value; NotifyPropertyChanged(); } }
+        public double MaxZoom { get => _MaxZoom; set { _MaxZoom = value; OnPropertyChanged(); } }
         private double _MaxZoom = 10;
-        public double MinZoom { get => _MinZoom; set { _MinZoom = value; NotifyPropertyChanged(); } }
+        public double MinZoom { get => _MinZoom; set { _MinZoom = value; OnPropertyChanged(); } }
         private double _MinZoom = 0.01;
 
         [JsonIgnore]
-        public string FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); } }
+        public string FilePath { get => _FilePath; set { _FilePath = value; OnPropertyChanged(); } }
         private string _FilePath;
         [JsonIgnore]
         public bool ConvertXYZhandleOnce { get; set; }
@@ -67,7 +67,7 @@ namespace ColorVision.ImageEditor
         public IntPtr ConvertXYZhandle { get; set; } = Tool.GenerateRandomIntPtr();
 
         [JsonIgnore]
-        public int Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsChannel1));} }
+        public int Channel { get => _Channel; set { _Channel = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsChannel1));} }
         private int _Channel;
 
         [JsonIgnore]
@@ -75,30 +75,30 @@ namespace ColorVision.ImageEditor
 
         public int Ochannel { get; set; }
 
-        public bool IsShowLoadImage { get => _IsShowLoadImage; set { _IsShowLoadImage = value; NotifyPropertyChanged(); } }
+        public bool IsShowLoadImage { get => _IsShowLoadImage; set { _IsShowLoadImage = value; OnPropertyChanged(); } }
         private bool _IsShowLoadImage = true;
 
         public event EventHandler ColormapTypesChanged;
 
-        public ColormapTypes ColormapTypes { get => _ColormapTypes; set { _ColormapTypes = value; NotifyPropertyChanged(); ColormapTypesChanged?.Invoke(this, new EventArgs()); } }
+        public ColormapTypes ColormapTypes { get => _ColormapTypes; set { _ColormapTypes = value; OnPropertyChanged(); ColormapTypesChanged?.Invoke(this, new EventArgs()); } }
         private ColormapTypes _ColormapTypes = ColormapTypes.COLORMAP_JET;
 
-        public bool IsLayoutUpdated{ get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; NotifyPropertyChanged(); } }
+        public bool IsLayoutUpdated{ get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; OnPropertyChanged(); } }
         private bool _IsLayoutUpdated = true;
 
-        public bool IsShowColorBar { get => _IsShowColorBar; set { _IsShowColorBar = value; NotifyPropertyChanged(); } }
+        public bool IsShowColorBar { get => _IsShowColorBar; set { _IsShowColorBar = value; OnPropertyChanged(); } }
         private bool _IsShowColorBar = true;
 
 
         public event EventHandler BalanceChanged;
 
-        public double RedBalance { get => _RedBalance; set { _RedBalance = value; NotifyPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
+        public double RedBalance { get => _RedBalance; set { _RedBalance = value; OnPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
         private double _RedBalance = 1;
 
-        public double GreenBalance { get => _GreenBalance; set { _GreenBalance = value; NotifyPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
+        public double GreenBalance { get => _GreenBalance; set { _GreenBalance = value; OnPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
         private double _GreenBalance = 1;
 
-        public double BlueBalance { get => _BlueBalance; set { _BlueBalance = value; NotifyPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
+        public double BlueBalance { get => _BlueBalance; set { _BlueBalance = value; OnPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
         private double _BlueBalance = 1;
 
     }

@@ -241,7 +241,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
              Count = SysResourceDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "type", 103 } }).Where(a => string.IsNullOrWhiteSpace(a.Value)).ToList().Count;
         }
 
-        public int Count { get => _Count; set { _Count = value; NotifyPropertyChanged(); } }
+        public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count;
 
         public override UserControl GetDeviceInfo() => new InfoSpectrum(this);

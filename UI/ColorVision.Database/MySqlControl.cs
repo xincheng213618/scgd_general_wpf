@@ -39,7 +39,7 @@ namespace ColorVision.Database
 
         public event EventHandler MySqlConnectChanged;
 
-        public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; NotifyPropertyChanged(); } }
+        public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; OnPropertyChanged(); } }
         private bool _IsConnect;
         private static readonly char[] separator = new[] { ';' };
 

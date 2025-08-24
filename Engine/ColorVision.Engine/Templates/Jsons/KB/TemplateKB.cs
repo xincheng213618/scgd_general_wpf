@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             }
             set {
                 JsonValue = JsonConvert.SerializeObject(value);
-                NotifyPropertyChanged(); 
+                OnPropertyChanged(); 
             } }
 
         public TemplateJsonKBParam() : base()

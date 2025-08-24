@@ -92,7 +92,7 @@ namespace ColorVision.Engine.Services.PhySpectrums
         }
 
 
-    public int Count { get => _Count; set { _Count = value; NotifyPropertyChanged(); } }
+    public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
     private int _Count;
 
 

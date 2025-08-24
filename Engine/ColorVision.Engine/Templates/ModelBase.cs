@@ -16,11 +16,11 @@ namespace ColorVision.Engine.Templates
     public class ParamBase : ViewModelBase
     {
         [Browsable(false)]
-        public virtual int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
+        public virtual int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }
         private int _Id;
 
         [Browsable(false)]
-        public virtual string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        public virtual string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name;
     }
 
@@ -81,7 +81,7 @@ namespace ColorVision.Engine.Templates
                     }
                 }
             }
-            NotifyPropertyChanged(propertyName);
+            OnPropertyChanged(propertyName);
             return true;
         }
 

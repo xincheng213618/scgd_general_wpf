@@ -29,7 +29,7 @@ namespace ColorVision.Engine.Templates.POI.POIRevise
         private float _P = 0.01f;
 
         [Category("PoiReviseParam"), Description("修正方式")]
-        public GenCalibrationType GenCalibrationType { get => GetValue(_GenCalibrationType); set { SetProperty(ref _GenCalibrationType, value); NotifyPropertyChanged(); } }
+        public GenCalibrationType GenCalibrationType { get => GetValue(_GenCalibrationType); set { SetProperty(ref _GenCalibrationType, value); OnPropertyChanged(); } }
         private GenCalibrationType _GenCalibrationType = GenCalibrationType.BrightnessAndChroma;
     }
 }

@@ -11,16 +11,16 @@ namespace ColorVision.UI.Configs
 {
     public class SystemMonitorSetting : ViewModelBase, IConfig
     {
-        public int UpdateSpeed { get => _UpdateSpeed; set { _UpdateSpeed = value; NotifyPropertyChanged(); } }
+        public int UpdateSpeed { get => _UpdateSpeed; set { _UpdateSpeed = value; OnPropertyChanged(); } }
         private int _UpdateSpeed = 1000;
 
-        public string DefaultTimeFormat { get => _DefaultTimeFormat; set { _DefaultTimeFormat = value; NotifyPropertyChanged(); } }
+        public string DefaultTimeFormat { get => _DefaultTimeFormat; set { _DefaultTimeFormat = value; OnPropertyChanged(); } }
         private string _DefaultTimeFormat = "yyyy/MM/dd HH:mm:ss";
 
-        public bool IsShowTime { get => _ShowTime; set { _ShowTime = value; NotifyPropertyChanged(); } }
+        public bool IsShowTime { get => _ShowTime; set { _ShowTime = value; OnPropertyChanged(); } }
         private bool _ShowTime;
 
-        public bool IsShowRAM { get => _IsShowRAM; set { _IsShowRAM = value; NotifyPropertyChanged(); } }
+        public bool IsShowRAM { get => _IsShowRAM; set { _IsShowRAM = value; OnPropertyChanged(); } }
         private bool _IsShowRAM;
 
     }
@@ -87,7 +87,7 @@ namespace ColorVision.UI.Configs
             {
                 if (value != Config.UpdateSpeed)
                 {
-                    Config.UpdateSpeed = value; NotifyPropertyChanged();
+                    Config.UpdateSpeed = value; OnPropertyChanged();
                     timer?.Dispose();
                     timer = new Timer(TimeRun, null, 0, value);
                 }
@@ -164,46 +164,46 @@ namespace ColorVision.UI.Configs
         /// <summary>
         /// 当前分区硬盘大小
         /// </summary>
-        public string CurrentDiskTotalSize { get => _CurrentDiskTotalSize; set { _CurrentDiskTotalSize = value; NotifyPropertyChanged(); } }
+        public string CurrentDiskTotalSize { get => _CurrentDiskTotalSize; set { _CurrentDiskTotalSize = value; OnPropertyChanged(); } }
         private string _CurrentDiskTotalSize = string.Empty;
 
 
-        public string Time { get => _Time; set { _Time = value; NotifyPropertyChanged(); } }
+        public string Time { get => _Time; set { _Time = value; OnPropertyChanged(); } }
         private string _Time = string.Empty;
 
 
         /// <summary>
         /// 总处理器占用
         /// </summary>
-        public string ProcessorTotal { get => _ProcessorTotal; set { _ProcessorTotal = value; NotifyPropertyChanged(); } }
+        public string ProcessorTotal { get => _ProcessorTotal; set { _ProcessorTotal = value; OnPropertyChanged(); } }
         private string _ProcessorTotal = string.Empty;
 
 
         /// <summary>
         /// 内存获取
         /// </summary>
-        public string MemoryAvailable { get => _MemoryAvailable; set { _MemoryAvailable = value; NotifyPropertyChanged(); } }
+        public string MemoryAvailable { get => _MemoryAvailable; set { _MemoryAvailable = value; OnPropertyChanged(); } }
         private string _MemoryAvailable = string.Empty;
 
         /// <summary>
         /// 当前软件占用内存
         /// </summary>
-        public string MemoryThis { get => _MemoryThis; set { _MemoryThis = value; NotifyPropertyChanged(); } }
+        public string MemoryThis { get => _MemoryThis; set { _MemoryThis = value; OnPropertyChanged(); } }
         private string _MemoryThis = string.Empty;
 
-        public double RAMPercent { get => _RAMPercent; set { _RAMPercent = value; NotifyPropertyChanged(); } }
+        public double RAMPercent { get => _RAMPercent; set { _RAMPercent = value; OnPropertyChanged(); } }
         private double _RAMPercent;
 
-        public double RAMThisPercent { get => _RAMThisPercent; set { _RAMThisPercent = value; NotifyPropertyChanged(); } }
+        public double RAMThisPercent { get => _RAMThisPercent; set { _RAMThisPercent = value; OnPropertyChanged(); } }
         private double _RAMThisPercent;
 
-        public string RAMThis { get => _RAMThis; set { _RAMThis = value; NotifyPropertyChanged(); } }
+        public string RAMThis { get => _RAMThis; set { _RAMThis = value; OnPropertyChanged(); } }
         private string _RAMThis = string.Empty;
 
-        public double CPUPercent { get => _CPUPercent; set { _CPUPercent = value; NotifyPropertyChanged(); } }
+        public double CPUPercent { get => _CPUPercent; set { _CPUPercent = value; OnPropertyChanged(); } }
         private double _CPUPercent;
 
-        public double CPUThisPercent { get => _CPUThisPercent; set { _CPUThisPercent = value; NotifyPropertyChanged(); } }
+        public double CPUThisPercent { get => _CPUThisPercent; set { _CPUThisPercent = value; OnPropertyChanged(); } }
         private double _CPUThisPercent;
 
 

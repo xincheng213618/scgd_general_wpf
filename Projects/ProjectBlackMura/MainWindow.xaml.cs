@@ -40,20 +40,20 @@ namespace ProjectBlackMura
 
     public class BlackMuraResult:ViewModelBase
     {
-        public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
+        public int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }
         private int _Id;
 
-        public string Model { get => _Model; set { _Model = value; NotifyPropertyChanged(); } }
+        public string Model { get => _Model; set { _Model = value; OnPropertyChanged(); } }
         private string _Model = string.Empty;
         public string Code { get; set; }
 
-        public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }
+        public string SN { get => _SN; set { _SN = value; OnPropertyChanged(); } }
         private string _SN;
-        public string WhiteFilePath { get => _WhiteFilePath; set { _WhiteFilePath = value; NotifyPropertyChanged(); } }
+        public string WhiteFilePath { get => _WhiteFilePath; set { _WhiteFilePath = value; OnPropertyChanged(); } }
         private string _WhiteFilePath = string.Empty;
 
 
-        public bool Result { get => _Result; set { _Result = value; NotifyPropertyChanged(); } }
+        public bool Result { get => _Result; set { _Result = value; OnPropertyChanged(); } }
         private bool _Result = true;
 
         public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();

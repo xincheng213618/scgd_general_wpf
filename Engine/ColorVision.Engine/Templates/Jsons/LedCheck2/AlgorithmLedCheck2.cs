@@ -15,9 +15,9 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 {
     public class PointVM:ViewModelBase
     {
-        public double X { get => _X; set { _X = value; NotifyPropertyChanged(); } }
+        public double X { get => _X; set { _X = value; OnPropertyChanged(); } }
         private double _X;
-        public double Y { get => _Y; set { _Y = value; NotifyPropertyChanged(); } }
+        public double Y { get => _Y; set { _Y = value; OnPropertyChanged(); } }
         private double _Y;
 
         public  PointFloat ToPointFloat()
@@ -40,7 +40,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
 
         public void OpenTemplate()
@@ -48,16 +48,16 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
             new TemplateEditorWindow(new TemplateLedCheck2(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
-        public FlowEngineLib.Algorithm.CVOLED_FDAType CVOLEDFDAType { get => _CVOLED_FDAType; set { _CVOLED_FDAType = value; NotifyPropertyChanged(); } }
+        public FlowEngineLib.Algorithm.CVOLED_FDAType CVOLEDFDAType { get => _CVOLED_FDAType; set { _CVOLED_FDAType = value; OnPropertyChanged(); } }
         private FlowEngineLib.Algorithm.CVOLED_FDAType _CVOLED_FDAType;
 
-        public PointVM Point1 { get => _Point1; set { _Point1 = value; NotifyPropertyChanged(); } }
+        public PointVM Point1 { get => _Point1; set { _Point1 = value; OnPropertyChanged(); } }
         private PointVM _Point1 = new PointVM();
-        public PointVM Point2 { get => _Point2; set { _Point2 = value; NotifyPropertyChanged(); } }
+        public PointVM Point2 { get => _Point2; set { _Point2 = value; OnPropertyChanged(); } }
         private PointVM _Point2 = new PointVM();
-        public PointVM Point3 { get => _Point3; set { _Point3 = value; NotifyPropertyChanged(); } }
+        public PointVM Point3 { get => _Point3; set { _Point3 = value; OnPropertyChanged(); } }
         private PointVM _Point3 = new PointVM();
-        public PointVM Point4 { get => _Point4; set { _Point4 = value; NotifyPropertyChanged(); } }
+        public PointVM Point4 { get => _Point4; set { _Point4 = value; OnPropertyChanged(); } }
         private PointVM _Point4 = new PointVM();
 
 

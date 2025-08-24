@@ -148,10 +148,10 @@ namespace ColorVision.UI.Sorts
 
         public event EventHandler VisibleChanged;
 
-        public bool IsVisible { get => _IsVisible; set { _IsVisible = value; NotifyPropertyChanged(); VisibleChanged?.Invoke(this, new EventArgs()); } }
+        public bool IsVisible { get => _IsVisible; set { _IsVisible = value; OnPropertyChanged(); VisibleChanged?.Invoke(this, new EventArgs()); } }
         private bool _IsVisible;
 
-        public bool IsSortD { get => _IsSortD; set { _IsSortD = value; NotifyPropertyChanged(); } }
+        public bool IsSortD { get => _IsSortD; set { _IsSortD = value; OnPropertyChanged(); } }
         private bool _IsSortD;
     }
 }

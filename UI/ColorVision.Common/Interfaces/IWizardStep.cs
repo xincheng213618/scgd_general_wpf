@@ -21,7 +21,7 @@ namespace ColorVision.UI
         public virtual ICommand? Command => new RelayCommand(A => Execute());
         public abstract string Description { get; }
 
-        public virtual bool ConfigurationStatus { get => _ConfigurationStatus; set { _ConfigurationStatus = value; NotifyPropertyChanged(); } }
+        public virtual bool ConfigurationStatus { get => _ConfigurationStatus; set { _ConfigurationStatus = value; OnPropertyChanged(); } }
         private bool _ConfigurationStatus = true;
 
         public virtual void Execute()

@@ -9,32 +9,32 @@ namespace ColorVision.Engine.Templates.SysDictionary
     public class SysDictionaryModDetaiModel : VPKModel
     {
         [SugarColumn(ColumnName ="pid")]
-        public int PId { get => _PId; set { _PId = value; NotifyPropertyChanged(); } }
+        public int PId { get => _PId; set { _PId = value; OnPropertyChanged(); } }
         private int _PId;
         [SugarColumn(ColumnName ="address_code")]
-        public long AddressCode { get => _AddressCode; set { _AddressCode = value; NotifyPropertyChanged(); } }
+        public long AddressCode { get => _AddressCode; set { _AddressCode = value; OnPropertyChanged(); } }
         private long _AddressCode;
         [SugarColumn(ColumnName ="symbol")]
-        public string? Symbol { get => _Symbol; set { _Symbol = value; NotifyPropertyChanged(); } }
+        public string? Symbol { get => _Symbol; set { _Symbol = value; OnPropertyChanged(); } }
         private string? _Symbol;
         [SugarColumn(ColumnName ="name")]
-        public string? Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        public string? Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string? _Name;
 
         [SugarColumn(ColumnName ="default_val")]
-        public string? DefaultValue { get => _DefaultValue; set { _DefaultValue = value; NotifyPropertyChanged(); } }
+        public string? DefaultValue { get => _DefaultValue; set { _DefaultValue = value; OnPropertyChanged(); } }
         private string? _DefaultValue;
         [SugarColumn(ColumnName ="val_type")]
-        public SValueType ValueType { get => _ValueType; set { _ValueType = value; NotifyPropertyChanged(); } }
+        public SValueType ValueType { get => _ValueType; set { _ValueType = value; OnPropertyChanged(); } }
         private SValueType _ValueType;
         [SugarColumn(ColumnName ="is_enable")]
-        public bool IsEnable { get => _IsEnable; set { _IsEnable = value; NotifyPropertyChanged(); } }
+        public bool IsEnable { get => _IsEnable; set { _IsEnable = value; OnPropertyChanged(); } }
         private bool _IsEnable = true;
         [SugarColumn(ColumnName ="is_delete")]
-        public bool IsDelete { get => _IsDelete; set { _IsDelete = value; NotifyPropertyChanged(); } }
+        public bool IsDelete { get => _IsDelete; set { _IsDelete = value; OnPropertyChanged(); } }
         private bool _IsDelete;
         [SugarColumn(ColumnName ="create_date")]
-        public DateTime CreateDate { get => _CreateDate; set { _CreateDate = value; NotifyPropertyChanged(); } }
+        public DateTime CreateDate { get => _CreateDate; set { _CreateDate = value; OnPropertyChanged(); } }
         private DateTime _CreateDate;
     }
 

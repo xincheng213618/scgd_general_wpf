@@ -7,9 +7,9 @@ namespace ColorVision.UI.Views
     {
         public static ViewConfig Instance => ConfigService.Instance.GetRequiredService<ViewConfig>();
 
-        public bool IsAutoSelect { get => _IsAutoSelect; set { _IsAutoSelect = value; NotifyPropertyChanged(); } }
+        public bool IsAutoSelect { get => _IsAutoSelect; set { _IsAutoSelect = value; OnPropertyChanged(); } }
         private bool _IsAutoSelect =true;
-        public int ViewMaxCount { get => _ViewMaxCount; set { _ViewMaxCount = value; NotifyPropertyChanged(); } }
+        public int ViewMaxCount { get => _ViewMaxCount; set { _ViewMaxCount = value; OnPropertyChanged(); } }
         private int _ViewMaxCount = 1;
 
     }

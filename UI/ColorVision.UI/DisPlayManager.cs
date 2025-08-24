@@ -132,10 +132,10 @@ namespace ColorVision.UI
     {
         public static DisPlayManagerConfig Instance => ConfigService.Instance.GetRequiredService<DisPlayManagerConfig>();
         public Dictionary<string, int> StoreIndex { get; set; } = new Dictionary<string, int>();
-        public bool IsRetore { get => _IsRetore; set { _IsRetore = value; NotifyPropertyChanged(); } }
+        public bool IsRetore { get => _IsRetore; set { _IsRetore = value; OnPropertyChanged(); } }
         private bool _IsRetore = true;
 
-        public int LastSelectIndex { get => _LastSelectIndex; set { _LastSelectIndex = value; NotifyPropertyChanged(); } }
+        public int LastSelectIndex { get => _LastSelectIndex; set { _LastSelectIndex = value; OnPropertyChanged(); } }
         private int _LastSelectIndex ;
     }
 

@@ -29,23 +29,23 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
         public static BlackMuraConfig Instance =>  ConfigService.Instance.GetRequiredService<BlackMuraConfig>();
 
-        public double WLvMaxScale { get => _WLvMaxScale; set { _WLvMaxScale = value; NotifyPropertyChanged(); } }
+        public double WLvMaxScale { get => _WLvMaxScale; set { _WLvMaxScale = value; OnPropertyChanged(); } }
         private double _WLvMaxScale = 1;
 
-        public double WLvMinScale { get => _WLvMinScale; set { _WLvMinScale = value; NotifyPropertyChanged(); } }
+        public double WLvMinScale { get => _WLvMinScale; set { _WLvMinScale = value; OnPropertyChanged(); } }
         private double _WLvMinScale = 1;
 
-        public double WZaRelMaxScale { get => _WZaRelMaxScale; set { _WZaRelMaxScale = value; NotifyPropertyChanged(); } }
+        public double WZaRelMaxScale { get => _WZaRelMaxScale; set { _WZaRelMaxScale = value; OnPropertyChanged(); } }
         private double _WZaRelMaxScale = 1;
 
 
-        public double BLvMaxScale { get => _BLvMaxScale; set { _BLvMaxScale = value; NotifyPropertyChanged(); } }
+        public double BLvMaxScale { get => _BLvMaxScale; set { _BLvMaxScale = value; OnPropertyChanged(); } }
         private double _BLvMaxScale = 1;
 
-        public double BLvMinScale { get => _BLvMinScale; set { _BLvMinScale = value; NotifyPropertyChanged(); } }
+        public double BLvMinScale { get => _BLvMinScale; set { _BLvMinScale = value; OnPropertyChanged(); } }
         private double _BLvMinScale = 1;
 
-        public double BZaRelMaxScale { get => _BZaRelMaxScale; set { _BZaRelMaxScale = value; NotifyPropertyChanged(); } }
+        public double BZaRelMaxScale { get => _BZaRelMaxScale; set { _BZaRelMaxScale = value; OnPropertyChanged(); } }
         private double _BZaRelMaxScale = 1;
 
 

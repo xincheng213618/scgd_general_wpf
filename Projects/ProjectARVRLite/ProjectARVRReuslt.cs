@@ -125,7 +125,7 @@ namespace ProjectARVRLite
 
         }
 
-        public int BatchId { get => _BatchId; set { _BatchId = value; NotifyPropertyChanged(); } }
+        public int BatchId { get => _BatchId; set { _BatchId = value; OnPropertyChanged(); } }
         private int _BatchId;
 
         public string Model { get; set; } = string.Empty;

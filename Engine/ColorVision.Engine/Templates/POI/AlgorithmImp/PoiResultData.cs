@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
 
 
-        public double Y { get { return _Y; } set { _Y = value; NotifyPropertyChanged(); } }
+        public double Y { get { return _Y; } set { _Y = value; OnPropertyChanged(); } }
         private double _Y;
 
         public PoiResultCIEYData(PoiPointResultModel pOIPointResultModel) : base(pOIPointResultModel)
@@ -78,13 +78,13 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             POIPointResultModel = pOIPointResultModel;
             Point = new POIPoint(pOIPointResultModel.PoiId ?? -1, -1, pOIPointResultModel.PoiName, pOIPointResultModel.PoiType, (int)pOIPointResultModel.PoiX, (int)pOIPointResultModel.PoiY, pOIPointResultModel.PoiWidth ?? 0, pOIPointResultModel.PoiHeight ?? 0);
         }
-        public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
+        public int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }
         private int _Id;
 
 
-        public POIPoint Point { get { return POIPoint; } set { POIPoint = value; NotifyPropertyChanged(); } }
+        public POIPoint Point { get { return POIPoint; } set { POIPoint = value; OnPropertyChanged(); } }
 
-        public string Name { get => Point.Name; set { Point.Name = value; NotifyPropertyChanged(); } }
+        public string Name { get => Point.Name; set { Point.Name = value; OnPropertyChanged(); } }
 
         public string PixelPos { get { return string.Format("{0},{1}", POIPoint.PixelX, POIPoint.PixelY); } }
 

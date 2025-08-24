@@ -19,19 +19,19 @@ namespace ColorVision.Engine.ToolPlugins
         public static LedToolConfig Instance => ConfigService.Instance.GetRequiredService<LedToolConfig>();
 
         [DisplayName("灯珠数据文件"), PropertyEditorType(PropertyEditorType.TextSelectFile)]
-        public string SelectedPath { get => _SelectedPath; set { _SelectedPath = value; NotifyPropertyChanged(); } }
+        public string SelectedPath { get => _SelectedPath; set { _SelectedPath = value; OnPropertyChanged(); } }
         private string _SelectedPath;
 
         [DisplayName("图像文件"), PropertyEditorType(PropertyEditorType.TextSelectFile)]
-        public string SelectedPath1 { get => _SelectedPath1; set { _SelectedPath1 = value; NotifyPropertyChanged(); } }
+        public string SelectedPath1 { get => _SelectedPath1; set { _SelectedPath1 = value; OnPropertyChanged(); } }
         private string _SelectedPath1;
 
         [DisplayName("半径"), PropertyEditorType(PropertyEditorType.TextSelectFile)]
-        public int Radius { get => _Radius; set { _Radius = value; NotifyPropertyChanged(); } }
+        public int Radius { get => _Radius; set { _Radius = value; OnPropertyChanged(); } }
         private int _Radius = 4;
 
         [DisplayName("宽度"), PropertyEditorType(PropertyEditorType.TextSelectFile)]
-        public int Thickness { get => _Thickness; set { _Thickness = value; NotifyPropertyChanged(); } }
+        public int Thickness { get => _Thickness; set { _Thickness = value; OnPropertyChanged(); } }
         private int _Thickness = 1;
 
     }

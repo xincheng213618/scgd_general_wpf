@@ -16,11 +16,11 @@ namespace ColorVision.UI
     public class ConfigOptions:ViewModelBase, IConfig
     {
         [DisplayName("是否启用定时备份")]
-        public bool EnableBackup { get => _EnableBackup; set { _EnableBackup = value; NotifyPropertyChanged(); } }
+        public bool EnableBackup { get => _EnableBackup; set { _EnableBackup = value; OnPropertyChanged(); } }
         private bool _EnableBackup = true;
 
         [DisplayName("最大备份数量"),Description("超过则自动清理旧备份")]
-        public int MaxBackupFiles { get => _MaxBackupFiles; set { _MaxBackupFiles = value; NotifyPropertyChanged(); } }
+        public int MaxBackupFiles { get => _MaxBackupFiles; set { _MaxBackupFiles = value; OnPropertyChanged(); } }
         private int _MaxBackupFiles;
     }
     /// <summary>

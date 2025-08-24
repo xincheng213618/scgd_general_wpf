@@ -113,12 +113,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             }
         }
 
-        public ObservableCollection<string> ImageFiles { get => _ImageFiles; set { _ImageFiles = value; NotifyPropertyChanged(); } }
+        public ObservableCollection<string> ImageFiles { get => _ImageFiles; set { _ImageFiles = value; OnPropertyChanged(); } }
         private ObservableCollection<string> _ImageFiles = new ObservableCollection<string>();
 
-        public List<string> RawImageFiles { get => _RawImageFiles; set { _RawImageFiles = value; NotifyPropertyChanged(); } } 
+        public List<string> RawImageFiles { get => _RawImageFiles; set { _RawImageFiles = value; OnPropertyChanged(); } } 
         private List<string> _RawImageFiles = new List<string>();
-        public List<string> CIEImageFiles { get => _CIEImageFiles; set { _CIEImageFiles = value; NotifyPropertyChanged(); } }
+        public List<string> CIEImageFiles { get => _CIEImageFiles; set { _CIEImageFiles = value; OnPropertyChanged(); } }
         private List<string> _CIEImageFiles = new List<string>();
 
         public Dictionary<string, string> HistoryFilePath { get; set; } = new Dictionary<string, string>() { };

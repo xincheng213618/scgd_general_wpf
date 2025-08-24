@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
         public static ObservableCollection<TemplateModel<TJPoiAnalysisParam>> Params => TemplatePoiAnalysis.Params;
         public RelayCommand OpenTemplateCommand { get; set; }
 
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
 
         public void OpenTemplate()
@@ -43,7 +43,7 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
 
         public static ObservableCollection<TemplateModel<PoiParam>> PoiParams => TemplatePoi.Params;
         public RelayCommand OpenTemplatePoiCommand { get; set; }
-        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplatePoiSelectedIndex;
 
         public void OpenTemplatePoi()

@@ -36,13 +36,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         }
         private string propertyName = string.Empty;
 
-        public string FilePath { get { if (string.IsNullOrWhiteSpace(propertyName)) return GetValue(_FilePath); else return GetValue(_FilePath, propertyName); } set { if (string.IsNullOrWhiteSpace(propertyName)) { SetProperty(ref _FilePath, value); } else { SetProperty(ref _FilePath, value, propertyName); NotifyPropertyChanged(); } } }
+        public string FilePath { get { if (string.IsNullOrWhiteSpace(propertyName)) return GetValue(_FilePath); else return GetValue(_FilePath, propertyName); } set { if (string.IsNullOrWhiteSpace(propertyName)) { SetProperty(ref _FilePath, value); } else { SetProperty(ref _FilePath, value, propertyName); OnPropertyChanged(); } } }
         private string _FilePath = string.Empty;
 
-        public bool IsSelected { get { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) return GetValue(_IsSelected); else return GetValue(_IsSelected, propertyName + "IsSelected"); } set { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) SetProperty(ref _IsSelected, value); else SetProperty(ref _IsSelected, value, propertyName + "IsSelected"); NotifyPropertyChanged(); } }
+        public bool IsSelected { get { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) return GetValue(_IsSelected); else return GetValue(_IsSelected, propertyName + "IsSelected"); } set { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) SetProperty(ref _IsSelected, value); else SetProperty(ref _IsSelected, value, propertyName + "IsSelected"); OnPropertyChanged(); } }
         private bool _IsSelected;
 
-        public override int Id { get { if (string.IsNullOrWhiteSpace(propertyName + "Id")) return GetValue(_Id); else return GetValue(_Id, propertyName + "Id"); } set { if (string.IsNullOrWhiteSpace(propertyName + "Id")) SetProperty(ref _Id, value); else SetProperty(ref _Id, value, propertyName + "Id"); NotifyPropertyChanged(); } }
+        public override int Id { get { if (string.IsNullOrWhiteSpace(propertyName + "Id")) return GetValue(_Id); else return GetValue(_Id, propertyName + "Id"); } set { if (string.IsNullOrWhiteSpace(propertyName + "Id")) SetProperty(ref _Id, value); else SetProperty(ref _Id, value, propertyName + "Id"); OnPropertyChanged(); } }
         private int _Id;
     }
 

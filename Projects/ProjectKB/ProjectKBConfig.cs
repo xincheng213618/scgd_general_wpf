@@ -51,15 +51,15 @@ namespace ProjectKB
         }
 
         [DisplayName("日志开关(重启窗口后生效)")]
-        public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; NotifyPropertyChanged(); } }
+        public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; OnPropertyChanged(); } }
         private bool _LogControlVisibility = true;
 
         [DisplayName("重试次数")]
-        public int TryCountMax { get => _TryCountMax; set { _TryCountMax = value; NotifyPropertyChanged(); } }
+        public int TryCountMax { get => _TryCountMax; set { _TryCountMax = value; OnPropertyChanged(); } }
         private int _TryCountMax = 2;
 
         [DisplayName("允许测试失败")]
-        public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; NotifyPropertyChanged(); } }
+        public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; OnPropertyChanged(); } }
         private bool _AllowTestFailures = true;
         public void EditConfig()
         {
@@ -125,10 +125,10 @@ namespace ProjectKB
         }
 
         [JsonIgnore]
-        public ObservableCollection<TemplateModel<FlowParam>> TemplateItemSource { get => _TemplateItemSource; set { _TemplateItemSource = value; NotifyPropertyChanged(); } }
+        public ObservableCollection<TemplateModel<FlowParam>> TemplateItemSource { get => _TemplateItemSource; set { _TemplateItemSource = value; OnPropertyChanged(); } }
         private ObservableCollection<TemplateModel<FlowParam>> _TemplateItemSource;
 
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
         public void OpenTemplate()
         {
@@ -142,20 +142,20 @@ namespace ProjectKB
         public event EventHandler<string> SNChanged;
 
         [DisplayName("SN锁")]
-        public bool SNlocked { get => _SNlocked; set { _SNlocked = value; NotifyPropertyChanged(); } }
+        public bool SNlocked { get => _SNlocked; set { _SNlocked = value; OnPropertyChanged(); } }
         private bool _SNlocked;
 
         [JsonIgnore]
-        public string SN { get => _SN; set { if (SNlocked) return;  _SN = value; NotifyPropertyChanged(); SNChanged?.Invoke(this, value); } }
+        public string SN { get => _SN; set { if (SNlocked) return;  _SN = value; OnPropertyChanged(); SNChanged?.Invoke(this, value); } }
         private string _SN = string.Empty;
 
         public static ModbusControl ModbusControl => ModbusControl.GetInstance();
 
         [DisplayName("自动连接Modbus"), Category("KB")]
-        public bool AutoModbusConnect { get => _AutoModbusConnect; set { _AutoModbusConnect = value; NotifyPropertyChanged(); } }
+        public bool AutoModbusConnect { get => _AutoModbusConnect; set { _AutoModbusConnect = value; OnPropertyChanged(); } }
         private bool _AutoModbusConnect = true;
         [DisplayName("KBLVSacle"), Category("KB")]
-        public double KBLVSacle { get => _KBLVSacle; set { _KBLVSacle = value; NotifyPropertyChanged(); } }
+        public double KBLVSacle { get => _KBLVSacle; set { _KBLVSacle = value; OnPropertyChanged(); } }
         private double _KBLVSacle = 0.006583904;
 
 

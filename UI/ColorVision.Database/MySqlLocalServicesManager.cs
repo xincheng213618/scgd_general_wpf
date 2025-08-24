@@ -70,12 +70,12 @@ namespace ColorVision.Database
             });
         }
 
-        public string FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); } }
+        public string FilePath { get => _FilePath; set { _FilePath = value; OnPropertyChanged(); } }
         private string _FilePath;
-        public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name;
 
-        public DateTime CreationTime { get => _CreationTime; set { _CreationTime = value; NotifyPropertyChanged(); } }
+        public DateTime CreationTime { get => _CreationTime; set { _CreationTime = value; OnPropertyChanged(); } }
         private DateTime _CreationTime;
 
 

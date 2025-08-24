@@ -76,10 +76,10 @@ namespace ColorVision.Engine.MQTT
         /// <summary>
         /// MQTT
         /// </summary>
-        public bool IsUseMQTT { get => _IsUseMQTT; set { _IsUseMQTT = value; NotifyPropertyChanged(); } }
+        public bool IsUseMQTT { get => _IsUseMQTT; set { _IsUseMQTT = value; OnPropertyChanged(); } }
         private bool _IsUseMQTT = true;
 
-        public double DefaultTimeout { get => _DefaultTimeout; set { _DefaultTimeout = value; NotifyPropertyChanged(); } }
+        public double DefaultTimeout { get => _DefaultTimeout; set { _DefaultTimeout = value; OnPropertyChanged(); } }
         private double _DefaultTimeout = 30000;
 
 
@@ -90,13 +90,13 @@ namespace ColorVision.Engine.MQTT
         /// <summary>
         /// 是否显示心跳
         /// </summary>
-        public bool IsShieldHeartbeat { get => _IsShieldHeartbeat; set { _IsShieldHeartbeat = value; NotifyPropertyChanged(); } }
+        public bool IsShieldHeartbeat { get => _IsShieldHeartbeat; set { _IsShieldHeartbeat = value; OnPropertyChanged(); } }
         private bool _IsShieldHeartbeat;
 
         /// <summary>
         /// 只显示选中的
         /// </summary>
-        public bool ShowSelect { get => _ShowSelect; set { _ShowSelect = value; NotifyPropertyChanged(); } }
+        public bool ShowSelect { get => _ShowSelect; set { _ShowSelect = value; OnPropertyChanged(); } }
         private bool _ShowSelect;
         public const string ConfigAESKey = "ColorVision";
         public const string ConfigAESVector = "ColorVision";

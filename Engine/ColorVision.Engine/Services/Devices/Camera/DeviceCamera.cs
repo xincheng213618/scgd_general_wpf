@@ -29,7 +29,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCamera));
 
-        public PhyCamera? PhyCamera { get => _PhyCamera; set { _PhyCamera = value; NotifyPropertyChanged(); } }
+        public PhyCamera? PhyCamera { get => _PhyCamera; set { _PhyCamera = value; OnPropertyChanged(); } }
         private PhyCamera? _PhyCamera;
         public ViewCamera View { get; set; }
         public MQTTCamera DService { get; set; }
@@ -283,7 +283,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 Config.TakeImageMode = PhyCamera.Config.TakeImageMode;
                 Config.ImageBpp = PhyCamera.Config.ImageBpp;
 
-                NotifyPropertyChanged(nameof(PhyCamera));
+                OnPropertyChanged(nameof(PhyCamera));
             }
             base.Save();
         }

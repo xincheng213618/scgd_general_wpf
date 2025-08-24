@@ -67,7 +67,7 @@ namespace WindowsServicePlugin.CVWinSMS
                 await GetLatestReleaseVersion();
             }
         }
-        public bool ConfigurationStatus { get => _ConfigurationStatus; set { _ConfigurationStatus = value; NotifyPropertyChanged(); } }
+        public bool ConfigurationStatus { get => _ConfigurationStatus; set { _ConfigurationStatus = value; OnPropertyChanged(); } }
         private bool _ConfigurationStatus = File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath);
 
         public async Task GetLatestReleaseVersion()

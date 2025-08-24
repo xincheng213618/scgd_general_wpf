@@ -26,7 +26,7 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
 
         public void OpenTemplate()
@@ -34,7 +34,7 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
             new TemplateEditorWindow(new TemplateGhostQK(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
-        public string CIEFileName { get => _CIEFileName; set { _CIEFileName = value; NotifyPropertyChanged(); } }
+        public string CIEFileName { get => _CIEFileName; set { _CIEFileName = value; OnPropertyChanged(); } }
         private string _CIEFileName;
 
 

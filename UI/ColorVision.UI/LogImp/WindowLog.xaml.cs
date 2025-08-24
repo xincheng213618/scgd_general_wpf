@@ -56,7 +56,7 @@ namespace ColorVision.UI
             }
         }
         [JsonIgnore]
-        public string Log { get => _Log; set { _Log = value; NotifyPropertyChanged(); } }
+        public string Log { get => _Log; set { _Log = value; OnPropertyChanged(); } }
         private string _Log;
 
         public bool IsShowLog
@@ -67,7 +67,7 @@ namespace ColorVision.UI
                 if (_IsShowLog != value)
                 {
                     _IsShowLog = value;
-                    NotifyPropertyChanged();
+                    OnPropertyChanged();
 
                     if (_hierarchy == null)
                         _hierarchy = (Hierarchy)LogManager.GetRepository();

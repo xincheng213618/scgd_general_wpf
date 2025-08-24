@@ -62,7 +62,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         }
 
 
-        public int Count { get => _Count; set { _Count = value; NotifyPropertyChanged(); } }
+        public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count;
 
         public PhyCamera? GetPhyCamera(string? Code) => PhyCameras.FirstOrDefault(a => a.Code == Code);

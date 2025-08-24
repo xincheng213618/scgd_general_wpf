@@ -10,7 +10,7 @@ namespace ProjectKB.Modbus
         public static ModbusSetting Instance => ConfigService.Instance.GetRequiredService<ModbusSetting>();
 
         public event EventHandler<bool> MobusEnableChanged;
-        public bool MobusEnable { get => _MobusEnable; set { _MobusEnable = value; NotifyPropertyChanged(); MobusEnableChanged?.Invoke(this, _MobusEnable); } }
+        public bool MobusEnable { get => _MobusEnable; set { _MobusEnable = value; OnPropertyChanged(); MobusEnableChanged?.Invoke(this, _MobusEnable); } }
         private bool _MobusEnable = true;
 
         /// <summary>

@@ -22,13 +22,13 @@ namespace ColorVision.Engine.Pattern
             ContextMenu.Items.Add(new MenuItem() { Header = "选中", Command = SelectCommand });
 
         }
-        public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name;
 
         public  bool IsEditMode { get => _IsEditMode; set {
                 if (_IsEditMode == value) return;
                 _IsEditMode = value;
-                NotifyPropertyChanged();
+                OnPropertyChanged();
                 if (!value)
                 {
                     string newpath = Path.Combine(Path.GetDirectoryName(FilePath), Name+ Path.GetExtension(FilePath));

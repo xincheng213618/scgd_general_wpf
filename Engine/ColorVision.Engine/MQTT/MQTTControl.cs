@@ -25,7 +25,7 @@ namespace ColorVision.Engine.MQTT
 
         public IMqttClient MQTTClient { get; set; }
 
-        public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; MQTTConnectChanged?.Invoke(this, new EventArgs()); NotifyPropertyChanged(); } }
+        public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; MQTTConnectChanged?.Invoke(this, new EventArgs()); OnPropertyChanged(); } }
         private bool _IsConnect;
 
         public event Func<MqttApplicationMessageReceivedEventArgs, Task> ApplicationMessageReceivedAsync;

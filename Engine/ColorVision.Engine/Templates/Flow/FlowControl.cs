@@ -25,25 +25,25 @@ namespace ColorVision.Engine.Templates.Flow
 
     public class FlowControlData : ViewModelBase
     {
-        public string Version { get => _Version; set { _Version = value; NotifyPropertyChanged(); } }
+        public string Version { get => _Version; set { _Version = value; OnPropertyChanged(); } }
         private string _Version;
-        public string ServiceName { get => _ServiceName; set { _ServiceName = value; NotifyPropertyChanged(); } }
+        public string ServiceName { get => _ServiceName; set { _ServiceName = value; OnPropertyChanged(); } }
         private string _ServiceName;
 
-        public string EventName { get => _EventName; set { _EventName = value; NotifyPropertyChanged(); } }
+        public string EventName { get => _EventName; set { _EventName = value; OnPropertyChanged(); } }
         private string _EventName;
 
-        public int ServiceID { get => _ServiceID; set { _ServiceID = value; NotifyPropertyChanged(); } }
+        public int ServiceID { get => _ServiceID; set { _ServiceID = value; OnPropertyChanged(); } }
         private int _ServiceID;
 
-        public string SerialNumber { get => _SerialNumber; set { _SerialNumber = value; NotifyPropertyChanged(); } }
+        public string SerialNumber { get => _SerialNumber; set { _SerialNumber = value; OnPropertyChanged(); } }
         private string _SerialNumber;
 
-        public string MsgID { get => _MsgID; set { _MsgID = value; NotifyPropertyChanged(); } }
+        public string MsgID { get => _MsgID; set { _MsgID = value; OnPropertyChanged(); } }
         private string _MsgID;
 
         [JsonProperty("params")]
-        public dynamic Params { get => _Params; set { _Params = value; NotifyPropertyChanged(); } }
+        public dynamic Params { get => _Params; set { _Params = value; OnPropertyChanged(); } }
         private dynamic _Params;
     }
 
@@ -86,7 +86,7 @@ namespace ColorVision.Engine.Templates.Flow
                 lock (_lock)
                 {
                     _IsFlowRun = value;
-                    NotifyPropertyChanged();
+                    OnPropertyChanged();
                 }
             }
         }

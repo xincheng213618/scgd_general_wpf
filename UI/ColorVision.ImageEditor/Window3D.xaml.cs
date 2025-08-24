@@ -16,10 +16,10 @@ namespace ColorVision.ImageEditor
     {
         public static Window3DConfig Instance => ConfigService.Instance.GetRequiredService<Window3DConfig>();
 
-        public int TargetPixelsX { get => _TargetPixelsX; set { _TargetPixelsX = 512;NotifyPropertyChanged(); } }
+        public int TargetPixelsX { get => _TargetPixelsX; set { _TargetPixelsX = 512;OnPropertyChanged(); } }
         private int _TargetPixelsX = 512;
 
-        public int TargetPixelsY { get => _TargetPixelsY; set { _TargetPixelsY = 512; NotifyPropertyChanged(); } }
+        public int TargetPixelsY { get => _TargetPixelsY; set { _TargetPixelsY = 512; OnPropertyChanged(); } }
         private int _TargetPixelsY = 512;
     }
 

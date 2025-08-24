@@ -9,28 +9,28 @@ namespace ProjectBlackMura
  {
     public class Measurements : ViewModelBase
     {
-        public double Mean { get => _Mean; set { _Mean = value; NotifyPropertyChanged(); } }
+        public double Mean { get => _Mean; set { _Mean = value; OnPropertyChanged(); } }
         private double _Mean;
 
-        public double Max { get => _Max; set { _Max = value; NotifyPropertyChanged(); } }
+        public double Max { get => _Max; set { _Max = value; OnPropertyChanged(); } }
         private double _Max;
 
-        public double Min { get => _Min; set { _Min = value; NotifyPropertyChanged(); } }
+        public double Min { get => _Min; set { _Min = value; OnPropertyChanged(); } }
         private double _Min;
 
-        public double Uniformity { get => _Uniformity; set { _Uniformity = value; NotifyPropertyChanged(); } }
+        public double Uniformity { get => _Uniformity; set { _Uniformity = value; OnPropertyChanged(); } }
         private double _Uniformity;
 
-        public double Wavelength { get => _Wavelength; set { _Wavelength = value; NotifyPropertyChanged(); } }
+        public double Wavelength { get => _Wavelength; set { _Wavelength = value; OnPropertyChanged(); } }
         private double _Wavelength;
 
-        public double Saturation { get => _Saturation; set { _Saturation = value; NotifyPropertyChanged(); } }
+        public double Saturation { get => _Saturation; set { _Saturation = value; OnPropertyChanged(); } }
         private double _Saturation;
 
-        public double ZaRelmax { get => _ZaRelmax; set { _ZaRelmax = value; NotifyPropertyChanged(); } }
+        public double ZaRelmax { get => _ZaRelmax; set { _ZaRelmax = value; OnPropertyChanged(); } }
         private double _ZaRelmax;
 
-        public double Bordersize { get => _Bordersize; set { _Bordersize = value; NotifyPropertyChanged(); } }
+        public double Bordersize { get => _Bordersize; set { _Bordersize = value; OnPropertyChanged(); } }
         private double _Bordersize;
 
 
@@ -41,19 +41,19 @@ namespace ProjectBlackMura
 
     public class BlackMudraResult:ViewModelBase
     {
-        public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }
+        public string SN { get => _SN; set { _SN = value; OnPropertyChanged(); } }
         private string _SN;
 
-        public string Model { get => _Model; set { _Model = value; NotifyPropertyChanged(); } }
+        public string Model { get => _Model; set { _Model = value; OnPropertyChanged(); } }
         private string _Model;
 
-        public DateTime DateTime { get => _DateTime; set { _DateTime = value; NotifyPropertyChanged(); } }
+        public DateTime DateTime { get => _DateTime; set { _DateTime = value; OnPropertyChanged(); } }
         private DateTime _DateTime = DateTime.Now;
 
-        public BlackMuraTestType BlackMuraTestType { get => _BlackMuraTestType; set { _BlackMuraTestType = value; NotifyPropertyChanged(); } }
+        public BlackMuraTestType BlackMuraTestType { get => _BlackMuraTestType; set { _BlackMuraTestType = value; OnPropertyChanged(); } }
         private BlackMuraTestType _BlackMuraTestType = BlackMuraTestType.None;
 
-        public double Contrast { get => _Contrast; set { _Contrast = value; NotifyPropertyChanged(); } }
+        public double Contrast { get => _Contrast; set { _Contrast = value; OnPropertyChanged(); } }
         private double _Contrast = 1;
 
         public Measurements WhiteImage { get; set; } = new Measurements();

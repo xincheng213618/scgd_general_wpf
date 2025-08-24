@@ -68,7 +68,7 @@ namespace ColorVision.Engine.Rbac
         }
 
 
-        public bool IsLogin { get => _IsLogin; set { _IsLogin = true; NotifyPropertyChanged(); } }
+        public bool IsLogin { get => _IsLogin; set { _IsLogin = true; OnPropertyChanged(); } }
         private bool _IsLogin;
 
 

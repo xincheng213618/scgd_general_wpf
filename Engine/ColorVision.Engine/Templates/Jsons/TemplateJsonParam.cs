@@ -84,8 +84,8 @@ namespace ColorVision.Engine.Templates.Jsons
             }
         }
 
-        public override int Id { get => TemplateJsonModel.Id; set { TemplateJsonModel.Id = value; NotifyPropertyChanged(); } }
-        public override string Name { get => TemplateJsonModel.Name ?? string.Empty; set { TemplateJsonModel.Name = value; NotifyPropertyChanged(); } }
+        public override int Id { get => TemplateJsonModel.Id; set { TemplateJsonModel.Id = value; OnPropertyChanged(); } }
+        public override string Name { get => TemplateJsonModel.Name ?? string.Empty; set { TemplateJsonModel.Name = value; OnPropertyChanged(); } }
 
         public event EventHandler JsonValueChanged;
 
@@ -96,7 +96,7 @@ namespace ColorVision.Engine.Templates.Jsons
                 if (JsonHelper.IsValidJson(value))
                 {
                     TemplateJsonModel.JsonVal = value;
-                    NotifyPropertyChanged();
+                    OnPropertyChanged();
                 }
             }
         }

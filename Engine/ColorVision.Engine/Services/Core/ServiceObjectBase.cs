@@ -29,7 +29,7 @@ namespace ColorVision.Engine.Services.Core
             set
             {
                 _Parent = value;
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
         private ServiceObjectBase _Parent;

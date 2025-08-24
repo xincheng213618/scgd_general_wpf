@@ -37,7 +37,7 @@ namespace ColorVision.Engine.Archive.Dao
             TotalTime = TimeSpan.FromMilliseconds((double)(batchResultMasterModel.TotalTime??0));
         }
         [DisplayName("序号")]
-        public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
+        public int Id { get { return _Id; } set { _Id = value; OnPropertyChanged(); } }
         private int _Id;
 
         public ArchiveStatus ArchiveStatus { get => _ArchiveStatus; set { _ArchiveStatus = value; } }
@@ -46,18 +46,18 @@ namespace ColorVision.Engine.Archive.Dao
         public bool IshowArch => ArchiveStatus == ArchiveStatus.Pending || ArchiveStatus == ArchiveStatus.NotArchived;
 
         [DisplayName("批次号")]
-        public string? Batch { get { return _Batch; } set { _Batch = value; NotifyPropertyChanged(); } }
+        public string? Batch { get { return _Batch; } set { _Batch = value; OnPropertyChanged(); } }
         private string? _Batch;
         [DisplayName("BatchCode")]
-        public string? BatchCode { get { return _BatchCode; } set { _BatchCode = value; NotifyPropertyChanged(); } }
+        public string? BatchCode { get { return _BatchCode; } set { _BatchCode = value; OnPropertyChanged(); } }
         private string? _BatchCode;
 
         [DisplayName("测量时间")]
-        public DateTime? CreateTime { get=> _CreateTime;  set { _CreateTime = value; NotifyPropertyChanged(); } }
+        public DateTime? CreateTime { get=> _CreateTime;  set { _CreateTime = value; OnPropertyChanged(); } }
         private DateTime? _CreateTime;
 
         [DisplayName("TotalTime")]
-        public TimeSpan? TotalTime { get => _TotalTime; set { _TotalTime = value; NotifyPropertyChanged(); } }
+        public TimeSpan? TotalTime { get => _TotalTime; set { _TotalTime = value; OnPropertyChanged(); } }
         private TimeSpan? _TotalTime;
     }
 

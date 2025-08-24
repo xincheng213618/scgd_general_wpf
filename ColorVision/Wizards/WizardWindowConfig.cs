@@ -6,7 +6,7 @@ namespace ColorVision.Wizards
     {
         public static WizardWindowConfig Instance => ConfigService.Instance.GetRequiredService<WizardWindowConfig>();
 
-        public bool WizardCompletionKey { get => _WizardCompletionKey; set { _WizardCompletionKey = value; NotifyPropertyChanged(); } }
+        public bool WizardCompletionKey { get => _WizardCompletionKey; set { _WizardCompletionKey = value; OnPropertyChanged(); } }
         private bool _WizardCompletionKey;
     }
 }

@@ -22,7 +22,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         /// </summary>
         [JsonProperty("ob")]
         [DisplayName("obL")]
-        public int Ob { get => _Ob; set { _Ob = value; NotifyPropertyChanged();  } }
+        public int Ob { get => _Ob; set { _Ob = value; OnPropertyChanged();  } }
         private int _Ob = 4;
 
         /// <summary>
@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         /// </summary>
         [JsonProperty("obR")]
         [DisplayName("obR")]
-        public int ObR { get => _ObR; set { _ObR = value; NotifyPropertyChanged(); } }
+        public int ObR { get => _ObR; set { _ObR = value; OnPropertyChanged(); } }
         private int _ObR;
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         /// </summary>
         [JsonProperty("obT")]
         [DisplayName("obT")]
-        public int ObT { get => _ObT; set { _ObT = value; NotifyPropertyChanged();} }
+        public int ObT { get => _ObT; set { _ObT = value; OnPropertyChanged();} }
         private int _ObT;
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         /// </summary>
         [JsonProperty("obB")]
         [DisplayName("obB")]
-        public int ObB { get => _ObB; set { _ObB = value; NotifyPropertyChanged(); } }
+        public int ObB { get => _ObB; set { _ObB = value; OnPropertyChanged(); } }
         private int _ObB;
 
 
@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         /// </summary>
         [JsonProperty("tempCtlChecked")]
         [DisplayName("温控")]
-        public bool TempCtlChecked { get => _TempCtlChecked; set { _TempCtlChecked = value; NotifyPropertyChanged(); } }
+        public bool TempCtlChecked { get => _TempCtlChecked; set { _TempCtlChecked = value; OnPropertyChanged(); } }
         private bool _TempCtlChecked = true;
 
         /// <summary>
@@ -63,7 +63,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         /// </summary>
         [JsonProperty("targetTemp")]
         [DisplayName("目标温度"), PropertyVisibility(nameof(TempCtlChecked))]
-        public float TargetTemp { get => _TargetTemp; set { _TargetTemp = value; NotifyPropertyChanged(); } }
+        public float TargetTemp { get => _TargetTemp; set { _TargetTemp = value; OnPropertyChanged(); } }
         private float _TargetTemp = 10.0f;
         /// <summary>
         /// 温度查询时间间隔
@@ -76,7 +76,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         /// </summary>
         [JsonProperty("usbTraffic")]
         [DisplayName("传输速率")]
-        public float UsbTraffic { get => _UsbTraffic; set { _UsbTraffic = value; NotifyPropertyChanged(); } }
+        public float UsbTraffic { get => _UsbTraffic; set { _UsbTraffic = value; OnPropertyChanged(); } }
         private float _UsbTraffic;
 
         /// <summary>
@@ -84,7 +84,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         /// </summary>
         [JsonProperty("offset")]
         [DisplayName("偏移")]
-        public int Offset { get => _Offset; set { _Offset = value; NotifyPropertyChanged(); } }
+        public int Offset { get => _Offset; set { _Offset = value; OnPropertyChanged(); } }
         private int _Offset;
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         /// </summary>
         [JsonProperty("gain")]
         [DisplayName("增益")]
-        public int Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
+        public int Gain { get => _Gain; set { _Gain = value; OnPropertyChanged(); } }
         private int _Gain = 10;
 
         /// <summary>
@@ -100,28 +100,28 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         /// </summary>
         [JsonProperty("ex")]
         [DisplayName("ROI X"),Browsable(true)]
-        public int PointX { get => _PointX; set { _PointX = value; NotifyPropertyChanged();  } }
+        public int PointX { get => _PointX; set { _PointX = value; OnPropertyChanged();  } }
         private int _PointX;
         /// <summary>
         /// FindLightArea Y
         /// </summary>
         [JsonProperty("ey")]
         [DisplayName("ROI Y"), Browsable(true)]
-        public int PointY { get => _PointY; set { _PointY = value; NotifyPropertyChanged();  } }
+        public int PointY { get => _PointY; set { _PointY = value; OnPropertyChanged();  } }
         private int _PointY;
         /// <summary>
         /// FindLightArea W
         /// </summary>
         [JsonProperty("ew")]
         [DisplayName("ROI W"), Browsable(true)]
-        public int Width { get => _Width; set { _Width = value; NotifyPropertyChanged();  } }
+        public int Width { get => _Width; set { _Width = value; OnPropertyChanged();  } }
         private int _Width;
         /// <summary>
         /// FindLightArea H
         /// </summary>
         [JsonProperty("eh")]
         [DisplayName("ROI H"), Browsable(true)]
-        public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
+        public int Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private int _Height;
 
 

@@ -30,7 +30,7 @@ namespace ProjectKB.Modbus
 
         public event EventHandler StatusChanged;
 
-        public ushort CurrentValue { get => _CurrentValue; set { if (value == _CurrentValue) return; _CurrentValue = value; NotifyPropertyChanged(); StatusChanged?.Invoke(this, new EventArgs()); } }
+        public ushort CurrentValue { get => _CurrentValue; set { if (value == _CurrentValue) return; _CurrentValue = value; OnPropertyChanged(); StatusChanged?.Invoke(this, new EventArgs()); } }
         private ushort _CurrentValue;
 
         public static bool TestConnect(ModbusConfig Config)
@@ -132,7 +132,7 @@ namespace ProjectKB.Modbus
 
         public event EventHandler MySqlConnectChanged;
 
-        public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; NotifyPropertyChanged(); } }
+        public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; OnPropertyChanged(); } }
         private bool _IsConnect;
 
         bool IsRun;

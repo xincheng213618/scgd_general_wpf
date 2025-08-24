@@ -99,7 +99,7 @@ namespace ColorVision.Projects.ProjectShiYuan
             windowLog.Show();
         }
 
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
         public void OpenTemplate()
         {
@@ -111,32 +111,32 @@ namespace ColorVision.Projects.ProjectShiYuan
             new FlowEngineToolWindow(TemplateFlow.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
-        public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }
+        public string SN { get => _SN; set { _SN = value; OnPropertyChanged(); } }
         private string _SN;
 
 
-        public bool IsOpenConnect { get => _IsOpenConnect;set { _IsOpenConnect = value; NotifyPropertyChanged(); } }
+        public bool IsOpenConnect { get => _IsOpenConnect;set { _IsOpenConnect = value; OnPropertyChanged(); } }
         private bool _IsOpenConnect;
 
-        public string FlowName { get => _FlowName; set { _FlowName = value; NotifyPropertyChanged(); } }
+        public string FlowName { get => _FlowName; set { _FlowName = value; OnPropertyChanged(); } }
         private string _FlowName;
 
-        public int DeviceId { get => _DeviceId; set { _DeviceId = value; NotifyPropertyChanged(); } }
+        public int DeviceId { get => _DeviceId; set { _DeviceId = value; OnPropertyChanged(); } }
         private int _DeviceId;
 
-        public string PortName { get => _PortName; set { _PortName = value; NotifyPropertyChanged(); } }
+        public string PortName { get => _PortName; set { _PortName = value; OnPropertyChanged(); } }
         private string _PortName;
 
-        public string TestName { get => _TestName; set { _TestName = value; NotifyPropertyChanged(); } }
+        public string TestName { get => _TestName; set { _TestName = value; OnPropertyChanged(); } }
         private string _TestName = "WBROtest";
 
-        public string DataPath { get => _DataPath; set { _DataPath = value; NotifyPropertyChanged(); } }
+        public string DataPath { get => _DataPath; set { _DataPath = value; OnPropertyChanged(); } }
         private string _DataPath;
 
-        public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; NotifyPropertyChanged(); } }
+        public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; OnPropertyChanged(); } }
         private bool _IsAutoUploadSn;
 
-        public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; NotifyPropertyChanged(); } }
+        public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; OnPropertyChanged(); } }
         private long _LastFlowTime;
 
 

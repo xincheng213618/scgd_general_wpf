@@ -30,8 +30,8 @@ namespace ColorVision.Engine.Templates.BuzProduct
             CreateBuzProductDetailCommamd = new RelayCommand(a => CreateBuzProductDetail());
         }
 
-        public override int Id { get => BuzProductMasterModel.Id; set { BuzProductMasterModel.Id = value; NotifyPropertyChanged(); } }
-        public override string Name { get => BuzProductMasterModel.Name ?? string.Empty; set { BuzProductMasterModel.Name = value; NotifyPropertyChanged(); } }
+        public override int Id { get => BuzProductMasterModel.Id; set { BuzProductMasterModel.Id = value; OnPropertyChanged(); } }
+        public override string Name { get => BuzProductMasterModel.Name ?? string.Empty; set { BuzProductMasterModel.Name = value; OnPropertyChanged(); } }
 
         public ObservableCollection<BuzProductDetailModel> BuzProductDetailModels { get; set; } = new ObservableCollection<BuzProductDetailModel>();
 

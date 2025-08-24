@@ -24,7 +24,7 @@ namespace ColorVision.UI.Views
                 if (_ViewIndex == value)
                     return;
                 PreViewIndex = _ViewIndex;
-                ViewIndexChangedEvent?.Invoke(_ViewIndex, value); _ViewIndex = value; NotifyPropertyChanged(); } }
+                ViewIndexChangedEvent?.Invoke(_ViewIndex, value); _ViewIndex = value; OnPropertyChanged(); } }
 
         private int _ViewIndex = -1;
         public ViewType ViewType
@@ -42,10 +42,10 @@ namespace ColorVision.UI.Views
         public int PreViewIndex { get => _PreViewIndex; private set { _PreViewIndex = value;   } }
         private int _PreViewIndex = -1;
 
-        public ImageSource Icon { get => _Icon; set { _Icon = value; NotifyPropertyChanged(); } }
+        public ImageSource Icon { get => _Icon; set { _Icon = value; OnPropertyChanged(); } }
         private ImageSource _Icon;
 
-        public string Title { get => _Title; set { _Title = value; NotifyPropertyChanged(); }}
+        public string Title { get => _Title; set { _Title = value; OnPropertyChanged(); }}
         private string _Title = string.Empty;
     }
 }

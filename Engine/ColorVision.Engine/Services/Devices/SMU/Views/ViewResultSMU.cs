@@ -146,7 +146,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         public Scatter ScatterPlot { get; set; }
 
 
-        public int Id { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }
+        public int Id { get => _ID; set { _ID = value; OnPropertyChanged(); } }
         private int _ID;
         public DateTime? CreateTime { get; set; }
         public string? Batch { get; set; }

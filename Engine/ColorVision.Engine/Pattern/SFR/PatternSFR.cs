@@ -11,25 +11,25 @@ namespace ColorVision.Engine.Pattern.SFR
 {
     public class PatternSFRConfig:ViewModelBase,IConfig
     {
-        public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; NotifyPropertyChanged(); } }
+        public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _MainBrush = Brushes.White;
 
-        public SolidColorBrush AltBrush { get => _AltBrush; set { _AltBrush = value; NotifyPropertyChanged(); } }
+        public SolidColorBrush AltBrush { get => _AltBrush; set { _AltBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _AltBrush = Brushes.Black;
 
-        public int Cols { get => _Cols; set { _Cols = value; NotifyPropertyChanged(); } }
+        public int Cols { get => _Cols; set { _Cols = value; OnPropertyChanged(); } }
         private int _Cols = 3;
 
-        public int Rows { get => _Rows; set { _Rows = value; NotifyPropertyChanged(); } }
+        public int Rows { get => _Rows; set { _Rows = value; OnPropertyChanged(); } }
         private int _Rows = 3;
 
-        public int SquareSize { get => _SquareSize; set { _SquareSize = value; NotifyPropertyChanged(); } }
+        public int SquareSize { get => _SquareSize; set { _SquareSize = value; OnPropertyChanged(); } }
         private int _SquareSize = 50;
 
-        public double AngleDeg { get => _AngleDeg; set { _AngleDeg = value; NotifyPropertyChanged(); } }
+        public double AngleDeg { get => _AngleDeg; set { _AngleDeg = value; OnPropertyChanged(); } }
         private double _AngleDeg = 10.0;
 
-        public double BorderRatio { get => _BorderRatio; set { _BorderRatio = value; NotifyPropertyChanged(); } }
+        public double BorderRatio { get => _BorderRatio; set { _BorderRatio = value; OnPropertyChanged(); } }
         private double _BorderRatio = 0.1;
 
     }
