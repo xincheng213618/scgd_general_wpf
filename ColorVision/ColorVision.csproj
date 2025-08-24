@@ -64,6 +64,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
+    <ProjectReference Include="..\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
+    <ProjectReference Include="..\UI\ColorVision.Scheduler\ColorVision.Scheduler.csproj" />
+    <ProjectReference Include="..\UI\ColorVision.SocketProtocol\ColorVision.SocketProtocol.csproj" />
     <ProjectReference Include="..\UI\ColorVision.Solution\ColorVision.Solution.csproj" />
     <ProjectReference Include="..\UI\ColorVision.UI\ColorVision.UI.csproj" />
   </ItemGroup>

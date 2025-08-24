@@ -1,15 +1,15 @@
 ﻿using AvalonDock.Layout;
 using ColorVision.Common.Utilities;
 using ColorVision.Solution.Searches;
+using Microsoft.Web.WebView2.Wpf;
 using System.IO;
 using System.Windows;
-using System.Windows.Controls;
 
 
 namespace ColorVision.Solution.Editor
 {
-    [FolderEditor("图片编辑器")]
-    public class ProjectEditor : EditorBase
+    [GenericEditor("浏览器编辑器")]
+    public class WebView2Editor : EditorBase
     {
         public override void Open(string filePath)
         {
@@ -36,28 +36,12 @@ namespace ColorVision.Solution.Editor
 
                 var directory = new DirectoryInfo(filePath);
 
-                StackPanel stackPanel = new StackPanel();
-                foreach (var item in directory.GetFiles())
-                {
-                    TextBox textBox = new TextBox
-                    {
-                        Text = item.Name,
-                        Margin = new Thickness(5),
-                        Tag = item.FullName,
-                        IsReadOnly = true
-                    };
+                WebView2 webView2 = new WebView2();
 
-                    stackPanel.Children.Add(textBox);   
-
-                }
-                UserControl userControl = new UserControl
-                {
-                    Content = stackPanel
-                };
 
                 LayoutDocument layoutDocument = new LayoutDocument() { ContentId = GuidId, Title = Path.GetFileName(filePath) };
 
-                layoutDocument.Content = userControl;
+                layoutDocument.Content = webView2;
                 SolutionViewExtensions.LayoutDocumentPane.Children.Add(layoutDocument);
                 SolutionViewExtensions.LayoutDocumentPane.SelectedContentIndex = SolutionViewExtensions.LayoutDocumentPane.IndexOf(layoutDocument);
                 layoutDocument.IsActiveChanged += (s, e) =>
