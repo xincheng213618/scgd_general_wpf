@@ -7,14 +7,13 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:resx="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        Title="ColorVision" Height="500"  Width="400" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="ColorVision" Height="300"  Width="400" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid x:Name="MainGrid" Background="#11ECEFFF">
         <Grid.RowDefinitions>
             <RowDefinition Height="61*"/>
             <RowDefinition Height="36*"/>
         </Grid.RowDefinitions>
         <StackPanel Margin="10,10,10,10" Grid.RowSpan="2">
-            <Image Source="/ColorVision.Engine;component/Assets/Image/ColorVision.png"  Stretch="Uniform" Height="80" Margin="10"/>
             <Border Background="{DynamicResource GlobalBorderBrush}" Margin="20,10" Height="250" CornerRadius="10">
                 <Grid>
                     <Grid.RowDefinitions>
