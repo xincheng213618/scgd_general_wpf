@@ -102,56 +102,5 @@ namespace ColorVision.Database
 
         }
 
-        public List<T> ConditionalQuery(Dictionary<string, object> param, int limit = -1)
-        {
-            string sql = $"select * from {TableName} where 1=1";
-            // 遍历字典，为每个键值对构建查询条件
-            foreach (var pair in param)
-            {
-                // 这假设字典的键是数据库列的名称
-                // 并且值是你想要匹配的模式
-                if (pair.Value != null && !string.IsNullOrEmpty(pair.Value.ToString()))
-                {
-                    // 对于安全起见，应该使用参数化查询来避免SQL注入
-
-                    if (pair.Key.StartsWith(">", StringComparison.CurrentCulture))
-                    {
-                        sql += $" AND `{pair.Key[1..]}` > '{pair.Value.ToString()}'";
-                    }
-                    else if (pair.Key.StartsWith("<", StringComparison.CurrentCulture))
-                    {
-                        sql += $" AND `{pair.Key.Substring(1)}` < '{pair.Value.ToString()}'";
-                    }
-                    else
-                    {
-                        sql += $" AND `{pair.Key}` LIKE '%{pair.Value}%'";
-                    }
-                }
-            }
-            if (limit >= 1)
-            {
-                sql += $" ORDER BY id DESC LIMIT {limit}";
-            }
-            DataTable d_info = GetData(sql, param);
-            List<T> list = new List<T>(d_info.Rows.Count);
-            try
-            {
-                foreach (var item in d_info.AsEnumerable())
-                {
-
-                    T? model = GetModelFromDataRow(item);
-                    if (model != null)
-                    {
-                        list.Add(model);
-                    }
-                }
-                return list;
-            }
-            catch (Exception ex)
-            {
-                log.Debug(ex);
-                return list;
-            }
-        }
     }
 }

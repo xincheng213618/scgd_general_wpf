@@ -98,9 +98,8 @@ namespace ColorVision.Engine.Archive.Dao
         }
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            var BatchResultMasterModels = batchResultMasterDao.ConditionalQuery(SearchBox.Text);
             ViewResults.Clear();
-            foreach (var item in BatchResultMasterModels)
+            foreach (var item in MySqlControl.GetInstance().DB.Queryable<BatchResultMasterModel>().Where(x => x.Code == SearchBox.Text).ToList())
             {
                 ViewResults.AddUnique(new ViewBatchResult(item));
             }
@@ -108,9 +107,8 @@ namespace ColorVision.Engine.Archive.Dao
 
         private void Query_Click(object sender, RoutedEventArgs e)
         {
-            var BatchResultMasterModels = batchResultMasterDao.ConditionalQuery(SearchBox.Text);
             ViewResults.Clear();
-            foreach (var item in BatchResultMasterModels)
+            foreach (var item in MySqlControl.GetInstance().DB.Queryable<BatchResultMasterModel>().Where(x => x.Code == SearchBox.Text).ToList())
             {
                 ViewResults.AddUnique(new ViewBatchResult(item));
             }

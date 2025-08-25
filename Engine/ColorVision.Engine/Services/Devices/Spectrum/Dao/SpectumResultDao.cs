@@ -114,37 +114,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
 
 
 
-        public List<SpectumResultModel> selectBySN(string sn)
-        {
-            List<SpectumResultModel> list = new List<SpectumResultModel>();
-            DataTable d_info = GetTableAllBySN(sn);
-            foreach (var item in d_info.AsEnumerable())
-            {
-                SpectumResultModel? model = GetModelFromDataRow(item);
-                if (model != null)
-                {
-                    list.Add(model);
-                }
-            }
-            return list;
-        }
 
-        private DataTable GetTableAllBySN(string bid)
-        {
-            string sql = $"select * from {TableName} where batch_id='{bid}'";
-            DataTable d_info = GetData(sql);
-            return d_info;
-        }
-
-        public List<SpectumResultModel> ConditionalQuery(string id, string batchid,DateTime? dateTimeSTART,DateTime? dateTimeEnd)
-        {
-            Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
-            keyValuePairs.Add("id", id);
-            keyValuePairs.Add("batch_id", batchid);
-            keyValuePairs.Add(">create_date", dateTimeSTART);
-            keyValuePairs.Add("<create_date", dateTimeEnd);
-            return ConditionalQuery(keyValuePairs);
-        }
         public override SpectumResultModel GetModelFromDataRow(DataRow item) => new SpectumResultModel
         {
             Id = item.Field<int>("id"),

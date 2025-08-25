@@ -462,23 +462,10 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
-            if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text) && SearchTimeSart.SelectedDateTime==DateTime.MinValue)
+            foreach (var item in MRSmuScanDao.Instance.GetAll())
             {
-                foreach (var item in MRSmuScanDao.Instance.GetAll())
-                {
-                    ViewResultSMU viewResultSMU = new(item);
-                    ViewResults.Add(viewResultSMU);
-                };
-            }
-            else
-            {
-
-                var list = MRSmuScanDao.Instance.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text ,SearchTimeSart.SelectedDateTime, SearchTimeEnd.SelectedDateTime);
-                foreach (var item in list)
-                {
-                    ViewResultSMU viewResultSMU = new(item);
-                    ViewResults.Add(viewResultSMU);
-                };
+                ViewResultSMU viewResultSMU = new(item);
+                ViewResults.Add(viewResultSMU);
             }
             if (ViewResults.Count > 0)
             {
