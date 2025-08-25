@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Engine.Templates.Validate.Dic
+namespace ColorVision.Engine.Templates.Validate
 {
     public class DicComplyParam : ParamModBase
     {

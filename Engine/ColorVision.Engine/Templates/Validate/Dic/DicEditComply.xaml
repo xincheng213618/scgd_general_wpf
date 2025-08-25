@@ -1,9 +1,10 @@
-﻿<UserControl x:Class="ColorVision.Engine.Templates.Validate.Dic.DicEditComply"
+﻿<UserControl x:Class="ColorVision.Engine.Templates.Validate.DicEditComply"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ColorVision.Engine.Templates.Validate.Dic"
+             xmlns:local="clr-namespace:ColorVision.Engine.Templates.Validate"
+             xmlns:en="clr-namespace:ColorVision.Engine"
              xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DicComplyParam}"
@@ -30,42 +31,42 @@
                     </GridView.ColumnHeaderContainerStyle>
                     <GridViewColumn  Header="Code">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:SysDictionaryModItemValidateModel}">
+                            <DataTemplate  DataType="{x:Type en:SysDictionaryModItemValidateModel}">
                                 <TextBlock Text="{Binding Code}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn  Header="ValMax">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:SysDictionaryModItemValidateModel}">
+                            <DataTemplate  DataType="{x:Type en:SysDictionaryModItemValidateModel}">
                                 <TextBox Text="{ Binding  ValMax}" Width="40"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn  Header="ValMin">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:SysDictionaryModItemValidateModel}">
+                            <DataTemplate  DataType="{x:Type en:SysDictionaryModItemValidateModel}">
                                 <TextBox Text="{ Binding  ValMin}" Width="40"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn  Header="ValEqual">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:SysDictionaryModItemValidateModel}">
+                            <DataTemplate  DataType="{x:Type en:SysDictionaryModItemValidateModel}">
                                 <TextBox Text="{ Binding ValEqual}" Width="40"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn  Header="ValRadix">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:SysDictionaryModItemValidateModel}">
+                            <DataTemplate  DataType="{x:Type en:SysDictionaryModItemValidateModel}">
                                 <TextBox Text="{ Binding  ValRadix}" Width="40" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn  Header="IsEnable">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:SysDictionaryModItemValidateModel}">
+                            <DataTemplate  DataType="{x:Type en:SysDictionaryModItemValidateModel}">
                                 <CheckBox IsChecked="{ Binding  IsEnable}" Width="40" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>

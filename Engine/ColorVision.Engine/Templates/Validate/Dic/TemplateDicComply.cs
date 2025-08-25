@@ -6,7 +6,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Templates.Validate.Dic
+namespace ColorVision.Engine.Templates.Validate
 {
     public class TemplateDicComply : ITemplate<DicComplyParam>
     {

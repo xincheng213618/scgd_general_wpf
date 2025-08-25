@@ -1,7 +1,7 @@
 ﻿using ColorVision.Database;
 using SqlSugar;
 
-namespace ColorVision.Engine.Templates.Validate.Dic
+namespace ColorVision.Engine
 {
     [SugarTable("t_scgd_sys_dictionary_mod_item_validate")]
     public class SysDictionaryModItemValidateModel : VPKModel
