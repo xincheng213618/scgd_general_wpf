@@ -1,7 +1,6 @@
 ﻿using ColorVision.Database;
 using SqlSugar;
 using System;
-using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Dao
 {

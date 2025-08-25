@@ -4,6 +4,7 @@ using System;
 
 namespace ColorVision.Engine
 {
+
     public enum ArchiveStatus
     {
         NotArchived = -1,

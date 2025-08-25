@@ -1,6 +1,5 @@
 ﻿using ColorVision.Database;
 using SqlSugar;
-using System.Collections.Generic;
 
 namespace ColorVision.Engine.Templates
 {

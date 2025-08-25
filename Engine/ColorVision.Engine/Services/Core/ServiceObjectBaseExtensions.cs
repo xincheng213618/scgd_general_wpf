@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Terminal;
 using Newtonsoft.Json;
 using ColorVision.Database;

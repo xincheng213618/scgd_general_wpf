@@ -2,7 +2,7 @@
 using System;
 using SqlSugar;
 
-namespace ColorVision.Engine.Templates
+namespace ColorVision.Engine
 {
     [SugarTable("t_scgd_mod_param_master")]
     public class ModMasterModel : PKModel

@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Templates.SysDictionary;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Templates.Validate.Dic

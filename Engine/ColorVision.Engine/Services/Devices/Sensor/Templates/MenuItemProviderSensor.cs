@@ -3,7 +3,6 @@ using ColorVision.Engine.Templates;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Windows;
-using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.Database;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates

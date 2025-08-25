@@ -1,8 +1,5 @@
 ﻿using ColorVision.Database;
-using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using SqlSugar;
-using static iText.StyledXmlParser.Jsoup.Select.Evaluator;
 
 namespace ColorVision.Engine.Services.Core
 {

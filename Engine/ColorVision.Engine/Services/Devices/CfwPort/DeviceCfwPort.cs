@@ -1,6 +1,5 @@
 ﻿using ColorVision.UI;
 using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Common.MVVM;

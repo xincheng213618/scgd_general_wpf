@@ -1,8 +1,6 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Database;
+﻿using ColorVision.Database;
 using SqlSugar;
 using System;
-using System.Collections.Generic;
 
 namespace ColorVision.Engine.Templates
 {

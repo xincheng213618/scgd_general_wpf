@@ -234,7 +234,7 @@ namespace ColorVision.Engine.Services
 
         public void LoadgroupResource(GroupResource groupResource)
         {
-            Db.CodeFirst.InitTables<ResourceGoup>();
+            Db.CodeFirst.InitTables<SysResourceGoupModel>();
 
             List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetGroupResourceItems(groupResource.SysResourceModel.Id);
             foreach (var sysResourceModel in sysResourceModels)

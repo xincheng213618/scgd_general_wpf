@@ -1,6 +1,4 @@
-﻿using ColorVision.Engine.Abstractions;
-using ColorVision.Database;
-using Newtonsoft.Json;
+﻿using ColorVision.Database;
 using SqlSugar;
 
 namespace ColorVision.Engine.Templates.Jsons

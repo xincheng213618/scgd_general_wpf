@@ -2,13 +2,11 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using cvColorVision;
-using Newtonsoft.Json;
 using ScottPlot;
 using ScottPlot.Plottables;
 using System;

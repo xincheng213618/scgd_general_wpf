@@ -18,7 +18,6 @@ using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using CVCommCore;
 using log4net;
-using Mysqlx.Crud;
 using SqlSugar;
 using System;
 using System.ComponentModel;
