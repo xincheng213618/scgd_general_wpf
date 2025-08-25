@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Solution.Searches;
 using ColorVision.UI.Sorts;
@@ -20,12 +19,12 @@ namespace ColorVision.Engine.Archive.Dao
 
     public class ViewBatchResult : ViewModelBase,ISortID
     {
-        public BatchResultMasterModel BatchResultMasterModel { get; set; }
+        public MeasureBatchModel BatchResultMasterModel { get; set; }
         public ViewBatchResult()
         {
 
         }
-        public ViewBatchResult(BatchResultMasterModel batchResultMasterModel)
+        public ViewBatchResult(MeasureBatchModel batchResultMasterModel)
         {
             BatchResultMasterModel = batchResultMasterModel;
             Id = batchResultMasterModel.Id;
@@ -99,7 +98,7 @@ namespace ColorVision.Engine.Archive.Dao
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             ViewResults.Clear();
-            foreach (var item in MySqlControl.GetInstance().DB.Queryable<BatchResultMasterModel>().Where(x => x.Code == SearchBox.Text).ToList())
+            foreach (var item in MySqlControl.GetInstance().DB.Queryable<MeasureBatchModel>().Where(x => x.Code == SearchBox.Text).ToList())
             {
                 ViewResults.AddUnique(new ViewBatchResult(item));
             }
@@ -108,7 +107,7 @@ namespace ColorVision.Engine.Archive.Dao
         private void Query_Click(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
-            foreach (var item in MySqlControl.GetInstance().DB.Queryable<BatchResultMasterModel>().Where(x => x.Code == SearchBox.Text).ToList())
+            foreach (var item in MySqlControl.GetInstance().DB.Queryable<MeasureBatchModel>().Where(x => x.Code == SearchBox.Text).ToList())
             {
                 ViewResults.AddUnique(new ViewBatchResult(item));
             }
@@ -179,7 +178,7 @@ namespace ColorVision.Engine.Archive.Dao
 
         private void AdvanceQuery_Click(object sender, RoutedEventArgs e)
         {
-            GenericQuery<BatchResultMasterModel, ViewBatchResult> genericQuery = new GenericQuery<BatchResultMasterModel, ViewBatchResult>(MySqlControl.GetInstance().DB, ViewResults, t => new ViewBatchResult(t));
+            GenericQuery<MeasureBatchModel, ViewBatchResult> genericQuery = new GenericQuery<MeasureBatchModel, ViewBatchResult>(MySqlControl.GetInstance().DB, ViewResults, t => new ViewBatchResult(t));
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
         }

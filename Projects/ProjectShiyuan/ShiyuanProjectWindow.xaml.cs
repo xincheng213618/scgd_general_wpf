@@ -3,7 +3,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MQTT;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Compliance;
@@ -26,6 +25,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using ColorVision.Engine.Dao;
 
 namespace ColorVision.Projects.ProjectShiYuan
 {
@@ -540,7 +540,7 @@ namespace ColorVision.Projects.ProjectShiYuan
 
         public static void BeginNewBatch(string sn, string name)
         {
-            BatchResultMasterModel batch = new();
+            MeasureBatchModel batch = new();
             batch.Name = string.IsNullOrEmpty(name) ? sn : name;
             batch.Code = sn;
             batch.CreateDate = DateTime.Now;

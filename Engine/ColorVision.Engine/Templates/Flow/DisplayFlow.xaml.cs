@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8602,CS8603,CS8601
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Scheduler;
@@ -451,7 +450,7 @@ namespace ColorVision.Engine.Templates.Flow
             stopwatch.Start();
 
             timer.Change(0, 100); // 启动定时器
-            BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = sn, Code = sn, CreateDate = DateTime.Now });
+            BatchResultMasterDao.Instance.Save(new MeasureBatchModel() { Name = sn, Code = sn, CreateDate = DateTime.Now });
             flowControl.Start(sn);
         }
 

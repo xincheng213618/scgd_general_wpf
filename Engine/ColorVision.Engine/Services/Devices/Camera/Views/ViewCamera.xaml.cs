@@ -134,17 +134,17 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 case MQTTCameraEventEnum.Event_GetData:
                     if (arg.Data == null) return;
                     int masterId = Convert.ToInt32(arg.Data.MasterId);
-                    List<MeasureImgResultModel> resultMaster = null;
+                    List<MeasureResultImgModel> resultMaster = null;
                     if (masterId > 0)
                     {
-                        resultMaster = new List<MeasureImgResultModel>();
-                        MeasureImgResultModel model = MeasureImgResultDao.Instance.GetById(masterId);
+                        resultMaster = new List<MeasureResultImgModel>();
+                        MeasureResultImgModel model = MeasureImgResultDao.Instance.GetById(masterId);
                         if (model != null)
                             resultMaster.Add(model);
                     }
                     if (resultMaster != null)
                     {
-                        foreach (MeasureImgResultModel result in resultMaster)
+                        foreach (MeasureResultImgModel result in resultMaster)
                         {
                             Application.Current?.Dispatcher.BeginInvoke(() =>
                             {
@@ -261,7 +261,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             }
         }
 
-        public void ShowResult(MeasureImgResultModel model)
+        public void ShowResult(MeasureResultImgModel model)
         {
             ViewResultCamera result = new(model);
 
@@ -280,7 +280,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public void SearchAll()
         {
             ViewResults.Clear();
-            var query = MySqlControl.GetInstance().DB.Queryable<MeasureImgResultModel>();
+            var query = MySqlControl.GetInstance().DB.Queryable<MeasureResultImgModel>();
             query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
             foreach (var item in dbList)
@@ -294,7 +294,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
-            GenericQuery<MeasureImgResultModel,ViewResultCamera> genericQuery = new GenericQuery<MeasureImgResultModel, ViewResultCamera>(MySqlControl.GetInstance().DB, ViewResults,t=> new ViewResultCamera(t));
+            GenericQuery<MeasureResultImgModel,ViewResultCamera> genericQuery = new GenericQuery<MeasureResultImgModel, ViewResultCamera>(MySqlControl.GetInstance().DB, ViewResults,t=> new ViewResultCamera(t));
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
         }

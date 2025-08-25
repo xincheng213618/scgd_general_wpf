@@ -88,7 +88,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                     log.Debug($"masterId:{masterId}");
                     if (masterId > 0)
                     {
-                        MeasureImgResultModel model = MeasureImgResultDao.Instance.GetById(masterId);
+                        MeasureResultImgModel model = MeasureImgResultDao.Instance.GetById(masterId);
                         if (model != null)
                         {
                             log.Debug($"FileUrl：{model.FileUrl}");
@@ -108,7 +108,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         }
 
 
-        public void ShowResult(MeasureImgResultModel model)
+        public void ShowResult(MeasureResultImgModel model)
         {
             ViewResultCamera result = new(model);
             ViewResults.AddUnique(result);
@@ -199,7 +199,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
-            var query = MySqlControl.GetInstance().DB.Queryable<MeasureImgResultModel>();
+            var query = MySqlControl.GetInstance().DB.Queryable<MeasureResultImgModel>();
             query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
             foreach (var item in dbList)
@@ -212,7 +212,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
-            GenericQuery<MeasureImgResultModel, ViewResultCamera> genericQuery = new GenericQuery<MeasureImgResultModel, ViewResultCamera>(MySqlControl.GetInstance().DB, ViewResults, t => new ViewResultCamera(t));
+            GenericQuery<MeasureResultImgModel, ViewResultCamera> genericQuery = new GenericQuery<MeasureResultImgModel, ViewResultCamera>(MySqlControl.GetInstance().DB, ViewResults, t => new ViewResultCamera(t));
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
         }

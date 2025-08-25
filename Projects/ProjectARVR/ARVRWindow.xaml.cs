@@ -56,6 +56,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.Engine;
 
 namespace ProjectARVR
 {
@@ -576,7 +577,7 @@ namespace ProjectARVR
             stopwatch.Reset();
             stopwatch.Start();
 
-            BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
+            BatchResultMasterDao.Instance.Save(new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
 
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
@@ -687,7 +688,7 @@ namespace ProjectARVR
         private void Processing(string SerialNumber)
         {
             IsSavePicture = true;
-            BatchResultMasterModel Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
+            MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
 
             if (Batch == null)
             {

@@ -3,7 +3,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MQTT;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
@@ -29,6 +28,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.Engine.Dao;
 
 namespace ProjectBlackMura
 {
@@ -340,7 +340,7 @@ namespace ProjectBlackMura
             stopwatch.Reset();
             stopwatch.Start();
 
-            BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
+            BatchResultMasterDao.Instance.Save(new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
 
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器

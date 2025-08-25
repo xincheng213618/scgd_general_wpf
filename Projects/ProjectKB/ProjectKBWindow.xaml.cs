@@ -2,8 +2,8 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Abstractions;
+using ColorVision.Engine.Dao;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
@@ -290,7 +290,7 @@ namespace ProjectKB
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
             stopwatch.Reset();
             stopwatch.Start();
-            BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
+            BatchResultMasterDao.Instance.Save(new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
 
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
@@ -361,7 +361,7 @@ namespace ProjectKB
 
                 if (CurrentFlowResult.Msg.Contains("SDK return failed"))
                 {
-                    BatchResultMasterModel Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
+                    MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
                     if (Batch != null)
                     {
                         var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);

@@ -1383,7 +1383,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             var db = MySqlControl.GetInstance().DB;
 
-            var recentItems = db.Queryable<MeasureImgResultModel>()
+            var recentItems = db.Queryable<MeasureResultImgModel>()
                    .OrderBy(it => it.CreateDate, OrderByType.Desc)
                    .Take(6)
                    .ToList();
@@ -1445,7 +1445,7 @@ namespace ColorVision.Engine.Templates.POI
 
 
 
-        private ObservableCollection<MeasureImgResultModel> MeasureImgResultModels = new();
+        private ObservableCollection<MeasureResultImgModel> MeasureImgResultModels = new();
         private void Button_RefreshImg_Click(object sender, RoutedEventArgs e)
         {
             MeasureImgResultModels.Clear();
@@ -1466,7 +1466,7 @@ namespace ColorVision.Engine.Templates.POI
             {
                 try
                 {
-                    if (MeasureImgResultModels[ComboBoxImg.SelectedIndex] is MeasureImgResultModel model && model.FileUrl != null)
+                    if (MeasureImgResultModels[ComboBoxImg.SelectedIndex] is MeasureResultImgModel model && model.FileUrl != null)
                     {
                         OpenImage(new NetFileUtil().OpenLocalCVFile(model.FileUrl, CVType.Raw));
                         PoiConfig.BackgroundFilePath = model.FileUrl;
@@ -2064,17 +2064,17 @@ namespace ColorVision.Engine.Templates.POI
                 msgRecord.MsgSucessed += (arg) =>
                 {
                     int masterId = Convert.ToInt32(arg.Data.MasterId);
-                    List<MeasureImgResultModel> resultMaster = null;
+                    List<MeasureResultImgModel> resultMaster = null;
                     if (masterId > 0)
                     {
-                        resultMaster = new List<MeasureImgResultModel>();
-                        MeasureImgResultModel model = MeasureImgResultDao.Instance.GetById(masterId);
+                        resultMaster = new List<MeasureResultImgModel>();
+                        MeasureResultImgModel model = MeasureImgResultDao.Instance.GetById(masterId);
                         if (model != null)
                             resultMaster.Add(model);
                     }
                     if (resultMaster != null)
                     {
-                        foreach (MeasureImgResultModel result in resultMaster)
+                        foreach (MeasureResultImgModel result in resultMaster)
                         {
                             try
                             {

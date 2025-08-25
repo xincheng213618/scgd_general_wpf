@@ -3,6 +3,7 @@ using ColorVision.Common.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
+using ColorVision.Engine;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
@@ -343,7 +344,7 @@ namespace ProjectARVRLite
             if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否删除 {item.SN} 测试结果？", "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 ViewResluts.Remove(item);
-                MySqlControl.GetInstance().DB.Deleteable<BatchResultMasterModel>().Where(it => it.Id == item.Id).ExecuteCommand();
+                MySqlControl.GetInstance().DB.Deleteable<MeasureBatchModel>().Where(it => it.Id == item.Id).ExecuteCommand();
                 log.Info($"删除测试结果 {item.SN}");
             }
         }
@@ -483,7 +484,7 @@ namespace ProjectARVRLite
             stopwatch.Reset();
             stopwatch.Start();
 
-            BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
+            BatchResultMasterDao.Instance.Save(new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
 
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
@@ -582,7 +583,7 @@ namespace ProjectARVRLite
 
                 if (CurrentFlowResult.Msg.Contains("SDK return failed")|| CurrentFlowResult.Msg.Contains("Not get cie file"))
                 {
-                    BatchResultMasterModel Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
+                    MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
                     if (Batch != null)
                     {
                         var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
@@ -657,7 +658,7 @@ namespace ProjectARVRLite
 
         private void Processing(string SerialNumber)
         {
-            BatchResultMasterModel Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
+            MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
 
 
             if (Batch == null)

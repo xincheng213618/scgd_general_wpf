@@ -30,18 +30,18 @@ namespace ColorVision.Engine.Services.Dao
         {
 
         }
-        public ViewResultCamera(MeasureImgResultModel measureImgResultModel)
+        public ViewResultCamera(MeasureResultImgModel measureImgResultModel)
         {
             Id = measureImgResultModel.Id;
             FilePath = measureImgResultModel.RawFile ?? string.Empty;
             FileUrl = measureImgResultModel.FileUrl ?? string.Empty;
             FileType = (CameraFileType)(measureImgResultModel.FileType ?? 0);
-            ReqParams = measureImgResultModel.ReqParams ?? string.Empty;
+            ReqParams = measureImgResultModel.Params ?? string.Empty;
             ImgFrameInfo = measureImgResultModel.ImgFrameInfo ?? string.Empty;
             CreateTime = measureImgResultModel.CreateDate;
             ResultCode = measureImgResultModel.ResultCode;
-            ResultMsg = measureImgResultModel.ResultMsg;
-            ResultDesc = measureImgResultModel.ResultMsg ?? string.Empty;
+            ResultMsg = measureImgResultModel.Result;
+            ResultDesc = measureImgResultModel.Result ?? string.Empty;
             _totalTime = measureImgResultModel.TotalTime;
             DeviceCode = measureImgResultModel.DeviceCode;
             ExportCVCIECommand = new RelayCommand(a => Export(), a => File.Exists(FileUrl));
