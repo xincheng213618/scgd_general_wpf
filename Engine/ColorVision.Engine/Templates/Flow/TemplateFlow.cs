@@ -4,7 +4,6 @@ using ColorVision.Database;
 using ColorVision.Engine.Rbac;
 using ColorVision.UI.Extension;
 using CVCommCore;
-using Dm.util;
 using Newtonsoft.Json;
 using SqlSugar;
 using System;
@@ -138,7 +137,7 @@ namespace ColorVision.Engine.Templates.Flow
             flowParam.ModMaster.Name = flowParam.Name;
             db.Updateable(flowParam.ModMaster).ExecuteCommand();
 
-            List<Templates.ModDetailModel> details = new();
+            List<ModDetailModel> details = new();
             flowParam.GetDetail(details);
             if (details.Count > 0)
             {
@@ -336,7 +335,7 @@ namespace ColorVision.Engine.Templates.Flow
                         };
                         id = Db.Insertable(sysResourceModel).ExecuteReturnIdentity();
 
-                        flowDetail[0].ValueA = id.toString();
+                        flowDetail[0].ValueA = id.ToString();
                         Db.Updateable(flowDetail[0]).ExecuteCommand();
 
                     }
