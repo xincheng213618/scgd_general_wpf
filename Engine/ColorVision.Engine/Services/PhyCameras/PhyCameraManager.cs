@@ -34,6 +34,8 @@ namespace ColorVision.Engine.Services.PhyCameras
         private static PhyCameraManager _instance;
         private static readonly object Locker = new();
         public static PhyCameraManager GetInstance() { lock (Locker) { return _instance ??= new PhyCameraManager(); } }
+        public static SqlSugar.SqlSugarClient Db => MySqlControl.GetInstance().DB;
+
         public RelayCommand CreateCommand { get; set; }
 
         public RelayCommand ImportCommand { get; set; }
@@ -302,7 +304,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         private static void LoadPhyCameraResources(PhyCamera phyCamera)
         {
-            var sysResourceModels = SysResourceDao.Instance.GetResourceItems(phyCamera.SysResourceModel.Id);
+            var sysResourceModels =  Db.Queryable<SysResourceModel>().Where(it => it.Pid == phyCamera.SysResourceModel.Id && it.IsDelete == false && it.IsEnable == true).ToList();
             foreach (var sysResourceModel in sysResourceModels)
             {
                 switch (sysResourceModel.Type)

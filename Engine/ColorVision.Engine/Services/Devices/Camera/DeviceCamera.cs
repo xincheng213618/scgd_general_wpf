@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Messages;
 using ColorVision.Database;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
@@ -18,6 +18,8 @@ using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using CVCommCore;
 using log4net;
+using Mysqlx.Crud;
+using SqlSugar;
 using System;
 using System.ComponentModel;
 using System.Windows;
@@ -290,21 +292,29 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void FetchLatestTemperature(object a)
         {
-            var model = CameraTempDao.Instance.GetLatestCameraTemp(SysResourceModel.Id);
-            if (model != null)
+            try
             {
-                var list =CameraTempDao.Instance.GetCameraTempsByCreateDate(SysResourceModel.Id, 100);
-                list.Reverse();
-                TemperatureChartWindow window = new TemperatureChartWindow(list);
-                window.Show();
+                var list = Db.Queryable<CameraTempModel>()
+                    .Where(x => x.RescourceId == SysResourceModel.Id)
+                    .OrderBy(x => x.CreateDate, OrderByType.Desc)
+                    .Take(100)
+                    .ToList();
+
+                if (list != null && list.Count > 0)
+                {
+                    list.Reverse(); // 如果需要按时间升序显示，保留 Reverse
+                    TemperatureChartWindow window = new TemperatureChartWindow(list);
+                    window.Show();
+                }
+                else
+                {
+                    MessageBox1.Show(Application.Current.MainWindow, "查询不到对应的温度数据");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox1.Show(Application.Current.MainWindow, "查询不到对应的温度数据");
+                MessageBox1.Show(Application.Current.MainWindow, "查询温度数据时发生错误：" + ex.Message);
             }
-
-
-
         }
 
         public override UserControl GetDeviceInfo() => new InfoCamera(this);

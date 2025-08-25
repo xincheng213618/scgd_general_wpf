@@ -203,7 +203,7 @@ namespace ColorVision.Engine.Services
 
             foreach (var deviceService in DeviceServices)
             {
-                List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetResourceItems(deviceService.SysResourceModel.Id, UserConfig.TenantId);
+                List<SysResourceModel> sysResourceModels = Db.Queryable<SysResourceModel>().Where(it => it.Pid == deviceService.SysResourceModel.Id && it.IsDelete == false && it.IsEnable == true).ToList();
                 foreach (var sysResourceModel in sysResourceModels)
                 {
                     if (sysResourceModel.Type == (int)ServiceTypes.Group)
@@ -234,7 +234,8 @@ namespace ColorVision.Engine.Services
 
         public void LoadgroupResource(GroupResource groupResource)
         {
-            SysResourceDao.Instance.CreatResourceGroup();
+            Db.CodeFirst.InitTables<ResourceGoup>();
+
             List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetGroupResourceItems(groupResource.SysResourceModel.Id);
             foreach (var sysResourceModel in sysResourceModels)
             {

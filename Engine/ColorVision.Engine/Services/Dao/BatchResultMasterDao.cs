@@ -55,16 +55,6 @@ namespace ColorVision.Engine.Services.Dao
     {
         public static BatchResultMasterDao Instance { get; set; } = new BatchResultMasterDao();
 
-        public BatchResultMasterModel? GetByCode(string code)
-        {
-            string sql = $"select * from {TableName} where code=@code";
-            Dictionary<string, object> param = new()
-            {
-                { "code", code }
-            };
-            DataTable d_info = GetData(sql, param);
-            return (d_info !=null && d_info.Rows.Count == 1) ? GetModelFromDataRow(d_info.Rows[0]) : default;
-        }
-
+        public BatchResultMasterModel? GetByCode(string code) => Db.Queryable<BatchResultMasterModel>().Where(a => a.Code == code).First();
     }
 }

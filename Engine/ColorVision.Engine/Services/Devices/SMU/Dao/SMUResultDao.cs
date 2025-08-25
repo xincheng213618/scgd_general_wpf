@@ -1,9 +1,6 @@
 ﻿using ColorVision.Database;
 using SqlSugar;
 using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Dao
 {
@@ -37,31 +34,4 @@ namespace ColorVision.Engine.Services.Devices.SMU.Dao
         public DateTime? CreateDate { get; set; }
     }
 
-    public class SMUResultDao : BaseTableDao<SMUResultModel>
-    {
-
-        public static SMUResultDao Instance { get; set; } = new SMUResultDao();
-
-        public List<SMUResultModel> selectBySN(string sn)
-        {
-            List<SMUResultModel> list = new();
-            DataTable d_info = GetTableAllBySN(sn);
-            foreach (var item in d_info.AsEnumerable())
-            {
-                SMUResultModel? model = GetModelFromDataRow(item);
-                if (model != null)
-                {
-                    list.Add(model);
-                }
-            }
-            return list;
-        }
-
-        private DataTable GetTableAllBySN(string bid)
-        {
-            string sql = $"select * from {TableName} where batch_id='{bid}'";
-            DataTable d_info = GetData(sql);
-            return d_info;
-        }
-    }
 }
