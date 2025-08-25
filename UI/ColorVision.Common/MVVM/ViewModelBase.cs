@@ -15,28 +15,11 @@ namespace ColorVision.Common.MVVM
         /// <summary>
         /// 消息通知事件
         /// </summary>
-        public void OnPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
         protected virtual bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string propertyName = "")
         {
             storage = value;
-            OnPropertyChanged(propertyName);
-            return true;
-        }
-        protected virtual bool SetIfChangedProperty<T>(ref T storage, T value, [CallerMemberName] string propertyName = "")
-        {
-            if (EqualityComparer<T>.Default.Equals(storage, value)) return false;
-            storage = value;
-            OnPropertyChanged(propertyName);
-            return true;
-        }
-
-        protected virtual bool SetIfChangedProperty<T>(ref T storage, T value, Action onChanged, [CallerMemberName] string propertyName = "")
-        {
-            if (EqualityComparer<T>.Default.Equals(storage, value)) return false;
-
-            storage = value;
-            onChanged?.Invoke();
             OnPropertyChanged(propertyName);
             return true;
         }
