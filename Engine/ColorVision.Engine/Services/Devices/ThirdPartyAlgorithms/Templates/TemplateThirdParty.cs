@@ -3,6 +3,7 @@ using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Jsons;
+using ColorVision.Engine.Templates.POI.Dao;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -99,7 +100,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
 
             void DeleteSingle(int id)
             {
-                ModThirdPartyAlgorithmsDao.Instance.DeleteById(id, false);
+                Db.Deleteable<ModThirdPartyAlgorithmsModel>().Where(it => it.Id == id).ExecuteCommand();
                 TemplateParams.RemoveAt(index);
             }
 

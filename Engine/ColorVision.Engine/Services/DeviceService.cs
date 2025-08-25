@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CS8604,CS8631
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Database;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices;
@@ -14,6 +14,7 @@ using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;
 using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.ComponentModel;
 using System.IO;
@@ -96,6 +97,8 @@ namespace ColorVision.Engine.Services
 
     public class DeviceService<T> : DeviceService where T : DeviceServiceConfig, new()
     {
+
+        public SqlSugarClient Db => MySqlControl.GetInstance().DB;
         public T Config { get; set; }
 
         public override ImageSource Icon { get => _Icon; set { _Icon = value; OnPropertyChanged(); } }
@@ -248,7 +251,7 @@ namespace ColorVision.Engine.Services
 
             //删除数据库
             if (SysResourceModel != null)
-                SysResourceDao.Instance.DeleteById(SysResourceModel.Id,false);
+                 Db.Deleteable<SysResourceModel>().Where(it => it.Id == SysResourceModel.Id).ExecuteCommand();
 
             //删除设备服务
             ServiceManager.GetInstance().DeviceServices.Remove(this);

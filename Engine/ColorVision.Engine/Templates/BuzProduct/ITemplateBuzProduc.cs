@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.UI.Extension;
 using log4net;
 using Newtonsoft.Json;
@@ -115,9 +116,8 @@ namespace ColorVision.Engine.Templates.BuzProduct
             if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
             void DeleteSingle(int id)
             {
-                int ret = BuzProductDetailDao.Instance.DeleteById(id, false);
-                BuzProductDetailDao.Instance.DeleteAllByPid(id, false);
-                log.Info($"Delete Tempate：{TemplateParams[index].Key},ret{ret}");
+                Db.Deleteable<BuzProductMasterModel>().Where(x => x.Id == id).ExecuteCommand();
+                Db.Deleteable<BuzProductDetailModel>().Where(x => x.Pid == id).ExecuteCommand();
                 TemplateParams.RemoveAt(index);
             }
 

@@ -240,7 +240,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 this.VisualChildren.Clear();
                 Task.Run(() =>
                 {
-                    SysResourceDao.Instance.DeleteAllByPid(Id ,false);
+                    Db.Deleteable<SysResourceModel>().Where(x => x.Pid == SysResourceModel.Id).ExecuteCommand();
                     var ModMasterModels = Db.Queryable<ModMasterModel>().Where(x => x.ResourceId == Id).ToList();
                     foreach (var item in ModMasterModels)
                     {
@@ -256,7 +256,8 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.ConfirmDelete, "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
             CalibrationParams.Clear();
             this.VisualChildren.Clear();
-            SysResourceDao.Instance.DeleteAllByPid(Id, false);
+
+            Db.Deleteable<SysResourceModel>().Where(x => x.Pid == SysResourceModel.Id).ExecuteCommand();
 
             var ModMasterModels = Db.Queryable<ModMasterModel>().Where(x => x.ResourceId == Id).ToList();
             foreach (var item in ModMasterModels)

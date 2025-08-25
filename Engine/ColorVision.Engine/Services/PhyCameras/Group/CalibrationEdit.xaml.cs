@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Services.Core;
+﻿using ColorVision.Database;
+using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Themes;
@@ -176,7 +177,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                     GroupResource groupResource = selectedItem as GroupResource;
                     if (groupResource != null)
                     {
-                        SysResourceDao.Instance.DeleteById(groupResource.SysResourceModel.Id, false);
+                        MySqlControl.GetInstance().DB.Deleteable<SysResourceModel>().Where(it => it.Id == groupResource.SysResourceModel.Id).ExecuteCommand();
                         itemsToRemove.Add(groupResource);
                     }
                 }

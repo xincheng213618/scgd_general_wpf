@@ -1,5 +1,6 @@
 ﻿using ColorVision.Database;
 using ColorVision.Engine.Rbac;
+using ColorVision.Engine.Templates.BuzProduct;
 using ColorVision.Engine.Templates.SysDictionary;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -66,8 +67,8 @@ namespace ColorVision.Engine.Templates.Validate.Dic
 
             void DeleteSingle(int id)
             {
-                SysDictionaryModItemValidateDao.Instance.DeleteAllByPid(id);
-                int ret = SysDictionaryModMasterDao.Instance.DeleteById(id, false);
+                Db.Deleteable<SysDictionaryModItemValidateModel>().Where(x => x.Pid == id).ExecuteCommand();
+                Db.Deleteable<SysDictionaryModModel>().Where(x => x.Id == id).ExecuteCommand();
                 TemplateParams.RemoveAt(index);
             }
             if (selectedCount <= 1)

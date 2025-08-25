@@ -2,14 +2,15 @@
 using ColorVision.Common.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Database;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
-using ColorVision.Database;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.FindLightArea;
@@ -40,7 +41,6 @@ using log4net;
 using log4net.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-
 using Panuon.WPF.UI;
 using ProjectARVRLite;
 using ProjectARVRLite.PluginConfig;
@@ -61,6 +61,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using static iText.StyledXmlParser.Jsoup.Select.Evaluator;
 
 namespace ProjectARVRLite
 {
@@ -342,7 +343,7 @@ namespace ProjectARVRLite
             if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否删除 {item.SN} 测试结果？", "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 ViewResluts.Remove(item);
-                BatchResultMasterDao.Instance.DeleteById(item.Id);
+                MySqlControl.GetInstance().DB.Deleteable<BatchResultMasterModel>().Where(it => it.Id == item.Id).ExecuteCommand();
                 log.Info($"删除测试结果 {item.SN}");
             }
         }

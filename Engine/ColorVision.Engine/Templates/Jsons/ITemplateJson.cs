@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.UI.Extension;
 using log4net;
 using Newtonsoft.Json;
@@ -127,7 +128,7 @@ namespace ColorVision.Engine.Templates.Jsons
             if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
             void DeleteSingle(int id)
             {
-                int ret = TemplateJsonDao.Instance.DeleteById(id,false);
+                int ret = Db.Deleteable<ThirdPartyAlgorithmsModel>().Where(it => it.Id == id).ExecuteCommand();
                 log.Info($"Delete Tempate：{TemplateParams[index].Key},ret{ret}");
                 TemplateParams.RemoveAt(index);
             }

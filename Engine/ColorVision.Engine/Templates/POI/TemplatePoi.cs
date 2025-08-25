@@ -1,6 +1,8 @@
 ﻿using ColorVision.Database;
 using ColorVision.Engine.Rbac;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.POI.Dao;
+using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.UI.Extension;
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -69,8 +71,7 @@ namespace ColorVision.Engine.Templates.POI
         }
         public override void Delete(int index)
         {
-            PoiMasterDao poiMasterDao = new();
-            poiMasterDao.DeleteById(TemplateParams[index].Value.Id);
+            Db.Deleteable<PoiMasterModel>().Where(it => it.Id == TemplateParams[index].Value.Id).ExecuteCommand();
             TemplateParams.RemoveAt(index);
         }
 

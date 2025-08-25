@@ -45,65 +45,6 @@ namespace ColorVision.Database
             }
         }
 
-        public int SaveByPid(int pid, IEnumerable<T> datas)
-        {
-            DeleteAllByPid(pid, false);
-            DataTable dataTable = new DataTable(TableName);
-            CreateColumns(dataTable);
-            foreach (var item in datas)
-            {
-                DataRow row = dataTable.NewRow();
-                dataTable.Rows.Add(row);
-                Model2Row(item, row);
-                if (item.Id <= 0)
-                    row[PKField] = DBNull.Value;
-            }
-            return BulkInsertAsync(dataTable);
-        }
-
-        //如果检索代码看到了这里，应该是数据库的local_infile没有启用，这里设置即可  SET GLOBAL local_infile=1;
-        public int BulkInsertAsync(DataTable dataTable)
-        {
-            int count = -1;
-            MySqlConnector.MySqlConnection connection = new(MySqlControl.GetConnectionString() + ";SslMode = none;AllowLoadLocalInfile=True");
-            dataTable.TableName = TableName;
-            using (connection)
-            {
-                var bulkCopy = new MySqlConnector.MySqlBulkCopy(connection)
-                {
-                    DestinationTableName = dataTable.TableName
-                };
-
-
-                int i = 0;
-                foreach (DataColumn col in dataTable.Columns)
-                {
-                    bulkCopy.ColumnMappings.Add(new MySqlConnector.MySqlBulkCopyColumnMapping(i, col.ColumnName));
-                    i++;
-                }
-
-                try
-                {
-
-                    MySqlConnector.MySqlBulkCopyResult result = bulkCopy.WriteToServer(dataTable);
-                    count = result.RowsInserted;
-                    //check for problems
-                    //if (result.Warnings.Count != 0)
-                    //{
-                    //    /* handle potential Data loss warnings */
-                    //}
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex);
-                }
-            }
-
-            return count;
-        }
-
-
-
 
         public T? GetByParam(Dictionary<string, object> param) => GetAllByParam(param).FirstOrDefault();
 
@@ -212,10 +153,5 @@ namespace ColorVision.Database
                 return list;
             }
         }
-
-        public int DeleteAllByPid(int pid, bool IsLogicDel = true) => DeleteAllByParam(new Dictionary<string, object>() { { "pid", pid } }, IsLogicDel);
-
-        public int DeleteById(int id, bool IsLogicDel = true) => DeleteAllByParam(new Dictionary<string, object>() { { "id", id } }, IsLogicDel);
-
     }
 }

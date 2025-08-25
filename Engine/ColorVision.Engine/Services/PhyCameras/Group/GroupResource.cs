@@ -141,7 +141,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public override void Delete()
         {
             this.Parent?.RemoveChild(this);
-            SysResourceDao.Instance.DeleteById(this.Id);
+            Db.Deleteable<SysResourceModel>().Where(a => a.Id == this.Id).ExecuteCommand();
         }
 
         public override void Save()

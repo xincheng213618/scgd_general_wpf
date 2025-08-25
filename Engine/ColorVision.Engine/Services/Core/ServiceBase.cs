@@ -1,6 +1,8 @@
 ﻿using ColorVision.Database;
 using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using SqlSugar;
+using static iText.StyledXmlParser.Jsoup.Select.Evaluator;
 
 namespace ColorVision.Engine.Services.Core
 {
@@ -34,8 +36,8 @@ namespace ColorVision.Engine.Services.Core
 
         public override void Delete()
         {
-            base.Delete();  
-            SysResourceDao.Instance.DeleteById(SysResourceModel.Id);
+            base.Delete();
+            int ret = Db.Deleteable<SysResourceModel>().Where(it => it.Id == SysResourceModel.Id).ExecuteCommand();
         }
 
     }

@@ -96,7 +96,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Man
 
             void DeleteSingle(int id)
             {
-                ThirdPartyAlgorithmsDao.Instance.DeleteById(id, false);
+                Db.Deleteable<ThirdPartyAlgorithmsModel>().Where(it => it.Id == id).ExecuteCommand();
                 TemplateParams.RemoveAt(index);
             }
 

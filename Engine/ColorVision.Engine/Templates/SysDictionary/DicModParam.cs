@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Rbac;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -40,7 +41,8 @@ namespace ColorVision.Engine.Templates.SysDictionary
             if (index > -1 && index < TemplateParams.Count)
             {
                 var item = TemplateParams[index];
-                SysDictionaryModMasterDao.Instance.DeleteById(item.Value.Id,false);
+                Db.Deleteable<SysResourceModel>().Where(a => a.Id == item.Value.Id).ExecuteCommand();
+
                 TemplateParams.RemoveAt(index);
             }
         }

@@ -100,9 +100,9 @@ namespace ColorVision.Engine.Templates.Validate
             if (index >= 0 && index < TemplateParams.Count)
             {
                 int id = TemplateParams[index].Value.Id;
-                int ret = ValidateTemplateMasterDao.Instance.DeleteById(id);
-                ValidateTemplateDetailDao.Instance.DeleteAllByPid(id);
-                TemplateParams.RemoveAt(index);
+
+                Db.Deleteable<ValidateTemplateDetailModel>().Where(x => x.Pid == id).ExecuteCommand();
+                Db.Deleteable<ValidateTemplateMasterModel>().Where(x => x.Id == id).ExecuteCommand();
             }
         }
 

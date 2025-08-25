@@ -1,4 +1,6 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.Database;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -58,7 +60,7 @@ namespace ColorVision.Engine.Templates.SysDictionary
         {
             if (sender is MenuItem menuItem && menuItem.Tag is SysDictionaryModDetaiModel SysDictionaryModDetaiModel)
             {
-                SysDictionaryModDetailDao.Instance.DeleteById(SysDictionaryModDetaiModel.Id, false);
+                MySqlControl.GetInstance().DB.Deleteable<SysResourceModel>().Where(it => it.Id == SysDictionaryModDetaiModel.Id).ExecuteCommand();
                 Param.ModDetaiModels.Remove(SysDictionaryModDetaiModel);
             }
         }
