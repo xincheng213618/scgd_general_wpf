@@ -2,7 +2,7 @@
 using SqlSugar;
 using System;
 
-namespace ColorVision.Engine.Templates
+namespace ColorVision.Engine
 {
     [SugarTable("t_scgd_sys_dictionary_mod_master")]
     public class SysDictionaryModModel : VPKModel, IInitTables

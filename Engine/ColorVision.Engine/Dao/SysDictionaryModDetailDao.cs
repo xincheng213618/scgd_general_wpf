@@ -3,7 +3,7 @@ using SqlSugar;
 using System;
 using System.ComponentModel;
 
-namespace ColorVision.Engine.Templates
+namespace ColorVision.Engine
 {
     public enum SValueType
     {
