@@ -90,22 +90,21 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 case MQTTCalibrationEventEnum.Event_GetData:
                     if (arg.Data == null) return;
                     int masterId = Convert.ToInt32(arg.Data.MasterId);
-                    List<MeasureImgResultModel> resultMaster = null;
+                    log.Debug($"masterId:{masterId}");
                     if (masterId > 0)
                     {
-                        resultMaster = new List<MeasureImgResultModel>();
                         MeasureImgResultModel model = MeasureImgResultDao.Instance.GetById(masterId);
                         if (model != null)
-                            resultMaster.Add(model);
-                    }
-                    if (resultMaster != null)
-                    {
-                        foreach (MeasureImgResultModel result in resultMaster)
                         {
+                            log.Debug($"FileUrl：{model.FileUrl}");
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                ShowResult(result);
+                                ShowResult(model);
                             });
+                        }
+                        else
+                        {
+                            log.Debug($"GetImgResult By Id is null: {masterId}");
                         }
                     }
                     break;

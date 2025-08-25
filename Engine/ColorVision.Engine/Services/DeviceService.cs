@@ -233,8 +233,8 @@ namespace ColorVision.Engine.Services
 
         public void RestartRCService()
         {
-            string TypeCode =MySqlControl.GetInstance().DB.Queryable<SysDictionaryModel>().Where(x=>x.Pid ==1 && x.Value ==SysResourceModel.Pid).First().Key;
-            string PCode = MySqlControl.GetInstance().DB.Queryable<SysResourceModel>().InSingle(SysResourceModel.Type).Code;
+            string TypeCode =MySqlControl.GetInstance().DB.Queryable<SysDictionaryModel>().Where(x=>x.Pid ==1 && x.Value ==SysResourceModel.Type).First().Key;
+            string PCode = MySqlControl.GetInstance().DB.Queryable<SysResourceModel>().InSingle(SysResourceModel.Pid).Code;
 
             MqttRCService.GetInstance().RestartServices(TypeCode, PCode, Config.Code);
         }

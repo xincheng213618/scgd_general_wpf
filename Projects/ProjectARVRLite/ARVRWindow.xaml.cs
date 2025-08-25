@@ -321,8 +321,6 @@ namespace ProjectARVRLite
 
             this.Closed += (s, e) =>
             {
-
-
                 this.Dispose();
             };
 
@@ -363,6 +361,7 @@ namespace ProjectARVRLite
         {
             if (FlowTemplate.SelectedIndex < 0) return;
             string Refreshdata = TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64;
+
             try
             {
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())

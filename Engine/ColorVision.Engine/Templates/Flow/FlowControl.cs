@@ -110,17 +110,16 @@ namespace ColorVision.Engine.Templates.Flow
             flowEngine.StartNode(sn, tol);
         }
 
-        public async void FinishedAsync(object sender, FlowEngineEventArgs e)
+        public void FinishedAsync(object sender, FlowEngineEventArgs e)
         {
+            IsFlowRun = false;
+            FlowControlData data = new FlowControlData() { StartNodeName = e.StartNodeName, SerialNumber = e.SerialNumber, EventName = e.Status.ToString(), Params = e.Message };
             try
             {
-                IsFlowRun = false;
-                FlowControlData data = new FlowControlData() { StartNodeName =e.StartNodeName ,SerialNumber =e.SerialNumber, EventName =e.Status.ToString(), Params =e.Message };                
-                log.Info("清理流程中，等待100ms");
-                flowEngine.FlowClear();
-                await Task.Delay(100);
-                log.Info("流程清理完成");
-                Application.Current.Dispatcher.Invoke(() => FlowCompleted?.Invoke(this, data));
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    FlowCompleted?.Invoke(this, data);
+                });
             }
             catch (Exception ex)
             {

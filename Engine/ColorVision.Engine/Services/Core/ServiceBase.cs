@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Services.Core
         public override void Save()
         {
             SysResourceModel.Name = Name;
-            MySqlControl.GetInstance().DB.Updateable<SysResourceModel>().ExecuteCommand();
+            MySqlControl.GetInstance().DB.Updateable(SysResourceModel).ExecuteCommand();
         }
 
         public override void Delete()

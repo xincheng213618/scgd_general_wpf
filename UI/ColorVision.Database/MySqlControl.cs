@@ -74,7 +74,20 @@ namespace ColorVision.Database
                     DbType = SqlSugar.DbType.MySql,
                     IsAutoCloseConnection = true
                 });
-                
+                // 检查数据库名是否为空
+                // 检查当前 local_infile 的值
+                int localInfile = DB.Ado.GetInt("SELECT @@global.local_infile;");
+
+                if (localInfile == 0)
+                {
+                    // 不支持则设置为 1
+                    DB.Ado.ExecuteCommand("SET GLOBAL local_infile = 1;");
+                    log.Info("local_infile 已设置为 1");
+                }
+                else
+                {
+                    log.Info("local_infile 已经支持");
+                }
 
                 return Task.FromResult(true);
             }
@@ -135,7 +148,19 @@ namespace ColorVision.Database
                 });
 
                 // 检查数据库名是否为空
-                db.Ado.ExecuteCommand("SELECT 1");
+                // 检查当前 local_infile 的值
+                int localInfile = db.Ado.GetInt("SELECT @@global.local_infile;");
+
+                if (localInfile == 0)
+                {
+                    // 不支持则设置为 1
+                    db.Ado.ExecuteCommand("SET GLOBAL local_infile = 1;");
+                    log.Info("local_infile 已设置为 1");
+                }
+                else
+                {
+                    log.Info("local_infile 已经支持");
+                }
 
                 // 检查数据库是否存在
                 var dbResult = db.Ado.SqlQuery<string>(

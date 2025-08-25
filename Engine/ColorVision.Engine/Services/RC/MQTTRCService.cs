@@ -324,6 +324,7 @@ namespace ColorVision.Engine.Services.RC
 
         public void RestartServices(string? nodeType = null, string? svrCode =null)
         {
+            log.Info($"RestartServices {nodeType} {svrCode}");
             if (Token != null)
             {
                 nodeType ??= string.Empty;
@@ -333,6 +334,7 @@ namespace ColorVision.Engine.Services.RC
         }
         public void RestartServices(string nodeType, string svrCode, string devCode)
         {
+            log.Info($"RestartServices {nodeType} {svrCode} {devCode}");
             if (Token != null)
             {
                 MQTTRCServicesRestartRequest reg = new(AppId, NodeName, nodeType, Token.AccessToken, svrCode, devCode);
