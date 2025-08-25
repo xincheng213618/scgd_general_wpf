@@ -214,7 +214,7 @@ namespace ColorVision.Engine.Templates
         public override object CreateDefault()
         {
             List<ModDetailModel> list = new();
-            List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(TemplateDicId, true, false);
+            List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(TemplateDicId);
             foreach (var item in sysDic)
             {
                 list.Add(new ModDetailModel() { SysPid = item.Id, Pid = -1, ValueA = item.DefaultValue });
@@ -474,7 +474,7 @@ namespace ColorVision.Engine.Templates
                 }
                 else
                 {
-                    List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(TemplateDicId, true, false);
+                    List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(TemplateDicId);
                     foreach (var item in sysDic)
                     {
                         details.Add(new ModDetailModel() { SysPid = item.Id, Pid = -1, ValueA = item.DefaultValue });
