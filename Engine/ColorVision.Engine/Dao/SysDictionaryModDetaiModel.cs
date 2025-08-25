@@ -53,8 +53,8 @@ namespace ColorVision.Engine
         private DateTime _CreateDate;
     }
 
-    public class SysDictionaryModDetaiDao : BaseTableDao<SysDictionaryModDetaiModel>
+    public class SysDictionaryModDetailDao : BaseTableDao<SysDictionaryModDetaiModel>
     {
-        public static SysDictionaryModDetaiModel Instance { get; set; } = new SysDictionaryModDetaiModel();
+        public static SysDictionaryModDetailDao Instance { get; set; } = new SysDictionaryModDetailDao();
     }
 }
