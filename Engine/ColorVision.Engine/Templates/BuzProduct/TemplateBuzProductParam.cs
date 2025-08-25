@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using ColorVision.Database;
 
 namespace ColorVision.Engine.Templates.BuzProduct
 {
@@ -40,6 +41,7 @@ namespace ColorVision.Engine.Templates.BuzProduct
             BuzProductDetailModel buzProductDetailModel = new BuzProductDetailModel();
             buzProductDetailModel.Pid = BuzProductMasterModel.Id;
             buzProductDetailModel.Code =string.Empty;
+
             BuzProductDetailDao.Instance.Save(buzProductDetailModel);
             BuzProductDetailModels.Add(buzProductDetailModel);
         }

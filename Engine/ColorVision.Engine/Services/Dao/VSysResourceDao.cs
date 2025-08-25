@@ -86,7 +86,7 @@ namespace ColorVision.Engine.Services.Dao
             ExecuteNonQuery(sql, parameters);
         }
       
-        public SysResourceModel? GetByCode(string code) => GetByParam(new Dictionary<string, object>() { { "code", code } });
+        public SysResourceModel? GetByCode(string code) => this.GetByParam(new Dictionary<string, object>() { { "code", code } });
 
         public void CreatResourceGroup()
         {
@@ -116,7 +116,7 @@ namespace ColorVision.Engine.Services.Dao
             return list;
         }
 
-        public List<SysResourceModel> GetAllType(int type) => GetAllByParam(new Dictionary<string, object>() { { "type", type },{ "is_delete",0 } });
+        public List<SysResourceModel> GetAllType(int type) => this.GetAllByParam(new Dictionary<string, object>() { { "type", type },{ "is_delete",0 } });
     }
 
 }

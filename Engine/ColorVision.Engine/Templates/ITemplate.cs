@@ -299,13 +299,7 @@ namespace ColorVision.Engine.Templates
             {
                 List<ModDetailModel> de = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id).ToList();
                 int ret = Db.Deleteable<ModMasterModel>().Where(x => x.Id == id).ExecuteCommand();
-
                 Db.Deleteable<ModDetailModel>().Where(x => x.Pid == id).ExecuteCommand();
-                foreach (ModDetailModel model in de)
-                {
-                    string code = Cryptography.GetMd5Hash(model.ValueA + model.Id);
-                    SysResourceDao.Instance.DeleteAllByParam(new Dictionary<string, object>() { { "code", code } }, true);
-                }
             }
 
             if (selectedCount <= 1)

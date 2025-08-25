@@ -70,7 +70,7 @@ namespace ColorVision.Engine.Sys.Dao
 
         public SysConfigRcModel? GetByCode(string code)
         {
-            return GetByParam(new Dictionary<string, object>() { { "code", code } });
+            return this.GetByParam(new Dictionary<string, object>() { { "code", code } });
         }
     }
     public class MenuConfigArchive : MenuItemBase

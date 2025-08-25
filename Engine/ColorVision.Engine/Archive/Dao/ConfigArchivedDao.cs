@@ -50,7 +50,7 @@ namespace ColorVision.Engine.Archive.Dao
 
         public GlobleCfgdModel? GetArchDB()
         {
-            return GetByParam(new System.Collections.Generic.Dictionary<string, object>() { { "cfg_type", 10 } });
+            return this.GetByParam(new System.Collections.Generic.Dictionary<string, object>() { { "cfg_type", 10 } });
         }
 
 

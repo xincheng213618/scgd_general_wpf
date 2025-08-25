@@ -937,6 +937,8 @@ namespace ProjectKB
         {
             if (Summary.AutoUploadSN)
             {
+                if (string.IsNullOrWhiteSpace(ProjectKBConfig.Instance.SN)) return;
+
                 DebounceTimer.AddOrResetTimer("KBUploadSN", 500, e => UploadSN(), 0);
             }
         }
@@ -949,6 +951,7 @@ namespace ProjectKB
             IsCheckWIP = false;
             if (Summary.UseMes)
             {
+
                 log.Info($"CheckWIP Stage{SummaryManager.GetInstance().Summary.Stage},SN:{ProjectKBConfig.Instance.SN}");
                 IntPtr a = MesDll.CheckWIP(SummaryManager.GetInstance().Summary.Stage, ProjectKBConfig.Instance.SN);
                 var result = MesDll.PtrToString(a);

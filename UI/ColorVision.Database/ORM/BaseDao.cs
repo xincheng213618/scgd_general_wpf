@@ -18,13 +18,9 @@ namespace ColorVision.Database
         public string TableName { get { return _TableName; } set { _TableName = value; } }
         private string _TableName;
 
-        public string PKField { get { return _PKField; } set { _PKField = value; } }
-        private string _PKField;
-
         public BaseDao(string tableName, string pkField)
         {
             _TableName = tableName;
-            _PKField = pkField;
         }
 
         public int ExecuteNonQuery(string sql)
@@ -107,63 +103,6 @@ namespace ColorVision.Database
             }
 
             return dt;
-        }
-
-        public int Save(DataTable dt)
-        {
-            int count = -1;
-            string sqlStr = string.Format("SELECT * FROM {0} WHERE FALSE", TableName);
-            try
-            {
-                var conn = MySqlControl.GetInstance().MySqlConnection;
-                using (MySqlCommand cmd = new MySqlCommand(sqlStr, conn))
-                {
-                    using (MySqlDataAdapter dataAdapter = new MySqlDataAdapter(cmd))
-                    {
-                        dataAdapter.RowUpdated += DataAdapter_RowUpdated;
-                        using (MySqlCommandBuilder builder = new(dataAdapter))
-                        {
-                            builder.ConflictOption = ConflictOption.OverwriteChanges;
-                            builder.SetAllValues = true;
-                            dataAdapter.UpdateCommand = builder.GetUpdateCommand(true) as MySqlCommand;
-                            count = dataAdapter.Update(dt);
-                            dt.AcceptChanges();
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-            }
-            return count;
-        }
-
-        private void DataAdapter_RowUpdated(object sender, MySqlRowUpdatedEventArgs e)
-        {
-            if (e.Row[_PKField] == DBNull.Value)
-            {
-                e.Row[_PKField] = e.Command.LastInsertedId;
-            }
-        }
-
-
-        public int DeleteAllByParam(Dictionary<string, object> param, bool IsLogicDel = true)
-        {
-            if (param == null || param.Count == 0)
-            {
-                throw new ArgumentException("Parameter dictionary cannot be null or empty", nameof(param));
-            }
-
-            // Build the WHERE clause from the parameters
-            var whereClauses = param.Select(kvp => $"{kvp.Key} = @{kvp.Key}");
-            string whereClause = string.Join(" AND ", whereClauses);
-
-            string sql = IsLogicDel
-                ? $"UPDATE {TableName} SET is_delete = 1 WHERE {whereClause}"
-                : $"DELETE FROM {TableName} WHERE {whereClause}";
-
-            return ExecuteNonQuery(sql, param);
         }
     }
 }

@@ -45,14 +45,15 @@ namespace ColorVision.Engine.Templates.SysDictionary
         private DateTime _CreateDate;
 
 
-        [SugarColumn(ColumnName ="is_enbale")]
+        [SugarColumn(ColumnName = "is_enable")]
         public bool IsEnable { get => _IsEnable; set { _IsEnable = value; OnPropertyChanged(); } }
         private bool _IsEnable = true;
 
 
-        [SugarColumn(ColumnName ="is_delete")]
+        [SugarColumn(ColumnName = "is_delete")]
         public bool IsDelete { get => _IsDelete; set { _IsDelete = value; OnPropertyChanged(); } }
         private bool _IsDelete;
+
 
         [SugarColumn(ColumnName ="remark")]
         public string? Remark { get => _Remark; set { _Remark = value; OnPropertyChanged(); } }
@@ -62,6 +63,6 @@ namespace ColorVision.Engine.Templates.SysDictionary
     public class SysDictionaryModMasterDao : BaseTableDao<SysDictionaryModModel>
     {
         public static SysDictionaryModMasterDao Instance { get; set; } = new SysDictionaryModMasterDao();
-        public SysDictionaryModModel? GetByCode(string code, int tenantId) => GetByParam( new Dictionary<string, object>() { { "is_delete",0 }, { "code", code }, { "tenant_id", tenantId } });
+        public SysDictionaryModModel? GetByCode(string code, int tenantId) => this.GetByParam( new Dictionary<string, object>() { { "is_delete",0 }, { "code", code }, { "tenant_id", tenantId } });
     }
 }

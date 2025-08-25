@@ -78,7 +78,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
     {
         public static CameraLicenseDao Instance { get; set; } = new CameraLicenseDao();
 
-        public LicenseModel? GetByMAC(string Code) => GetByParam(new Dictionary<string, object>() { { "mac_sn", Code } });
+        public LicenseModel? GetByMAC(string Code) => this.GetByParam(new Dictionary<string, object>() { { "mac_sn", Code } });
     
     }
 

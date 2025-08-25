@@ -41,11 +41,5 @@ namespace ColorVision.Engine.Templates.SysDictionary
     {
         public static SysDictionaryDao Instance { get; set; } = new SysDictionaryDao();
 
-        public int? GetPid(string Key)
-        {
-            SysDictionaryModel sysDictionaryModel = GetByParam(new Dictionary<string, object>() { { "key", Key } });
-            return sysDictionaryModel != null ? sysDictionaryModel.Pid : null;
-        }
-
     }
 }

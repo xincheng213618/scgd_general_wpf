@@ -85,6 +85,40 @@ namespace ColorVision.Engine.Templates.Flow
             SaveIndex.Clear();
         }
 
+        public override void Delete(int index)
+        {
+            int selectedCount = TemplateParams.Count(item => item.IsSelected);
+            if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
+
+            void DeleteSingle(int id)
+            {
+                List<ModDetailModel> de = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id).ToList();
+                int ret = Db.Deleteable<ModMasterModel>().Where(x => x.Id == id).ExecuteCommand();
+
+                Db.Deleteable<ModDetailModel>().Where(x => x.Pid == id).ExecuteCommand();
+                foreach (ModDetailModel model in de)
+                {
+                    string code = Cryptography.GetMd5Hash(model.ValueA + model.Id);
+                    ret = Db.Deleteable<SysResourceModel>().Where(x => x.Code == code).ExecuteCommand();
+                }
+            }
+
+            if (selectedCount <= 1)
+            {
+                int id = TemplateParams[index].Value.Id;
+                DeleteSingle(id);
+                TemplateParams.RemoveAt(index);
+            }
+            else
+            {
+                foreach (var item in TemplateParams.Where(item => item.IsSelected == true).ToList())
+                {
+                    DeleteSingle(item.Id);
+                    TemplateParams.Remove(item);
+                }
+            }
+        }
+
         public override void Save()
         {
             if (SaveIndex.Count == 0) return;
