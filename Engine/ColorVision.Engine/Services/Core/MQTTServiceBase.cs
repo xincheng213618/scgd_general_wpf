@@ -185,7 +185,7 @@ namespace ColorVision.Engine.Services.Core
             msg.Token ??= ServiceToken;
             msg.ServiceName ??= SendTopic;
 
-            string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+            string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { });
 
             Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));
 
