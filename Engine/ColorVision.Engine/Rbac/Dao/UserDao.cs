@@ -87,7 +87,7 @@ namespace ColorVision.Engine.Rbac
 
     public class UserDao:BaseTableDao<UserModel>
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(BaseDao));
+        private static readonly ILog log = LogManager.GetLogger(typeof(UserDao));
         public static UserDao Instance { get; set; } = new UserDao();
 
 

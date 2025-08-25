@@ -41,7 +41,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
     {
         public static ModThirdPartyAlgorithmsDao Instance { get; set; } = new ModThirdPartyAlgorithmsDao();
 
-        public override DataRow Model2Row(ModThirdPartyAlgorithmsModel item, DataRow row) => ReflectionHelper.Model2RowAuto(item, row);
 
     }
 }
