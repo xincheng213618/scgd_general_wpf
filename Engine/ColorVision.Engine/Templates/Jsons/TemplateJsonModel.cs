@@ -12,12 +12,12 @@ namespace ColorVision.Engine.Templates.Jsons
         private string _Name;
 
         [SugarColumn(ColumnName ="mm_id")]
-        public int? DicId  { get => _DicId; set { _DicId = value; OnPropertyChanged(); } }
-        private int? _DicId;
+        public int? Pid  { get => _Pid; set { _Pid = value; OnPropertyChanged(); } }
+        private int? _Pid;
 
         [SugarColumn(ColumnName ="code")]
-        public string? DicCode { get => _DicCode; set { _DicCode = value; OnPropertyChanged(); } }
-        private string? _DicCode;
+        public string? Code { get => _Code; set { _Code = value; OnPropertyChanged(); } }
+        private string? _Code;
 
         [SugarColumn(ColumnName ="res_pid")]
         public int? ResourceId { get => _ResourceId; set { _ResourceId = value; OnPropertyChanged(); } }
@@ -43,7 +43,7 @@ namespace ColorVision.Engine.Templates.Jsons
         public DateTime CreateDate { get => _CreateDate; set { _CreateDate = value; OnPropertyChanged(); } }
         private DateTime _CreateDate = DateTime.Now;
 
-        [SugarColumn(ColumnName ="remark")]
+        [SugarColumn(ColumnName = "remark", ColumnDataType = "text", IsNullable = true)]
         public string? Remark { get => _Remark; set { _Remark = value; OnPropertyChanged(); } }
         private string? _Remark;
     }

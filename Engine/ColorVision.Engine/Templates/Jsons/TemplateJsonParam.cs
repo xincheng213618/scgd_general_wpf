@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Templates.Jsons
         public RelayCommand CheckCommand { get; set; }
 
         [Browsable(false)]
-        public DicTemplateJsonModel? DicTemplateJsonModel => DicTemplateJsonDao.Instance.GetById(TemplateJsonModel.DicId);
+        public DicTemplateJsonModel? DicTemplateJsonModel => DicTemplateJsonDao.Instance.GetById(TemplateJsonModel.Pid);
 
         public RelayCommand OpenEditToolCommand { get; set; }
 

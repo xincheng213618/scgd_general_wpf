@@ -7,23 +7,19 @@ namespace ColorVision.Engine.Templates
     [SugarTable("t_scgd_mod_param_master")]
     public class ModMasterModel : PKModel
     {
-        public ModMasterModel()
-        {
-        }
-
 
         [SugarColumn(ColumnName = "code", IsNullable = true)]
         public string? Code { get; set; }
         [SugarColumn(ColumnName = "name",IsNullable =true)]
         public string? Name { get; set; }
 
-        [SugarColumn(ColumnName = "mm_id", IsNullable = true)]
+        [SugarColumn(ColumnName = "mm_id", IsNullable = true,ColumnDescription = "t_scgd_sys_dictionary_mod_master")]
         public int Pid { get; set; }
 
-        [SugarColumn(ColumnName = "res_pid", IsNullable = true)]
+        [SugarColumn(ColumnName = "res_pid", IsNullable = true,ColumnDescription = "t_scgd_sys_resource")]
         public int? ResourceId { get; set; }
 
-        [SugarColumn(ColumnName = "cfg_json",IsNullable =true)]
+        [SugarColumn(ColumnName = "cfg_json", ColumnDataType = "json",IsNullable =true)]
         public string? JsonVal { get; set; } 
 
         [SugarColumn(ColumnName = "create_date")]

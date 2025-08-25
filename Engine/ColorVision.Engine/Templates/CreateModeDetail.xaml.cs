@@ -34,7 +34,7 @@ namespace ColorVision.Engine.Templates
             CreateConfig = new ModDetailModel() { Pid = Param.Id};
             CreateConfig.Pid = Param.Id;
             CreateConfig.SysPid = 500;
-            SysDictionaryModDetaiModels = SysDictionaryModDetailDao.Instance.GetAllByPid(Param.ModMaster.Pid,true,false);
+            SysDictionaryModDetaiModels = SysDictionaryModDetailDao.Instance.GetAllByPid(Param.ModMaster.Pid);
             BorderEdit.DataContext = CreateConfig;
 
             if (SysDictionaryModDetaiModels.Count == 0)

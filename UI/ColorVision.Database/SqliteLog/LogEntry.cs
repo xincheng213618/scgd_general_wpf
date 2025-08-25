@@ -3,11 +3,11 @@ using System;
 
 namespace ColorVision.Database.SqliteLog
 {
-    public class LogEntry
+    public class LogEntry:IPKModel
     {
         [SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
         public int Id { get; set; }
-        public DateTime Date { get; set; }
+        public DateTime Date { get; set; } = DateTime.Now;
 
         [SugarColumn(IsPrimaryKey = true, IsNullable = true)]
         public string? Thread { get; set; }
