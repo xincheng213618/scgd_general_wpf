@@ -449,7 +449,7 @@ namespace ColorVision.Engine.Templates
             List<ModDetailModel> details = new();
             foreach (var item in SysDictionaryModDetailDao.Instance.GetAllByPid(TemplateDicId))
             {
-                details.Add(new ModDetailModel() { SysPid = item.Id, Pid = -1, ValueA = item.DefaultValue });
+                details.Add(new ModDetailModel() { SysPid = item.Id, Pid = modMaster.Id, ValueA = item.DefaultValue });
             }
             Db.Deleteable<ModDetailModel>().Where(x => x.Pid == modMaster.Id).ExecuteCommand();
             Db.Insertable(details).ExecuteCommand();
