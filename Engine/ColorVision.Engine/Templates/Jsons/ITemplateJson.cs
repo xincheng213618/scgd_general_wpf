@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.Database;
 using ColorVision.UI.Extension;
 using log4net;
 using Newtonsoft.Json;

@@ -4,7 +4,6 @@ using ColorVision.Engine.Abstractions;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.ARVR.SFR;
-using ColorVision.Engine.Templates.MTF;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
 using System;

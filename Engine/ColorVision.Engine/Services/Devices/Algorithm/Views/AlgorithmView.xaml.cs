@@ -2,9 +2,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Abstractions;
-using ColorVision.Database;
-using ColorVision.Database;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;

@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Database;
-using ColorVision.Database;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Solution.Searches;

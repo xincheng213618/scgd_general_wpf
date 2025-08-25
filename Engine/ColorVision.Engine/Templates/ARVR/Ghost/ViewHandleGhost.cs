@@ -5,7 +5,6 @@ using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Media;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Templates.FOV;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using System;

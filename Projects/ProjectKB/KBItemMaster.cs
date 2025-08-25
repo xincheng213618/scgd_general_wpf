@@ -2,7 +2,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Templates.Flow;
-using log4net;
 using Newtonsoft.Json;
 using SqlSugar;
 using System.Collections.ObjectModel;

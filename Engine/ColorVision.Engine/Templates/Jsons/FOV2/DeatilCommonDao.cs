@@ -1,7 +1,5 @@
 ﻿using ColorVision.Engine.Abstractions;
-using ColorVision.Database;
 using Newtonsoft.Json;
-using SqlSugar;
 using System.IO;
 
 namespace ColorVision.Engine.Templates.Jsons.FOV2

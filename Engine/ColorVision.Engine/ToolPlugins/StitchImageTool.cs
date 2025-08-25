@@ -1,12 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Extension;
-using ColorVision.UI.Menus;
-using OpenCvSharp;
-using System;
-using System.Collections.ObjectModel;
-using System.Windows.Forms;
-
- // 现在移除这个逻辑
+﻿// 现在移除这个逻辑
 namespace ColorVision.Engine.ToolPlugins
 {
     //public class StitchImageConfig:ViewModelBase

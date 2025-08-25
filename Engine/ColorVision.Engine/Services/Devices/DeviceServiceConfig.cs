@@ -2,7 +2,6 @@
 using ColorVision.Engine.Services.Core;
 using CVCommCore;
 using Newtonsoft.Json;
-using System;
 using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices

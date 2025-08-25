@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CA1707
-using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
 using ColorVision.Database;
@@ -26,9 +25,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using YamlDotNet.Core;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {

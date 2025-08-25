@@ -1,16 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Messages;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using log4net;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO.Ports;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Interop;
 
 namespace ProjectBlackMura
 {

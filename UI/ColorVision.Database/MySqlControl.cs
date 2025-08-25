@@ -5,6 +5,7 @@ using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -74,6 +75,9 @@ namespace ColorVision.Database
                     DbType = SqlSugar.DbType.MySql,
                     IsAutoCloseConnection = true
                 });
+                //修复管理员权限下bulk创建文件权限错误的问题
+                StaticConfig.BulkCopy_MySqlCsvPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ColorVision", "bulkcopyfiles");
+                
                 // 检查数据库名是否为空
                 // 检查当前 local_infile 的值
                 int localInfile = DB.Ado.GetInt("SELECT @@global.local_infile;");

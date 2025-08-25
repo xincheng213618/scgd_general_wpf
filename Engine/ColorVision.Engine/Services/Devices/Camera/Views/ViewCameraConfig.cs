@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using Newtonsoft.Json;

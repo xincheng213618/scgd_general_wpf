@@ -1,11 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
-using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

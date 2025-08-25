@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Templates;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.UI.Extension;

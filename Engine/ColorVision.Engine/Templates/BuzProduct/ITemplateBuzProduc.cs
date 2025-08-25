@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.Database;
 using ColorVision.UI.Extension;
 using log4net;
 using Newtonsoft.Json;
@@ -67,9 +66,10 @@ namespace ColorVision.Engine.Templates.BuzProduct
                 if (index > -1 && index < TemplateParams.Count)
                 {
                     var item = TemplateParams[index];
-                    BuzProductMasterDao.Instance.Save(item.Value.BuzProductMasterModel);
-                    BuzProductDetailDao.Instance.SaveByPid(item.Value.BuzProductMasterModel.Id,item.Value.BuzProductDetailModels);
+                    item.Value.BuzProductMasterModel.Name = item.Value.Name;
+                    Db.Updateable(item.Value.BuzProductMasterModel).ExecuteCommand();
 
+                    Db.Updateable(item.Value.BuzProductDetailModels).ExecuteCommand();
                 }
             }
         }
@@ -81,6 +81,7 @@ namespace ColorVision.Engine.Templates.BuzProduct
 
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
+
 
                 var templates = BuzProductMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "is_delete", 0 } });
                 foreach (var template in templates)

@@ -1,15 +1,9 @@
 ﻿#pragma warning disable CA1720,CS8601,CS8602,CS8603
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Database;
-using log4net;
-using MySql.Data.MySqlClient;
 using Newtonsoft.Json.Linq;
 using SqlSugar;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;

@@ -8,7 +8,6 @@ using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes;
@@ -18,8 +17,6 @@ using CVCommCore.CVAlgorithm;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
-using MySqlConnector.Logging;
-using NPOI.SS.Formula.Functions;
 using Panuon.WPF.UI;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
@@ -27,13 +24,11 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Ports;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using WpfHexaEditor.Core.MethodExtention;
 
 namespace ProjectBlackMura
 {

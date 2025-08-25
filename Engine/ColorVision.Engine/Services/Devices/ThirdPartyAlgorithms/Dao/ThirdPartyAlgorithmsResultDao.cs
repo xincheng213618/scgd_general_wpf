@@ -1,6 +1,4 @@
 ﻿using ColorVision.Database;
-using ColorVision.Database;
-using NPOI.SS.Formula.Functions;
 using SqlSugar;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao

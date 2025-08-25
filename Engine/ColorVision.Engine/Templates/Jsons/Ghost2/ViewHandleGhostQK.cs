@@ -5,7 +5,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.UI;
 using log4net;
 using System.Collections.Generic;

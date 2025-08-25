@@ -1,6 +1,5 @@
 ﻿using SqlSugar;
 using System.Collections.Generic;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace ColorVision.Database
 {

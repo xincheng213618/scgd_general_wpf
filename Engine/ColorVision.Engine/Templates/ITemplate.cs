@@ -2,11 +2,8 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.Database;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Templates.POI;
-using ColorVision.Engine.Templates.POI.Dao;
 using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.Solution;
 using ColorVision.UI.Extension;
@@ -21,7 +18,6 @@ using System.IO.Compression;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace ColorVision.Engine.Templates
 {

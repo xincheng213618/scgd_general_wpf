@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Core;
 using CVCommCore;
-using System;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices

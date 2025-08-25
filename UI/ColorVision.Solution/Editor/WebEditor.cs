@@ -1,6 +1,5 @@
 ﻿using AvalonDock.Layout;
 using ColorVision.Common.Utilities;
-using ColorVision.ImageEditor;
 using ColorVision.Solution.Searches;
 using ColorVision.UI;
 using Microsoft.Web.WebView2.Wpf;

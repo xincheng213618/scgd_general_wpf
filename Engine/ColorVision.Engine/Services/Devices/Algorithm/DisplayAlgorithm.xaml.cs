@@ -1,13 +1,10 @@
-﻿using AvalonDock.Controls;
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Abstractions;
 using ColorVision.UI;
 using CVCommCore;
-using LiveChartsCore.SkiaSharpView.Painting.ImageFilters;
 using log4net;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using System.Windows;

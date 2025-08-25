@@ -1,8 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
-using ColorVision.Database;
-using ColorVision.Database;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw.Ruler;

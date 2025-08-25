@@ -1,9 +1,7 @@
 ﻿using ColorVision.Database;
-using ColorVision.Database;
 using ColorVision.Engine.Templates.POI.Dao;
 using log4net;
 using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

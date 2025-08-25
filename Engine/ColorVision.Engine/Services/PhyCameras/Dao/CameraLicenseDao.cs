@@ -2,7 +2,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.Database;
 using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
 using SqlSugar;

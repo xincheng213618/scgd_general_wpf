@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Pattern.Dot;
 using ColorVision.UI;
 using OpenCvSharp;
 using System;

@@ -1,14 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Pattern.NineDot;
 using ColorVision.UI;
-using NPOI.SS.UserModel;
 using OpenCvSharp;
-using SkiaSharp;
 using System;
 using System.ComponentModel;
 using System.Windows.Controls;
 using System.Windows.Media;
-using static iText.Kernel.Pdf.Colorspace.PdfPattern;
 
 namespace ColorVision.Engine.Pattern.Dot
 {

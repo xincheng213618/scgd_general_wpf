@@ -1,5 +1,4 @@
 ﻿using ColorVision.Database;
-using ColorVision.Database;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;

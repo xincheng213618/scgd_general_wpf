@@ -45,20 +45,6 @@ namespace ColorVision.Database
             }
         }
 
-
-        public int UpdateByPid(int pid, List<T> datas)
-        {
-            string sql = $"select * from {TableName} where pid={pid}";
-            DataTable dataTable = GetData(sql);
-            dataTable.TableName = TableName;
-            foreach (var item in datas)
-            {
-                DataRow row = dataTable.GetRow(item);
-                Model2Row(item, row);
-            }
-            return Save(dataTable);
-        }
-
         public int SaveByPid(int pid, IEnumerable<T> datas)
         {
             DeleteAllByPid(pid, false);

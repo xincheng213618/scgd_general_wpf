@@ -1,6 +1,5 @@
 ﻿using ColorVision.UI.Sorts;
 using ColorVision.Engine.Templates.POI.Dao;
-using ColorVision.Common.MVVM;
 
 namespace ColorVision.Engine.Templates.POI
 {

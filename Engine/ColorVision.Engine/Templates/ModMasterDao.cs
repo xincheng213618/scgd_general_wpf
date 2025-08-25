@@ -1,8 +1,5 @@
 ﻿using ColorVision.Database;
-using ColorVision.Engine.Templates.SysDictionary;
 using System;
-using System.Collections.Generic;
-using System.Data;
 using SqlSugar;
 
 namespace ColorVision.Engine.Templates

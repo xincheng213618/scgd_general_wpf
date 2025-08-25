@@ -1,5 +1,4 @@
 ﻿using ColorVision.Database;
-using ColorVision.Database;
 using CVCommCore.CVAlgorithm;
 using SqlSugar;
 

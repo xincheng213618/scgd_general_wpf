@@ -2,7 +2,6 @@
 using ColorVision.Database;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.FileIO;
 using CVCommCore;

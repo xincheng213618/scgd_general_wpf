@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
-using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
 using OpenCvSharp;
 using System.ComponentModel;
 using System.Windows.Controls;

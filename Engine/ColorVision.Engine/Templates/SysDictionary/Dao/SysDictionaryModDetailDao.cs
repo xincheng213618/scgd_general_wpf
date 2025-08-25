@@ -1,7 +1,6 @@
 ﻿using ColorVision.Database;
 using SqlSugar;
 using System;
-using System.Data;
 
 namespace ColorVision.Engine.Templates.SysDictionary
 {

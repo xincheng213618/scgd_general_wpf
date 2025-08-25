@@ -4,7 +4,6 @@ using ColorVision.Solution.Editor;
 using ColorVision.Solution.Searches;
 using System.IO;
 using System.Windows;
-using WpfHexaEditor.Core;
 
 namespace ColorVision.Solution
 {

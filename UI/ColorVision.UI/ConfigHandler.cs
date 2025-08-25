@@ -8,7 +8,6 @@ using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Windows;
-using static System.Windows.Forms.Design.AxImporter;
 
 namespace ColorVision.UI
 {

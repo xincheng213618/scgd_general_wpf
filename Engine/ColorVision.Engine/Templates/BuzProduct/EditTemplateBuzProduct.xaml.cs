@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Templates.Jsons;
-using ColorVision.Engine.Templates.Validate;
+﻿using ColorVision.Engine.Templates.Validate;
 using ColorVision.UI;
 using System;
 using System.Linq;

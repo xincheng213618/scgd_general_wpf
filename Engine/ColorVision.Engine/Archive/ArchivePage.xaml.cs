@@ -1,11 +1,7 @@
 ﻿using ColorVision.Database;
-using ColorVision.Database;
-using ColorVision.Database;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Solution.Searches;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
-using Mysqlx.Crud;
 using NPOI.SS.Formula.Functions;
 using SqlSugar;
 using System;

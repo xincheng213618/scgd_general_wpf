@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Pattern.Solid;
 using ColorVision.UI;
-using Newtonsoft.Json;
 using OpenCvSharp;
 using System;
 using System.ComponentModel;

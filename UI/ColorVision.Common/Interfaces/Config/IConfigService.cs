@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Reflection;
-
-namespace ColorVision.UI
+﻿namespace ColorVision.UI
 {
     public interface IConfigService
     {

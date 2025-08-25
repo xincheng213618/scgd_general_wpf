@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using ColorVision.Common.MVVM;
-using System.Windows.Controls;
 
 namespace ColorVision.Util.Draw.Special
 {

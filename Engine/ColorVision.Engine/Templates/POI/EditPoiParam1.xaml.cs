@@ -5,7 +5,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
 using ColorVision.Database;
-using ColorVision.Database;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera;

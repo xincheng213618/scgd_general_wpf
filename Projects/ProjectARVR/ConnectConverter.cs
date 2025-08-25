@@ -1,6 +1,4 @@
-﻿using ST.Library.UI.NodeEditor;
-using System.Globalization;
-using System.Security.Cryptography;
+﻿using System.Globalization;
 using System.Windows.Data;
 
 namespace ProjectARVR

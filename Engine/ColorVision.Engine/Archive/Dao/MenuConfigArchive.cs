@@ -1,12 +1,9 @@
 ﻿using ColorVision.Database;
-using ColorVision.Database;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Sys.Dao;
-using ColorVision.Solution.Searches;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Engine.Archive.Dao
 {

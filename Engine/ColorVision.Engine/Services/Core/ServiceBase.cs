@@ -1,6 +1,5 @@
 ﻿using ColorVision.Database;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Templates;
 using SqlSugar;
 
 namespace ColorVision.Engine.Services.Core

@@ -4,7 +4,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.UI;
-using ColorVision.UI.Views;
 using ColorVision.Util.Draw.Special;
 using log4net;
 using System;
