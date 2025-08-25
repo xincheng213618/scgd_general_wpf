@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
         {
         }
 
-        public TemplateJsonDistortion2(TemplateJsonModel templateJsonModel) : base(templateJsonModel)
+        public TemplateJsonDistortion2(ModMasterModel templateJsonModel) : base(templateJsonModel)
         {
 
         }

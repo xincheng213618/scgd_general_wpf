@@ -48,7 +48,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
         {
         }
 
-        public TJDFOVParam(TemplateJsonModel templateJsonModel) : base(templateJsonModel)
+        public TJDFOVParam(ModMasterModel templateJsonModel) : base(templateJsonModel)
         {
 
         }

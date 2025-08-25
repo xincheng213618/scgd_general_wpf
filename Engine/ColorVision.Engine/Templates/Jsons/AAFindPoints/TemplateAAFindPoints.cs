@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
         {
         }
 
-        public TAAFindPointsParam(TemplateJsonModel templateJsonModel) : base(templateJsonModel)
+        public TAAFindPointsParam(ModMasterModel templateJsonModel) : base(templateJsonModel)
         {
 
         }

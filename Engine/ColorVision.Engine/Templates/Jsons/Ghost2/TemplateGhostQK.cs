@@ -48,7 +48,7 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
         {
         }
 
-        public TemplateJsonGhost2(TemplateJsonModel templateJsonModel) : base(templateJsonModel)
+        public TemplateJsonGhost2(ModMasterModel templateJsonModel) : base(templateJsonModel)
         {
 
         }

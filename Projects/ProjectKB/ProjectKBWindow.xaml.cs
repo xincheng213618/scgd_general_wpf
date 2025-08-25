@@ -1,11 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Database;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MQTT;
-using ColorVision.Database;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;
@@ -399,7 +400,13 @@ namespace ProjectKB
             {
                 if (item.ImgFileType == AlgorithmResultType.KB || item.ImgFileType == AlgorithmResultType.KB_Raw)
                 {
-                    var mod = TemplateJsonDao.Instance.GetByParam(new Dictionary<string, object>() { { "name", item.TName }, { "mm_id", 150 } });
+                   
+                    var mod = MySqlControl.GetInstance().DB.Queryable<ModMasterModel>().Where(x => x.Name == item.TName && x.Pid == 150).First();
+                    if (mod == null)
+                    {
+                        log.Warn($"item.TName{item.TName},Cant find template");
+                        continue;
+                    }
 
                     KBJson kBJson = JsonConvert.DeserializeObject<KBJson>(mod.JsonVal);
                     log.Info(JsonConvert.SerializeObject(kBJson));

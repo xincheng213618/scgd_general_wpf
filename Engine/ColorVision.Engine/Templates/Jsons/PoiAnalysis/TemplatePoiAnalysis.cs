@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
         {
         }
 
-        public TJPoiAnalysisParam(TemplateJsonModel templateJsonModel) : base(templateJsonModel)
+        public TJPoiAnalysisParam(ModMasterModel templateJsonModel) : base(templateJsonModel)
         {
 
         }

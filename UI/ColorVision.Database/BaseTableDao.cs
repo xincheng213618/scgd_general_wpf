@@ -155,7 +155,7 @@ namespace ColorVision.Database
                 {
                     // 主键为0视为插入，否则按主键更新
                     int ret;
-                    if (item.Id == 0)
+                    if (item.Id <= 0)
                     {
                         var newId = db.Insertable<T>(item).ExecuteReturnIdentity(); // 返回自增主键
                         item.Id = newId;

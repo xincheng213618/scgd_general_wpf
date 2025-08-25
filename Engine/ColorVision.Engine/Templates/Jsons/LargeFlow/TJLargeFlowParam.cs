@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Templates.Jsons.LargeFlow
         {
         }
 
-        public TJLargeFlowParam(TemplateJsonModel templateJsonModel):base(templateJsonModel) 
+        public TJLargeFlowParam(ModMasterModel templateJsonModel):base(templateJsonModel) 
         {
 
         }

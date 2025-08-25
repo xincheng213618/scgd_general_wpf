@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
         {
         }
 
-        public TJMTFParam(TemplateJsonModel templateJsonModel) : base(templateJsonModel)
+        public TJMTFParam(ModMasterModel templateJsonModel) : base(templateJsonModel)
         {
 
         }

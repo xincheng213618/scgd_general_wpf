@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.UI.Extension;
 using log4net;
 using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -31,7 +32,7 @@ namespace ColorVision.Engine.Templates.Jsons
             return [.. TemplateParams.Select(a => a.Key)];
         }
 
-        public override string Title { get => Code + ColorVision.Engine.Properties.Resources.Edit; set { } }
+        public override string Title { get => $"{Code}{ColorVision.Engine.Properties.Resources.Edit}"; set { } }
 
 
         public override Type GetTemplateType => typeof(T);
@@ -53,11 +54,11 @@ namespace ColorVision.Engine.Templates.Jsons
 
         public override object CreateDefault()
         {
-            var dictemplate = DicTemplateJsonDao.Instance.GetById(TemplateDicId);
+            var dictemplate = Db.Queryable<DicTemplateJsonModel>().Where(x => x.Id == TemplateDicId).First();
             if (dictemplate ==null)
                 return new T();
 
-            TemplateJsonModel templateJson = new TemplateJsonModel();
+            ModMasterModel templateJson = new ModMasterModel();
             templateJson.Code = dictemplate.Code;
             templateJson.Pid = dictemplate.Id;
             templateJson.JsonVal = dictemplate.JsonVal;
@@ -69,14 +70,6 @@ namespace ColorVision.Engine.Templates.Jsons
         }
 
 
-        public virtual void Save(TemplateModel<T> item)
-        {
-            TemplateJsonDao.Instance.Save(item.Value.TemplateJsonModel);
-        }
-        public virtual void Save(T item)
-        {
-            TemplateJsonDao.Instance.Save(item.TemplateJsonModel);
-        }
 
         public override void Save()
         {
@@ -87,7 +80,7 @@ namespace ColorVision.Engine.Templates.Jsons
                 if (index > -1 && index < TemplateParams.Count)
                 {
                     var item = TemplateParams[index];
-                    TemplateJsonDao.Instance.Save(item.Value.TemplateJsonModel);
+                    Db.Insertable(item.Value.TemplateJsonModel).ExecuteReturnIdentity();
                 }
             }
         }
@@ -99,8 +92,8 @@ namespace ColorVision.Engine.Templates.Jsons
 
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                List<TemplateJsonModel> templates = new List<TemplateJsonModel>();
-                templates = TemplateJsonDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mm_id", TemplateDicId } ,{ "is_delete",0} });
+                List<ModMasterModel> templates = new List<ModMasterModel>();
+                templates = Db.Queryable<ModMasterModel>().Where(x => x.Pid == TemplateDicId && x.IsDelete == false).ToList();
 
                 foreach (var template in templates)
                 {
@@ -250,19 +243,23 @@ namespace ColorVision.Engine.Templates.Jsons
         }
         public override void Create(string templateName)
         {
-            T? AddParamMode()
+            try
             {
-                var dictemplate = DicTemplateJsonDao.Instance.GetById(TemplateDicId);
+                var dictemplate = Db.Queryable<DicTemplateJsonModel>().Where(x => x.Id == TemplateDicId).First();
+                if (dictemplate == null)
+                {
+                    log.Warn("模板字典未找到，ID=" + TemplateDicId);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"模板字典未找到，ID={TemplateDicId}", "ColorVision");
+                    return;
+                }
 
-                if (dictemplate == null) return null;
-                TemplateJsonModel templateJson = new TemplateJsonModel();
+                ModMasterModel templateJson = new ModMasterModel();
                 if (CreateTemp != null)
                 {
                     templateJson.CopyFrom(CreateTemp.TemplateJsonModel);
                     templateJson.Name = templateName;
                     templateJson.Code = dictemplate.Code;
                     templateJson.Pid = dictemplate.Id;
-                    templateJson.Id = -1;
                 }
                 else
                 {
@@ -271,30 +268,38 @@ namespace ColorVision.Engine.Templates.Jsons
                     templateJson.Pid = dictemplate.Id;
                     templateJson.JsonVal = dictemplate.JsonVal;
                 }
-                TemplateJsonDao.Instance.Save(templateJson);
+                templateJson.Id = Db.Insertable(templateJson).ExecuteReturnIdentity();
+                log.Info($"模板保存成功，Name={templateJson.Name}, Id={templateJson.Id}");
+
+                ExportTemp = null;
+
                 if (templateJson.Id > 0)
                 {
-                    return (T)Activator.CreateInstance(typeof(T), new object[] { templateJson });
+                    var param = (T)Activator.CreateInstance(typeof(T), new object[] { templateJson });
+                    var a = new TemplateModel<T>(templateName, param);
+                    TemplateParams.Add(a);
+                    log.Info($"模板参数添加成功，Name={templateName}");
                 }
-                return null;
-            }
-            T? param = AddParamMode();
-            if (ExportTemp != null) ExportTemp = null;
-            if (param != null)
-            {
-                var a = new TemplateModel<T>(templateName, param);
-                TemplateParams.Add(a);
-            }
-            else
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(T)}模板失败", "ColorVision");
-                if (GetMysqlCommand() is IMysqlCommand mysqlCommand)
+                else
                 {
-                    if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否重置数据库{typeof(T)}相关项", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                    string msg = $"数据库创建{typeof(T)}模板失败";
+                    MessageBox.Show(Application.Current.GetActiveWindow(), msg, "ColorVision");
+                    log.Error(msg);
+
+                    if (GetMysqlCommand() is IMysqlCommand mysqlCommand)
                     {
-                        MySqlControl.GetInstance().BatchExecuteNonQuery(mysqlCommand.GetRecover());
+                        if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否重置数据库{typeof(T)}相关项", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                        {
+                            MySqlControl.GetInstance().BatchExecuteNonQuery(mysqlCommand.GetRecover());
+                            log.Warn($"数据库{typeof(T)}相关项已重置");
+                        }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                log.Error("模板创建异常：" + ex.Message, ex);
+                MessageBox.Show(Application.Current.GetActiveWindow(), "模板创建发生异常：" + ex.Message, "ColorVision");
             }
         }
     }

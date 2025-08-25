@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Templates.Jsons
     {
         [Browsable(false)]
         [JsonIgnore]
-        public TemplateJsonModel TemplateJsonModel { get; set; }
+        public ModMasterModel TemplateJsonModel { get; set; }
         [Browsable(false)]
         [JsonIgnore]
         public RelayCommand ResetCommand { get; set; }
@@ -32,14 +32,14 @@ namespace ColorVision.Engine.Templates.Jsons
 
         public TemplateJsonParam()
         {
-            TemplateJsonModel = new TemplateJsonModel();
+            TemplateJsonModel = new ModMasterModel();
             ResetCommand = new RelayCommand((a) => ResetValue());
             OpenEditToolCommand = new RelayCommand(a => OpenEditTool());
             CheckCommand = new RelayCommand(a => Check());
             Description = "Json配置";
         }
 
-        public TemplateJsonParam(TemplateJsonModel templateJsonModel)
+        public TemplateJsonParam(ModMasterModel templateJsonModel)
         {
             TemplateJsonModel = templateJsonModel;
             ResetCommand = new RelayCommand((a) => ResetValue());

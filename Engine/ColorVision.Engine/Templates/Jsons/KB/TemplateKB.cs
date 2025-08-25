@@ -49,7 +49,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         {
         }
 
-        public TemplateJsonKBParam(TemplateJsonModel templateJsonModel):base(templateJsonModel) 
+        public TemplateJsonKBParam(ModMasterModel templateJsonModel):base(templateJsonModel) 
         {
 
         }

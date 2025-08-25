@@ -3,8 +3,8 @@ using ColorVision.Common.Adorners.ListViewAdorners;
 using ColorVision.Common.Collections;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Messages;
 using ColorVision.Database;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -12,6 +12,7 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;
+using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
@@ -1369,7 +1370,7 @@ namespace ColorVision.Engine.Templates.POI
                 }
             }
             TemplateJsonKBParam.JsonValue = JsonConvert.SerializeObject(KBJson);
-            TemplateJsonDao.Instance.Save(TemplateJsonKBParam.TemplateJsonModel);
+            MySqlControl.GetInstance().DB.Insertable(TemplateJsonKBParam.TemplateJsonModel).ExecuteReturnIdentity();
 
             MessageBox.Show(WindowHelpers.GetActiveWindow(), "保存成功", "ColorVision");
         }

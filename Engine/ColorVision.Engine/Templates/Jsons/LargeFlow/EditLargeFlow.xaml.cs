@@ -275,7 +275,7 @@ namespace ColorVision.Engine.Templates.Jsons.LargeFlow
                     LargeFlowConfig.Flows.Add(item.Key);
             }
             TJLargeFlowParam.JsonValue = JsonConvert.SerializeObject(LargeFlowConfig);
-            TemplateJsonDao.Instance.Save(TJLargeFlowParam.TemplateJsonModel);
+            MySqlControl.GetInstance().DB.Insertable(TJLargeFlowParam.TemplateJsonModel).ExecuteReturnIdentity();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
