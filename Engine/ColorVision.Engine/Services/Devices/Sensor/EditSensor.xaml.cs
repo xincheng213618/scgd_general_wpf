@@ -1,12 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Database;
 using ColorVision.Engine.Services.PhyCameras;
-using ColorVision.Engine.Templates.SysDictionary;
+using ColorVision.Engine.Templates;
 using ColorVision.Themes;
 using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
-using ColorVision.Database;
 
 
 namespace ColorVision.Engine.Services.Devices.Sensor

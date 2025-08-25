@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
+using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.UI.Extension;
 using log4net;
 using Newtonsoft.Json;
@@ -54,7 +55,7 @@ namespace ColorVision.Engine.Templates.Jsons
 
         public override object CreateDefault()
         {
-            var dictemplate = Db.Queryable<DicTemplateJsonModel>().Where(x => x.Id == TemplateDicId).First();
+            var dictemplate = Db.Queryable<SysDictionaryModModel>().Where(x => x.Id == TemplateDicId).First();
             if (dictemplate ==null)
                 return new T();
 
@@ -245,7 +246,7 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             try
             {
-                var dictemplate = Db.Queryable<DicTemplateJsonModel>().Where(x => x.Id == TemplateDicId).First();
+                var dictemplate = Db.Queryable<SysDictionaryModModel>().Where(x => x.Id == TemplateDicId).First();
                 if (dictemplate == null)
                 {
                     log.Warn("模板字典未找到，ID=" + TemplateDicId);

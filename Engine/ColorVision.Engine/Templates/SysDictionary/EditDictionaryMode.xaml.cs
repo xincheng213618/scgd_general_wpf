@@ -6,7 +6,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Templates.SysDictionary
+namespace ColorVision.Engine.Templates
 {
 
     public class EditDictionaryModeConfig : IConfig

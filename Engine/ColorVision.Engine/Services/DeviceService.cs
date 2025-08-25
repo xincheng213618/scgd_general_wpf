@@ -7,7 +7,7 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
-using ColorVision.Engine.Templates.SysDictionary;
+using ColorVision.Engine.Templates;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;

@@ -2,7 +2,7 @@
 using SqlSugar;
 using System.Collections.Generic;
 
-namespace ColorVision.Engine.Templates.SysDictionary
+namespace ColorVision.Engine.Templates
 {
     [SugarTable("t_scgd_sys_dictionary")]
     public class SysDictionaryModel : VPKModel

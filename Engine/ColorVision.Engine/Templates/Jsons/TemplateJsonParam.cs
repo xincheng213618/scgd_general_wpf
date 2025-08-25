@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.UI.Utilities;
 using Newtonsoft.Json;
 using System;
@@ -24,7 +25,7 @@ namespace ColorVision.Engine.Templates.Jsons
         public RelayCommand CheckCommand { get; set; }
 
         [Browsable(false)]
-        public DicTemplateJsonModel? DicTemplateJsonModel => DicTemplateJsonDao.Instance.GetById(TemplateJsonModel.Pid);
+        public SysDictionaryModModel? DicTemplateJsonModel => DicTemplateJsonDao.Instance.GetById(TemplateJsonModel.Pid);
 
         public RelayCommand OpenEditToolCommand { get; set; }
 
@@ -73,7 +74,7 @@ namespace ColorVision.Engine.Templates.Jsons
 
         public void ResetValue()
         {
-            if (DicTemplateJsonModel is DicTemplateJsonModel dicnmodel && DicTemplateJsonModel.JsonVal is string str)
+            if (DicTemplateJsonModel is SysDictionaryModModel dicnmodel && DicTemplateJsonModel.JsonVal is string str)
             {
                 JsonValue = str;
                 JsonValueChanged?.Invoke(this, EventArgs.Empty);

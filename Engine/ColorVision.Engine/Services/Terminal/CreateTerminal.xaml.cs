@@ -19,7 +19,7 @@ using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms;
 using ColorVision.Engine.Services.Types;
-using ColorVision.Engine.Templates.SysDictionary;
+using ColorVision.Engine.Templates;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using Newtonsoft.Json;
