@@ -1,7 +1,7 @@
 ﻿using ColorVision.Database;
 using SqlSugar;
 
-namespace ColorVision.Engine.Templates.POI.Dao
+namespace ColorVision.Engine.Templates.POI
 {
     [SugarTable("t_scgd_algorithm_poi_template_detail")]
     public class PoiDetailModel : PKModel
