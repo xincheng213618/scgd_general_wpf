@@ -16,7 +16,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Dao
 {
-    public class ViewResultCamera : ViewModelBase, ISortID
+    public class ViewResultImage : ViewModelBase, ISortID
     {
         public ContextMenu ContextMenu { get; set; }
         public RelayCommand ExportCVCIECommand { get; set; }
@@ -26,11 +26,11 @@ namespace ColorVision.Engine.Services.Dao
         public RelayCommand OpenContainingFolderCommand { get; set; }
         public RelayCommand CreateToPoiCommand { get; set; }
 
-        public ViewResultCamera()
+        public ViewResultImage()
         {
 
         }
-        public ViewResultCamera(MeasureResultImgModel measureImgResultModel)
+        public ViewResultImage(MeasureResultImgModel measureImgResultModel)
         {
             Id = measureImgResultModel.Id;
             FilePath = measureImgResultModel.RawFile ?? string.Empty;

@@ -535,7 +535,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
             {
-                Type type = typeof(ViewResultCamera);
+                Type type = typeof(ViewResultImage);
 
                 var properties = type.GetProperties();
                 foreach (var property in properties)

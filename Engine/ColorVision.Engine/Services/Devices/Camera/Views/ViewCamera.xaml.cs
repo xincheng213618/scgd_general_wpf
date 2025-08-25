@@ -39,7 +39,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public DeviceCamera Device { get; set; }
 
         public static ViewCameraConfig Config => ViewCameraConfig.Instance;
-        public static ObservableCollection<ViewResultCamera> ViewResults => Config.ViewResults;
+        public static ObservableCollection<ViewResultImage> ViewResults => Config.ViewResults;
 
         public ViewCamera(DeviceCamera device)
         {
@@ -94,7 +94,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             else
             {
                 listView1.SelectedIndex = -1;
-                foreach (var item in listView1.SelectedItems.Cast<ViewResultCamera>().ToList())
+                foreach (var item in listView1.SelectedItems.Cast<ViewResultImage>().ToList())
                     ViewResults.Remove(item);
             }
         }
@@ -167,7 +167,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
             {
-                Type type = typeof(ViewResultCamera);
+                Type type = typeof(ViewResultImage);
 
                 var properties = type.GetProperties();
                 foreach (var property in properties)
@@ -263,7 +263,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         public void ShowResult(MeasureResultImgModel model)
         {
-            ViewResultCamera result = new(model);
+            ViewResultImage result = new(model);
 
             ViewResults.AddUnique(result, Config.InsertAtBeginning);
             if (Config.AutoRefreshView)
@@ -285,7 +285,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
             foreach (var item in dbList)
             {
-                ViewResultCamera algorithmResult = new(item);
+                ViewResultImage algorithmResult = new(item);
                 ViewResults.AddUnique(algorithmResult);
             }
         }
@@ -294,7 +294,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
-            GenericQuery<MeasureResultImgModel,ViewResultCamera> genericQuery = new GenericQuery<MeasureResultImgModel, ViewResultCamera>(MySqlControl.GetInstance().DB, ViewResults,t=> new ViewResultCamera(t));
+            GenericQuery<MeasureResultImgModel,ViewResultImage> genericQuery = new GenericQuery<MeasureResultImgModel, ViewResultImage>(MySqlControl.GetInstance().DB, ViewResults,t=> new ViewResultImage(t));
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
         }

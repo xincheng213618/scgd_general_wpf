@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Archive.Dao
             InitializeComponent();
         }
 
-        public ObservableCollection<ViewResultCamera> ViewResultCameras { get; set; } = new ObservableCollection<ViewResultCamera>();
+        public ObservableCollection<ViewResultImage> ViewResultImages { get; set; } = new ObservableCollection<ViewResultImage>();
         public ObservableCollection<AlgorithmResult> AlgorithmResults { get; set; } = new ObservableCollection<AlgorithmResult>();
 
 
@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Archive.Dao
         {
             TextBatch.Text = "批次 " + ViewBatchResult.BatchCode +" 结果";
 
-            listView1.ItemsSource = ViewResultCameras;
+            listView1.ItemsSource = ViewResultImages;
 
 
             listView2.ItemsSource = AlgorithmResults;
@@ -41,12 +41,12 @@ namespace ColorVision.Engine.Archive.Dao
         }
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
-            ViewResultCameras.Clear();
+            ViewResultImages.Clear();
             foreach (var item in MeasureImgResultDao.Instance.GetAllByBatchId(ViewBatchResult.Id))
             {
-                ViewResultCameras.AddUnique(new ViewResultCamera(item));
+                ViewResultImages.AddUnique(new ViewResultImage(item));
             }
-            if (ViewResultCameras.Count == 0) StactPanelImage.Visibility = Visibility.Collapsed;
+            if (ViewResultImages.Count == 0) StactPanelImage.Visibility = Visibility.Collapsed;
 
             AlgorithmResults.Clear();
             foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(ViewBatchResult.Id))
@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Archive.Dao
         {
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
-                ViewResultCameras[listView.SelectedIndex].Open();
+                ViewResultImages[listView.SelectedIndex].Open();
             }
         }
 

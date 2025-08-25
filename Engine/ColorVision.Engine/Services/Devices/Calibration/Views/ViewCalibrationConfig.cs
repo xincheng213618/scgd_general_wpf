@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
     {
         public static ViewCalibrationConfig Instance => ConfigService.Instance.GetRequiredService<ViewCalibrationConfig>();
         [JsonIgnore]
-        public ObservableCollection<ViewResultCamera> ViewResults { get; set; } = new ObservableCollection<ViewResultCamera>();
+        public ObservableCollection<ViewResultImage> ViewResults { get; set; } = new ObservableCollection<ViewResultImage>();
         [JsonIgnore]
         public RelayCommand ClearListCommand { get; set; }
         public ViewCalibrationConfig()

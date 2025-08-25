@@ -53,49 +53,49 @@
                                     </GridView.ColumnHeaderContainerStyle>
                                     <GridViewColumn  Header="序号" Width="50">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type camera:ViewResultCamera}">
+                                            <DataTemplate  DataType="{x:Type camera:ViewResultImage}">
                                                 <TextBlock Text="{Binding Id}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="图像数据文件" Width="120">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type camera:ViewResultCamera}">
+                                            <DataTemplate  DataType="{x:Type camera:ViewResultImage}">
                                                 <TextBlock Text="{Binding FilePath}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="参数" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type camera:ViewResultCamera}">
+                                            <DataTemplate  DataType="{x:Type camera:ViewResultImage}">
                                                 <TextBlock Text="{Binding ReqParams}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="用时(ms)" Width="100">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type camera:ViewResultCamera}">
+                                            <DataTemplate  DataType="{x:Type camera:ViewResultImage}">
                                                 <TextBlock Text="{Binding TotalTime}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="图像信息" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type camera:ViewResultCamera}">
+                                            <DataTemplate  DataType="{x:Type camera:ViewResultImage}">
                                                 <TextBlock Text="{Binding ImgFrameInfo}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="结果" Width="50">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type camera:ViewResultCamera}">
+                                            <DataTemplate  DataType="{x:Type camera:ViewResultImage}">
                                                 <TextBlock Text="{Binding ResultCode}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="信息" Width="100">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type camera:ViewResultCamera}">
+                                            <DataTemplate  DataType="{x:Type camera:ViewResultImage}">
                                                 <TextBlock Text="{Binding ResultMsg}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>

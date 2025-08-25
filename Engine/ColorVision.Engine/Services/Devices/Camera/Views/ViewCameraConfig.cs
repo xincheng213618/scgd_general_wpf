@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public static ViewCameraConfig Instance => ConfigService.Instance.GetRequiredService<ViewCameraConfig>();
 
         [JsonIgnore]
-        public ObservableCollection<ViewResultCamera> ViewResults { get; set; } = new ObservableCollection<ViewResultCamera>();
+        public ObservableCollection<ViewResultImage> ViewResults { get; set; } = new ObservableCollection<ViewResultImage>();
 
         [JsonIgnore]
         public RelayCommand ClearListCommand { get; set; }

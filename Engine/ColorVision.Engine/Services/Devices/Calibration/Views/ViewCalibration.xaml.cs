@@ -46,7 +46,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             InitializeComponent();
         }
         public static ViewCalibrationConfig Config => ViewCalibrationConfig.Instance;
-        public static ObservableCollection<ViewResultCamera> ViewResults => Config.ViewResults;
+        public static ObservableCollection<ViewResultImage> ViewResults => Config.ViewResults;
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -74,7 +74,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             else
             {
                 listView1.SelectedIndex = -1;
-                foreach (var item in listView1.SelectedItems.Cast<ViewResultCamera>().ToList())
+                foreach (var item in listView1.SelectedItems.Cast<ViewResultImage>().ToList())
                     ViewResults.Remove(item);
             }
         }
@@ -110,7 +110,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         public void ShowResult(MeasureResultImgModel model)
         {
-            ViewResultCamera result = new(model);
+            ViewResultImage result = new(model);
             ViewResults.AddUnique(result);
             if (Config.AutoRefreshView)
             {
@@ -204,7 +204,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
             foreach (var item in dbList)
             {
-                ViewResultCamera algorithmResult = new(item);
+                ViewResultImage algorithmResult = new(item);
                 ViewResults.AddUnique(algorithmResult);
             }
         }
@@ -212,7 +212,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
-            GenericQuery<MeasureResultImgModel, ViewResultCamera> genericQuery = new GenericQuery<MeasureResultImgModel, ViewResultCamera>(MySqlControl.GetInstance().DB, ViewResults, t => new ViewResultCamera(t));
+            GenericQuery<MeasureResultImgModel, ViewResultImage> genericQuery = new GenericQuery<MeasureResultImgModel, ViewResultImage>(MySqlControl.GetInstance().DB, ViewResults, t => new ViewResultImage(t));
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
         }
@@ -221,7 +221,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
             {
-                Type type = typeof(ViewResultCamera);
+                Type type = typeof(ViewResultImage);
 
                 var properties = type.GetProperties();
                 foreach (var property in properties)

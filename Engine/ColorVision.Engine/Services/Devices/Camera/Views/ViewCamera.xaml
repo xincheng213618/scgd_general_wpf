@@ -100,56 +100,56 @@
                         </GridView.ColumnHeaderContainerStyle>
                         <GridViewColumn  Header="{x:Static properties:Resources.SerialNumber1}" Width="50">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type model:ViewResultCamera}">
+                                <DataTemplate  DataType="{x:Type model:ViewResultImage}">
                                     <TextBlock Text="{Binding Id}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn  Header="{x:Static properties:Resources.Info}" Width="50">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type model:ViewResultCamera}">
+                                <DataTemplate  DataType="{x:Type model:ViewResultImage}">
                                     <TextBlock Text="{ Binding  ResultMsg}" />
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn  Header="{x:Static properties:Resources.File}" Width="120">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type model:ViewResultCamera}">
+                                <DataTemplate  DataType="{x:Type model:ViewResultImage}">
                                     <TextBlock Text="{ Binding  FilePath}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn  Header="{x:Static properties:Resources.Result}" Width="50">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type model:ViewResultCamera}">
+                                <DataTemplate  DataType="{x:Type model:ViewResultImage}">
                                     <TextBlock Text="{ Binding  ResultCode}" />
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn  Header="{x:Static properties:Resources.ImageInfo}" >
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type model:ViewResultCamera}">
+                                <DataTemplate  DataType="{x:Type model:ViewResultImage}">
                                     <TextBlock Text="{ Binding  ImgFrameInfo}" />
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn  Header="{x:Static properties:Resources.Duration}" Width="100">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type model:ViewResultCamera}">
+                                <DataTemplate  DataType="{x:Type model:ViewResultImage}">
                                     <TextBlock Text="{ Binding  TotalTime}" />
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn  Header="{x:Static properties:Resources.Parameter}" >
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type model:ViewResultCamera}">
+                                <DataTemplate  DataType="{x:Type model:ViewResultImage}">
                                     <TextBlock Text="{ Binding   ReqParams}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn  Header="DeviceCode" Width="50">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type model:ViewResultCamera}">
+                                <DataTemplate  DataType="{x:Type model:ViewResultImage}">
                                     <TextBlock Text="{Binding DeviceCode}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
