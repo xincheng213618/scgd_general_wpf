@@ -43,7 +43,7 @@ namespace ColorVision.Database
     {
         [DisplayName("查询数量"), Category("View")]
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
-        private int _Count = -1;
+        private int _Count = 100;
 
         [DisplayName("按类型排序"), Category("View")]
         public OrderByType OrderByType { get => _OrderByType; set { _OrderByType = value; OnPropertyChanged(); } }

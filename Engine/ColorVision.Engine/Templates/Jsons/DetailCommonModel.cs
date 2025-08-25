@@ -10,32 +10,13 @@ namespace ColorVision.Engine.Templates.Jsons
         public string ResultFileName { get; set; }
     }
 
-    public class DetailViewReslut : IViewResult
-    {
-        public DetailCommonModel DetailCommonModel { get; set; }
-
-        public DetailViewReslut(DetailCommonModel detailCommonModel)
-        {
-            DetailCommonModel = detailCommonModel;
-
-            var restfile = JsonConvert.DeserializeObject<ResultFile>(detailCommonModel.ResultJson);
-            ResultFileName = restfile?.ResultFileName;
-        }
-        [SugarColumn(ColumnName ="id")]
-        public int Id { get; set; }
-        [SugarColumn(ColumnName ="pid")]
-        public int PId { get; set; }
-        public string? ResultFileName { get; set; }
-    }
-
-
     [SugarTable("t_scgd_algorithm_result_detail_common")]
     public class DetailCommonModel : PKModel, IInitTables
     {
         [SugarColumn(ColumnName ="pid")]
         public int PId { get; set; }
 
-        [SugarColumn(ColumnName ="result")]
+        [SugarColumn(ColumnName ="result",ColumnDataType ="json")]
         public string ResultJson { get; set; }
     }
 
