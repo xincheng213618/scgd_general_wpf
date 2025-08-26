@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Archive.Dao
             Batch = batchResultMasterModel.Name;
             BatchCode = batchResultMasterModel.Code;
             CreateTime = batchResultMasterModel.CreateDate;
-            TotalTime = TimeSpan.FromMilliseconds((double)(batchResultMasterModel.TotalTime??0));
+            TotalTime = TimeSpan.FromMilliseconds(batchResultMasterModel.TotalTime);
         }
         [DisplayName("序号")]
         public int Id { get { return _Id; } set { _Id = value; OnPropertyChanged(); } }
