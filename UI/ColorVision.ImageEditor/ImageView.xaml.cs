@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -27,7 +28,7 @@ namespace ColorVision.ImageEditor
     /// <summary>
     /// ImageView.xaml 的交互逻辑
     /// </summary>
-    public partial class ImageView : UserControl,IDisposable
+    public partial class ImageView : UserControl, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
 
@@ -62,7 +63,7 @@ namespace ColorVision.ImageEditor
             ToolBarLeft.DataContext = Config;
             Zoombox1.DataContext = imageViewConfig;
             ImageViewModel.PropertyCommand = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(Parent), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
-           
+
             Config.ColormapTypesChanged -= Config_ColormapTypesChanged;
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
             Config.BalanceChanged += ImageViewConfig_BalanceChanged;
@@ -388,7 +389,7 @@ namespace ColorVision.ImageEditor
                 if (ImageViewModel.EraseVisual)
                 {
                     ImageViewModel.DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
-                    drawCanvas.AddVisual(SelectRect,false);
+                    drawCanvas.AddVisual(SelectRect, false);
 
                     if (ImageViewModel.SelectDrawingVisuals != null)
                     {
@@ -614,7 +615,7 @@ namespace ColorVision.ImageEditor
                     IsMouseDown = false;
                     var MouseUpP = e.GetPosition(drawCanvas);
 
-                    if (drawCanvas.GetVisual(MouseUpP) is not DrawingVisual dv ||  ImageViewModel.SelectDrawingVisuals == null || !ImageViewModel.SelectDrawingVisuals.Contains(dv))
+                    if (drawCanvas.GetVisual(MouseUpP) is not DrawingVisual dv || ImageViewModel.SelectDrawingVisuals == null || !ImageViewModel.SelectDrawingVisuals.Contains(dv))
                         SelectDrawingVisualsClear();
 
                     if (drawCanvas.ContainsVisual(SelectRect))
@@ -644,7 +645,7 @@ namespace ColorVision.ImageEditor
                                 ImageViewModel.SelectDrawingVisuals = null;
                         }
 
-                        drawCanvas.RemoveVisual(SelectRect,false);
+                        drawCanvas.RemoveVisual(SelectRect, false);
                     }
 
 
@@ -737,7 +738,7 @@ namespace ColorVision.ImageEditor
                             {
                                 Circl.Center += l;
                             });
-                            ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction) { Header ="移动圆"});
+                            ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "移动圆" });
                         }
                     }
                 }
@@ -778,7 +779,7 @@ namespace ColorVision.ImageEditor
 
         public void OpenImage(WriteableBitmap? writeableBitmap)
         {
-           if (writeableBitmap != null) 
+            if (writeableBitmap != null)
                 SetImageSource(writeableBitmap);
         }
 
@@ -801,7 +802,7 @@ namespace ColorVision.ImageEditor
         public async void OpenImage(string? filePath)
         {
             //如果文件已经打开，不会重复打开
-            if (filePath ==null || filePath.Equals(Config.FilePath, StringComparison.Ordinal)) return;
+            if (filePath == null || filePath.Equals(Config.FilePath, StringComparison.Ordinal)) return;
             Button1931.Visibility = Visibility.Collapsed;
             Config.AddProperties("FilePath", filePath);
             ClearSelectionChangedHandlers();
@@ -849,7 +850,8 @@ namespace ColorVision.ImageEditor
                         BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
                         SetImageSource(bitmapImage.ToWriteableBitmap());
                         UpdateZoomAndScale();
-                    };
+                    }
+                    ;
 
                 }
                 catch (Exception ex)
@@ -862,55 +864,107 @@ namespace ColorVision.ImageEditor
 
         }
 
-        public HImage? HImageCache { get; set; }
+        public HImage? HImageCache
+        {
+            get
+            {
+                if (_hImageCache == null && ViewBitmapSource != null && ViewBitmapSource is WriteableBitmap writeableBitmap)
+                {
+                    _hImageCache = writeableBitmap.ToHImage();
+                }
+                return _hImageCache;
+            }
+            set { _hImageCache = value; }
+        }
+        private HImage? _hImageCache;
+
 
         public void SetImageSource(ImageSource imageSource)
         {
+            Clear();
             ComboBoxLayers.Visibility = Visibility.Visible;
             if (HImageCache != null)
             {
                 HImageCache?.Dispose();
                 HImageCache = null;
-            };
+            }
+            ;
+
             if (imageSource is WriteableBitmap writeableBitmap)
             {
-                Config.AddProperties("PixelFormat", writeableBitmap.Format);
-                Task.Run(() => Application.Current.Dispatcher.Invoke((() =>
+
+
+                int cols = writeableBitmap.PixelWidth;
+                int rows = writeableBitmap.PixelHeight;
+                int channels, depth;
+
+                switch (writeableBitmap.Format.ToString())
                 {
-                    HImageCache = writeableBitmap.ToHImage();
-                    if (HImageCache is HImage hImage)
-                    {
-                        Config.AddProperties("Cols", hImage.cols);
-                        Config.AddProperties("Rows", hImage.rows);
-                        Config.AddProperties("Channel", hImage.channels);
-                        Config.AddProperties("Depth", hImage.depth);
-                        Config.AddProperties("Stride", hImage.stride);
+                    case "Bgr32":
+                    case "Bgra32":
+                    case "Pbgra32":
+                        channels = 4; // BGRA format has 4 channels
+                        depth = 8; // 8 bits per channel
+                        break;
+                    case "Bgr24":
+                    case "Rgb24":
+                        channels = 3; // RGB format has 3 channels
+                        depth = 8; // 8 bits per channel
+                        break;
+                    case "Indexed8":
+                        depth = 8; // 8 bits per channel
+                        channels = 1;
+                        break;
+                    case "Rgb48":
+                        channels = 3; // RGB format has 3 channels
+                        depth = 16; // 8 bits per channel
+                        break;
+                    case "Gray8":
+                        channels = 1; // Gray scale has 1 channel
+                        depth = 8; // 8 bits per channel
+                        break;
+                    case "Gray16":
+                        channels = 1; // Gray scale has 1 channel
+                        depth = 16; // 16 bits per channel
+                        break;
+                    case "Gray32Float":
+                        channels = 1; // Gray scale has 1 channel
+                        depth = 32; // 16 bits per channel
+                        break;
+                    default:
+                        MessageBox.Show($"{writeableBitmap.Format}暂不支持的格式,请联系开发人员");
+                        throw new NotSupportedException("The pixel format is not supported.");
+                }
 
-                        Config.Channel = hImage.channels;
-                        Config.Ochannel = Config.Channel;
+                int stride = cols * channels * (depth / 8);
 
-                        if (hImage.depth == 16)
-                        {
-                            PseudoSlider.Maximum = 65535;
-                            PseudoSlider.ValueEnd = 65535;
+                Config.AddProperties("PixelFormat", writeableBitmap.Format);
+                Config.AddProperties("Cols", cols);
+                Config.AddProperties("Rows", rows);
+                Config.AddProperties("Channel", channels);
+                Config.AddProperties("Depth", depth);
+                Config.AddProperties("Stride", stride);
 
-                            thresholdSlider.Maximum = 65535;
-                            thresholdSlider.Value = 0;
-                            Config.AddProperties("Max",65535 );
+                Config.Channel = channels;
+                Config.Ochannel = channels;
 
-                        }
-                        else
-                        {
-                            Config.AddProperties("Max", 255);
-
-                            PseudoSlider.Maximum = 255;
-                            PseudoSlider.ValueEnd = 255;
-
-                            thresholdSlider.Maximum = 255;
-                            thresholdSlider.Value = 0;
-                        }
-                    }
-                })));
+                if (depth == 16)
+                {
+                    Config.AddProperties("Max", 65535);
+                    PseudoSlider.Maximum = 65535;
+                    PseudoSlider.ValueEnd = 65535;
+                    thresholdSlider.Maximum = 65535;
+                    thresholdSlider.Value = 0;
+                }
+                else
+                {
+                    Config.AddProperties("Max", 255);
+                    PseudoSlider.Maximum = 255;
+                    PseudoSlider.ValueEnd = 255;
+                    thresholdSlider.Maximum = 255;
+                    thresholdSlider.Value = 0;
+                }
+                Config.AddProperties("PixelFormat", writeableBitmap.Format);
             }
 
             ViewBitmapSource = imageSource;
@@ -928,7 +982,7 @@ namespace ColorVision.ImageEditor
 
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
         {
-            DebounceTimer.AddOrResetTimer("PseudoSlider", 50, e=>  RenderPseudo(), 0);
+            DebounceTimer.AddOrResetTimer("PseudoSlider", 50, e => RenderPseudo(), 0);
         }
 
         private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
@@ -976,7 +1030,8 @@ namespace ColorVision.ImageEditor
                             }
                         });
                     });
-                };
+                }
+                ;
             });
         }
 
@@ -1000,10 +1055,10 @@ namespace ColorVision.ImageEditor
 
         private void HistogramButton_Click(object sender, RoutedEventArgs e)
         {
-            if (ImageShow.Source is not BitmapSource bitmapSource)  return;
+            if (ImageShow.Source is not BitmapSource bitmapSource) return;
 
             var (redHistogram, greenHistogram, blueHistogram) = ImageUtils.RenderHistogram(bitmapSource);
-            if (bitmapSource.Format.Masks.Count ==1)
+            if (bitmapSource.Format.Masks.Count == 1)
             {
                 HistogramChartWindow histogramChartWindow = new HistogramChartWindow(redHistogram);
                 histogramChartWindow.Show();
@@ -1015,7 +1070,7 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        public List<string> ComboBoxLayerItems { get; set; } = new List<string>() { "Src" ,"R","G","B" };
+        public List<string> ComboBoxLayerItems { get; set; } = new List<string>() { "Src", "R", "G", "B" };
 
         public void ComboBoxLayersSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -1102,7 +1157,8 @@ namespace ColorVision.ImageEditor
                     }
                     ImageShow.Source = FunctionImage;
                 }
-            };
+            }
+            ;
         }
 
         public void AdjustWhiteBalance()
@@ -1151,7 +1207,8 @@ namespace ColorVision.ImageEditor
                 }
 
 
-            };
+            }
+            ;
         }
 
         private void CM_AutomaticColorAdjustment(object sender, RoutedEventArgs e)
@@ -1178,7 +1235,8 @@ namespace ColorVision.ImageEditor
                     }
                     ImageShow.Source = FunctionImage;
                 }
-            };
+            }
+            ;
         }
 
         private void CM_AutomaticToneAdjustment(object sender, RoutedEventArgs e)
@@ -1234,7 +1292,7 @@ namespace ColorVision.ImageEditor
 
         private void PreviewSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            DebounceTimer.AddOrResetTimer("ApplyGammaCorrection", 50, a=> ApplyGammaCorrection(a), GammaSlider.Value);
+            DebounceTimer.AddOrResetTimer("ApplyGammaCorrection", 50, a => ApplyGammaCorrection(a), GammaSlider.Value);
         }
 
         public void ApplyGammaCorrection(double Gamma)
@@ -1303,7 +1361,7 @@ namespace ColorVision.ImageEditor
         {
             DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, AdjustBrightnessContrast, ContrastSlider.Value, BrightnessSlider.Value);
         }
-        public void AdjustBrightnessContrast(double Contrast ,double Brightness)
+        public void AdjustBrightnessContrast(double Contrast, double Brightness)
         {
             if (HImageCache == null) return;
             //实现类似于PS的效果
@@ -1328,6 +1386,7 @@ namespace ColorVision.ImageEditor
                     ImageShow.Source = FunctionImage;
                     stopwatch.Stop();
                     log.Info($"AdjustBrightnessContrast {stopwatch.Elapsed}");
+
                 }
             });
         }
@@ -1377,14 +1436,14 @@ namespace ColorVision.ImageEditor
                 Stopwatch stopwatch = new Stopwatch();
                 stopwatch.Start();
                 double thresh = thresholdSlider.Value;
-                double maxval =  Config.GetProperties<int>("Max");
+                double maxval = Config.GetProperties<int>("Max");
 
 
                 int type = 0;
                 log.Info($"InvertImag");
                 Task.Run(() =>
                 {
-                    int ret = OpenCVMediaHelper.M_Threshold((HImage)HImageCache, out HImage hImageProcessed, thresh, maxval,type);
+                    int ret = OpenCVMediaHelper.M_Threshold((HImage)HImageCache, out HImage hImageProcessed, thresh, maxval, type);
                     Application.Current.Dispatcher.BeginInvoke(() =>
                     {
                         if (ret == 0)
