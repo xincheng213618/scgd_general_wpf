@@ -40,7 +40,7 @@ namespace ColorVision.Engine
         [SugarColumn(ColumnName ="img_result")]
         public string ResultImagFile { get; set; }
 
-        [SugarColumn(ColumnName ="total_time")]
+        [SugarColumn(ColumnName ="total_time",IsNullable =true)]
         public long TotalTime { get; set; }
 
         [SugarColumn(ColumnName ="create_date")]
