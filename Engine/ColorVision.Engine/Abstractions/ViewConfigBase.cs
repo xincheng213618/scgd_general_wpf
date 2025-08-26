@@ -5,7 +5,7 @@ using System.ComponentModel;
 using System.Windows;
 
 
-namespace ColorVision.Engine.Abstractions
+namespace ColorVision.Engine
 {
     /// <summary>
     /// 配置视图的基类，提供通用配置选项

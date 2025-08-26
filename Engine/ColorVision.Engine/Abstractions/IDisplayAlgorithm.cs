@@ -6,7 +6,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Abstractions
+namespace ColorVision.Engine
 {
     public class DisplayAlgorithmParam
     {

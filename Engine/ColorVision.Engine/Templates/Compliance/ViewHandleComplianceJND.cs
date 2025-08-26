@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Abstractions;
-using ColorVision.Database;
+﻿using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using System.Collections.Generic;
 using System.IO;

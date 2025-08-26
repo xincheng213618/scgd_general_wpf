@@ -3,8 +3,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.Themes.Controls;

@@ -1,5 +1,4 @@
 ﻿using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services.Core;
 
 namespace ColorVision.Engine.Services.Terminal
 {

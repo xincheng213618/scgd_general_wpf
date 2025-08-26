@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Services.Core;
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;

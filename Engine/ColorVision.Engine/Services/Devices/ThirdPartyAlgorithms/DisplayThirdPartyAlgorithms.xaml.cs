@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8604,CS0168,CS8629,CA1822,CS8602
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;

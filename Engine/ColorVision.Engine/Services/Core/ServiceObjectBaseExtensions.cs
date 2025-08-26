@@ -3,7 +3,7 @@ using ColorVision.Engine.Services.Terminal;
 using Newtonsoft.Json;
 using ColorVision.Database;
 
-namespace ColorVision.Engine.Services.Core
+namespace ColorVision.Engine.Services
 {
     public static class ServiceObjectBaseExtensions
     {

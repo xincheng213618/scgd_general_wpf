@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.Algorithms;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor.Draw;

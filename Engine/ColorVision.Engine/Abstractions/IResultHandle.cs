@@ -3,7 +3,7 @@ using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using System.Collections.Generic;
 
-namespace ColorVision.Engine.Abstractions
+namespace ColorVision.Engine
 {
     public enum ViewResultAlgType
     {

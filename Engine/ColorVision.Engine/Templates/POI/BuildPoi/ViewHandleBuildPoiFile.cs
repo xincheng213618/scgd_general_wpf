@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8604,CS8603
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Media;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;

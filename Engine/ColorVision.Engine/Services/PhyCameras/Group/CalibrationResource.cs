@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Core;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using cvColorVision;

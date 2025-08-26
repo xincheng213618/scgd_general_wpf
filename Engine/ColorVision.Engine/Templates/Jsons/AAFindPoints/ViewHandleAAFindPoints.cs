@@ -3,7 +3,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor.Draw;

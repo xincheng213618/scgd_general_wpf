@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8602
 using ColorVision.Database;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.FileIO;

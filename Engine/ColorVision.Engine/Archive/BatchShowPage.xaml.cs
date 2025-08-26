@@ -1,6 +1,5 @@
 ﻿using ColorVision.Database;
 using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.UI.Sorts;
 using System;

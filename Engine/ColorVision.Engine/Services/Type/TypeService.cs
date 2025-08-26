@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Terminal;
-using ColorVision.Engine.Templates;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;

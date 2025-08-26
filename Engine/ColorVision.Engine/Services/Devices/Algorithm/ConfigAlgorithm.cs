@@ -1,6 +1,4 @@
-﻿using ColorVision.Engine.Abstractions;
-
-namespace ColorVision.Engine.Services.Devices.Algorithm
+﻿namespace ColorVision.Engine.Services.Devices.Algorithm
 {
     public class ConfigAlgorithm : DeviceServiceConfig, IFileServerCfg
     {

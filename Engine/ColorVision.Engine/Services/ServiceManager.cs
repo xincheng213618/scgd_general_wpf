@@ -1,7 +1,5 @@
 ﻿using ColorVision.Database;
 using ColorVision.Engine.Rbac;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -17,7 +15,6 @@ using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
-using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using SqlSugar;
