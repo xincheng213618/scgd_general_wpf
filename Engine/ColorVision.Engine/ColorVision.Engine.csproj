@@ -52,17 +52,9 @@
 			<HintPath>..\..\DLL\CVCommCore.dll</HintPath>
 			<Private>True</Private>
 		</Reference>
-		<Reference Include="FlowEngineLib">
-			<HintPath>..\..\DLL\FlowEngineLib.dll</HintPath>
-			<Private>True</Private>
-		</Reference>
 		<Reference Include="MQTTMessageLib">
 			<HintPath>..\..\DLL\MQTTMessageLib.dll</HintPath>
 			<Private>True</Private>
-		</Reference>
-		<Reference Include="ST.Library.UI">
-		  <HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
-		  <Private>True</Private>
 		</Reference>
 	</ItemGroup>
 	
@@ -92,6 +84,8 @@
     <ProjectReference Include="..\..\UI\ColorVision.Scheduler\ColorVision.Scheduler.csproj" />
     <ProjectReference Include="..\..\UI\ColorVision.Solution\ColorVision.Solution.csproj" />
     <ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
+    <ProjectReference Include="..\FlowEngineLib\FlowEngineLib.csproj" />
+    <ProjectReference Include="..\ST.Library.UI\ST.Library.UI.csproj" />
   </ItemGroup>
 
   <ItemGroup>

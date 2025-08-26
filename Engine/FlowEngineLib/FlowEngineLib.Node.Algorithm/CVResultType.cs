@@ -1,0 +1,35 @@
+namespace FlowEngineLib.Node.Algorithm;
+
+public enum CVResultType
+{
+	None = -1,
+	Algorithm_POI = 0,
+	Algorithm_POI_XYZ = 1,
+	Algorithm_POI_Y = 2,
+	Algorithm_FOV = 3,
+	Algorithm_SFR = 4,
+	Algorithm_MTF = 5,
+	Algorithm_Ghost = 6,
+	Algorithm_LedCheck = 7,
+	Algorithm_LightArea = 8,
+	Algorithm_Distortion = 9,
+	Algorithm_Calibration = 10,
+	Algorithm_BuildPOI = 11,
+	Algorithm_Compliance = 12,
+	Algorithm_Compliance_STD_CIE_XYZ = 13,
+	Algorithm_Compliance_STD_CIE_Y = 14,
+	Algorithm_RealPOI = 15,
+	Algorithm_LEDStripDetection = 16,
+	Algorithm_Compliance_Contrast_CIE_XYZ = 17,
+	Algorithm_Compliance_Contrast_CIE_Y = 18,
+	Algorithm_FindDotsArrayMem = 21,
+	Algorithm_FindDotsArrayMem_File = 22,
+	Algorithm_POI_XYZ_File = 23,
+	Algorithm_POI_Y_File = 24,
+	Algorithm_ImageCropping = 29,
+	ThirdPartyAlgorithms_File = 40,
+	ThirdPartyAlgorithms_RealParam = 41,
+	Camera_Img = 100,
+	SMU = 200,
+	Spectrum = 300
+}
