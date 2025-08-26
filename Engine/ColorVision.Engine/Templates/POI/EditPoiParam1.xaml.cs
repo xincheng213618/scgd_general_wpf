@@ -6,7 +6,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
@@ -1368,7 +1367,7 @@ namespace ColorVision.Engine.Templates.POI
                 }
             }
             TemplateJsonKBParam.JsonValue = JsonConvert.SerializeObject(KBJson);
-            MySqlControl.GetInstance().DB.Insertable(TemplateJsonKBParam.TemplateJsonModel).ExecuteReturnIdentity();
+            MySqlControl.GetInstance().DB.Updateable(TemplateJsonKBParam.TemplateJsonModel).ExecuteCommand();
 
             MessageBox.Show(WindowHelpers.GetActiveWindow(), "保存成功", "ColorVision");
         }

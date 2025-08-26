@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8604
 
-using ColorVision.Engine.Abstractions;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System.Collections.ObjectModel;

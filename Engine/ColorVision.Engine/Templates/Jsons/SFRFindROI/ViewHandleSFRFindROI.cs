@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8602,CS8601,CS8629
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.POI;
@@ -17,6 +16,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
 {
@@ -74,9 +74,9 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
 
     public class ViewHandleSFRFindROI : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.ARVR_SFR_FindROI };
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.ARVR_SFR_FindROI };
 
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
             var ViewResults = result.ViewResults.ToSpecificViewResults<ViewSFRFindROI>();
@@ -104,7 +104,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
             File.WriteAllText(fileName, csvBuilder.ToString(), Encoding.UTF8);
         }
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(AlgorithmView view, ViewResultAlg result)
         {
             if (result.ViewResults ==null)
             {
@@ -144,13 +144,13 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
                     }
                 }
                 RelayCommand ExportToPoiCommand = new RelayCommand(a => ExportToPoi());
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "创建POI", Command = ExportToPoiCommand });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "创建到POI", Command = ExportToPoiCommand });
                 result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmSFRFindROI), ImageFilePath = result.FilePath })) });
             }
 
         }
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(AlgorithmView view, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);

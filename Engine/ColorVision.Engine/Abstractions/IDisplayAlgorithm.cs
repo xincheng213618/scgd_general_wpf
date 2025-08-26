@@ -6,7 +6,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Abstractions
+namespace ColorVision.Engine
 {
     public class DisplayAlgorithmParam
     {
@@ -30,9 +30,9 @@ namespace ColorVision.Engine.Abstractions
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IResultHandleBase).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    if (Activator.CreateInstance(type) is IResultHandleBase algorithmResultRender)
+                    if (Activator.CreateInstance(type) is IResultHandleBase ViewResultAlgRender)
                     {
-                        ResultHandles.Add(algorithmResultRender);
+                        ResultHandles.Add(ViewResultAlgRender);
                     }
                 }
             }

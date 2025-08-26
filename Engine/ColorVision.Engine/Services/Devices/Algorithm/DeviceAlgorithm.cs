@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
-using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using System;
 using System.Windows;

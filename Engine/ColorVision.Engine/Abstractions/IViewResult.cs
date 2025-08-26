@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Engine.Abstractions
+namespace ColorVision.Engine
 {
     public interface IViewResult
     {

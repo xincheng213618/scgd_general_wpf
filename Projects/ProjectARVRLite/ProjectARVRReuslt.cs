@@ -2,7 +2,7 @@
 using ColorVision.Common.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Abstractions;
+using ColorVision.Engine;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
 using ColorVision.Database;

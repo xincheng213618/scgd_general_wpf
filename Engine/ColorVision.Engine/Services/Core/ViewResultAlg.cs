@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CS8601
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Media;
 using ColorVision.Database;
 using ColorVision.Engine.Templates.POI;
@@ -16,9 +15,9 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Views
+namespace ColorVision.Engine.Services
 {
-    public class AlgorithmResult : ViewModelBase, ISortID
+    public class ViewResultAlg : ViewModelBase, ISortID
     {
         public ObservableCollection<IViewResult> ViewResults { get; set; }
 
@@ -29,12 +28,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public RelayCommand ExportToPoiCommand { get; set; }
 
-        public AlgorithmResult()
+        public ViewResultAlg()
         {
 
         }
 
-        public AlgorithmResult(AlgResultMasterModel item)
+        public ViewResultAlg(AlgResultMasterModel item)
         {
             Id = item.Id;
             Batch = BatchResultMasterDao.Instance.GetById(item.BatchId)?.Code;
@@ -56,7 +55,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             ContextMenu.Items.Add(new MenuItem() { Header = "选中", Command = OpenContainingFolderCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "导出", Command = ExportCVCIECommand });
             ExportToPoiCommand = new RelayCommand(a => ExportToPoi(), a => ViewResults?.ToSpecificViewResults<PoiResultData>().Count != 0 || ViewResults?.ToSpecificViewResults<PoiPointResultModel>().Count != 0);
-            ContextMenu.Items.Add(new MenuItem() { Header = "导出到POI", Command = ExportToPoiCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "创建到POI", Command = ExportToPoiCommand });
         }
 
         public string? Version { get; set; }
@@ -232,8 +231,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private DateTime? _CreateTime;
 
         [DisplayName("ResultType")]
-        public AlgorithmResultType ResultType {get=> _ResultType; set { _ResultType = value; OnPropertyChanged(); } }
-        private AlgorithmResultType _ResultType;
+        public ViewResultAlgType ResultType {get=> _ResultType; set { _ResultType = value; OnPropertyChanged(); } }
+        private ViewResultAlgType _ResultType;
 
         [DisplayName("ResultDesc")]
         public string ResultDesc { get { return _ResultDesc; } set { _ResultDesc = value; OnPropertyChanged(); } }

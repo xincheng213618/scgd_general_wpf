@@ -1,10 +1,9 @@
 ﻿#pragma warning disable CS8601,CS8603
-using ColorVision.Engine.Abstractions;
 using ColorVision.Database;
 using SqlSugar;
 using System;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Views
+namespace ColorVision.Engine
 {
     [@SugarTable("t_scgd_algorithm_result_master")]
     public class AlgResultMasterModel : PKModel
@@ -21,7 +20,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public string ImgFile { get; set; }
 
         [SugarColumn(ColumnName ="img_file_type")]
-        public AlgorithmResultType ImgFileType { get; set; }
+        public ViewResultAlgType ImgFileType { get; set; }
 
         [SugarColumn(ColumnName ="version")]
         public string version { get; set; }
@@ -41,7 +40,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         [SugarColumn(ColumnName ="img_result")]
         public string ResultImagFile { get; set; }
 
-        [SugarColumn(ColumnName ="total_time")]
+        [SugarColumn(ColumnName ="total_time",IsNullable =true)]
         public long TotalTime { get; set; }
 
         [SugarColumn(ColumnName ="create_date")]

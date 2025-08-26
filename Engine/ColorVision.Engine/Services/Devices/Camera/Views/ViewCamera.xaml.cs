@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.Themes.Controls;
@@ -285,8 +284,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
             foreach (var item in dbList)
             {
-                ViewResultImage algorithmResult = new(item);
-                ViewResults.AddUnique(algorithmResult);
+                ViewResultImage ViewResultAlg = new(item);
+                ViewResults.AddUnique(ViewResultAlg);
             }
         }
 

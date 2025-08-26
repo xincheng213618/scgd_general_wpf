@@ -1,10 +1,11 @@
 ﻿#pragma warning disable CA1707,CA1711
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using System.Collections.Generic;
 
-namespace ColorVision.Engine.Abstractions
+namespace ColorVision.Engine
 {
-    public enum AlgorithmResultType
+    public enum ViewResultAlgType
     {
         None = -1,
         POI = 0,
@@ -67,16 +68,16 @@ namespace ColorVision.Engine.Abstractions
     }
     public interface IResultHandle
     {
-        public bool CanHandle1(AlgorithmResult result);
+        public bool CanHandle1(ViewResultAlg result);
 
-        void Handle(AlgorithmView view, AlgorithmResult result);
-        void SideSave(AlgorithmResult result, string selectedPath);
+        void Handle(AlgorithmView view, ViewResultAlg result);
+        void SideSave(ViewResultAlg result, string selectedPath);
     }
 
     public abstract class IResultHandleBase : IResultHandle
     {
-        public abstract List<AlgorithmResultType> CanHandle { get; }
-        public virtual bool CanHandle1(AlgorithmResult result)
+        public abstract List<ViewResultAlgType> CanHandle { get; }
+        public virtual bool CanHandle1(ViewResultAlg result)
         {
             if (CanHandle.Contains(result.ResultType))
             {
@@ -85,13 +86,13 @@ namespace ColorVision.Engine.Abstractions
             return false;
         }
 
-        public abstract void Handle(AlgorithmView view, AlgorithmResult result);
+        public abstract void Handle(AlgorithmView view, ViewResultAlg result);
 
-        public virtual void Load(AlgorithmView view, AlgorithmResult result)
+        public virtual void Load(AlgorithmView view, ViewResultAlg result)
         {
 
         }
-        public virtual void SideSave(AlgorithmResult result, string selectedPath)
+        public virtual void SideSave(ViewResultAlg result, string selectedPath)
         {
 
         }

@@ -2,7 +2,7 @@
 using System;
 using System.ComponentModel;
 
-namespace ColorVision.Engine.Abstractions
+namespace ColorVision.Engine
 {
     public interface IFileServerCfg
     {

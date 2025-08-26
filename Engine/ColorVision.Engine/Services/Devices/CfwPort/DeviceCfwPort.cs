@@ -1,5 +1,4 @@
 ﻿using ColorVision.UI;
-using ColorVision.Engine.Services.Core;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Common.MVVM;

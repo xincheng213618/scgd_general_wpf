@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using System;
@@ -9,14 +8,15 @@ using System.IO;
 using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.ImageCropping
 {
     public class ViewHandleImageCropping : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.Image_Cropping };
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.Image_Cropping };
 
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             var ViewResults = result.ViewResults.ToSpecificViewResults<ResultImageModel>();
 
@@ -47,7 +47,7 @@ namespace ColorVision.Engine.Templates.ImageCropping
         public AlgorithmView AlgorithmView { get; set; }
 
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(AlgorithmView view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -56,7 +56,7 @@ namespace ColorVision.Engine.Templates.ImageCropping
             }
         }
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(AlgorithmView view, ViewResultAlg result)
         {
             AlgorithmView = view;
 

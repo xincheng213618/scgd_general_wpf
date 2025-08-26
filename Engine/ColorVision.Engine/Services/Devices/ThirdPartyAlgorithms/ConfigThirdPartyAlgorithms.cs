@@ -1,6 +1,4 @@
-﻿using ColorVision.Engine.Abstractions;
-
-namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
+﻿namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {
     public class ConfigThirdPartyAlgorithms : DeviceServiceConfig
     {

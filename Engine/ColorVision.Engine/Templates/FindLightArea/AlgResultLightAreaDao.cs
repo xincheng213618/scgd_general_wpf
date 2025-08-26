@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.Algorithms;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor.Draw;
@@ -12,6 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.FindLightArea
 {
@@ -36,9 +36,9 @@ namespace ColorVision.Engine.Templates.FindLightArea
 
     public class ViewHandleFindLightArea : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.LightArea, AlgorithmResultType.FindLightArea };
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.LightArea, ViewResultAlgType.FindLightArea };
 
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
             var ViewResults = result.ViewResults.ToSpecificViewResults<AlgResultLightAreaModel>();
@@ -47,12 +47,12 @@ namespace ColorVision.Engine.Templates.FindLightArea
         }
 
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(AlgorithmView view, ViewResultAlg result)
         {
             result.ViewResults ??= new ObservableCollection<IViewResult>(AlgResultLightAreaDao.Instance.GetAllByPid(result.Id));
         }
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(AlgorithmView view, ViewResultAlg result)
         {
             view.ImageView.ImageShow.Clear();
 

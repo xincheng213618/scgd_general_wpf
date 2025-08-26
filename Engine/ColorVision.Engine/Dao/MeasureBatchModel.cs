@@ -17,23 +17,25 @@ namespace ColorVision.Engine
     public class MeasureBatchModel : PKModel, IInitTables
     {
 
-        [SugarColumn(ColumnName = "t_id")]
+        [SugarColumn(ColumnName = "t_id", IsNullable = true)]
         public int? TId { get; set; }
-        [SugarColumn(ColumnName = "name")]
-        public string? Name { get; set; }
-        [SugarColumn(ColumnName = "code")]
-        public string? Code { get; set; }
-        [SugarColumn(ColumnName = "create_date")]
-        public DateTime? CreateDate { get; set; }
-        [SugarColumn(ColumnName = "total_time")]
-        public int? TotalTime { get; set; }
 
-        [SugarColumn(ColumnName = "result")]
+        [SugarColumn(ColumnName = "name",IsNullable = true)]
+        public string? Name { get; set; }
+        [SugarColumn(ColumnName = "code",IsNullable = true)]
+        public string? Code { get; set; }
+
+        [SugarColumn(ColumnName = "create_date")]
+        public DateTime? CreateDate { get; set; } = DateTime.Now;
+
+        [SugarColumn(ColumnName = "total_time")]
+        public int TotalTime { get; set; } = 0;
+
+        [SugarColumn(ColumnName = "result",IsNullable =true)]
         public string? Result { get; set; }
 
-
         [SugarColumn(ColumnName = "archived_flag")]
-        public ArchiveStatus ArchiveStatus { get; set; }
+        public ArchiveStatus ArchiveStatus { get; set; } = ArchiveStatus.Pending;
 
         [SugarColumn(ColumnName = "tenant_id")]
         public int TenantId { get; set; }

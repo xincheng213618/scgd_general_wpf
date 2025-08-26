@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;

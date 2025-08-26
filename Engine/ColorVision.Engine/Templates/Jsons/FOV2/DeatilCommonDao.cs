@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Abstractions;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System.IO;
 
 namespace ColorVision.Engine.Templates.Jsons.FOV2

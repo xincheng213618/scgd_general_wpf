@@ -25,46 +25,9 @@ namespace ColorVision.Engine.Messages
         }
     }
 
-    public class MessagesListWindowConfig : IConfig
+    public class MessagesListWindowConfig : WindowConfig
     {
         public static MessagesListWindowConfig Instance => ConfigService.Instance.GetRequiredService<MessagesListWindowConfig>();
-
-        public bool IsRestoreWindow { get; set; } = true;
-        public double Width { get; set; }
-        public double Height { get; set; }
-        public double Left { get; set; }
-        public double Top { get; set; }
-        public int WindowState { get; set; }
-
-
-        public void SetWindow(Window window)
-        {
-            if (IsRestoreWindow && Height != 0 && Width != 0)
-            {
-                window.Top = Top;
-                window.Left = Left;
-                window.Height = Height;
-                window.Width = Width;
-                window.WindowState = (WindowState)WindowState;
-
-                if (Width > SystemParameters.WorkArea.Width)
-                {
-                    window.Width = SystemParameters.WorkArea.Width;
-                }
-                if (Height > SystemParameters.WorkArea.Height)
-                {
-                    window.Height = SystemParameters.WorkArea.Height;
-                }
-            }
-        }
-        public void SetConfig(Window window)
-        {
-            Top = window.Top;
-            Left = window.Left;
-            Height = window.Height;
-            Width = window.Width;
-            WindowState = (int)window.WindowState;
-        }
     }
 
 
@@ -82,7 +45,6 @@ namespace ColorVision.Engine.Messages
             InitializeComponent();
             this.ApplyCaption();
             MessagesListWindowConfig.Instance.SetWindow(this);
-            this.SizeChanged +=(s,e) => MessagesListWindowConfig.Instance.SetConfig(this);
         }
 
 
@@ -225,6 +187,16 @@ namespace ColorVision.Engine.Messages
         {
             string text = JsonConvert.SerializeObject(MsgConfig.Instance.MsgRecords[ListView1.SelectedIndex].MsgReturn);
             Common.NativeMethods.Clipboard.SetText(text);
+        }
+
+        private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void Inquire_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

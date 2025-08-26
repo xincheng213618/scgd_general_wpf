@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
@@ -13,14 +12,15 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.LedCheck
 {
     public class ViewHandleLedCheck : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { };
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { };
 
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             string fileName = Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
             var ViewResults = result.ViewResults.ToSpecificViewResults<ViewResultLedCheck>();
@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Templates.LedCheck
 
 
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(AlgorithmView view, ViewResultAlg result)
         {
             base.Load(view, result);
             if (result.ViewResults == null)
@@ -62,7 +62,7 @@ namespace ColorVision.Engine.Templates.LedCheck
         }
 
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(AlgorithmView view, ViewResultAlg result)
         {
 
             if (File.Exists(result.FilePath))

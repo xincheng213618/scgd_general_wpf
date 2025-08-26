@@ -2,8 +2,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Configs;
@@ -799,7 +797,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                                         {
                                             if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
                                             {
-                                                SysResourceDao.Instance.ADDGroup(groupResource.SysResourceModel.Id, colorVisionVCalibratioItems.SysResourceModel.Id);
+                                                Db.Insertable(new SysResourceGoupModel { ResourceId = groupResource.SysResourceModel.Id, GroupId = colorVisionVCalibratioItems.SysResourceModel.Id }).ExecuteCommand();
                                                 groupResource.AddChild(colorVisionVCalibratioItems);
                                             }
                                         }

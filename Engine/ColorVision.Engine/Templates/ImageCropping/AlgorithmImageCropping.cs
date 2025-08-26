@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using MQTTMessageLib;

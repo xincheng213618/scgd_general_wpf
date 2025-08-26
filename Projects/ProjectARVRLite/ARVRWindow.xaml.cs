@@ -4,7 +4,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services;
@@ -115,7 +114,6 @@ namespace ProjectARVRLite
             InitializeComponent();
             this.ApplyCaption(false);
             Config.SetWindow(this);
-            SizeChanged += (s, e) => Config.SetConfig(this);
         }
 
         public ARVR1TestType CurrentTestType = ARVR1TestType.None;
@@ -687,12 +685,12 @@ namespace ProjectARVRLite
                 log.Info($"AlgResultMasterlists count {AlgResultMasterlists.Count}");
                 foreach (var AlgResultMaster in AlgResultMasterlists)
                 {
-                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.FindLightArea)
+                    if (AlgResultMaster.ImgFileType == ViewResultAlgType.FindLightArea)
                     {
                         result.ViewReslutW51.AlgResultLightAreaModels = AlgResultLightAreaDao.Instance.GetAllByPid(AlgResultMaster.Id);
                     }
 
-                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.FOV)
+                    if (AlgResultMaster.ImgFileType == ViewResultAlgType.FOV)
                     {
                         List<DetailCommonModel> AlgResultModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
                         if (AlgResultModels.Count == 1)
@@ -757,7 +755,7 @@ namespace ProjectARVRLite
                 log.Info($"AlgResultMasterlists count {AlgResultMasterlists.Count}");
                 foreach (var AlgResultMaster in AlgResultMasterlists)
                 {
-                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.POI_XYZ)
+                    if (AlgResultMaster.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
                         result.ViewResultWhite.PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
                         List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(AlgResultMaster.Id);
@@ -858,7 +856,7 @@ namespace ProjectARVRLite
                             result.ViewResultWhite.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                         }
                     }
-                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.PoiAnalysis)
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.ViewResultAlgType.PoiAnalysis)
                     {
                         if (AlgResultMaster.TName.Contains("Luminance_uniformity"))
                         {
@@ -927,7 +925,7 @@ namespace ProjectARVRLite
                 log.Info($"AlgResultMasterlists count {AlgResultMasterlists.Count}");
                 foreach (var AlgResultMaster in AlgResultMasterlists)
                 {
-                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.POI_XYZ)
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.ViewResultAlgType.POI_XYZ)
                     {
                         result.ViewResultW25.PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
 
@@ -1020,7 +1018,7 @@ namespace ProjectARVRLite
 
                 foreach (var AlgResultMaster in AlgResultMasterlists)
                 {
-                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.POI_XYZ)
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.ViewResultAlgType.POI_XYZ)
                     {
                         result.ViewResultBlack.PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
 
@@ -1074,7 +1072,7 @@ namespace ProjectARVRLite
 
                 foreach (var AlgResultMaster in AlgResultMasterlists)
                 {
-                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.POI_XYZ)
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.ViewResultAlgType.POI_XYZ)
                     {
                         result.ViewReslutCheckerboard.PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
 
@@ -1088,7 +1086,7 @@ namespace ProjectARVRLite
 
                     }
 
-                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.PoiAnalysis)
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.ViewResultAlgType.PoiAnalysis)
                     {
                         if (AlgResultMaster.TName.Contains("Chessboard_Contrast"))
                         {
@@ -1133,7 +1131,7 @@ namespace ProjectARVRLite
 
                 foreach (var AlgResultMaster in AlgResultMasterlists)
                 {
-                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.MTF && AlgResultMaster.version == "2.0")
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.ViewResultAlgType.MTF && AlgResultMaster.version == "2.0")
                     {
 
                         List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
@@ -1407,7 +1405,7 @@ namespace ProjectARVRLite
 
                 foreach (var AlgResultMaster in AlgResultMasterlists)
                 {
-                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.Distortion && AlgResultMaster.version == "2.0")
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.ViewResultAlgType.Distortion && AlgResultMaster.version == "2.0")
                     {
                         List<DetailCommonModel> AlgResultModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
                         if (AlgResultModels.Count == 1)
@@ -1463,7 +1461,7 @@ namespace ProjectARVRLite
 
                 foreach (var AlgResultMaster in AlgResultMasterlists)
                 {
-                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.FindCross )
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.ViewResultAlgType.FindCross )
                     {
                         log.Info(AlgResultMaster.Id);
                         List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);

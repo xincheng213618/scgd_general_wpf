@@ -31,7 +31,6 @@ namespace ColorVision.Engine.Services.PhySpectrums
             InitializeComponent();
             this.ApplyCaption();
             Config.SetWindow(this);
-            SizeChanged += (s, e) => Config.SetConfig(this);
         }
 
 

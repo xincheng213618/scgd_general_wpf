@@ -1,5 +1,5 @@
 ﻿using ColorVision.Database;
-using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.UI.Sorts;
 using System;
@@ -26,7 +26,7 @@ namespace ColorVision.Engine.Archive.Dao
         }
 
         public ObservableCollection<ViewResultImage> ViewResultImages { get; set; } = new ObservableCollection<ViewResultImage>();
-        public ObservableCollection<AlgorithmResult> AlgorithmResults { get; set; } = new ObservableCollection<AlgorithmResult>();
+        public ObservableCollection<ViewResultAlg> ViewResultAlgs { get; set; } = new ObservableCollection<ViewResultAlg>();
 
 
         private void Page_Initialized(object sender, EventArgs e)
@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Archive.Dao
             listView1.ItemsSource = ViewResultImages;
 
 
-            listView2.ItemsSource = AlgorithmResults;
+            listView2.ItemsSource = ViewResultAlgs;
 
         }
         private void Page_Loaded(object sender, RoutedEventArgs e)
@@ -48,12 +48,12 @@ namespace ColorVision.Engine.Archive.Dao
             }
             if (ViewResultImages.Count == 0) StactPanelImage.Visibility = Visibility.Collapsed;
 
-            AlgorithmResults.Clear();
+            ViewResultAlgs.Clear();
             foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(ViewBatchResult.Id))
             {
-                AlgorithmResults.AddUnique(new AlgorithmResult(item));
+                ViewResultAlgs.AddUnique(new ViewResultAlg(item));
             }
-            if (AlgorithmResults.Count == 0) StactPanelAlg.Visibility = Visibility.Collapsed;
+            if (ViewResultAlgs.Count == 0) StactPanelAlg.Visibility = Visibility.Collapsed;
 
         }
 
@@ -103,7 +103,7 @@ namespace ColorVision.Engine.Archive.Dao
                     window.Show();
                 }
 
-                AlgorithmView.ViewResults.Add(AlgorithmResults[listView.SelectedIndex]);
+                AlgorithmView.ViewResults.Add(ViewResultAlgs[listView.SelectedIndex]);
                 AlgorithmView.RefreshResultListView();
             }
         }

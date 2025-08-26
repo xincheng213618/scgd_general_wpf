@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Abstractions;
-using ColorVision.Database;
+﻿using ColorVision.Database;
 using SqlSugar;
 
 namespace ColorVision.Engine.Templates.Jsons.SFRFindROI

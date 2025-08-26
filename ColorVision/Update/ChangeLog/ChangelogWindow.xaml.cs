@@ -67,7 +67,6 @@ namespace ColorVision.Update
             InitializeComponent();
             this.ApplyCaption();
             WindowConfig.SetWindow(this);
-            this.SizeChanged += (s, e) => WindowConfig.SetConfig(this);
         }
         string? CHANGELOG { get; set; }
         private void Window_Initialized(object sender, System.EventArgs e)

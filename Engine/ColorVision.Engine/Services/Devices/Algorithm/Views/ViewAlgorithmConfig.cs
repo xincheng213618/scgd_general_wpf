@@ -1,6 +1,5 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
@@ -16,7 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public static ViewAlgorithmConfig Instance => ConfigService.Instance.GetRequiredService<ViewAlgorithmConfig>();
 
         [JsonIgnore]
-        public ObservableCollection<AlgorithmResult> ViewResults { get; set; } = new ObservableCollection<AlgorithmResult>();
+        public ObservableCollection<ViewResultAlg> ViewResults { get; set; } = new ObservableCollection<ViewResultAlg>();
 
         [JsonIgnore]
         public RelayCommand ClearListCommand { get; set; }

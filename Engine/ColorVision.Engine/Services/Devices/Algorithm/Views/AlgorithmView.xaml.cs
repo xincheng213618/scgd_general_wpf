@@ -1,7 +1,6 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
@@ -97,7 +96,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             else
             {
                 listView1.SelectedIndex = -1;
-                foreach (var item in listView1.SelectedItems.Cast<AlgorithmResult>().ToList())
+                foreach (var item in listView1.SelectedItems.Cast<ViewResultAlg>().ToList())
                     ViewResults.Remove(item);
             }
         }
@@ -124,14 +123,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
-        public ObservableCollection<AlgorithmResult> ViewResults => Config.ViewResults;
+        public ObservableCollection<ViewResultAlg> ViewResults => Config.ViewResults;
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.SelectedIndex < 0) return;
 
   
-            if (listView1.SelectedIndex < 0 ||listView1.Items[listView1.SelectedIndex] is not AlgorithmResult result)
+            if (listView1.SelectedIndex < 0 ||listView1.Items[listView1.SelectedIndex] is not ViewResultAlg result)
             {
                 MessageBox.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
                 return;
@@ -177,16 +176,16 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         {
             if (result != null)
             {
-                AlgorithmResult algorithmResult = new AlgorithmResult(result);
+                ViewResultAlg ViewResultAlg = new ViewResultAlg(result);
 
-                var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(algorithmResult));
-                    ResultHandle?.Load(this,algorithmResult);
+                var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(ViewResultAlg));
+                    ResultHandle?.Load(this,ViewResultAlg);
 
-                ViewResults.AddUnique(algorithmResult, Config.InsertAtBeginning);
+                ViewResults.AddUnique(ViewResultAlg, Config.InsertAtBeginning);
                 if (Config.AutoRefreshView)
                     RefreshResultListView();
                 if (Config.AutoSaveSideData)
-                    SideSave(algorithmResult, Config.SaveSideDataDirPath);
+                    SideSave(ViewResultAlg, Config.SaveSideDataDirPath);
             }
         }
 
@@ -200,7 +199,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (listView1.SelectedIndex < 0) return;
-            if (ViewResults[listView1.SelectedIndex] is not AlgorithmResult result) return;
+            if (ViewResults[listView1.SelectedIndex] is not ViewResultAlg result) return;
             var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(result));
             if (ResultHandle != null)
             {
@@ -222,12 +221,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
             switch (result.ResultType)
             {
-                case AlgorithmResultType.POI_XYZ_File:
-                case AlgorithmResultType.POI_Y_File:
+                case ViewResultAlgType.POI_XYZ_File:
+                case ViewResultAlgType.POI_Y_File:
                     header = new List<string> { "file_name", "FileUrl", "FileType" };
                     bdHeader = new List<string> { "FileName", "FileUrl", "FileType", };
                     break;
-                case AlgorithmResultType.POI:
+                case ViewResultAlgType.POI:
                     if (result.ViewResults == null)
                     {
                         result.ViewResults = new ObservableCollection<IViewResult>();
@@ -399,7 +398,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
-        public void SideSave(AlgorithmResult result,string selectedPath)
+        public void SideSave(ViewResultAlg result,string selectedPath)
         {
             var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle.Contains(result.ResultType));
             if (ResultHandle != null)
@@ -421,7 +420,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                 foreach (var selectedItem in listView1.SelectedItems)
                 {
-                    if (selectedItem is AlgorithmResult result)
+                    if (selectedItem is ViewResultAlg result)
                     {
                         SideSave(result, selectedPath);
                     }
@@ -437,7 +436,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
             {
-                Type type = typeof(AlgorithmResult);
+                Type type = typeof(ViewResultAlg);
 
                 var properties = type.GetProperties();
                 foreach (var property in properties)
@@ -475,14 +474,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
             foreach (var item in dbList)
             {
-                AlgorithmResult algorithmResult = new AlgorithmResult(item);
-                ViewResults.AddUnique(algorithmResult);
+                ViewResultAlg ViewResultAlg = new ViewResultAlg(item);
+                ViewResults.AddUnique(ViewResultAlg);
             }
         }
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            GenericQuery<AlgResultMasterModel, AlgorithmResult> genericQuery = new GenericQuery<AlgResultMasterModel, AlgorithmResult>(MySqlControl.GetInstance().DB, ViewResults, t => new AlgorithmResult(t));
+            GenericQuery<AlgResultMasterModel, ViewResultAlg> genericQuery = new GenericQuery<AlgResultMasterModel, ViewResultAlg>(MySqlControl.GetInstance().DB, ViewResults, t => new ViewResultAlg(t));
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
         }

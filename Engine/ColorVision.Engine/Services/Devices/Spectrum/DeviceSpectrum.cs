@@ -1,8 +1,6 @@
 ﻿#pragma warning disable CS8601,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Services.PhyCameras.Dao;

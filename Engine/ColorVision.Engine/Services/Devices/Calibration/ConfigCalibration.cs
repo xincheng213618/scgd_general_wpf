@@ -1,6 +1,4 @@
-﻿using ColorVision.Engine.Abstractions;
-
-namespace ColorVision.Engine.Services.Devices.Calibration
+﻿namespace ColorVision.Engine.Services.Devices.Calibration
 {
     public class ConfigCalibration: DeviceServiceConfig, IFileServerCfg
     {

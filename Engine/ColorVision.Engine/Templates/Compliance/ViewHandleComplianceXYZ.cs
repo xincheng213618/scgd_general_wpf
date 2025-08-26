@@ -1,22 +1,22 @@
-﻿using ColorVision.Engine.Abstractions;
-using ColorVision.Database;
+﻿using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Controls;
 using System.Windows.Data;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Compliance
 {
     public class ViewHandleComplianceXYZ : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>()
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>()
         {
-            AlgorithmResultType.Compliance_Contrast_CIE_XYZ,
-            AlgorithmResultType.Compliance_Math_CIE_XYZ,
+            ViewResultAlgType.Compliance_Contrast_CIE_XYZ,
+            ViewResultAlgType.Compliance_Math_CIE_XYZ,
         };
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(AlgorithmView view, ViewResultAlg result)
         {
             view.ImageView.ImageShow.Clear();
 

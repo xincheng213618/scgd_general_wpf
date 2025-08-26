@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CS8602
 
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using log4net;
@@ -14,6 +13,7 @@ using System.Reflection;
 using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Jsons.FOV2
 {
@@ -23,8 +23,8 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleDFOV));
 
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.FOV};
-        public override bool CanHandle1(AlgorithmResult result)
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.FOV};
+        public override bool CanHandle1(ViewResultAlg result)
         {
             if (result.Version != "2.0") return false;
             return base.CanHandle1(result);
@@ -39,7 +39,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
             return field;
         }
 
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             var blackMuraViews = result.ViewResults.ToSpecificViewResults<DFovView>();
             var csvBuilder = new StringBuilder();
@@ -115,7 +115,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
         }
 
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(AlgorithmView view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -130,7 +130,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
             }
         }
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(AlgorithmView view, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);

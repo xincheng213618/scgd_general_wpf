@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8604,CS8603
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Media;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
@@ -17,12 +16,13 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi
 {
     public class ViewHandleBuildPoiFile : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.BuildPOI_File};
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.BuildPOI_File};
 
         public static void CovertPoiParam(PoiParam poiParam ,string fileName)
         {
@@ -107,7 +107,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
             return poiInfo;
         }
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(AlgorithmView view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -123,7 +123,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
         }
 
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(AlgorithmView view, ViewResultAlg result)
         {
 
             if (result.ViewResults.Count > 0 && result.ViewResults[0] is PoiCieFileModel model)

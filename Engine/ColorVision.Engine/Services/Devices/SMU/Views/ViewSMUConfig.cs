@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Abstractions;
-using ColorVision.UI;
+﻿using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System.Collections.ObjectModel;
 

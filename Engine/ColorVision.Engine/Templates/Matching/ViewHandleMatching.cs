@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.Algorithms;
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor.Draw;
@@ -10,15 +9,16 @@ using System.IO;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Matching
 {
     public class ViewHandleMatching : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.AOI};
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.AOI};
 
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(AlgorithmView view, ViewResultAlg result)
         {
            if (result.ViewResults != null)
             {
@@ -27,7 +27,7 @@ namespace ColorVision.Engine.Templates.Matching
             }
         }
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(AlgorithmView view, ViewResultAlg result)
         {
 
             if (File.Exists(result.FilePath))

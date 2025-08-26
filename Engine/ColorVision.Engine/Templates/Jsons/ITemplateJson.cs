@@ -80,7 +80,7 @@ namespace ColorVision.Engine.Templates.Jsons
                 if (index > -1 && index < TemplateParams.Count)
                 {
                     var item = TemplateParams[index];
-                    Db.Insertable(item.Value.TemplateJsonModel).ExecuteReturnIdentity();
+                    Db.Updateable(item.Value.TemplateJsonModel).ExecuteCommand();
                 }
             }
         }
@@ -121,8 +121,9 @@ namespace ColorVision.Engine.Templates.Jsons
             if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
             void DeleteSingle(int id)
             {
-                int ret = Db.Deleteable<ThirdPartyAlgorithmsModel>().Where(it => it.Id == id).ExecuteCommand();
-                log.Info($"Delete Tempate：{TemplateParams[index].Key},ret{ret}");
+                string key = TemplateParams[index].Key;
+                int ret = Db.Deleteable<ModMasterModel>().Where(it => it.Id == id).ExecuteCommand();
+                log.Info($"Delete Tempate：{key},ret{ret}");
                 TemplateParams.RemoveAt(index);
             }
 
