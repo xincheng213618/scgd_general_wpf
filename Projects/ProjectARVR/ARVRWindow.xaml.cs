@@ -1427,7 +1427,7 @@ namespace ProjectARVR
                             ColorVision.Engine.Templates.Jsons.Distortion2.Distortion2View blackMuraView = new ColorVision.Engine.Templates.Jsons.Distortion2.Distortion2View(AlgResultModels[0]);
 
                             blackMuraView.DistortionReslut.TVDistortion.HorizontalRatio = blackMuraView.DistortionReslut.TVDistortion.HorizontalRatio * ObjectiveTestResultFix.HorizontalTVDistortion;
-                            blackMuraView.DistortionReslut.TVDistortion.VerticalRatio = blackMuraView.DistortionReslut.TVDistortion.HorizontalRatio * ObjectiveTestResultFix.VerticalTVDistortion;
+                            blackMuraView.DistortionReslut.TVDistortion.VerticalRatio = blackMuraView.DistortionReslut.TVDistortion.VerticalRatio * ObjectiveTestResultFix.VerticalTVDistortion;
 
                             result.ViewReslutDistortionGhost.Distortion2View = blackMuraView;
 
