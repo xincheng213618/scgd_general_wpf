@@ -109,7 +109,7 @@ namespace ColorVision.Engine.Templates.POI
                     var db = MySqlControl.GetInstance().DB;
                     Stopwatch sw2 = Stopwatch.StartNew();
                     db.Deleteable<PoiDetailModel>().Where(x => x.Pid == poiMasterModel.Id).ExecuteCommand();
-                    int count = MySqlControl.GetInstance().DB.Fastest<PoiDetailModel>().BulkCopy(poiDetails);
+                    int count = MySqlControl.GetInstance().DB.Insertable(poiDetails).ExecuteCommand();
                     sw2.Stop();
 
 
