@@ -74,7 +74,6 @@ namespace ProjectBlackMura
             InitializeComponent();
             this.ApplyCaption();
             BlackMuraWindowConfig.Instance.SetWindow(this);
-            this.SizeChanged += (s, e) => BlackMuraWindowConfig.Instance.SetConfig(this);
 
         }
         private LogOutput? logOutput;

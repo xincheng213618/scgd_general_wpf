@@ -61,7 +61,6 @@ namespace ProjectKB
             InitializeComponent();
             this.ApplyCaption(false);
             Config.SetWindow(this);
-            SizeChanged += (s, e) => Config.SetConfig(this);
             this.Title += "-" + Assembly.GetAssembly(typeof(ProjectKBWindow))?.GetName().Version?.ToString() ?? "";
         }
         public LogOutput logOutput { get; set; }

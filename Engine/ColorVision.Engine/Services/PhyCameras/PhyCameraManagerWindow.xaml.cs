@@ -37,7 +37,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             InitializeComponent();
             this.ApplyCaption();
             Config.SetWindow(this);
-            SizeChanged += (s, e) => Config.SetConfig(this);
         }
 
 

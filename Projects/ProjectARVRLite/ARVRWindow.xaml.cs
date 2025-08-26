@@ -114,7 +114,6 @@ namespace ProjectARVRLite
             InitializeComponent();
             this.ApplyCaption(false);
             Config.SetWindow(this);
-            SizeChanged += (s, e) => Config.SetConfig(this);
         }
 
         public ARVR1TestType CurrentTestType = ARVR1TestType.None;
