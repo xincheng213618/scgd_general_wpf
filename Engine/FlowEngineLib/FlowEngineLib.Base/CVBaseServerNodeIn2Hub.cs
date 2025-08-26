@@ -132,7 +132,6 @@ public class CVBaseServerNodeIn2Hub : CVBaseServerNode
 
 	private void DoNodeEndedTransferData(CVStartCFC obj)
 	{
-		logger.Info($"DoNodeEndedTransferData, {JsonConvert.SerializeObject(obj)}");
 		m_op_end.TransferData(obj);
 	}
 }

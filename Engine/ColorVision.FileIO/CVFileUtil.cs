@@ -38,7 +38,7 @@ namespace ColorVision.FileIO
             }
             try
             {
-                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read,FileShare.Read))
                 {
                     if (fs.Length < 5)
                     {
@@ -72,7 +72,7 @@ namespace ColorVision.FileIO
             {
                 return -1;
             }
-            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
                 if (fs.Length < 9)
                 {
@@ -178,7 +178,7 @@ namespace ColorVision.FileIO
 
         public static bool ReadCIEFileData(string filePath, ref CVCIEFile fileInfo, int dataStartIndex)
         {
-            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read,FileShare.Read))
             {
                 using (BinaryReader br = new BinaryReader(fs))
                 {
@@ -446,7 +446,7 @@ namespace ColorVision.FileIO
         {
             if (File.Exists(fileName))
             {
-                FileStream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read);
+                FileStream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
                 BinaryReader binaryReader = new BinaryReader(fileStream);
                 long length = fileStream.Length;
                 byte[] bytes = new byte[length];
