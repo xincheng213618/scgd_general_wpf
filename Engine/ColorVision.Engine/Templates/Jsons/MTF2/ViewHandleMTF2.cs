@@ -3,10 +3,14 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Templates.Jsons.SFRFindROI;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using log4net;
+using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,7 +20,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Jsons.MTF2
 {
@@ -171,6 +174,42 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
 
                     result.ContextMenu.Items.Add(new MenuItem() { Header = "选中2.0结果集", Command = SelectrelayCommand });
                     result.ContextMenu.Items.Add(new MenuItem() { Header = "打开2.0结果集", Command = OpenrelayCommand });
+
+
+
+                    void ExportToPoi()
+                    {
+                        int old1 = TemplatePoi.Params.Count;
+                        TemplatePoi templatePoi1 = new TemplatePoi();
+                        templatePoi1.ImportTemp = new PoiParam() { Name = templatePoi1.NewCreateFileName("poi") };
+                        templatePoi1.ImportTemp.Height = 400;
+                        templatePoi1.ImportTemp.Width = 300;
+                        templatePoi1.ImportTemp.PoiConfig.BackgroundFilePath = result.FilePath;
+                        foreach (var item in mtfresult.MTFResult.result)
+                        {
+                            PoiPoint poiPoint = new PoiPoint()
+                            {
+                                Name = item.name,
+                                PixX = item.x,
+                                PixY = item.y,
+                                PixHeight =item.w,
+                                PixWidth = item.h,
+                                PointType = RiPointTypes.Rect,
+                                Id = item.id
+                            };
+                            templatePoi1.ImportTemp.PoiPoints.Add(poiPoint);
+                        }
+
+
+                        templatePoi1.OpenCreate();
+                        int next1 = TemplatePoi.Params.Count;
+                        if (next1 == old1 + 1)
+                        {
+                            new EditPoiParam(TemplatePoi.Params[next1 - 1].Value).ShowDialog();
+                        }
+                    }
+                    RelayCommand ExportToPoiCommand = new RelayCommand(a => ExportToPoi());
+                    result.ContextMenu.Items.Add(new MenuItem() { Header = "创建到POI", Command = ExportToPoiCommand });
                 }
 
                 result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmMTF2), ImageFilePath = result.FilePath })) });
