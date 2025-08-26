@@ -5,17 +5,18 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows.Controls;
 using System.Windows.Data;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Compliance
 {
     public class ViewHandleComplianceJND : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get;  } = new List<AlgorithmResultType>()
+        public override List<ViewResultAlgType> CanHandle { get;  } = new List<ViewResultAlgType>()
         {
-            AlgorithmResultType.Compliance_Math_JND,
+            ViewResultAlgType.Compliance_Math_JND,
         };
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(AlgorithmView view, ViewResultAlg result)
         {
             view.ImageView.ImageShow.Clear();
 

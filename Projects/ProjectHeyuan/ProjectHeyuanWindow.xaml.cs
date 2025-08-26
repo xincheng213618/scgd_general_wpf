@@ -292,7 +292,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                         List<ComplianceXYZModel> complianceXYZModels = new List<ComplianceXYZModel>();
                         foreach (var item in resultMaster)
                         {
-                            if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
+                            if (item.ImgFileType == ViewResultAlgType.POI_XYZ)
                             {
                                 List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
                                 foreach (var pointResultModel in POIPointResultModels)
@@ -301,7 +301,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                                     PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                                 }
                             }
-                            if (item.ImgFileType == AlgorithmResultType.Compliance_Math_CIE_XYZ)
+                            if (item.ImgFileType == ViewResultAlgType.Compliance_Math_CIE_XYZ)
                             {
                                 var lists = ComplianceXYZDao.Instance.GetAllByPid(item.Id);
                                 complianceXYZModels.AddRange(lists);

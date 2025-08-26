@@ -12,6 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
@@ -41,13 +42,13 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
     public class ViewHandleRealPOI : IResultHandleBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleRealPOI));
-        public override List<AlgorithmResultType> CanHandle { get;  } = new List<AlgorithmResultType>() { AlgorithmResultType.RealPOI, AlgorithmResultType.POI_XYZ_V2, AlgorithmResultType.POI_Y_V2 , AlgorithmResultType.KB_Output_Lv, AlgorithmResultType.KB_Output_CIE };
+        public override List<ViewResultAlgType> CanHandle { get;  } = new List<ViewResultAlgType>() { ViewResultAlgType.RealPOI, ViewResultAlgType.POI_XYZ_V2, ViewResultAlgType.POI_Y_V2 , ViewResultAlgType.KB_Output_Lv, ViewResultAlgType.KB_Output_CIE };
 
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             var csvBuilder = new StringBuilder();
 
-            if (result.ResultType == AlgorithmResultType.KB_Output_CIE)
+            if (result.ResultType == ViewResultAlgType.KB_Output_CIE)
             {
                 List<string> properties = new List<string>() { "PoiName", "KeyLv", "HaloLv", "KeyCIE_U", "KeyCIE_V", "KeyCIE_X", "KeyCIE_Y", "KeyCIE_CCT", "KeyCIE_Wave", "HaloCIE_U", "HaloCIE_V", "HaloCIE_X", "HaloCIE_Y", "HaloCIE_CCT", "HaloCIE_Wave" };
                 csvBuilder.AppendLine(string.Join(",", properties));
@@ -100,7 +101,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
            
             File.WriteAllText(selectedPath +"//" + result.Batch + ".csv", csvBuilder.ToString(), Encoding.UTF8);
         }
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(AlgorithmView view, ViewResultAlg result)
         {
             if (result.ViewResults ==null)
             {
@@ -110,7 +111,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
         }
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(AlgorithmView view, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);

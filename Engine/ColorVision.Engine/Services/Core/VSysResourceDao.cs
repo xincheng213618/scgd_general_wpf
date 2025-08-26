@@ -2,7 +2,7 @@
 using SqlSugar;
 using System.Collections.Generic;
 
-namespace ColorVision.Engine.Services.Dao
+namespace ColorVision.Engine.Services.Core
 {
     public class SysResourceDao : BaseTableDao<SysResourceModel>
     {
@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Services.Dao
             return new SqlSugarClient(new ConnectionConfig
             {
                 ConnectionString = MySqlControl.GetConnectionString(),
-                DbType = SqlSugar.DbType.MySql,
+                DbType = DbType.MySql,
                 IsAutoCloseConnection = true
             });
         }

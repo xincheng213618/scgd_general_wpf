@@ -4,7 +4,7 @@ using ColorVision.Database;
 using SqlSugar;
 using System;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Views
+namespace ColorVision.Engine
 {
     [@SugarTable("t_scgd_algorithm_result_master")]
     public class AlgResultMasterModel : PKModel
@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public string ImgFile { get; set; }
 
         [SugarColumn(ColumnName ="img_file_type")]
-        public AlgorithmResultType ImgFileType { get; set; }
+        public ViewResultAlgType ImgFileType { get; set; }
 
         [SugarColumn(ColumnName ="version")]
         public string version { get; set; }

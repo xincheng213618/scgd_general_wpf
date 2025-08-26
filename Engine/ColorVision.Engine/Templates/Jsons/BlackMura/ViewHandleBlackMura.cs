@@ -20,6 +20,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Jsons.BlackMura
 {
@@ -84,7 +85,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleBlackMura));
 
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.BlackMura_Calc};
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.BlackMura_Calc};
 
         private static string EscapeCsvField(string field)
         {
@@ -96,7 +97,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
             return field;
         }
 
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             var blackMuraViews = result.ViewResults.ToSpecificViewResults<BlackMuraView>();
             var csvBuilder = new StringBuilder();
@@ -172,7 +173,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
         }
 
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(AlgorithmView view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -278,7 +279,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
             }
         }
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(AlgorithmView view, ViewResultAlg result)
         {
             void OpenSource()
             {

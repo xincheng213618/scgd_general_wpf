@@ -5,8 +5,7 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:ColorVision.Engine.Archive.Dao"
       xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
-      xmlns:camera ="clr-namespace:ColorVision.Engine.Services.Dao"
-      xmlns:algorithm ="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Views"
+      xmlns:se ="clr-namespace:ColorVision.Engine.Services"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
       Title="BatchDataHistory" Initialized="Page_Initialized" Loaded="Page_Loaded">
@@ -53,49 +52,49 @@
                                     </GridView.ColumnHeaderContainerStyle>
                                     <GridViewColumn  Header="序号" Width="50">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type camera:ViewResultImage}">
+                                            <DataTemplate  DataType="{x:Type se:ViewResultImage}">
                                                 <TextBlock Text="{Binding Id}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="图像数据文件" Width="120">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type camera:ViewResultImage}">
+                                            <DataTemplate  DataType="{x:Type se:ViewResultImage}">
                                                 <TextBlock Text="{Binding FilePath}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="参数" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type camera:ViewResultImage}">
+                                            <DataTemplate  DataType="{x:Type se:ViewResultImage}">
                                                 <TextBlock Text="{Binding ReqParams}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="用时(ms)" Width="100">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type camera:ViewResultImage}">
+                                            <DataTemplate  DataType="{x:Type se:ViewResultImage}">
                                                 <TextBlock Text="{Binding TotalTime}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="图像信息" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type camera:ViewResultImage}">
+                                            <DataTemplate  DataType="{x:Type se:ViewResultImage}">
                                                 <TextBlock Text="{Binding ImgFrameInfo}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="结果" Width="50">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type camera:ViewResultImage}">
+                                            <DataTemplate  DataType="{x:Type se:ViewResultImage}">
                                                 <TextBlock Text="{Binding ResultCode}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="信息" Width="100">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type camera:ViewResultImage}">
+                                            <DataTemplate  DataType="{x:Type se:ViewResultImage}">
                                                 <TextBlock Text="{Binding ResultMsg}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
@@ -123,28 +122,28 @@
                                     </GridView.ColumnHeaderContainerStyle>
                                     <GridViewColumn  Header="序号" Width="50">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type  algorithm:AlgorithmResult}">
+                                            <DataTemplate  DataType="{x:Type  se:ViewResultAlg}">
                                                 <TextBlock Text="{Binding Id}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="批次号" Width="200">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type algorithm:AlgorithmResult}">
+                                            <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
                                                 <TextBlock Text="{ Binding  Batch}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="图像" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type algorithm:AlgorithmResult}">
+                                            <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
                                                 <TextBlock Text="{ Binding   FilePath}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="模板" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type algorithm:AlgorithmResult}">
+                                            <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
                                                 <TextBlock Text="{ Binding   POITemplateName}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
@@ -152,21 +151,21 @@
 
                                     <GridViewColumn  Header="测量时间" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type algorithm:AlgorithmResult}">
+                                            <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
                                                 <TextBlock Text="{ Binding  CreateTime}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="用时" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type algorithm:AlgorithmResult}">
+                                            <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
                                                 <TextBlock Text="{ Binding  TotalTime}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="结果" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type algorithm:AlgorithmResult}">
+                                            <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
                                                 <TextBlock Text="{ Binding  Result}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>

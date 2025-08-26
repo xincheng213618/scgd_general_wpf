@@ -396,7 +396,7 @@ namespace ProjectKB
             KBItemMaster.BatchId = Batch.Id;
             foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
             {
-                if (item.ImgFileType == AlgorithmResultType.KB || item.ImgFileType == AlgorithmResultType.KB_Raw)
+                if (item.ImgFileType == ViewResultAlgType.KB || item.ImgFileType == ViewResultAlgType.KB_Raw)
                 {
                    
                     var mod = MySqlControl.GetInstance().DB.Queryable<ModMasterModel>().Where(x => x.Name == item.TName && x.Pid == 150).First();
@@ -422,7 +422,7 @@ namespace ProjectKB
 
                     }
                 }
-                if (item.ImgFileType == AlgorithmResultType.POI_Y)
+                if (item.ImgFileType == ViewResultAlgType.POI_Y)
                 {
                     var pois = PoiPointResultDao.Instance.GetAllByPid(item.Id);
                     if (pois != null)
@@ -445,7 +445,7 @@ namespace ProjectKB
                         }
                     }
                 }
-                if (item.ImgFileType == AlgorithmResultType.POI_Y_V2)
+                if (item.ImgFileType == ViewResultAlgType.POI_Y_V2)
                 {
                     var pois = PoiPointResultDao.Instance.GetAllByPid(item.Id);
                     if (pois != null)

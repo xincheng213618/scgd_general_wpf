@@ -16,9 +16,9 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Views
+namespace ColorVision.Engine.Services
 {
-    public class AlgorithmResult : ViewModelBase, ISortID
+    public class ViewResultAlg : ViewModelBase, ISortID
     {
         public ObservableCollection<IViewResult> ViewResults { get; set; }
 
@@ -29,12 +29,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public RelayCommand ExportToPoiCommand { get; set; }
 
-        public AlgorithmResult()
+        public ViewResultAlg()
         {
 
         }
 
-        public AlgorithmResult(AlgResultMasterModel item)
+        public ViewResultAlg(AlgResultMasterModel item)
         {
             Id = item.Id;
             Batch = BatchResultMasterDao.Instance.GetById(item.BatchId)?.Code;
@@ -232,8 +232,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private DateTime? _CreateTime;
 
         [DisplayName("ResultType")]
-        public AlgorithmResultType ResultType {get=> _ResultType; set { _ResultType = value; OnPropertyChanged(); } }
-        private AlgorithmResultType _ResultType;
+        public ViewResultAlgType ResultType {get=> _ResultType; set { _ResultType = value; OnPropertyChanged(); } }
+        private ViewResultAlgType _ResultType;
 
         [DisplayName("ResultDesc")]
         public string ResultDesc { get { return _ResultDesc; } set { _ResultDesc = value; OnPropertyChanged(); } }

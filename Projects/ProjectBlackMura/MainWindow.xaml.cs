@@ -421,7 +421,7 @@ namespace ProjectBlackMura
             {
                 foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
                 {
-                    if (item.ImgFileType == AlgorithmResultType.BlackMura_Calc)
+                    if (item.ImgFileType == ViewResultAlgType.BlackMura_Calc)
                     {
                         List<BlackMuraModel> AlgResultModels = BlackMuraDao.Instance.GetAllByPid(item.Id);
                         if (AlgResultModels.Count > 0)
@@ -446,7 +446,7 @@ namespace ProjectBlackMura
                         }
                     }
 
-                    if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
+                    if (item.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
                         List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
                         int id = 0;
@@ -472,7 +472,7 @@ namespace ProjectBlackMura
             {
                 foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
                 {
-                    if (item.ImgFileType == AlgorithmResultType.BlackMura_Calc)
+                    if (item.ImgFileType == ViewResultAlgType.BlackMura_Calc)
                     {
                         List<BlackMuraModel> AlgResultModels = BlackMuraDao.Instance.GetAllByPid(item.Id);
                         if (AlgResultModels.Count > 0)
@@ -494,7 +494,7 @@ namespace ProjectBlackMura
 
                         }
                     }
-                    if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
+                    if (item.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
                         List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
                         int id = 0;
@@ -520,7 +520,7 @@ namespace ProjectBlackMura
             {
                 foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
                 {
-                    if (item.ImgFileType == AlgorithmResultType.BlackMura_Calc)
+                    if (item.ImgFileType == ViewResultAlgType.BlackMura_Calc)
                     {
                         List<BlackMuraModel> AlgResultModels = BlackMuraDao.Instance.GetAllByPid(item.Id);
                         if (AlgResultModels.Count > 0)
@@ -543,7 +543,7 @@ namespace ProjectBlackMura
 
                         }
                     }
-                    if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
+                    if (item.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
                         List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
                         int id = 0;
@@ -567,7 +567,7 @@ namespace ProjectBlackMura
             {
                 foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
                 {
-                    if (item.ImgFileType == AlgorithmResultType.BlackMura_Calc)
+                    if (item.ImgFileType == ViewResultAlgType.BlackMura_Calc)
                     {
                         List<BlackMuraModel> AlgResultModels = BlackMuraDao.Instance.GetAllByPid(item.Id);
                         if (AlgResultModels.Count > 0)
@@ -590,7 +590,7 @@ namespace ProjectBlackMura
 
                         }
                     }
-                    if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
+                    if (item.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
                         List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
                         int id = 0;
@@ -614,7 +614,7 @@ namespace ProjectBlackMura
             {
                 foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
                 {
-                    if (item.ImgFileType == AlgorithmResultType.BlackMura_Calc)
+                    if (item.ImgFileType == ViewResultAlgType.BlackMura_Calc)
                     {
                         List<BlackMuraModel> AlgResultModels = BlackMuraDao.Instance.GetAllByPid(item.Id);
                         if (AlgResultModels.Count > 0)
@@ -637,7 +637,7 @@ namespace ProjectBlackMura
 
                         }
                     }
-                    if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
+                    if (item.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
                         List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
                         int id = 0;

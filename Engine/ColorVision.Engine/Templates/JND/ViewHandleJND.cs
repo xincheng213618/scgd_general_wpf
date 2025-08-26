@@ -12,14 +12,15 @@ using System.IO;
 using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.JND
 {
     public class ViewHandleJND : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.Compliance_Math_JND, AlgorithmResultType.OLED_JND_CalVas};
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.Compliance_Math_JND, ViewResultAlgType.OLED_JND_CalVas};
 
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             var ViewResults = result.ViewResults.ToSpecificViewResults<ViewRsultJND>();
 
@@ -52,7 +53,7 @@ namespace ColorVision.Engine.Templates.JND
 
         public AlgorithmView AlgorithmView { get; set; }
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(AlgorithmView view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -63,7 +64,7 @@ namespace ColorVision.Engine.Templates.JND
             }
         }
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(AlgorithmView view, ViewResultAlg result)
         {
             AlgorithmView = view;
 

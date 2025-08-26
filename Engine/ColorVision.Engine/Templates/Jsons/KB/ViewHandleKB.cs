@@ -16,15 +16,16 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Jsons.KB
 {
     public class ViewHandleKB : IResultHandleBase
     {
         private static ILog log = LogManager.GetLogger(nameof(ViewHandleKB));
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.KB , AlgorithmResultType.KB_Raw};
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.KB , ViewResultAlgType.KB_Raw};
 
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             if (!File.Exists(result.ResultImagFile)) return;
             try
@@ -66,7 +67,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         }
 
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(AlgorithmView view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -75,7 +76,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             }
         }
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(AlgorithmView view, ViewResultAlg result)
         {
             if (File.Exists(result.ResultImagFile))
             {

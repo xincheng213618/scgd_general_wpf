@@ -14,7 +14,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Dao
+namespace ColorVision.Engine.Services
 {
     public class ViewResultImage : ViewModelBase, ISortID
     {

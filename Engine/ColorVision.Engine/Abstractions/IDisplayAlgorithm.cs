@@ -30,9 +30,9 @@ namespace ColorVision.Engine.Abstractions
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IResultHandleBase).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    if (Activator.CreateInstance(type) is IResultHandleBase algorithmResultRender)
+                    if (Activator.CreateInstance(type) is IResultHandleBase ViewResultAlgRender)
                     {
-                        ResultHandles.Add(algorithmResultRender);
+                        ResultHandles.Add(ViewResultAlgRender);
                     }
                 }
             }

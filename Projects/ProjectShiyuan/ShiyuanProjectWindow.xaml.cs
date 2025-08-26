@@ -329,7 +329,7 @@ namespace ColorVision.Projects.ProjectShiYuan
                     var resultMaster = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
                     foreach (var item in resultMaster)
                     {
-                        if (item.ImgFileType == AlgorithmResultType.Compliance_Math_JND)
+                        if (item.ImgFileType == ViewResultAlgType.Compliance_Math_JND)
                         {
                             var complianceJNDModels = ComplianceJNDDao.Instance.GetAllByPid(item.Id);
                             log.Info($"获取JDN信息：  Id{item.Id},nums{complianceJNDModels.Count}");
@@ -345,7 +345,7 @@ namespace ColorVision.Projects.ProjectShiYuan
                     List<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
                     foreach (var item in resultMaster)
                     {
-                        if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
+                        if (item.ImgFileType == ViewResultAlgType.POI_XYZ)
                         {
                             List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
 
@@ -357,7 +357,7 @@ namespace ColorVision.Projects.ProjectShiYuan
 
                         }
 
-                        if (item.ImgFileType == AlgorithmResultType.OLED_JND_CalVas)
+                        if (item.ImgFileType == ViewResultAlgType.OLED_JND_CalVas)
                         {
                             ObservableCollection<ViewRsultJND> ViewRsultJNDs = new ObservableCollection<ViewRsultJND>();
                             foreach (var model in PoiPointResultDao.Instance.GetAllByPid(item.Id))

@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
@@ -204,8 +205,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
             foreach (var item in dbList)
             {
-                ViewResultImage algorithmResult = new(item);
-                ViewResults.AddUnique(algorithmResult);
+                ViewResultImage ViewResultAlg = new(item);
+                ViewResults.AddUnique(ViewResultAlg);
             }
         }
 
