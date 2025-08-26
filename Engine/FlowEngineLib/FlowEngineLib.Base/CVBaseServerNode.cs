@@ -461,7 +461,6 @@ public class CVBaseServerNode : CVCommonNode
 					cVTransByEvent.Cancel();
                 }
 
-                logger.Info($"m_op_end, {JsonConvert.SerializeObject(e.TargetOption.Data)}");
                 m_op_end.TransferData(e.TargetOption.Data);
                 Reset();
 			}
@@ -568,8 +567,8 @@ public class CVBaseServerNode : CVCommonNode
 			logger.InfoFormat("[{0}]Node completed. Transfer to the next node. TotalTime={1}/{2}", ToShortString(), timeSpan.ToString(), trans.startTime.ToString("O"));
 		}
 
-        logger.Info($"111nodeEndEvent {this.GetType()}: {JsonConvert.SerializeObject(trans.trans_action)}");
-
+        if (logger.IsDebugEnabled)
+            logger.Debug($"nodeEndEvent {this.GetType()}: {JsonConvert.SerializeObject(trans.trans_action)}");
 		CVStartCFC cVStartCFC = new CVStartCFC();
 		cVStartCFC.StartTime = trans.trans_action.StartTime;
         cVStartCFC.Id = trans.trans_action.Id;
@@ -583,7 +582,8 @@ public class CVBaseServerNode : CVCommonNode
 
         trans.trans_action = cVStartCFC;
         m_op_end.TransferData(trans.trans_action);
-        logger.Info($"112nodeEndEvent {this.GetType()}: {JsonConvert.SerializeObject(trans.trans_action)}");
+		if (logger.IsDebugEnabled)
+			logger.Debug($"nodeEndEvent {this.GetType()}: {JsonConvert.SerializeObject(trans.trans_action)}");
         base.nodeEndEvent?.Invoke(this, new FlowEngineNodeEndEventArgs());
 	}
 

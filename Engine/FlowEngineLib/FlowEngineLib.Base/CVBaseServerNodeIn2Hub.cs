@@ -29,88 +29,9 @@ public class CVBaseServerNodeIn2Hub : CVBaseServerNode
 		base.OnCreate();
 		m_in2_start = base.InputOptions.Add(m_in2_text, typeof(CVStartCFC), bSingle: true);
 		m_in2_start.Connected += m_in_op_Connected;
-		m_in2_start.DataTransfer += m_in_start_DataTransfer1;
+		m_in2_start.DataTransfer += m_in_start_DataTransfer;
 	}
 	
-
-    private void m_in_start_DataTransfer1(object sender, STNodeOptionEventArgs e)
-    {
-        if(sender is STNodeOption sTNodeOption)
-		{
-            if (HasData(e))
-            {
-                bool flag = true;
-                if (e.TargetOption.DataType == typeof(CVStartCFC))
-                {
-                    CVStartCFC cVStartCFC = e.TargetOption.Data as CVStartCFC;
-                    logger.Info($"m_in_start_DataTransfer1 : {JsonConvert.SerializeObject(cVStartCFC)}");
-
-                    if (cVStartCFC.IsPaused)
-                    {
-                        DoTransferToServer(cVStartCFC, e);
-                        return;
-                    }
-                    CVStartCFC data = new CVStartCFC(cVStartCFC);
-                    sTNodeOption.Data = data;
-                    int num = 0;
-                    StatusTypeEnum statusType = StatusTypeEnum.Runing;
-
-                    for (int i = 0; i < base.InputOptionsCount; i++)
-                    {
-                        STNodeOption sTNodeOption1 = base.InputOptions[i];
-                        if (sTNodeOption1.DataType == typeof(CVStartCFC))
-                        {
-                            CVStartCFC cVStartCFC2 = (CVStartCFC)sTNodeOption1.Data;
-                            if (cVStartCFC2 != null)
-                            {
-                                if (!cVStartCFC2.IsRunning)
-                                {
-                                    statusType = cVStartCFC2.FlowStatus;
-                                    flag = false;
-                                }
-                                masterInput[i] = cVStartCFC2;
-                                logger.Info($"m_in_start_DataTransfer1 {this.GetType()}{i}: {JsonConvert.SerializeObject(cVStartCFC2)}");
-                                num++;
-                            }
-                        }
-                        else
-                        {
-                            logger.WarnFormat("TargetData Type is not flow common type => {0}", sTNodeOption1.DataType.AssemblyQualifiedName);
-                        }
-                    }
-                    if (logger.IsDebugEnabled)
-                    {
-                        logger.DebugFormat("[{0}][{1}/{2}]DoServerTransfer => {3}", ToShortString(), num, base.InputOptionsCount, cVStartCFC.ToShortString());
-                    }
-                    if (num == base.InputOptionsCount)
-                    {
-                        clearData();
-                        if (flag)
-                        {
-                            DoTransferToServer(cVStartCFC, e);
-                        }
-                        else
-                        {
-                            cVStartCFC.SetStatusType(statusType);
-                            DoNodeEndedTransferData(cVStartCFC);
-                        }
-                        clearInCFC();
-                    }
-                }
-                else
-                {
-                    logger.WarnFormat("TargetData Type is not flow common type => {0}", e.TargetOption.DataType.AssemblyQualifiedName);
-                }
-            }
-            else
-            {
-                clearData();
-                clearInCFC();
-                DoNodeEndedTransferData(null);
-            }
-        }
-    }
-
     protected override void m_in_start_DataTransfer(object sender, STNodeOptionEventArgs e)
     {
         DoInputDataTransfer(sender as STNodeOption, e);
@@ -125,8 +46,6 @@ public class CVBaseServerNodeIn2Hub : CVBaseServerNode
 			if (e.TargetOption.DataType == typeof(CVStartCFC))
 			{
 				CVStartCFC cVStartCFC = e.TargetOption.Data as CVStartCFC;
-                logger.Info($"m_in_start_DataTransfer : {JsonConvert.SerializeObject(cVStartCFC)}");
-
                 if (cVStartCFC.IsPaused)
 				{
 					DoTransferToServer(cVStartCFC, e);
@@ -151,7 +70,6 @@ public class CVBaseServerNodeIn2Hub : CVBaseServerNode
 								flag = false;
                             }
 							masterInput[i] = cVStartCFC2;
-                            logger.Info($"m_in_start_DataTransfer {this.GetType()}{i}: {JsonConvert.SerializeObject(cVStartCFC2)}");
                             num++;
 						}
 					}

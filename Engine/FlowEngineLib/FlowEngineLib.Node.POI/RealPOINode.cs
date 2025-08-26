@@ -289,7 +289,8 @@ public class RealPOINode : CVBaseServerNodeIn2Hub
 			getPreStepParam(masterInput[i], algorithmPreStepParam);
 			array[i] = algorithmPreStepParam;
 		}
-        logger.Info($"RealPOINode Input1 MasterId: {array[0].MasterId}, Input2 MasterId: {array[1].MasterId}");
+		if(logger.IsDebugEnabled)
+			logger.Debug($"RealPOINode Input1 MasterId: {array[0].MasterId}, Input2 MasterId: {array[1].MasterId}");
 
         RealPOIData result = new RealPOIData(_FilterTemplateName, _ReviseTemplateName, _ReviseFileName, _OutputTemplateName, poiData, array[0].MasterId, array[1].MasterId, _IsResultAdd, _IsSubPixel, _IsCCTWave);
 		if (start.Data.ContainsKey("Image"))
