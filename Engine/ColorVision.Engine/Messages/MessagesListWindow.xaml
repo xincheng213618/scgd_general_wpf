@@ -131,7 +131,7 @@
                 </ListView.View>
             </ListView>
 
-            <Grid x:Name="GridContent" Grid.Column="1" d:DataContext="{d:DesignInstance local:MsgRecord}" Margin="0,5,5,5">
+            <Grid x:Name="GridContent" Grid.Column="1" d:DataContext="{d:DesignInstance local:MsgRecord}" Margin="0,0,5,5">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="*"/>

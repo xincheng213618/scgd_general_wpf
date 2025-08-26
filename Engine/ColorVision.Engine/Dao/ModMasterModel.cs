@@ -19,7 +19,7 @@ namespace ColorVision.Engine
         [SugarColumn(ColumnName = "res_pid", IsNullable = true,ColumnDescription = "t_scgd_sys_resource")]
         public int? ResourceId { get; set; }
 
-        [SugarColumn(ColumnName = "cfg_json", ColumnDataType = "json",IsNullable =true)]
+        [SugarColumn(ColumnName = "cfg_json",IsNullable =true)]
         public string? JsonVal { get; set; } 
 
         [SugarColumn(ColumnName = "create_date")]

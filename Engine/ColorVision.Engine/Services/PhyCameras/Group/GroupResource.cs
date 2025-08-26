@@ -148,7 +148,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             SysResourceDao.Instance.Save(SysResourceModel);
 
-            ///这里后面再优化，先全部删除在添加
+            ///这里后面再优化，r
             Db.Deleteable<SysResourceGoupModel>().Where(x => x.GroupId == SysResourceModel.Id).ExecuteCommand();
 
             VisualChildren.Clear();
@@ -168,7 +168,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
             foreach (var item in VisualChildren.OfType<CalibrationResource>())
             {
-                Db.Insertable(new SysResourceGoupModel { ResourceId = SysResourceModel.Id, GroupId = item.SysResourceModel.Id }).ExecuteCommand();
+                Db.Insertable(new SysResourceGoupModel { ResourceId = item.SysResourceModel.Id, GroupId = SysResourceModel.Id }).ExecuteCommand();
             }
             base.Save();
         }

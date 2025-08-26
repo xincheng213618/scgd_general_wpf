@@ -1367,7 +1367,7 @@ namespace ColorVision.Engine.Templates.POI
                 }
             }
             TemplateJsonKBParam.JsonValue = JsonConvert.SerializeObject(KBJson);
-            MySqlControl.GetInstance().DB.Insertable(TemplateJsonKBParam.TemplateJsonModel).ExecuteReturnIdentity();
+            MySqlControl.GetInstance().DB.Updateable(TemplateJsonKBParam.TemplateJsonModel).ExecuteCommand();
 
             MessageBox.Show(WindowHelpers.GetActiveWindow(), "保存成功", "ColorVision");
         }
