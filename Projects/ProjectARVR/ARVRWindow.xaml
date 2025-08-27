@@ -40,44 +40,59 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <Grid Visibility="Visible" >
-                        <StackPanel Orientation="Horizontal" Background="{DynamicResource RegionBrush}">
-                            <Button  Command="{Binding OpenConfigCommand}" Padding="0" Height="25" Width="25" Margin="5,0,0,0"> 
-                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" RenderTransformOrigin="0.5,0.5"  Foreground="{DynamicResource GlobalTextBrush}">
-                                    <TextBlock.RenderTransform>
-                                        <RotateTransform x:Name="rotateTransform21"/>
-                                    </TextBlock.RenderTransform>
-                                </TextBlock>
+                        <ToolBarTray  Grid.Row="0" IsLocked="True">
+                            <ToolBar Padding="3,2">
+                                <Button  Content="查询" Command="{Binding ViewResultManager.QueryCommand}" Margin="2,0,0,0"/>
+                                <Button  Content="通用查询" Command="{Binding ViewResultManager.GenericQueryCommand}" Margin="2,0,0,0"/>
+                            </ToolBar>
+                        </ToolBarTray>
+                        <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
+                            <Button Command="{Binding ViewResultManager.SaveCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
+                                <Rectangle Width="16" Height="16" Fill="{StaticResource DISave}" />
+                            </Button>
+                            <Button  Click="Button_Click_Clear" Command="{Binding ViewResultManager.ViewReslutsClearCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0" >
                                 <Button.Triggers>
                                     <EventTrigger RoutedEvent="Button.Click">
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="rotateTransform21" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                                <DoubleAnimation  Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX" To="0.7" Duration="0:0:0.1" AutoReverse="True" />
+                                                <DoubleAnimation  Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY" To="0.7" Duration="0:0:0.1" AutoReverse="True" />
                                             </Storyboard>
                                         </BeginStoryboard>
                                     </EventTrigger>
                                 </Button.Triggers>
+                                <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" RenderTransformOrigin="0.5,0.5">
+                                    <Image.RenderTransform>
+                                        <ScaleTransform x:Name="ScaleTransform" ScaleX="1" ScaleY="1" />
+                                    </Image.RenderTransform>
+                                </Image>
                             </Button>
-                            <Button Click="Button_Click_Clear"  Padding="0" Height="25" Width="25" Margin="5,0,0,0">
-                                <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" Margin="2" />
+                            <Button Grid.Column="1" Margin="0,1,5,0" HorizontalAlignment="Left" Command="{Binding ViewResultManager.EditConfigCommand}" Padding="2" Height="25" Width="25" >
+                                <Button.Triggers>
+                                    <EventTrigger RoutedEvent="Button.Click">
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Button.Triggers>
+                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                                    <TextBlock.RenderTransform>
+                                        <RotateTransform x:Name="rotateTransform2" CenterX="8" CenterY="8"/>
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
                             </Button>
-
                         </StackPanel>
                     </Grid>
-
                     <Grid  Grid.Row="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="200"/>
-                        </Grid.ColumnDefinitions>
-                        <Border Grid.Column="1"  Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" >
-                            <TextBox x:FieldModifier="public"  x:Name="logTextBox" TextWrapping="WrapWithOverflow" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
-                        </Border>
-                        <ListView x:Name="listView1" BorderThickness="0" Padding="0"  SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" Grid.RowSpan="2" >
+                        <ListView x:Name="listView1" BorderThickness="0" Padding="0" SelectedIndex="{Binding ViewResultManager.ViewReslutsSelectedIndex}"  SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
                             <ListView.Resources >
                                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                             </ListView.Resources>
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                                    <Setter Property="ContextMenu" Value="{Binding ContextMenu}" />
                                 </Style>
                             </ListView.ItemContainerStyle>
                             <ListView.View>
@@ -90,7 +105,7 @@
                                             <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                         </Style>
                                     </GridView.ColumnHeaderContainerStyle>
-                                    <GridViewColumn Header="Id" Width="50">
+                                    <GridViewColumn Header="Id">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
                                                 <TextBlock Text="{Binding Id}" />
@@ -101,6 +116,13 @@
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
                                                 <TextBlock Text="{Binding FlowStatus}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="PASS" Width="50">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                                <TextBlock Text="{Binding Result}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -126,6 +148,8 @@
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
 
+
+
                                     <GridViewColumn Header="Time" Width="150">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
@@ -133,9 +157,22 @@
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
+                                    <GridViewColumn Header="RunTime" Width="80">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                                <TextBlock Text="{Binding RunTime}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="RunMsg">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                                <TextBlock Text="{Binding Msg}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
                                 </GridView>
                             </ListView.View>
-
                         </ListView>
 
                     </Grid>
@@ -149,57 +186,50 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0" Margin="5">
-                    <StackPanel>
-                        <DockPanel  Margin="0,0,0,5">
-                            <ComboBox  x:Name="FlowTemplate" Height="10" SelectedIndex="{Binding TemplateSelectedIndex}" ItemsSource="{Binding TemplateItemSource}" SelectedValuePath="Value" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
-                            <Grid Width="30" Margin="5,0"  HorizontalAlignment="Left">
-                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
-                                <Button  Width="30" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding  OpenTemplateCommand}"/>
-                            </Grid>
-                            <Grid Width="30" >
-                                <Image Source="{StaticResource  DrawingImageEdit}" Width="15" Margin="0" />
-                                <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding OpenFlowEngineToolCommand}"/>
-                            </Grid>
-                            <DockPanel DockPanel.Dock="Left" HorizontalAlignment="Right" Margin="20,0,0,0">
-                                <TextBlock Text="SN" Margin="0,0,5,0"/>
-                                <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
-                            </DockPanel>
-                            <Button  Command="{Binding EditSPECConfigcommand}"  DockPanel.Dock="Right"  Padding="0" Height="25" Width="25" Margin="5,0,0,0">
-                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" RenderTransformOrigin="0.5,0.5"  Foreground="{DynamicResource GlobalTextBrush}">
-                                    <TextBlock.RenderTransform>
-                                        <RotateTransform x:Name="rotateTransform101"/>
-                                    </TextBlock.RenderTransform>
-                                </TextBlock>
-                                <Button.Triggers>
-                                    <EventTrigger RoutedEvent="Button.Click">
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="rotateTransform101" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </EventTrigger>
-                                </Button.Triggers>
-                            </Button>
-                            <Button Content="Test"  DockPanel.Dock="Right" Background="Pink"  Click="TestClick" />
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="75"/>
+                    </Grid.RowDefinitions>
+                    <DockPanel  Margin="0,0,0,5">
+                        <ComboBox  x:Name="FlowTemplate" Height="10" SelectedIndex="{Binding TemplateSelectedIndex}" ItemsSource="{Binding TemplateItemSource}" SelectedValuePath="Value" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
+                        <Grid Width="30" Margin="5,0"  HorizontalAlignment="Left">
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <Button  Width="30" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding  OpenTemplateCommand}"/>
+                        </Grid>
+                        <Grid Width="30" >
+                            <Image Source="{StaticResource  DrawingImageEdit}" Width="15" Margin="0" />
+                            <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding OpenFlowEngineToolCommand}"/>
+                        </Grid>
+                        <DockPanel DockPanel.Dock="Left" HorizontalAlignment="Right" Margin="20,0,0,0">
+                            <TextBlock Text="SN" Margin="0,0,5,0"/>
+                            <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
                         </DockPanel>
-                    </StackPanel>
+                        <Button Content="测试"  DockPanel.Dock="Right" Background="Pink"  Click="TestClick" Margin="5,0,0,0" />
+                    </DockPanel>
+
+                    <Border Grid.Row="1" Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Margin="0,0,0,0">
+                        <TextBox x:FieldModifier="public"  x:Name="logTextBox" TextWrapping="WrapWithOverflow" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
+                    </Border>
+
                 </Grid>
                 <Grid Grid.Row="1" Margin="5,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <hc:StepBar Grid.Row="0" StepIndex="{Binding StepIndex}" Margin="-10,0">
-                        <hc:StepBarItem Content="初始化"/>
-                        <hc:StepBarItem Content="White"/>
-                        <hc:StepBarItem Content="Black"/>
-                        <hc:StepBarItem Content="Chessboard"/>
-                        <hc:StepBarItem Content="MTFH"/>
-                        <hc:StepBarItem Content="MTFV"/>
-                        <hc:StepBarItem Content="Distortion"/>
-                        <hc:StepBarItem Content="OpticCenter"/>
-                    </hc:StepBar>
+                    <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Margin="5,0,5,5">
+                        <hc:StepBar Grid.Row="0" StepIndex="{Binding StepIndex}" Margin="-5,3,0,2">
+                            <hc:StepBarItem Content="初始化"/>
+                            <hc:StepBarItem Content="White"/>
+                            <hc:StepBarItem Content="Black"/>
+                            <hc:StepBarItem Content="Chessboard"/>
+                            <hc:StepBarItem Content="MTFH"/>
+                            <hc:StepBarItem Content="MTFV"/>
+                            <hc:StepBarItem Content="Distortion"/>
+                            <hc:StepBarItem Content="OpticCenter"/>
+                        </hc:StepBar>
+                    </Border>
                     <RichTextBox x:Name="outputText"  Grid.Row="1"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                         <FlowDocument>
                             <Paragraph>
@@ -207,34 +237,39 @@
                             </Paragraph>
                         </FlowDocument>
                     </RichTextBox>
-                    <LogImp:LogOutput x:Name="LogOutput1"  Grid.Row="2" />
+                    <Grid Grid.Row="2" x:Name="LogGrid"  Height="250">
+
+                    </Grid>
                 </Grid>
 
             </Grid>
         </Grid>
 
-        
+
         <StatusBar Grid.Row="2">
-            <StatusBarItem>
-                <Button Content="日志" Command="{Binding OpenLogCommand}"/>
-            </StatusBarItem>
             <StatusBarItem>
                 <Button Content="设置" Command="{Binding OpenConfigCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="更新记录" Command="{Binding OpenChangeLogCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="自述文件" Command="{Binding OpenReadMeCommand}"/>
+                <Button Content="日志" Command="{Binding OpenLogCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="InitTest" Command="{Binding InitTestCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="Recipe" Command="{Binding EditSPECConfigcommand}"/>
+                <Button Content="Recipe" Command="{Binding RecipeManager.EditCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="EditFix" Command="{Binding EditObjectiveTestResultFixCommand}"/>
+                <Button Content="Summary" Command="{Binding SummaryManager.EditCommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="EditFix" Command="{Binding FixManager.EditCommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="自述文件" Command="{Binding OpenReadMeCommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="变更日志" Command="{Binding OpenChangeLogCommand}"/>
             </StatusBarItem>
         </StatusBar>
 

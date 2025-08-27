@@ -569,25 +569,35 @@ public class CVBaseServerNode : CVCommonNode
 
         if (logger.IsDebugEnabled)
             logger.Debug($"nodeEndEvent {this.GetType()}: {JsonConvert.SerializeObject(trans.trans_action)}");
-		CVStartCFC cVStartCFC = new CVStartCFC();
-		cVStartCFC.StartTime = trans.trans_action.StartTime;
-        cVStartCFC.Id = trans.trans_action.Id;
-        cVStartCFC.TTL = trans.trans_action.TTL;
-        cVStartCFC.IsDel = trans.trans_action.IsDel;
-        cVStartCFC.SerialNumber = trans.trans_action.SerialNumber;
-        cVStartCFC.Data = trans.trans_action.Data;
-		cVStartCFC.FlowStatus = trans.trans_action.FlowStatus;
-		cVStartCFC.SetActionType(trans.trans_action.GetActionType());
-        cVStartCFC.SetStartNode(trans.trans_action.GetStartNode());
+        lock (trans)
+        {
+            CVStartCFC cVStartCFC = new CVStartCFC();
+            cVStartCFC.StartTime = trans.trans_action.StartTime;
+            cVStartCFC.Id = trans.trans_action.Id;
+            cVStartCFC.TTL = trans.trans_action.TTL;
+            cVStartCFC.IsDel = trans.trans_action.IsDel;
+            cVStartCFC.SerialNumber = trans.trans_action.SerialNumber;
+            cVStartCFC.Data = trans.trans_action.Data;
+            cVStartCFC.SetActionType(trans.trans_action.GetActionType());
+            cVStartCFC.FlowStatus = trans.trans_action.FlowStatus;
+            cVStartCFC.SetStartNode(trans.trans_action.GetStartNode());
 
-        trans.trans_action = cVStartCFC;
-        m_op_end.TransferData(trans.trans_action);
-		if (logger.IsDebugEnabled)
-			logger.Debug($"nodeEndEvent {this.GetType()}: {JsonConvert.SerializeObject(trans.trans_action)}");
+            logger.Debug($"nodeEndEvent 1 {this.GetType()}: {JsonConvert.SerializeObject(cVStartCFC)}");
+            m_op_end.TransferData(cVStartCFC);
+            logger.Debug($"nodeEndEvent 2 {this.GetType()}: {JsonConvert.SerializeObject(cVStartCFC)}");
+        }
         base.nodeEndEvent?.Invoke(this, new FlowEngineNodeEndEventArgs());
-	}
+        if (logger.IsDebugEnabled)
+            logger.Debug($"nodeEndEvent 3 {this.GetType()}: {JsonConvert.SerializeObject(trans.trans_action)}");
 
-	protected virtual void release(string serialNumber)
+
+
+    }
+    private static readonly object trans = new();
+
+
+
+    protected virtual void release(string serialNumber)
 	{
 		if (m_trans_action.ContainsKey(serialNumber))
 		{

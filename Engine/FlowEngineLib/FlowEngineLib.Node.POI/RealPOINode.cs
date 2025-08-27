@@ -188,7 +188,6 @@ public class RealPOINode : CVBaseServerNodeIn2Hub
 		_IsResultAdd = false;
 		_IsSubPixel = false;
 		_IsCCTWave = true;
-        logger.Info($"RealPOINode");
     }
 
     protected override void OnCreate()

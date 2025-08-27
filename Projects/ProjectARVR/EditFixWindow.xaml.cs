@@ -7,19 +7,22 @@ using System.Windows;
 namespace ProjectARVR
 {
 
-    public class ObjectiveTestResultFixManager
+    public class FixManager
     {
-        private static ObjectiveTestResultFixManager _instance;
+        private static FixManager _instance;
         private static readonly object _locker = new();
-        public static ObjectiveTestResultFixManager GetInstance() { lock (_locker) { _instance ??= new ObjectiveTestResultFixManager(); return _instance; } }
+        public static FixManager GetInstance() { lock (_locker) { _instance ??= new FixManager(); return _instance; } }
         public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
 
-        public static string ObjectiveTestResultFixPath { get; set; } = DirectoryPath + "ObjectiveTestResultFix.json";
+        public static string ObjectiveTestResultFixPath { get; set; } = DirectoryPath + "ARVRObjectiveTestResultFix.json";
 
         public ObjectiveTestResultFix ObjectiveTestResultFix { get; set; }
+        public RelayCommand EditCommand { get; set; }
 
-        public ObjectiveTestResultFixManager()
+        public FixManager()
         {
+            EditCommand = new RelayCommand(a => Edit());
+
             if (!Directory.Exists(DirectoryPath))
                 Directory.CreateDirectory(DirectoryPath);
 
@@ -34,6 +37,12 @@ namespace ProjectARVR
             }
 
         }
+        public static void Edit()
+        {
+            EditFixWindow EditFixWindow = new EditFixWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            EditFixWindow.ShowDialog();
+        }
+
         public void Save()
         {
             try
@@ -68,19 +77,19 @@ namespace ProjectARVR
     }
 
     /// <summary>
-    /// ObjectiveTestResultFixWindow.xaml 的交互逻辑
+    /// EditFixWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class ObjectiveTestResultFixWindow : Window
+    public partial class EditFixWindow : Window
     {
-        ObjectiveTestResultFixManager ObjectiveTestResultFixManager { get; set; }
-        public ObjectiveTestResultFixWindow()
+        FixManager ObjectiveTestResultFixManager { get; set; }
+        public EditFixWindow()
         {
             InitializeComponent();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            ObjectiveTestResultFixManager = ObjectiveTestResultFixManager.GetInstance();
+            ObjectiveTestResultFixManager = FixManager.GetInstance();
             EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(ObjectiveTestResultFixManager.ObjectiveTestResultFix));
         }
 

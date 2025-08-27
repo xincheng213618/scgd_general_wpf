@@ -8,7 +8,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ProjectARVRLite
+namespace ProjectARVR
 {
     public class ViewResultManagerConfig : ViewModelBase, IConfig
     {
@@ -31,7 +31,13 @@ namespace ProjectARVRLite
         [DisplayName("打开图像延迟"), Category("View")]
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; OnPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;
-       [DisplayName("Csv保存路径"), PropertyEditorType(PropertyEditorType.TextSelectFolder), Category("ARVR")]
+
+        [DisplayName("预切换流程"), Category("View")]
+        public bool PreSwitchFlow { get => _PreSwitchFlow; set { _PreSwitchFlow = value; OnPropertyChanged(); } }
+        private bool _PreSwitchFlow;
+
+
+        [DisplayName("Csv保存路径"), PropertyEditorType(PropertyEditorType.TextSelectFolder), Category("ARVR")]
         public string SavePathCsv { get => _SavePathCsv; set { _SavePathCsv = value; OnPropertyChanged(); } }
         private string _SavePathCsv = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");
 
@@ -47,7 +53,7 @@ namespace ProjectARVRLite
         public static ViewResultManager GetInstance() { lock (_locker) { _instance ??= new ViewResultManager(); return _instance; } }
         public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
 
-        public static string SqliteDbPath { get; set; } = DirectoryPath + "ProjectARVRLite.db";
+        public static string SqliteDbPath { get; set; } = DirectoryPath + "ProjectARVR.db";
 
         public ViewResultManagerConfig Config { get; set; }
 

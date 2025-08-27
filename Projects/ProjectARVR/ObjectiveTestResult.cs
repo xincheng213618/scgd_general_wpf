@@ -1,10 +1,10 @@
 ﻿#pragma warning disable
 using ColorVision.Common.Algorithms;
 using ColorVision.Common.MVVM;
+using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
-using ColorVision.Database;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
@@ -31,7 +31,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Org.BouncyCastle.Asn1.Ocsp;
 using Panuon.WPF.UI;
-using ProjectARVR.Config;
 using ProjectARVR.Services;
 using ST.Library.UI.NodeEditor;
 using System;

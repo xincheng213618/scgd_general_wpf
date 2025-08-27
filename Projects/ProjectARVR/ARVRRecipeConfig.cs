@@ -1,8 +1,6 @@
 ﻿#pragma warning disable
 using ColorVision.Common.MVVM;
 using ProjectARVR;
-using ProjectARVR;
-using ProjectARVR.Config;
 using System.ComponentModel;
 
 namespace ProjectARVR

@@ -2,10 +2,11 @@
 using ColorVision.Common.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Database;
+using ColorVision.Engine;
 using ColorVision.Engine;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
-using ColorVision.Database;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
@@ -28,6 +29,7 @@ using ColorVision.SocketProtocol;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
+using ColorVision.UI.LogImp;
 using CVCommCore.CVAlgorithm;
 using FlowEngineLib;
 using FlowEngineLib.Base;
@@ -39,8 +41,8 @@ using Newtonsoft.Json.Linq;
 using Org.BouncyCastle.Asn1.Ocsp;
 using Panuon.WPF.UI;
 using ProjectARVR;
-using ProjectARVR.Config;
 using ProjectARVR.Services;
+using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -56,203 +58,9 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.Engine;
 
 namespace ProjectARVR
 {
-    public enum ARVRTestType
-    {
-        None,
-        /// <summary>
-        /// 白画面
-        /// </summary>
-        White,
-        /// <summary>
-        /// 黑画面
-        /// </summary>
-        Black,
-        /// <summary>
-        /// 棋盘格
-        /// </summary>
-        Chessboard,
-        /// <summary>
-        /// MTF 横
-        /// </summary>
-        MTFH,
-        /// <summary>
-        /// MTF垂直
-        /// </summary>
-        MTFV,
-        /// <summary>
-        /// 畸变
-        /// </summary>
-        Distortion,
-        /// <summary>
-        /// 光轴偏角
-        /// </summary>
-        OpticCenter,
-        /// <summary>
-        /// 鬼影
-        /// </summary>
-        Ghost,
-        /// <summary>
-        /// 屏幕定位
-        /// </summary>
-        DotMatrix,
-        /// <summary>
-        /// 白画面瑕疵检测
-        /// </summary>
-        WscreeenDefectDetection,
-        /// <summary>
-        /// 黑画面瑕疵检测
-        /// </summary>
-        BKscreeenDefectDetection
-    }
-
-    public class ProjectARVRReuslt : ViewModelBase
-    {
-        public int Id { get; set; }
-        public string Model { get; set; }
-
-        public DateTime CreateTime { get; set; } 
-
-        public string FileName { get; set; }
-
-        public string SN { get; set; }
-
-        public string Code { get; set; }
-        public FlowStatus FlowStatus { get; set; } = FlowStatus.Ready;
-
-        public bool Result { get; set; } = true;
-
-        public ARVRTestType TestType { get; set; }
-
-        public ViewResultWhite ViewResultWhite { get; set; } = new ViewResultWhite();
-        public ViewResultBlack ViewResultBlack { get; set; } = new ViewResultBlack();
-
-        public ViewReslutCheckerboard ViewReslutCheckerboard { get; set; } = new ViewReslutCheckerboard();
-
-        public ViewRelsultMTFH ViewRelsultMTFH { get; set; } = new ViewRelsultMTFH();
-
-        public ViewRelsultMTFV ViewRelsultMTFV { get; set; } = new ViewRelsultMTFV();
-
-        public ViewReslutDistortionGhost ViewReslutDistortionGhost { get; set; } = new ViewReslutDistortionGhost();
-
-        public ViewResultOpticCenter ViewResultOpticCenter { get; set; } = new ViewResultOpticCenter();
-
-    }
-
-
-    public class ViewResultOpticCenter
-    {
-        public BinocularFusionModel BinocularFusionModel { get; set; }
-
-        /// <summary>
-        /// X轴倾斜角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem XTilt { get; set; }
-
-        /// <summary>
-        /// Y轴倾斜角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem YTilt { get; set; }
-
-        /// <summary>
-        /// 旋转角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem Rotation { get; set; }
-    }
-
-    public class ViewReslutDistortionGhost
-    {
-        public ColorVision.Engine.Templates.Jsons.Distortion2.Distortion2View Distortion2View { get; set; }
-
-        /// <summary>
-        /// 水平TV畸变(%) 测试项
-        /// </summary>
-        public ObjectiveTestItem HorizontalTVDistortion { get; set; }
-
-        /// <summary>
-        /// 垂直TV畸变(%) 测试项
-        /// </summary>
-        public ObjectiveTestItem VerticalTVDistortion { get; set; }
-
-    }
-
-    public class ViewRelsultMTFH
-    {
-        public MTFDetailViewReslut MTFDetailViewReslut { get; set; }
-
-    }
-    public class ViewRelsultMTFV
-    {
-        public MTFDetailViewReslut MTFDetailViewReslut { get; set; }
-
-    }
-
-    public class ViewResultBlack
-    {
-        public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
-
-        /// <summary>
-        /// FOFO对比度 测试项
-        /// </summary>
-        public ObjectiveTestItem FOFOContrast { get; set; }
-
-
-    }
-
-    public class ViewResultWhite
-    {
-        public List<AlgResultLightAreaModel> AlgResultLightAreaModels { get; set; }
-
-        public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
-
-        public DFovView DFovView { get; set; }
-
-        /// <summary>
-        /// 中心相关色温(K) 测试项
-        /// </summary>
-        public ObjectiveTestItem CenterCorrelatedColorTemperature { get; set; }
-
-        /// <summary>
-        /// 亮度均匀性(%) 测试项
-        /// </summary>
-        public ObjectiveTestItem LuminanceUniformity { get; set; }
-
-        /// <summary>
-        /// 色彩均匀性 测试项
-        /// </summary>
-        public ObjectiveTestItem ColorUniformity { get; set; }
-
-        /// <summary>
-        /// 水平视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem HorizontalFieldOfViewAngle { get; set; }
-
-        /// <summary>
-        /// 垂直视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem VerticalFieldOfViewAngle { get; set; }
-
-        /// <summary>
-        /// 对角线视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem DiagonalFieldOfViewAngle { get; set; }
-
-
-    }
-
-    public class ViewReslutCheckerboard
-    {
-        public ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
-
-        /// <summary>
-        /// 棋盘格对比度 测试项
-        /// </summary>
-        public ObjectiveTestItem ChessboardContrast { get; set; }
-    }
-
 
     public class SwitchPG
     {
@@ -269,8 +77,15 @@ namespace ProjectARVR
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
         public static ARVRWindowConfig Config => ARVRWindowConfig.Instance;
-        public ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = new ObservableCollection<ProjectARVRReuslt>();
-        public static ObjectiveTestResultFix ObjectiveTestResultFix => ObjectiveTestResultFixManager.GetInstance().ObjectiveTestResultFix;
+
+        public static ProjectARVRConfig ProjectConfig => ProjectARVRConfig.Instance;
+
+        public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
+
+        public static ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = ViewResultManager.ViewResluts;
+
+        public static ObjectiveTestResultFix ObjectiveTestResultFix => FixManager.GetInstance().ObjectiveTestResultFix;
+
 
         public ARVRWindow()
         {
@@ -306,8 +121,9 @@ namespace ProjectARVR
         }
 
         bool IsSwitchRun = false;
-        public void SwitchPGCompleted()
+        public void SwitchPGCompleted(bool run = true)
         {
+            log.Info("SwitchPGCompleted");
             if (IsSwitchRun)
             {
                 log.Info("重复触发PG");
@@ -320,64 +136,90 @@ namespace ProjectARVR
                 log.Info("PG切换错误，正在执行流程");
                 return;
             }
-            log.Info("PG切换结束");
-
             var values = Enum.GetValues(typeof(ARVRTestType));
             int currentIndex = Array.IndexOf(values, CurrentTestType);
             int nextIndex = (currentIndex + 1) % values.Length;
             // 跳过 None（假设 None 是第一个）
             if ((ARVRTestType)values.GetValue(nextIndex) == ARVRTestType.None)
                 nextIndex = (nextIndex + 1) % values.Length;
-            CurrentTestType = (ARVRTestType)values.GetValue(nextIndex);
+            var TestType = (ARVRTestType)values.GetValue(nextIndex);
 
-            if (CurrentTestType == ARVRTestType.White)
+            if (TestType == ARVRTestType.White)
             {
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White")).Value;
                 ProjectARVRConfig.Instance.StepIndex = 1;
-                RunTemplate();
+                if (run)
+                {
+                    CurrentTestType = TestType;
+                    RunTemplate();
+                }
             }
             //if (CurrentTestType == ARVRTestType.White1)
             //{
             //    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White_calibrate")).Value;
             //    RunTemplate();
             //}
-            if (CurrentTestType == ARVRTestType.Black)
+            if (TestType == ARVRTestType.Black)
             {
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Black")).Value;
                 ProjectARVRConfig.Instance.StepIndex = 2;
-                RunTemplate();
+                if (run)
+                {
+                    CurrentTestType = TestType;
+                    RunTemplate();
+                }
             }
-            if (CurrentTestType == ARVRTestType.Chessboard)
+            if (TestType == ARVRTestType.Chessboard)
             {
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Chessboard")).Value;
                 ProjectARVRConfig.Instance.StepIndex = 3;
-                RunTemplate();
+                if (run)
+                {
+                    CurrentTestType = TestType;
+                    RunTemplate();
+                }
             }
-            if (CurrentTestType == ARVRTestType.MTFH)
+            if (TestType == ARVRTestType.MTFH)
             {
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("MTF_H")).Value;
                 ProjectARVRConfig.Instance.StepIndex = 4;
-                RunTemplate();
+                if (run)
+                {
+                    CurrentTestType = TestType;
+                    RunTemplate();
+                }
             }
 
-            if (CurrentTestType == ARVRTestType.MTFV)
+            if (TestType == ARVRTestType.MTFV)
             {
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("MTF_V")).Value;
                 ProjectARVRConfig.Instance.StepIndex = 5;
-                RunTemplate();
+                if (run)
+                {
+                    CurrentTestType = TestType;
+                    RunTemplate();
+                }
             }
 
-            if (CurrentTestType == ARVRTestType.Distortion)
+            if (TestType == ARVRTestType.Distortion)
             {
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Distortion")).Value;
                 ProjectARVRConfig.Instance.StepIndex = 6;
-                RunTemplate();
+                if (run)
+                {
+                    CurrentTestType = TestType;
+                    RunTemplate();
+                }
             }
-            if (CurrentTestType == ARVRTestType.OpticCenter)
+            if (TestType == ARVRTestType.OpticCenter)
             {
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("OpticCenter")).Value;
                 ProjectARVRConfig.Instance.StepIndex = 7;
-                RunTemplate();
+                if (run)
+                {
+                    CurrentTestType = TestType;
+                    RunTemplate();
+                }
             }
 
             IsSwitchRun = false;
@@ -390,7 +232,7 @@ namespace ProjectARVR
 
         public static RecipeManager RecipeManager => RecipeManager.GetInstance();
         public static ARVRRecipeConfig SPECConfig => RecipeManager.RecipeConfig;
-
+        LogOutput logOutput;
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = ProjectARVRConfig.Instance;
@@ -419,19 +261,30 @@ namespace ProjectARVR
             timer = new Timer(TimeRun, null, 0, 500);
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
+            if (ProjectARVRConfig.Instance.LogControlVisibility)
+            {
+                logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
+                LogGrid.Children.Add(logOutput);
+            }
+            else
+            {
+                LogGrid.Visibility = Visibility.Collapsed;
+            }
+
             this.Closed += (s, e) =>
             {
                 timer.Change(Timeout.Infinite, 500); // 停止定时器
                 timer?.Dispose();
 
-                LogOutput1?.Dispose();
+                logOutput?.Dispose();
             };
+            ViewResultManager.ListView = listView1;
             listView1.ItemsSource = ViewResluts;
 
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
-    
+
         }
 
         public void Delete()
@@ -512,7 +365,7 @@ namespace ProjectARVR
                         TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                         string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                        msg = $"{FlowName} {Environment.NewLine} 上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
+                        msg = $"{FlowName}{Environment.NewLine}上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
                     }
                     logTextBox.Text = msg;
                 }
@@ -552,16 +405,18 @@ namespace ProjectARVR
             LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
 
             CurrentFlowResult = new ProjectARVRReuslt();
-            CurrentFlowResult.SN = SNtextBox.Name;
+            CurrentFlowResult.SN = ProjectARVRConfig.Instance.SN;
+            CurrentFlowResult.Model = FlowTemplate.Text;
+
+            CurrentFlowResult.TestType = CurrentTestType;
+
             FlowName = FlowTemplate.Text;
             CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            CurrentFlowResult.FlowStatus = FlowStatus.Ready;
-            CurrentFlowResult.CreateTime = DateTime.Now;
+
             await Refresh();
 
-            if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info( "找不到完整流程，运行失败");return; }
+            if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info("找不到完整流程，运行失败"); return; }
 
-            log.Info($"IsReady{flowEngine.IsReady}");
             if (!flowEngine.IsReady)
             {
                 string base64 = string.Empty;
@@ -569,9 +424,9 @@ namespace ProjectARVR
                 await Refresh();
                 log.Info($"IsReady{flowEngine.IsReady}");
             }
+            CurrentFlowResult.FlowStatus = FlowStatus.Ready;
 
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
-
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
             stopwatch.Reset();
             stopwatch.Start();
@@ -589,15 +444,31 @@ namespace ProjectARVR
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
-
             FlowEngineConfig.Instance.FlowRunTime[FlowTemplate.Text] = stopwatch.ElapsedMilliseconds;
 
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
+            CurrentFlowResult.RunTime = stopwatch.ElapsedMilliseconds;
+            logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
 
             if (FlowControlData.EventName == "Completed")
             {
+                CurrentFlowResult.Msg = "Completed";
                 try
                 {
+                    //如果没有执行完，先切换PG，并且提前设置流程
+                    if (!IsTestTypeCompleted())
+                    {
+                        SwitchPG();
+                        if (ViewResultManager.Config.PreSwitchFlow)
+                        {
+                            Application.Current.Dispatcher.BeginInvoke(() =>
+                            {
+                                SwitchPGCompleted(false);
+                            });
+                        }
+
+                    }
+
                     Application.Current.Dispatcher.BeginInvoke(() =>
                     {
                         Processing(FlowControlData.SerialNumber);
@@ -613,7 +484,9 @@ namespace ProjectARVR
             {
                 log.Info("流程运行超时，正在重新尝试");
                 CurrentFlowResult.FlowStatus = FlowStatus.OverTime;
-                ViewResluts.Insert(0, CurrentFlowResult); //倒序插入
+                CurrentFlowResult.Msg = logTextBox.Text;
+                ViewResultManager.Save(CurrentFlowResult);
+
                 flowEngine.LoadFromBase64(string.Empty);
                 Refresh();
 
@@ -649,16 +522,48 @@ namespace ProjectARVR
             }
             else
             {
-                TryCount = 0;
                 log.Error("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
-                ViewResluts.Insert(0, CurrentFlowResult); //倒序插入
+                CurrentFlowResult.Msg = FlowControlData.Params;
 
-
-                logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
-                if (ProjectARVRConfig.Instance.AllowTestFailures)
+                if (CurrentFlowResult.Msg.Contains("SDK return failed") || CurrentFlowResult.Msg.Contains("Not get cie file"))
                 {
-                    SwithchSocket();
+                    MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
+                    if (Batch != null)
+                    {
+                        var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
+                        if (values.Count > 0)
+                        {
+                            CurrentFlowResult.FileName = values[0].FileUrl;
+                        }
+                    }
+                }
+
+
+                ViewResultManager.Save(CurrentFlowResult);
+                logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
+
+
+                TryCount = 0;
+
+                if (ProjectConfig.AllowTestFailures)
+                {
+                    //如果允许失败，则切换PG，并且提前设置流程,执行结束时直接发送结束
+                    if (!IsTestTypeCompleted())
+                    {
+                        SwitchPG();
+                        if (ViewResultManager.Config.PreSwitchFlow)
+                        {
+                            Application.Current.Dispatcher.BeginInvoke(() =>
+                            {
+                                SwitchPGCompleted(false);
+                            });
+                        }
+                    }
+                    else
+                    {
+                        TestCompleted();
+                    }
                 }
                 else
                 {
@@ -682,12 +587,10 @@ namespace ProjectARVR
             }
         }
 
-        private bool IsSavePicture = false;
-
         private void Processing(string SerialNumber)
         {
-            IsSavePicture = true;
             MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
+
 
             if (Batch == null)
             {
@@ -696,12 +599,10 @@ namespace ProjectARVR
             }
             ProjectARVRReuslt result = CurrentFlowResult ?? new ProjectARVRReuslt();
 
-            result.Model = FlowTemplate.Text;
-            result.Id = Batch.Id;
-            result.SN = ProjectARVRConfig.Instance.SN;
-            result.Result = true;
-            result.CreateTime = DateTime.Now;
+            result.BatchId = Batch.Id;
             result.FlowStatus = FlowStatus.Completed;
+            result.CreateTime = DateTime.Now;
+            result.Result = true;
 
             //if (result.Model.Contains("White_calibrate"))
             //{
@@ -1536,113 +1437,107 @@ namespace ProjectARVR
                 }
             }
 
-            ViewResluts.Insert(0, result); //倒序插入
-            listView1.SelectedIndex = 0;
+            ViewResultManager.Save(result);
+
+
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
-            SwithchSocket();
+
+            if (IsTestTypeCompleted())
+            {
+                TestCompleted();
+            }
         }
 
-        private void SwithchSocket()
+        private bool IsTestTypeCompleted()
         {
-            if (SocketManager.GetInstance().TcpClients.Count > 0)
-            {
-                log.Info("Socket已经链接 ");
-                try
-                {
-                    if (SocketControl.Current.Stream != null)
-                    {
-                        var values = Enum.GetValues(typeof(ARVRTestType));
-                        int currentIndex = Array.IndexOf(values, CurrentTestType);
-                        int nextIndex = (currentIndex + 1) % values.Length;
-                        // 跳过 None（假设 None 是第一个）
-                        if ((ARVRTestType)values.GetValue(nextIndex) == ARVRTestType.None)
-                            nextIndex = (nextIndex + 1) % values.Length;
-                        ARVRTestType aRVRTestType = (ARVRTestType)values.GetValue(nextIndex);
+            var values = Enum.GetValues(typeof(ARVRTestType));
+            int currentIndex = Array.IndexOf(values, CurrentTestType);
+            int nextIndex = (currentIndex + 1) % values.Length;
+            // 跳过 None（假设 None 是第一个）
+            if ((ARVRTestType)values.GetValue(nextIndex) == ARVRTestType.None)
+                nextIndex = (nextIndex + 1) % values.Length;
+            ARVRTestType aRVRTestType = (ARVRTestType)values.GetValue(nextIndex);
 
-                        if (aRVRTestType == ARVRTestType.Ghost)
-                        {
+            return aRVRTestType >= ARVRTestType.Ghost;
+        }
 
-                            ObjectiveTestResult.TotalResult = true;
-                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowWhiteTestReslut;
-                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowBlackTestReslut;
-                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowChessboardTestReslut;
-                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowMTFHTestReslut;
-                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowMTFVTestReslut;
-                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowDistortionTestReslut;
-                            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowOpticCenterTestReslut;
-
-                            log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
-
-                            try
-                            {
-                                string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                                string filePath = Path.Combine(ProjectARVRConfig.Instance.ResultSavePath, $"ObjectiveTestResults_{timeStr}.csv");
-
-                                List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
-
-                                objectiveTestResults.Add(ObjectiveTestResult);
-                                ObjectiveTestResultCsvExporter.ExportToCsv(objectiveTestResults, filePath);
-                            }
-                            catch(Exception ex)
-                            {
-                                log.Error(ex);
-                            }
-
-                            var response = new SocketResponse
-                            {
-                                Version = "1.0",
-                                MsgID = string.Empty,
-                                EventName = "ProjectARVRResult",
-                                Code = 0,
-                                SerialNumber = SNtextBox.Text,
-                                Msg = "ARVR Test Completed",
-                                Data = ObjectiveTestResult
-                            };
-                            string respString = JsonConvert.SerializeObject(response);
-                            log.Info(respString);
-                            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
-                        }
-                        else
-                        {
-
-                            var response = new SocketResponse
-                            {
-                                Version = "1.0",
-                                MsgID = string.Empty,
-                                EventName = "SwitchPG",
-                                Code = 0,
-                                Msg = "Switch PG",
-                                SerialNumber = SNtextBox.Text,
-                                Data = new SwitchPG
-                                {
-                                    ARVRTestType = aRVRTestType
-                                },
-                            };
-                            string respString = JsonConvert.SerializeObject(response);
-                            log.Info(respString);
-                            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
-                        }
-
-                    }
-                    else
-                    {
-                        log.Info("Socket流为空，无法发送数据");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    log.ErrorExt(ex);
-                }
-
-            }
-            else
+        private void SwitchPG()
+        {
+            if (SocketManager.GetInstance().TcpClients.Count <= 0 || SocketControl.Current.Stream == null)
             {
                 log.Info("找不到连接的Socket");
+                return;
             }
+            log.Info("Socket已经链接 ");
+
+            var values = Enum.GetValues(typeof(ARVRTestType));
+            int currentIndex = Array.IndexOf(values, CurrentTestType);
+            int nextIndex = (currentIndex + 1) % values.Length;
+            // 跳过 None（假设 None 是第一个）
+            if ((ARVRTestType)values.GetValue(nextIndex) == ARVRTestType.None)
+                nextIndex = (nextIndex + 1) % values.Length;
+            ARVRTestType aRVRTestType = (ARVRTestType)values.GetValue(nextIndex);
+
+            var response = new SocketResponse
+            {
+                Version = "1.0",
+                MsgID = string.Empty,
+                EventName = "SwitchPG",
+                Code = 0,
+                Msg = "Switch PG",
+                SerialNumber = SNtextBox.Text,
+                Data = new SwitchPG
+                {
+                    ARVRTestType = aRVRTestType
+                },
+            };
+            string respString = JsonConvert.SerializeObject(response);
+            log.Info(respString);
+            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
 
         }
 
+        private void TestCompleted()
+        {
+            if (SocketManager.GetInstance().TcpClients.Count <= 0 || SocketControl.Current.Stream == null)
+            {
+                log.Info("找不到连接的Socket");
+                return;
+            }
+            ObjectiveTestResult.TotalResult = true;
+            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowWhiteTestReslut;
+            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowBlackTestReslut;
+            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowChessboardTestReslut;
+            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowMTFVTestReslut;
+            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowMTFHTestReslut;
+            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowDistortionTestReslut;
+            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowOpticCenterTestReslut;
+            log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
 
+            string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
+
+
+            string filePath = Path.Combine(ViewResultManager.Config.SavePathCsv, $"ObjectiveTestResults_{timeStr}.csv");
+
+            List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
+
+            objectiveTestResults.Add(ObjectiveTestResult);
+            ObjectiveTestResultCsvExporter.ExportToCsv(objectiveTestResults, filePath);
+            var response = new SocketResponse
+            {
+                Version = "1.0",
+                MsgID = string.Empty,
+                EventName = "ProjectARVRResult",
+                Code = 0,
+                SerialNumber = SNtextBox.Text,
+                Msg = "ARVR Test Completed",
+                Data = ObjectiveTestResult
+            };
+            string respString = JsonConvert.SerializeObject(response);
+            log.Info(respString);
+            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+        }
 
         private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
@@ -1662,7 +1557,23 @@ namespace ProjectARVR
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
                 var result = ViewResluts[listView.SelectedIndex];
-                GenoutputText(result);
+                try
+                {
+                    if (result.FlowStatus == FlowStatus.Completed)
+                    {
+                        GenoutputText(result);
+                    }
+                    else
+                    {
+                        outputText.Background = Brushes.White;
+                        outputText.Document.Blocks.Clear(); // 清除之前的内容
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                }
 
                 Task.Run(async () =>
                 {
@@ -1889,24 +1800,7 @@ namespace ProjectARVR
                         }
                     }
                 }
-                Task.Run(async () =>
-                {
-                    await Task.Delay(200);
 
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        if (IsSavePicture)
-                        {
-                            IsSavePicture = false;
-                            string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                            if (Directory.Exists(ProjectARVRConfig.Instance.ResultSavePath))
-                            {
-                                string filePath = Path.Combine(ProjectARVRConfig.Instance.ResultSavePath, $"{result.TestType}_{timeStr}.png");
-                                ImageView.ImageViewModel.Save(filePath);
-                            }
-                        }
-                    });
-                });
 
             });
 

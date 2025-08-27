@@ -19,8 +19,12 @@ namespace ProjectARVR
 
         public ARVRRecipeConfig RecipeConfig { get; set; } = new ARVRRecipeConfig();
 
+        public RelayCommand EditCommand { get; set; }
+
         public RecipeManager()
         {
+            EditCommand = new RelayCommand(a => Edit());
+
             if (!Directory.Exists(DirectoryPath))
                 Directory.CreateDirectory(DirectoryPath);
 
@@ -33,6 +37,14 @@ namespace ProjectARVR
                 RecipeConfigs = new Dictionary<string, ARVRRecipeConfig>();
                 Save();
             }
+
+
+        }
+
+        public static void Edit()
+        {
+            EditRecipeWindow EditRecipeWindow = new EditRecipeWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            EditRecipeWindow.ShowDialog();
         }
 
         public void Save()

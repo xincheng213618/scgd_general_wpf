@@ -33,7 +33,6 @@ using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.UI.LogImp;
 using CVCommCore.CVAlgorithm;
-using Dm.util;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using LiveChartsCore.Kernel;
@@ -52,6 +51,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
@@ -61,12 +61,13 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using static iText.StyledXmlParser.Jsoup.Select.Evaluator;
 
 namespace ProjectARVRLite
 {
     public class ProjectARVRLitetestJob : IJob
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ProjectARVRLitetestJob));
+
         public Task Execute(IJobExecutionContext context)
         {
             var schedulerInfo = QuartzSchedulerManager.GetInstance().TaskInfos.First(x => x.JobName == context.JobDetail.Key.Name && x.GroupName == context.JobDetail.Key.Group);
@@ -77,6 +78,8 @@ namespace ProjectARVRLite
             });
             Application.Current.Dispatcher.Invoke(() =>
             {
+                ProjectWindowInstance.WindowInstance.SwitchPGCompleted();
+
                 ProjectWindowInstance.WindowInstance.RunTemplate();
 
                 schedulerInfo.Status = SchedulerStatus.Ready;
@@ -139,17 +142,10 @@ namespace ProjectARVRLite
                     ProjectARVRLiteConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
                 });
             }
-            if (ViewResultManager.Config.PreSwitchFlow)
-            {
-                Application.Current.Dispatcher.BeginInvoke(() =>
-                {
-                    SwitchPGCompleted(false);
-                });
-            }
         }
 
         bool IsSwitchRun = false;
-        public void SwitchPGCompleted(bool run =true)
+        public void SwitchPGCompleted()
         {
             if (IsSwitchRun)
             {
@@ -158,7 +154,7 @@ namespace ProjectARVRLite
             }
             IsSwitchRun = true;
 
-            if (flowControl != null && flowControl.IsFlowRun)
+            if (flowControl.IsFlowRun)
             {
                 log.Info("PG切换错误，正在执行流程");
                 return;
@@ -177,98 +173,70 @@ namespace ProjectARVRLite
                 {
                     ProjectConfig.StepIndex = 1;
                     FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White51")).Value;
-                    if (run)
-                    {
-                        CurrentTestType = TestType;
-                        RunTemplate();
-                    }
+                    CurrentTestType = TestType;
+                    RunTemplate();
                 }
                 if (TestType == ARVR1TestType.White)
                 {
                     ProjectConfig.StepIndex = 2;
                     FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White255")).Value;
-                    if (run)
-                    {
-                        CurrentTestType = TestType;
-                        RunTemplate();
-                    }
+                    CurrentTestType = TestType;
+                    RunTemplate();
                 }
                 if (TestType == ARVR1TestType.Black)
                 {
                     ProjectConfig.StepIndex = 3;
                     FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Black")).Value;
-                    if (run)
-                    {
-                        CurrentTestType = TestType;
-                        RunTemplate();
-                    }
+                    CurrentTestType = TestType;
+                    RunTemplate();
                 }
                 if (TestType == ARVR1TestType.W25)
                 {
                     ProjectConfig.StepIndex = 4;
 
                     FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White25")).Value;
-                    if (run)
-                    {
-                        CurrentTestType = TestType;
-                        RunTemplate();
-                    }
+                    CurrentTestType = TestType;
+                    RunTemplate();
                 }
                 if (TestType == ARVR1TestType.Chessboard)
                 {
                     ProjectConfig.StepIndex = 5;
 
                     FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Chessboard")).Value;
-                    if (run)
-                    {
-                        CurrentTestType = TestType;
-                        RunTemplate();
-                    }
+                    CurrentTestType = TestType;
+                    RunTemplate();
                 }
                 if (TestType == ARVR1TestType.MTFHV)
                 {
                     ProjectConfig.StepIndex = 6;
 
                     FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("MTF_HV")).Value;
-                    if (run)
-                    {
-                        CurrentTestType = TestType;
-                        RunTemplate();
-                    }
+                    CurrentTestType = TestType;
+                    RunTemplate();
                 }
                 if (TestType == ARVR1TestType.Distortion)
                 {
                     ProjectConfig.StepIndex = 7;
 
                     FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Distortion")).Value;
-                    if (run)
-                    {
-                        CurrentTestType = TestType;
-                        RunTemplate();
-                    }
+                    CurrentTestType = TestType;
+                    RunTemplate();
                 }
                 if (TestType == ARVR1TestType.OpticCenter)
                 {
                     ProjectConfig.StepIndex = 8;
                     FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("OpticCenter")).Value;
-                    if (run)
-                    {
-                        CurrentTestType = TestType;
-                        RunTemplate();
-                    }
+                    CurrentTestType = TestType;
+                    RunTemplate();
                 }
-
-            }catch(Exception ex)
+                CurrentTestType = TestType;
+                RunTemplate();
+            }
+            catch (Exception ex)
             {
                 log.Error(ex);
             }
-
             IsSwitchRun = false;
-
-            if (!run)
-            {
-                Refresh();
-            }
         }
 
        
@@ -291,6 +259,7 @@ namespace ProjectARVRLite
             STNodeEditorMain = new STNodeEditor();
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             flowEngine.AttachNodeEditor(STNodeEditorMain);
+            flowControl = new FlowControl(MQTTControl.GetInstance(), flowEngine);
 
             string Name = "Default";
             if (RecipeManager.RecipeConfigs.TryGetValue(Name, out ARVRRecipeConfig recipeConfig))
@@ -415,7 +384,7 @@ namespace ProjectARVRLite
                         TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                         string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                        msg = $"{FlowName} {Environment.NewLine} 上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
+                        msg = $"{FlowName}{Environment.NewLine}上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
                     }
                     logTextBox.Text = msg;
                 }
@@ -449,8 +418,12 @@ namespace ProjectARVRLite
 
         public async Task RunTemplate()
         {
-            if (flowControl != null && flowControl.IsFlowRun) return;
-
+            if (flowControl.IsFlowRun)
+            {
+                log.Info("当前flowControl存在流程执行");
+                return;
+            }
+            flowControl.IsFlowRun = true;
             TryCount++;
             LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
 
@@ -477,7 +450,6 @@ namespace ProjectARVRLite
             }
             CurrentFlowResult.FlowStatus = FlowStatus.Ready;
 
-            flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
             stopwatch.Reset();
             stopwatch.Start();
@@ -512,14 +484,6 @@ namespace ProjectARVRLite
                     if (!IsTestTypeCompleted())
                     {
                         SwitchPG();
-                        if (ViewResultManager.Config.PreSwitchFlow)
-                        {
-                            Application.Current.Dispatcher.BeginInvoke(() =>
-                            {
-                                SwitchPGCompleted(false);
-                            });
-                        }
-
                     }
 
                     Application.Current.Dispatcher.BeginInvoke(() =>
@@ -596,21 +560,6 @@ namespace ProjectARVRLite
                 ViewResultManager.Save(CurrentFlowResult);
                 logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
 
-                if(CurrentFlowResult.Msg.Contains("Not get cie file"))
-                {
-                    if (TryCount < ProjectARVRLiteConfig.Instance.TryCountMax)
-                    {
-                        Task.Delay(200).ContinueWith(t =>
-                        {
-                            log.Info("重新尝试运行流程");
-                            Application.Current.Dispatcher.BeginInvoke(() =>
-                            {
-                                RunTemplate();
-                            });
-                        });
-                        return;
-                    }
-                }
                 TryCount = 0;
 
                 if (ProjectARVRLiteConfig.Instance.AllowTestFailures)
@@ -619,13 +568,6 @@ namespace ProjectARVRLite
                     if (!IsTestTypeCompleted())
                     {
                         SwitchPG();
-                        if (ViewResultManager.Config.PreSwitchFlow)
-                        {
-                            Application.Current.Dispatcher.BeginInvoke(() =>
-                            {
-                                SwitchPGCompleted(false);
-                            });
-                        }
                     }
                     else
                     {
@@ -670,6 +612,8 @@ namespace ProjectARVRLite
             result.FlowStatus = FlowStatus.Completed;
             result.CreateTime = DateTime.Now;
             result.Result = true;
+
+
             if (result.Model.Contains("White51"))
             {
                 log.Info("正在解析White51的流程");
@@ -2143,6 +2087,7 @@ namespace ProjectARVRLite
         }
         public void Dispose()
         {
+            flowControl.Stop();
             STNodeEditorMain.Dispose();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
             timer?.Dispose();

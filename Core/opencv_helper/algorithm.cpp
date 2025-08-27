@@ -313,6 +313,57 @@ int findLuminousArea(cv::Mat& src, cv::Rect& largestRect,int threshold)
     return 0;
 }
 
+int findLuminousAreaLocalContrast(cv::Mat& src, std::vector<cv::Point2f>& points, float contrastThreshold, int windowSize = 15)
+{
+    points.clear();
+    if (src.empty()) return -1;
+
+    cv::Mat gray;
+    if (src.channels() != 1)
+        cv::cvtColor(src, gray, cv::COLOR_BGR2GRAY);
+    else
+        gray = src;
+    if (gray.depth() == CV_16U)
+        cv::normalize(gray, gray, 0, 255, cv::NORM_MINMAX, CV_8U);
+
+    cv::Mat localMean;
+    cv::blur(gray, localMean, cv::Size(windowSize, windowSize));
+    cv::Mat contrast;
+    cv::divide(gray, localMean + 1, contrast, 1, CV_32F);
+
+    cv::Mat mask;
+    cv::threshold(contrast, mask, contrastThreshold, 1, cv::THRESH_BINARY);
+
+    mask.convertTo(mask, CV_8U, 255);
+
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+    cv::morphologyEx(mask, mask, cv::MORPH_OPEN, kernel);
+
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    // 可选：针对加权区域筛选最大轮廓
+    // ...
+
+    if (contours.empty()) return -2;
+
+    size_t maxIdx = 0;
+    double maxArea = 0;
+    for (size_t i = 0; i < contours.size(); ++i) {
+        double area = cv::contourArea(contours[i]);
+        if (area > maxArea) {
+            maxArea = area;
+            maxIdx = i;
+        }
+    }
+
+    cv::RotatedRect minRect = cv::minAreaRect(contours[maxIdx]);
+    cv::Point2f verts[4];
+    minRect.points(verts);
+    points.assign(verts, verts + 4);
+    return 0;
+}
+
 int drawPoiImage(cv::Mat& src, cv::Mat& dst, int radius, int* points, int pointCount,int thickness)
 {
     int depth = src.depth();
