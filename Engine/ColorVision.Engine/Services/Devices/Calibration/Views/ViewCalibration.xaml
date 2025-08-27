@@ -84,6 +84,12 @@
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
                         <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                        <Setter Property="Opacity" Value="1"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsFileExists}" Value="False">
+                                <Setter Property="Opacity" Value="0.7"/>
+                            </DataTrigger>
+                        </Style.Triggers>
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.View >
@@ -100,13 +106,6 @@
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type se:ViewResultImage}">
                                     <TextBlock Text="{Binding Id}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn  Header="bool" Width="40">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type se:ViewResultImage}">
-                                    <TextBlock Text="{ Binding  IsFileExists}" />
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
