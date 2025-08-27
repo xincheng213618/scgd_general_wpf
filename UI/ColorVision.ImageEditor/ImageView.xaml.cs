@@ -35,7 +35,7 @@ namespace ColorVision.ImageEditor
         public ImageViewModel ImageViewModel { get; set; }
 
 
-        public ImageViewConfig Config => ImageViewModel.Config;
+        public ImageViewConfig Config { get; set; } = new ImageViewConfig();
 
         public event EventHandler RenderCompleted;
         protected virtual void OnRenderCompleted()
@@ -53,22 +53,6 @@ namespace ColorVision.ImageEditor
             InitializeComponent();
 
         }
-
-
-
-        public void SetConfig(ImageViewConfig imageViewConfig)
-        {
-            this.DataContext = this;
-            AdvancedStackPanel.DataContext = this;
-            ToolBarLeft.DataContext = Config;
-            Zoombox1.DataContext = imageViewConfig;
-            ImageViewModel.PropertyCommand = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(Parent), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
-
-            Config.ColormapTypesChanged -= Config_ColormapTypesChanged;
-            Config.ColormapTypesChanged += Config_ColormapTypesChanged;
-            Config.BalanceChanged += ImageViewConfig_BalanceChanged;
-        }
-
 
         public static Dictionary<ColormapTypes, string> GetColormapVDictionary()
         {
@@ -163,8 +147,17 @@ namespace ColorVision.ImageEditor
                     }
                 }
             }
-            ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow);
-            SetConfig(Config);
+            ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow,Config);
+            this.DataContext = this;
+            AdvancedStackPanel.DataContext = this;
+            ToolBarLeft.DataContext = Config;
+            Zoombox1.DataContext = Config;
+            ImageViewModel.PropertyCommand = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(Parent), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
+
+            Config.ColormapTypesChanged -= Config_ColormapTypesChanged;
+            Config.ColormapTypesChanged += Config_ColormapTypesChanged;
+            Config.BalanceChanged += ImageViewConfig_BalanceChanged;
+
             foreach (var item in ComponentManager.GetInstance().IImageComponents)
                 item.Execute(this);
 
@@ -881,15 +874,16 @@ namespace ColorVision.ImageEditor
 
         public void SetImageSource(ImageSource imageSource)
         {
-            Clear();
-            ComboBoxLayers.Visibility = Visibility.Visible;
+            FunctionImage = null;
+            ViewBitmapSource = null;
+            ImageShow.Source = null;
             if (HImageCache != null)
             {
                 HImageCache?.Dispose();
                 HImageCache = null;
             }
-            ;
 
+            ComboBoxLayers.Visibility = Visibility.Visible;
             if (imageSource is WriteableBitmap writeableBitmap)
             {
 

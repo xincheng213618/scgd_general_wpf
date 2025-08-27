@@ -103,16 +103,16 @@ namespace ColorVision.ImageEditor.Draw
             using DrawingContext dc = drawingVisual.RenderOpen();
             dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
         }
-        public ImageViewConfig Config { get; set; } = new ImageViewConfig();
+        public ImageViewConfig Config { get; set; }
 
         public ContextMenu ContextMenu { get; set; }
         public List<MenuItemMetadata> MenuItemMetadatas { get; set; }
         public IImageOpen? IImageOpen { get; set; }
 
-        public ImageViewModel(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas)
+        public ImageViewModel(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas,ImageViewConfig config = null )
         {
+            Config = config ?? new ImageViewConfig();
             SelectEditorVisual = new SelectEditorVisual(drawCanvas, zoombox);
-
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.Print, (s, e) => Print(), (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, (s, e) => OpenImage(), (s, e) => { e.CanExecute = true; }));

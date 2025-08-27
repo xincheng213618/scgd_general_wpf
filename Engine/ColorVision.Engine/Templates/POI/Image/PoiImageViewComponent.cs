@@ -148,6 +148,12 @@ namespace ColorVision.Engine.Templates.POI.Image
                     return;
                 }
 
+                if (!imageView.Config.GetProperties<bool>("IsBufferSet"))
+                {
+                    Action action = imageView.Config.GetProperties<Action>("LoadBuffer");
+                    action?.Invoke();
+                }
+
 
                 int result = ConvertXYZ.CM_SetFilter(imageView.Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.Enable, poiParams.PoiConfig.Filter.Threshold);
                 result = ConvertXYZ.CM_SetFilterNoArea(imageView.Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.NoAreaEnable, poiParams.PoiConfig.Filter.Threshold);

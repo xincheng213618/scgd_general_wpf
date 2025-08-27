@@ -85,18 +85,24 @@ namespace ColorVision.Engine.Media
         bool ShowDateFilePath;
         public void CVCIESetBuffer(ImageView imageView,string filePath)
         {
-             bool IsBufferSet = false;
             CVCIEFile meta;
             int index;
 
-            void LoadBuffer()
+
+            Action LoadBuffer = new Action(() =>
             {
-                if (IsBufferSet) return;
+                if (imageView.Config.GetProperties<bool>("IsBufferSet")) return;
+                var meta = imageView.Config.GetProperties<CVCIEFile>("meta");
+                int index = imageView.Config.GetProperties<int>("index");
                 CVFileUtil.ReadCIEFileData(filePath, ref meta, index);
                 int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(imageView.Config.ConvertXYZhandle, (uint)meta.rows, (uint)meta.cols, (uint)meta.bpp, (uint)meta.channels, meta.data);
                 log.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
-                IsBufferSet = true;
-            }
+                imageView.Config.AddProperties("IsBufferSet", true);
+
+            });
+
+            imageView.Config.AddProperties("LoadBuffer", LoadBuffer);
+
 
             if (File.Exists(ViewAlgorithmConfig.Instance.ShowDateFilePath))
             {
@@ -122,8 +128,11 @@ namespace ColorVision.Engine.Media
             }
             void ShowCVCIE(object sender, ImageInfo imageInfo)
             {
-                if (!IsBufferSet)
-                    LoadBuffer();
+                if (imageView.Config.GetProperties<bool>("IsBufferSet"))
+                {
+                    Action action = imageView.Config.GetProperties<Action>("LoadBuffer");
+                    action?.Invoke();
+                }
 
                 float dXVal = 0;
                 float dYVal = 0;
@@ -192,7 +201,7 @@ namespace ColorVision.Engine.Media
             imageView.ImageViewModel.ClearImageEventHandler += (s, e) =>
             {
                 int result = ConvertXYZ.CM_ReleaseBuffer(imageView.Config.ConvertXYZhandle);
-                IsBufferSet = false;
+                imageView.Config.AddProperties("IsBufferSet", false);
             };
             if (!imageView.Config.ConvertXYZhandleOnce)
             {
@@ -240,7 +249,6 @@ namespace ColorVision.Engine.Media
 
             if (File.Exists(filePath) && CVFileUtil.IsCIEFile(filePath))
             {
-
                  index = CVFileUtil.ReadCIEFileHeader(imageView.Config.FilePath, out meta);
                 if (index <= 0) return;
                 if (meta.FileExtType == CVType.CIE)
@@ -249,7 +257,12 @@ namespace ColorVision.Engine.Media
 
                     log.Debug(JsonConvert.SerializeObject(meta));
                     imageView.Config.AddProperties("IsCVCIE", true);
+
+                    imageView.Config.AddProperties("meta", meta);
+                    imageView.Config.AddProperties("index", index);
                     imageView.Config.AddProperties("Exp", meta.exp);
+
+                    imageView.Config.AddProperties("IsBufferSet",false);
                     exp = meta.exp;
 
                     imageView.ImageViewModel.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
