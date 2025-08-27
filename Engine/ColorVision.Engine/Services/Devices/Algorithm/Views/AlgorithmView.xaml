@@ -118,6 +118,13 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
+                            <GridViewColumn  Header="bool" Width="40">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type se:ViewResultImage}">
+                                        <TextBlock Text="{ Binding  IsFileExists}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
                             <GridViewColumn  Header="ResultDesc" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type se:ViewResultAlg}">

@@ -1,8 +1,8 @@
 ﻿#pragma warning disable CS8601
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Media;
 using ColorVision.Database;
+using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
@@ -12,6 +12,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -56,7 +57,19 @@ namespace ColorVision.Engine.Services
             ContextMenu.Items.Add(new MenuItem() { Header = "导出", Command = ExportCVCIECommand });
             ExportToPoiCommand = new RelayCommand(a => ExportToPoi(), a => ViewResults?.ToSpecificViewResults<PoiResultData>().Count != 0 || ViewResults?.ToSpecificViewResults<PoiPointResultModel>().Count != 0);
             ContextMenu.Items.Add(new MenuItem() { Header = "创建到POI", Command = ExportToPoiCommand });
+            Task.Run(() =>
+            {
+                bool exists = !string.IsNullOrEmpty(FilePath) && File.Exists(FilePath);
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    IsFileExists = exists;
+                });
+            });
+
         }
+
+        public bool IsFileExists { get => _IsFileExists; set { if (_IsFileExists == value) return; _IsFileExists = value; OnPropertyChanged(); } }
+        private bool _IsFileExists = true;
 
         public string? Version { get; set; }
         public void OpenContainingFolder()

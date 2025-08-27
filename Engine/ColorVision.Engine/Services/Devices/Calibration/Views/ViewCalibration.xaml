@@ -103,6 +103,13 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
+                        <GridViewColumn  Header="bool" Width="40">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type se:ViewResultImage}">
+                                    <TextBlock Text="{ Binding  IsFileExists}" />
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
                         <GridViewColumn  Header="{x:Static properties:Resources.Info}" Width="50">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type se:ViewResultImage}">

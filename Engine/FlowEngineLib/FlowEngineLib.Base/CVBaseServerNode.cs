@@ -10,6 +10,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Transactions;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace FlowEngineLib.Base;
 
@@ -518,7 +519,18 @@ public class CVBaseServerNode : CVCommonNode
 	private void DoTransNodeEndOut(CVTransAction trans, CVBaseEventCmd cmd)
 	{
 		CVServerResponse resp = cmd.resp;
-		if (resp.Status == ActionStatusEnum.Finish)
+
+        CVStartCFC cVStartCFC = new CVStartCFC();
+        cVStartCFC.StartTime = trans.trans_action.StartTime;
+        cVStartCFC.Id = trans.trans_action.Id;
+        cVStartCFC.TTL = trans.trans_action.TTL;
+        cVStartCFC.IsDel = trans.trans_action.IsDel;
+        cVStartCFC.SerialNumber = trans.trans_action.SerialNumber;
+        cVStartCFC.SetActionType(trans.trans_action.GetActionType());
+        cVStartCFC.FlowStatus = trans.trans_action.FlowStatus;
+        cVStartCFC.SetStartNode(trans.trans_action.GetStartNode());
+
+        if (resp.Status == ActionStatusEnum.Finish)
 		{
 			dynamic data = resp.Data;
 			int masterResultType = -1;
@@ -545,53 +557,39 @@ public class CVBaseServerNode : CVCommonNode
 				{
 					masterResultType = ((data.MasterResultType != null) ? data.MasterResultType : data.ResultType);
 				}
-				trans.NodeFinished(masterValue, masterId, masterResultType);
+
+				cVStartCFC.MasterValue(masterValue, masterId, masterResultType);
+
             }
         }
 		else if (resp.Status == ActionStatusEnum.Failed)
 		{
-			trans.NodeFailed(cmd.resp.Message, base.DeviceCode);
-			logger.InfoFormat("[{0}]CVTransAction Failed => {1}", ToShortString(), JsonConvert.SerializeObject(trans.trans_action));
+			cVStartCFC.Failed(cmd.resp.Message, base.DeviceCode, trans.startTime);
+
+			logger.InfoFormat("[{0}]CVTransAction Failed => {1}", ToShortString(), JsonConvert.SerializeObject(cVStartCFC));
 		}
 		if (_IsPublishStatus)
 		{
-			trans.DoPublishStatus(GetServiceName(), GetDeviceCode(), GetFullNodeName(), resp);
+			string serverName = GetServiceName();
+			string deviceCode = GetDeviceCode();
+			string nodeName = GetFullNodeName();
+			CVServerResponse status = resp;
+            cVStartCFC.AddResult(nodeName, status, trans.startTime);
+            cVStartCFC.BuildStatusMsg(serverName, deviceCode);
+            cVStartCFC.GetStartNode().DoPublishStatus(serverName);
 		}
 		else
 		{
-			trans.AddTTL();
-		}
+            cVStartCFC.AddTTL(trans.startTime);
+        }
+
 		TimeSpan timeSpan = DateTime.Now - trans.startTime;
 		if (logger.IsInfoEnabled)
 		{
 			logger.InfoFormat("[{0}]Node completed. Transfer to the next node. TotalTime={1}/{2}", ToShortString(), timeSpan.ToString(), trans.startTime.ToString("O"));
 		}
-
-        if (logger.IsDebugEnabled)
-            logger.Debug($"nodeEndEvent {this.GetType()}: {JsonConvert.SerializeObject(trans.trans_action)}");
-        lock (trans)
-        {
-            CVStartCFC cVStartCFC = new CVStartCFC();
-            cVStartCFC.StartTime = trans.trans_action.StartTime;
-            cVStartCFC.Id = trans.trans_action.Id;
-            cVStartCFC.TTL = trans.trans_action.TTL;
-            cVStartCFC.IsDel = trans.trans_action.IsDel;
-            cVStartCFC.SerialNumber = trans.trans_action.SerialNumber;
-            cVStartCFC.Data = trans.trans_action.Data;
-            cVStartCFC.SetActionType(trans.trans_action.GetActionType());
-            cVStartCFC.FlowStatus = trans.trans_action.FlowStatus;
-            cVStartCFC.SetStartNode(trans.trans_action.GetStartNode());
-
-            logger.Debug($"nodeEndEvent 1 {this.GetType()}: {JsonConvert.SerializeObject(cVStartCFC)}");
-            m_op_end.TransferData(cVStartCFC);
-            logger.Debug($"nodeEndEvent 2 {this.GetType()}: {JsonConvert.SerializeObject(cVStartCFC)}");
-        }
+        m_op_end.TransferData(cVStartCFC);
         base.nodeEndEvent?.Invoke(this, new FlowEngineNodeEndEventArgs());
-        if (logger.IsDebugEnabled)
-            logger.Debug($"nodeEndEvent 3 {this.GetType()}: {JsonConvert.SerializeObject(trans.trans_action)}");
-
-
-
     }
     private static readonly object trans = new();
 

@@ -3,14 +3,16 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.POI;
-using ColorVision.ImageEditor;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
+using Google.Protobuf.Collections;
 using MQTTMessageLib.Camera;
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -54,7 +56,20 @@ namespace ColorVision.Engine.Services
             ContextMenu.Items.Add(new MenuItem() { Header = "在文件夹中选中文件", Command = OpenContainingFolderCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "导出", Command = ExportCVCIECommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "作为底图创建POI", Command = CreateToPoiCommand });
+
+            Task.Run(() =>
+            {
+                bool exists = !string.IsNullOrEmpty(FileUrl) && File.Exists(FileUrl);
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    IsFileExists = exists;
+                });
+            });
+
         }
+
+        public bool IsFileExists { get => _IsFileExists; set { if (_IsFileExists == value) return; _IsFileExists = value; OnPropertyChanged(); } }
+        private bool _IsFileExists = true;
 
         public void CreateToPoi()
         {
