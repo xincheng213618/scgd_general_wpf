@@ -116,27 +116,20 @@ namespace ColorVision.Database.SqliteLog
         // 批量插入
         private void Flush()
         {
-            try
+            var list = new List<LogEntry>();
+            while (_entries.TryDequeue(out var entry))
             {
-                var list = new List<LogEntry>();
-                while (_entries.TryDequeue(out var entry))
+                list.Add(entry);
+                if (list.Count >= BatchSize)
                 {
-                    list.Add(entry);
-                    if (list.Count >= BatchSize)
-                    {
-                        // 分批插入，避免一次过多
-                        _db.Insertable(list).ExecuteCommand();
-                        list.Clear();
-                    }
-                }
-                if (list.Count > 0)
-                {
+                    // 分批插入，避免一次过多
                     _db.Insertable(list).ExecuteCommand();
+                    list.Clear();
                 }
             }
-            catch
+            if (list.Count > 0)
             {
-                // 可以写入本地文件作为降级
+                _db.Insertable(list).ExecuteCommand();
             }
         }
 

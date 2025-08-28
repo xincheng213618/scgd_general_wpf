@@ -44,7 +44,24 @@ namespace ColorVision.Engine.Templates.Flow
 
         public string Params { get => _Params; set { _Params = value; OnPropertyChanged(); } }
         private string _Params;
+
+
+        public FlowStatus FlowStatus
+        {
+            get => Status switch
+            {
+                StatusTypeEnum.Runing => FlowStatus.Runing,
+                StatusTypeEnum.Failed => FlowStatus.Failed,
+                StatusTypeEnum.Completed => FlowStatus.Completed,
+                StatusTypeEnum.Canceled => FlowStatus.Canceled,
+                StatusTypeEnum.OverTime => FlowStatus.OverTime,
+                StatusTypeEnum.Paused => FlowStatus.Paused,
+
+                _ => FlowStatus.Ready,
+            };
+        }
     }
+    
 
 
     public class FlowControl : ViewModelBase
@@ -108,7 +125,7 @@ namespace ColorVision.Engine.Templates.Flow
         public void FinishedAsync(object sender, FlowEngineEventArgs e)
         {
             IsFlowRun = false;
-            FlowControlData data = new FlowControlData() { StartNodeName = e.StartNodeName, SerialNumber = e.SerialNumber, EventName = e.Status.ToString(), Params = e.Message };
+            FlowControlData data = new FlowControlData() { StartNodeName = e.StartNodeName, SerialNumber = e.SerialNumber, EventName = e.Status.ToString() , Status= e.Status, Params = e.Message };
             try
             {
                 Application.Current.Dispatcher.BeginInvoke(() =>

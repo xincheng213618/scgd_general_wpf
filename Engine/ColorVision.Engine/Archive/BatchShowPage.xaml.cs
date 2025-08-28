@@ -16,12 +16,12 @@ namespace ColorVision.Engine.Archive.Dao
     public partial class BatchDataHistory : Page
     {
         public Frame Frame { get; set; }
-        public ViewBatchResult ViewBatchResult { get; set; }
+        public MeasureBatchModel MeasureBatchModel { get; set; }
 
-        public BatchDataHistory(Frame frame, ViewBatchResult viewBatchResult)
+        public BatchDataHistory(Frame frame, MeasureBatchModel measureBatchModel)
         {
             Frame = frame;
-            ViewBatchResult = viewBatchResult;
+            MeasureBatchModel = measureBatchModel;
             InitializeComponent();
         }
 
@@ -31,25 +31,23 @@ namespace ColorVision.Engine.Archive.Dao
 
         private void Page_Initialized(object sender, EventArgs e)
         {
-            TextBatch.Text = "批次 " + ViewBatchResult.BatchCode +" 结果";
+            TextBatch.Text = "批次 " + MeasureBatchModel.Code +" 结果";
 
             listView1.ItemsSource = ViewResultImages;
-
-
             listView2.ItemsSource = ViewResultAlgs;
 
         }
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
             ViewResultImages.Clear();
-            foreach (var item in MeasureImgResultDao.Instance.GetAllByBatchId(ViewBatchResult.Id))
+            foreach (var item in MeasureImgResultDao.Instance.GetAllByBatchId(MeasureBatchModel.Id))
             {
                 ViewResultImages.AddUnique(new ViewResultImage(item));
             }
             if (ViewResultImages.Count == 0) StactPanelImage.Visibility = Visibility.Collapsed;
 
             ViewResultAlgs.Clear();
-            foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(ViewBatchResult.Id))
+            foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(MeasureBatchModel.Id))
             {
                 ViewResultAlgs.AddUnique(new ViewResultAlg(item));
             }
@@ -103,6 +101,7 @@ namespace ColorVision.Engine.Archive.Dao
                     window.Show();
                 }
 
+                AlgorithmView.ViewResults.Clear();
                 AlgorithmView.ViewResults.Add(ViewResultAlgs[listView.SelectedIndex]);
                 AlgorithmView.RefreshResultListView();
             }

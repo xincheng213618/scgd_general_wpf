@@ -1,4 +1,5 @@
 ﻿using ColorVision.Database;
+using ColorVision.Engine.Templates.Flow;
 using SqlSugar;
 using System;
 
@@ -29,10 +30,13 @@ namespace ColorVision.Engine
         public DateTime? CreateDate { get; set; } = DateTime.Now;
 
         [SugarColumn(ColumnName = "total_time")]
-        public int TotalTime { get; set; } = 0;
+        public int TotalTime { get; set; }
 
         [SugarColumn(ColumnName = "result",IsNullable =true)]
         public string? Result { get; set; }
+
+        [SugarColumn(ColumnName = "result_code", IsNullable = true)]
+        public FlowStatus FlowStatus { get; set; } = FlowStatus.Ready;
 
         [SugarColumn(ColumnName = "archived_flag")]
         public ArchiveStatus ArchiveStatus { get; set; } = ArchiveStatus.Pending;

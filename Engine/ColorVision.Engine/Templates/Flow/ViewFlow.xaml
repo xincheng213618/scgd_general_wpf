@@ -15,9 +15,12 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
-        <Grid Grid.Column="0" Grid.ColumnSpan="1" x:Name="Grid1">
+        <Grid Grid.Column="0" Grid.ColumnSpan="1" x:Name="Grid1" SizeChanged="Grid1_SizeChanged">
             <WindowsFormsHost x:Name="winf1" Visibility="Visible" VerticalAlignment="Stretch">
                 <st:STNodeEditor  x:Name="STNodeEditorMain" x:FieldModifier="public"  MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel" />
+            </WindowsFormsHost>
+            <WindowsFormsHost x:Name="winf2" Height="350"  Width="250" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="0,0,0,5">
+                <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
             </WindowsFormsHost>
         </Grid>
         <Grid Grid.Column="1"  x:Name="Grid2"  Width="300" >
@@ -111,13 +114,11 @@
                 </StackPanel>
             </Border>
 
-            <Border x:Name="SignStackBorder" Grid.Row="3"  Background="{DynamicResource SecondaryRegionBrush}" Visibility="Collapsed" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="5,0,5,5" CornerRadius="5">
+            <Border x:Name="SignStackBorder" Grid.Row="3"  Background="{DynamicResource SecondaryRegionBrush}" Visibility="Collapsed" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0" Margin="5,0,5,5" CornerRadius="5">
                 <StackPanel x:Name="SignStackPannel"  Orientation="Vertical" Margin="3" >
                 </StackPanel>
             </Border>
-            <WindowsFormsHost x:Name="winf2"  Grid.Row="4"  Height="400" >
-                <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
-            </WindowsFormsHost>
+
         </Grid>
     </Grid>
 </UserControl>

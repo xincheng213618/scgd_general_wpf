@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8602,CS8603,CS8601
+using ColorVision.Database;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
@@ -8,6 +9,7 @@ using ColorVision.UI;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
+using NPOI.SS.Formula.Functions;
 using Panuon.WPF.UI;
 using Quartz;
 using ST.Library.UI.NodeEditor;
@@ -23,7 +25,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.Database;
 
 
 namespace ColorVision.Engine.Templates.Flow
@@ -233,6 +234,12 @@ namespace ColorVision.Engine.Templates.Flow
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
+            measureBatchModel.FlowStatus = FlowControlData.FlowStatus;
+            measureBatchModel.TotalTime = (int)stopwatch.ElapsedMilliseconds;
+            measureBatchModel.Result = FlowControlData.Params;
+            MySqlControl.GetInstance().DB.Updateable(measureBatchModel).ExecuteReturnEntity();
+
+
             FlowEngineConfig.Instance.FlowRunTime[ComboBoxFlow.Text] = stopwatch.ElapsedMilliseconds;
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
 
@@ -345,6 +352,8 @@ namespace ColorVision.Engine.Templates.Flow
         {
             RunFlow();
         }
+
+        MeasureBatchModel measureBatchModel;
         string FlowName;
         public async void RunFlow()
         {
@@ -410,7 +419,9 @@ namespace ColorVision.Engine.Templates.Flow
             stopwatch.Start();
 
             timer.Change(0, 100); // 启动定时器
-            BatchResultMasterDao.Instance.Save(new MeasureBatchModel() { Name = sn, Code = sn, CreateDate = DateTime.Now });
+            measureBatchModel = new MeasureBatchModel() { TId = TemplateFlow.Params[ComboBoxFlow.SelectedIndex].Id, Name = sn, Code = sn };
+            measureBatchModel.Id = MySqlControl.GetInstance().DB.Insertable(measureBatchModel).ExecuteReturnIdentity();
+
             flowControl.Start(sn);
         }
 
@@ -424,7 +435,15 @@ namespace ColorVision.Engine.Templates.Flow
             ButtonRun.Visibility = Visibility.Visible;
             ButtonStop.Visibility = Visibility.Collapsed;
             flowControl?.Stop();
+            stopwatch.Stop();
+            timer.Change(Timeout.Infinite, 500); // 停止定时器
+
+            measureBatchModel.FlowStatus = FlowStatus.Canceled;
+            measureBatchModel.TotalTime = (int)stopwatch.ElapsedMilliseconds;
+            MySqlControl.GetInstance().DB.Updateable(measureBatchModel);
+
             View.logTextBox.Text = "已经取消执行";
+
         }
 
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)

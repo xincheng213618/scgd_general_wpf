@@ -13,8 +13,7 @@
     </Page.Resources>
     <Grid>
         <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" CornerRadius="5" Margin="5"/>
-
-        <Grid Margin="5" >
+        <Grid  >
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -33,6 +32,11 @@
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
                         </ContextMenu>
                     </ListView.Resources>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                            <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
                     <ListView.View >
                         <GridView >
                             <GridView.ColumnHeaderContainerStyle>
@@ -48,35 +52,56 @@
                             <GridViewColumn  Header="序号" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewBatchResult}"  >
-                                        <TextBlock Text="{Binding Id}"/>
+                                        <TextBlock Text="{Binding MeasureBatchModel.Id}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="批次号">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewBatchResult}"  >
-                                        <TextBlock Text="{Binding Batch}"/>
+                                        <TextBlock Text="{Binding MeasureBatchModel.Name}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="BatchCode">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:ViewBatchResult}"  >
-                                        <TextBlock Text="{Binding BatchCode}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="测量时间">
+                            <GridViewColumn  Header="TId">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewBatchResult}"  >
-                                        <TextBlock Text="{Binding CreateTime}"/>
+                                        <TextBlock Text="{Binding MeasureBatchModel.TId}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="FlowStatus">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:ViewBatchResult}"  >
+                                        <TextBlock Text="{Binding MeasureBatchModel.FlowStatus}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="TotalTime">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewBatchResult}"  >
-                                        <TextBlock Text="{Binding TotalTime}"/>
+                                        <TextBlock Text="{Binding MeasureBatchModel.TotalTime}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="Msg" Width="150">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:ViewBatchResult}"  >
+                                        <TextBlock Text="{Binding MeasureBatchModel.Result}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="BatchCode">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewBatchResult}"  >
+                                        <TextBlock Text="{Binding MeasureBatchModel.Code}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="测量时间" Width="150">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:ViewBatchResult}"  >
+                                        <TextBlock Text="{Binding MeasureBatchModel.CreateDate, StringFormat=yyyy/dd/MM hh:mm:ss}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
@@ -84,7 +109,7 @@
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewBatchResult}">
                                         <Grid>
-                                            <TextBlock Text="{Binding ArchiveStatus}" Visibility="{Binding IshowArch,Converter={StaticResource bool2VisibilityConverter1}}"/>
+                                            <TextBlock Text="{Binding MeasureBatchModel.ArchiveStatus}" Visibility="{Binding IshowArch,Converter={StaticResource bool2VisibilityConverter1}}"/>
                                             <Button Content="归档" Click="Arch_Click" Visibility="{Binding IshowArch,Converter={StaticResource bool2VisibilityConverter}}" Tag="{Binding .}"/>
                                         </Grid>
                                     </DataTemplate>

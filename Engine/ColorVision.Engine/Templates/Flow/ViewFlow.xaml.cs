@@ -412,7 +412,7 @@ namespace ColorVision.Engine.Services.Flow
             }
             Frame frame = new Frame();
 
-            BatchDataHistory batchDataHistory = new BatchDataHistory(frame, new ViewBatchResult(Batch));
+            BatchDataHistory batchDataHistory = new BatchDataHistory(frame, Batch);
 
             Window window = new Window() { Owner = Application.Current.GetActiveWindow() };
             window.Content = batchDataHistory;
@@ -426,9 +426,20 @@ namespace ColorVision.Engine.Services.Flow
 
             DataSummaryPage batchDataHistory = new DataSummaryPage(frame);
             frame.Navigate(batchDataHistory);
-            Window window = new Window();
+
+            Window window = new Window() { Title ="流程结果查询" ,Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Height =720 ,Width =1280 };
             window.Content = frame;
             window.Show();
+        }
+
+        private void Grid1_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (sender is Grid grid)
+            {
+                winf2.Visibility = grid.ActualHeight < 500 || grid.ActualWidth < 300 ? Visibility.Collapsed : Visibility.Visible;
+
+                winf1.Visibility = grid.ActualHeight < 200 || grid.ActualWidth < 100 ? Visibility.Collapsed : Visibility.Visible;
+            }
         }
     }
 }

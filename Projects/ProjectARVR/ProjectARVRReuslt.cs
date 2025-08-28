@@ -146,7 +146,7 @@ namespace ProjectARVR
                 return;
             }
             Frame frame = new Frame();
-            BatchDataHistory batchDataHistory = new BatchDataHistory(frame, new ViewBatchResult(Batch));
+            BatchDataHistory batchDataHistory = new BatchDataHistory(frame, Batch);
             Window window = new Window() { Owner = Application.Current.GetActiveWindow() };
             window.Content = batchDataHistory;
             window.Show();

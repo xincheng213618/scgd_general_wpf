@@ -17,45 +17,21 @@ namespace ColorVision.Engine.Archive.Dao
 {
 
 
-    public class ViewBatchResult : ViewModelBase,ISortID
+    public class ViewBatchResult : ViewModelBase
     {
-        public MeasureBatchModel BatchResultMasterModel { get; set; }
+        public MeasureBatchModel MeasureBatchModel { get; set; }
+
+        public ContextMenu ContextMenu { get; set; }
+
         public ViewBatchResult()
         {
 
         }
         public ViewBatchResult(MeasureBatchModel batchResultMasterModel)
         {
-            BatchResultMasterModel = batchResultMasterModel;
-            Id = batchResultMasterModel.Id;
-            Batch = batchResultMasterModel.Name;
-            BatchCode = batchResultMasterModel.Code;
-            CreateTime = batchResultMasterModel.CreateDate;
-            TotalTime = TimeSpan.FromMilliseconds(batchResultMasterModel.TotalTime);
+            MeasureBatchModel = batchResultMasterModel;
+            ContextMenu = new ContextMenu();
         }
-        [DisplayName("序号")]
-        public int Id { get { return _Id; } set { _Id = value; OnPropertyChanged(); } }
-        private int _Id;
-
-        public ArchiveStatus ArchiveStatus { get => _ArchiveStatus; set { _ArchiveStatus = value; } }
-        private ArchiveStatus _ArchiveStatus;
-
-        public bool IshowArch => ArchiveStatus == ArchiveStatus.Pending || ArchiveStatus == ArchiveStatus.NotArchived;
-
-        [DisplayName("批次号")]
-        public string? Batch { get { return _Batch; } set { _Batch = value; OnPropertyChanged(); } }
-        private string? _Batch;
-        [DisplayName("BatchCode")]
-        public string? BatchCode { get { return _BatchCode; } set { _BatchCode = value; OnPropertyChanged(); } }
-        private string? _BatchCode;
-
-        [DisplayName("测量时间")]
-        public DateTime? CreateTime { get=> _CreateTime;  set { _CreateTime = value; OnPropertyChanged(); } }
-        private DateTime? _CreateTime;
-
-        [DisplayName("TotalTime")]
-        public TimeSpan? TotalTime { get => _TotalTime; set { _TotalTime = value; OnPropertyChanged(); } }
-        private TimeSpan? _TotalTime;
     }
 
     /// <summary>
@@ -98,7 +74,7 @@ namespace ColorVision.Engine.Archive.Dao
             ViewResults.Clear();
             foreach (var item in MySqlControl.GetInstance().DB.Queryable<MeasureBatchModel>().Where(x => x.Code == SearchBox.Text).ToList())
             {
-                ViewResults.AddUnique(new ViewBatchResult(item));
+                ViewResults.Add(new ViewBatchResult(item));
             }
         }
 
@@ -107,7 +83,7 @@ namespace ColorVision.Engine.Archive.Dao
             ViewResults.Clear();
             foreach (var item in MySqlControl.GetInstance().DB.Queryable<MeasureBatchModel>().Where(x => x.Code == SearchBox.Text).ToList())
             {
-                ViewResults.AddUnique(new ViewBatchResult(item));
+                ViewResults.Add(new ViewBatchResult(item));
             }
         }
 
@@ -155,14 +131,14 @@ namespace ColorVision.Engine.Archive.Dao
         {
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
-                Frame.Navigate(new BatchDataHistory(Frame, ViewResults[listView.SelectedIndex]));
+                Frame.Navigate(new BatchDataHistory(Frame, ViewResults[listView.SelectedIndex].MeasureBatchModel));
             }
         }
         private void Arch_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button && button.Tag is ViewBatchResult viewBatchResult && viewBatchResult.BatchCode !=null)
+            if (sender is Button button && button.Tag is ViewBatchResult viewBatchResult && viewBatchResult.MeasureBatchModel.Code !=null)
             {
-                MqttRCService.GetInstance().Archived(viewBatchResult.BatchCode);
+                MqttRCService.GetInstance().Archived(viewBatchResult.MeasureBatchModel.Code);
                 MessageBox.Show("归档指令已经发送");
                 Frame.Refresh();
             }
