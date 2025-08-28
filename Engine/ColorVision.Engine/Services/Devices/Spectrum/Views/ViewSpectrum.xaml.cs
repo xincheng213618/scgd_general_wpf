@@ -283,29 +283,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             wpfplot1.Refresh();
         }
 
-        bool First;
-
-        public void SpectrumDrawPlot(SpectrumData data)
-        {
-            if (!First)
-            {
-                listView1.Visibility = Visibility.Visible;
-                listView2.Visibility = Visibility.Visible;
-                First = true;
-            }
-
-            COLOR_PARA colorParam = data.Data;
-
-            ViewResultSpectrum viewResultSpectrum = new(colorParam);
-            viewResultSpectrum.Id = data.ID;
-            viewResultSpectrum.V = data.V;
-            viewResultSpectrum.I = data.I;
-            ViewResults.Add(viewResultSpectrum);
-
-            ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
-            listView1.SelectedIndex = ViewResults.Count - 1;
-        }
-
         private List<Scatter> ScatterPlots { get; set; } = new List<Scatter>();
 
         private void Button1_Click(object sender, RoutedEventArgs e)
@@ -450,40 +427,25 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         {
             ViewResults.Clear();
             ScatterPlots.Clear();
-            if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text)&& SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
-            {
-                var list = SpectumResultDao.Instance.GetAll();
-                foreach (var item in list)
-                {
-                    ViewResultSpectrum viewResultSpectrum = new(item);
-                    viewResultSpectrum.V = float.NaN;
-                    viewResultSpectrum.I = float.NaN;
-                    ViewResults.Add(viewResultSpectrum);
-                    ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
-                };
-            }
-            else
-            {
 
+            var list = MySqlControl.GetInstance().DB.Queryable<SpectumResultModel>().OrderByDescending(x => x.Id).ToList();
+            foreach (var item in list)
+            {
+                ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(item);
+                viewResultSpectrum.V = float.NaN;
+                viewResultSpectrum.I = float.NaN;
+                ViewResults.Add(viewResultSpectrum);
+                ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
             }
+            ;
             if (ViewResults.Count > 0)
             {
                 listView1.Visibility = Visibility.Visible;
                 listView2.Visibility = Visibility.Visible;
-                First = true;
                 listView1.SelectedIndex = 0;
             }
-            SerchPopup.IsOpen = false;
         }
 
-        private void Search1_Click(object sender, RoutedEventArgs e)
-        {
-            SearchTimeSart.SelectedDateTime = null;
-            SearchTimeEnd.SelectedDateTime = DateTime.Now;
-
-            SerchPopup.IsOpen = true;
-            TextBoxId.Text = string.Empty;
-        }
 
         private void ContextMenu_Click(object sender, RoutedEventArgs e)
         {

@@ -13,6 +13,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
     [SugarTable("t_scgd_measure_result_spectrometer")]
     public class SpectumResultModel : PKModel, IInitTables
     {
+        [SugarColumn(ColumnName = "device_code",IsNullable =true)]
+        public string? DeviceCode { get; set; }
+
+        [SugarColumn(ColumnName = "batch_id", IsNullable = true)]
+        public int? BatchId { get; set; }
+
+        [SugarColumn(ColumnName = "z_index", IsNullable = true)]
+        public int? Zindex { get; set; }
+
         [SugarColumn(ColumnName ="fIntTime")]
         public float? IntTime { get; set; }
 
@@ -25,11 +34,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
         [SugarColumn(ColumnName ="auto_init_dark")]
         public bool IsUseAutoDark { get; set; }
 
-        [SugarColumn(ColumnName ="pid")]
-        public int? Pid { get; set; }
-
-        [SugarColumn(ColumnName ="batch_id")]
-        public int? BatchId { get; set; }
+        [SugarColumn(ColumnName = "self_adaption_init_dark",ColumnDescription = "自适应校零")]
+        public bool self_adaption_init_dark { get; set; }
 
         [SugarColumn(ColumnName ="fPL")]
         public string? fPL { get; set; }
@@ -108,8 +114,4 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
     }
 
 
-    public class SpectumResultDao : BaseTableDao<SpectumResultModel>
-    {
-        public static SpectumResultDao Instance { get; set; } = new SpectumResultDao();
-    }
 }

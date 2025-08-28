@@ -42,30 +42,7 @@
                             <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSwitch}" />
                         </ToggleButton>
                         <Button Content="{x:Static properties:Resources.Inquire}" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
-                        <Button x:Name="Search" Content="高级查询" Click="Search1_Click" Margin="2,0,0,0"/>
-                        <Popup  x:Name="SerchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Search}">
-                            <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="227">
-                                <StackPanel Margin="5">
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="序号" Width="60"/>
-                                        <TextBox  x:Name="TextBoxId" Style="{StaticResource TextBox.Small}" Text=""/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="批次号" Width="60"/>
-                                        <TextBox x:Name="TextBoxBatch"  Style="{StaticResource TextBox.Small}" Text=""/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="开始时间" Width="60"/>
-                                        <hc:DateTimePicker x:Name="SearchTimeSart" SelectedDateTime="{x:Static sys:DateTime.MinValue}" Style="{StaticResource DateTimePicker.Small}" />
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="截至时间" Width="60"/>
-                                        <hc:DateTimePicker x:Name="SearchTimeEnd" SelectedDateTime="{x:Static sys:DateTime.Now}" Style="{StaticResource DateTimePicker.Small}"  />
-                                    </DockPanel>
-                                    <Button Content="查询" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
-                                </StackPanel>
-                            </Border>
-                        </Popup>
+                        <Button x:Name="Search" Content="高级查询" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
                         <Button  Content="交换" Click="Exchange_Click" Margin="2,0,0,0"/>
                     </ToolBar>
                 </ToolBarTray>
@@ -111,7 +88,7 @@
                 </StackPanel>
 
 
-                <ListView Height="{Binding Config.Height}" Grid.Row="1"  d:DataContext="{d:DesignInstance local:SpectralData}" Padding="0,5,5,0"  BorderThickness="0"  x:Name="listView1"  SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                <ListView Height="{Binding Config.Height}" Grid.Row="1" Padding="0,5,5,0"  BorderThickness="0"  x:Name="listView1"  SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.Resources>
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
                     </ListView.Resources>
