@@ -73,13 +73,11 @@ namespace ColorVision.Engine.Archive.Dao
             Frame = MainFrame;
             InitializeComponent();
         }
-        BatchResultMasterDao batchResultMasterDao = new();
-
         public ObservableCollection<ViewBatchResult> ViewResults { get; set; } = new ObservableCollection<ViewBatchResult>();
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
-            var BatchResultMasterModels = batchResultMasterDao.GetAll();
+            var BatchResultMasterModels = MySqlControl.GetInstance().DB.Queryable<MeasureBatchModel>().OrderByDescending(x => x.Id).Take(100).ToList();
             foreach (var item in BatchResultMasterModels)
             {
                 ViewResults.Add(new ViewBatchResult(item));

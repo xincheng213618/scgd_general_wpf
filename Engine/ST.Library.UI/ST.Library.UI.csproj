@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
-  <PropertyGroup>
-    <AssemblyName>ST.Library.UI</AssemblyName>
-    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
-    <UseWindowsForms>True</UseWindowsForms>
-			<LangVersion>11.0</LangVersion>
+	<PropertyGroup>
+		<AssemblyName>ST.Library.UI</AssemblyName>
+		<GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+		<UseWindowsForms>True</UseWindowsForms>
+		<LangVersion>11.0</LangVersion>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<TargetFrameworks>net8.0-windows</TargetFrameworks>
 		<VersionPrefix>1.2.0.2410</VersionPrefix>
-  </PropertyGroup>
-  <PropertyGroup />
-  <ItemGroup />
+	</PropertyGroup>
+	<PropertyGroup />
+	<ItemGroup />
 </Project>

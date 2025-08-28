@@ -414,7 +414,7 @@ namespace ColorVision.Engine.Services.Flow
 
             BatchDataHistory batchDataHistory = new BatchDataHistory(frame, new ViewBatchResult(Batch));
 
-            Window window = new Window();
+            Window window = new Window() { Owner = Application.Current.GetActiveWindow() };
             window.Content = batchDataHistory;
             window.Show();
 

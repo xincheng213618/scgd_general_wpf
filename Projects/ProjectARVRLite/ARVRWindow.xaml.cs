@@ -454,7 +454,9 @@ namespace ProjectARVRLite
             stopwatch.Reset();
             stopwatch.Start();
 
-            BatchResultMasterDao.Instance.Save(new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
+            MeasureBatchModel measureBatchModel = new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code };
+            int id = MySqlControl.GetInstance().DB.Insertable(measureBatchModel).ExecuteReturnIdentity();
+            CurrentFlowResult.BatchId = id;
 
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
@@ -539,11 +541,12 @@ namespace ProjectARVRLite
             }
             else
             {
-                log.Error("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
+                log.Error("流程运行失败" + FlowControlData.EventName + FlowControlData.Params);
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                 CurrentFlowResult.Msg = FlowControlData.Params;
 
-                if (CurrentFlowResult.Msg.Contains("SDK return failed")|| CurrentFlowResult.Msg.Contains("Not get cie file"))
+                //算法失败但是图像是有的，可以帮助用户即使发现原因
+                if (CurrentFlowResult.Msg.Contains("SDK return failed") || CurrentFlowResult.Msg.Contains("BinocularFusion calculation failed") || CurrentFlowResult.Msg.Contains("Not get cie file"))
                 {
                     MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
                     if (Batch != null)

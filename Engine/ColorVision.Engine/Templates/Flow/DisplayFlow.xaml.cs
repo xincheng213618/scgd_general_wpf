@@ -409,7 +409,7 @@ namespace ColorVision.Engine.Templates.Flow
             stopwatch.Restart();
             stopwatch.Start();
 
-            //timer.Change(0, 100); // 启动定时器
+            timer.Change(0, 100); // 启动定时器
             BatchResultMasterDao.Instance.Save(new MeasureBatchModel() { Name = sn, Code = sn, CreateDate = DateTime.Now });
             flowControl.Start(sn);
         }

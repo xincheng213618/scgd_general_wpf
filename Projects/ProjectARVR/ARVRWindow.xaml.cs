@@ -430,9 +430,9 @@ namespace ProjectARVR
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
             stopwatch.Reset();
             stopwatch.Start();
-
-            BatchResultMasterDao.Instance.Save(new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
-
+            MeasureBatchModel measureBatchModel = new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code};
+            int id = MySqlControl.GetInstance().DB.Insertable(measureBatchModel).ExecuteReturnIdentity();
+            CurrentFlowResult.BatchId = id;
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
         }
@@ -522,11 +522,12 @@ namespace ProjectARVR
             }
             else
             {
-                log.Error("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
+                log.Error("流程运行失败" + FlowControlData.EventName + FlowControlData.Params);
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                 CurrentFlowResult.Msg = FlowControlData.Params;
 
-                if (CurrentFlowResult.Msg.Contains("SDK return failed") || CurrentFlowResult.Msg.Contains("Not get cie file"))
+                //算法失败但是图像是有的，可以帮助用户即使发现原因
+                if (CurrentFlowResult.Msg.Contains("SDK return failed") || CurrentFlowResult.Msg.Contains("BinocularFusion calculation failed") || CurrentFlowResult.Msg.Contains("Not get cie file"))
                 {
                     MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
                     if (Batch != null)
@@ -539,10 +540,8 @@ namespace ProjectARVR
                     }
                 }
 
-
-                ViewResultManager.Save(CurrentFlowResult);
                 logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
-
+                ViewResultManager.Save(CurrentFlowResult);
 
                 TryCount = 0;
 
@@ -940,22 +939,25 @@ namespace ProjectARVR
                         }
                     }
 
-                    try
-                    {
-                        string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                        string filePath = Path.Combine(ProjectARVRConfig.Instance.ResultSavePath, $"Chessboard_{timeStr}.csv");
-                        PoiResultCIExyuvData.SaveCsv(result.ViewReslutCheckerboard.PoiResultCIExyuvDatas, filePath);
+                    //if(result.ViewReslutCheckerboard.PoiResultCIExyuvDatas != null)
+                    //{
+                    //    try
+                    //    {
+                    //        string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                    //        string filePath = Path.Combine(ProjectARVRConfig.Instance.ResultSavePath, $"Chessboard_{timeStr}.csv");
+                    //        PoiResultCIExyuvData.SaveCsv(result.ViewReslutCheckerboard.PoiResultCIExyuvDatas, filePath);
+                    //        var csvBuilder = new StringBuilder();
+                    //        csvBuilder.AppendLine();
+                    //        csvBuilder.AppendLine($"Chessboard");
+                    //        csvBuilder.AppendLine($"{result.ViewReslutCheckerboard.ChessboardContrast.Value}");
+                    //        File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
+                    //    }
+                    //    catch (Exception ex)
+                    //    {
+                    //        log.Error(ex);
+                    //    }
+                    //}
 
-                        var csvBuilder = new StringBuilder();
-                        csvBuilder.AppendLine();
-                        csvBuilder.AppendLine($"Chessboard");
-                        csvBuilder.AppendLine($"{result.ViewReslutCheckerboard.ChessboardContrast.Value}");
-                        File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Error(ex);
-                    }
                 }
             }
             else if (result.Model.Contains("MTF_H"))
@@ -1572,6 +1574,7 @@ namespace ProjectARVR
                 }
                 catch (Exception ex)
                 {
+                    log.Info("展示图片报错");
                     log.Error(ex);
                 }
 
@@ -1611,10 +1614,18 @@ namespace ProjectARVR
                 ImageView.OpenImage(result.FileName);
                 ImageView.ImageShow.Clear();
 
+
                 if (result.TestType == ARVRTestType.White)
                 {
                     DVPolygon polygon = new DVPolygon();
                     List<System.Windows.Point> point1s = new List<System.Windows.Point>();
+
+                    if(result.ViewResultWhite == null || result.ViewResultWhite.PoiResultCIExyuvDatas ==null || result.ViewResultWhite.AlgResultLightAreaModels ==null)
+                    {
+                        log.Info("找不到白画面的结果");
+                        return;
+                    }
+
                     foreach (var item in result.ViewResultWhite.AlgResultLightAreaModels)
                     {
                         point1s.Add(new System.Windows.Point((int)item.PosX, (int)item.PosY));
@@ -1666,7 +1677,11 @@ namespace ProjectARVR
 
                 if (result.TestType == ARVRTestType.Black)
                 {
-
+                    if (result.ViewResultBlack == null || result.ViewResultBlack.PoiResultCIExyuvDatas == null)
+                    {
+                        log.Info("找不到黑画面的结果");
+                        return;
+                    }
                     foreach (var poiResultCIExyuvData in result.ViewResultBlack.PoiResultCIExyuvDatas)
                     {
                         var item = poiResultCIExyuvData.Point;
@@ -1703,6 +1718,11 @@ namespace ProjectARVR
 
                 if (result.TestType == ARVRTestType.Chessboard)
                 {
+                    if (result.ViewReslutCheckerboard == null || result.ViewReslutCheckerboard.PoiResultCIExyuvDatas == null)
+                    {
+                        log.Info("找不到棋盘格的结果");
+                        return;
+                    }
                     foreach (var poiResultCIExyuvData in result.ViewReslutCheckerboard.PoiResultCIExyuvDatas)
                     {
                         var item = poiResultCIExyuvData.Point;
@@ -1740,6 +1760,12 @@ namespace ProjectARVR
                 if (result.TestType == ARVRTestType.MTFH)
                 {
 
+                    if (result.ViewRelsultMTFH == null || result.ViewRelsultMTFH.MTFDetailViewReslut == null)
+                    {
+                        log.Info("找不到MTFH的结果");
+                        return;
+                    }
+
                     int id = 0;
                     if (result.ViewRelsultMTFH.MTFDetailViewReslut.MTFResult.result.Count != 0)
                     {
@@ -1760,6 +1786,11 @@ namespace ProjectARVR
                 }
                 if (result.TestType == ARVRTestType.MTFV)
                 {
+                    if (result.ViewRelsultMTFV == null || result.ViewRelsultMTFV.MTFDetailViewReslut == null)
+                    {
+                        log.Info("找不到MTFV的结果");
+                        return;
+                    }
                     int id = 0;
                     if (result.ViewRelsultMTFV.MTFDetailViewReslut.MTFResult.result.Count != 0)
                     {
@@ -1781,6 +1812,12 @@ namespace ProjectARVR
 
                 if (result.TestType == ARVRTestType.Distortion)
                 {
+                    if (result.ViewReslutDistortionGhost == null || result.ViewReslutDistortionGhost.Distortion2View == null)
+                    {
+                        log.Info("找不到畸变的结果");
+                        return;
+                    }
+
                     if (result.ViewReslutDistortionGhost.Distortion2View.DistortionReslut.TVDistortion != null)
                     {
                         if (result.ViewReslutDistortionGhost.Distortion2View.DistortionReslut.TVDistortion.FinalPoints != null)
@@ -1800,7 +1837,6 @@ namespace ProjectARVR
                         }
                     }
                 }
-
 
             });
 
@@ -1866,7 +1902,15 @@ namespace ProjectARVR
                     break;
                 case ARVRTestType.Black:
                     outtext += $"黑画面 测试项：自动AA区域定位算法+关注点算法+序列对比度算法(中心亮度比值)" + Environment.NewLine;
-                    outtext += $"FOFOContrast:{result.ViewResultBlack.FOFOContrast.TestValue}  LowLimit:{result.ViewResultBlack.FOFOContrast.LowLimit} UpLimit:{result.ViewResultBlack.FOFOContrast.UpLimit},Rsult{(result.ViewResultBlack.FOFOContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    if (result.ViewResultBlack.PoiResultCIExyuvDatas != null)
+                    {
+                        foreach (var item in result.ViewResultBlack.PoiResultCIExyuvDatas)
+                        {
+                            outtext += $"{item.Name}  X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
+                        }
+                    }
+                    if (result.ViewResultBlack.FOFOContrast !=null)
+                        outtext += $"FOFOContrast:{result.ViewResultBlack.FOFOContrast.TestValue}  LowLimit:{result.ViewResultBlack.FOFOContrast.LowLimit} UpLimit:{result.ViewResultBlack.FOFOContrast.UpLimit},Rsult{(result.ViewResultBlack.FOFOContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     break;
                 case ARVRTestType.MTFH:
                     outtext += $"水平MTF 测试项：自动AA区域定位算法+关注点+MTF算法" + Environment.NewLine;

@@ -314,10 +314,13 @@ public class CVBaseServerNode : CVCommonNode
 		{
 			trans.trans_action.GetStartNode().DoPublish(act);
 		}
-		Thread thread = new Thread(()=>WaitingOverTime(cmd));
-		thread.Start();
-
-    }
+		Task.Run(delegate
+		{
+			WaitingOverTime(cmd);
+		});
+		//Thread thread = new Thread(()=>WaitingOverTime(cmd));
+		//thread.Start();
+	}
 
 	public bool DoServerStatusRecv(CVBaseDataFlowResp statusEvent)
 	{
