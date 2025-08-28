@@ -87,10 +87,12 @@ namespace ColorVision.Engine.MQTT
 
         private async Task MQTTClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
         {
-            var message = $"{DateTime.Now:HH:mm:ss.fff} Received: {e.ApplicationMessage.Topic} {Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment)}, QoS: [{e.ApplicationMessage.QualityOfServiceLevel}], Retain: [{e.ApplicationMessage.Retain}]";
-            log.Logger.Log(typeof(MQTTControl), log4net.Core.Level.Trace, message, null);
-            MQTTLogChanged?.Invoke(new MQTTLog(1, message, e.ApplicationMessage.Topic, Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment)));
-
+             if (log.IsDebugEnabled)
+            {
+                var message = $"{DateTime.Now:HH:mm:ss.fff} Received: {e.ApplicationMessage.Topic} {Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment)}, QoS: [{e.ApplicationMessage.QualityOfServiceLevel}], Retain: [{e.ApplicationMessage.Retain}]";
+                log.Logger.Log(typeof(MQTTControl), log4net.Core.Level.Trace, message, null);
+                MQTTLogChanged?.Invoke(new MQTTLog(1, message, e.ApplicationMessage.Topic, Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment)));
+            }
             if (ApplicationMessageReceivedAsync != null)
             {
                 await ApplicationMessageReceivedAsync(e);

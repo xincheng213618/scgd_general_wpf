@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Transactions;
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -313,11 +314,10 @@ public class CVBaseServerNode : CVCommonNode
 		{
 			trans.trans_action.GetStartNode().DoPublish(act);
 		}
-		Task.Run(delegate
-		{
-			WaitingOverTime(cmd);
-		});
-	}
+		Thread thread = new Thread(()=>WaitingOverTime(cmd));
+		thread.Start();
+
+    }
 
 	public bool DoServerStatusRecv(CVBaseDataFlowResp statusEvent)
 	{

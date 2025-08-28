@@ -37,9 +37,6 @@ namespace ColorVision.Engine.Templates.Flow
         public bool IsShowLargeFlow { get => _IsShowLargeFlow; set { _IsShowLargeFlow = value; OnPropertyChanged(); } }
         private bool _IsShowLargeFlow;
 
-        [DisplayName("新消息UI")]
-        public bool IsNewMsgUI{ get => _IsNewMsgUI; set { _IsNewMsgUI = value; OnPropertyChanged(); } }
-        private bool _IsNewMsgUI = true;
         public int LastSelectFlow { get => _LastSelectFlow; set { _LastSelectFlow = value; OnPropertyChanged(); } }
         private int _LastSelectFlow;
 
