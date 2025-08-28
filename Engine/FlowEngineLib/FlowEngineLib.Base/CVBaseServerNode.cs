@@ -314,10 +314,10 @@ public class CVBaseServerNode : CVCommonNode
 		{
 			trans.trans_action.GetStartNode().DoPublish(act);
 		}
-		Task.Run(delegate
-		{
-			WaitingOverTime(cmd);
-		});
+		//Task.Run(delegate
+		//{
+		//	WaitingOverTime(cmd);
+		//});
 		//Thread thread = new Thread(()=>WaitingOverTime(cmd));
 		//thread.Start();
 	}
@@ -346,7 +346,7 @@ public class CVBaseServerNode : CVCommonNode
 			if (serverResponse.Status != ActionStatusEnum.Pending && cVTransByEvent.m_sever_actionEvent.ContainsKey(serverResponse.Id))
 			{
 				CVBaseEventCmd cVBaseEventCmd = cVTransByEvent.m_sever_actionEvent[serverResponse.Id];
-				cVBaseEventCmd.waiter.SignalMessageReceived();
+				//cVBaseEventCmd.waiter.SignalMessageReceived();
 				cVBaseEventCmd.resp = serverResponse;
 				OnServerResponse(serverResponse, cVTransByEvent.trans_action);
 				if (!IsCacheActResponse(cVTransByEvent, serverResponse))

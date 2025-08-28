@@ -49,7 +49,7 @@ public class CVTransAction
 	{
 		foreach (KeyValuePair<string, CVBaseEventCmd> item in m_sever_actionEvent)
 		{
-			item.Value.waiter.SignalMessageReceived();
+			//item.Value.waiter.SignalMessageReceived();
 		}
 	}
 
