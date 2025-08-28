@@ -26,6 +26,9 @@ namespace ColorVision.Engine.Services.Flow
         public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
         public  FlowEngineControl FlowEngineControl { get; set; }
+
+        public static FlowEngineManager FlowEngineManager => FlowEngineManager.GetInstance();
+
         public View View { get; set; }
         public RelayCommand AutoSizeCommand { get; set; }
 
@@ -412,24 +415,12 @@ namespace ColorVision.Engine.Services.Flow
             }
             Frame frame = new Frame();
 
-            BatchDataHistory batchDataHistory = new BatchDataHistory(frame, Batch);
+            MeasureBatchPage batchDataHistory = new MeasureBatchPage(frame, Batch);
 
             Window window = new Window() { Owner = Application.Current.GetActiveWindow() };
             window.Content = batchDataHistory;
             window.Show();
 
-        }
-
-        private void Button1_Click(object sender, RoutedEventArgs e)
-        {
-            Frame frame = new Frame();
-
-            DataSummaryPage batchDataHistory = new DataSummaryPage(frame);
-            frame.Navigate(batchDataHistory);
-
-            Window window = new Window() { Title ="流程结果查询" ,Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Height =720 ,Width =1280 };
-            window.Content = frame;
-            window.Show();
         }
 
         private void Grid1_SizeChanged(object sender, SizeChangedEventArgs e)

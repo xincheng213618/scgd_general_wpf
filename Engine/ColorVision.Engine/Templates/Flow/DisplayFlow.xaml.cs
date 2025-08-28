@@ -104,11 +104,6 @@ namespace ColorVision.Engine.Templates.Flow
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = FlowEngineManager.GetInstance();
-            this.ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = "开始执行(_S)", Command = EngineCommands.StartExecutionCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = "停止执行(_S)", Command = EngineCommands.StopExecutionCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = "属性", Command = Config.EditCommand });
-
             this.SetIconResource("DrawingImageFlow", View.View);
 
             this.AddViewConfig(View, ComboxView);

@@ -8,17 +8,17 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Archive.Dao
+namespace ColorVision.Engine
 {
     /// <summary>
-    /// BatchDataHistory.xaml 的交互逻辑
+    /// MeasureBatchPage.xaml 的交互逻辑
     /// </summary>
-    public partial class BatchDataHistory : Page
+    public partial class MeasureBatchPage : Page
     {
         public Frame Frame { get; set; }
         public MeasureBatchModel MeasureBatchModel { get; set; }
 
-        public BatchDataHistory(Frame frame, MeasureBatchModel measureBatchModel)
+        public MeasureBatchPage(Frame frame, MeasureBatchModel measureBatchModel)
         {
             Frame = frame;
             MeasureBatchModel = measureBatchModel;
@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Archive.Dao
 
         private void Page_Initialized(object sender, EventArgs e)
         {
-            TextBatch.Text = "批次 " + MeasureBatchModel.Code +" 结果";
+            Title = "批次 " + MeasureBatchModel.Code +" 结果";
 
             listView1.ItemsSource = ViewResultImages;
             listView2.ItemsSource = ViewResultAlgs;
@@ -44,14 +44,12 @@ namespace ColorVision.Engine.Archive.Dao
             {
                 ViewResultImages.AddUnique(new ViewResultImage(item));
             }
-            if (ViewResultImages.Count == 0) StactPanelImage.Visibility = Visibility.Collapsed;
 
             ViewResultAlgs.Clear();
             foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(MeasureBatchModel.Id))
             {
                 ViewResultAlgs.AddUnique(new ViewResultAlg(item));
             }
-            if (ViewResultAlgs.Count == 0) StactPanelAlg.Visibility = Visibility.Collapsed;
 
         }
 

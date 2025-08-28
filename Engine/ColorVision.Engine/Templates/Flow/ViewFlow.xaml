@@ -110,7 +110,7 @@
                     <Slider x:Name="ZoomSlider" Value="{Binding CanvasScale}" Maximum="5" Minimum="0.2" Margin="0,0,0,5" />
                     <TextBox x:FieldModifier="public"  x:Name="logTextBox" TextWrapping="WrapWithOverflow" Height="105" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" Margin="0,0,0,5" />
                     <Button Content="查询结果" Click="Button_Click"/>
-                    <Button Content="流程结果管理" Click="Button1_Click"/>
+                    <Button Content="流程结果管理"  Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"/>
                 </StackPanel>
             </Border>
 

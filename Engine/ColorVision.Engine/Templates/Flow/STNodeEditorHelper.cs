@@ -277,7 +277,8 @@ namespace ColorVision.Engine.Templates.Flow
 
                 AddStackPanel(name => algorithmGhostNode.DeviceCode = name, algorithmGhostNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
 
-                AddStackPanel1(name => algorithmGhostNode.TempName = name, algorithmGhostNode.TempName, "Ghost", new TemplateGhostQK(), new TemplateGhost());
+                AddStackPanel(name => algorithmGhostNode.TempName = name, algorithmGhostNode.TempName, "GhostQK", new TemplateGhostQK());
+                AddStackPanel(name => algorithmGhostNode.TempName = name, algorithmGhostNode.TempName, "Ghost", new TemplateGhost());
             }
 
 
@@ -343,10 +344,13 @@ namespace ColorVision.Engine.Templates.Flow
                             AddStackPanel(name => algorithmNode1.POITempName = name, algorithmNode1.POITempName, "POI", new TemplatePoi());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmARVRType.FOV:
-                            AddStackPanel1(name => algorithmNode1.TempName = name, algorithmNode1.TempName, "FOV", new TemplateDFOV(), new TemplateFOV());
+                            AddStackPanel(name => algorithmNode1.TempName = name, algorithmNode1.TempName, "DFOV", new TemplateDFOV());
+                            AddStackPanel(name => algorithmNode1.TempName = name, algorithmNode1.TempName, "FOV", new TemplateFOV());
+
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmARVRType.畸变:
-                            AddStackPanel1(name => algorithmNode1.TempName = name, algorithmNode1.TempName, "畸变", new TemplateDistortion2(), new TemplateDistortionParam());
+                            AddStackPanel(name => algorithmNode1.TempName = name, algorithmNode1.TempName, "畸变2", new TemplateDistortion2());
+                            AddStackPanel(name => algorithmNode1.TempName = name, algorithmNode1.TempName, "畸变", new TemplateDistortionParam());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmARVRType.SFR_FindROI:
                             AddStackPanel(name => algorithmNode1.TempName = name, algorithmNode1.TempName, "SFR_FindROI", new TemplateSFRFindROI());
@@ -431,13 +435,16 @@ namespace ColorVision.Engine.Templates.Flow
                             AddStackPanel(name => algorithmNode.POITempName = name, algorithmNode.POITempName, "POI", new TemplatePoi());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.FOV:
-                            AddStackPanel1(name => algorithmNode.TempName = name, algorithmNode.TempName, "FOV", new TemplateDFOV(), new TemplateFOV());
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "DFOV", new TemplateDFOV());
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "FOV", new TemplateFOV());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.鬼影:
-                            AddStackPanel1(name => algorithmNode.TempName = name, algorithmNode.TempName, "畸变", new TemplateGhostQK(), new TemplateGhost());
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "GhostQK", new TemplateGhostQK());
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "Ghost", new TemplateGhost());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.畸变:
-                            AddStackPanel1(name => algorithmNode.TempName = name, algorithmNode.TempName, "畸变", new TemplateDistortion2(), new TemplateDistortionParam());
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "Distortion2", new TemplateDistortion2());
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "Distortion", new TemplateDistortionParam());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.灯珠检测:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯珠检测", new TemplateLedCheck());
@@ -885,11 +892,6 @@ namespace ColorVision.Engine.Templates.Flow
             SignStackPanel.Children.Add(dockPanel);
         }
 
-        void AddStackPanel1<T, T1>(Action<string> updateStorageAction, string tempName, string signName, ITemplateJson<T> template, ITemplate<T1> template1) where T : TemplateJsonParam, new() where T1: ParamModBase, new()
-        {
-            AddStackPanel(updateStorageAction, tempName, signName, template);
-            AddStackPanel(updateStorageAction, tempName, signName, template1);
-        }
 
         void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplateJson<T> template) where T : TemplateJsonParam, new()
         {
@@ -900,7 +902,6 @@ namespace ColorVision.Engine.Templates.Flow
                 SelectedValuePath = "Value",
                 DisplayMemberPath = "Key",
                 Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small"),
-                Width = 120
             };
 
             HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
@@ -921,14 +922,6 @@ namespace ColorVision.Engine.Templates.Flow
                 STNodePropertyGrid1.Refresh();
             };
 
-
-            Grid grid = new Grid
-            {
-                Width = 20,
-                Margin = new Thickness(5, 0, 0, 0),
-                HorizontalAlignment = System.Windows.HorizontalAlignment.Left
-            };
-
             // 创建 TextBlock
             TextBlock textBlock = new TextBlock
             {
@@ -940,26 +933,25 @@ namespace ColorVision.Engine.Templates.Flow
             };
 
             // 创建 Button
-            Button button = new Button
+            Button OpenTemplateEditorButton = new Button
             {
                 Width = 20,
-                BorderBrush = Brushes.Transparent,
-                Background = Brushes.Transparent,
+                Padding = new Thickness(2),
                 BorderThickness = new Thickness(0),
+                Margin = new Thickness(5, 0, 0, 0),
             };
-
-            button.Click += (s, e) =>
+            OpenTemplateEditorButton.Content = textBlock;
+            OpenTemplateEditorButton.Click += (s, e) =>
             {
                 new TemplateEditorWindow(template, comboBox.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
             };
 
             // 将控件添加到 Grid
-            grid.Children.Add(textBlock);
-            grid.Children.Add(button);
-
+            DockPanel.SetDock(OpenTemplateEditorButton, Dock.Right);
+            dockPanel.Children.Add(OpenTemplateEditorButton);
 
             dockPanel.Children.Add(comboBox);
-            dockPanel.Children.Add(grid);
+
             SignStackPanel.Children.Add(dockPanel);
         }
 

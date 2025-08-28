@@ -137,7 +137,7 @@ namespace ProjectARVRLite
                 return;
             }
             Frame frame = new Frame();
-            BatchDataHistory batchDataHistory = new BatchDataHistory(frame, new ViewBatchResult(Batch));
+            MeasureBatchPage batchDataHistory = new BatchDataHistory(frame, new ViewBatchResult(Batch));
             Window window = new Window() { Owner = Application.Current.GetActiveWindow() };
             window.Content = batchDataHistory;
             window.Show();

@@ -1,7 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.Archive.Dao;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Solution.Searches;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
@@ -13,9 +16,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Archive.Dao
+namespace ColorVision.Engine
 {
-
 
     public class ViewBatchResult : ViewModelBase
     {
@@ -34,30 +36,73 @@ namespace ColorVision.Engine.Archive.Dao
         }
     }
 
-    /// <summary>
-    /// DataSummaryPage.xaml 的交互逻辑
-    /// </summary>
-    public partial class DataSummaryPage : Page,ISolutionPage
+    [DisplayName("流程批次配置")]
+    public class MeasureBatchManagerPageConfig : ViewConfigBase, IConfig
     {
-        public string PageTitle => nameof(DataSummaryPage);
+        public static MeasureBatchManagerPageConfig Instance => ConfigService.Instance.GetRequiredService<MeasureBatchManagerPageConfig>();
+    }
 
-        public Frame Frame { get; set; }
+    public class MeasureBatchManager
+    {
+        private static MeasureBatchManager _instance;
+        private static readonly object _locker = new();
+        public static MeasureBatchManager GetInstance() { lock (_locker) { return _instance ??= new MeasureBatchManager(); } }
 
-        public DataSummaryPage() { }
-        public DataSummaryPage(Frame MainFrame)
-        {
-            Frame = MainFrame;
-            InitializeComponent();
-        }
+        public MeasureBatchManagerPageConfig Config { get; set; }
         public ObservableCollection<ViewBatchResult> ViewResults { get; set; } = new ObservableCollection<ViewBatchResult>();
-        private void Page_Loaded(object sender, RoutedEventArgs e)
+        public RelayCommand GenericQueryCommand { get; set; }
+
+        public MeasureBatchManager()
+        {
+            Config = ConfigService.Instance.GetRequiredService<MeasureBatchManagerPageConfig>();
+            GenericQueryCommand = new RelayCommand(a => GenericQuery());
+
+            Load();
+        }
+
+        public void Load()
         {
             ViewResults.Clear();
-            var BatchResultMasterModels = MySqlControl.GetInstance().DB.Queryable<MeasureBatchModel>().OrderByDescending(x => x.Id).Take(100).ToList();
+            var BatchResultMasterModels = MySqlControl.GetInstance().DB.Queryable<MeasureBatchModel>().OrderByDescending(x => x.Id).OrderBy(x => x.Id, Config.OrderByType).Take(Config.Count).ToList();
             foreach (var item in BatchResultMasterModels)
             {
                 ViewResults.Add(new ViewBatchResult(item));
             }
+        }
+
+        public void GenericQuery()
+        {
+            GenericQuery<MeasureBatchModel, ViewBatchResult> genericQuery = new GenericQuery<MeasureBatchModel, ViewBatchResult>(MySqlControl.GetInstance().DB, ViewResults, t => new ViewBatchResult(t));
+            GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
+            genericQueryWindow.ShowDialog();
+        }
+
+    }
+
+
+        /// <summary>
+        /// MeasureBatchManagerPage.xaml 的交互逻辑
+        /// </summary>
+    public partial class MeasureBatchManagerPage : Page,ISolutionPage
+    {
+        public string PageTitle => nameof(MeasureBatchManagerPage);
+
+        public static MeasureBatchManager MeasureBatchManager => MeasureBatchManager.GetInstance();
+
+        public static ObservableCollection<ViewBatchResult> ViewResults => MeasureBatchManager.ViewResults;
+
+        public Frame Frame { get; set; }
+
+        public MeasureBatchManagerPage() { }
+        public MeasureBatchManagerPage(Frame MainFrame)
+        {
+            Frame = MainFrame;
+            InitializeComponent();
+        }
+        private void Page_Loaded(object sender, RoutedEventArgs e)
+        {
+            this.DataContext = MeasureBatchManager.GetInstance();
+
         }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -131,7 +176,7 @@ namespace ColorVision.Engine.Archive.Dao
         {
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
-                Frame.Navigate(new BatchDataHistory(Frame, ViewResults[listView.SelectedIndex].MeasureBatchModel));
+                Frame.Navigate(new MeasureBatchPage(Frame, ViewResults[listView.SelectedIndex].MeasureBatchModel));
             }
         }
         private void Arch_Click(object sender, RoutedEventArgs e)
