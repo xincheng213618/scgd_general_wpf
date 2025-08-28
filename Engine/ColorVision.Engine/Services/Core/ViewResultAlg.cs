@@ -18,6 +18,9 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services
 {
+
+
+
     public class ViewResultAlg : ViewModelBase, ISortID
     {
         public ObservableCollection<IViewResult> ViewResults { get; set; }

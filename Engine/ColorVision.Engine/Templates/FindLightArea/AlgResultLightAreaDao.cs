@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.Algorithms;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor.Draw;
 using SqlSugar;
 using System.Collections.Generic;
@@ -47,12 +46,12 @@ namespace ColorVision.Engine.Templates.FindLightArea
         }
 
 
-        public override void Load(AlgorithmView view, ViewResultAlg result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             result.ViewResults ??= new ObservableCollection<IViewResult>(AlgResultLightAreaDao.Instance.GetAllByPid(result.Id));
         }
 
-        public override void Handle(AlgorithmView view, ViewResultAlg result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             view.ImageView.ImageShow.Clear();
 
@@ -86,14 +85,14 @@ namespace ColorVision.Engine.Templates.FindLightArea
             List<string> bdHeader = new List<string> { "PosX", "PosY" };
 
 
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
-                view.listViewSide.ItemsSource = null;
+                view.ListView.ItemsSource = null;
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
         }
     }

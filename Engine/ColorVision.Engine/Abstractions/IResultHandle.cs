@@ -1,7 +1,11 @@
 ﻿#pragma warning disable CA1707,CA1711
 using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.ImageEditor;
+using ColorVision.UI.Sorts;
+using CVCommCore.CVAlgorithm;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Windows.Controls;
 
 namespace ColorVision.Engine
 {
@@ -66,11 +70,22 @@ namespace ColorVision.Engine
         Math_DataConvert = 70,
         BlackMura_Calc = 80
     }
+
+    public interface IViewImageA
+    {
+        ImageView ImageView { get; set; }
+        ListView ListView { get; set; }
+        ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; }
+
+        TextBox SideTextBox { get; set; }
+        void AddPOIPoint(List<POIPoint> PoiPoints);
+    }
+
     public interface IResultHandle
     {
         public bool CanHandle1(ViewResultAlg result);
 
-        void Handle(AlgorithmView view, ViewResultAlg result);
+        void Handle(IViewImageA view, ViewResultAlg result);
         void SideSave(ViewResultAlg result, string selectedPath);
     }
 
@@ -86,9 +101,9 @@ namespace ColorVision.Engine
             return false;
         }
 
-        public abstract void Handle(AlgorithmView view, ViewResultAlg result);
+        public abstract void Handle(IViewImageA view, ViewResultAlg result);
 
-        public virtual void Load(AlgorithmView view, ViewResultAlg result)
+        public virtual void Load(IViewImageA view, ViewResultAlg result)
         {
 
         }

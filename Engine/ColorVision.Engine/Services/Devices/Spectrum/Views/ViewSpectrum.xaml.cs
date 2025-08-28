@@ -1,11 +1,9 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
-using cvColorVision;
 using ScottPlot;
 using ScottPlot.Plottables;
 using System;

@@ -1,5 +1,4 @@
 ﻿using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.UI;
 using CVCommCore;

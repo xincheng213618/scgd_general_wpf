@@ -2,7 +2,6 @@
 
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI.Extension;
 using log4net;
@@ -69,7 +68,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
             return value;
         }
 
-        public override void Load(AlgorithmView view, ViewResultAlg result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -84,7 +83,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
             }
         }
 
-        public override void Handle(AlgorithmView view, ViewResultAlg result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             void OpenSource()
             {
@@ -120,13 +119,13 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
             List<string> header = new() { "Point9Distortion", "TVDistortion", "OpticDistortion" };
             List<string> bdHeader = new() { "DistortionReslut.Point9Distortion", "DistortionReslut.TVDistortion", "DistortionReslut.OpticDistortion" };
 
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
 
             view.SideTextBox.Visibility = System.Windows.Visibility.Visible;

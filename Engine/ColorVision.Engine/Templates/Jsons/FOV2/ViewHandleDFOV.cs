@@ -2,7 +2,6 @@
 
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using log4net;
 using SqlSugar;
 using System.Collections.Generic;
@@ -115,7 +114,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
         }
 
 
-        public override void Load(AlgorithmView view, ViewResultAlg result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -130,7 +129,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
             }
         }
 
-        public override void Handle(AlgorithmView view, ViewResultAlg result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
@@ -138,13 +137,13 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
             List<string> header = new() { "D_Fov", "H_Fov", "V_FOV", "ClolorVisionH_Fov", "ClolorVisionV_Fov", "LeftDownToRightUp", "LeftUpToRightDown" };
             List<string> bdHeader = new() { "D_Fov", "H_Fov", "V_FOV", "ClolorVisionH_Fov", "ClolorVisionV_Fov", "LeftDownToRightUp" , "LeftUpToRightDown" };
 
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
         }
 

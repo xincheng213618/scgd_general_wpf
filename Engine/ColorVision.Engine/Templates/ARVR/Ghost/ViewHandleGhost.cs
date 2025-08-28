@@ -3,7 +3,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Media;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using System;
@@ -90,7 +89,7 @@ namespace ColorVision.Engine.Templates.Ghost
             }
             return field;
         }
-        public override void Load(AlgorithmView view, ViewResultAlg result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -104,7 +103,7 @@ namespace ColorVision.Engine.Templates.Ghost
             }
         }
 
-        public override void Handle(AlgorithmView view, ViewResultAlg result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults.Count != 0 && result.ViewResults[0] is AlgResultGhostModel viewResultGhost)
             {
@@ -169,13 +168,13 @@ namespace ColorVision.Engine.Templates.Ghost
             List<string> header = new() { "质心坐标", "光斑灰度", "鬼影灰度" };
             List<string> bdHeader = new() { "LEDCenters", "LEDBlobGray", "GhostAverageGray" };
 
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
         }
 

@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using CVCommCore.CVAlgorithm;
 using System.Collections.Generic;
@@ -16,7 +15,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
     {
         public override List<ViewResultAlgType> CanHandle { get;  } = new List<ViewResultAlgType>() { ViewResultAlgType.BuildPOI};
 
-        public override void Load(AlgorithmView view, ViewResultAlg result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -32,7 +31,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
 
         }
 
-        public override void Handle(AlgorithmView view, ViewResultAlg result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
@@ -51,13 +50,13 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
             header = new() { "Name", "位置", "大小", "形状" };
             bdHeader = new() { "Name", "PixelPos", "PixelSize", "Shapes" };
 
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
         }
     }

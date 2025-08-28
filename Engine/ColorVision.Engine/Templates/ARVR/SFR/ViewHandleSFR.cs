@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CS8604,CS8602,CS8629
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.ARVR.SFR;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
@@ -107,7 +106,7 @@ namespace ColorVision.Engine.Templates.SFR
         }
 
 
-        public override void Load(AlgorithmView view, ViewResultAlg result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -131,7 +130,7 @@ namespace ColorVision.Engine.Templates.SFR
             }
         }
 
-        public override void Handle(AlgorithmView view, ViewResultAlg result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
@@ -162,14 +161,14 @@ namespace ColorVision.Engine.Templates.SFR
             List<string> header = new() { "RoiX", "RoiY", "RoiWidth", "RoiHeight", "Pdfrequency", "PdomainSamplingData" };
             List<string> bdHeader = new() { "RoiX", "RoiY", "RoiWidth", "RoiHeight", "Pdfrequency", "PdomainSamplingData" };
 
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
-                view.listViewSide.ItemsSource = null;
+                view.ListView.ItemsSource = null;
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
         }
     }

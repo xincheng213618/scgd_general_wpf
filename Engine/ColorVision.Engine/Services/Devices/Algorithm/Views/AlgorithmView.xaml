@@ -31,7 +31,6 @@
                 <RowDefinition x:Name="ListRow1" Height="*"/>
                 <RowDefinition x:Name="ListRow2" Height="Auto"/>
             </Grid.RowDefinitions>
-            <media:ImageView Grid.Row="0" x:Name="ImageView"></media:ImageView>
             <Grid  Grid.Row="1" >
                 <Grid.RowDefinitions>
                     <RowDefinition Height="32"/>
@@ -212,7 +211,7 @@
             </ListView.View>
         </ListView>
 
-        <TextBox x:Name="SideTextBox" Visibility="Collapsed" Panel.ZIndex="9" Grid.Column="1" Width="{Binding ActualWidth,ElementName=listViewSide}" TextWrapping="WrapWithOverflow" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
+        <TextBox x:Name="TextBoxside" Visibility="Collapsed" Panel.ZIndex="9" Grid.Column="1" Width="{Binding ActualWidth,ElementName=listViewSide}" TextWrapping="WrapWithOverflow" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
 
         <GridSplitter  Grid.Column="1"  Panel.ZIndex="999" Background="#1FFFFFFF"  Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted1"  />
 

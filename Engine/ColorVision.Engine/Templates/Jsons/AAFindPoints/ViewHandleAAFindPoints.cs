@@ -4,7 +4,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using log4net;
@@ -114,7 +113,7 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
         }
 
 
-        public override void Load(AlgorithmView view, ViewResultAlg result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -148,7 +147,7 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
             }
         }
 
-        public override void Handle(AlgorithmView view, ViewResultAlg result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
@@ -170,23 +169,23 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
 
                 List<string> header = new() { "ID", "X", "Y" };
                 List<string> bdHeader = new() { "Id", "X", "Y" };
-                if (view.listViewSide.View is GridView gridView)
+                if (view.ListView.View is GridView gridView)
                 {
                     view.LeftGridViewColumnVisibilitys.Clear();
                     gridView.Columns.Clear();
                     for (int i = 0; i < header.Count; i++)
                         gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
 
-                    view.listViewSide.ItemsSource = new ObservableCollection<Corner>(viewResult.AAFindPoint.Corner);
+                    view.ListView.ItemsSource = new ObservableCollection<Corner>(viewResult.AAFindPoint.Corner);
                 }
             }
             else
             {
-                if (view.listViewSide.View is GridView gridView)
+                if (view.ListView.View is GridView gridView)
                 {
                     gridView.Columns.Clear();
                 }
-                view.listViewSide.ItemsSource = null;
+                view.ListView.ItemsSource = null;
             }
         }
     }

@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor.Draw;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -18,7 +17,7 @@ namespace ColorVision.Engine.Templates.Matching
         public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.AOI};
 
 
-        public override void Load(AlgorithmView view, ViewResultAlg result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
            if (result.ViewResults != null)
             {
@@ -27,7 +26,7 @@ namespace ColorVision.Engine.Templates.Matching
             }
         }
 
-        public override void Handle(AlgorithmView view, ViewResultAlg result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
 
             if (File.Exists(result.FilePath))
@@ -58,13 +57,13 @@ namespace ColorVision.Engine.Templates.Matching
             List<string> header =  new() { "分数", "角度", "中心点x" , "中心点y", "左上点x" , "左上点y" , "右上点x" , "右上点y" , "右下点x", "右下点y", "左下点x", "左下点x" };
             List<string> bdHeader = new() { "Score", "Angle", "CenterX", "CenterY", "LeftTopX", "LeftTopY" , "RightTopX", "RightTopY", "RightBottomX", "RightBottomY" , "LeftBottomX", "LeftBottomY" };
 
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
         }
     }

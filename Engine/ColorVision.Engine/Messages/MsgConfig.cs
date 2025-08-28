@@ -4,7 +4,6 @@ using Newtonsoft.Json;
 using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
-using System.Windows;
 
 namespace ColorVision.Engine.Messages
 {

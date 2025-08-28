@@ -1,5 +1,4 @@
 ﻿using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Controls;
@@ -18,7 +17,7 @@ namespace ColorVision.Engine.Templates.Compliance
             ViewResultAlgType.Compliance_Math_CIE_Y,
         };
 
-        public override void Handle(AlgorithmView view, ViewResultAlg result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             view.ImageView.ImageShow.Clear();
 
@@ -36,13 +35,13 @@ namespace ColorVision.Engine.Templates.Compliance
             header = new() { "名称", "值", "Validate" };
             bdHeader = new() { "Name", "DataValue", "ValidateResult" };
 
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
         }
     }

@@ -28,13 +28,19 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
+
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
-    public partial class AlgorithmView : UserControl,IView,IDisposable
+    public partial class AlgorithmView : UserControl,IView,IDisposable, IViewImageA
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AlgorithmView));
         public View View { get; set; }
+        public ImageView ImageView { get; set; }
+
+        public ListView ListView { get; set; }
+
+        public TextBox SideTextBox { get; set; }
 
         public AlgorithmView()
         {
@@ -48,7 +54,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
-
+            ImageView = new ImageView();
+            ListView = listViewSide;
+            SideTextBox = TextBoxside;
+            Grid1.Children.Add(ImageView);
             View = new View();
             if (listView1.View is GridView gridView)
             {

@@ -2,7 +2,6 @@
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
@@ -16,7 +15,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Interop;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {

@@ -2,7 +2,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Themes;
 using ColorVision.UI;
 using FlowEngineLib;
@@ -24,8 +23,6 @@ using ColorVision.Engine.Templates.Validate;
 using ColorVision.Engine.Templates.Compliance;
 using ColorVision.Engine.Services.RC;
 using FlowEngineLib.Base;
-using ColorVision.Engine;
-
 using ColorVision.Engine;
 
 namespace ColorVision.Projects.ProjectHeyuan

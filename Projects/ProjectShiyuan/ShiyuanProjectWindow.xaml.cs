@@ -3,7 +3,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine;
 using ColorVision.Engine.MQTT;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Compliance;
 using ColorVision.Engine.Templates.Flow;

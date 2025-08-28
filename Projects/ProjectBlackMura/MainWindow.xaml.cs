@@ -3,7 +3,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine;
 using ColorVision.Engine.MQTT;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
@@ -28,7 +27,6 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.Engine;
 
 namespace ProjectBlackMura
 {

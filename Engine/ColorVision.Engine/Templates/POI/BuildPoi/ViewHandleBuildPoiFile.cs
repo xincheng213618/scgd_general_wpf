@@ -2,7 +2,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Media;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.FileIO;
 using CsvHelper;
 using CVCommCore.CVAlgorithm;
@@ -107,7 +106,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
             return poiInfo;
         }
 
-        public override void Load(AlgorithmView view, ViewResultAlg result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -123,7 +122,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
         }
 
 
-        public override void Handle(AlgorithmView view, ViewResultAlg result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
 
             if (result.ViewResults.Count > 0 && result.ViewResults[0] is PoiCieFileModel model)
@@ -170,13 +169,13 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
 
             var header = new List<string> { "id", "file_name", "file_url", "fileType" };
             var bdHeader = new List<string> { "Id", "FileName", "FileUrl", "file_type" };
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
 
         }

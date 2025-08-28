@@ -127,7 +127,7 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
             }
         }
 
-        public override void Load(AlgorithmView view, ViewResultAlg result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -158,7 +158,7 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
             }
         }
 
-        public override void Handle(AlgorithmView view, ViewResultAlg result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
@@ -172,7 +172,7 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
                     {
                         var header = new List<string> { "id","name", "x", "y", "w", "h", "center_x", "center_y", "rotationAngle", "tilt_tilt_x", "tilt_tilt_y" };
                         // For binding, you may want to use a value converter or custom object, or expose computed properties
-                        if (view.listViewSide.View is GridView gridView)
+                        if (view.ListView.View is GridView gridView)
                         {
                             view.LeftGridViewColumnVisibilitys.Clear();
                             gridView.Columns.Clear();
@@ -216,7 +216,7 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
                                     tilt_tilt_y = item.tilt.tilt_y
                                 });
                             }
-                            view.listViewSide.ItemsSource = flatList;
+                            view.ListView.ItemsSource = flatList;
                         }
                     }
                 }

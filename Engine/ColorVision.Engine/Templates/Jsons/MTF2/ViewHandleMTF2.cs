@@ -4,13 +4,10 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Templates.Jsons.SFRFindROI;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using log4net;
-using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -148,7 +145,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
         }
 
 
-        public override void Load(AlgorithmView view, ViewResultAlg result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -216,7 +213,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
             }
         }
 
-        public override void Handle(AlgorithmView view, ViewResultAlg result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
@@ -248,13 +245,13 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
                     List<string> header = new() { "name", "x","y","w","h","mtfvalue" };
                     List<string> bdHeader = new() { "name", "x", "y", "w", "h", "mtfValue" };
 
-                    if (view.listViewSide.View is GridView gridView)
+                    if (view.ListView.View is GridView gridView)
                     {
                         view.LeftGridViewColumnVisibilitys.Clear();
                         gridView.Columns.Clear();
                         for (int i = 0; i < header.Count; i++)
                             gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                        view.listViewSide.ItemsSource = mTFDetailViewReslut?.MTFResult?.result;
+                        view.ListView.ItemsSource = mTFDetailViewReslut?.MTFResult?.result;
                     }
                 }
             }
