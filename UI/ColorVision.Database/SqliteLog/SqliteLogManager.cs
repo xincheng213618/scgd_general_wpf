@@ -25,7 +25,7 @@ namespace ColorVision.Database.SqliteLog
             }
         }
         public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Log\\";
-        public static string SqliteDbPath { get; set; } = DirectoryPath + "Logs.db";
+        public static string SqliteDbPath { get; set; } = DirectoryPath + "SqliteLogs.db";
 
         public static SqliteLogManagerConfig Config => ConfigService.Instance.GetRequiredService<SqliteLogManagerConfig>();
 
@@ -116,20 +116,26 @@ namespace ColorVision.Database.SqliteLog
         // 批量插入
         private void Flush()
         {
-            var list = new List<LogEntry>();
-            while (_entries.TryDequeue(out var entry))
+            try
             {
-                list.Add(entry);
-                if (list.Count >= BatchSize)
+                var list = new List<LogEntry>();
+                while (_entries.TryDequeue(out var entry))
                 {
-                    // 分批插入，避免一次过多
+                    list.Add(entry);
+                    if (list.Count >= BatchSize)
+                    {
+                        // 分批插入，避免一次过多
+                        _db.Insertable(list).ExecuteCommand();
+                        list.Clear();
+                    }
+                }
+                if (list.Count > 0)
+                {
                     _db.Insertable(list).ExecuteCommand();
-                    list.Clear();
                 }
             }
-            if (list.Count > 0)
+            catch (Exception ex)
             {
-                _db.Insertable(list).ExecuteCommand();
             }
         }
 

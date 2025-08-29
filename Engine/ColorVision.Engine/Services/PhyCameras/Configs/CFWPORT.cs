@@ -1,4 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates.MTF;
+using Newtonsoft.Json;
 using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.PhyCameras.Configs
@@ -53,5 +55,34 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public List<ChannelCfg> ChannelCfgs { get => _ChannelCfgs; set { _ChannelCfgs = value; OnPropertyChanged(); } }
 
         private List<ChannelCfg> _ChannelCfgs;
+
+        public bool IsNDPort { get; set; }
+        public double NDMaxExpTime { get; set; }
+        public double NDMinExpTime { get; set; }
+        public int[] NDRate { get; set; } = System.Array.Empty<int>();
+
+        public string[] NDCaliNameGroups { get; set; } = System.Array.Empty<string>();
+
+
+        public string NDRatesJson
+        {
+            get => JsonConvert.SerializeObject(NDRate);
+            set
+            {
+                if (!string.IsNullOrEmpty(value))
+                    NDRate = JsonConvert.DeserializeObject<int[]>(value);
+            }
+        }
+
+        public string NDCaliNameGroupsJson
+        {
+            get => JsonConvert.SerializeObject(NDCaliNameGroups);
+            set
+            {
+                if (!string.IsNullOrEmpty(value))
+                    NDCaliNameGroups = JsonConvert.DeserializeObject<string[]>(value);
+            }
+        }
+
     }
 }

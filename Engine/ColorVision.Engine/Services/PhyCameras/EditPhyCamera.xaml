@@ -54,11 +54,37 @@
                                 <TextBlock Text="启用:" Width="120"/>
                                 <ui:ToggleSwitch IsChecked="{Binding CFW.IsUseCFW}"/>
                             </DockPanel>
+
+
                             <StackPanel  Visibility="{Binding CFW.IsUseCFW,Converter={StaticResource bool2VisibilityConverter}}">
+
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="IsNDPort:" Width="120"/>
+                                    <ui:ToggleSwitch IsChecked="{Binding CFW.IsNDPort}"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="NDMaxExpTime:" Width="120"/>
+                                    <TextBox Text="{Binding CFW.NDMaxExpTime}"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="NDMaxExpTime:" Width="120"/>
+                                    <TextBox Text="{Binding CFW.NDMaxExpTime}"/>
+                                </DockPanel>
+
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="NDRatesJson:" Width="120"/>
+                                    <TextBox Text="{Binding CFW.NDRatesJson}"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="NDCaliNameGroupsJson:" Width="120"/>
+                                    <TextBox Text="{Binding CFW.NDCaliNameGroupsJson}"/>
+                                </DockPanel>
                                 <DockPanel Margin="0,2">
                                     <TextBlock Text="启用串口发送:" Width="120"/>
                                     <ui:ToggleSwitch IsChecked="{Binding CFW.IsCOM}"/>
                                 </DockPanel>
+
+
                                 <StackPanel  Visibility="{Binding CFW.IsCOM,Converter={StaticResource bool2VisibilityConverter}}" >
                                     <DockPanel Margin="0,2">
                                         <TextBlock Text="串口:" Width="120"/>
