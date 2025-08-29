@@ -106,15 +106,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 取消 的本地化字符串。
-        /// </summary>
-        public static string Cancel {
-            get {
-                return ResourceManager.GetString("Cancel", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 变更日志 的本地化字符串。
         /// </summary>
         public static string ChangeLog {
@@ -138,15 +129,6 @@ namespace ColorVision.Properties {
         public static string CheckUpdatesOnStartup {
             get {
                 return ResourceManager.GetString("CheckUpdatesOnStartup", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 关闭 的本地化字符串。
-        /// </summary>
-        public static string Close {
-            get {
-                return ResourceManager.GetString("Close", resourceCulture);
             }
         }
         
@@ -340,15 +322,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 最小化 的本地化字符串。
-        /// </summary>
-        public static string Minimize {
-            get {
-                return ResourceManager.GetString("Minimize", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 发现新版本 的本地化字符串。
         /// </summary>
         public static string NewVersionFound {
@@ -372,15 +345,6 @@ namespace ColorVision.Properties {
         public static string OK {
             get {
                 return ResourceManager.GetString("OK", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 置顶 的本地化字符串。
-        /// </summary>
-        public static string Pin {
-            get {
-                return ResourceManager.GetString("Pin", resourceCulture);
             }
         }
         
@@ -444,15 +408,6 @@ namespace ColorVision.Properties {
         public static string RunAsAdmin {
             get {
                 return ResourceManager.GetString("RunAsAdmin", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 保存 的本地化字符串。
-        /// </summary>
-        public static string Save {
-            get {
-                return ResourceManager.GetString("Save", resourceCulture);
             }
         }
         

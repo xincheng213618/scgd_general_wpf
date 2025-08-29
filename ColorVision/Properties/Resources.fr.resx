@@ -135,23 +135,8 @@
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>Démarrage (peut échouer)</value>
   </data>
-  <data name="Close" xml:space="preserve">
-    <value>fermeture</value>
-  </data>
-  <data name="Minimize" xml:space="preserve">
-    <value>minimiser</value>
-  </data>
-  <data name="Pin" xml:space="preserve">
-    <value>épingler en haut</value>
-  </data>
   <data name="Restore" xml:space="preserve">
     <value>Restaurer</value>
-  </data>
-  <data name="Save" xml:space="preserve">
-    <value>sauvegarder</value>
-  </data>
-  <data name="Cancel" xml:space="preserve">
-    <value>Annuler</value>
   </data>
   <data name="OK" xml:space="preserve">
     <value>Bien sûr</value>

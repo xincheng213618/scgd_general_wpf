@@ -135,23 +135,8 @@
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>自動起動</value>
   </data>
-  <data name="Close" xml:space="preserve">
-    <value>キャンセル</value>
-  </data>
-  <data name="Minimize" xml:space="preserve">
-    <value>最小化</value>
-  </data>
-  <data name="Pin" xml:space="preserve">
-    <value>ピン留めする</value>
-  </data>
   <data name="Restore" xml:space="preserve">
     <value>リセットする</value>
-  </data>
-  <data name="Save" xml:space="preserve">
-    <value>保存</value>
-  </data>
-  <data name="Cancel" xml:space="preserve">
-    <value>キャンセル</value>
   </data>
   <data name="OK" xml:space="preserve">
     <value>OK</value>

@@ -135,23 +135,8 @@
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>Запуск (может быть неудачным)</value>
   </data>
-  <data name="Close" xml:space="preserve">
-    <value>закрытие</value>
-  </data>
-  <data name="Minimize" xml:space="preserve">
-    <value>минимизировать</value>
-  </data>
-  <data name="Pin" xml:space="preserve">
-    <value>прикрепить сверху</value>
-  </data>
   <data name="Restore" xml:space="preserve">
     <value>Восстановить вниз</value>
-  </data>
-  <data name="Save" xml:space="preserve">
-    <value>сохранять</value>
-  </data>
-  <data name="Cancel" xml:space="preserve">
-    <value>Отмена</value>
   </data>
   <data name="OK" xml:space="preserve">
     <value>Конечно</value>
