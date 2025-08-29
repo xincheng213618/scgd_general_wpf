@@ -135,12 +135,6 @@
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>Démarrage (peut échouer)</value>
   </data>
-  <data name="Restore" xml:space="preserve">
-    <value>Restaurer</value>
-  </data>
-  <data name="OK" xml:space="preserve">
-    <value>Bien sûr</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>Démarrer la disposition de l’interface de récupération</value>
   </data>
@@ -185,9 +179,6 @@
   </data>
   <data name="ErrorOccurred" xml:space="preserve">
     <value>Une erreur s'est produite</value>
-  </data>
-  <data name="ConnectionName" xml:space="preserve">
-    <value>nom de connexion</value>
   </data>
   <data name="ChangeLog" xml:space="preserve">
     <value>Journal des modifications</value>

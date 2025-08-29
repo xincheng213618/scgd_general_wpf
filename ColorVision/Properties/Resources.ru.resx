@@ -135,12 +135,6 @@
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>Запуск (может быть неудачным)</value>
   </data>
-  <data name="Restore" xml:space="preserve">
-    <value>Восстановить вниз</value>
-  </data>
-  <data name="OK" xml:space="preserve">
-    <value>Конечно</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>Макет интерфейса запуска восстановления</value>
   </data>
@@ -185,9 +179,6 @@
   </data>
   <data name="ErrorOccurred" xml:space="preserve">
     <value>Произошла ошибка</value>
-  </data>
-  <data name="ConnectionName" xml:space="preserve">
-    <value>название соединения</value>
   </data>
   <data name="ChangeLog" xml:space="preserve">
     <value>Журнал изменений</value>

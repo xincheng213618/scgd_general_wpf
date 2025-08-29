@@ -135,12 +135,6 @@
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>开机启动(可能会不成功)</value>
   </data>
-  <data name="Restore" xml:space="preserve">
-    <value>向下还原</value>
-  </data>
-  <data name="OK" xml:space="preserve">
-    <value>确定</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>恢复上次退出时窗口的大小和位置</value>
   </data>
@@ -185,9 +179,6 @@
   </data>
   <data name="ErrorOccurred" xml:space="preserve">
     <value>发生错误</value>
-  </data>
-  <data name="ConnectionName" xml:space="preserve">
-    <value>连接名</value>
   </data>
   <data name="ChangeLog" xml:space="preserve">
     <value>变更日志</value>

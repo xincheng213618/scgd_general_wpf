@@ -135,12 +135,6 @@
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>자동 시작</value>
   </data>
-  <data name="Restore" xml:space="preserve">
-    <value>아래로 복원</value>
-  </data>
-  <data name="OK" xml:space="preserve">
-    <value>OK</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>복구 인터페이스 레이아웃 시작</value>
   </data>
@@ -185,9 +179,6 @@
   </data>
   <data name="ErrorOccurred" xml:space="preserve">
     <value>에러 발생됨</value>
-  </data>
-  <data name="ConnectionName" xml:space="preserve">
-    <value>연결 이름</value>
   </data>
   <data name="ChangeLog" xml:space="preserve">
     <value>변경 로그</value>

@@ -169,15 +169,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 连接名 的本地化字符串。
-        /// </summary>
-        public static string ConnectionName {
-            get {
-                return ResourceManager.GetString("ConnectionName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 当前速度： 的本地化字符串。
         /// </summary>
         public static string CurrentSpeed {
@@ -331,15 +322,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 确定 的本地化字符串。
-        /// </summary>
-        public static string OK {
-            get {
-                return ResourceManager.GetString("OK", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 插件管理器窗口 的本地化字符串。
         /// </summary>
         public static string PluginManagerWindow {
@@ -372,15 +354,6 @@ namespace ColorVision.Properties {
         public static string ReleaseDate {
             get {
                 return ResourceManager.GetString("ReleaseDate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 向下还原 的本地化字符串。
-        /// </summary>
-        public static string Restore {
-            get {
-                return ResourceManager.GetString("Restore", resourceCulture);
             }
         }
         

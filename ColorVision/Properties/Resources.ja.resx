@@ -135,12 +135,6 @@
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>自動起動</value>
   </data>
-  <data name="Restore" xml:space="preserve">
-    <value>リセットする</value>
-  </data>
-  <data name="OK" xml:space="preserve">
-    <value>OK</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>回復インターフェイスのレイアウトを開始します</value>
   </data>
@@ -185,9 +179,6 @@
   </data>
   <data name="ErrorOccurred" xml:space="preserve">
     <value>エラーが発生しました</value>
-  </data>
-  <data name="ConnectionName" xml:space="preserve">
-    <value>接続名</value>
   </data>
   <data name="ChangeLog" xml:space="preserve">
     <value>変更ログ</value>
