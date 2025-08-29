@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CA1707
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Messages;
 using ColorVision.Database;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Video;
@@ -18,6 +18,7 @@ using FlowEngineLib.Algorithm;
 using log4net;
 using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -577,6 +578,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             var windowTemplate = new TemplateEditorWindow(new TemplateHDR(), ComboBoxHDRTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
+        }
+
+        private void NDport_Click(object sender, RoutedEventArgs e)
+        {
+            ServicesHelper.SendCommandEx(sender, () => DService.SetNDPort());
         }
     }
 }

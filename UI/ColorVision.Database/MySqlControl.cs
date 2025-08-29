@@ -61,11 +61,7 @@ namespace ColorVision.Database
                 var newConn = new MySqlConnection() { ConnectionString = connStr };
                 newConn.Open();
                 var oldConn = Interlocked.Exchange(ref _conn, newConn); // 原子切换
-                IsConnect = true;
-                if (ConnectionString != connStr)
-                {
-                    Application.Current.Dispatcher.BeginInvoke(() => MySqlConnectChanged?.Invoke(newConn, new EventArgs()));
-                }
+
                 ConnectionString = connStr;
                 log.Info($"数据库连接成功:{connStr}");
 
@@ -92,7 +88,11 @@ namespace ColorVision.Database
                 {
                     log.Info("local_infile 已经支持");
                 }
-
+                IsConnect = true;
+                if (ConnectionString != connStr)
+                {
+                    Application.Current.Dispatcher.BeginInvoke(() => MySqlConnectChanged?.Invoke(newConn, new EventArgs()));
+                }
                 return Task.FromResult(true);
             }
             catch (MySqlException ex)
@@ -128,74 +128,71 @@ namespace ColorVision.Database
             return connStr;
         }
 
-        public static void TestConnect(MySqlConfig mySqlConfig)  
+        public static void TestConnect(MySqlConfig MySqlConfig)
         {
-            string connStr = GetConnectionString(mySqlConfig, 2);
-            log.Info($"Test数据库连接信息:{connStr}");
-
-            if (string.IsNullOrEmpty(mySqlConfig.Database))
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "数据库名不能为空");
-                });
-                return;
-            }
-
+            string connStr = GetConnectionString(MySqlConfig, 2);
             try
             {
-                var db = new SqlSugar.SqlSugarClient(new SqlSugar.ConnectionConfig
+                log.Info($"Test数据库连接信息:{connStr}");
+                using (var mySqlConnection = new MySqlConnection(connStr))
                 {
-                    ConnectionString = connStr,
-                    DbType = SqlSugar.DbType.MySql,
-                    IsAutoCloseConnection = true
-                });
+                    mySqlConnection.Open();
 
-                // 检查数据库名是否为空
-                // 检查当前 local_infile 的值
-                int localInfile = db.Ado.GetInt("SELECT @@global.local_infile;");
-
-                if (localInfile == 0)
-                {
-                    // 不支持则设置为 1
-                    db.Ado.ExecuteCommand("SET GLOBAL local_infile = 1;");
-                    log.Info("local_infile 已设置为 1");
-                }
-                else
-                {
-                    log.Info("local_infile 已经支持");
-                }
-
-                // 检查数据库是否存在
-                var dbResult = db.Ado.SqlQuery<string>(
-                    "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = @dbName",
-                    new { dbName = mySqlConfig.Database }
-                );
-
-                if (dbResult == null || dbResult.Count == 0)
-                {
-                    log.Warn("Database does not exist.");
-                    Application.Current.Dispatcher.Invoke(() =>
+                    if (string.IsNullOrEmpty(MySqlConfig.Database))
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "数据库不存在。");
-                    });
-                    return;
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), "数据库名不能为空");
+                        });
+                    }
+
+                    // 查询数据库是否存在
+                    string query = $"SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = @dbName";
+                    using (var command = new MySqlCommand(query, mySqlConnection))
+                    {
+                        command.Parameters.AddWithValue("@dbName", MySqlConfig.Database);
+                        using (var reader = command.ExecuteReader())
+                        {
+                            if (reader.HasRows)
+                            {
+                                log.Info("Database exists.");
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    MessageBox.Show(Application.Current.GetActiveWindow(), "连接成功");
+                                });
+                            }
+                            else
+                            {
+                                log.Warn("Database does not exist.");
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    MessageBox.Show(Application.Current.GetActiveWindow(), "数据库不存在。");
+                                });
+                            }
+                        }
+                    }
                 }
-
-                log.Info("连接成功，数据库及表（如指定）存在。");
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "连接成功");
-                });
-
             }
-            catch (SqlSugarException ex)
+            catch (MySqlException ex)
             {
                 log.Error(ex);
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    // SqlSugarException 没有 MySqlException 的 Number 属性，只能提示通用信息
-                    MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库连接失败，SqlSugar异常：{ex.Message}");
+                    switch (ex.Number)
+                    {
+                        case 1045:
+                            MessageBox.Show(Application.Current.GetActiveWindow(), "账号或密码错误，请检查！");
+                            break;
+                        case 1049:
+                            MessageBox.Show(Application.Current.GetActiveWindow(), "指定的数据库不存在！");
+                            break;
+                        case 2003:
+                            MessageBox.Show(Application.Current.GetActiveWindow(), "无法连接到MySQL服务器，请检查端口和网络！");
+                            break;
+                        default:
+                            MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库连接失败，错误码：{ex.Number}");
+                            break;
+                    }
                 });
             }
             catch (Exception ex)

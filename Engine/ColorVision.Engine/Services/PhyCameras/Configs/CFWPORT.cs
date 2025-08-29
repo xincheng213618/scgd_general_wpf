@@ -56,9 +56,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
         private List<ChannelCfg> _ChannelCfgs;
 
-        public bool IsNDPort { get; set; }
-        public double NDMaxExpTime { get; set; }
-        public double NDMinExpTime { get; set; }
+        public bool IsNDPort { get => _IsNDPort; set { _IsNDPort = value; OnPropertyChanged(); } }
+        private bool _IsNDPort;
+        public double NDMaxExpTime { get => _NDMaxExpTime; set { _NDMaxExpTime = value; OnPropertyChanged(); } }
+        private double _NDMaxExpTime;
+        public double NDMinExpTime { get => _NDMinExpTime; set { _NDMinExpTime = value; OnPropertyChanged(); } }
+        private double _NDMinExpTime;
+
         public int[] NDRate { get; set; } = System.Array.Empty<int>();
 
         public string[] NDCaliNameGroups { get; set; } = System.Array.Empty<string>();

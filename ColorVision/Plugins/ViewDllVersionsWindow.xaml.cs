@@ -47,7 +47,7 @@ namespace ColorVision.Plugins
                         Company = company,
                         Product = product,
                         Culture = name.CultureInfo?.Name,
-                        PublicKeyToken = BitConverter.ToString(name.GetPublicKeyToken() ?? new byte[0]),
+                        PublicKeyToken = BitConverter.ToString(name.GetPublicKeyToken() ?? Array.Empty<byte>()),
                         Location = a.IsDynamic ? "(dynamic)" : a.Location,
                         IsDynamic = a.IsDynamic,
                     };

@@ -208,6 +208,7 @@
                         <StackPanel Visibility="{Binding Config.IsAutoExpose,Converter={StaticResource bool2VisibilityConverter1}}" Margin="0,0,0,3">
                             <DockPanel >
                                 <Button Content="{x:Static properties:Resources.AutoExposure}"  DockPanel.Dock="Right"  Click="AutoExplose_Click"  HorizontalAlignment="Left"/>
+                                <CheckBox DockPanel.Dock="Right" Content="ND" IsChecked="{Binding Config.IsWithND}" Visibility="{Binding Config.CFW.IsNDPort,Converter={StaticResource bool2VisibilityConverter}}"/>
                                 <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
                                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
                                         <TextBlock.RenderTransform>
@@ -288,6 +289,13 @@
                             </Grid>
                         </StackPanel>
                     </StackPanel>
+
+                    <DockPanel Margin="0,2" Visibility="{Binding Config.CFW.IsNDPort,Converter={StaticResource bool2VisibilityConverter}}">
+                        <Button  DockPanel.Dock="Right" Content="调整NDPort"  Click="NDport_Click" />
+                        <TextBlock Text="NDPort"  Width="40"  />
+                        <TextBox Text="{Binding Config.NDPort}"  BorderThickness="0,0,0,1" Margin="5,0"/>
+                    </DockPanel>
+
                     <StackPanel Margin="2" Visibility="{Binding Config.MotorConfig.IsUseMotor,Converter={StaticResource bool2VisibilityConverter}}">
                         <DockPanel >
                             <Button  DockPanel.Dock="Right" Content="自动聚焦" Click="AutoFocus_Click"   />
@@ -311,6 +319,7 @@
                             </Grid>
                             <ComboBox x:Name="ComboxAutoFocus"   d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" SelectedIndex="{Binding AutoFocusTemplateIndex}"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                         </DockPanel>
+
                         <DockPanel Margin="0,2">
                             <Button  DockPanel.Dock="Right" Content="移动"  Click="Move_Click" />
                             <CheckBox  x:Name="CheckBoxIsAbs" Content="绝对位置" />
@@ -321,6 +330,8 @@
                             <TextBlock Text="光圈F"  Width="40"  />
                             <TextBox x:Name="TextDiaphragm" Text="0"  BorderThickness="0,0,0,1" Margin="5,0"/>
                         </DockPanel>
+
+
                         <Button  Margin="0,2" Content="返回原点"  Click="GoHome_Click" />
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Content="获取位置"  Click="GetPosition_Click" />

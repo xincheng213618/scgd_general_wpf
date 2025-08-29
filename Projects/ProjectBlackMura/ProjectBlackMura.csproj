@@ -35,12 +35,6 @@
 		<Reference Include="CVCommCore">
 		  <HintPath>..\..\DLL\CVCommCore.dll</HintPath>
 		</Reference>
-		<Reference Include="FlowEngineLib">
-			<HintPath>..\..\DLL\FlowEngineLib.dll</HintPath>
-		</Reference>
-		<Reference Include="ST.Library.UI">
-			<HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
-		</Reference>
 	</ItemGroup>
 
 	<ItemGroup>

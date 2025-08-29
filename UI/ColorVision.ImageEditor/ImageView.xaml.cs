@@ -1511,5 +1511,10 @@ namespace ColorVision.ImageEditor
                 e.Handled = true;
             }
         }
+
+        private void EditDIExpand_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

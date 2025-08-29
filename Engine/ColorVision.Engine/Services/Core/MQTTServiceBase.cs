@@ -67,6 +67,7 @@ namespace ColorVision.Engine.Services
                     //Token unavailable
                     if (json.Code == -10)
                     {
+                        log.Warn("token 失效，正在重新获取");
                         MqttRCService.GetInstance().QueryServices();
                         return Task.CompletedTask;
                     }

@@ -130,6 +130,9 @@
                                     <Button Content="锁定" Command="{Binding ToolConcentricCircle.LockCommand}" Click="reference1_Click" Width="80"  Tag="1"/>
                                 </StackPanel>
                             </Popup>
+                            <Button Click="EditDIExpand_Click" Padding="5"   >
+                                <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DIExpand}" />
+                            </Button>
                         </StackPanel>
 
                     </Grid>

@@ -97,6 +97,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                     string Msg = $"Saturation:{Config.Saturation}  ExpTime:{Config.ExpTime}";
                                     MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
                                 }
+                                try
+                                {
+                                    if (msg.Data.NDPort != null)
+                                    {
+                                        Config.NDPort = msg.Data.NDPort;
+                                    }
+
+                                }
+                                catch( Exception ex)
+                                {
+                                    log.Info("ND高版本支持");
+                                } 
+
                             } );
                         }
                         break;
@@ -249,11 +262,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 EventName = "SetParam",
                 Params = Params
             };
-
-            if (Config.IsExpThree&&!IsVideoOpen)
+            var Func = new List<ParamFunction>();
+            if (Config.IsExpThree && !IsVideoOpen)
             {
                 var FunParams = new Dictionary<string, object>() { };
-                FunParams.Add("nIndex",0);
+                FunParams.Add("nIndex", 0);
                 FunParams.Add("dExp", Config.ExpTimeR);
 
                 var FunParams1 = new Dictionary<string, object>() { };
@@ -269,28 +282,51 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 FunParamss.Add(FunParams1);
                 FunParamss.Add(FunParams2);
 
-                var Func = new List<ParamFunction>();
                 foreach (var item in FunParamss)
                 {
                     var Fun = new ParamFunction() { Name = "CM_SetExpTimeEx", Params = item };
                     Func.Add(Fun);
                 }
                 Func.Add(new ParamFunction() { Name = "CM_SetGain", Params = new Dictionary<string, object>() { { "Gain", Config.Gain } } });
-                Params.Add("Func", Func);
             }
             else
             {
                 var FunParams = new Dictionary<string, object>() { };
                 FunParams.Add("dExp", Config.ExpTime);
                 var Fun = new ParamFunction() { Name = "CM_SetExpTime", Params = FunParams };
-                var Func = new List<ParamFunction>();
                 Func.Add(Fun);
                 Func.Add(new ParamFunction() { Name = "CM_SetGain", Params = new Dictionary<string, object>() { { "Gain", Config.Gain } } });
-                Params.Add("Func", Func);
             }
 
+
+            if (Config.CFW.IsUseCFW && Config.CFW.IsNDPort)
+            {
+                Func.Add(new ParamFunction() { Name = "CM_SetNDPort", Params = new Dictionary<string, object>(){ { "NDPort",Config.NDPort } } });
+            }
+            Params.Add("Func", Func);
             return PublishAsyncClient(msg);
         }
+
+
+        public MsgRecord SetNDPort()
+        {
+            var Params = new Dictionary<string, object>() { };
+
+            MsgSend msg = new()
+            {
+                EventName = "SetParam",
+                Params = Params
+            };
+            var Func = new List<ParamFunction>();
+            if (Config.CFW.IsUseCFW && Config.CFW.IsNDPort)
+            {
+                Func.Add(new ParamFunction() { Name = "CM_SetNDPort", Params = new Dictionary<string, object>() { { "NDPort", Config.NDPort } } });
+            }
+            Params.Add("Func", Func);
+            return PublishAsyncClient(msg);
+        }
+
+
 
         public MsgRecord GetData(double[] expTime, CalibrationParam param, AutoExpTimeParam autoExpTimeParam,ParamBase HDRparamBase)
         {
@@ -371,6 +407,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             var Params = new Dictionary<string, object>() { };
             Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = autoExpTimeParam.Name });
+            Params.Add("IsWithND",  Config.IsWithND);
+
+            
             MsgSend msg = new()
             {
                 EventName = "GetAutoExpTime",
@@ -409,7 +448,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             };
             return PublishAsyncClient(msg);
         }
-
 
 
 

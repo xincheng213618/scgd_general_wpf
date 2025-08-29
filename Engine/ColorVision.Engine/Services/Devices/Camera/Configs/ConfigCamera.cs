@@ -102,6 +102,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
 
         public double ExpTimeBLog { get => Math.Log(ExpTimeB); set { ExpTimeB = Math.Pow(Math.E, value); } }
 
+        public int NDPort { get => _NDPort; set { _NDPort = value; OnPropertyChanged(); } }
+        private int _NDPort;
+        public bool IsWithND { get => _IsWithND; set { _IsWithND = value; OnPropertyChanged(); } }
+        private bool _IsWithND;
 
         public double Saturation { get => _Saturation; set { _Saturation = value; OnPropertyChanged(); } }
         private double _Saturation = -1;
