@@ -210,9 +210,6 @@
   <data name="ExperimentalFeature" xml:space="preserve">
     <value>实验性功能</value>
   </data>
-  <data name="InstallCertificate" xml:space="preserve">
-    <value>安装证书</value>
-  </data>
   <data name="SerialNumber" xml:space="preserve">
     <value>序列号</value>
   </data>
@@ -258,14 +255,8 @@
   <data name="Upgrade" xml:space="preserve">
     <value>升级</value>
   </data>
-  <data name="Sended" xml:space="preserve">
-    <value>已经发送</value>
-  </data>
   <data name="Local" xml:space="preserve">
     <value>本地</value>
-  </data>
-  <data name="Alias" xml:space="preserve">
-    <value>别名</value>
   </data>
   <data name="Duration" xml:space="preserve">
     <value>用时</value>
@@ -305,9 +296,6 @@
   </data>
   <data name="BuildDate" xml:space="preserve">
     <value>构建日期</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>项目名称</value>
   </data>
   <data name="Command" xml:space="preserve">
     <value>命令</value>

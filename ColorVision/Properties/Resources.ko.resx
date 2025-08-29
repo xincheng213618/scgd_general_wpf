@@ -210,9 +210,6 @@
   <data name="ExperimentalFeature" xml:space="preserve">
     <value>실험적 기능</value>
   </data>
-  <data name="InstallCertificate" xml:space="preserve">
-    <value>인증서 설치</value>
-  </data>
   <data name="SerialNumber" xml:space="preserve">
     <value>일련번호</value>
   </data>
@@ -258,14 +255,8 @@
   <data name="Upgrade" xml:space="preserve">
     <value>업그레이드</value>
   </data>
-  <data name="Sended" xml:space="preserve">
-    <value>보냄</value>
-  </data>
   <data name="Local" xml:space="preserve">
     <value>현지의</value>
-  </data>
-  <data name="Alias" xml:space="preserve">
-    <value>별명</value>
   </data>
   <data name="Duration" xml:space="preserve">
     <value>시간 비용</value>
@@ -305,9 +296,6 @@
   </data>
   <data name="BuildDate" xml:space="preserve">
     <value>빌드 날짜</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>프로젝트명</value>
   </data>
   <data name="Command" xml:space="preserve">
     <value>명령</value>

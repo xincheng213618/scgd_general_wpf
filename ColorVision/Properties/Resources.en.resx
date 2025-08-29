@@ -210,9 +210,6 @@
   <data name="ExperimentalFeature" xml:space="preserve">
     <value>Experimental features</value>
   </data>
-  <data name="InstallCertificate" xml:space="preserve">
-    <value>Install Certificate</value>
-  </data>
   <data name="SerialNumber" xml:space="preserve">
     <value>Serial Number</value>
   </data>
@@ -258,14 +255,8 @@
   <data name="Upgrade" xml:space="preserve">
     <value>Upgrade</value>
   </data>
-  <data name="Sended" xml:space="preserve">
-    <value>Sended</value>
-  </data>
   <data name="Local" xml:space="preserve">
     <value>local</value>
-  </data>
-  <data name="Alias" xml:space="preserve">
-    <value>Aliases</value>
   </data>
   <data name="Duration" xml:space="preserve">
     <value>Duration</value>
@@ -305,9 +296,6 @@
   </data>
   <data name="BuildDate" xml:space="preserve">
     <value>BuildDate</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>Name</value>
   </data>
   <data name="Command" xml:space="preserve">
     <value>Command</value>

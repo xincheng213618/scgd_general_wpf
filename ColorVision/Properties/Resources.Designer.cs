@@ -79,15 +79,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 别名 的本地化字符串。
-        /// </summary>
-        public static string Alias {
-            get {
-                return ResourceManager.GetString("Alias", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 程序关闭 的本地化字符串。
         /// </summary>
         public static string ApplicationExit {
@@ -304,15 +295,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 安装证书 的本地化字符串。
-        /// </summary>
-        public static string InstallCertificate {
-            get {
-                return ResourceManager.GetString("InstallCertificate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 软件启动时打开本地服务 的本地化字符串。
         /// </summary>
         public static string LaunchSoftwareWithLocalService {
@@ -484,15 +466,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 项目名称 的本地化字符串。
-        /// </summary>
-        public static string ProjectName {
-            get {
-                return ResourceManager.GetString("ProjectName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 发布日期 的本地化字符串。
         /// </summary>
         public static string ReleaseDate {
@@ -543,15 +516,6 @@ namespace ColorVision.Properties {
         public static string Search {
             get {
                 return ResourceManager.GetString("Search", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 已经发送 的本地化字符串。
-        /// </summary>
-        public static string Sended {
-            get {
-                return ResourceManager.GetString("Sended", resourceCulture);
             }
         }
         

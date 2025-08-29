@@ -210,9 +210,6 @@
   <data name="ExperimentalFeature" xml:space="preserve">
     <value>実験的な機能</value>
   </data>
-  <data name="InstallCertificate" xml:space="preserve">
-    <value>証明書のインストール</value>
-  </data>
   <data name="SerialNumber" xml:space="preserve">
     <value>シリアルナンバー</value>
   </data>
@@ -258,14 +255,8 @@
   <data name="Upgrade" xml:space="preserve">
     <value>アップグレード</value>
   </data>
-  <data name="Sended" xml:space="preserve">
-    <value>送信済み</value>
-  </data>
   <data name="Local" xml:space="preserve">
     <value>地元</value>
-  </data>
-  <data name="Alias" xml:space="preserve">
-    <value>エイリアス</value>
   </data>
   <data name="Duration" xml:space="preserve">
     <value>時間コスト</value>
@@ -305,9 +296,6 @@
   </data>
   <data name="BuildDate" xml:space="preserve">
     <value>ビルド日</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>プロジェクト名</value>
   </data>
   <data name="Command" xml:space="preserve">
     <value>コマンド</value>
