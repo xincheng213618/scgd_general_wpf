@@ -141,17 +141,11 @@
   <data name="OK" xml:space="preserve">
     <value>OK</value>
   </data>
-  <data name="Settings" xml:space="preserve">
-    <value>설정</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>복구 인터페이스 레이아웃 시작</value>
   </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>소프트웨어 버전</value>
-  </data>
-  <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
-    <value>소프트웨어가 시작될 때 로컬 서비스 열기</value>
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>마법사</value>

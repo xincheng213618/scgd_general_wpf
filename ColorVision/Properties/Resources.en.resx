@@ -141,17 +141,11 @@
   <data name="OK" xml:space="preserve">
     <value>OK</value>
   </data>
-  <data name="Settings" xml:space="preserve">
-    <value>Settings</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>Start recovery interface layout</value>
   </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>Software Version</value>
-  </data>
-  <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
-    <value>Open the local service when the software starts</value>
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>Wizard</value>

@@ -141,17 +141,11 @@
   <data name="OK" xml:space="preserve">
     <value>确定</value>
   </data>
-  <data name="Settings" xml:space="preserve">
-    <value>设置</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>恢复上次退出时窗口的大小和位置</value>
   </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>软件版本</value>
-  </data>
-  <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
-    <value>软件启动时打开本地服务</value>
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>向导</value>

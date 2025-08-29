@@ -141,17 +141,11 @@
   <data name="OK" xml:space="preserve">
     <value>確定</value>
   </data>
-  <data name="Settings" xml:space="preserve">
-    <value>设置</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>啟動復原介面佈局</value>
   </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>軟體版本</value>
-  </data>
-  <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
-    <value>軟體啟動時開啟本機服務</value>
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>嚮導</value>

@@ -259,15 +259,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 软件启动时打开本地服务 的本地化字符串。
-        /// </summary>
-        public static string LaunchSoftwareWithLocalService {
-            get {
-                return ResourceManager.GetString("LaunchSoftwareWithLocalService", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 启动成功 的本地化字符串。
         /// </summary>
         public static string LaunchSuccess {
@@ -426,15 +417,6 @@ namespace ColorVision.Properties {
         public static string ServiceAgreement {
             get {
                 return ResourceManager.GetString("ServiceAgreement", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 设置 的本地化字符串。
-        /// </summary>
-        public static string Settings {
-            get {
-                return ResourceManager.GetString("Settings", resourceCulture);
             }
         }
         

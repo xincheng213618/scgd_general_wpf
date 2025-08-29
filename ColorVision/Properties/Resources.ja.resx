@@ -141,17 +141,11 @@
   <data name="OK" xml:space="preserve">
     <value>OK</value>
   </data>
-  <data name="Settings" xml:space="preserve">
-    <value>設定</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>回復インターフェイスのレイアウトを開始します</value>
   </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>ソフトウェアバージョン</value>
-  </data>
-  <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
-    <value>ソフトウェアの起動時にローカルサービスを開きます</value>
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>ウィザード</value>

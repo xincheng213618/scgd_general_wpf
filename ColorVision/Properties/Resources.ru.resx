@@ -141,17 +141,11 @@
   <data name="OK" xml:space="preserve">
     <value>Конечно</value>
   </data>
-  <data name="Settings" xml:space="preserve">
-    <value>Настройки</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>Макет интерфейса запуска восстановления</value>
   </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>Версия ПО</value>
-  </data>
-  <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
-    <value>Откройте локальную службу при запуске программного обеспечения</value>
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>волшебник</value>

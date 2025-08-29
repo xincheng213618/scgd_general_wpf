@@ -141,17 +141,11 @@
   <data name="OK" xml:space="preserve">
     <value>Bien sûr</value>
   </data>
-  <data name="Settings" xml:space="preserve">
-    <value>installation</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>Démarrer la disposition de l’interface de récupération</value>
   </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>Une version de logiciel</value>
-  </data>
-  <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
-    <value>Ouvrez le service local au démarrage du logiciel</value>
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>magicien</value>
