@@ -240,8 +240,6 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
                             view.ImageView.AddVisual(Rectangle);
                         }
                     }
-                    view.ImageView.RaiseRenderCompleted();
-
 
                     List<string> header = new() { "name", "x","y","w","h","mtfvalue" };
                     List<string> bdHeader = new() { "name", "x", "y", "w", "h", "mtfValue" };

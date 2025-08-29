@@ -246,11 +246,26 @@ int findLuminousAreaCorners(cv::Mat& src, std::vector<cv::Point2f>& points, int 
         }
     }
 
-    // 最小外接矩形
-    RotatedRect minRect = minAreaRect(contours[maxIdx]);
-    Point2f verts[4];
-    minRect.points(verts);
-    points.assign(verts, verts + 4);
+    std::vector<cv::Point> approx;
+    double peri = cv::arcLength(contours[maxIdx], true);
+    // 0.02 * peri 可调整，通常 0.01~0.05 之间
+    cv::approxPolyDP(contours[maxIdx], approx, 0.02 * peri, true);
+
+    if (approx.size() == 4) {
+        // 这就是你要的四边形4个角点
+        for (int i = 0; i < 4; ++i)
+            points.push_back(cv::Point2f(approx[i]));
+        return 0;
+    }
+    else {
+
+        // 最小外接矩形
+        RotatedRect minRect = minAreaRect(contours[maxIdx]);
+        Point2f verts[4];
+        minRect.points(verts);
+        points.assign(verts, verts + 4);
+    }
+
     return 0;
 }
 

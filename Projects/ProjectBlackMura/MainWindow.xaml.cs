@@ -752,7 +752,6 @@ namespace ProjectBlackMura
                         break;
                 }
             }
-            ImageView.RaiseRenderCompleted();
         }
 
 
