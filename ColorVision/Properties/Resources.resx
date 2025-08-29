@@ -129,17 +129,11 @@
   <data name="MenuAbout" xml:space="preserve">
     <value>关于(_A)</value>
   </data>
-  <data name="MenuSettings" xml:space="preserve">
-    <value>设置(_S)</value>
-  </data>
   <data name="About" xml:space="preserve">
     <value>关于</value>
   </data>
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>开机启动(可能会不成功)</value>
-  </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>隐藏</value>
   </data>
   <data name="Close" xml:space="preserve">
     <value>关闭</value>
@@ -198,9 +192,6 @@
   <data name="LaunchSuccess" xml:space="preserve">
     <value>启动成功</value>
   </data>
-  <data name="ExperimentalFeature" xml:space="preserve">
-    <value>实验性功能</value>
-  </data>
   <data name="CurrentVersionIsUpToDate" xml:space="preserve">
     <value>当前版本已经是最新版本</value>
   </data>
@@ -242,9 +233,6 @@
   </data>
   <data name="Upgrade" xml:space="preserve">
     <value>升级</value>
-  </data>
-  <data name="Local" xml:space="preserve">
-    <value>本地</value>
   </data>
   <data name="Duration" xml:space="preserve">
     <value>用时</value>

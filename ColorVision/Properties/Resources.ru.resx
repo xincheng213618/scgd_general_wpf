@@ -129,17 +129,11 @@
   <data name="MenuAbout" xml:space="preserve">
     <value>Об</value>
   </data>
-  <data name="MenuSettings" xml:space="preserve">
-    <value>Настройки</value>
-  </data>
   <data name="About" xml:space="preserve">
     <value>о</value>
   </data>
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>Запуск (может быть неудачным)</value>
-  </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>скрывать</value>
   </data>
   <data name="Close" xml:space="preserve">
     <value>закрытие</value>
@@ -198,9 +192,6 @@
   <data name="LaunchSuccess" xml:space="preserve">
     <value>Началось успешно</value>
   </data>
-  <data name="ExperimentalFeature" xml:space="preserve">
-    <value>Экспериментальные возможности</value>
-  </data>
   <data name="CurrentVersionIsUpToDate" xml:space="preserve">
     <value>Текущая версия уже является последней версией</value>
   </data>
@@ -242,9 +233,6 @@
   </data>
   <data name="Upgrade" xml:space="preserve">
     <value>обновление</value>
-  </data>
-  <data name="Local" xml:space="preserve">
-    <value>местный</value>
   </data>
   <data name="Duration" xml:space="preserve">
     <value>затраты времени</value>

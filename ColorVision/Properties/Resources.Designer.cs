@@ -259,15 +259,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 实验性功能 的本地化字符串。
-        /// </summary>
-        public static string ExperimentalFeature {
-            get {
-                return ResourceManager.GetString("ExperimentalFeature", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 强制更新 的本地化字符串。
         /// </summary>
         public static string ForceUpdate {
@@ -313,29 +304,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 本地 的本地化字符串。
-        /// </summary>
-        public static string Local {
-            get {
-                return ResourceManager.GetString("Local", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 关于(_A) 的本地化字符串。
         /// </summary>
         public static string MenuAbout {
             get {
                 return ResourceManager.GetString("MenuAbout", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 设置(_S) 的本地化字符串。
-        /// </summary>
-        public static string MenuSettings {
-            get {
-                return ResourceManager.GetString("MenuSettings", resourceCulture);
             }
         }
         
@@ -588,15 +561,6 @@ namespace ColorVision.Properties {
         public static string Version {
             get {
                 return ResourceManager.GetString("Version", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 隐藏 的本地化字符串。
-        /// </summary>
-        public static string WindowHidden {
-            get {
-                return ResourceManager.GetString("WindowHidden", resourceCulture);
             }
         }
         

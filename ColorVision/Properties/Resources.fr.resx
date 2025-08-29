@@ -129,17 +129,11 @@
   <data name="MenuAbout" xml:space="preserve">
     <value>À propos de)</value>
   </data>
-  <data name="MenuSettings" xml:space="preserve">
-    <value>Paramètre_s</value>
-  </data>
   <data name="About" xml:space="preserve">
     <value>à propos</value>
   </data>
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>Démarrage (peut échouer)</value>
-  </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>cacher</value>
   </data>
   <data name="Close" xml:space="preserve">
     <value>fermeture</value>
@@ -198,9 +192,6 @@
   <data name="LaunchSuccess" xml:space="preserve">
     <value>Démarré avec succès</value>
   </data>
-  <data name="ExperimentalFeature" xml:space="preserve">
-    <value>Fonctionnalités expérimentales</value>
-  </data>
   <data name="CurrentVersionIsUpToDate" xml:space="preserve">
     <value>La version actuelle est déjà la dernière version</value>
   </data>
@@ -242,9 +233,6 @@
   </data>
   <data name="Upgrade" xml:space="preserve">
     <value>mise à niveau</value>
-  </data>
-  <data name="Local" xml:space="preserve">
-    <value>locale</value>
   </data>
   <data name="Duration" xml:space="preserve">
     <value>coût du temps</value>

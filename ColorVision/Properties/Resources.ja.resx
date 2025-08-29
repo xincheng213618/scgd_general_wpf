@@ -129,17 +129,11 @@
   <data name="MenuAbout" xml:space="preserve">
     <value>について (_A)</value>
   </data>
-  <data name="MenuSettings" xml:space="preserve">
-    <value>設定 (_S)</value>
-  </data>
   <data name="About" xml:space="preserve">
     <value>について</value>
   </data>
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>自動起動</value>
-  </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>非表示</value>
   </data>
   <data name="Close" xml:space="preserve">
     <value>キャンセル</value>
@@ -198,9 +192,6 @@
   <data name="LaunchSuccess" xml:space="preserve">
     <value>正常に開始されました</value>
   </data>
-  <data name="ExperimentalFeature" xml:space="preserve">
-    <value>実験的な機能</value>
-  </data>
   <data name="CurrentVersionIsUpToDate" xml:space="preserve">
     <value>現在のバージョンはすでに最新バージョンです</value>
   </data>
@@ -242,9 +233,6 @@
   </data>
   <data name="Upgrade" xml:space="preserve">
     <value>アップグレード</value>
-  </data>
-  <data name="Local" xml:space="preserve">
-    <value>地元</value>
   </data>
   <data name="Duration" xml:space="preserve">
     <value>時間コスト</value>
