@@ -240,9 +240,6 @@
   <data name="BuildDate" xml:space="preserve">
     <value>BuildDate</value>
   </data>
-  <data name="Command" xml:space="preserve">
-    <value>Command</value>
-  </data>
   <data name="Search" xml:space="preserve">
     <value>Search</value>
   </data>

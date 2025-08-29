@@ -240,9 +240,6 @@
   <data name="BuildDate" xml:space="preserve">
     <value>ДатаСборки</value>
   </data>
-  <data name="Command" xml:space="preserve">
-    <value>Команда</value>
-  </data>
   <data name="Search" xml:space="preserve">
     <value>поиск</value>
   </data>

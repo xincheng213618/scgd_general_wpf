@@ -240,9 +240,6 @@
   <data name="BuildDate" xml:space="preserve">
     <value>ビルド日</value>
   </data>
-  <data name="Command" xml:space="preserve">
-    <value>コマンド</value>
-  </data>
   <data name="Search" xml:space="preserve">
     <value>検索</value>
   </data>

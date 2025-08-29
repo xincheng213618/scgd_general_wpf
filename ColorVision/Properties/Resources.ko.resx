@@ -240,9 +240,6 @@
   <data name="BuildDate" xml:space="preserve">
     <value>빌드 날짜</value>
   </data>
-  <data name="Command" xml:space="preserve">
-    <value>명령</value>
-  </data>
   <data name="Search" xml:space="preserve">
     <value>찾다</value>
   </data>
