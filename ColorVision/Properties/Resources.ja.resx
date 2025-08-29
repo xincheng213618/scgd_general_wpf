@@ -156,12 +156,6 @@
   <data name="Acquire" xml:space="preserve">
     <value>コレクション</value>
   </data>
-  <data name="RunAsAdmin" xml:space="preserve">
-    <value>管理者として実行</value>
-  </data>
-  <data name="NotRunAsAdmin" xml:space="preserve">
-    <value>非管理者として実行する</value>
-  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>正常に開始されました</value>
   </data>

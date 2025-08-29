@@ -156,12 +156,6 @@
   <data name="Acquire" xml:space="preserve">
     <value>коллекция</value>
   </data>
-  <data name="RunAsAdmin" xml:space="preserve">
-    <value>Запустить от имени администратора</value>
-  </data>
-  <data name="NotRunAsAdmin" xml:space="preserve">
-    <value>Запуск от имени администратора</value>
-  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>Началось успешно</value>
   </data>

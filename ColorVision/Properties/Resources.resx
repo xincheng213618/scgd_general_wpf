@@ -156,12 +156,6 @@
   <data name="Acquire" xml:space="preserve">
     <value>采集</value>
   </data>
-  <data name="RunAsAdmin" xml:space="preserve">
-    <value>以管理员身份运行</value>
-  </data>
-  <data name="NotRunAsAdmin" xml:space="preserve">
-    <value>以非管理员身份运行</value>
-  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>启动成功</value>
   </data>

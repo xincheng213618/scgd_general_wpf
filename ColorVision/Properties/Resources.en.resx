@@ -156,12 +156,6 @@
   <data name="Acquire" xml:space="preserve">
     <value>Acquire</value>
   </data>
-  <data name="RunAsAdmin" xml:space="preserve">
-    <value>Run as administrator</value>
-  </data>
-  <data name="NotRunAsAdmin" xml:space="preserve">
-    <value>Run as non-administrator</value>
-  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>Started successfully</value>
   </data>

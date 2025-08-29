@@ -304,15 +304,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 以非管理员身份运行 的本地化字符串。
-        /// </summary>
-        public static string NotRunAsAdmin {
-            get {
-                return ResourceManager.GetString("NotRunAsAdmin", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 插件管理器窗口 的本地化字符串。
         /// </summary>
         public static string PluginManagerWindow {
@@ -354,15 +345,6 @@ namespace ColorVision.Properties {
         public static string Rollback {
             get {
                 return ResourceManager.GetString("Rollback", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 以管理员身份运行 的本地化字符串。
-        /// </summary>
-        public static string RunAsAdmin {
-            get {
-                return ResourceManager.GetString("RunAsAdmin", resourceCulture);
             }
         }
         

@@ -156,12 +156,6 @@
   <data name="Acquire" xml:space="preserve">
     <value>수집</value>
   </data>
-  <data name="RunAsAdmin" xml:space="preserve">
-    <value>관리자로 실행</value>
-  </data>
-  <data name="NotRunAsAdmin" xml:space="preserve">
-    <value>비관리자로 실행</value>
-  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>성공적으로 시작되었습니다</value>
   </data>
