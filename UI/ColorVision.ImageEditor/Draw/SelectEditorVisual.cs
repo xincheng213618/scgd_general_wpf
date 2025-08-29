@@ -143,7 +143,7 @@ namespace ColorVision.ImageEditor.Draw
             SelectVisual = selectVisual;
             if (selectVisual != null)
             {
-                _Rect = selectVisual.GetRect();
+                Rect = selectVisual.GetRect();
             }
             Render();
         }

@@ -9,7 +9,6 @@ using log4net;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -50,37 +49,6 @@ namespace ColorVision.ImageEditor
         public ImageView()
         {
             InitializeComponent();
-
-        }
-
-        public static Dictionary<ColormapTypes, string> GetColormapVDictionary()
-        {
-            var colormapDictionary = new Dictionary<ColormapTypes, string>
-        {
-            { ColormapTypes.COLORMAP_AUTUMN, "Assets/Colormaps/colorscale_autumn.jpg" },
-            { ColormapTypes.COLORMAP_BONE, "Assets/Colormaps/colorscale_bone.jpg" },
-            { ColormapTypes.COLORMAP_JET, "Assets/Colormaps/colorscale_jet.jpg" },
-            { ColormapTypes.COLORMAP_WINTER, "Assets/Colormaps/colorscale_winter.jpg" },
-            { ColormapTypes.COLORMAP_RAINBOW, "Assets/Colormaps/colorscale_rainbow.jpg" },
-            { ColormapTypes.COLORMAP_OCEAN, "Assets/Colormaps/colorscale_ocean.jpg" },
-            { ColormapTypes.COLORMAP_SUMMER, "Assets/Colormaps/colorscale_summer.jpg" },
-            { ColormapTypes.COLORMAP_SPRING, "Assets/Colormaps/colorscale_spring.jpg" },
-            { ColormapTypes.COLORMAP_COOL, "Assets/Colormaps/colorscale_cool.jpg" },
-            { ColormapTypes.COLORMAP_HSV, "Assets/Colormaps/colorscale_hsv.jpg" },
-            { ColormapTypes.COLORMAP_PINK, "Assets/Colormaps/colorscale_pink.jpg" },
-            { ColormapTypes.COLORMAP_HOT, "Assets/Colormaps/colorscale_hot.jpg" },
-            { ColormapTypes.COLORMAP_PARULA, "Assets/Colormaps/colorscale_parula.jpg" },
-            { ColormapTypes.COLORMAP_MAGMA, "Assets/Colormaps/colorscale_magma.jpg" },
-            { ColormapTypes.COLORMAP_INFERNO, "Assets/Colormaps/colorscale_inferno.jpg" },
-            { ColormapTypes.COLORMAP_PLASMA, "Assets/Colormaps/colorscale_plasma.jpg" },
-            { ColormapTypes.COLORMAP_VIRIDIS, "Assets/Colormaps/colorscale_viridis.jpg" },
-            { ColormapTypes.COLORMAP_CIVIDIS, "Assets/Colormaps/colorscale_cividis.jpg" },
-            { ColormapTypes.COLORMAP_TWILIGHT, "Assets/Colormaps/colorscale_twilight.jpg" },
-            { ColormapTypes.COLORMAP_TWILIGHT_SHIFTED, "Assets/Colormaps/colorscale_twilight_shifted.jpg" },
-            { ColormapTypes.COLORMAP_TURBO, "Assets/Colormaps/colorscale_turbo.jpg" },
-            { ColormapTypes.COLORMAP_DEEPGREEN, "Assets/Colormaps/colorscale_deepgreen.jpg" }
-        };
-            return colormapDictionary;
         }
 
         public static Dictionary<ColormapTypes, string> GetColormapHDictionary()
@@ -147,6 +115,7 @@ namespace ColorVision.ImageEditor
                 }
             }
             ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow,Config);
+            ImageViewModel.PropertyGrid = PropertyGrid2;
             this.DataContext = this;
             AdvancedStackPanel.DataContext = this;
             ToolBarLeft.DataContext = Config;
@@ -314,7 +283,6 @@ namespace ColorVision.ImageEditor
                     menuIte2.Click += (s, e) =>
                     {
                         ImageShow.RemoveVisual(DrawingVisual);
-                        PropertyGrid2.SelectedObject = null;
                     };
                     ContextMenu.Items.Add(menuItem);
                     ContextMenu.Items.Add(menuIte2);
@@ -330,7 +298,6 @@ namespace ColorVision.ImageEditor
         {
             if (sender is MenuItem menuItem && menuItem.Tag is Visual visual)
             {
-                PropertyGrid2.SelectedObject = null;
                 ImageShow.RemoveVisual(visual);
             }
         }
@@ -405,8 +372,6 @@ namespace ColorVision.ImageEditor
                     DrawCircleCache.Attribute.Center = MouseDownP;
                     DrawCircleCache.Attribute.Radius = DefalutRadius;
                     drawCanvas.AddVisual(DrawCircleCache);
-
-                    ImageViewModel.SelectDrawingVisual = null;
                     SelectDrawingVisualsClear();
                     return;
                 }
@@ -418,8 +383,6 @@ namespace ColorVision.ImageEditor
                     DrawingRectangleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
 
                     drawCanvas.AddVisual(DrawingRectangleCache);
-
-                    ImageViewModel.SelectDrawingVisual = null;
                     SelectDrawingVisualsClear();
                     return;
                 }
@@ -443,12 +406,6 @@ namespace ColorVision.ImageEditor
                     return;
                 if (MouseVisual is IDrawingVisual drawingVisual)
                 {
-                    PropertyChangedEventHandler @event = (s, e) => PropertyGrid2.Refresh();
-                    if (PropertyGrid2.SelectedObject is BaseProperties viewModelBase)
-                        viewModelBase.PropertyChanged -= @event;
-                    PropertyGrid2.SelectedObject = drawingVisual.BaseAttribute;
-                    drawingVisual.BaseAttribute.PropertyChanged += @event;
-
                     if (ImageViewModel.ImageEditMode == true)
                     {
                         if (ImageViewModel.SelectDrawingVisuals != null && drawingVisual is DrawingVisual visual1 && ImageViewModel.SelectDrawingVisuals.Contains(visual1))
@@ -656,19 +613,8 @@ namespace ColorVision.ImageEditor
                         if (DrawCircleCache.Attribute.Radius == DefalutRadius)
                             DrawCircleCache.Render();
 
-                        if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
-                        {
-                            viewModelBase.PropertyChanged -= (s, e) =>
-                            {
-                                PropertyGrid2.Refresh();
-                            };
-                        }
+                        ImageViewModel.SelectDrawingVisual = DrawCircleCache;
 
-                        PropertyGrid2.SelectedObject = DrawCircleCache.Attribute;
-                        DrawCircleCache.Attribute.PropertyChanged += (s, e) =>
-                        {
-                            PropertyGrid2.Refresh();
-                        };
                         DrawCircleCache.AutoAttributeChanged = true;
 
                         DefalutRadius = DrawCircleCache.Radius;
@@ -679,21 +625,9 @@ namespace ColorVision.ImageEditor
                         if (DrawingRectangleCache.Attribute.Rect.Width == DefalutWidth && DrawingRectangleCache.Attribute.Rect.Height == DefalutHeight)
                             DrawingRectangleCache.Render();
 
-                        if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
-                        {
-                            viewModelBase.PropertyChanged -= (s, e) =>
-                            {
-                                PropertyGrid2.Refresh();
-                            };
-                        }
-                        PropertyGrid2.SelectedObject = DrawingRectangleCache.Attribute;
                         DrawingRectangleCache.AutoAttributeChanged = true;
 
-                        DrawingRectangleCache.Attribute.PropertyChanged += (s, e) =>
-                        {
-                            PropertyGrid2.Refresh();
-                        };
-
+                        ImageViewModel.SelectDrawingVisual = DrawingRectangleCache;
 
                         DefalutWidth = DrawingRectangleCache.Attribute.Rect.Width;
                         DefalutHeight = DrawingRectangleCache.Attribute.Rect.Height;
@@ -740,6 +674,8 @@ namespace ColorVision.ImageEditor
                 }
             }
         }
+
+
 
         private void Button7_Click(object sender, RoutedEventArgs e)
         {
@@ -862,7 +798,15 @@ namespace ColorVision.ImageEditor
             {
                 if (_hImageCache == null && ViewBitmapSource != null && ViewBitmapSource is WriteableBitmap writeableBitmap)
                 {
-                    _hImageCache = writeableBitmap.ToHImage();
+                    if (writeableBitmap.Dispatcher.CheckAccess())
+                    {
+                        _hImageCache = writeableBitmap.ToHImage();
+                    }
+                    else
+                    {
+                        _hImageCache = writeableBitmap.Dispatcher.Invoke(() => writeableBitmap.ToHImage());
+                    }
+
                 }
                 return _hImageCache;
             }

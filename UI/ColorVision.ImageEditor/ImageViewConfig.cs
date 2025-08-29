@@ -101,5 +101,8 @@ namespace ColorVision.ImageEditor
         public double BlueBalance { get => _BlueBalance; set { _BlueBalance = value; OnPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
         private double _BlueBalance = 1;
 
+
+        public bool IsShowPropertyEdit { get => _IsShowPropertyEdit; set { _IsShowPropertyEdit = value; OnPropertyChanged();} }
+        private bool _IsShowPropertyEdit;
     }
 }

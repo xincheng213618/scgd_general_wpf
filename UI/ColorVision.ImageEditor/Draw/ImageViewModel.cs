@@ -8,6 +8,7 @@ using ColorVision.Util.Draw.Special;
 using Gu.Wpf.Geometry;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -78,18 +79,33 @@ namespace ColorVision.ImageEditor.Draw
 
         public ToolReferenceLine ToolConcentricCircle { get; set; }
 
+        public System.Windows.Forms.PropertyGrid PropertyGrid { get; set; }
+
         public DrawingVisual? SelectDrawingVisual { get => _SelectDrawingVisual  ; set 
             {
                 _SelectDrawingVisual = value;
                 if (_SelectDrawingVisual is ISelectVisual selectVisual)
                 {
                     SelectEditorVisual.SetRender(selectVisual);
+
+                    if (PropertyGrid !=null && _SelectDrawingVisual is IDrawingVisual drawingVisualBase)
+                    {
+                        if (PropertyGrid.SelectedObject is IDrawingVisual drawingVisualold)
+                            drawingVisualold.BaseAttribute.PropertyChanged -= Attribute_PropertyGrid2;
+                        PropertyGrid.SelectedObject = drawingVisualBase.BaseAttribute;
+                        drawingVisualBase.BaseAttribute.PropertyChanged += Attribute_PropertyGrid2;
+                    }
                 }
                 else
                 {
                     SelectEditorVisual.SetRender(null);
                 }
             }
+        }
+
+        private void Attribute_PropertyGrid2(object? sender, PropertyChangedEventArgs e)
+        {
+             PropertyGrid.Refresh();
         }
         private DrawingVisual? _SelectDrawingVisual;
 
