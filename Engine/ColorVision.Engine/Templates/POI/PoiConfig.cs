@@ -5,6 +5,7 @@ using ColorVision.Database;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.ImageEditor;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using Newtonsoft.Json;
@@ -22,35 +23,6 @@ namespace ColorVision.Engine.Templates.POI
         X = 0,
         Y = 1,
         Z = 2
-    }
-
-    public enum RiPointTypes
-    {
-        Circle = 0,
-        Rect = 1,
-        Mask = 2,
-        Point = 3,
-        Polygon = 4
-    }
-
-    public enum BorderType
-    {
-        [Description("无")]
-        None = -1,
-        [Description("绝对值")]
-        Absolute,
-        [Description("相对值")]
-        Relative
-    }
-
-    public enum DrawingPOIPosition
-    {
-        [Description("线上")]
-        LineOn,
-        [Description("内切")]
-        Internal,
-        [Description("外切")]
-        External
     }
 
     public class POIFilter : ViewModelBase
@@ -79,25 +51,6 @@ namespace ColorVision.Engine.Templates.POI
         private int _Y;
     }
 
-
-
-    public class FindLuminousArea : ViewModelBase
-    {
-        [DisplayName("Threshold")]
-        public int Threshold { get => _Threshold; set { if (value > 255) value = 255; if (value < 0) value = 0; _Threshold = value;OnPropertyChanged(); } }
-        private int _Threshold = 100;
-    }
-
-    public class FindLuminousAreaCorner : ViewModelBase
-    {
-        [DisplayName("Threshold")]
-        public int Threshold { get => _Threshold; set { if (value > 255) value = 255; if (value < 0) value = 0; _Threshold = value; OnPropertyChanged(); } }
-        private int _Threshold = 100;
-
-        [DisplayName("UseRotatedRect")]
-        public bool UseRotatedRect { get => _UseRotatedRect; set { _UseRotatedRect = value; OnPropertyChanged(); } }
-        private bool _UseRotatedRect = true;
-    }
 
     public class PoiConfig : ViewModelBase
     {
@@ -168,12 +121,12 @@ namespace ColorVision.Engine.Templates.POI
 
 
         [JsonIgnore]
-        public bool IsPointCircle { get => DefaultPointType == RiPointTypes.Circle; set { if (value) DefaultPointType = RiPointTypes.Circle; OnPropertyChanged(); } }
+        public bool IsPointCircle { get => DefaultPointType == GraphicTypes.Circle; set { if (value) DefaultPointType = GraphicTypes.Circle; OnPropertyChanged(); } }
         [JsonIgnore]
-        public bool IsPointRect { get => DefaultPointType == RiPointTypes.Rect; set { if (value) DefaultPointType = RiPointTypes.Rect; OnPropertyChanged(); } }
+        public bool IsPointRect { get => DefaultPointType == GraphicTypes.Rect; set { if (value) DefaultPointType = GraphicTypes.Rect; OnPropertyChanged(); } }
         [JsonIgnore]
-        public bool IsPointMask { get => DefaultPointType == RiPointTypes.Mask; set { if (value) DefaultPointType = RiPointTypes.Rect; OnPropertyChanged(); } }
-        public RiPointTypes DefaultPointType { set; get; }
+        public bool IsPointMask { get => DefaultPointType == GraphicTypes.Mask; set { if (value) DefaultPointType = GraphicTypes.Rect; OnPropertyChanged(); } }
+        public GraphicTypes DefaultPointType { set; get; }
 
         public FindLuminousArea FindLuminousArea { get; set; } = new FindLuminousArea();
 
@@ -206,17 +159,17 @@ namespace ColorVision.Engine.Templates.POI
         [JsonIgnore]
         public int CenterY { get => (int)Center.Y; set { Center = new Point(Center.X, value); OnPropertyChanged(); } }
 
-        public RiPointTypes PointType { set; get; }
+        public GraphicTypes PointType { set; get; }
 
         [JsonIgnore]
-        public bool IsAreaCircle { get => PointType == RiPointTypes.Circle; set { if (value) PointType = RiPointTypes.Circle; OnPropertyChanged(); } }
+        public bool IsAreaCircle { get => PointType == GraphicTypes.Circle; set { if (value) PointType = GraphicTypes.Circle; OnPropertyChanged(); } }
         [JsonIgnore]
-        public bool IsAreaRect { get => PointType == RiPointTypes.Rect; set { if (value) PointType = RiPointTypes.Rect; OnPropertyChanged(); } }
+        public bool IsAreaRect { get => PointType == GraphicTypes.Rect; set { if (value) PointType = GraphicTypes.Rect; OnPropertyChanged(); } }
         [JsonIgnore]
-        public bool IsAreaMask { get => PointType == RiPointTypes.Mask; set { if (value) PointType = RiPointTypes.Mask; OnPropertyChanged(); } }
+        public bool IsAreaMask { get => PointType == GraphicTypes.Mask; set { if (value) PointType = GraphicTypes.Mask; OnPropertyChanged(); } }
 
         [JsonIgnore]
-        public bool IsAreaPolygon { get => PointType == RiPointTypes.Polygon; set { if (value) PointType = RiPointTypes.Polygon; OnPropertyChanged(); } }
+        public bool IsAreaPolygon { get => PointType == GraphicTypes.Polygon; set { if (value) PointType = GraphicTypes.Polygon; OnPropertyChanged(); } }
 
         public bool IsUserDraw { get => _IsUserDraw; set { _IsUserDraw = value; OnPropertyChanged(); } }
         private bool _IsUserDraw;

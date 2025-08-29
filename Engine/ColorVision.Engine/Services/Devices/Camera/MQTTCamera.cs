@@ -11,6 +11,7 @@ using CVCommCore;
 using MQTTMessageLib;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -45,6 +46,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
             //string Msg = "{\"Version\":\"1.0\",\"EventName\":\"AutoFocus\",\"ServiceName\":\"RC_local/Camera/SVR.Camera.Default/CMD\",\"DeviceName\":null,\"DeviceCode\":\"DEV.Camera.Default1\",\"SerialNumber\":\"\",\"Code\":0,\"MsgID\":\"ac152c4d-9501-49fe-b082-03110dc26479\",\"data\":{\"Position\":157909,\"VidPosition\":111.15504121214114,\"TotalTime\":23759,\"MasterId\":54,\"MasterResultType\":108,\"MasterValue\":null}}";
             //msg = JsonConvert.DeserializeObject<MsgReturn>(Msg);
 
+            //string Msg = "{\"Version\":\"1.0\",\"EventName\":\"GetAutoExpTime\",\"ServiceName\":\"RC_local/Camera/SVR.Camera.Default/CMD\",\"DeviceName\":null,\"DeviceCode\":\"DEV.Camera.Default\",\"SerialNumber\":null,\"Code\":0,\"MsgID\":\"21ea4913-3f22-42d7-9946-d85e5b05f2d8\",\"data\":{\"ExpTime\":[{\"result\":28.9528713,\"resultSaturation\":0.0},{\"result\":216.322388,\"resultSaturation\":0.0},{\"result\":2382.22241,\"resultSaturation\":0.0}],\"NDPort\":2}}";
+            //msg = JsonConvert.DeserializeObject<MsgReturn>(Msg);
+
             if (Config.Code != null && msg.DeviceCode != Config.Code) return;
 
             if (msg.Code == 0)
@@ -58,8 +62,54 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     case MQTTCameraEventEnum.Event_GetData:
                         break;
                     case "GetAutoExpTime":
-                        if (msg.Data != null && msg.Data[0].result != null)
+                        if (msg.Data == null) break;
+                        try
                         {
+                            if (msg.Data[0].result != null)
+                            {
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    if (Config.IsExpThree)
+                                    {
+                                        for (int i = 0; i < 3; i++)
+                                        {
+                                            if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_X)
+                                            {
+                                                Config.ExpTimeR = msg.Data[i].result;
+                                                Config.SaturationR = msg.Data[i].resultSaturation;
+                                            }
+                                            if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Y)
+                                            {
+                                                Config.ExpTimeG = msg.Data[i].result;
+                                                Config.SaturationG = msg.Data[i].resultSaturation;
+                                            }
+
+                                            if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Z)
+                                            {
+                                                Config.ExpTimeB = msg.Data[i].result;
+                                                Config.SaturationB = msg.Data[i].resultSaturation;
+                                            }
+                                        }
+
+                                        string Msg = $"SaturationR:{Config.SaturationR}  ExpTime:{Config.ExpTimeR}" + Environment.NewLine +
+                                                     $"SaturationG:{Config.SaturationG}  ExpTime:{Config.ExpTimeG}" + Environment.NewLine +
+                                                     $"SaturationB:{Config.SaturationB}  ExpTime:{Config.ExpTimeB}" + Environment.NewLine;
+                                        MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
+                                    }
+                                    else
+                                    {
+                                        Config.ExpTime = msg.Data[0].result;
+                                        Config.Saturation = msg.Data[0].resultSaturation;
+
+                                        string Msg = $"Saturation:{Config.Saturation}  ExpTime:{Config.ExpTime}";
+                                        MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
+                                    }
+                                });
+                            }
+                        }
+                        catch(Exception ex)
+                        {
+                            log.Info("ND高版本支持");
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 if (Config.IsExpThree)
@@ -68,19 +118,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                     {
                                         if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_X)
                                         {
-                                            Config.ExpTimeR = msg.Data[i].result;
-                                            Config.SaturationR = msg.Data[i].resultSaturation;
+                                            Config.ExpTimeR = msg.Data.ExpTime[i].result;
+                                            Config.SaturationR = msg.Data.ExpTime[i].resultSaturation;
                                         }
                                         if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Y)
                                         {
-                                            Config.ExpTimeG = msg.Data[i].result;
-                                            Config.SaturationG = msg.Data[i].resultSaturation;
+                                            Config.ExpTimeG = msg.Data.ExpTime[i].result;
+                                            Config.SaturationG = msg.Data.ExpTime[i].resultSaturation;
                                         }
 
                                         if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Z)
                                         {
-                                            Config.ExpTimeB = msg.Data[i].result;
-                                            Config.SaturationB = msg.Data[i].resultSaturation;
+                                            Config.ExpTimeB = msg.Data.ExpTime[i].result;
+                                            Config.SaturationB = msg.Data.ExpTime[i].resultSaturation;
                                         }
                                     }
 
@@ -91,27 +141,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                 }
                                 else
                                 {
-                                    Config.ExpTime = msg.Data[0].result;
-                                    Config.Saturation = msg.Data[0].resultSaturation;
+                                    Config.ExpTime = msg.Data.ExpTime[0].result;
+                                    Config.Saturation = msg.Data.ExpTime[0].resultSaturation;
 
                                     string Msg = $"Saturation:{Config.Saturation}  ExpTime:{Config.ExpTime}";
                                     MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
                                 }
-                                try
+                                if (msg.Data.NDPort != null)
                                 {
-                                    if (msg.Data.NDPort != null)
-                                    {
-                                        Config.NDPort = msg.Data.NDPort;
-                                    }
-
+                                    Config.NDPort = msg.Data.NDPort;
                                 }
-                                catch( Exception ex)
-                                {
-                                    log.Info("ND高版本支持");
-                                } 
-
-                            } );
+                            });
                         }
+
                         break;
                     case "SaveLicense":
                         log.Debug($"SaveLicense:{msg.Data}");

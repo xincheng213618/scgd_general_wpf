@@ -5,6 +5,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.POI;
+using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using log4net;
@@ -191,7 +192,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
                                 PixY = item.y,
                                 PixHeight =item.w,
                                 PixWidth = item.h,
-                                PointType = RiPointTypes.Rect,
+                                PointType = GraphicTypes.Rect,
                                 Id = item.id
                             };
                             templatePoi1.ImportTemp.PoiPoints.Add(poiPoint);

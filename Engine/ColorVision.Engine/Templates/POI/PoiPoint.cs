@@ -1,4 +1,5 @@
-﻿using ColorVision.UI.Sorts;
+﻿using ColorVision.ImageEditor;
+using ColorVision.UI.Sorts;
 
 namespace ColorVision.Engine.Templates.POI
 {
@@ -22,7 +23,7 @@ namespace ColorVision.Engine.Templates.POI
         public int Id { set; get; }
 
         public string Name { set; get; }
-        public RiPointTypes PointType { set; get; }
+        public GraphicTypes PointType { set; get; }
         public double PixX { set; get; }
         public double PixY { set; get; }
         public double PixWidth { set; get; }

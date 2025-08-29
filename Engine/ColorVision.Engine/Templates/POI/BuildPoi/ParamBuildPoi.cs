@@ -1,4 +1,5 @@
-﻿using CVCommCore.CVAlgorithm;
+﻿using ColorVision.ImageEditor;
+using CVCommCore.CVAlgorithm;
 using System.Collections.Generic;
 using System.ComponentModel;
 
@@ -42,8 +43,8 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
         private POIPointTypes _PointType = POIPointTypes.Circle;
 
         [Category("BuildPOI"), Description("POI点位置")]
-        public DrawingPOIPosition PointPosition { get => GetValue(_PointPosition); set { SetProperty(ref _PointPosition, value); } }
-        private DrawingPOIPosition _PointPosition = DrawingPOIPosition.LineOn;
+        public DrawingGraphicPosition PointPosition { get => GetValue(_PointPosition); set { SetProperty(ref _PointPosition, value); } }
+        private DrawingGraphicPosition _PointPosition = DrawingGraphicPosition.LineOn;
 
         [Category("BuildPOI"), Description("POI点宽度")]
         public int PointWidth { get => GetValue(_PointWidth); set { SetProperty(ref _PointWidth, value); } }
@@ -54,8 +55,8 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
         private int _PointHeight = 3;
 
         [Category("BuildPOI"), Description("布点边距类型")]
-        public BorderType MarginType { get => GetValue(_MarginType); set { SetProperty(ref _MarginType, value); } }
-        private BorderType _MarginType = BorderType.Relative;
+        public GraphicBorderType MarginType { get => GetValue(_MarginType); set { SetProperty(ref _MarginType, value); } }
+        private GraphicBorderType _MarginType = GraphicBorderType.Relative;
 
         [Category("BuildPOI"), Description("布点左边距")]
         public int MarginLeft { get => GetValue(_MarginLeft); set { SetProperty(ref _MarginLeft, value); } }

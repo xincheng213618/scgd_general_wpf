@@ -16,6 +16,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using ColorVision.Engine.Services;
+using ColorVision.ImageEditor;
 
 namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
 {
@@ -128,7 +129,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
                             PixY = (double)item.PoiY,
                             PixHeight = (double)item.PoiHeight,
                             PixWidth = (double)item.PoiWidth,
-                            PointType = (RiPointTypes)item.PoiType,
+                            PointType = (GraphicTypes)item.PoiType,
                             Id = -1
                         };
                         templatePoi1.ImportTemp.PoiPoints.Add(poiPoint);

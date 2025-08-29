@@ -6,6 +6,7 @@ using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
 using System;
@@ -106,7 +107,7 @@ namespace ColorVision.Engine.Services
                         PixY = (double)item.PoiY,
                         PixHeight = (double)item.PoiHeight,
                         PixWidth = (double)item.PoiWidth,
-                        PointType = (RiPointTypes)item.PoiType,
+                        PointType = (GraphicTypes)item.PoiType,
                         Id = -1
                     };
                     templatePoi1.ImportTemp.PoiPoints.Add(poiPoint);
@@ -137,7 +138,7 @@ namespace ColorVision.Engine.Services
                     PixY = item.Point.PixelY,
                     PixHeight = item.Point.Height,
                     PixWidth = item.Point.Width,    
-                    PointType = (RiPointTypes)item.Point.PointType,
+                    PointType = (GraphicTypes)item.Point.PointType,
                     Id =-1
                 };
                 templatePoi.ImportTemp.PoiPoints.Add(poiPoint);

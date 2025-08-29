@@ -16,6 +16,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
 using ColorVision.Engine.Services;
+using ColorVision.ImageEditor;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi
 {
@@ -29,7 +30,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
             poiParam.PoiPoints.Clear();
             foreach (var item in poiInfo.Positions)
             {
-                poiParam.PoiPoints.Add(new PoiPoint() { PixX = item.PixelX, PixY = item.PixelY ,PointType = (RiPointTypes)poiInfo.HeaderInfo.PointType ,PixWidth = poiInfo .HeaderInfo.Width, PixHeight = poiInfo.HeaderInfo.Height });
+                poiParam.PoiPoints.Add(new PoiPoint() { PixX = item.PixelX, PixY = item.PixelY ,PointType = (GraphicTypes)poiInfo.HeaderInfo.PointType ,PixWidth = poiInfo .HeaderInfo.Width, PixHeight = poiInfo.HeaderInfo.Height });
             }
             poiParam.PoiConfig.AreaRectRow = poiInfo.HeaderInfo.Rows;
             poiParam.PoiConfig.AreaRectCol = poiInfo.HeaderInfo.Cols;

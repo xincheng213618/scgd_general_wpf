@@ -1,4 +1,5 @@
 ﻿using ColorVision.Database;
+using ColorVision.ImageEditor;
 using SqlSugar;
 
 namespace ColorVision.Engine.Templates.POI
@@ -30,7 +31,7 @@ namespace ColorVision.Engine.Templates.POI
         [SugarColumn(ColumnName ="pid", Length = 11, IsNullable = true)]
         public int? Pid { get; set; }
         [SugarColumn(ColumnName ="pt_type", Length = 11, IsNullable = true)]
-        public RiPointTypes Type { get; set; }
+        public GraphicTypes Type { get; set; }
         [SugarColumn(ColumnName ="pix_x", Length = 11, IsNullable = true)]
         public int? PixX { get; set; }
         [SugarColumn(ColumnName ="pix_y", Length = 11, IsNullable = true)]

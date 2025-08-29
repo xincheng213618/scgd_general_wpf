@@ -25,7 +25,7 @@ using System.Windows.Media.Imaging;
 namespace ColorVision.ImageEditor
 {
     /// <summary>
-    /// ImageView.xaml 的交互逻辑
+    /// ImageShow.xaml 的交互逻辑
     /// </summary>
     public partial class ImageView : UserControl, IDisposable
     {
@@ -1514,7 +1514,8 @@ namespace ColorVision.ImageEditor
 
         private void EditDIExpand_Click(object sender, RoutedEventArgs e)
         {
-
+            GraphicEditingWindow graphicEditingWindow = new GraphicEditingWindow(this) { Owner = Application.Current.GetActiveWindow()};
+            graphicEditingWindow.Show();
         }
     }
 }
