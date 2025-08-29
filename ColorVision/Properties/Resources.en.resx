@@ -132,9 +132,6 @@
   <data name="MenuSettings" xml:space="preserve">
     <value>_Settings</value>
   </data>
-  <data name="MenuOptions" xml:space="preserve">
-    <value>_Options</value>
-  </data>
   <data name="About" xml:space="preserve">
     <value>About</value>
   </data>
@@ -186,14 +183,8 @@
   <data name="CheckUpdatesOnStartup" xml:space="preserve">
     <value>Detect updates when software starts</value>
   </data>
-  <data name="TransparentWindow" xml:space="preserve">
-    <value>Transparent window</value>
-  </data>
   <data name="Project" xml:space="preserve">
     <value>Project</value>
-  </data>
-  <data name="EnableDatabase" xml:space="preserve">
-    <value>Enable Database</value>
   </data>
   <data name="Acquire" xml:space="preserve">
     <value>Acquire</value>
@@ -209,9 +200,6 @@
   </data>
   <data name="ExperimentalFeature" xml:space="preserve">
     <value>Experimental features</value>
-  </data>
-  <data name="SerialNumber" xml:space="preserve">
-    <value>Serial Number</value>
   </data>
   <data name="CurrentVersionIsUpToDate" xml:space="preserve">
     <value>The current version is already the latest version</value>
@@ -281,9 +269,6 @@
   </data>
   <data name="UploadFile" xml:space="preserve">
     <value>Upload files</value>
-  </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>_Edit</value>
   </data>
   <data name="PluginManagerWindow" xml:space="preserve">
     <value>PluginManagerWindow</value>

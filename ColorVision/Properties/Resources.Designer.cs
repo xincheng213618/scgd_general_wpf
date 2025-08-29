@@ -250,15 +250,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 启用数据库 的本地化字符串。
-        /// </summary>
-        public static string EnableDatabase {
-            get {
-                return ResourceManager.GetString("EnableDatabase", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 发生错误 的本地化字符串。
         /// </summary>
         public static string ErrorOccurred {
@@ -336,24 +327,6 @@ namespace ColorVision.Properties {
         public static string MenuAbout {
             get {
                 return ResourceManager.GetString("MenuAbout", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 编辑(_E) 的本地化字符串。
-        /// </summary>
-        public static string MenuEdit {
-            get {
-                return ResourceManager.GetString("MenuEdit", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 选项(_O) 的本地化字符串。
-        /// </summary>
-        public static string MenuOptions {
-            get {
-                return ResourceManager.GetString("MenuOptions", resourceCulture);
             }
         }
         
@@ -520,15 +493,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 序列号 的本地化字符串。
-        /// </summary>
-        public static string SerialNumber {
-            get {
-                return ResourceManager.GetString("SerialNumber", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 服务协议 的本地化字符串。
         /// </summary>
         public static string ServiceAgreement {
@@ -588,15 +552,6 @@ namespace ColorVision.Properties {
         public static string TimeLeft {
             get {
                 return ResourceManager.GetString("TimeLeft", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 透明窗口 的本地化字符串。
-        /// </summary>
-        public static string TransparentWindow {
-            get {
-                return ResourceManager.GetString("TransparentWindow", resourceCulture);
             }
         }
         

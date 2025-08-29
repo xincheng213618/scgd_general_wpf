@@ -132,9 +132,6 @@
   <data name="MenuSettings" xml:space="preserve">
     <value>設定 (_S)</value>
   </data>
-  <data name="MenuOptions" xml:space="preserve">
-    <value>オプション (_O)</value>
-  </data>
   <data name="About" xml:space="preserve">
     <value>について</value>
   </data>
@@ -186,14 +183,8 @@
   <data name="CheckUpdatesOnStartup" xml:space="preserve">
     <value>ソフトウェアの起動時にアップデートを検出する</value>
   </data>
-  <data name="TransparentWindow" xml:space="preserve">
-    <value>透明な窓</value>
-  </data>
   <data name="Project" xml:space="preserve">
     <value>プロジェクト</value>
-  </data>
-  <data name="EnableDatabase" xml:space="preserve">
-    <value>データベースを有効にする</value>
   </data>
   <data name="Acquire" xml:space="preserve">
     <value>コレクション</value>
@@ -209,9 +200,6 @@
   </data>
   <data name="ExperimentalFeature" xml:space="preserve">
     <value>実験的な機能</value>
-  </data>
-  <data name="SerialNumber" xml:space="preserve">
-    <value>シリアルナンバー</value>
   </data>
   <data name="CurrentVersionIsUpToDate" xml:space="preserve">
     <value>現在のバージョンはすでに最新バージョンです</value>
@@ -281,9 +269,6 @@
   </data>
   <data name="UploadFile" xml:space="preserve">
     <value>ファイルをアップロードする</value>
-  </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>編集する (_E)</value>
   </data>
   <data name="PluginManagerWindow" xml:space="preserve">
     <value>プラグインマネージャーウィンドウ</value>

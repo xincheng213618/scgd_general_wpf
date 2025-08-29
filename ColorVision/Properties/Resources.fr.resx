@@ -132,9 +132,6 @@
   <data name="MenuSettings" xml:space="preserve">
     <value>Paramètre_s</value>
   </data>
-  <data name="MenuOptions" xml:space="preserve">
-    <value>_Option</value>
-  </data>
   <data name="About" xml:space="preserve">
     <value>à propos</value>
   </data>
@@ -168,9 +165,6 @@
   <data name="Settings" xml:space="preserve">
     <value>installation</value>
   </data>
-  <data name="EnableDatabase" xml:space="preserve">
-    <value>Activer la base de données</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>Démarrer la disposition de l’interface de récupération</value>
   </data>
@@ -189,9 +183,6 @@
   <data name="CheckUpdatesOnStartup" xml:space="preserve">
     <value>Détecter les mises à jour au démarrage du logiciel</value>
   </data>
-  <data name="TransparentWindow" xml:space="preserve">
-    <value>fenêtre transparente</value>
-  </data>
   <data name="Project" xml:space="preserve">
     <value>projet</value>
   </data>
@@ -209,9 +200,6 @@
   </data>
   <data name="ExperimentalFeature" xml:space="preserve">
     <value>Fonctionnalités expérimentales</value>
-  </data>
-  <data name="SerialNumber" xml:space="preserve">
-    <value>numéro de série</value>
   </data>
   <data name="CurrentVersionIsUpToDate" xml:space="preserve">
     <value>La version actuelle est déjà la dernière version</value>
@@ -281,9 +269,6 @@
   </data>
   <data name="UploadFile" xml:space="preserve">
     <value>Télécharger des fichiers</value>
-  </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>Modifier(E)</value>
   </data>
   <data name="PluginManagerWindow" xml:space="preserve">
     <value>FenêtreGestionnaireDePlugins</value>

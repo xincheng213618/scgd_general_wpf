@@ -132,9 +132,6 @@
   <data name="MenuSettings" xml:space="preserve">
     <value>設置(_S)</value>
   </data>
-  <data name="MenuOptions" xml:space="preserve">
-    <value>選項(_O）</value>
-  </data>
   <data name="About" xml:space="preserve">
     <value>關於</value>
   </data>
@@ -186,14 +183,8 @@
   <data name="CheckUpdatesOnStartup" xml:space="preserve">
     <value>軟體啟動時偵測更新</value>
   </data>
-  <data name="TransparentWindow" xml:space="preserve">
-    <value>透明視窗</value>
-  </data>
   <data name="Project" xml:space="preserve">
     <value>工程</value>
-  </data>
-  <data name="EnableDatabase" xml:space="preserve">
-    <value>啟用資料庫</value>
   </data>
   <data name="Acquire" xml:space="preserve">
     <value>採集</value>
@@ -209,9 +200,6 @@
   </data>
   <data name="ExperimentalFeature" xml:space="preserve">
     <value>實驗性功能</value>
-  </data>
-  <data name="SerialNumber" xml:space="preserve">
-    <value>序號</value>
   </data>
   <data name="CurrentVersionIsUpToDate" xml:space="preserve">
     <value>目前版本已經是最新版本</value>
@@ -281,9 +269,6 @@
   </data>
   <data name="UploadFile" xml:space="preserve">
     <value>上傳文件</value>
-  </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>編輯(_E)</value>
   </data>
   <data name="PluginManagerWindow" xml:space="preserve">
     <value>插件管理器視窗</value>

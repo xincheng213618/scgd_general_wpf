@@ -355,69 +355,6 @@ namespace ColorVision.Update
             UpdateApplication(filePath, isIncrement);
         }
 
-        private async Task SilenceDownloadAndUpdate(Version latestVersion, string downloadPath, CancellationToken cancellationToken)
-        {
-            string downloadUrl;
-            string filePath;
-            downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/Update/ColorVision-Update-[{latestVersion}].zip";
-            filePath = Path.Combine(downloadPath, $"ColorVision-Update-[{latestVersion}].zip");
-
-            await DownloadFileAsync(downloadUrl, filePath, cancellationToken);
-
-
-            void update()
-            {
-                try
-                {
-                    // 解压缩 ZIP 文件到临时目录
-                    string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionUpdate");
-                    if (Directory.Exists(tempDirectory))
-                    {
-                        Directory.Delete(tempDirectory, true);
-                    }
-                    ZipFile.ExtractToDirectory(filePath, tempDirectory);
-
-                    // 创建批处理文件内容
-                    string batchFilePath = Path.Combine(tempDirectory, "update.bat");
-                    string programDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                    string? executableName = Path.GetFileName(Environment.ProcessPath);
-
-                    string batchContent = $@"
-@echo off
-taskkill /f /im ""{executableName}""
-timeout /t 0
-xcopy /y /e ""{tempDirectory}\*"" ""{programDirectory}""
-rd /s /q ""{tempDirectory}""
-del ""%~f0"" & exit
-";
-
-                    File.WriteAllText(batchFilePath, batchContent);
-                    // 设置批处理文件的启动信息
-                    ProcessStartInfo startInfo = new()
-                    {
-                        FileName = batchFilePath,
-                        UseShellExecute = true,
-                        WindowStyle = ProcessWindowStyle.Hidden // 隐藏命令行窗口
-                    };
-
-                    if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
-                    {
-                        startInfo.Verb = "runas"; // 请求管理员权限
-                        startInfo.WindowStyle = ProcessWindowStyle.Normal;
-                    }
-
-                    // 启动批处理文件并退出当前程序
-                    Process.Start(startInfo);
-                    Environment.Exit(0);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"更新失败: {ex.Message}");
-                }
-            }
-            AppDomain.CurrentDomain.ProcessExit += (s, e) => update();
-        }
-
         private void UpdateApplication(string downloadPath, bool isIncrement)
         {
             Application.Current.Dispatcher.Invoke(() =>

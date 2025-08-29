@@ -132,9 +132,6 @@
   <data name="MenuSettings" xml:space="preserve">
     <value>구성 (_S)</value>
   </data>
-  <data name="MenuOptions" xml:space="preserve">
-    <value>옵션 (_O)</value>
-  </data>
   <data name="About" xml:space="preserve">
     <value>소개</value>
   </data>
@@ -186,14 +183,8 @@
   <data name="CheckUpdatesOnStartup" xml:space="preserve">
     <value>소프트웨어가 시작될 때 업데이트 감지</value>
   </data>
-  <data name="TransparentWindow" xml:space="preserve">
-    <value>투명한 창</value>
-  </data>
   <data name="Project" xml:space="preserve">
     <value>프로젝트</value>
-  </data>
-  <data name="EnableDatabase" xml:space="preserve">
-    <value>데이터베이스 활성화</value>
   </data>
   <data name="Acquire" xml:space="preserve">
     <value>수집</value>
@@ -209,9 +200,6 @@
   </data>
   <data name="ExperimentalFeature" xml:space="preserve">
     <value>실험적 기능</value>
-  </data>
-  <data name="SerialNumber" xml:space="preserve">
-    <value>일련번호</value>
   </data>
   <data name="CurrentVersionIsUpToDate" xml:space="preserve">
     <value>현재 버전은 이미 최신 버전입니다</value>
@@ -281,9 +269,6 @@
   </data>
   <data name="UploadFile" xml:space="preserve">
     <value>파일 업로드</value>
-  </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>편집 (_E)</value>
   </data>
   <data name="PluginManagerWindow" xml:space="preserve">
     <value>플러그인 관리자 창</value>
