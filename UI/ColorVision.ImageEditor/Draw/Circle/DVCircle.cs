@@ -5,13 +5,6 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public interface ISelectVisual
-    {
-        public Rect GetRect();
-        public void SetRect(Rect rect);
-
-
-    }
     public class DVCircle : DrawingVisualBase<CircleProperties>, IDrawingVisual,ICircle, ISelectVisual
     {
         public bool AutoAttributeChanged { get; set; }

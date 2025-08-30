@@ -59,6 +59,8 @@ namespace ColorVision.ImageEditor.Draw
 
         public bool GetContainingRect(Point point)
         {
+            if (SelectVisual == null) return false;
+
             IsEditor = false;
 
             double thickness = 1 / ZoomboxSub.ContentMatrix.M11;
@@ -158,7 +160,11 @@ namespace ColorVision.ImageEditor.Draw
             if (SelectVisual == null)
                 return;
             double thickness = 1 / ZoomboxSub.ContentMatrix.M11;
+            double thickness1 = thickness * 1.5;
+;
+            dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), Rect);
             dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), Rect);
+
             // 小矩形的尺寸
             double smallRectSize = 10 * thickness;
             double halfSmallRectSize = smallRectSize / 2;
@@ -175,6 +181,19 @@ namespace ColorVision.ImageEditor.Draw
             Rect middleLeft = new Rect(Rect.Left - halfSmallRectSize, Rect.Top + (Rect.Height / 2) - halfSmallRectSize, smallRectSize, smallRectSize);
             Rect middleRight = new Rect(Rect.Right - halfSmallRectSize, Rect.Top + (Rect.Height / 2) - halfSmallRectSize, smallRectSize, smallRectSize);
             // 绘制小矩形
+
+
+
+            dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), topLeft);
+            dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), topRight);
+            dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), bottomLeft);
+            dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), bottomRight);
+
+            dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), middleTop);
+            dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), middleBottom);
+            dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), middleLeft);
+            dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), middleRight);
+
             dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), topLeft);
             dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), topRight);
             dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), bottomLeft);
@@ -185,16 +204,25 @@ namespace ColorVision.ImageEditor.Draw
             dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), middleLeft);
             dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), middleRight);
 
+
+
+
+
+
+
             Point start = new Point(middleTop.Left + middleTop.Width / 2, middleTop.Top + middleTop.Height / 2);
             Point end = start + new Vector(0, -40 * thickness);
 
             // Draw line
+            dc.DrawLine(new Pen(Brushes.Black, thickness1), start, end);
             dc.DrawLine(new Pen(Brushes.White, thickness), start, end);
 
             // Draw rotation icon (simple circle for demonstration)
             double iconSize = 10 * thickness;
             Rect iconRect = new Rect(end.X - iconSize / 2, end.Y - iconSize / 2, iconSize, iconSize);
+            dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.Black, thickness1), end, iconSize / 2, iconSize / 2);
             dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.White, thickness), end, iconSize / 2, iconSize / 2);
+
         }
 
         public void Dispose()

@@ -64,11 +64,11 @@ namespace ColorVision.ImageEditor.Draw
 
         private DrawCanvas Image { get; set; }
 
-        private BezierCurveManager BezierCurveManager { get; set; }
+        public BezierCurveManager BezierCurveManager { get; set; }
 
-        private CircleManager CircleManager { get; set; }
+        public CircleManager CircleManager { get; set; }
 
-        private RectangleManager RectangleManager { get; set; }
+        public RectangleManager RectangleManager { get; set; }
 
         public MouseMagnifier MouseMagnifier { get; set; }
 
