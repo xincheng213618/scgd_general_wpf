@@ -240,7 +240,6 @@ namespace ColorVision.ImageEditor
         private bool IsMouseDown;
         private Point MouseDownP;
 
-        private DVCircle DrawCircleCache;
         private DVRectangle DrawingRectangleCache;
         private DVPolygon? DrawingVisualPolygonCache;
 
@@ -365,12 +364,6 @@ namespace ColorVision.ImageEditor
 
                 if (ImageViewModel.DrawCircle)
                 {
-                    DrawCircleCache = new DVCircle() { AutoAttributeChanged = false };
-                    DrawCircleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                    DrawCircleCache.Attribute.Center = MouseDownP;
-                    DrawCircleCache.Attribute.Radius = DefalutRadius;
-                    drawCanvas.AddVisual(DrawCircleCache);
-                    SelectDrawingVisualsClear();
                     return;
                 }
 
@@ -501,15 +494,6 @@ namespace ColorVision.ImageEditor
                         ImageViewModel.SelectEditorVisual.SetRect();
                     }
 
-                    if (ImageViewModel.DrawCircle)
-                    {
-                        if (DrawCircleCache != null)
-                        {
-                            double Radius = Math.Sqrt((Math.Pow(point.X - MouseDownP.X, 2) + Math.Pow(point.Y - MouseDownP.Y, 2)));
-                            DrawCircleCache.Attribute.Radius = Radius;
-                            DrawCircleCache.Render();
-                        }
-                    }
                     else if (ImageViewModel.DrawRect)
                     {
                         if (DrawingRectangleCache != null)
@@ -549,7 +533,6 @@ namespace ColorVision.ImageEditor
 
         private double DefalutWidth { get; set; } = 30;
         private double DefalutHeight { get; set; } = 30;
-        private double DefalutRadius { get; set; } = 30;
 
 
         private void ImageShow_MouseUp(object sender, MouseButtonEventArgs e)
@@ -605,32 +588,23 @@ namespace ColorVision.ImageEditor
                         }
 
                     }
-                    else if (ImageViewModel.DrawCircle && DrawCircleCache !=null)
-                    {
-                        if (DrawCircleCache.Attribute.Radius == DefalutRadius)
-                            DrawCircleCache.Render();
 
-                        ImageViewModel.SelectDrawingVisual = DrawCircleCache;
-
-                        DrawCircleCache.AutoAttributeChanged = true;
-
-                        DefalutRadius = DrawCircleCache.Radius;
-
-                        DrawCircleCache = null;
-
-                    }
                     else if (ImageViewModel.DrawRect)
                     {
-                        if (DrawingRectangleCache.Attribute.Rect.Width == DefalutWidth && DrawingRectangleCache.Attribute.Rect.Height == DefalutHeight)
-                            DrawingRectangleCache.Render();
+                        if (DrawingRectangleCache != null)
+                        {
+                            if (DrawingRectangleCache.Attribute.Rect.Width == DefalutWidth && DrawingRectangleCache.Attribute.Rect.Height == DefalutHeight)
+                                DrawingRectangleCache.Render();
 
-                        DrawingRectangleCache.AutoAttributeChanged = true;
+                            DrawingRectangleCache.AutoAttributeChanged = true;
 
-                        ImageViewModel.SelectDrawingVisual = DrawingRectangleCache;
+                            ImageViewModel.SelectDrawingVisual = DrawingRectangleCache;
 
-                        DefalutWidth = DrawingRectangleCache.Attribute.Rect.Width;
-                        DefalutHeight = DrawingRectangleCache.Attribute.Rect.Height;
-                        DrawingRectangleCache = null;
+                            DefalutWidth = DrawingRectangleCache.Attribute.Rect.Width;
+                            DefalutHeight = DrawingRectangleCache.Attribute.Rect.Height;
+                            DrawingRectangleCache = null;
+                        }
+
                     }
 
                     drawCanvas.ReleaseMouseCapture();

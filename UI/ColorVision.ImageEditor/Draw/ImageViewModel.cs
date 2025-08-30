@@ -64,7 +64,7 @@ namespace ColorVision.ImageEditor.Draw
 
         private DrawCanvas Image { get; set; }
 
-        private BezierCurveManager BezierCurveImp { get; set; }
+        private BezierCurveManager BezierCurveManager { get; set; }
 
         private CircleManager CircleManager { get; set; }
 
@@ -159,7 +159,7 @@ namespace ColorVision.ImageEditor.Draw
             ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zoombox, drawCanvas);
             ToolConcentricCircle = new ToolReferenceLine(this,zoombox, drawCanvas);
 
-            BezierCurveImp = new BezierCurveManager(this, zoombox, drawCanvas);
+            BezierCurveManager = new BezierCurveManager(this, zoombox, drawCanvas);
 
             CircleManager = new CircleManager(this, zoombox, drawCanvas);
 
@@ -936,21 +936,21 @@ namespace ColorVision.ImageEditor.Draw
             }
         }
 
-        private bool _DrawCircle;
         /// <summary>
         /// 是否画圆形
         /// </summary>
-        public bool DrawCircle {  get => _DrawCircle;
+        public bool DrawCircle {
+            get => CircleManager.IsShow;
             set
             {
-                if (_DrawCircle == value) return;
-                _DrawCircle = value;
+                if (CircleManager.IsShow == value) return;
+                CircleManager.IsShow = value;
                 if (value)
                 {
                     ImageEditMode = true;
                     LastChoice = nameof(DrawCircle);
                 }
-                OnPropertyChanged(); 
+                OnPropertyChanged();
             }
         }
 
@@ -1015,11 +1015,11 @@ namespace ColorVision.ImageEditor.Draw
 
         public bool DrawBezierCurve
         {
-            get => BezierCurveImp.IsShow;
+            get => BezierCurveManager.IsShow;
             set
             {
-                if (BezierCurveImp.IsShow == value) return;
-                BezierCurveImp.IsShow = value;
+                if (BezierCurveManager.IsShow == value) return;
+                BezierCurveManager.IsShow = value;
                 if (value)
                 {
                     ImageEditMode = true;
@@ -1099,6 +1099,9 @@ namespace ColorVision.ImageEditor.Draw
         public void Dispose()
         {
             SelectEditorVisual.Dispose();
+            CircleManager.Dispose();
+            BezierCurveManager.Dispose();
+
             Parent = null;
             ZoomboxSub = null;
             Image = null;

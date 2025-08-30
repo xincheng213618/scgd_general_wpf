@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS0414,CS8625
+using Gu.Wpf.Geometry;
 using System;
 using System.Windows;
 using System.Windows.Input;
@@ -8,18 +9,18 @@ namespace ColorVision.ImageEditor.Draw
 {
     public class CircleManager:IDisposable
     {
-        private ZoomboxSub ZoomboxSub { get; set; }
+        private ZoomboxSub Zoombox1 { get; set; }
         private DrawCanvas DrawCanvas { get; set; }
 
-        public DrawingVisual BezierCurveImpCache { get; set; }
+        private DVCircle DrawCircleCache;
 
-        public ImageViewModel Paraent { get; set; }
+        public ImageViewModel ImageViewModel { get; set; }
 
         public CircleManager(ImageViewModel imageEditViewMode, ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
-            ZoomboxSub = zombox;
+            Zoombox1 = zombox;
             DrawCanvas = drawCanvas;
-            Paraent = imageEditViewMode;
+            ImageViewModel = imageEditViewMode;
         }
 
         public bool IsShow
@@ -55,33 +56,16 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.MouseLeave -= MouseLeave;
             DrawCanvas.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp -= Image_PreviewMouseUp;
-            DVBezierCurveCache = null;
+            DrawCircleCache = null;
         }
 
-
-
-
-        private void DrawCanvas_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key ==Key.End || e.Key==Key.Escape || e.Key == Key.Enter)
-            {
-                if (DVBezierCurveCache != null)
-                {
-                    DVBezierCurveCache.Points.RemoveAt(DVBezierCurveCache.Points.Count - 1);
-                    DVBezierCurveCache.Render();
-                    DVBezierCurveCache = null;
-                }
-                e.Handled = true;
-            }
-        }
 
 
         Point MouseDownP { get; set; }
         Point MouseUpP { get; set; }
 
         bool IsMouseDown;
-
-        DVBezierCurve DVBezierCurveCache { get; set; }
+        private double DefalutRadius { get; set; } = 30;
 
         private void PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -89,20 +73,32 @@ namespace ColorVision.ImageEditor.Draw
             MouseDownP = e.GetPosition(DrawCanvas);
             IsMouseDown = true;
 
-            if (DVBezierCurveCache == null)
+            if (ImageViewModel.SelectEditorVisual.GetContainingRect(MouseDownP))
             {
-                DVBezierCurveCache = new DVBezierCurve() { AutoAttributeChanged = false };
-                DVBezierCurveCache.Points.Add(MouseDownP);
-                DVBezierCurveCache.Points.Add(MouseDownP);
-
-                DVBezierCurveCache.Attribute.Pen = new Pen(Brushes.Red, 1 / ZoomboxSub.ContentMatrix.M11);
-                DVBezierCurveCache.Render();
-                DrawCanvas.AddVisual(DVBezierCurveCache);
+                return;
             }
             else
             {
-                DVBezierCurveCache.Points.Add(MouseDownP);
-                DVBezierCurveCache.Render();
+                ImageViewModel.SelectEditorVisual.SetRender(null);
+            }
+
+            DrawCircleCache = new DVCircle() { AutoAttributeChanged = false };
+            DrawCircleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+            DrawCircleCache.Attribute.Center = MouseDownP;
+            DrawCircleCache.Attribute.Radius = DefalutRadius;
+            DrawCanvas.AddVisual(DrawCircleCache);
+
+            if (ImageViewModel.SelectDrawingVisuals != null)
+            {
+                foreach (var item in ImageViewModel.SelectDrawingVisuals)
+                {
+                    if (item is IDrawingVisual id)
+                    {
+                        id.Pen.Brush = Brushes.Red;
+                        id.Render();
+                    }
+                }
+                ImageViewModel.SelectDrawingVisuals = null;
             }
             e.Handled = true;
         }
@@ -110,13 +106,23 @@ namespace ColorVision.ImageEditor.Draw
 
         private void Image_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
+            DrawCanvas.ReleaseMouseCapture();
+
             IsMouseDown = false;
-            if (DVBezierCurveCache != null)
+            if (DrawCircleCache != null)
             {
                 MouseUpP = e.GetPosition(DrawCanvas);
-                DVBezierCurveCache.Points.RemoveAt(DVBezierCurveCache.Points.Count - 1);
-                DVBezierCurveCache.Points.Add(MouseUpP);
-                DVBezierCurveCache.Render();
+
+                if (DrawCircleCache.Attribute.Radius == DefalutRadius)
+                    DrawCircleCache.Render();
+
+                ImageViewModel.SelectDrawingVisual = DrawCircleCache;
+
+                DrawCircleCache.AutoAttributeChanged = true;
+
+                DefalutRadius = DrawCircleCache.Radius;
+
+                DrawCircleCache = null;
             }
             e.Handled = true;
         }
@@ -125,13 +131,16 @@ namespace ColorVision.ImageEditor.Draw
 
         private void MouseMove(object sender, MouseEventArgs e)
         {
-            if (DVBezierCurveCache !=null)
+            if (IsMouseDown)
             {
-                var point = e.GetPosition(DrawCanvas);
+                if (DrawCircleCache != null)
+                {
+                    var point = e.GetPosition(DrawCanvas);
 
-                DVBezierCurveCache.Points.RemoveAt(DVBezierCurveCache.Points.Count - 1);
-                DVBezierCurveCache.Points.Add(point);
-                DVBezierCurveCache.Render();
+                    double Radius = Math.Sqrt((Math.Pow(point.X - MouseDownP.X, 2) + Math.Pow(point.Y - MouseDownP.Y, 2)));
+                    DrawCircleCache.Attribute.Radius = Radius;
+                    DrawCircleCache.Render();
+                }
             }
             e.Handled = true;
         }
@@ -154,11 +163,8 @@ namespace ColorVision.ImageEditor.Draw
 
         public void Dispose()
         {
-            DrawCanvas.MouseMove -= MouseMove;
-            DrawCanvas.MouseEnter -= MouseEnter;
-            DrawCanvas.MouseLeave -= MouseLeave;
-            DrawCanvas.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
-            DrawCanvas.PreviewMouseUp -= Image_PreviewMouseUp;
+            UnLoad();
+
             GC.SuppressFinalize(this);
         }
     }
