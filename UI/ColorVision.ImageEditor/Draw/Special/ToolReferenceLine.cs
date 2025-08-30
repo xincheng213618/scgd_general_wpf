@@ -69,12 +69,10 @@ namespace ColorVision.Util.Draw.Special
                 Image.ContextMenu = null;
                 if (value)
                 {
-                    if (!(ActualWidth == Image.ActualWidth && ActualHeight == Image.ActualHeight))
-                    {
-                        ActualWidth = Image.ActualWidth;
-                        ActualHeight = Image.ActualHeight;
-                        RMouseDownP = new Point(Image.ActualWidth / 2, Image.ActualHeight / 2);
-                    }
+                    ActualWidth = Image.ActualWidth;
+                    ActualHeight = Image.ActualHeight;
+                    RMouseDownP = new Point(Image.ActualWidth / 2, Image.ActualHeight / 2);
+                    PointLen = new Vector();
                     Image.MouseMove += MouseMove;
                     Image.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
                     Image.PreviewMouseRightButtonDown += Image_PreviewMouseRightButtonDown;
