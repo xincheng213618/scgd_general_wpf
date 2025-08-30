@@ -81,13 +81,16 @@ namespace ColorVision.ImageEditor.Draw
                 ImageViewModel.SelectEditorVisual.SetRender(null);
             }
 
-             
+            if (DrawCircleCache != null) return;
+ 
+            DVCircle dVCircle = new DVCircle();
+            dVCircle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+            dVCircle.Attribute.Center = MouseDownP;
+            dVCircle.Attribute.Radius = DefalutRadius;
+
+            DrawCircleCache = dVCircle;
 
 
-            DrawCircleCache = new DVCircle();
-            DrawCircleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-            DrawCircleCache.Attribute.Center = MouseDownP;
-            DrawCircleCache.Attribute.Radius = DefalutRadius;
             DrawCanvas.AddVisual(DrawCircleCache);
 
             if (ImageViewModel.SelectDrawingVisuals != null)

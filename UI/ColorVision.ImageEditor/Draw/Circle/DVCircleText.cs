@@ -49,8 +49,6 @@ namespace ColorVision.ImageEditor.Draw
         public DVCircleText()
         {
             Attribute = new CircleTextProperties();
-            Attribute.Id = No++;
-            Attribute.Brush = Brushes.Transparent;
             Attribute.Pen = new Pen(Brushes.Red, 2);
             Attribute.Center = new Point(50, 50);
             Attribute.Radius = 30;

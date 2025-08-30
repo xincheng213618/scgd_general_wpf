@@ -17,8 +17,6 @@ namespace ColorVision.ImageEditor.Draw
         public DVBezierCurve()
         {
             Attribute = new BezierCurveProperties();
-            Attribute.Id = No++;
-            Attribute.Brush = Brushes.Transparent;
             Attribute.Pen = new Pen(Brushes.Blue, 2);
             Points = new List<Point>();
             Attribute.PropertyChanged += (s, e) => { if (AutoAttributeChanged && e.PropertyName != "ID") Render(); };

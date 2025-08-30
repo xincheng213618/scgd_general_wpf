@@ -15,8 +15,7 @@ namespace ColorVision.ImageEditor.Draw
         public DVDatumPolygon()
         {
             Attribute = new PolygonProperties();
-            Attribute.Id = No++;
-            Attribute.Brush = Brushes.Transparent;
+
             Attribute.Pen = new Pen(Brushes.Red, 2);
             Attribute.Points = new List<Point>();
             Attribute.PropertyChanged += (s, e) =>

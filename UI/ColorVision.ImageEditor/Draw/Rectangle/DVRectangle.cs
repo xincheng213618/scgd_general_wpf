@@ -14,7 +14,6 @@ namespace ColorVision.ImageEditor.Draw
         public DVRectangle()
         {
             Attribute = new RectangleProperties();
-            Attribute.Id = No++;
             Attribute.Brush = Brushes.Transparent;
             Attribute.Pen = new Pen(Brushes.Red, 1);
             Attribute.Rect = new Rect(50, 50, 100, 100);

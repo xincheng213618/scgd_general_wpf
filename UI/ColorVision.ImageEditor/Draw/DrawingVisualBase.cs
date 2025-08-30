@@ -10,10 +10,8 @@ namespace ColorVision.ImageEditor.Draw
     {
         public event PropertyChangedEventHandler? PropertyChanged;
         public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        public static int No = 1;
 
         public virtual int ID { get; set; }
-
         public virtual void Render() { }
 
         public virtual Rect GetRect() => new Rect();
