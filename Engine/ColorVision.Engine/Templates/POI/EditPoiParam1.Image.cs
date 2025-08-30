@@ -194,7 +194,7 @@ namespace ColorVision.Engine.Templates.POI
                 if (ImageViewModel.DrawCircle)
                 {
                     No++;
-                    DrawCircleCache = new DVCircleText() { AutoAttributeChanged = false };
+                    DrawCircleCache = new DVCircleText();
                     DrawCircleCache.Attribute.Id = No;
                     DrawCircleCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
                     DrawCircleCache.Attribute.Center = MouseDownP;
@@ -212,7 +212,7 @@ namespace ColorVision.Engine.Templates.POI
                 {
                     No++;
 
-                    DrawingRectangleCache = new DVRectangleText() { AutoAttributeChanged = false };
+                    DrawingRectangleCache = new DVRectangleText();
                     DrawingRectangleCache.Attribute.Id = No;
                     if (PoiConfig.UseCenter)
                     {
@@ -466,7 +466,6 @@ namespace ColorVision.Engine.Templates.POI
                         DrawCircleCache.Render();
                         PropertyGrid2.SelectedObject = DrawCircleCache.BaseAttribute;
 
-                        DrawCircleCache.AutoAttributeChanged = true;
 
                         ListView1.ScrollIntoView(DrawCircleCache);
                         ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawCircleCache);
@@ -480,7 +479,6 @@ namespace ColorVision.Engine.Templates.POI
 
 
                         PropertyGrid2.SelectedObject = DrawingRectangleCache.BaseAttribute;
-                        DrawingRectangleCache.AutoAttributeChanged = true;
                         ListView1.ScrollIntoView(DrawingRectangleCache);
                         ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawingRectangleCache);
 

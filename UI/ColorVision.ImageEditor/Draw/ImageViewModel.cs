@@ -8,6 +8,7 @@ using ColorVision.Util.Draw.Special;
 using Gu.Wpf.Geometry;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
@@ -84,6 +85,9 @@ namespace ColorVision.ImageEditor.Draw
         public ToolReferenceLine ToolConcentricCircle { get; set; }
 
         public System.Windows.Forms.PropertyGrid PropertyGrid { get; set; }
+
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
+
 
         public DrawingVisual? SelectDrawingVisual { get => _SelectDrawingVisual  ; set 
             {
@@ -1105,6 +1109,8 @@ namespace ColorVision.ImageEditor.Draw
 
             RectangleManager.Dispose();
             BezierCurveManager.Dispose();
+            DrawingVisualLists.Clear();
+            DrawingVisualLists = null;
 
             Parent = null;
             ZoomboxSub = null;

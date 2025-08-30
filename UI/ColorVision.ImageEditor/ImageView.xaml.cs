@@ -30,10 +30,10 @@ namespace ColorVision.ImageEditor
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
         Guid Guid { get; set; } = Guid.NewGuid();
+        public ImageViewConfig Config { get; set; } = new ImageViewConfig();
 
         public ImageViewModel ImageViewModel { get; set; }
-
-        public ImageViewConfig Config { get; set; } = new ImageViewConfig();
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.DrawingVisualLists;
 
 
         public ImageView()
@@ -87,7 +87,6 @@ namespace ColorVision.ImageEditor
             DebounceTimer.AddOrResetTimer("AdjustWhiteBalance", 30, AdjustWhiteBalance);
         }
 
-        public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {

@@ -80,9 +80,10 @@ namespace ColorVision.Engine.Templates.POI
                 }))));
             }));
         }
-        
 
-        public BulkObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new BulkObservableCollection<IDrawingVisual>();
+
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.DrawingVisualLists;
+
         public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
 
         public ImageViewConfig Config { get; set; } = new ImageViewConfig();
@@ -90,8 +91,13 @@ namespace ColorVision.Engine.Templates.POI
         {
             DataContext = PoiParam;
 
-            ListView1.ItemsSource = DrawingVisualLists;
+            ImageViewModel = new ImageViewModel(ImageContentGrid, Zoombox1, ImageShow);
+            ImageViewModel.PropertyGrid = PropertyGrid2;
+            ImageViewModel.ToolBarScaleRuler.IsShow = false;
+            ImageViewModel.CircleManager.IsEnabled = false;
+            ImageViewModel.RectangleManager.IsEnabled = false;
 
+            ListView1.ItemsSource = DrawingVisualLists;
 
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(GraphicBorderType)).Cast<GraphicBorderType>()  select new KeyValuePair<GraphicBorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;
@@ -102,10 +108,7 @@ namespace ColorVision.Engine.Templates.POI
             ComboBoxBorderType2.ItemsSource = from e1 in Enum.GetValues(typeof(DrawingGraphicPosition)).Cast<DrawingGraphicPosition>() select new KeyValuePair<DrawingGraphicPosition, string>(e1, e1.ToDescription());
             ComboBoxBorderType2.SelectedIndex = 0;
 
-            ImageViewModel = new ImageViewModel(ImageContentGrid, Zoombox1, ImageShow);
-            ImageViewModel.ToolBarScaleRuler.IsShow = false;
-            ImageViewModel.CircleManager.IsEnabled = false;
-            ImageViewModel.RectangleManager.IsEnabled = false;
+
 
             ToolBar1.DataContext = ImageViewModel;
             ToolBarRight.DataContext = ImageViewModel;
@@ -287,9 +290,7 @@ namespace ColorVision.Engine.Templates.POI
                         if (Name == Properties.Resources.SerialNumber1)
                         {
                             item.IsSortD = !item.IsSortD;
-                            var sortedItems = DrawingVisualLists.ToList();
-                            sortedItems.Sort((x, y) => item.IsSortD ? y.BaseAttribute.Id.CompareTo(x.BaseAttribute.Id) : x.BaseAttribute.Id.CompareTo(y.BaseAttribute.Id));
-                            DrawingVisualLists.UpdateCollection(sortedItems);
+                            DrawingVisualLists.Sort((x, y) => item.IsSortD ? y.BaseAttribute.Id.CompareTo(x.BaseAttribute.Id) : x.BaseAttribute.Id.CompareTo(y.BaseAttribute.Id));
                         }
                     }
                 }
@@ -536,7 +537,6 @@ namespace ColorVision.Engine.Templates.POI
                     Init = true;
                     return;
                 }
-                DrawingVisualLists.SuspendUpdate();
                 int WaitNum = 50;
                 if (!PoiConfig.IsShowText)
                     WaitNum = 1000;
@@ -607,10 +607,7 @@ namespace ColorVision.Engine.Templates.POI
                     }
                 }
                 WaitControlProgressBar.Value = 99;
-                if (DrawingVisualLists.Count <= 1000000)
-                {
-                    DrawingVisualLists.ResumeUpdate();
-                }
+
 
                 if (Init)
                 {
@@ -823,7 +820,6 @@ namespace ColorVision.Engine.Templates.POI
                     int all = rows * cols;
                     if (all > 1000)
                     {
-                        DrawingVisualLists.SuspendUpdate();
                         WaitControl.Visibility = Visibility.Visible;
                         WaitControlProgressBar.Visibility = Visibility.Visible;
                         WaitControlProgressBar.Value = 0;
@@ -962,10 +958,6 @@ namespace ColorVision.Engine.Templates.POI
                         thread.Start();
                     }
 
-                    if (all <= 1000000)
-                    {
-                        DrawingVisualLists.ResumeUpdate();
-                    }
 
                     break;
                 case GraphicTypes.Mask:

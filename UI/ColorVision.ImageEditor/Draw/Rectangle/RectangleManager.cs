@@ -1,6 +1,8 @@
 ﻿#pragma warning disable CS0414,CS8625
 using Gu.Wpf.Geometry;
 using System;
+using System.Linq;
+using System.Security.Cryptography;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -13,7 +15,7 @@ namespace ColorVision.ImageEditor.Draw
         private DrawCanvas DrawCanvas { get; set; }
         public ImageViewModel ImageViewModel { get; set; }
 
-        private DVRectangle DrawingRectangleCache;
+        private DVRectangleText DrawingRectangleCache;
 
         public RectangleManager(ImageViewModel imageEditViewMode, ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
@@ -87,9 +89,12 @@ namespace ColorVision.ImageEditor.Draw
             {
                 ImageViewModel.SelectEditorVisual.SetRender(null);
             }
-            DrawingRectangleCache = new DVRectangle() { AutoAttributeChanged = false };
+            DrawingRectangleCache = new DVRectangleText();
+            int did = CheckNo();
+            DrawingRectangleCache.Attribute.Id = did;
             DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + DefalutWidth, MouseDownP.Y + DefalutHeight));
             DrawingRectangleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+            DrawingRectangleCache.Attribute.Text = "Point_" + did;
 
             DrawCanvas.AddVisual(DrawingRectangleCache);
 
@@ -107,7 +112,17 @@ namespace ColorVision.ImageEditor.Draw
             }
             e.Handled = true;
         }
-
+        public int CheckNo()
+        {
+            if (ImageViewModel.DrawingVisualLists.Count > 0 && ImageViewModel.DrawingVisualLists.Last() is DrawingVisualBase drawingVisual)
+            {
+                return drawingVisual.ID + 1;
+            }
+            else
+            {
+                return 1;
+            }
+        }
 
         private void Image_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
@@ -120,8 +135,6 @@ namespace ColorVision.ImageEditor.Draw
 
                 if (DrawingRectangleCache.Attribute.Rect.Width == DefalutWidth && DrawingRectangleCache.Attribute.Rect.Height == DefalutHeight)
                     DrawingRectangleCache.Render();
-
-                DrawingRectangleCache.AutoAttributeChanged = true;
 
                 ImageViewModel.SelectDrawingVisual = DrawingRectangleCache;
 

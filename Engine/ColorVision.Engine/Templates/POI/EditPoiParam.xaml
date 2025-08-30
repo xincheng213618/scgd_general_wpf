@@ -638,7 +638,7 @@
                                             <MenuItem Header="{x:Static properties:Resources.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
                                         </ContextMenu>
                                     </StackPanel.ContextMenu>
-                                    <TextBox Text="{Binding Attribute.Text}" Width="100"  Margin="5,0"/>
+                                    <TextBox Text="{Binding Attribute.Text}"  HorizontalContentAlignment="Center"  Width="100"  Margin="5,0"/>
                                     <TextBox Text="{Binding Attribute.Rect,StringFormat={}{0:F0}}" Width="200" Margin="5,0"/>
                                 </StackPanel>
                             </DataTemplate>

@@ -9,7 +9,6 @@ namespace ColorVision.ImageEditor.Draw
     {
         public Rect Rect { get => Attribute.Rect; set => Attribute.Rect = value; }
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
-        public bool AutoAttributeChanged { get; set; } = true;
 
         public DVRectangle()
         {
@@ -17,10 +16,7 @@ namespace ColorVision.ImageEditor.Draw
             Attribute.Brush = Brushes.Transparent;
             Attribute.Pen = new Pen(Brushes.Red, 1);
             Attribute.Rect = new Rect(50, 50, 100, 100);
-            Attribute.PropertyChanged += (s, e) =>
-            {
-                if (AutoAttributeChanged) Render();
-            };
+            Attribute.PropertyChanged += (s, e) => Render();
         }
         private TextAttribute TextAttribute = new();
 

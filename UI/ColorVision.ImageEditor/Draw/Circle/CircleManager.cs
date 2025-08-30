@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS0414,CS8625
 using Gu.Wpf.Geometry;
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -41,6 +42,18 @@ namespace ColorVision.ImageEditor.Draw
                         UnLoad();
                     }
                 }
+            }
+        }
+
+        public int CheckNo()
+        {
+            if (ImageViewModel.DrawingVisualLists.Count > 0 && ImageViewModel.DrawingVisualLists.Last() is DrawingVisualBase drawingVisual)
+            {
+                return drawingVisual.ID + 1;
+            }
+            else
+            {
+                return 1;
             }
         }
 
@@ -87,10 +100,12 @@ namespace ColorVision.ImageEditor.Draw
             if (DrawCircleCache != null) return;
 
             DVCircleText dVCircle = new DVCircleText();
+            int did = CheckNo();
+            dVCircle.Attribute.Id = did;
             dVCircle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
             dVCircle.Attribute.Center = MouseDownP;
             dVCircle.Attribute.Radius = DefalutRadius;
-            dVCircle.Attribute.Text = "Point";
+            dVCircle.Attribute.Text = "Point_" + did;
             DrawCircleCache = dVCircle;
 
 
