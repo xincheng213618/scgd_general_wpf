@@ -7,12 +7,11 @@ namespace ColorVision.ImageEditor.Draw
 {
     public class DVCircle : DrawingVisualBase<CircleProperties>, IDrawingVisual,ICircle, ISelectVisual
     {
-        public bool AutoAttributeChanged { get; set; }
         public Point Center { get => Attribute.Center; set => Attribute.Center = value; }
         public double Radius { get => Attribute.Radius; set => Attribute.Radius = value; }
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
 
-        public DVCircle()
+        public DVCircle() 
         {
             Attribute = new CircleProperties();
             Attribute.Id = No++;
@@ -20,9 +19,8 @@ namespace ColorVision.ImageEditor.Draw
             Attribute.Pen = new Pen(Brushes.Red, 2);
             Attribute.Center = new Point(50, 50);
             Attribute.Radius = 30;
-            Attribute.PropertyChanged += (s,e)=> { if (AutoAttributeChanged && e.PropertyName != "ID") Render(); };
+            Attribute.PropertyChanged += (s, e) => Render();
         }
-
         private TextAttribute TextAttribute = new();
 
         public bool IsDrawing { get; set; }

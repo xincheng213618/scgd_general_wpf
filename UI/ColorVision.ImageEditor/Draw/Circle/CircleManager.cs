@@ -81,7 +81,10 @@ namespace ColorVision.ImageEditor.Draw
                 ImageViewModel.SelectEditorVisual.SetRender(null);
             }
 
-            DrawCircleCache = new DVCircle() { AutoAttributeChanged = false };
+             
+
+
+            DrawCircleCache = new DVCircle();
             DrawCircleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
             DrawCircleCache.Attribute.Center = MouseDownP;
             DrawCircleCache.Attribute.Radius = DefalutRadius;
@@ -116,8 +119,6 @@ namespace ColorVision.ImageEditor.Draw
                     DrawCircleCache.Render();
 
                 ImageViewModel.SelectDrawingVisual = DrawCircleCache;
-
-                DrawCircleCache.AutoAttributeChanged = true;
 
                 DefalutRadius = DrawCircleCache.Radius;
 
