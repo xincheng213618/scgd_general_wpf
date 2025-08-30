@@ -185,11 +185,18 @@ namespace ColorVision.Engine.Templates.POI
         public int AreaCircleAngle { get => _AreaCircleAngle; set { _AreaCircleAngle = value; OnPropertyChanged(); } }
         private int _AreaCircleAngle;
 
+
+        public int AreaRectX { get => _AreaRectX; set { _AreaRectX = value; OnPropertyChanged(); } }
+        private int _AreaRectX ;
+        public int AreaRectY { get => _AreaRectY; set { _AreaRectY = value; OnPropertyChanged(); } }
+        private int _AreaRectY;
+
         public int AreaRectWidth { get => _AreaRectWidth; set { _AreaRectWidth = value; OnPropertyChanged(); } }
         private int _AreaRectWidth = 200;
 
         public int AreaRectHeight { get => _AreaRectHeight; set { _AreaRectHeight = value; OnPropertyChanged(); } }
         private int _AreaRectHeight = 200;
+
 
         public int AreaRectRow { get => _AreaRectRow; set { _AreaRectRow = value; OnPropertyChanged(); } }
         private int _AreaRectRow = 3;

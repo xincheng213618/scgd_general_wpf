@@ -13,7 +13,7 @@ namespace ColorVision.ImageEditor.Draw
 
         [Category("Circle"), DisplayName("颜色")]
         public Brush Brush { get => _Brush; set { _Brush = value; NotifyPropertyChanged(); } }
-        private Brush _Brush;
+        private Brush _Brush = DefaultBrush;
 
         public List<Point> Points { get; set; }
     }

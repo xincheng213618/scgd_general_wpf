@@ -157,7 +157,6 @@
                                 <RadioButton x:Name="RadioButtonAreaCircle" GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaCircle}" Width="60" Content="圆"/>
                                 <RadioButton x:Name="RadioButtonAreaRect"  GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaRect}" Width="60" Content="矩形"/>
                                 <RadioButton x:Name="RadioButtonAreaMask"  GroupName="shapeArea"   Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaMask}" Width="70" Content="四边形"/>
-                                <RadioButton x:Name="RadioButtonAreaPolygon"  GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaPolygon}" Width="60" Content="折线"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,5" >
                                 <ToggleButton  HorizontalAlignment="Left"  Height="16" Style="{StaticResource ToggleButtonSwitch}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="SetDefault_Click" IsChecked="{Binding PoiConfig.IsUserDraw}"/>
@@ -341,64 +340,6 @@
                                         </DockPanel>
                                     </UniformGrid>
                                 </StackPanel>
-                                <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaPolygon,Converter={StaticResource bool2VisibilityConverter}}">
-                                    <ListView  x:Name="ListViewPolygon"  MaxHeight="200" Style="{StaticResource ListView.Small}" ItemsSource="{Binding PoiConfig.Polygons}" Grid.Column="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" >
-                                        <ListView.Resources>
-                                            <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
-                                            </ContextMenu>
-                                        </ListView.Resources>
-                                        <ListView.View >
-                                            <GridView >
-                                                <GridView.ColumnHeaderContainerStyle>
-                                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Setter Property="Background" Value="Transparent"/>
-                                                        <Setter Property="BorderThickness" Value="0"/>
-                                                        <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
-                                                        <EventSetter Event="Click" Handler="GridViewColumnSort"/>
-                                                    </Style>
-                                                </GridView.ColumnHeaderContainerStyle>
-                                                <GridViewColumn Header="显示">
-                                                    <GridViewColumn.CellTemplate>
-                                                        <DataTemplate DataType="{x:Type local:PolygonPoint}">
-                                                            <TextBlock Text="{Binding .}"/>
-                                                        </DataTemplate>
-                                                    </GridViewColumn.CellTemplate>
-                                                </GridViewColumn>
-                                                <GridViewColumn Header="显示">
-                                                    <GridViewColumn.CellTemplate>
-                                                        <DataTemplate DataType="{x:Type local:PolygonPoint}">
-                                                            <Button Content="删除" Click="Button_Click" Tag="{Binding .}"/>
-                                                        </DataTemplate>
-                                                    </GridViewColumn.CellTemplate>
-                                                </GridViewColumn>
-                                                <GridViewColumn Header="显示" Width="70">
-                                                    <GridViewColumn.CellTemplate>
-                                                        <DataTemplate DataType="{x:Type local:PolygonPoint}">
-                                                            <TextBox Text="{Binding SplitNumber}" HorizontalContentAlignment="Center" Width="50"/>
-                                                        </DataTemplate>
-                                                    </GridViewColumn.CellTemplate>
-                                                </GridViewColumn>
-
-
-                                            </GridView>
-                                        </ListView.View>
-                                    </ListView>
-
-
-
-                                    <UniformGrid  Columns="2" >
-                                        <DockPanel Margin="2" HorizontalAlignment="Left">
-                                            <TextBlock Text="设定分割"   MinWidth="70"/>
-                                            <TextBox Text="{Binding PoiConfig.AreaPolygonLenNum}" Width="55"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="2" HorizontalAlignment="Left">
-                                            <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding PoiConfig.AreaPolygonUsNode}"/>
-                                            <TextBox  Text="是否使用节点" />
-                                        </DockPanel>
-                                    </UniformGrid>
-                                    <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
-                                </StackPanel>
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
@@ -479,7 +420,7 @@
                 <ToggleButton IsChecked="{Binding Gridline.IsShow}" >
                     <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIGridlines}"  Margin="-5"/>
                 </ToggleButton>
-                
+
                 <ToggleButton  IsChecked="{Binding EraseVisual}" Margin="1,0" >
                     <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageeraser}"/>
                 </ToggleButton>
@@ -644,23 +585,10 @@
                         <StackPanel>
                             <Button Content="编辑" Click="Button_Click_1"/>
                         </StackPanel>
-                        
+
                     </Grid>
                 </Grid>
             </Grid>
-        </Grid>
-
-        <Grid x:Name="WaitControl" Grid.Row="0" Grid.ColumnSpan="2" Panel.ZIndex="9" Visibility="Collapsed">
-            <Grid   Background="Black"  Opacity="0.3"/>
-            <Border   Background="#F9F9F9"  Height="250" Width="250"  CornerRadius="10">
-                <Border Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" CornerRadius="5" Margin="5">
-                    <Grid>
-                        <base:ProgressRing  BorderBrush="Red" Margin="30" />
-                        <TextBlock x:Name="WaitControlText" Text="数据生成中" HorizontalAlignment="Center" FontSize="16"/>
-                        <ProgressBar x:Name="WaitControlProgressBar" Visibility="Collapsed" BorderThickness="0"  Maximum="100" Minimum="0"  Margin="5" VerticalAlignment="Bottom" />
-                    </Grid>
-                </Border>
-            </Border>
         </Grid>
     </Grid>
 </Window>

@@ -9,15 +9,15 @@ namespace ColorVision.ImageEditor.Draw
 
         [Category("RectangleAttribute"), DisplayName("笔刷")]
         public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
-        private Pen _Pen;
+        private Pen _Pen = new Pen(Brushes.Red, 1);
 
         [Category("RectangleAttribute"), DisplayName("颜色")]
         public Brush Brush { get => _Brush; set { _Brush = value; NotifyPropertyChanged(); } }
-        private Brush _Brush;
+        private Brush _Brush = DefaultBrush;
 
         [Category("RectangleAttribute"), DisplayName("矩形")]
         public Rect Rect { get => _Rect; set { _Rect = value; NotifyPropertyChanged(); } }
-        private Rect _Rect;
+        private Rect _Rect = new Rect(50, 50, 100, 100);
     }
 
 

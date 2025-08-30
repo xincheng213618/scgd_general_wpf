@@ -67,9 +67,6 @@ namespace ColorVision.Engine.Templates.POI
 
         private bool IsMouseDown;
         private Point MouseDownP;
-
-        private DVPolygon? DrawingPolygonCache;
-
         private DVCircleText? DrawCircleCache;
         private DVRectangleText? DrawingRectangleCache;
 
@@ -89,51 +86,6 @@ namespace ColorVision.Engine.Templates.POI
 
         private void ImageShow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (PoiConfig.IsUserDraw)
-            {
-                if (PoiConfig.IsAreaPolygon && ImageViewModel.DrawPolygon && DrawingPolygonCache != null)
-                {
-                    ImageShow.RemoveVisual(DrawingPolygonCache);
-                    PoiConfig.Polygons.Clear();
-                    foreach (var item in DrawingPolygonCache.Attribute.Points)
-                    {
-                        PoiConfig.Polygons.Add(new PolygonPoint(item.X, item.Y));
-                    }
-                    DrawingPolygonCache = null;
-                    RenderPoiConfig();
-                }
-
-                if (PoiConfig.IsAreaMask && ImageViewModel.DrawPolygon)
-                {
-                    ImageShow.RemoveVisual(DrawingPolygonCache);
-                    if (DrawingPolygonCache != null && DrawingPolygonCache.Attribute.Points.Count == 4)
-                    {
-                        PoiConfig.Polygon1X = (int)DrawingPolygonCache.Attribute.Points[0].X;
-                        PoiConfig.Polygon1Y = (int)DrawingPolygonCache.Attribute.Points[0].Y;
-                        PoiConfig.Polygon2X = (int)DrawingPolygonCache.Attribute.Points[1].X;
-                        PoiConfig.Polygon2Y = (int)DrawingPolygonCache.Attribute.Points[1].Y;
-                        PoiConfig.Polygon3X = (int)DrawingPolygonCache.Attribute.Points[2].X;
-                        PoiConfig.Polygon3Y = (int)DrawingPolygonCache.Attribute.Points[2].Y;
-                        PoiConfig.Polygon4X = (int)DrawingPolygonCache.Attribute.Points[3].X;
-                        PoiConfig.Polygon4Y = (int)DrawingPolygonCache.Attribute.Points[3].Y;
-
-                        RenderPoiConfig();
-                    }
-                    else
-                    {
-                        MessageBox.Show("必须要是4个点");
-                    }
-                    DrawingPolygonCache = null;
-
-                }
-            }
-
-            if (DrawingPolygonCache != null)
-            {
-                DrawingPolygonCache.MovePoints = null;
-                DrawingPolygonCache.Render();
-                DrawingPolygonCache = null;
-            }
             IsRightButtonDown = true;
         }
 
@@ -195,11 +147,6 @@ namespace ColorVision.Engine.Templates.POI
 
                 if (ImageViewModel.EraseVisual)
                 {
-                    ImageViewModel.DrawSelectRect(SelectRect, new System.Windows.Rect(MouseDownP, MouseDownP)); ;
-                    drawCanvas.AddVisual(SelectRect);
-
-                    SelectDrawingVisualsClear();
-                    ImageViewModel.SelectDrawingVisual = null;
                     return;
                 }
 
@@ -239,20 +186,6 @@ namespace ColorVision.Engine.Templates.POI
                     DrawingRectangleCache.Attribute.Text = "Point_" + no.ToString();
 
                     drawCanvas.AddVisual(DrawingRectangleCache);
-
-
-                    SelectDrawingVisualsClear();
-                    ImageViewModel.SelectDrawingVisual = null;
-                    return;
-                }
-                if (ImageViewModel.DrawPolygon)
-                {
-                    if (DrawingPolygonCache == null)
-                    {
-                        DrawingPolygonCache = new DVPolygon();
-                        DrawingPolygonCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
-                        drawCanvas.AddVisual(DrawingPolygonCache);
-                    }
 
 
                     SelectDrawingVisualsClear();
@@ -314,15 +247,6 @@ namespace ColorVision.Engine.Templates.POI
 
                 var controlWidth = drawCanvas.ActualWidth;
                 var controlHeight = drawCanvas.ActualHeight;
-
-                if (ImageViewModel.DrawPolygon)
-                {
-                    if (DrawingPolygonCache != null)
-                    {
-                        DrawingPolygonCache.MovePoints = point;
-                        DrawingPolygonCache.Render();
-                    }
-                }
 
                 if (IsMouseDown)
                 {
@@ -438,42 +362,25 @@ namespace ColorVision.Engine.Templates.POI
 
                     if (drawCanvas.ContainsVisual(SelectRect))
                     {
-                        if (ImageViewModel.EraseVisual)
+                        ImageViewModel.SelectDrawingVisuals = drawCanvas.GetVisuals(new RectangleGeometry(new System.Windows.Rect(MouseDownP, MouseUpP)));
+                        foreach (var item in ImageViewModel.SelectDrawingVisuals)
                         {
-                            drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseDownP));
-                            drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseUpP));
-                            foreach (var item in drawCanvas.GetVisuals(new RectangleGeometry(new System.Windows.Rect(MouseDownP, MouseUpP))))
+                            if (item is IDrawingVisual drawingVisual)
                             {
-                                drawCanvas.RemoveVisual(item, false);
+                                drawingVisual.Pen.Brush = Brushes.Yellow;
+                                drawingVisual.Render();
                             }
                         }
-                        else
-                        {
-                            ImageViewModel.SelectDrawingVisuals = drawCanvas.GetVisuals(new RectangleGeometry(new System.Windows.Rect(MouseDownP, MouseUpP)));
-                            foreach (var item in ImageViewModel.SelectDrawingVisuals)
-                            {
-                                if (item is IDrawingVisual drawingVisual)
-                                {
-                                    drawingVisual.Pen.Brush = Brushes.Yellow;
-                                    drawingVisual.Render();
-                                }
-                            }
 
-                            if (ImageViewModel.SelectDrawingVisuals.Count == 0)
-                                ImageViewModel.SelectDrawingVisuals = null;
-                        }
+                        if (ImageViewModel.SelectDrawingVisuals.Count == 0)
+                            ImageViewModel.SelectDrawingVisuals = null;
 
                         drawCanvas.RemoveVisual(SelectRect, false);
                     }
 
 
-                    if (ImageViewModel.DrawPolygon && DrawingPolygonCache != null)
-                    {
-                        DrawingPolygonCache.Points.Add(MouseUpP);
-                        DrawingPolygonCache.MovePoints = null;
-                        DrawingPolygonCache.Render();
-                    }
-                    else if (ImageViewModel.DrawCircle && DrawCircleCache != null)
+
+                    if (ImageViewModel.DrawCircle && DrawCircleCache != null)
                     {
                         DrawCircleCache.Render();
                         ListView1.ScrollIntoView(DrawCircleCache);

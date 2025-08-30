@@ -6,21 +6,22 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class BezierCurveManager:IDisposable
+    public class PolygonManager : IDisposable
     {
         private ZoomboxSub ZoomboxSub { get; set; }
         private DrawCanvas DrawCanvas { get; set; }
 
-        public DrawingVisual BezierCurveImpCache { get; set; }
+        public DVPolygon? DrawingVisualPolygonCache { get; set; }
 
         public ImageViewModel ImageViewModel { get; set; }
 
-        public BezierCurveManager(ImageViewModel imageViewModel, ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public PolygonManager(ImageViewModel imageViewModel, ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
             DrawCanvas = drawCanvas;
             ImageViewModel = imageViewModel;
         }
+        public bool IsEnabled { get; set; } = true;
 
         private bool _IsShow;
         public bool IsShow
@@ -29,14 +30,18 @@ namespace ColorVision.ImageEditor.Draw
             {
                 if (_IsShow == value) return;
                 _IsShow = value;
-                if (value)
+                if (IsEnabled)
                 {
-                     Load();
+                    if (value)
+                    {
+                        Load();
+                    }
+                    else
+                    {
+                        UnLoad();
+                    }
                 }
-                else
-                {
-                    UnLoad();
-                }
+
             }
         }
 
@@ -56,7 +61,7 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.MouseLeave -= MouseLeave;
             DrawCanvas.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp -= Image_PreviewMouseUp;
-            DVBezierCurveCache = null;
+            DrawingVisualPolygonCache = null;
 
         }
 
@@ -64,11 +69,11 @@ namespace ColorVision.ImageEditor.Draw
         {
             if (e.Key ==Key.End || e.Key==Key.Escape || e.Key == Key.Enter)
             {
-                if (DVBezierCurveCache != null)
+                if (DrawingVisualPolygonCache != null)
                 {
-                    DVBezierCurveCache.Points.RemoveAt(DVBezierCurveCache.Points.Count - 1);
-                    DVBezierCurveCache.Render();
-                    DVBezierCurveCache = null;
+                    DrawingVisualPolygonCache.Points.RemoveAt(DrawingVisualPolygonCache.Points.Count - 1);
+                    DrawingVisualPolygonCache.Render();
+                    DrawingVisualPolygonCache = null;
                 }
                 e.Handled = true;
             }
@@ -80,7 +85,6 @@ namespace ColorVision.ImageEditor.Draw
 
         bool IsMouseDown;
 
-        DVBezierCurve DVBezierCurveCache { get; set; }
 
         private void PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -88,20 +92,20 @@ namespace ColorVision.ImageEditor.Draw
             MouseDownP = e.GetPosition(DrawCanvas);
             IsMouseDown = true;
 
-            if (DVBezierCurveCache == null)
+            if (DrawingVisualPolygonCache == null)
             {
-                DVBezierCurveCache = new DVBezierCurve() { AutoAttributeChanged = false };
-                DVBezierCurveCache.Points.Add(MouseDownP);
-                DVBezierCurveCache.Points.Add(MouseDownP);
+                DrawingVisualPolygonCache = new DVPolygon();
+                DrawingVisualPolygonCache.Points.Add(MouseDownP);
+                DrawingVisualPolygonCache.Points.Add(MouseDownP);
 
-                DVBezierCurveCache.Attribute.Pen = new Pen(Brushes.Red, 1 / ZoomboxSub.ContentMatrix.M11);
-                DVBezierCurveCache.Render();
-                DrawCanvas.AddVisual(DVBezierCurveCache);
+                DrawingVisualPolygonCache.Attribute.Pen = new Pen(Brushes.Red, 1 / ZoomboxSub.ContentMatrix.M11);
+                DrawingVisualPolygonCache.Render();
+                DrawCanvas.AddVisual(DrawingVisualPolygonCache);
             }
             else
             {
-                DVBezierCurveCache.Points.Add(MouseDownP);
-                DVBezierCurveCache.Render();
+                DrawingVisualPolygonCache.Points.Add(MouseDownP);
+                DrawingVisualPolygonCache.Render();
             }
             e.Handled = true;
         }
@@ -110,12 +114,12 @@ namespace ColorVision.ImageEditor.Draw
         private void Image_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
             IsMouseDown = false;
-            if (DVBezierCurveCache != null)
+            if (DrawingVisualPolygonCache != null)
             {
                 MouseUpP = e.GetPosition(DrawCanvas);
-                DVBezierCurveCache.Points.RemoveAt(DVBezierCurveCache.Points.Count - 1);
-                DVBezierCurveCache.Points.Add(MouseUpP);
-                DVBezierCurveCache.Render();
+                DrawingVisualPolygonCache.Points.RemoveAt(DrawingVisualPolygonCache.Points.Count - 1);
+                DrawingVisualPolygonCache.Points.Add(MouseUpP);
+                DrawingVisualPolygonCache.Render();
             }
             e.Handled = true;
         }
@@ -124,13 +128,12 @@ namespace ColorVision.ImageEditor.Draw
 
         private void MouseMove(object sender, MouseEventArgs e)
         {
-            if (DVBezierCurveCache !=null)
+            if (DrawingVisualPolygonCache !=null)
             {
                 var point = e.GetPosition(DrawCanvas);
-
-                DVBezierCurveCache.Points.RemoveAt(DVBezierCurveCache.Points.Count - 1);
-                DVBezierCurveCache.Points.Add(point);
-                DVBezierCurveCache.Render();
+                DrawingVisualPolygonCache.Points.RemoveAt(DrawingVisualPolygonCache.Points.Count - 1);
+                DrawingVisualPolygonCache.Points.Add(point);
+                DrawingVisualPolygonCache.Render();
             }
             e.Handled = true;
         }

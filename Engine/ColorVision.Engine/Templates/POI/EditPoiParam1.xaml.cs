@@ -204,15 +204,14 @@ namespace ColorVision.Engine.Templates.POI
                 }))));
             }));
         }
-        
 
-        public BulkObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new BulkObservableCollection<IDrawingVisual>();
+
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.DrawingVisualLists;
         public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
         private void Window_Initialized(object sender, EventArgs e)
         {
             DataContext = KBJson;
 
-            ListView1.ItemsSource = DrawingVisualLists;
             if (AlgorithmKBConfig.Instance.KBCanDrag)
             {
                 ListViewDragDropManager<IDrawingVisual> listViewDragDropManager = new Common.Adorners.ListViewAdorners.ListViewDragDropManager<IDrawingVisual>(ListView1);
@@ -243,12 +242,14 @@ namespace ColorVision.Engine.Templates.POI
             ComboBoxBorderType2.SelectedIndex = 0;
 
             ImageViewModel = new ImageViewModel(ImageContentGrid, Zoombox1, ImageShow);
-            ImageViewModel.PropertyGrid = PropertyGrid2;
-
             ImageViewModel.CircleManager.IsEnabled = false;
             ImageViewModel.RectangleManager.IsEnabled = false;
-
             ImageViewModel.ToolBarScaleRuler.IsShow = false;
+            ImageViewModel.PropertyGrid = PropertyGrid2;
+
+            ListView1.ItemsSource = DrawingVisualLists;
+
+
             ToolBar1.DataContext = ImageViewModel;
             ToolBarRight.DataContext = ImageViewModel;
             ImageViewModel.EditModeChanged += (s, e) =>
@@ -360,21 +361,13 @@ namespace ColorVision.Engine.Templates.POI
 
             if (KBJson.Height != 0 && KBJson.Width != 0)
             {
-                WaitControl.Visibility = Visibility.Visible;
-                WaitControlProgressBar.Visibility = Visibility.Visible;
-                WaitControlProgressBar.Value = 0;
-
                 if (File.Exists(PoiConfig.BackgroundFilePath))
                     OpenImage(PoiConfig.BackgroundFilePath);
                 else
                     CreateImage(KBJson.Width, KBJson.Height, Colors.White, false);
 
-                WaitControlProgressBar.Value = 20;
                 RenderPoiConfig();
                 PoiParamToDrawingVisual(KBJson);
-                WaitControl.Visibility = Visibility.Collapsed;
-                WaitControlProgressBar.Visibility = Visibility.Collapsed;
-                log.Debug("Render Poi end");
             }
             else
             {
@@ -384,23 +377,6 @@ namespace ColorVision.Engine.Templates.POI
             }
             PreviewKeyDown += (s, e) =>
             {
-                if (e.Key == Key.Escape)
-                {
-                    if (DrawingPolygonCache != null)
-                    {
-                        ImageShow.RemoveVisual(DrawingPolygonCache);
-                        DrawingPolygonCache.Render();
-                        DrawingPolygonCache = null;
-                    }
-                }
-                if (e.Key == Key.Back)
-                {
-                    if (DrawingPolygonCache != null && DrawingPolygonCache.Attribute.Points.Count > 0)
-                    {
-                        DrawingPolygonCache.Attribute.Points.Remove(DrawingPolygonCache.Attribute.Points.Last());
-                        DrawingPolygonCache.Render();
-                    }
-                }
                 if (e.KeyboardDevice.Modifiers == ModifierKeys.Control && e.Key ==Key.S)
                 {
                     SavePoiParam();
@@ -436,9 +412,7 @@ namespace ColorVision.Engine.Templates.POI
                         if (Name == Properties.Resources.SerialNumber1)
                         {
                             item.IsSortD = !item.IsSortD;
-                            var sortedItems = DrawingVisualLists.ToList();
-                            sortedItems.Sort((x, y) => item.IsSortD ? y.BaseAttribute.Id.CompareTo(x.BaseAttribute.Id) : x.BaseAttribute.Id.CompareTo(y.BaseAttribute.Id));
-                            DrawingVisualLists.UpdateCollection(sortedItems);
+                            DrawingVisualLists.Sort((x, y) => item.IsSortD ? y.BaseAttribute.Id.CompareTo(x.BaseAttribute.Id) : x.BaseAttribute.Id.CompareTo(y.BaseAttribute.Id));
                         }
                     }
                 }
@@ -622,11 +596,6 @@ namespace ColorVision.Engine.Templates.POI
                         DrawingVisualLists.Clear();
                         PropertyGrid2.SelectedObject = null;
                     }
-                    if (Init)
-                    {
-                        WaitControl.Visibility = Visibility.Collapsed;
-                        WaitControlProgressBar.Visibility = Visibility.Collapsed;
-                    }
                     Init = true;
                     ImageShow.RaiseImageInitialized();
 
@@ -657,12 +626,6 @@ namespace ColorVision.Engine.Templates.POI
                 foreach (var item in poiParam.KBKeyRects)
                 {
                     No++;
-
-                    if (No % WaitNum == 0)
-                    {
-                        WaitControlProgressBar.Value = 20 + No * 79 / poiParam.KBKeyRects.Count;
-                        await Task.Delay(10);
-                    }
                     DVRectangleText Rectangle = new();
                     Rectangle.IsShowText = PoiConfig.IsShowText;
                     Rectangle.Attribute.Rect = new System.Windows.Rect(item.X , item.Y, item.Width, item.Height);
@@ -704,7 +667,6 @@ namespace ColorVision.Engine.Templates.POI
                     ImageShow.AddVisual(Rectangle);
                     DBIndex.Add(Rectangle, No);
                 }
-                WaitControlProgressBar.Value = 99;
                 ImageShow.ClearActionCommand();
             }
             catch
@@ -731,9 +693,6 @@ namespace ColorVision.Engine.Templates.POI
 
                     if (PoiConfig.AreaCircleNum > 1000)
                     {
-                        WaitControl.Visibility = Visibility.Visible;
-                        WaitControlProgressBar.Visibility = Visibility.Visible;
-                        WaitControlProgressBar.Value = 0;
                         PoiConfig.IsLayoutUpdated = false;
                     }
 
@@ -741,11 +700,7 @@ namespace ColorVision.Engine.Templates.POI
                     for (int i = 0; i < PoiConfig.AreaCircleNum; i++)
                     {
                         Num++;
-                        if (Num % 100 == 0 && WaitControl.Visibility == Visibility.Visible)
-                        {
-                            WaitControlProgressBar.Value = Num * 1000 / PoiConfig.AreaCircleNum;
-                            await Task.Delay(1);
-                        }
+
 
                         double x1 = PoiConfig.CenterX + PoiConfig.AreaCircleRadius * Math.Cos(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
                         double y1 = PoiConfig.CenterY + PoiConfig.AreaCircleRadius * Math.Sin(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
@@ -907,10 +862,6 @@ namespace ColorVision.Engine.Templates.POI
                     int all = rows * cols;
                     if (all > 1000)
                     {
-                        DrawingVisualLists.SuspendUpdate();
-                        WaitControl.Visibility = Visibility.Visible;
-                        WaitControlProgressBar.Visibility = Visibility.Visible;
-                        WaitControlProgressBar.Value = 0;
                         PoiConfig.IsLayoutUpdated = false;
                     }
 
@@ -920,11 +871,6 @@ namespace ColorVision.Engine.Templates.POI
                         for (int j = 0; j < cols; j++)
                         {
                             Num++;
-                            if (Num % 10000 == 0 && WaitControl.Visibility == Visibility.Visible)
-                            {
-                                WaitControlProgressBar.Value = Num * 10000 / all;
-                                await Task.Delay(1);
-                            }
 
                             double x1 = startL + StepCol * j;
                             double y1 = startU + StepRow * i;
@@ -963,11 +909,6 @@ namespace ColorVision.Engine.Templates.POI
                             }
                         }
                     }
-                    if (all <= 1000000)
-                    {
-                        DrawingVisualLists.ResumeUpdate();
-                    }
-
                     break;
                 case GraphicTypes.Mask:
                     List<Point> pts_src =
@@ -1038,90 +979,6 @@ namespace ColorVision.Engine.Templates.POI
                     }
 
                     break;
-
-                case GraphicTypes.Polygon:
-
-                    int No = 0;
-                    for (int i = 0; i < PoiConfig.Polygons.Count - 1; i++)
-                    {
-                        double dx = (PoiConfig.Polygons[i + 1].X - PoiConfig.Polygons[i].X) / (PoiConfig.Polygons[i].SplitNumber + 1);
-                        double dy = (PoiConfig.Polygons[i + 1].Y - PoiConfig.Polygons[i].Y) / (PoiConfig.Polygons[i].SplitNumber + 1);
-
-                        for (int j = 1; j < PoiConfig.Polygons[i].SplitNumber + 1; j++)
-                        {
-                            No++;
-                            switch (PoiConfig.DefaultPointType)
-                            {
-                                case GraphicTypes.Circle:
-
-                                    DVCircleText Circle = new();
-                                    Circle.Attribute.Center = new Point(PoiConfig.Polygons[i].X + dx * j, PoiConfig.Polygons[i].Y + dy * j);
-                                    Circle.Attribute.Radius = PoiConfig.DefaultCircleRadius;
-                                    Circle.Attribute.Brush = Brushes.Transparent;
-                                    Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultCircleRadius / 30);
-                                    Circle.Attribute.Id = start + No;
-                                    Circle.Attribute.Name = Circle.Attribute.Id.ToString();
-                                    Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Id);
-                                    Circle.Render();
-                                    ImageShow.AddVisual(Circle);
-                                    break;
-                                case GraphicTypes.Rect:
-                                    DVRectangleText Rectangle = new();
-                                    Rectangle.Attribute.Rect = new System.Windows.Rect(PoiConfig.Polygons[i].X + dx * j - PoiConfig.DefaultRectWidth / 2, PoiConfig.Polygons[i].Y + dy * j - PoiConfig.DefaultRectHeight / 2, PoiConfig.DefaultRectWidth, PoiConfig.DefaultRectHeight);
-                                    Rectangle.Attribute.Brush = Brushes.Transparent;
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultRectWidth / 30);
-                                    Rectangle.Attribute.Id = start + No;
-                                    Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
-                                    Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
-                                    Rectangle.Render();
-                                    ImageShow.AddVisual(Rectangle);
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
-
-
-                    }
-
-                    for (int i = 0; i < PoiConfig.Polygons.Count; i++)
-                    {
-                        if (PoiConfig.AreaPolygonUsNode)
-                        {
-                            switch (PoiConfig.DefaultPointType)
-                            {
-                                case GraphicTypes.Circle:
-
-                                    DVCircleText Circle = new();
-                                    Circle.Attribute.Center = new Point(PoiConfig.Polygons[i].X, PoiConfig.Polygons[i].Y);
-                                    Circle.Attribute.Radius = PoiConfig.DefaultCircleRadius;
-                                    Circle.Attribute.Brush = Brushes.Transparent;
-                                    Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultCircleRadius / 30);
-                                    Circle.Attribute.Id = start + i + 1;
-                                    Circle.Attribute.Name = Circle.Attribute.Id.ToString();
-                                    Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Id);
-
-                                    Circle.Render();
-                                    ImageShow.AddVisual(Circle);
-                                    break;
-                                case GraphicTypes.Rect:
-                                    DVRectangleText Rectangle = new();
-                                    Rectangle.Attribute.Rect = new System.Windows.Rect(PoiConfig.Polygons[i].X - PoiConfig.DefaultRectWidth / 2, PoiConfig.Polygons[i].Y - PoiConfig.DefaultRectHeight / 2, PoiConfig.DefaultRectWidth, PoiConfig.DefaultRectHeight);
-                                    Rectangle.Attribute.Brush = Brushes.Transparent;
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultRectWidth / 30);
-                                    Rectangle.Attribute.Id = start + i + 1;
-                                    Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
-                                    Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
-                                    Rectangle.Render();
-                                    ImageShow.AddVisual(Rectangle);
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
-                    }
-
-                    break;
                 default:
                     break;
             }
@@ -1129,13 +986,6 @@ namespace ColorVision.Engine.Templates.POI
             {
                 UpdateVisualLayout(true);
                 ScrollViewer1.ScrollToEnd();
-            }
-            //这里我不推荐添加
-            if (WaitControl.Visibility == Visibility.Visible)
-            {
-                WaitControl.Visibility = Visibility.Collapsed;
-                WaitControlProgressBar.Visibility = Visibility.Collapsed;
-                WaitControlProgressBar.Value = 0;
             }
         }
 

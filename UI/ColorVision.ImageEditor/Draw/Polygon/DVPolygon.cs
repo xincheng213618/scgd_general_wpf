@@ -13,23 +13,16 @@ namespace ColorVision.ImageEditor.Draw
         public bool AutoAttributeChanged { get; set; } = true;
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
         public bool IsComple { get; set; }
-
-        
+ 
         public DVPolygon()
         {
             Attribute = new PolygonProperties();
             Attribute.Pen = new Pen(Brushes.Red, 2);
             Attribute.Points = new List<Point>();
-            Attribute.PropertyChanged += (s, e) =>
-            {
-                if (AutoAttributeChanged)
-                    Render();
-            };
+            Attribute.PropertyChanged += (s, e) => Render();
+
         }
         public List<Point> Points { get => Attribute.Points; }
-
-        public Point? MovePoints { get; set; }
-
 
         public override void Render()
         {
@@ -42,10 +35,6 @@ namespace ColorVision.ImageEditor.Draw
                 {
                     dc.DrawLine(whiteOutlinePen, Points[i - 1], Points[i]);
                     dc.DrawLine(new Pen(Attribute.Pen.Brush, Attribute.Pen.Thickness), Points[i - 1], Points[i]);
-                }
-                if (MovePoints != null)
-                {
-                    dc.DrawLine(new Pen(Brushes.Pink, Attribute.Pen.Thickness), Points[^1], (Point)MovePoints);
                 }
 
                 if (IsComple)

@@ -182,15 +182,7 @@ namespace ColorVision.ImageEditor
 
         private void ImageView_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Escape)
-            {
-                if (DrawingVisualPolygonCache != null)
-                {
-                    ImageShow.RemoveVisual(DrawingVisualPolygonCache);
-                    DrawingVisualPolygonCache.Render();
-                }
-            }
-            else if (e.Key == Key.Tab)
+            if (e.Key == Key.Tab)
             {
                 BorderPropertieslayers.Visibility = BorderPropertieslayers.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
                 InfoText.Text = Config.GetPropertyString();
@@ -242,9 +234,6 @@ namespace ColorVision.ImageEditor
         private bool IsMouseDown;
         private Point MouseDownP;
 
-        private DVPolygon? DrawingVisualPolygonCache;
-
-
         private void ImageShow_Initialized(object sender, EventArgs e)
         {
             ImageShow.ContextMenuOpening += MainWindow_ContextMenuOpening;
@@ -287,12 +276,6 @@ namespace ColorVision.ImageEditor
 
         private void ImageShow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (DrawingVisualPolygonCache != null)
-            {
-                DrawingVisualPolygonCache.MovePoints = null;
-                DrawingVisualPolygonCache.Render();
-                DrawingVisualPolygonCache = null;
-            }
             IsRightButtonDown = true;
         }
 
@@ -338,21 +321,6 @@ namespace ColorVision.ImageEditor
 
                 if (ImageViewModel.EraseVisual)
                 {
-                    ImageViewModel.DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
-                    drawCanvas.AddVisual(SelectRect, false);
-
-                    if (ImageViewModel.SelectDrawingVisuals != null)
-                    {
-                        foreach (var item in ImageViewModel.SelectDrawingVisuals)
-                        {
-                            if (item is IDrawingVisual id)
-                            {
-                                id.Pen.Brush = Brushes.Red;
-                                id.Render();
-                            }
-                        }
-                        ImageViewModel.SelectDrawingVisuals = null;
-                    }
                     return;
                 }
 
@@ -368,14 +336,6 @@ namespace ColorVision.ImageEditor
 
                 if (ImageViewModel.DrawPolygon)
                 {
-                    if (DrawingVisualPolygonCache == null)
-                    {
-                        DrawingVisualPolygonCache = new DVPolygon();
-                        DrawingVisualPolygonCache.Attribute.Pen.Thickness = 1 / Zoombox1.ContentMatrix.M11;
-                        drawCanvas.AddVisual(DrawingVisualPolygonCache);
-                    }
-                    SelectDrawingVisualsClear();
-
                     return;
                 }
                 var MouseVisual = drawCanvas.GetVisual(MouseDownP);
@@ -432,15 +392,6 @@ namespace ColorVision.ImageEditor
             if (sender is DrawCanvas drawCanvas && (Zoombox1.ActivateOn == ModifierKeys.None || !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn)))
             {
                 var point = e.GetPosition(drawCanvas);
-
-                if (ImageViewModel.DrawPolygon)
-                {
-                    if (DrawingVisualPolygonCache != null)
-                    {
-                        DrawingVisualPolygonCache.MovePoints = point;
-                        DrawingVisualPolygonCache.Render();
-                    }
-                }
 
                 if (IsMouseDown)
                 {
@@ -525,44 +476,20 @@ namespace ColorVision.ImageEditor
 
                     if (drawCanvas.ContainsVisual(SelectRect))
                     {
-                        if (ImageViewModel.EraseVisual)
+                        ImageViewModel.SelectDrawingVisuals = drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP)));
+                        foreach (var item in ImageViewModel.SelectDrawingVisuals)
                         {
-                            drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseDownP));
-                            drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseUpP));
-                            foreach (var item in drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP))))
+                            if (item is IDrawingVisual drawingVisual)
                             {
-                                drawCanvas.RemoveVisual(item);
+                                drawingVisual.Pen.Brush = Brushes.Yellow;
+                                drawingVisual.Render();
                             }
                         }
-                        else
-                        {
-                            ImageViewModel.SelectDrawingVisuals = drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP)));
-                            foreach (var item in ImageViewModel.SelectDrawingVisuals)
-                            {
-                                if (item is IDrawingVisual drawingVisual)
-                                {
-                                    drawingVisual.Pen.Brush = Brushes.Yellow;
-                                    drawingVisual.Render();
-                                }
-                            }
 
-                            if (ImageViewModel.SelectDrawingVisuals.Count == 0)
-                                ImageViewModel.SelectDrawingVisuals = null;
-                        }
+                        if (ImageViewModel.SelectDrawingVisuals.Count == 0)
+                            ImageViewModel.SelectDrawingVisuals = null;
 
                         drawCanvas.RemoveVisual(SelectRect, false);
-                    }
-
-
-                    if (ImageViewModel.DrawPolygon)
-                    {
-                        if (DrawingVisualPolygonCache != null)
-                        {
-                            DrawingVisualPolygonCache.Points.Add(MouseUpP);
-                            DrawingVisualPolygonCache.MovePoints = null;
-                            DrawingVisualPolygonCache.Render();
-                        }
-
                     }
 
                     drawCanvas.ReleaseMouseCapture();

@@ -96,6 +96,9 @@ namespace ColorVision.Engine.Templates.POI
             ImageViewModel.ToolBarScaleRuler.IsShow = false;
             ImageViewModel.CircleManager.IsEnabled = false;
             ImageViewModel.RectangleManager.IsEnabled = false;
+            ImageViewModel.PolygonManager.IsEnabled = false;
+
+            
 
             ListView1.ItemsSource = DrawingVisualLists;
 
@@ -1981,19 +1984,6 @@ namespace ColorVision.Engine.Templates.POI
                 ;
             }));
         }
-    }
-
-    public class PoiEditRectCache:IConfig
-    {
-        public static PoiEditRectCache Instance => ConfigService.Instance.GetRequiredService<PoiEditRectCache>();
-        public int? LeftTopX { get; set; }
-        public int? LeftTopY { get; set; }
-        public int? RightTopX { get; set; }
-        public int? RightTopY { get; set; }
-        public int? RightBottomX { get; set; }
-        public int? RightBottomY { get; set; }
-        public int? LeftBottomX { get; set; }
-        public int? LeftBottomY { get; set; }
     }
 
 }

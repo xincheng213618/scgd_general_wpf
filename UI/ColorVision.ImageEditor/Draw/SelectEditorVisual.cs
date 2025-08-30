@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8625,CS8602,CS8607,CS0103,CS0067
+using ColorVision.Common.Utilities;
 using System;
 using System.Windows;
 using System.Windows.Input;
@@ -11,7 +12,7 @@ namespace ColorVision.ImageEditor.Draw
         public DrawCanvas DrawCanvas { get; set; }
 
         public ZoomboxSub ZoomboxSub { get; set; }
-
+        Guid Guid { get; set; }
         public SelectEditorVisual(DrawCanvas drawCanvas, ZoomboxSub zoomboxSub)
         {
             DrawCanvas = drawCanvas;
@@ -21,7 +22,7 @@ namespace ColorVision.ImageEditor.Draw
 
         private void ZoomboxSub_LayoutUpdated(object? sender, System.EventArgs e)
         {
-            Render();
+            DebounceTimer.AddOrResetTimerDispatcher("SelectEditorVisualRender" + Guid.ToString(), 20, () => Render());
         }
 
         public Rect Rect { get => _Rect; set {  _Rect = value; }  }

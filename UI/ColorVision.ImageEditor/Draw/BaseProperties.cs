@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
@@ -6,6 +7,9 @@ namespace ColorVision.ImageEditor.Draw
 
     public class BaseProperties : BaseMode
     {
+        public static SolidColorBrush DefaultBrush { get; set; } = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#01F3F3F3"));
+
+
         [Category("Attribute"), DisplayName("序号")]
         public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;

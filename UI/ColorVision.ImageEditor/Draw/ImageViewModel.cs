@@ -71,6 +71,11 @@ namespace ColorVision.ImageEditor.Draw
 
         public RectangleManager RectangleManager { get; set; }
 
+        public EraseManager EraseManager { get; set; }
+
+        public PolygonManager PolygonManager { get; set; }
+
+
         public MouseMagnifier MouseMagnifier { get; set; }
 
         public Crosshair Crosshair { get; set; }
@@ -165,10 +170,12 @@ namespace ColorVision.ImageEditor.Draw
             ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zoombox, drawCanvas);
             ToolConcentricCircle = new ToolReferenceLine(this,zoombox, drawCanvas);
 
+            PolygonManager = new PolygonManager(this, zoombox, drawCanvas);
             BezierCurveManager = new BezierCurveManager(this, zoombox, drawCanvas);
 
             CircleManager = new CircleManager(this, zoombox, drawCanvas);
             RectangleManager = new RectangleManager(this, zoombox, drawCanvas);
+            EraseManager = new EraseManager(this, zoombox, drawCanvas);
 
             ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill(), a => Image != null && Image.Source != null);
             ZoomUniformCommand = new RelayCommand(a => ZoomboxSub.ZoomUniform(),a => Image != null && Image.Source != null);
@@ -999,16 +1006,13 @@ namespace ColorVision.ImageEditor.Draw
         private bool _Measure;
 
 
-
-        private bool _DrawPolygon;
-
         public bool DrawPolygon
         {
-            get => _DrawPolygon;
+            get => PolygonManager.IsShow;
             set
             {
-                if (_DrawPolygon == value) return;
-                _DrawPolygon = value;
+                if (PolygonManager.IsShow == value) return;
+                PolygonManager.IsShow = value;
                 if (value)
                 {
                     ImageEditMode = true;
@@ -1072,13 +1076,12 @@ namespace ColorVision.ImageEditor.Draw
 
         private string _LastChoice { get; set; }
 
-        private bool _EraseVisual;
 
-        public bool EraseVisual {  get => _EraseVisual;
+        public bool EraseVisual {  get => EraseManager.IsShow;
             set
             {
-                if (_EraseVisual == value) return;
-                    _EraseVisual = value;
+                if (EraseManager.IsShow == value) return;
+                EraseManager.IsShow = value;
 
                 if (value)
                 {
@@ -1106,8 +1109,9 @@ namespace ColorVision.ImageEditor.Draw
         {
             SelectEditorVisual.Dispose();
             CircleManager.Dispose();
-
+            EraseManager.Dispose();
             RectangleManager.Dispose();
+            PolygonManager.Dispose();
             BezierCurveManager.Dispose();
             DrawingVisualLists.Clear();
             DrawingVisualLists = null;

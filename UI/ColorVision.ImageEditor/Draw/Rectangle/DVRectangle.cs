@@ -13,9 +13,6 @@ namespace ColorVision.ImageEditor.Draw
         public DVRectangle()
         {
             Attribute = new RectangleProperties();
-            Attribute.Brush = Brushes.Transparent;
-            Attribute.Pen = new Pen(Brushes.Red, 1);
-            Attribute.Rect = new Rect(50, 50, 100, 100);
             Attribute.PropertyChanged += (s, e) => Render();
         }
         private TextAttribute TextAttribute = new();
