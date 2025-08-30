@@ -227,10 +227,13 @@ namespace ColorVision.ImageEditor
 
         public static void ImageLayoutUpdatedRender(double scale, ObservableCollection<IDrawingVisual> DrawingVisualLists)
         {
-            foreach (var item in DrawingVisualLists)
+            if (DrawingVisualLists != null)
             {
-                item.Pen.Thickness = scale;
-                item.Render();
+                foreach (var item in DrawingVisualLists)
+                {
+                    item.Pen.Thickness = scale;
+                    item.Render();
+                }
             }
         }
 
@@ -684,9 +687,8 @@ namespace ColorVision.ImageEditor
                     ComboBoxLayers.ItemsSource = ComboBoxLayerItems;
                     AddSelectionChangedHandler(ComboBoxLayersSelectionChanged);
 
-                    if (Config.IsShowLoadImage && isLargeFile)
+                    if (Config.IsShowLoadImage)
                     {
-                        WaitControl.Visibility = Visibility.Visible;
                         await Task.Run(() =>
                         {
                             byte[] imageData = File.ReadAllBytes(filePath);
@@ -695,7 +697,6 @@ namespace ColorVision.ImageEditor
                             {
                                 SetImageSource(bitmapImage.ToWriteableBitmap());
                                 UpdateZoomAndScale();
-                                WaitControl.Visibility = Visibility.Collapsed;
                             });
                         });
 

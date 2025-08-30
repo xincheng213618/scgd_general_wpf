@@ -250,20 +250,6 @@
                     </StackPanel>
                 </Border>
             </Grid>
-
-
-            <Grid x:Name="WaitControl"  x:FieldModifier="public" Grid.Row="0" Grid.ColumnSpan="2" Panel.ZIndex="9" Visibility="Collapsed">
-                <Grid   Background="Black"  Opacity="0.3"/>
-                <Border   Background="#F9F9F9"  Height="250" Width="250"  CornerRadius="10">
-                    <Border Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" CornerRadius="5" Margin="5">
-                        <Grid>
-                            <base:ProgressRing  BorderBrush="Red" Margin="30" />
-                            <TextBlock x:Name="WaitControlText"   x:FieldModifier="public" Text="DataLoading" HorizontalAlignment="Center" FontSize="16"/>
-                            <ProgressBar x:Name="WaitControlProgressBar"  x:FieldModifier="public" Visibility="Collapsed" BorderThickness="0"  Maximum="100" Minimum="0"  Margin="5" VerticalAlignment="Bottom" />
-                        </Grid>
-                    </Border>
-                </Border>
-            </Grid>
         </Grid>
 
         <Grid Grid.Column="1" Width="300" Visibility="{Binding ElementName=AdvancedButton, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">

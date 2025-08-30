@@ -66,7 +66,7 @@ namespace ColorVision.Plugins
             ContextMenu = new ContextMenu();
 
             DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = ColorVision.Properties.Resources.Update + Name ;
+            DownloadFile.DownloadTile = Resources.Update + Name ;
 
             if (PluginInfo.Enabled)
             {
@@ -74,8 +74,8 @@ namespace ColorVision.Plugins
             }
 
             ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = ApplicationCommands.Delete });
-            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Properties.Resources.Update, Command = UpdateCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = ApplicationCommands.Delete });
+            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Update, Command = UpdateCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "OpenLocalPath", Command = OpenLocalPathCommand });
 
 
@@ -85,7 +85,9 @@ namespace ColorVision.Plugins
 
         public void OpenLocalPath()
         {
-            PlatformHelper.OpenFolder($"Plugins//{PackageName}");
+            string localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins", PackageName);
+            log.Info($"OpenLocalPath:{localPath}");
+            PlatformHelper.OpenFolder(localPath);
         }
 
         public async void CheckVersion()

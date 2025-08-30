@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Draw;
 using System;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -152,7 +153,18 @@ namespace ColorVision.Engine.Templates.POI
                 ImageViewModel.SelectDrawingVisuals = null;
             }
         }
+        public int CheckNo()
+        {
+            if (DrawingVisualLists.Count > 0 && DrawingVisualLists.Last() is DrawingVisualBase drawingVisual)
+            {
+                return drawingVisual.ID + 1;
+            }
+            else
+            {
+                return 1;
+            }
 
+        }
         private void ImageShow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
@@ -193,13 +205,13 @@ namespace ColorVision.Engine.Templates.POI
 
                 if (ImageViewModel.DrawCircle)
                 {
-                    No++;
+                    int no = CheckNo();
                     DrawCircleCache = new DVCircleText();
-                    DrawCircleCache.Attribute.Id = No;
+                    DrawCircleCache.Attribute.Id = no;
                     DrawCircleCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
                     DrawCircleCache.Attribute.Center = MouseDownP;
                     DrawCircleCache.Attribute.Radius = PoiConfig.DefalutRadius;
-                    DrawCircleCache.Attribute.Text = "Point_" + No.ToString();
+                    DrawCircleCache.Attribute.Text = "Point_" + no.ToString();
 
                     drawCanvas.AddVisual(DrawCircleCache);
 
@@ -210,10 +222,10 @@ namespace ColorVision.Engine.Templates.POI
                 }
                 if (ImageViewModel.DrawRect)
                 {
-                    No++;
+                    int no = CheckNo();
 
                     DrawingRectangleCache = new DVRectangleText();
-                    DrawingRectangleCache.Attribute.Id = No;
+                    DrawingRectangleCache.Attribute.Id = no;
                     if (PoiConfig.UseCenter)
                     {
                         DrawingRectangleCache.Attribute.Rect = new System.Windows.Rect(new Point(MouseDownP.X + PoiConfig.DefalutWidth / 2, MouseDownP.Y + PoiConfig.DefalutHeight / 2), new Point(MouseDownP.X - PoiConfig.DefalutWidth / 2, MouseDownP.Y - PoiConfig.DefalutHeight / 2));
@@ -224,7 +236,7 @@ namespace ColorVision.Engine.Templates.POI
                     }
 
                     DrawingRectangleCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
-                    DrawingRectangleCache.Attribute.Text = "Point_" + No.ToString();
+                    DrawingRectangleCache.Attribute.Text = "Point_" + no.ToString();
 
                     drawCanvas.AddVisual(DrawingRectangleCache);
 
@@ -464,26 +476,24 @@ namespace ColorVision.Engine.Templates.POI
                     else if (ImageViewModel.DrawCircle && DrawCircleCache != null)
                     {
                         DrawCircleCache.Render();
-                        PropertyGrid2.SelectedObject = DrawCircleCache.BaseAttribute;
-
-
                         ListView1.ScrollIntoView(DrawCircleCache);
                         ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawCircleCache);
 
                         PoiConfig.DefalutRadius = DrawCircleCache.Attribute.Radius;
+                        ImageViewModel.SelectDrawingVisual = DrawCircleCache;
 
                     }
                     else if (ImageViewModel.DrawRect)
                     {
                         DrawingRectangleCache.Render();
 
-
-                        PropertyGrid2.SelectedObject = DrawingRectangleCache.BaseAttribute;
                         ListView1.ScrollIntoView(DrawingRectangleCache);
                         ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawingRectangleCache);
 
                         PoiConfig.DefalutWidth = DrawingRectangleCache.Attribute.Rect.Width;
                         PoiConfig.DefalutHeight = DrawingRectangleCache.Attribute.Rect.Height;
+                        ImageViewModel.SelectDrawingVisual = DrawingRectangleCache;
+
                     }
                     drawCanvas.ReleaseMouseCapture();
                     if (ImageViewModel.SelectDrawingVisual != null)

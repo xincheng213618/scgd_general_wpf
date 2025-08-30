@@ -353,7 +353,6 @@ namespace ColorVision.Engine.Media
             {
                 if (imageView.Config.IsShowLoadImage)
                 {
-                    imageView.WaitControl.Visibility = Visibility.Visible;
                     await Task.Run(() =>
                     {
                         CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filePath);
@@ -361,7 +360,6 @@ namespace ColorVision.Engine.Media
                         {
                             imageView.OpenImage(cVCIEFile.ToWriteableBitmap());
                             imageView.UpdateZoomAndScale();
-                            imageView.WaitControl.Visibility = Visibility.Collapsed;
                         });
                     });
                 }

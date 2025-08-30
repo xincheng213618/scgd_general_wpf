@@ -598,7 +598,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <WindowsFormsHost Grid.Column="0" Width="400" Height="300" x:Name="PropertyGrid21"  Visibility="Collapsed">
+                <WindowsFormsHost Grid.Column="0" Width="400" Height="300" x:Name="PropertyGrid21"  Visibility="Visible">
                     <winf:PropertyGrid  x:Name="PropertyGrid2" />
                 </WindowsFormsHost>
                 <Grid Grid.Column="1">
@@ -608,9 +608,6 @@
                     </Grid.ColumnDefinitions>
                     <ListView  x:Name="ListView1"  Style="{StaticResource ListView.Small}" ScrollViewer.HorizontalScrollBarVisibility="Visible" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
                         <ListView.Resources>
-                            <ContextMenu x:Key="ContextMenuItem">
-                                <MenuItem Header="{x:Static properties:Resources.Delete}"  Click="MenuItem_DrawingVisual_Delete" Tag="{Binding .}"  />
-                            </ContextMenu>
                             <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
 
                             <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type draw:DVCircle}" >
@@ -645,7 +642,6 @@
                         </ListView.Resources>
                         <ListView.ItemContainerStyle>
                             <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                                <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
                             </Style>
                         </ListView.ItemContainerStyle>
                         <ListView.View>

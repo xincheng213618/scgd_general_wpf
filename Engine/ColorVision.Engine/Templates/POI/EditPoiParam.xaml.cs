@@ -1507,7 +1507,7 @@ namespace ColorVision.Engine.Templates.POI
         private void Button_RefreshImg_Click(object sender, RoutedEventArgs e)
         {
             MeasureImgResultModels.Clear();
-            var imgs = MeasureImgResultDao.Instance.GetAll();
+            var imgs = MeasureImgResultDao.Instance.GetAll(100);
             imgs.Reverse();
             foreach (var item in imgs)
             {

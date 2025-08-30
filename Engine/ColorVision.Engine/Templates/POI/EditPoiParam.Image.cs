@@ -483,6 +483,7 @@ namespace ColorVision.Engine.Templates.POI
                         ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawCircleCache);
 
                         PoiConfig.DefalutRadius = DrawCircleCache.Attribute.Radius;
+                        ImageViewModel.SelectDrawingVisual = DrawCircleCache;
 
                     }
                     else if (ImageViewModel.DrawRect)
@@ -495,6 +496,7 @@ namespace ColorVision.Engine.Templates.POI
 
                         PoiConfig.DefalutWidth = DrawingRectangleCache.Attribute.Rect.Width;
                         PoiConfig.DefalutHeight = DrawingRectangleCache.Attribute.Rect.Height;
+                        ImageViewModel.SelectDrawingVisual = DrawingRectangleCache;
                     }
                     drawCanvas.ReleaseMouseCapture();
                     if (ImageViewModel.SelectDrawingVisual != null)

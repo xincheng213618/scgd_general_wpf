@@ -113,9 +113,7 @@ namespace ColorVision
                 }
                 else
                 {
-                    MessageBox.Show("不支持的文件格式");
-                    Environment.Exit(0);
-                    return;
+
                 }
             }
 
