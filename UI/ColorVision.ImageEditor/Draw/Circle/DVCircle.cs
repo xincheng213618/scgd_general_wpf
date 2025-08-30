@@ -21,6 +21,7 @@ namespace ColorVision.ImageEditor.Draw
             Attribute.Radius = 30;
             Attribute.PropertyChanged += (s, e) => Render();
         }
+
         private TextAttribute TextAttribute = new();
 
         public bool IsDrawing { get; set; }
