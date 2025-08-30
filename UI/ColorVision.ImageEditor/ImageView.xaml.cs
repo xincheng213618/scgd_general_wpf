@@ -29,6 +29,7 @@ namespace ColorVision.ImageEditor
     public partial class ImageView : UserControl, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
+        Guid Guid { get; set; } = Guid.NewGuid();
 
         public ImageViewModel ImageViewModel { get; set; }
 
@@ -215,7 +216,6 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        Guid Guid { get; set; } = Guid.NewGuid();
 
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
         {
@@ -240,7 +240,6 @@ namespace ColorVision.ImageEditor
         private bool IsMouseDown;
         private Point MouseDownP;
 
-        private DVRectangle DrawingRectangleCache;
         private DVPolygon? DrawingVisualPolygonCache;
 
 
@@ -369,12 +368,6 @@ namespace ColorVision.ImageEditor
 
                 if (ImageViewModel.DrawRect)
                 {
-                    DrawingRectangleCache = new DVRectangle() { AutoAttributeChanged = false };
-                    DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + DefalutWidth, MouseDownP.Y + DefalutHeight));
-                    DrawingRectangleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-
-                    drawCanvas.AddVisual(DrawingRectangleCache);
-                    SelectDrawingVisualsClear();
                     return;
                 }
 
@@ -494,15 +487,6 @@ namespace ColorVision.ImageEditor
                         ImageViewModel.SelectEditorVisual.SetRect();
                     }
 
-                    else if (ImageViewModel.DrawRect)
-                    {
-                        if (DrawingRectangleCache != null)
-                        {
-                            DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, point);
-                            DrawingRectangleCache.Render();
-                        }
-                    }
-
                     if (ImageViewModel.SelectDrawingVisuals != null)
                     {
                         foreach (var item in ImageViewModel.SelectDrawingVisuals)
@@ -530,9 +514,6 @@ namespace ColorVision.ImageEditor
                 LastMouseMove = point;
             }
         }
-
-        private double DefalutWidth { get; set; } = 30;
-        private double DefalutHeight { get; set; } = 30;
 
 
         private void ImageShow_MouseUp(object sender, MouseButtonEventArgs e)
@@ -585,24 +566,6 @@ namespace ColorVision.ImageEditor
                             DrawingVisualPolygonCache.Points.Add(MouseUpP);
                             DrawingVisualPolygonCache.MovePoints = null;
                             DrawingVisualPolygonCache.Render();
-                        }
-
-                    }
-
-                    else if (ImageViewModel.DrawRect)
-                    {
-                        if (DrawingRectangleCache != null)
-                        {
-                            if (DrawingRectangleCache.Attribute.Rect.Width == DefalutWidth && DrawingRectangleCache.Attribute.Rect.Height == DefalutHeight)
-                                DrawingRectangleCache.Render();
-
-                            DrawingRectangleCache.AutoAttributeChanged = true;
-
-                            ImageViewModel.SelectDrawingVisual = DrawingRectangleCache;
-
-                            DefalutWidth = DrawingRectangleCache.Attribute.Rect.Width;
-                            DefalutHeight = DrawingRectangleCache.Attribute.Rect.Height;
-                            DrawingRectangleCache = null;
                         }
 
                     }

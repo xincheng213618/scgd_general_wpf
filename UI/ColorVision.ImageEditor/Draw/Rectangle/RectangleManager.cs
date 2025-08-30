@@ -7,15 +7,15 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class CircleManager:IDisposable
+    public class RectangleManager : IDisposable
     {
         private ZoomboxSub Zoombox1 { get; set; }
         private DrawCanvas DrawCanvas { get; set; }
         public ImageViewModel ImageViewModel { get; set; }
 
-        private DVCircle DrawCircleCache;
+        private DVRectangle DrawingRectangleCache;
 
-        public CircleManager(ImageViewModel imageEditViewMode, ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public RectangleManager(ImageViewModel imageEditViewMode, ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             Zoombox1 = zombox;
             DrawCanvas = drawCanvas;
@@ -55,7 +55,7 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.MouseLeave -= MouseLeave;
             DrawCanvas.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp -= Image_PreviewMouseUp;
-            DrawCircleCache = null;
+            DrawingRectangleCache = null;
         }
 
 
@@ -64,7 +64,9 @@ namespace ColorVision.ImageEditor.Draw
         Point MouseUpP { get; set; }
 
         bool IsMouseDown;
-        private double DefalutRadius { get; set; } = 30;
+        private double DefalutWidth { get; set; } = 30;
+        private double DefalutHeight { get; set; } = 30;
+
 
         private void PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -80,12 +82,11 @@ namespace ColorVision.ImageEditor.Draw
             {
                 ImageViewModel.SelectEditorVisual.SetRender(null);
             }
+            DrawingRectangleCache = new DVRectangle() { AutoAttributeChanged = false };
+            DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + DefalutWidth, MouseDownP.Y + DefalutHeight));
+            DrawingRectangleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
 
-            DrawCircleCache = new DVCircle() { AutoAttributeChanged = false };
-            DrawCircleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-            DrawCircleCache.Attribute.Center = MouseDownP;
-            DrawCircleCache.Attribute.Radius = DefalutRadius;
-            DrawCanvas.AddVisual(DrawCircleCache);
+            DrawCanvas.AddVisual(DrawingRectangleCache);
 
             if (ImageViewModel.SelectDrawingVisuals != null)
             {
@@ -106,23 +107,24 @@ namespace ColorVision.ImageEditor.Draw
         private void Image_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
             DrawCanvas.ReleaseMouseCapture();
-
             IsMouseDown = false;
-            if (DrawCircleCache != null)
+
+            if (DrawingRectangleCache != null)
             {
                 MouseUpP = e.GetPosition(DrawCanvas);
 
-                if (DrawCircleCache.Attribute.Radius == DefalutRadius)
-                    DrawCircleCache.Render();
+                if (DrawingRectangleCache.Attribute.Rect.Width == DefalutWidth && DrawingRectangleCache.Attribute.Rect.Height == DefalutHeight)
+                    DrawingRectangleCache.Render();
 
-                ImageViewModel.SelectDrawingVisual = DrawCircleCache;
+                DrawingRectangleCache.AutoAttributeChanged = true;
 
-                DrawCircleCache.AutoAttributeChanged = true;
+                ImageViewModel.SelectDrawingVisual = DrawingRectangleCache;
 
-                DefalutRadius = DrawCircleCache.Radius;
-
-                DrawCircleCache = null;
+                DefalutWidth = DrawingRectangleCache.Attribute.Rect.Width;
+                DefalutHeight = DrawingRectangleCache.Attribute.Rect.Height;
+                DrawingRectangleCache = null;
             }
+
             e.Handled = true;
         }
 
@@ -132,13 +134,12 @@ namespace ColorVision.ImageEditor.Draw
         {
             if (IsMouseDown)
             {
-                if (DrawCircleCache != null)
+                if (DrawingRectangleCache != null)
                 {
                     var point = e.GetPosition(DrawCanvas);
 
-                    double Radius = Math.Sqrt((Math.Pow(point.X - MouseDownP.X, 2) + Math.Pow(point.Y - MouseDownP.Y, 2)));
-                    DrawCircleCache.Attribute.Radius = Radius;
-                    DrawCircleCache.Render();
+                    DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, point);
+                    DrawingRectangleCache.Render();
                 }
             }
             e.Handled = true;

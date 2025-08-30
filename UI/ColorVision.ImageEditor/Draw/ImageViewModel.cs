@@ -68,6 +68,8 @@ namespace ColorVision.ImageEditor.Draw
 
         private CircleManager CircleManager { get; set; }
 
+        private RectangleManager RectangleManager { get; set; }
+
         public MouseMagnifier MouseMagnifier { get; set; }
 
         public Crosshair Crosshair { get; set; }
@@ -162,6 +164,7 @@ namespace ColorVision.ImageEditor.Draw
             BezierCurveManager = new BezierCurveManager(this, zoombox, drawCanvas);
 
             CircleManager = new CircleManager(this, zoombox, drawCanvas);
+            RectangleManager = new RectangleManager(this, zoombox, drawCanvas);
 
             ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill(), a => Image != null && Image.Source != null);
             ZoomUniformCommand = new RelayCommand(a => ZoomboxSub.ZoomUniform(),a => Image != null && Image.Source != null);
@@ -954,17 +957,16 @@ namespace ColorVision.ImageEditor.Draw
             }
         }
 
-        private bool _DrawRect;
         /// <summary>
         /// 是否画圆形
         /// </summary>
         public bool DrawRect
         {
-            get => _DrawRect;
+            get => RectangleManager.IsShow;
             set
             {
-                if (_DrawRect == value) return;
-                _DrawRect = value;
+                if (RectangleManager.IsShow == value) return;
+                RectangleManager.IsShow = value;
                 if (value)
                 {
                     ImageEditMode = true;
@@ -1100,6 +1102,8 @@ namespace ColorVision.ImageEditor.Draw
         {
             SelectEditorVisual.Dispose();
             CircleManager.Dispose();
+
+            RectangleManager.Dispose();
             BezierCurveManager.Dispose();
 
             Parent = null;
