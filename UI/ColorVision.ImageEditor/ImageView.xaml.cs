@@ -280,13 +280,6 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private void MenuItem_DrawingVisual_Delete(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem && menuItem.Tag is Visual visual)
-            {
-                ImageShow.RemoveVisual(visual);
-            }
-        }
 
         bool IsRightButtonDown;
 
