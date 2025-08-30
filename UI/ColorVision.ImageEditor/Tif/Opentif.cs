@@ -12,8 +12,7 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Tif
 {
-    [FileExtension(".tif", ".tiff")]
-    public class Opentif : IImageOpen, IFileProcessor
+    public class FileProcessorTif : IFileProcessor
     {
         public int Order => -1;
 
@@ -25,6 +24,11 @@ namespace ColorVision.ImageEditor.Tif
         public bool CanProcess(string filePath)
         {
             return true;
+        }
+
+        public void Export(string filePath)
+        {
+            throw new NotImplementedException();
         }
 
         public void Process(string filePath)
@@ -46,11 +50,12 @@ namespace ColorVision.ImageEditor.Tif
                 }));
             }
         }
+    }
 
-        public void Export(string filePath)
-        {
 
-        }
+    [FileExtension(".tif", ".tiff")]
+    public class Opentif : IImageOpen
+    {
 
         public static int GetChannelCount(BitmapSource source)
         {
@@ -93,7 +98,6 @@ namespace ColorVision.ImageEditor.Tif
                 throw new NotSupportedException("Unsupported pixel format");
             }
         }
-
 
         public static WriteableBitmap ConvertGray32FloatToBitmapSource(BitmapSource bitmapSource)
         {
