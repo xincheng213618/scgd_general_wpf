@@ -6,21 +6,20 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class BezierCurveImp:IDisposable
+    public class BezierCurveManager:IDisposable
     {
         private ZoomboxSub ZoomboxSub { get; set; }
         private DrawCanvas DrawCanvas { get; set; }
 
-        public DrawingVisual DrawVisualImage { get; set; }
+        public DrawingVisual BezierCurveImpCache { get; set; }
 
         public ImageViewModel Paraent { get; set; }
 
-        public BezierCurveImp(ImageViewModel imageEditViewMode, ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public BezierCurveManager(ImageViewModel imageEditViewMode, ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
             DrawCanvas = drawCanvas;
             Paraent = imageEditViewMode;
-            DrawVisualImage = new DrawingVisual();
         }
 
         public bool IsShow
@@ -68,6 +67,7 @@ namespace ColorVision.ImageEditor.Draw
 
         Point MouseDownP { get; set; }
         Point MouseUpP { get; set; }
+
         bool IsMouseDown;
 
         DVBezierCurve DVBezierCurveCache { get; set; }

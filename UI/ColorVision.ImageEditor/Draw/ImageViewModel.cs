@@ -64,7 +64,9 @@ namespace ColorVision.ImageEditor.Draw
 
         private DrawCanvas Image { get; set; }
 
-        private BezierCurveImp BezierCurveImp { get; set; }
+        private BezierCurveManager BezierCurveImp { get; set; }
+
+        private CircleManager CircleManager { get; set; }
 
         public MouseMagnifier MouseMagnifier { get; set; }
 
@@ -157,7 +159,9 @@ namespace ColorVision.ImageEditor.Draw
             ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zoombox, drawCanvas);
             ToolConcentricCircle = new ToolReferenceLine(this,zoombox, drawCanvas);
 
-            BezierCurveImp = new BezierCurveImp(this, zoombox, drawCanvas);
+            BezierCurveImp = new BezierCurveManager(this, zoombox, drawCanvas);
+
+            CircleManager = new CircleManager(this, zoombox, drawCanvas);
 
             ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill(), a => Image != null && Image.Source != null);
             ZoomUniformCommand = new RelayCommand(a => ZoomboxSub.ZoomUniform(),a => Image != null && Image.Source != null);

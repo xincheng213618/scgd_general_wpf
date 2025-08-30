@@ -55,8 +55,12 @@ namespace ColorVision.ImageEditor.Draw
         public Point FixedPoint{ get; set; }
         public Point FixedPoint1 { get; set; }
 
+        public bool IsEditor { get; set; }
+
         public bool GetContainingRect(Point point)
         {
+            IsEditor = false;
+
             double thickness = 1 / ZoomboxSub.ContentMatrix.M11;
             double smallRectSize = 10 * thickness;
             double halfSmallRectSize = smallRectSize / 2;
@@ -79,25 +83,25 @@ namespace ColorVision.ImageEditor.Draw
             {
                 ZoomboxSub.Cursor = Cursors.SizeNWSE;
                 FixedPoint = OldRect.BottomRight;
-                return true;
+                IsEditor = true;
             }
             else if (topRight.Contains(point))
             {
                 FixedPoint = OldRect.BottomLeft;
                 ZoomboxSub.Cursor = Cursors.SizeNESW;
-                return true;
+                IsEditor = true;
             }
             else if (bottomLeft.Contains(point))
             {
                 FixedPoint = OldRect.TopRight;
                 ZoomboxSub.Cursor = Cursors.SizeNESW;
-                return true;
+                IsEditor = true;
             }
             else if (bottomRight.Contains(point))
             {
                 FixedPoint = OldRect.TopLeft;
                 ZoomboxSub.Cursor = Cursors.SizeNWSE;
-                return true;
+                IsEditor = true;
             }
             else if (middleTop.Contains(point))
             {
@@ -105,14 +109,14 @@ namespace ColorVision.ImageEditor.Draw
                 FixedPoint1 = OldRect.BottomRight;
                 ZoomboxSub.Cursor = Cursors.SizeNS;
 
-                return true;
+                IsEditor = true;
             }
             else if (middleBottom.Contains(point))
             {
                 FixedPoint = OldRect.TopLeft;
                 FixedPoint1 = OldRect.TopRight;
                 ZoomboxSub.Cursor = Cursors.SizeNS;
-                return true;
+                IsEditor = true;
             }
             else if (middleLeft.Contains(point))
             {
@@ -120,22 +124,22 @@ namespace ColorVision.ImageEditor.Draw
                 FixedPoint1 = OldRect.BottomRight;
 
                 ZoomboxSub.Cursor = Cursors.SizeWE;
-                return true;
+                IsEditor = true;
             }
             else if (middleRight.Contains(point))
             {
                 FixedPoint = OldRect.TopLeft;
                 FixedPoint1 = OldRect.BottomLeft;
                 ZoomboxSub.Cursor = Cursors.SizeWE;
-                return true;
+                return IsEditor = true;;
             }
             else if (Rect.Contains(point))
             {
                 ZoomboxSub.Cursor = Cursors.SizeAll;
-                return true;
+                IsEditor = true;
             }
 
-            return false;
+            return IsEditor;
         }
 
         public void SetRender(ISelectVisual selectVisual)
