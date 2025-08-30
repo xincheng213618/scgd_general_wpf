@@ -1,13 +1,13 @@
-﻿using ColorVision.ImageEditor;
-using ColorVision.UI;
+﻿using ColorVision.UI;
+using ColorVision.UI.PropertyEditor;
 using System.ComponentModel;
 using System.Windows;
 
 
 namespace ColorVision.Solution.FileMeta
 {
-    [FileExtension(".jpg|.png|.jpeg|.tif|.bmp|.tiff|.cvraw|.cvcie", "图片编辑器")]
-    public class FileProcessorImage : IFileProcessor
+    [FileExtension(".dat|.ini|.txt|.cs|.json|.java|.go|.md|.py|.dat|.js|.xml|.xaml|.cpp|.c|.bat|.sql|.css|.ps1")]
+    public class FileProcessorText : IFileProcessor
     {
         public int Order => 1;
 
@@ -26,15 +26,13 @@ namespace ColorVision.Solution.FileMeta
 
         public void Process(string filePath)
         {
-            ImageView imageView = new();
+            var control = new AvalonEditControll(filePath);
             Window window = new() { };
             if (Application.Current.MainWindow != window)
             {
                 window.Owner = Application.Current.GetActiveWindow();
             }
-            window.Content = imageView;
-            imageView.OpenImage(filePath);
-
+            window.Content = control;
             window.Show();
         }
     }

@@ -5,7 +5,7 @@ using System.IO;
 
 namespace ColorVision.Solution.FileMeta
 {
-    [FileExtension(".jpg", ".png", ".jpeg", ".tif", ".bmp", ".tiff")]
+    [FileExtension(".jpg|.png|.jpeg|.tif|.bmp|.tiff")]
     public class FileImage : FileMetaBase
     {
         public FileImage() { }
@@ -19,6 +19,7 @@ namespace ColorVision.Solution.FileMeta
 
         public override IEnumerable<MenuItemMetadata> GetMenuItems()
         {
+            MenuItemMetadata menuItemMetadata = new MenuItemMetadata();
             return base.GetMenuItems();
         }
 
