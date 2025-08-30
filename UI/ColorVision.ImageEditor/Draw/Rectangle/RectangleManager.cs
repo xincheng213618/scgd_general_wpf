@@ -21,6 +21,7 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas = drawCanvas;
             ImageViewModel = imageEditViewMode;
         }
+        public bool IsEnabled { get; set; } = true;
 
         public bool IsShow
         {
@@ -28,14 +29,18 @@ namespace ColorVision.ImageEditor.Draw
             {
                 if (_IsShow == value) return;
                 _IsShow = value;
-                if (value)
+                if (IsEnabled)
                 {
-                    Load();
+                    if (value)
+                    {
+                        Load();
+                    }
+                    else
+                    {
+                        UnLoad();
+                    }
                 }
-                else
-                {
-                    UnLoad();
-                }
+
             }
         }
 

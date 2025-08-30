@@ -13,7 +13,7 @@ namespace ColorVision.ImageEditor.Draw
         private DrawCanvas DrawCanvas { get; set; }
         public ImageViewModel ImageViewModel { get; set; }
 
-        private DVCircle DrawCircleCache;
+        private DVCircleText DrawCircleCache;
 
         public CircleManager(ImageViewModel imageEditViewMode, ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
@@ -22,19 +22,24 @@ namespace ColorVision.ImageEditor.Draw
             ImageViewModel = imageEditViewMode;
         }
 
+        public bool IsEnabled { get; set; } = true;
+
         public bool IsShow
         {
             get => _IsShow; set
             {
                 if (_IsShow == value) return;
                 _IsShow = value;
-                if (value)
+                if (IsEnabled)
                 {
-                    Load();
-                }
-                else
-                {
-                    UnLoad();
+                    if (value)
+                    {
+                        Load();
+                    }
+                    else
+                    {
+                        UnLoad();
+                    }
                 }
             }
         }
@@ -58,8 +63,6 @@ namespace ColorVision.ImageEditor.Draw
             DrawCircleCache = null;
         }
 
-
-
         Point MouseDownP { get; set; }
         Point MouseUpP { get; set; }
 
@@ -82,12 +85,12 @@ namespace ColorVision.ImageEditor.Draw
             }
 
             if (DrawCircleCache != null) return;
- 
-            DVCircle dVCircle = new DVCircle();
+
+            DVCircleText dVCircle = new DVCircleText();
             dVCircle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
             dVCircle.Attribute.Center = MouseDownP;
             dVCircle.Attribute.Radius = DefalutRadius;
-
+            dVCircle.Attribute.Text = "Point";
             DrawCircleCache = dVCircle;
 
 

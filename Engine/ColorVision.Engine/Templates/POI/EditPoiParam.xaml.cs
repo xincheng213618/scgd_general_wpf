@@ -104,6 +104,9 @@ namespace ColorVision.Engine.Templates.POI
 
             ImageViewModel = new ImageViewModel(ImageContentGrid, Zoombox1, ImageShow);
             ImageViewModel.ToolBarScaleRuler.IsShow = false;
+            ImageViewModel.CircleManager.IsEnabled = false;
+            ImageViewModel.RectangleManager.IsEnabled = false;
+
             ToolBar1.DataContext = ImageViewModel;
             ToolBarRight.DataContext = ImageViewModel;
             ImageViewModel.EditModeChanged += (s, e) =>

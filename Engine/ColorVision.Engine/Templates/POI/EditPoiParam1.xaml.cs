@@ -243,6 +243,8 @@ namespace ColorVision.Engine.Templates.POI
             ComboBoxBorderType2.SelectedIndex = 0;
 
             ImageViewModel = new ImageViewModel(ImageContentGrid, Zoombox1, ImageShow);
+            ImageViewModel.CircleManager.IsEnabled = false;
+            ImageViewModel.RectangleManager.IsEnabled = false;
 
             ImageViewModel.ToolBarScaleRuler.IsShow = false;
             ToolBar1.DataContext = ImageViewModel;
