@@ -32,9 +32,9 @@
                 <Border Margin="0" Style="{StaticResource BorderModuleArea}"  CornerRadius="5">
                     <StackPanel  Margin="5">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                            <RadioButton x:Name="RadioButtonAreaCircle" GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding IsAreaCircle}" Width="60" Content="圆"/>
+                            <RadioButton x:Name="RadioButtonAreaMask"  GroupName="shapeArea"   Checked="RadioButtonArea_Checked" IsChecked="{Binding IsAreaMask}" Width="70" Content="四边形" />
                             <RadioButton x:Name="RadioButtonAreaRect"  GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding IsAreaRect}" Width="60" Content="矩形"/>
-                            <RadioButton x:Name="RadioButtonAreaMask"  GroupName="shapeArea"   Checked="RadioButtonArea_Checked" IsChecked="{Binding IsAreaMask}" Width="70" Content="四边形"/>
+                            <RadioButton x:Name="RadioButtonAreaCircle" GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding IsAreaCircle}" Width="60" Content="圆"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,5" >
                             <ToggleButton  HorizontalAlignment="Left"  Height="16" Style="{StaticResource ToggleButtonSwitch}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="SetDefault_Click" IsChecked="{Binding PoiConfig.IsUserDraw}"/>
@@ -69,7 +69,7 @@
                             <StackPanel  Margin="5" Visibility="{Binding IsAreaRect,Converter={StaticResource bool2VisibilityConverter}}">
                                 <DockPanel Margin="0,2" >
                                     <Button Content="寻找发光区" Margin="5,0,0,0" ToolTip="一次"  Click="FindLuminousArea_Click"   />
-                                    <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding PoiConfig.FindLuminousAreaEditCommand}" Padding="2" Height="25" Width="25" >
+                                    <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding FindLuminousAreaEditCommand}" Padding="2" Height="25" Width="25" >
                                         <Button.Triggers>
                                             <EventTrigger RoutedEvent="Button.Click">
                                                 <BeginStoryboard>
@@ -155,7 +155,7 @@
                                     <StackPanel>
                                         <DockPanel Margin="0,2" >
                                             <Button Content="寻找发光区角点" Margin="5,0,0,0" ToolTip="一次"  Click="FindLuminousAreaCorner_Click"   />
-                                            <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding PoiConfig.FindLuminousAreaCornerEditCommand}" Padding="2" Height="25" Width="25" >
+                                            <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding FindLuminousAreaCornerEditCommand}" Padding="2" Height="25" Width="25" >
                                                 <Button.Triggers>
                                                     <EventTrigger RoutedEvent="Button.Click">
                                                         <BeginStoryboard>
@@ -231,11 +231,11 @@
                                 <UniformGrid  Columns="2" >
                                     <DockPanel Margin="2" HorizontalAlignment="Left">
                                         <TextBlock Text="行数:"   MinWidth="50"/>
-                                        <TextBox  Text="{Binding PoiConfig.AreaPolygonRow}" Width="55"  />
+                                        <TextBox  Text="{Binding AreaPolygonRow}" Width="55"  />
                                     </DockPanel>
                                     <DockPanel Margin="2" HorizontalAlignment="Left">
                                         <TextBlock Text="列数:"  MinWidth="50"/>
-                                        <TextBox  Text="{Binding PoiConfig.AreaPolygonCol}" Width="55" />
+                                        <TextBox  Text="{Binding AreaPolygonCol}" Width="55" />
                                     </DockPanel>
                                 </UniformGrid>
                             </StackPanel>

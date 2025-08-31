@@ -1,12 +1,16 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.UI;
+using ColorVision.UI.Extension;
 using ColorVision.Util.Draw.Rectangle;
+using Gu.Wpf.Geometry;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -71,10 +75,27 @@ namespace ColorVision.ImageEditor
 
     public class GraphicEditingConfig:ViewModelBase
     {
+        [JsonIgnore]
+        public RelayCommand FindLuminousAreaEditCommand { get; set; }
+        [JsonIgnore]
+        public RelayCommand FindLuminousAreaCornerEditCommand { get; set; }
+
+
+        public GraphicEditingConfig()
+        {
+
+            FindLuminousAreaEditCommand = new RelayCommand(a => new PropertyEditorWindow(FindLuminousArea) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            FindLuminousAreaCornerEditCommand = new RelayCommand(a => new PropertyEditorWindow(FindLuminousAreaCorner) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+        }
+
+        public FindLuminousArea FindLuminousArea { get; set; } = new FindLuminousArea();
+        public FindLuminousAreaCorner FindLuminousAreaCorner { get; set; } = new FindLuminousAreaCorner();
+
+
         public bool IsShowText { get => _IsShowText; set { _IsShowText = value; OnPropertyChanged(); } }
         private bool _IsShowText = true;
 
-        public GraphicTypes PointType { set; get; }
+        public GraphicTypes PointType { set; get; } = GraphicTypes.Mask;
 
         [JsonIgnore]
         public bool IsAreaCircle { get => PointType == GraphicTypes.Circle; set { if (value) PointType = GraphicTypes.Circle; OnPropertyChanged(); } }
@@ -232,7 +253,57 @@ namespace ColorVision.ImageEditor
 
         private void FindLuminousAreaCorner_Click(object sender, RoutedEventArgs e)
         {
+            if (ImageView.HImageCache != null)
+            {
+                string FindLuminousAreajson = PoiConfig.FindLuminousAreaCorner.ToJsonN();
+                Task.Run(() =>
+                {
+                    int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)ImageView.HImageCache, FindLuminousAreajson, out IntPtr resultPtr);
+                    if (length > 0)
+                    {
+                        string result = Marshal.PtrToStringAnsi(resultPtr);
+                        Console.WriteLine("Result: " + result);
+                        OpenCVMediaHelper.FreeResult(resultPtr);
+                        var jObj = Newtonsoft.Json.Linq.JObject.Parse(result);
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            var corners = jObj["Corners"].ToObject<List<List<float>>>();
+                            if (corners.Count == 4)
+                            {
+                                PoiConfig.Polygon1X = (int)corners[0][0];
+                                PoiConfig.Polygon1Y = (int)corners[0][1];
+                                PoiConfig.Polygon2X = (int)corners[1][0];
+                                PoiConfig.Polygon2Y = (int)corners[1][1];
+                                PoiConfig.Polygon3X = (int)corners[2][0];
+                                PoiConfig.Polygon3Y = (int)corners[2][1];
+                                PoiConfig.Polygon4X = (int)corners[3][0];
+                                PoiConfig.Polygon4Y = (int)corners[3][1];
+                            }
 
+                            List<Point> pts_src = new();
+                            pts_src.Add(PoiConfig.Polygon1);
+                            pts_src.Add(PoiConfig.Polygon2);
+                            pts_src.Add(PoiConfig.Polygon3);
+                            pts_src.Add(PoiConfig.Polygon4);
+
+                            List<Point> result = Helpers.SortPolyPoints(pts_src);
+                            DVDatumPolygon Polygon = new() { IsComple = true };
+                            Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / ImageView.Zoombox1.ContentMatrix.M11);
+                            Polygon.Attribute.Brush = Brushes.Transparent;
+                            Polygon.Attribute.Points.Add(result[0]);
+                            Polygon.Attribute.Points.Add(result[1]);
+                            Polygon.Attribute.Points.Add(result[2]);
+                            Polygon.Attribute.Points.Add(result[3]);
+                            Polygon.Render();
+                            ImageShow.AddVisual(Polygon);
+                        });
+                    }
+                    else
+                    {
+                        Console.WriteLine("Error occurred, code: " + length);
+                    }
+                });
+            }
         }
 
         private void ButtonImportMarin_Click(object sender, RoutedEventArgs e)
@@ -544,6 +615,35 @@ namespace ColorVision.ImageEditor
 
         private void FindLuminousArea_Click(object sender, RoutedEventArgs e)
         {
+            if (ImageView.HImageCache != null)
+            {
+                string FindLuminousAreajson = PoiConfig.FindLuminousArea.ToJsonN();
+                Task.Run(() =>
+                {
+                    int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)ImageView.HImageCache, FindLuminousAreajson, out IntPtr resultPtr);
+                    if (length > 0)
+                    {
+                        string result = Marshal.PtrToStringAnsi(resultPtr);
+                        Console.WriteLine("Result: " + result);
+                        OpenCVMediaHelper.FreeResult(resultPtr);
+                        MRect rect = Newtonsoft.Json.JsonConvert.DeserializeObject<MRect>(result);
+
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            DVDatumRectangle Rectangle = new DVDatumRectangle();
+                            Rectangle.Attribute.Rect = new System.Windows.Rect(rect.X, rect.Y, rect.Width, rect.Height);
+                            Rectangle.Attribute.Brush = Brushes.Transparent;
+                            Rectangle.Attribute.Pen = new Pen(Brushes.Blue, 1 / ImageView.Zoombox1.ContentMatrix.M11);
+                            Rectangle.Render();
+                            ImageShow.AddVisual(Rectangle);
+                        });
+                    }
+                    else
+                    {
+                        Console.WriteLine("Error occurred, code: " + length);
+                    }
+                });
+            }
 
         }
 
