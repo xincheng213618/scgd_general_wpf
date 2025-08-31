@@ -48,7 +48,7 @@ namespace ColorVision.Engine.Media
             return field;
         }
     }
-    [FileExtension(".cvraw", ".cvcie")]
+    [FileExtension(".cvraw|.cvcie")]
     public class CVRawOpen : IImageOpen
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CVRawOpen));
