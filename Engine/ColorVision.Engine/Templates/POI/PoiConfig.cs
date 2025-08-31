@@ -125,7 +125,7 @@ namespace ColorVision.Engine.Templates.POI
         [JsonIgnore]
         public bool IsPointRect { get => DefaultPointType == GraphicTypes.Rect; set { if (value) DefaultPointType = GraphicTypes.Rect; OnPropertyChanged(); } }
         [JsonIgnore]
-        public bool IsPointMask { get => DefaultPointType == GraphicTypes.Mask; set { if (value) DefaultPointType = GraphicTypes.Rect; OnPropertyChanged(); } }
+        public bool IsPointMask { get => DefaultPointType == GraphicTypes.Quadrilateral; set { if (value) DefaultPointType = GraphicTypes.Rect; OnPropertyChanged(); } }
         public GraphicTypes DefaultPointType { set; get; }
 
         public FindLuminousArea FindLuminousArea { get; set; } = new FindLuminousArea();
@@ -166,7 +166,7 @@ namespace ColorVision.Engine.Templates.POI
         [JsonIgnore]
         public bool IsAreaRect { get => PointType == GraphicTypes.Rect; set { if (value) PointType = GraphicTypes.Rect; OnPropertyChanged(); } }
         [JsonIgnore]
-        public bool IsAreaMask { get => PointType == GraphicTypes.Mask; set { if (value) PointType = GraphicTypes.Mask; OnPropertyChanged(); } }
+        public bool IsAreaMask { get => PointType == GraphicTypes.Quadrilateral; set { if (value) PointType = GraphicTypes.Quadrilateral; OnPropertyChanged(); } }
 
         [JsonIgnore]
         public bool IsAreaPolygon { get => PointType == GraphicTypes.Polygon; set { if (value) PointType = GraphicTypes.Polygon; OnPropertyChanged(); } }

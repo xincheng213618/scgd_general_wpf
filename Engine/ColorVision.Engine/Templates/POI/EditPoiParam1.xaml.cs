@@ -775,7 +775,7 @@ namespace ColorVision.Engine.Templates.POI
                                 Rectangle.Render();
                                 ImageShow.AddVisual(Rectangle);
                                 break;
-                            case GraphicTypes.Mask:
+                            case GraphicTypes.Quadrilateral:
                                 break;
                             default:
                                 break;
@@ -847,7 +847,7 @@ namespace ColorVision.Engine.Templates.POI
                                         break;
                                 }
                                 break;
-                            case GraphicTypes.Mask:
+                            case GraphicTypes.Quadrilateral:
                                 break;
                             default:
                                 break;
@@ -902,7 +902,7 @@ namespace ColorVision.Engine.Templates.POI
                                     Rectangle.Render();
                                     ImageShow.AddVisual(Rectangle);
                                     break;
-                                case GraphicTypes.Mask:
+                                case GraphicTypes.Quadrilateral:
                                     break;
                                 default:
                                     break;
@@ -910,7 +910,7 @@ namespace ColorVision.Engine.Templates.POI
                         }
                     }
                     break;
-                case GraphicTypes.Mask:
+                case GraphicTypes.Quadrilateral:
                     List<Point> pts_src =
                     [
                         PoiConfig.Polygon1,
@@ -970,7 +970,7 @@ namespace ColorVision.Engine.Templates.POI
                                     Rectangle.Render();
                                     ImageShow.AddVisual(Rectangle);
                                     break;
-                                case GraphicTypes.Mask:
+                                case GraphicTypes.Quadrilateral:
                                     break;
                                 default:
                                     break;
@@ -1098,7 +1098,7 @@ namespace ColorVision.Engine.Templates.POI
                         drawingVisualDatum = Rectangle;
                         ImageShow.AddVisual(drawingVisualDatum);
                         break;
-                    case GraphicTypes.Mask:
+                    case GraphicTypes.Quadrilateral:
 
                         List<Point> pts_src = new();
                         pts_src.Add(PoiConfig.Polygon1);

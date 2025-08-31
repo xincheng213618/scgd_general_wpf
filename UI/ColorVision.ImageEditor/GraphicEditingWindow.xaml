@@ -32,7 +32,7 @@
                 <Border Margin="0" Style="{StaticResource BorderModuleArea}"  CornerRadius="5">
                     <StackPanel  Margin="5">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                            <RadioButton x:Name="RadioButtonAreaMask"  GroupName="shapeArea"   Checked="RadioButtonArea_Checked" IsChecked="{Binding IsAreaMask}" Width="70" Content="四边形" />
+                            <RadioButton x:Name="RadioButtonAreaMask"  GroupName="shapeArea"   Checked="RadioButtonArea_Checked" IsChecked="{Binding IsQuadrilateral}" Width="70" Content="四边形" />
                             <RadioButton x:Name="RadioButtonAreaRect"  GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding IsAreaRect}" Width="60" Content="矩形"/>
                             <RadioButton x:Name="RadioButtonAreaCircle" GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding IsAreaCircle}" Width="60" Content="圆"/>
                         </StackPanel>

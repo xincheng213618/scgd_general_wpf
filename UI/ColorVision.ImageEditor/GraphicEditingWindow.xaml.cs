@@ -47,7 +47,7 @@ namespace ColorVision.ImageEditor
     {
         Circle = 0,
         Rect = 1,
-        Mask = 2,
+        Quadrilateral = 2,
         Point = 3,
         Polygon = 4
     }
@@ -95,14 +95,14 @@ namespace ColorVision.ImageEditor
         public bool IsShowText { get => _IsShowText; set { _IsShowText = value; OnPropertyChanged(); } }
         private bool _IsShowText = true;
 
-        public GraphicTypes PointType { set; get; } = GraphicTypes.Mask;
+        public GraphicTypes PointType { set; get; } = GraphicTypes.Quadrilateral;
 
         [JsonIgnore]
         public bool IsAreaCircle { get => PointType == GraphicTypes.Circle; set { if (value) PointType = GraphicTypes.Circle; OnPropertyChanged(); } }
         [JsonIgnore]
         public bool IsAreaRect { get => PointType == GraphicTypes.Rect; set { if (value) PointType = GraphicTypes.Rect; OnPropertyChanged(); } }
         [JsonIgnore]
-        public bool IsAreaMask { get => PointType == GraphicTypes.Mask; set { if (value) PointType = GraphicTypes.Mask; OnPropertyChanged(); } }
+        public bool IsQuadrilateral { get => PointType == GraphicTypes.Quadrilateral; set { if (value) PointType = GraphicTypes.Quadrilateral; OnPropertyChanged(); } }
 
         [JsonIgnore]
         public bool IsAreaPolygon { get => PointType == GraphicTypes.Polygon; set { if (value) PointType = GraphicTypes.Polygon; OnPropertyChanged(); } }
@@ -113,7 +113,7 @@ namespace ColorVision.ImageEditor
         [JsonIgnore]
         public bool IsPointRect { get => DefaultPointType == GraphicTypes.Rect; set { if (value) DefaultPointType = GraphicTypes.Rect; OnPropertyChanged(); } }
         [JsonIgnore]
-        public bool IsPointMask { get => DefaultPointType == GraphicTypes.Mask; set { if (value) DefaultPointType = GraphicTypes.Rect; OnPropertyChanged(); } }
+
         public GraphicTypes DefaultPointType { set; get; }
 
 
@@ -409,7 +409,7 @@ namespace ColorVision.ImageEditor
                                 Rectangle.Render();
                                 ImageShow.AddVisual(Rectangle);
                                 break;
-                            case GraphicTypes.Mask:
+                            case GraphicTypes.Quadrilateral:
                                 break;
                             default:
                                 break;
@@ -481,7 +481,7 @@ namespace ColorVision.ImageEditor
                                         break;
                                 }
                                 break;
-                            case GraphicTypes.Mask:
+                            case GraphicTypes.Quadrilateral:
                                 break;
                             default:
                                 break;
@@ -531,7 +531,7 @@ namespace ColorVision.ImageEditor
                                     Rectangle.Render();
                                     ImageShow.AddVisual(Rectangle);
                                     break;
-                                case GraphicTypes.Mask:
+                                case GraphicTypes.Quadrilateral:
                                     break;
                                 default:
                                     break;
@@ -540,7 +540,7 @@ namespace ColorVision.ImageEditor
                     }
 
                     break;
-                case GraphicTypes.Mask:
+                case GraphicTypes.Quadrilateral:
                     List<Point> pts_src =
                     [
                         PoiConfig.Polygon1,
@@ -599,7 +599,7 @@ namespace ColorVision.ImageEditor
                                     Rectangle.Render();
                                     ImageShow.AddVisual(Rectangle);
                                     break;
-                                case GraphicTypes.Mask:
+                                case GraphicTypes.Quadrilateral:
                                     break;
                                 default:
                                     break;
