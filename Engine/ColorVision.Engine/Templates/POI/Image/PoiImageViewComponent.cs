@@ -122,7 +122,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                                 Rectangle.Render();
                                 imageView.ImageShow.AddVisual(Rectangle);
                                 break;
-                            case GraphicTypes.Mask:
+                            case GraphicTypes.Quadrilateral:
                                 break;
                         }
                     }
