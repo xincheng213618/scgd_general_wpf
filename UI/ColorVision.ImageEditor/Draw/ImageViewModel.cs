@@ -28,9 +28,6 @@ namespace ColorVision.ImageEditor.Draw
     }
 
 
-
-
-
     public class ImageViewModel : ViewModelBase,IDisposable
     {
         public RelayCommand ZoomUniformToFill { get; set; }
@@ -96,6 +93,7 @@ namespace ColorVision.ImageEditor.Draw
 
         public DrawingVisual? SelectDrawingVisual { get => _SelectDrawingVisual  ; set 
             {
+                if (_SelectDrawingVisual == value) return;
                 _SelectDrawingVisual = value;
                 if (_SelectDrawingVisual is ISelectVisual selectVisual)
                 {
@@ -125,7 +123,29 @@ namespace ColorVision.ImageEditor.Draw
         public SelectEditorVisual SelectEditorVisual { get; set; }
 
 
-        public List<DrawingVisual>? SelectDrawingVisuals { get; set; }
+        public List<DrawingVisual>? SelectDrawingVisuals
+        {
+            get => _SelectDrawingVisuals;
+            set 
+            {
+                _SelectDrawingVisuals = value;
+
+                List<ISelectVisual> selectVisuals = new List<ISelectVisual>();
+                if (_SelectDrawingVisuals != null)
+                {
+                    foreach (var item in _SelectDrawingVisuals)
+                    {
+                        if (item is ISelectVisual selectVisual)
+                        {
+                            selectVisuals.Add(selectVisual);
+                        }
+                    }
+                }
+                SelectEditorVisual.SetRenders(selectVisuals);
+            }
+
+        }
+        private List<DrawingVisual>? _SelectDrawingVisuals;
 
         public static void DrawSelectRect(DrawingVisual drawingVisual, Rect rect)
         {
@@ -584,11 +604,15 @@ namespace ColorVision.ImageEditor.Draw
                             Circl.Center += new Vector(-2, 0);
                         }
                     }
-                    if (SelectEditorVisual.SelectVisual != null)
+                    if (SelectEditorVisual.SelectVisuals.Count >0)
                     {
-                        var OldRect = SelectEditorVisual.Rect;
-                        SelectEditorVisual.Rect = new Rect(OldRect.X -2, OldRect.Y, OldRect.Width, OldRect.Height);
-                        SelectEditorVisual.SetRect();
+                        foreach (var selectVisual in SelectEditorVisual.SelectVisuals)
+                        {
+                            var OldRect = selectVisual.GetRect();
+                             Rect rect = new Rect(OldRect.X - 2, OldRect.Y, OldRect.Width, OldRect.Height);
+                            selectVisual.SetRect(rect);
+                            SelectEditorVisual.Render();
+                        }
                     }
                     if (SelectDrawingVisuals != null)
                     {
@@ -613,11 +637,15 @@ namespace ColorVision.ImageEditor.Draw
                             Circl.Center += new Vector(2, 0);
                         }
                     }
-                    if (SelectEditorVisual.SelectVisual != null)
+                    if (SelectEditorVisual.SelectVisuals.Count > 0)
                     {
-                        var OldRect = SelectEditorVisual.Rect;
-                        SelectEditorVisual.Rect = new Rect(OldRect.X +2, OldRect.Y, OldRect.Width, OldRect.Height);
-                        SelectEditorVisual.SetRect();
+                        foreach (var selectVisual in SelectEditorVisual.SelectVisuals)
+                        {
+                            var OldRect = selectVisual.GetRect();
+                            Rect rect = new Rect(OldRect.X + 2, OldRect.Y, OldRect.Width, OldRect.Height);
+                            selectVisual.SetRect(rect);
+                            SelectEditorVisual.Render();
+                        }
                     }
                     if (SelectDrawingVisuals != null)
                     {
@@ -642,11 +670,15 @@ namespace ColorVision.ImageEditor.Draw
                             Circl.Center += new Vector(0, -2);
                         }
                     }
-                    if (SelectEditorVisual.SelectVisual != null)
+                    if (SelectEditorVisual.SelectVisuals.Count > 0)
                     {
-                        var OldRect = SelectEditorVisual.Rect;
-                        SelectEditorVisual.Rect = new Rect(OldRect.X, OldRect.Y - 2, OldRect.Width, OldRect.Height);
-                        SelectEditorVisual.SetRect();
+                        foreach (var selectVisual in SelectEditorVisual.SelectVisuals)
+                        {
+                            var OldRect = selectVisual.GetRect();
+                            Rect rect = new Rect(OldRect.X, OldRect.Y - 2, OldRect.Width, OldRect.Height);
+                            selectVisual.SetRect(rect);
+                            SelectEditorVisual.Render();
+                        }
                     }
                     if (SelectDrawingVisuals != null)
                     {
@@ -671,12 +703,18 @@ namespace ColorVision.ImageEditor.Draw
                             Circl.Center += new Vector(0, 2);
                         }
                     }
-                    if (SelectEditorVisual.SelectVisual != null)
+
+                    if (SelectEditorVisual.SelectVisuals.Count > 0)
                     {
-                        var OldRect = SelectEditorVisual.Rect;
-                        SelectEditorVisual.Rect = new Rect(OldRect.X, OldRect.Y + 2, OldRect.Width, OldRect.Height);
-                        SelectEditorVisual.SetRect();
+                        foreach (var selectVisual in SelectEditorVisual.SelectVisuals)
+                        {
+                            var OldRect = selectVisual.GetRect();
+                            Rect rect = new Rect(OldRect.X, OldRect.Y + 2, OldRect.Width, OldRect.Height);
+                            selectVisual.SetRect(rect);
+                            SelectEditorVisual.Render();
+                        }
                     }
+
                     if (SelectDrawingVisuals != null)
                     {
                         foreach (var item in SelectDrawingVisuals)
@@ -700,12 +738,17 @@ namespace ColorVision.ImageEditor.Draw
                             Circl.Radius += 2;
                         }
                     }
-                    if (SelectEditorVisual.SelectVisual != null)
+                    if (SelectEditorVisual.SelectVisuals.Count > 0)
                     {
-                        var OldRect = SelectEditorVisual.Rect;
-                        SelectEditorVisual.Rect = new Rect(OldRect.X -1, OldRect.Y -1, OldRect.Width +2, OldRect.Height +2);
-                        SelectEditorVisual.SetRect();
+                        foreach (var selectVisual in SelectEditorVisual.SelectVisuals)
+                        {
+                            var OldRect = selectVisual.GetRect();
+                            Rect rect = new Rect(OldRect.X - 1, OldRect.Y - 1, OldRect.Width + 2, OldRect.Height + 2);
+                            selectVisual.SetRect(rect);
+                            SelectEditorVisual.Render();
+                        }
                     }
+
                     if (SelectDrawingVisuals != null)
                     {
                         foreach (var item in SelectDrawingVisuals)
@@ -736,12 +779,18 @@ namespace ColorVision.ImageEditor.Draw
                             }
                         }
                     }
-                    if (SelectEditorVisual.SelectVisual != null)
+
+                    if (SelectEditorVisual.SelectVisuals.Count > 0)
                     {
-                        var OldRect = SelectEditorVisual.Rect;
-                        SelectEditorVisual.Rect = new Rect(OldRect.X + 1, OldRect.Y + 1, OldRect.Width - 1 , OldRect.Height - 1);
-                        SelectEditorVisual.SetRect();
+                        foreach (var selectVisual in SelectEditorVisual.SelectVisuals)
+                        {
+                            var OldRect = selectVisual.GetRect();
+                            Rect rect = new Rect(OldRect.X + 1, OldRect.Y + 1, OldRect.Width - 1, OldRect.Height - 1);
+                            selectVisual.SetRect(rect);
+                            SelectEditorVisual.Render();
+                        }
                     }
+
                     if (SelectDrawingVisuals != null)
                     {
                         foreach (var item in SelectDrawingVisuals)

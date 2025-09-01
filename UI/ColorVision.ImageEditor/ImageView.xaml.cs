@@ -246,28 +246,28 @@ namespace ColorVision.ImageEditor
                 var Point = Mouse.GetPosition(ImageShow);
                 var DrawingVisual = ImageShow.GetVisual(Point);
 
-                if (DrawingVisual != null && ImageViewModel.SelectEditorVisual.SelectVisual != DrawingVisual && DrawingVisual is IDrawingVisual drawing)
-                {
-                    Zoombox1.ContextMenu ??= new ContextMenu();
-                    Zoombox1.ContextMenu.Items.Clear();
-                    var ContextMenu = Zoombox1.ContextMenu;
-                    MenuItem menuItem = new() { Header = "隐藏(_H)" };
-                    menuItem.Click += (s, e) =>
-                    {
-                        drawing.BaseAttribute.IsShow = false;
-                    };
-                    MenuItem menuIte2 = new() { Header = "删除" };
-                    menuIte2.Click += (s, e) =>
-                    {
-                        ImageShow.RemoveVisual(DrawingVisual);
-                    };
-                    ContextMenu.Items.Add(menuItem);
-                    ContextMenu.Items.Add(menuIte2);
-                }
-                else
-                {
-                    Zoombox1.ContextMenu.Items.Clear();
-                }
+                //if (DrawingVisual != null && ImageViewModel.SelectDrawingVisual != DrawingVisual && DrawingVisual is IDrawingVisual drawing)
+                //{
+                //    Zoombox1.ContextMenu ??= new ContextMenu();
+                //    Zoombox1.ContextMenu.Items.Clear();
+                //    var ContextMenu = Zoombox1.ContextMenu;
+                //    MenuItem menuItem = new() { Header = "隐藏(_H)" };
+                //    menuItem.Click += (s, e) =>
+                //    {
+                //        drawing.BaseAttribute.IsShow = false;
+                //    };
+                //    MenuItem menuIte2 = new() { Header = "删除" };
+                //    menuIte2.Click += (s, e) =>
+                //    {
+                //        ImageShow.RemoveVisual(DrawingVisual);
+                //    };
+                //    ContextMenu.Items.Add(menuItem);
+                //    ContextMenu.Items.Add(menuIte2);
+                //}
+                //else
+                //{
+                //    Zoombox1.ContextMenu.Items.Clear();
+                //}
             }
         }
 
@@ -398,39 +398,66 @@ namespace ColorVision.ImageEditor
                     ImageViewModel.DrawSelectRect(SelectRect, new Rect(MouseDownP, point));
 
 
-                    if (ImageViewModel.SelectEditorVisual.SelectVisual != null)
+                    if (ImageViewModel.SelectEditorVisual.SelectVisuals.Count != 0)
                     {
                         if (Zoombox1.Cursor == Cursors.SizeAll)
                         {
-                            var oldRect = ImageViewModel.SelectEditorVisual.Rect;
-                            var deltaX = point.X - LastMouseMove.X;
-                            var deltaY = point.Y - LastMouseMove.Y;
-                            // 移动选择的区域
-                            ImageViewModel.SelectEditorVisual.Rect = new System.Windows.Rect(
-                                oldRect.X + deltaX,
-                                oldRect.Y + deltaY,
-                                oldRect.Width,
-                                oldRect.Height
-                            );
+                            foreach (var selectVisual in ImageViewModel.SelectEditorVisual.SelectVisuals)
+                            {
+                                var oldRect = selectVisual.GetRect(); ;
+                                var deltaX = point.X - LastMouseMove.X;
+                                var deltaY = point.Y - LastMouseMove.Y;
+
+                                // 移动选择的区域
+                                 Rect rect = new System.Windows.Rect(
+                                    oldRect.X + deltaX,
+                                    oldRect.Y + deltaY,
+                                    oldRect.Width,
+                                    oldRect.Height
+                                );
+                                selectVisual.SetRect(rect);
+                            }
+                            ImageViewModel.SelectEditorVisual.Render();
+
+
                         }
                         else if (Zoombox1.Cursor == Cursors.SizeNWSE || Zoombox1.Cursor == Cursors.SizeNESW)
                         {
-                            Point point1 = ImageViewModel.SelectEditorVisual.OldRect.TopLeft;
-                            ImageViewModel.SelectEditorVisual.Rect = new System.Windows.Rect(ImageViewModel.SelectEditorVisual.FixedPoint, point);
+                            foreach (var selectVisual in ImageViewModel.SelectEditorVisual.SelectVisuals)
+                            {
+                                var oldRect = selectVisual.GetRect(); ;
+                                Point point1 = oldRect.TopLeft;
+                                Rect rect = new System.Windows.Rect(ImageViewModel.SelectEditorVisual.FixedPoint, point);
+                                selectVisual.SetRect(rect);
+                            }
+                            ImageViewModel.SelectEditorVisual.Render();;
                         }
                         else if (Zoombox1.Cursor == Cursors.SizeNS)
                         {
-                            Point point1 = ImageViewModel.SelectEditorVisual.FixedPoint1;
-                            point1.Y = point.Y;
-                            ImageViewModel.SelectEditorVisual.Rect = new System.Windows.Rect(ImageViewModel.SelectEditorVisual.FixedPoint, point1);
+                            foreach (var selectVisual in ImageViewModel.SelectEditorVisual.SelectVisuals)
+                            {
+                                var oldRect = selectVisual.GetRect();
+                                Point point1 = ImageViewModel.SelectEditorVisual.FixedPoint1;
+                                point1.Y = point.Y;
+
+                                Rect rect = new System.Windows.Rect(ImageViewModel.SelectEditorVisual.FixedPoint, point1);
+                                selectVisual.SetRect(rect);
+                            }
+                            ImageViewModel.SelectEditorVisual.Render();
                         }
                         else if (Zoombox1.Cursor == Cursors.SizeWE)
                         {
-                            Point point1 = ImageViewModel.SelectEditorVisual.FixedPoint1;
-                            point1.X = point.X;
-                            ImageViewModel.SelectEditorVisual.Rect = new System.Windows.Rect(ImageViewModel.SelectEditorVisual.FixedPoint, point1);
+                            foreach (var selectVisual in ImageViewModel.SelectEditorVisual.SelectVisuals)
+                            {
+                                var oldRect = selectVisual.GetRect();
+                                Point point1 = ImageViewModel.SelectEditorVisual.FixedPoint1;
+                                point1.X = point.X;
+
+                                Rect rect = new System.Windows.Rect(ImageViewModel.SelectEditorVisual.FixedPoint, point1);
+                                selectVisual.SetRect(rect);
+                            }
+                            ImageViewModel.SelectEditorVisual.Render();
                         }
-                        ImageViewModel.SelectEditorVisual.SetRect();
                     }
 
                     if (ImageViewModel.SelectDrawingVisuals != null)
@@ -476,56 +503,65 @@ namespace ColorVision.ImageEditor
 
                     if (drawCanvas.ContainsVisual(SelectRect))
                     {
-                        ImageViewModel.SelectDrawingVisuals = drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP)));
-                        foreach (var item in ImageViewModel.SelectDrawingVisuals)
+                        var List = drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP)));
+                        if (List.Count == 1)
                         {
-                            if (item is IDrawingVisual drawingVisual)
+                            ImageViewModel.SelectDrawingVisual = List[0];
+                        }
+                        else if (List.Count ==0)
+                        {
+                            ImageViewModel.SelectDrawingVisuals = null;
+                        }
+                        else
+                        {
+                            ImageViewModel.SelectDrawingVisuals = List;
+                            foreach (var item in ImageViewModel.SelectDrawingVisuals)
                             {
-                                drawingVisual.Pen.Brush = Brushes.Yellow;
-                                drawingVisual.Render();
+                                if (item is IDrawingVisual drawingVisual)
+                                {
+                                    drawingVisual.Pen.Brush = Brushes.Yellow;
+                                    drawingVisual.Render();
+                                }
                             }
                         }
-
-                        if (ImageViewModel.SelectDrawingVisuals.Count == 0)
-                            ImageViewModel.SelectDrawingVisuals = null;
 
                         drawCanvas.RemoveVisual(SelectRect, false);
                     }
 
                     drawCanvas.ReleaseMouseCapture();
 
-                    if (ImageViewModel.SelectEditorVisual.SelectVisual != null)
-                    {
-                        if (ImageViewModel.SelectEditorVisual.SelectVisual is IRectangle rectangle)
-                        {
-                            var l = MouseUpP - MouseDownP;
+                    //if (ImageViewModel.SelectEditorVisual.SelectVisual != null)
+                    //{
+                    //    if (ImageViewModel.SelectEditorVisual.SelectVisual is IRectangle rectangle)
+                    //    {
+                    //        var l = MouseUpP - MouseDownP;
 
-                            Action undoaction = new Action(() =>
-                            {
-                                var OldRect = rectangle.Rect;
-                                rectangle.Rect = new Rect(OldRect.X - l.X, OldRect.Y - l.Y, OldRect.Width, OldRect.Height);
-                            });
-                            Action redoaction = new Action(() =>
-                            {
-                                var OldRect = rectangle.Rect;
-                                rectangle.Rect = new Rect(OldRect.X + l.X, OldRect.Y + l.Y, OldRect.Width, OldRect.Height);
-                            });
-                            ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "移动矩形" });
-                        }
-                        else if (ImageViewModel.SelectEditorVisual.SelectVisual is ICircle Circl)
-                        {
-                            var l = MouseUpP - MouseDownP;
-                            Action undoaction = new Action(() =>
-                            {
-                                Circl.Center -= l;
-                            });
-                            Action redoaction = new Action(() =>
-                            {
-                                Circl.Center += l;
-                            });
-                            ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "移动圆" });
-                        }
-                    }
+                    //        Action undoaction = new Action(() =>
+                    //        {
+                    //            var OldRect = rectangle.Rect;
+                    //            rectangle.Rect = new Rect(OldRect.X - l.X, OldRect.Y - l.Y, OldRect.Width, OldRect.Height);
+                    //        });
+                    //        Action redoaction = new Action(() =>
+                    //        {
+                    //            var OldRect = rectangle.Rect;
+                    //            rectangle.Rect = new Rect(OldRect.X + l.X, OldRect.Y + l.Y, OldRect.Width, OldRect.Height);
+                    //        });
+                    //        ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "移动矩形" });
+                    //    }
+                    //    else if (ImageViewModel.SelectEditorVisual.SelectVisual is ICircle Circl)
+                    //    {
+                    //        var l = MouseUpP - MouseDownP;
+                    //        Action undoaction = new Action(() =>
+                    //        {
+                    //            Circl.Center -= l;
+                    //        });
+                    //        Action redoaction = new Action(() =>
+                    //        {
+                    //            Circl.Center += l;
+                    //        });
+                    //        ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "移动圆" });
+                    //    }
+                    //}
                 }
                 if (IsRightButtonDown)
                 {
