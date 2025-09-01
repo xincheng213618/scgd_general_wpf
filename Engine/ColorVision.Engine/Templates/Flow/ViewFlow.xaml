@@ -19,7 +19,7 @@
             <WindowsFormsHost x:Name="winf1" Visibility="Visible" VerticalAlignment="Stretch">
                 <st:STNodeEditor  x:Name="STNodeEditorMain" x:FieldModifier="public"  MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel" />
             </WindowsFormsHost>
-            <WindowsFormsHost x:Name="winf2" Height="350"  Width="250" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="0,0,0,5">
+            <WindowsFormsHost x:Name="winf2" Height="250"  Width="250" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="0,0,0,5">
                 <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
             </WindowsFormsHost>
         </Grid>

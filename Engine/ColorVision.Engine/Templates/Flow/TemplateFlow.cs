@@ -3,7 +3,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Rbac;
 using ColorVision.UI.Extension;
-using CVCommCore;
 using Newtonsoft.Json;
 using SqlSugar;
 using System;
@@ -165,7 +164,7 @@ namespace ColorVision.Engine.Templates.Flow
                     res = new SysResourceModel
                     {
                         Name = flowParam.Name,
-                        Type = (int)PhysicalResourceType.FlowFile,
+                        Type = 101,
                         Value = flowParam.DataBase64,
                         Code = hasId
                             ? (flowParam.Id + Cryptography.GetMd5Hash(flowParam.DataBase64))

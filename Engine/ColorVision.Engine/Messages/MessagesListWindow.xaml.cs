@@ -39,6 +39,7 @@ namespace ColorVision.Engine.Messages
     {
         public ObservableCollection<MsgRecord> MsgRecords { get; set; }
 
+        MsgRecordManager MsgRecordManager { get; set; }
 
         public MessagesListWindow()
         {
@@ -50,8 +51,9 @@ namespace ColorVision.Engine.Messages
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext =
-            MsgRecords = MsgConfig.Instance.MsgRecords;
+            MsgRecordManager = MsgRecordManager.GetInstance();
+            this.DataContext = MsgRecordManager;
+            MsgRecords = MsgRecordManager.MsgRecords;
             ListView1.ItemsSource = MsgRecords;
         }
 
@@ -153,7 +155,7 @@ namespace ColorVision.Engine.Messages
         {
             if (ListView1.SelectedIndex > -1)
             {
-                GridContent.DataContext = MsgConfig.Instance.MsgRecords[ListView1.SelectedIndex];
+                GridContent.DataContext = MsgRecords[ListView1.SelectedIndex];
             }
         }
 
@@ -163,13 +165,13 @@ namespace ColorVision.Engine.Messages
             {
                 Formatting = Formatting.Indented
             };
-            string text = JsonConvert.SerializeObject(MsgConfig.Instance.MsgRecords[ListView1.SelectedIndex].MsgSend, settings);
+            string text = JsonConvert.SerializeObject(MsgRecords[ListView1.SelectedIndex].MsgSend, settings);
             Common.NativeMethods.Clipboard.SetText(text);
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            string text = JsonConvert.SerializeObject(MsgConfig.Instance.MsgRecords[ListView1.SelectedIndex].MsgSend);
+            string text = JsonConvert.SerializeObject(MsgRecords[ListView1.SelectedIndex].MsgSend);
             Common.NativeMethods.Clipboard.SetText(text);
         }
 
@@ -179,13 +181,13 @@ namespace ColorVision.Engine.Messages
             {
                 Formatting = Formatting.Indented
             };
-            string text = JsonConvert.SerializeObject(MsgConfig.Instance.MsgRecords[ListView1.SelectedIndex].MsgReturn, settings);
+            string text = JsonConvert.SerializeObject(MsgRecords[ListView1.SelectedIndex].MsgReturn, settings);
             Common.NativeMethods.Clipboard.SetText(text);
         }
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
-            string text = JsonConvert.SerializeObject(MsgConfig.Instance.MsgRecords[ListView1.SelectedIndex].MsgReturn);
+            string text = JsonConvert.SerializeObject(MsgRecords[ListView1.SelectedIndex].MsgReturn);
             Common.NativeMethods.Clipboard.SetText(text);
         }
 

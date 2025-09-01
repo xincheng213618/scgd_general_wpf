@@ -168,7 +168,14 @@ namespace ColorVision
                 {
                     TextBoxMsg.Text += Environment.NewLine + $"{Properties.Resources.Initializer} {initializer.GetType().Name}";
                 });
-                await initializer.InitializeAsync();
+                try
+                {
+                    await initializer.InitializeAsync();
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                }
                 stopwatch.Stop();
                 log.Info($"Initializer {initializer.GetType().Name} took {stopwatch.ElapsedMilliseconds} ms.");
                 Application.Current.Dispatcher.Invoke(() =>

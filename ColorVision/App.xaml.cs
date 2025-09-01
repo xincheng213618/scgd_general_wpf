@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.NativeMethods;
+using ColorVision.Engine.Services.RC;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Languages;
@@ -217,12 +218,19 @@ namespace ColorVision
 
                 Task.Run(async () =>
                 {
-                    foreach (var item in _IComponentInitializers)
+                    foreach (var initializer in _IComponentInitializers)
                     {
-                        await item.InitializeAsync();
+                        //防止搞崩程序
+                        try
+                        {
+                            await initializer.InitializeAsync();
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error(ex);
+                        }
                     }  
                 });
-
 
                 MainWindow MainWindow = new MainWindow();
                 MainWindow.Show();

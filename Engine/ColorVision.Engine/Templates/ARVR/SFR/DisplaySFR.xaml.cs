@@ -41,7 +41,7 @@ namespace ColorVision.Engine.Templates.SFR
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxSFRTemplate, "请先选择SFR模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxSFRTemplate, "请先选择SFR模板")) return;
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
@@ -54,7 +54,7 @@ namespace ColorVision.Engine.Templates.SFR
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(code, type, imgFileName, fileExtType, pm.Id, ComboxSFRTemplate.Text, sn);
-                ServicesHelper.SendCommand(msg, "SFR");
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

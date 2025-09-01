@@ -25,6 +25,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -424,8 +425,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void AutoFocus_Click(object sender, RoutedEventArgs e)
         {
             if (ComboxAutoFocus.SelectedValue is not AutoFocusParam param) return;
-            MsgRecord msgRecord = DService.AutoFocus(param);
-            ServicesHelper.SendCommand(msgRecord, "自动聚焦", false);
+            MsgRecord msg = DService.AutoFocus(param);
+            ServicesHelper.SendCommand(sender, msg);
         }
 
 

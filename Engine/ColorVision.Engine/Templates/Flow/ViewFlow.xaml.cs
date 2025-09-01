@@ -22,7 +22,8 @@ namespace ColorVision.Engine.Services.Flow
     public partial class ViewFlow : UserControl,IView, INotifyPropertyChanged,IDisposable
     {
         public event PropertyChangedEventHandler? PropertyChanged;
-        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+        public void OnPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
         public  FlowEngineControl FlowEngineControl { get; set; }
 
@@ -44,7 +45,7 @@ namespace ColorVision.Engine.Services.Flow
 
         public static FlowEngineConfig FlowConfig => FlowEngineConfig.Instance;
 
-        public bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; NotifyPropertyChanged(); } }
+        public bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; OnPropertyChanged(); } }
         private bool _IsEditMode = true;
 
         public DisplayFlow DisplayFlow { get; set; }
@@ -154,7 +155,7 @@ namespace ColorVision.Engine.Services.Flow
 
         public FlowParam FlowParam { get; set; }
 
-        public float CanvasScale { get => STNodeEditorHelper.CanvasScale; set { STNodeEditorMain.ScaleCanvas(value, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2); NotifyPropertyChanged(); } }
+        public float CanvasScale { get => STNodeEditorHelper.CanvasScale; set { STNodeEditorMain.ScaleCanvas(value, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2); OnPropertyChanged(); } }
 
         STNodeTreeView STNodeTreeView1 = new STNodeTreeView();
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -254,13 +255,13 @@ namespace ColorVision.Engine.Services.Flow
                 else if (e.Key == Key.Add)
                 {
                     STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.1f, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
-                    NotifyPropertyChanged(nameof(CanvasScale));
+                    OnPropertyChanged(nameof(CanvasScale));
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Subtract)
                 {
                     STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.1f, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
-                    NotifyPropertyChanged(nameof(CanvasScale));
+                    OnPropertyChanged(nameof(CanvasScale));
                     e.Handled = true;
                 }
             }
@@ -346,7 +347,6 @@ namespace ColorVision.Engine.Services.Flow
         private void STNodeEditorMain_MouseUp(object sender, System.Windows.Forms.MouseEventArgs e)
         {
             IsMouseDown = false;
-            
         }
 
         private void STNodeEditorMain_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)

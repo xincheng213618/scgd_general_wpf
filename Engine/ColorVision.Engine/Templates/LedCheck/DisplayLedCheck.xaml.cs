@@ -42,8 +42,8 @@ namespace ColorVision.Engine.Templates.LedCheck
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择灯珠检测模板")) return;
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxPoiTemplate, "请先选择关注点模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxTemplate, "请先选择灯珠检测模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxPoiTemplate, "请先选择关注点模板")) return;
 
             if (ComboxTemplate.SelectedValue is not LedCheckParam param) return;
             if (ComboxPoiTemplate.SelectedValue is not PoiParam poiParam) return;
@@ -58,7 +58,7 @@ namespace ColorVision.Engine.Templates.LedCheck
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(param, poiParam,code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "LedCheck");
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

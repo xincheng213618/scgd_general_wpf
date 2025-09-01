@@ -1,12 +1,11 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
-using Panuon.WPF.UI;
+using ColorVision.Themes.Controls;
 using System;
 using System.Globalization;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 
 namespace ColorVision.Engine.Services
@@ -14,6 +13,15 @@ namespace ColorVision.Engine.Services
 
     internal static partial class ServicesHelper
     {
+        public static bool IsTemplateSelected(ComboBox comboBox, string errorMessage)
+        {
+            if (comboBox.SelectedIndex == -1)
+            {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), errorMessage, "ColorVision");
+                return false;
+            }
+            return true;
+        }
 
         public static async void SelectAndFocusFirstNode(TreeView treeView)
         {
@@ -26,46 +34,6 @@ namespace ColorVision.Engine.Services
                     Application.Current.Dispatcher.Invoke(() => firstNode.Focus());
                 }
             }
-        }
-        public static IPendingHandler SendCommand(MsgRecord msgRecord, string Msg,bool canCancel = true)
-        {
-            IPendingHandler handler = PendingBox.Show(Application.Current.MainWindow, Msg, canCancel);
-            var temp = Application.Current.MainWindow.Cursor;
-            Application.Current.MainWindow.Cursor = Cursors.Wait;
-            MsgRecordStateChangedHandler msgRecordStateChangedHandler;
-            msgRecordStateChangedHandler = (e) =>
-            {
-                try
-                {
-                    handler?.UpdateMessage(e.ToDescription());
-                    if (e != MsgRecordState.Sended)
-                    {
-                        handler?.Close();
-                    }
-                }
-                catch
-                {
-                }
-                finally
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        Application.Current.MainWindow.Cursor = temp;
-                    });
-                }
-
-            };
-            msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
-            handler.Cancelling += delegate
-            {
-                msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
-                handler.Close();
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    Application.Current.MainWindow.Cursor = temp;
-                });
-            };
-            return handler;
         }
 
         public static MsgRecord? SendCommandEx(object sender, Func<MsgRecord> action)
@@ -84,7 +52,22 @@ namespace ColorVision.Engine.Services
             return null;
         }
 
+        public static void SendCommand(object sender, MsgRecord msgRecord)
+        {
+            if (sender is Button button)
+            {
+                var temp = button.Content;
+                button.Content = Properties.Resources.ResourceManager.GetString(msgRecord.MsgRecordState.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
 
+                MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
+                msgRecordStateChangedHandler = (e) =>
+                {
+                    button.Content = temp;
+                    msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
+                };
+                msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
+            }
+        }
 
         public static void SendCommand(Button button, MsgRecord msgRecord, bool Reserve = true)
         {
@@ -97,8 +80,7 @@ namespace ColorVision.Engine.Services
                 button.Content = temp;
                 msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
             };
-            if (Reserve)
-                msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
+            msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
         }
 
         public static bool IsInvalidPath(string Path, string Hint = "名称")

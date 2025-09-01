@@ -57,8 +57,8 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxPoiTemplate, "请先选择关注点模板")) return;
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxPoiFilter, "需要选择关注点过滤模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxPoiTemplate, "请先选择关注点模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxPoiFilter, "需要选择关注点过滤模板")) return;
 
             if (ComboxPoiTemplate.SelectedValue is not PoiParam poiParam) return;
             if (ComboxPoiFilter.SelectedValue is not PoiFilterParam pOIFilterParam) return;
@@ -76,7 +76,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(code, type, imgFileName, poiParam, pOIFilterParam, pOICalParam, poiOutputParam, sn);
-                ServicesHelper.SendCommand(msg, "计算关注点");
+                ServicesHelper.SendCommand(sender, msg);
             }
 
         }

@@ -14,6 +14,7 @@ namespace ColorVision.Engine.Messages
     public class MsgRecord : VPKModel
     {
         public event MsgRecordStateChangedHandler MsgRecordStateChanged;
+
         public event MsgRecordSucessChangedHandler? MsgSucessed;
         public void ClearMsgRecordSucessChangedHandler() => MsgSucessed = null;
 
@@ -36,15 +37,13 @@ namespace ColorVision.Engine.Messages
         [SugarColumn(IsIgnore = true)]
         public MsgSend MsgSend { get; set; }
 
-        [SugarColumn(ColumnName = "MsgSendJson",ColumnDataType ="json", IsNullable = true,IsJson = true)]
+        [SugarColumn(ColumnName = "MsgSendJson", IsNullable = true ,IsJson = true)]
         public string MsgSendJson { get => JsonConvert.SerializeObject(MsgSend); set { if (!string.IsNullOrEmpty(value)) MsgSend = JsonConvert.DeserializeObject<MsgSend>(value); } }
-
-
-
-
+       
+        [SugarColumn(IsIgnore = true)]
         public MsgReturn MsgReturn { get; set; }
 
-        [SugarColumn(ColumnName = "MsgReturnJson", ColumnDataType = "json", IsNullable = true, IsJson = true)]
+        [SugarColumn(ColumnName = "MsgReturnJson", IsNullable = true, IsJson = true)]
         public string MsgReturnJson { get => JsonConvert.SerializeObject(MsgReturn); set { if (!string.IsNullOrEmpty(value)) MsgReturn = JsonConvert.DeserializeObject<MsgReturn>(value); } }
 
         [SugarColumn(ColumnName = "ErrorMsg", IsNullable = true)]
@@ -89,21 +88,8 @@ namespace ColorVision.Engine.Messages
 
         private MsgRecordState _MsgRecordState = MsgRecordState.Initial;
 
-        private async void UpdateMsgRecordToDbAsync()
-        {
-            using (var db = new SqlSugarClient(new ConnectionConfig
-            {
-                ConnectionString = "your_sqlite_conn_string",
-                DbType = SqlSugar.DbType.Sqlite,
-                IsAutoCloseConnection = true
-            }))
-            {
-                await db.Updateable(this).Where(x => x.Id == this.Id).ExecuteCommandAsync();
-            }
-        }
-
         [SugarColumn(IsIgnore = true)]
-        [JsonIgnore]
+        //[JsonIgnore]
         public bool IsSend { get => MsgRecordState == MsgRecordState.Sended; }
 
         [SugarColumn(IsIgnore = true)]
@@ -113,6 +99,10 @@ namespace ColorVision.Engine.Messages
         [SugarColumn(IsIgnore = true)]
         [JsonIgnore]
         public bool IsTimeout { get => MsgRecordState == MsgRecordState.Timeout; }
+
+        public DateTime UpdateTime { get; set; } = DateTime.Now;
+
+        public DateTime CreateTime { get; set; } = DateTime.Now;
 
     }
 
