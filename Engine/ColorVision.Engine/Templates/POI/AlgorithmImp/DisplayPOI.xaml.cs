@@ -76,7 +76,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(code, type, imgFileName, poiParam, pOIFilterParam, pOICalParam, poiOutputParam, sn);
-                ServicesHelper.SendCommand(msg, "计算关注点");
+                ServicesHelper.SendCommand(sender, msg);
             }
 
         }

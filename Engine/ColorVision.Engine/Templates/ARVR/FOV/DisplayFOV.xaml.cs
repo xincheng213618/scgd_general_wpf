@@ -51,7 +51,7 @@ namespace ColorVision.Engine.Templates.FOV
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand( code, type, imgFileName, fileExtType, pm.Id, ComboxFOVTemplate.Text, sn);
-                ServicesHelper.SendCommand(msg, "FOV");
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

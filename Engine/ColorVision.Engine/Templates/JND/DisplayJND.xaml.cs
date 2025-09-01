@@ -57,7 +57,7 @@ namespace ColorVision.Engine.Templates.JND
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "JND");
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

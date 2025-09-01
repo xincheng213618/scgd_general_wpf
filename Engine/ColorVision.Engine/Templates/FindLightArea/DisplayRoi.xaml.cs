@@ -53,7 +53,7 @@ namespace ColorVision.Engine.Templates.FindLightArea
                 }
 
                 MsgRecord msg = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "发光区检测");
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

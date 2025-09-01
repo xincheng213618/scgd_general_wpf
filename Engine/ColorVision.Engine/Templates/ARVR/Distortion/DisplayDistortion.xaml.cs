@@ -52,7 +52,7 @@ namespace ColorVision.Engine.Templates.Distortion
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(param,code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "正在计算Distortion");
+                ServicesHelper.SendCommand(sender,msg);
             }
         }
 

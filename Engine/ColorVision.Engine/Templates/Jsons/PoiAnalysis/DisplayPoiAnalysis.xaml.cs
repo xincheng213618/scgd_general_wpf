@@ -51,7 +51,7 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "正在执行PoiAnalysis算法");
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

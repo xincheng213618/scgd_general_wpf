@@ -57,7 +57,7 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "正在执行寻找AA区算法");
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

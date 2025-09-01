@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "正在执行双目融合算法");
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

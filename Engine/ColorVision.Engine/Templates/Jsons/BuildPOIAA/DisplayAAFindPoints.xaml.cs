@@ -57,7 +57,7 @@ namespace ColorVision.Engine.Templates.Jsons.BuildPOIAA
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "正在执行AA布点算法");
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

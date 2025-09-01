@@ -1,10 +1,12 @@
-﻿using ColorVision.Engine.Services;
+﻿using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 
 namespace ColorVision.Engine.Templates.ImageCropping
 {
@@ -128,8 +130,8 @@ namespace ColorVision.Engine.Templates.ImageCropping
                     code = deviceService.Code;
                 }
 
-                var ss = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(ss, "发光区裁剪");
+                var msg = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "正在执行MTF2.0算法");
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

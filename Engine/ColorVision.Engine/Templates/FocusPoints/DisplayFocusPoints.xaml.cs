@@ -52,7 +52,7 @@ namespace ColorVision.Engine.Templates.FocusPoints
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(param,code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "LEDStripDetection");
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

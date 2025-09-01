@@ -91,7 +91,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
                 }
 
                 MsgRecord msg = IAlgorithm.SendCommand(param, POILayoutReq, Params, code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "关注点布点");
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

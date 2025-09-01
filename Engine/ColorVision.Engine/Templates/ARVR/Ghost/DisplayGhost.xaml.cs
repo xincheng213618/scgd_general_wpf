@@ -58,7 +58,7 @@ namespace ColorVision.Engine.Templates.Ghost
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(code, type, imgFileName, fileExtType, param, sn);
-                ServicesHelper.SendCommand(msg, "正在计算鬼影");
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

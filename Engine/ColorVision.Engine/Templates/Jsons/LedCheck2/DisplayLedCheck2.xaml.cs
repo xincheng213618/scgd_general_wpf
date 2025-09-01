@@ -65,7 +65,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(param, color, code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "LedCheck2");
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 
