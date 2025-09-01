@@ -5,7 +5,6 @@ using ColorVision.UI;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
-using Panuon.WPF.UI;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -59,7 +58,6 @@ namespace ColorVision.Engine.Services.Devices.FileServer
                     View.OpenImage(arg.FileData.ToWriteableBitmap());
                 });
             }
-            handler?.Close();
         }
 
         private void Service_OnImageData(object sender, FileServerDataEvent arg)
@@ -94,17 +92,10 @@ namespace ColorVision.Engine.Services.Devices.FileServer
             Task.Run(() => { MQTTFileServer.GetAllFiles(); });
         }
 
-        IPendingHandler handler { get; set; }
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
         {
             MQTTFileServer.Open(FilesView.Text);
-
-            handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
-            handler.Cancelling += delegate
-            {
-                handler?.Close();
-            };
         }
 
         private void Button_Click_Refresh(object sender, RoutedEventArgs e)
@@ -121,11 +112,6 @@ namespace ColorVision.Engine.Services.Devices.FileServer
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 MQTTFileServer.UploadFile(openFileDialog.FileName);
-                handler = PendingBox.Show(Application.Current.MainWindow, "", "上传", true);
-                handler.Cancelling += delegate
-                {
-                    handler?.Close();
-                };
             }
         }
 

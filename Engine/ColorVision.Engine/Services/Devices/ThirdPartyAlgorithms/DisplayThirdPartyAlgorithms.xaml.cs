@@ -13,7 +13,6 @@ using CVCommCore;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
-using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,8 +40,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
         public string DisPlayName => Device.Config.Name;
 
-        private IPendingHandler? handler { get; set; }
-
         private NetFileUtil netFileUtil;
 
         public DisplayThirdPartyAlgorithms(DeviceThirdPartyAlgorithms device)
@@ -64,7 +61,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                 });
             }
 
-            handler?.Close();
         }
 
 
@@ -126,7 +122,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                             Device.View.AlgResultMasterModelDataDraw(result);
                         });
                     }
-                    handler?.Close();
                     break;
             }
         }
@@ -237,11 +232,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 DService.UploadCIEFile(openFileDialog.FileName);
-                handler = PendingBox.Show(Application.Current.MainWindow, "", "上传", true);
-                handler.Cancelling += delegate
-                {
-                    handler?.Close();
-                };
             }
         }
 
