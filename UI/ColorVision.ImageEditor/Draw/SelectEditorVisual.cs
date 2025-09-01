@@ -31,12 +31,18 @@ namespace ColorVision.ImageEditor.Draw
 
         public List<ISelectVisual> SelectVisuals { get; set; } = new List<ISelectVisual>();
 
-        public Rect OldRect { get; set; }
-
-        public Point FixedPoint{ get; set; }
-        public Point FixedPoint1 { get; set; }
-
         public bool IsEditor { get; set; }
+        public class CacheClass
+        {
+            public Rect OldRect { get; set; }
+
+            public Point FixedPoint { get; set; }
+            public Point FixedPoint1 { get; set; }
+        }
+
+
+        public Dictionary<ISelectVisual, CacheClass> Cache { get; set; } = new Dictionary<ISelectVisual, CacheClass>();
+
 
         public bool GetContainingRect(Point point)
         {
@@ -47,9 +53,13 @@ namespace ColorVision.ImageEditor.Draw
             double halfSmallRectSize = smallRectSize / 2;
 
 
-            bool Check(Rect Rect)
+            bool Check(ISelectVisual selectVisual)
             {
-                OldRect = new Rect(Rect.X, Rect.Y, Rect.Width, Rect.Height);
+                Rect Rect = selectVisual.GetRect();
+                CacheClass cacheClass = new CacheClass();
+                Cache.Add(selectVisual,cacheClass);
+
+                cacheClass.OldRect = new Rect(Rect.X, Rect.Y, Rect.Width, Rect.Height);
                 // 计算每个角落的小矩形，使其中心在角落
                 Rect topLeft = new Rect(Rect.Left - halfSmallRectSize, Rect.Top - halfSmallRectSize, smallRectSize, smallRectSize);
                 Rect topRight = new Rect(Rect.Right - halfSmallRectSize, Rect.Top - halfSmallRectSize, smallRectSize, smallRectSize);
@@ -67,53 +77,53 @@ namespace ColorVision.ImageEditor.Draw
                 if (topLeft.Contains(point))
                 {
                     ZoomboxSub.Cursor = Cursors.SizeNWSE;
-                    FixedPoint = OldRect.BottomRight;
+                    cacheClass.FixedPoint = cacheClass.OldRect.BottomRight;
                     return true;
                 }
                 else if (topRight.Contains(point))
                 {
-                    FixedPoint = OldRect.BottomLeft;
+                    cacheClass.FixedPoint = cacheClass.OldRect.BottomLeft;
                     ZoomboxSub.Cursor = Cursors.SizeNESW;
                     return true;
                 }
                 else if (bottomLeft.Contains(point))
                 {
-                    FixedPoint = OldRect.TopRight;
+                    cacheClass.FixedPoint = cacheClass.OldRect.TopRight;
                     ZoomboxSub.Cursor = Cursors.SizeNESW;
                     return true;
                 }
                 else if (bottomRight.Contains(point))
                 {
-                    FixedPoint = OldRect.TopLeft;
+                    cacheClass.FixedPoint = cacheClass.OldRect.TopLeft;
                     ZoomboxSub.Cursor = Cursors.SizeNWSE;
                     return true;
                 }
                 else if (middleTop.Contains(point))
                 {
-                    FixedPoint = OldRect.BottomLeft;
-                    FixedPoint1 = OldRect.BottomRight;
+                    cacheClass.FixedPoint = cacheClass.OldRect.BottomLeft;
+                    cacheClass.FixedPoint1 = cacheClass.OldRect.BottomRight;
                     ZoomboxSub.Cursor = Cursors.SizeNS;
 
                     return true;
                 }
                 else if (middleBottom.Contains(point))
                 {
-                    FixedPoint = OldRect.TopLeft;
-                    FixedPoint1 = OldRect.TopRight;
+                    cacheClass.FixedPoint = cacheClass.OldRect.TopLeft;
+                    cacheClass.FixedPoint1 = cacheClass.OldRect.TopRight;
                     ZoomboxSub.Cursor = Cursors.SizeNS;
                     return true;
                 }
                 else if (middleLeft.Contains(point))
                 {
-                    FixedPoint = OldRect.TopRight;
-                    FixedPoint1 = OldRect.BottomRight;
+                    cacheClass.FixedPoint = cacheClass.OldRect.TopRight;
+                    cacheClass.FixedPoint1 = cacheClass.OldRect.BottomRight;
                     ZoomboxSub.Cursor = Cursors.SizeWE;
                     return true;
                 }
                 else if (middleRight.Contains(point))
                 {
-                    FixedPoint = OldRect.TopLeft;
-                    FixedPoint1 = OldRect.BottomLeft;
+                    cacheClass.FixedPoint = cacheClass.OldRect.TopLeft;
+                    cacheClass.FixedPoint1 = cacheClass.OldRect.BottomLeft;
                     ZoomboxSub.Cursor = Cursors.SizeWE;
                     return true;
                 }
@@ -125,22 +135,28 @@ namespace ColorVision.ImageEditor.Draw
                 return false;
 
             }
-
+            Cache.Clear();
             foreach (var item in SelectVisuals)
             {
-                if (Check(item.GetRect()))
+                if (Check(item))
                 {
                     return true;
                 }
             }
             return false;
         }
-
-        public void SetRender(ISelectVisual selectVisual)
+        public void ClearRender()
         {
+            SelectVisuals.Clear();
+            ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
+            Render();
+        }
+
+        public void SetRender<T>(T selectVisual)  where T :ISelectVisual
+        {
+            SelectVisuals.Clear();
             if (selectVisual == null)
             {
-                SelectVisuals.Clear();
                 ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
             }
             else
@@ -153,11 +169,14 @@ namespace ColorVision.ImageEditor.Draw
             Render();
         }
 
-        public void SetRenders(List<ISelectVisual> selectVisuals)
+
+
+
+        public void SetRenders<T>(IEnumerable<T> selectVisuals) where T : ISelectVisual
         {
+            SelectVisuals.Clear();
             if (selectVisuals == null)
             {
-                SelectVisuals.Clear();
                 ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
             }
             else

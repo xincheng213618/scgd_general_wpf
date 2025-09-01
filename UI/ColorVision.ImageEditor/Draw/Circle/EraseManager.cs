@@ -96,31 +96,7 @@ namespace ColorVision.ImageEditor.Draw
             ImageViewModel.DrawSelectRect(EraseVisual, new Rect(MouseDownP, MouseDownP)); ;
             DrawCanvas.AddVisual(EraseVisual);
 
-            if (ImageViewModel.SelectDrawingVisuals != null)
-            {
-                foreach (var item in ImageViewModel.SelectDrawingVisuals)
-                {
-                    if (item is IDrawingVisual id)
-                    {
-                        id.Pen.Brush = Brushes.Red;
-                        id.Render();
-                    }
-                }
-                ImageViewModel.SelectDrawingVisuals = null;
-            }
-
-            if (ImageViewModel.SelectDrawingVisuals != null)
-            {
-                foreach (var item in ImageViewModel.SelectDrawingVisuals)
-                {
-                    if (item is IDrawingVisual id)
-                    {
-                        id.Pen.Brush = Brushes.Red;
-                        id.Render();
-                    }
-                }
-                ImageViewModel.SelectDrawingVisuals = null;
-            }
+            ImageViewModel.SelectEditorVisual.ClearRender();
             e.Handled = true;
         }
 

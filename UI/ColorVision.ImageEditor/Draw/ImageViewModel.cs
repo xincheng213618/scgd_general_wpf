@@ -109,7 +109,7 @@ namespace ColorVision.ImageEditor.Draw
                 }
                 else
                 {
-                    SelectEditorVisual.SetRender(null);
+                    SelectEditorVisual.ClearRender();
                 }
             }
         }

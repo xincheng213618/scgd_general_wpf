@@ -368,7 +368,7 @@ namespace ColorVision.Engine.Templates.POI
                             {
                                 var oldRect = selectVisual.GetRect(); ;
                                 Point point1 = oldRect.TopLeft;
-                                Rect rect = new System.Windows.Rect(ImageViewModel.SelectEditorVisual.FixedPoint, point);
+                                Rect rect = new System.Windows.Rect(ImageViewModel.SelectEditorVisual.Cache[selectVisual].FixedPoint, point);
                                 selectVisual.SetRect(rect);
                             }
                             ImageViewModel.SelectEditorVisual.Render(); ;
@@ -378,10 +378,10 @@ namespace ColorVision.Engine.Templates.POI
                             foreach (var selectVisual in ImageViewModel.SelectEditorVisual.SelectVisuals)
                             {
                                 var oldRect = selectVisual.GetRect();
-                                Point point1 = ImageViewModel.SelectEditorVisual.FixedPoint1;
+                                Point point1 = ImageViewModel.SelectEditorVisual.Cache[selectVisual].FixedPoint1;
                                 point1.Y = point.Y;
 
-                                Rect rect = new System.Windows.Rect(ImageViewModel.SelectEditorVisual.FixedPoint, point1);
+                                Rect rect = new System.Windows.Rect(ImageViewModel.SelectEditorVisual.Cache[selectVisual].FixedPoint, point1);
                                 selectVisual.SetRect(rect);
                             }
                             ImageViewModel.SelectEditorVisual.Render();
@@ -391,10 +391,10 @@ namespace ColorVision.Engine.Templates.POI
                             foreach (var selectVisual in ImageViewModel.SelectEditorVisual.SelectVisuals)
                             {
                                 var oldRect = selectVisual.GetRect();
-                                Point point1 = ImageViewModel.SelectEditorVisual.FixedPoint1;
+                                Point point1 = ImageViewModel.SelectEditorVisual.Cache[selectVisual].FixedPoint1;
                                 point1.X = point.X;
 
-                                Rect rect = new System.Windows.Rect(ImageViewModel.SelectEditorVisual.FixedPoint, point1);
+                                Rect rect = new System.Windows.Rect(ImageViewModel.SelectEditorVisual.Cache[selectVisual].FixedPoint, point1);
                                 selectVisual.SetRect(rect);
                             }
                             ImageViewModel.SelectEditorVisual.Render();

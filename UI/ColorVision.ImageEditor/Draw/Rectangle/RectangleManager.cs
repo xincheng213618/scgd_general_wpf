@@ -87,7 +87,7 @@ namespace ColorVision.ImageEditor.Draw
             }
             else
             {
-                ImageViewModel.SelectEditorVisual.SetRender(null);
+                ImageViewModel.SelectEditorVisual.ClearRender();
             }
             DrawingRectangleCache = new DVRectangleText();
             int did = CheckNo();
@@ -98,18 +98,6 @@ namespace ColorVision.ImageEditor.Draw
 
             DrawCanvas.AddVisual(DrawingRectangleCache);
 
-            if (ImageViewModel.SelectDrawingVisuals != null)
-            {
-                foreach (var item in ImageViewModel.SelectDrawingVisuals)
-                {
-                    if (item is IDrawingVisual id)
-                    {
-                        id.Pen.Brush = Brushes.Red;
-                        id.Render();
-                    }
-                }
-                ImageViewModel.SelectDrawingVisuals = null;
-            }
             e.Handled = true;
         }
         public int CheckNo()
