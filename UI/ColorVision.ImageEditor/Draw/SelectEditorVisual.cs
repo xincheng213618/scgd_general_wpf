@@ -1,7 +1,10 @@
 ﻿#pragma warning disable CS8625,CS8602,CS8607,CS0103,CS0067
 using ColorVision.Common.Utilities;
+using Gu.Wpf.Geometry;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -13,9 +16,11 @@ namespace ColorVision.ImageEditor.Draw
         public DrawCanvas DrawCanvas { get; set; }
 
         public ZoomboxSub ZoomboxSub { get; set; }
+        public ImageViewModel ImageViewModel { get; set; }
         Guid Guid { get; set; }
-        public SelectEditorVisual(DrawCanvas drawCanvas, ZoomboxSub zoomboxSub)
+        public SelectEditorVisual(ImageViewModel imageViewModel, DrawCanvas drawCanvas, ZoomboxSub zoomboxSub)
         {
+            ImageViewModel = imageViewModel;
             DrawCanvas = drawCanvas;
             ZoomboxSub = zoomboxSub;
             DrawCanvas.AddVisual(this, false);
@@ -25,6 +30,7 @@ namespace ColorVision.ImageEditor.Draw
         {
             DebounceTimer.AddOrResetTimerDispatcher("SelectEditorVisualRender" + Guid.ToString(), 20, () => Render());
         }
+        public System.Windows.Forms.PropertyGrid PropertyGrid { get; set; }
 
         public Rect Rect { get => _Rect; set {  _Rect = value; }  }
         private Rect _Rect;
@@ -148,47 +154,75 @@ namespace ColorVision.ImageEditor.Draw
         public void ClearRender()
         {
             SelectVisuals.Clear();
+            DrawCanvas.PreviewKeyDown -= PreviewKeyDown;
             ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
+            if (PropertyGrid.SelectedObject is IDrawingVisual drawingVisualold)
+                drawingVisualold.BaseAttribute.PropertyChanged -= Attribute_PropertyGrid2;
+
             Render();
         }
 
         public void SetRender<T>(T selectVisual)  where T :ISelectVisual
         {
             SelectVisuals.Clear();
-            if (selectVisual == null)
-            {
-                ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
-            }
-            else
+            DrawCanvas.PreviewKeyDown -= PreviewKeyDown;
+            ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
+            if (PropertyGrid.SelectedObject is IDrawingVisual drawingVisualold)
+                drawingVisualold.BaseAttribute.PropertyChanged -= Attribute_PropertyGrid2;
+
+            if (selectVisual != null)
             {
                 SelectVisuals.Add(selectVisual);
-                Rect = selectVisual.GetRect();
-                ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
+                if (SelectVisuals.Count == 1)
+                {
+                    if (PropertyGrid != null && SelectVisuals[0] is IDrawingVisual drawingVisualBase)
+                    {
+                        PropertyGrid.SelectedObject = drawingVisualBase.BaseAttribute;
+                        drawingVisualBase.BaseAttribute.PropertyChanged += Attribute_PropertyGrid2;
+                    }
+                }
+                DrawCanvas.Focus();
+                DrawCanvas.PreviewKeyDown += PreviewKeyDown;
                 ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
             }
             Render();
         }
 
-
-
-
         public void SetRenders<T>(IEnumerable<T> selectVisuals) where T : ISelectVisual
         {
             SelectVisuals.Clear();
-            if (selectVisuals == null)
-            {
-                ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
-            }
-            else
+            DrawCanvas.PreviewKeyDown -= PreviewKeyDown;
+            ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
+            if (PropertyGrid.SelectedObject is IDrawingVisual drawingVisualold)
+                drawingVisualold.BaseAttribute.PropertyChanged -= Attribute_PropertyGrid2;
+
+            if (selectVisuals != null)
             {
                 foreach (var item in selectVisuals)
                 {
                     SelectVisuals.Add(item);
                 }
-                ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
+
+                if (SelectVisuals.Count == 1)
+                {
+                    if (PropertyGrid != null && SelectVisuals[0] is IDrawingVisual drawingVisualBase)
+                    {
+                        PropertyGrid.SelectedObject = drawingVisualBase.BaseAttribute;
+                        drawingVisualBase.BaseAttribute.PropertyChanged += Attribute_PropertyGrid2;
+                    }
+                }
+
+                DrawCanvas.PreviewKeyDown += PreviewKeyDown;
+                DrawCanvas.Focus();
                 ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
             }
+
             Render();
+        }
+
+        private void Attribute_PropertyGrid2(object? sender, PropertyChangedEventArgs e)
+        {
+            PropertyGrid.Refresh();
         }
 
 
@@ -269,8 +303,115 @@ namespace ColorVision.ImageEditor.Draw
             }
         }
 
+        private void PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (ImageViewModel.ImageEditMode)
+            {
+                if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Left || e.Key == Key.A))
+                {
+                    if (SelectVisuals.Count > 0)
+                    {
+                        foreach (var selectVisual in SelectVisuals)
+                        {
+                            var OldRect = selectVisual.GetRect();
+                            Rect rect = new Rect(OldRect.X - 2, OldRect.Y, OldRect.Width, OldRect.Height);
+                            selectVisual.SetRect(rect);
+                            Render();
+                        }
+                    }
+                    e.Handled = true;
+                }
+                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Right || e.Key == Key.D))
+                {
+                    if (SelectVisuals.Count > 0)
+                    {
+                        foreach (var selectVisual in SelectVisuals)
+                        {
+                            var OldRect = selectVisual.GetRect();
+                            Rect rect = new Rect(OldRect.X + 2, OldRect.Y, OldRect.Width, OldRect.Height);
+                            selectVisual.SetRect(rect);
+                            Render();
+                        }
+                    }
+
+                    e.Handled = true;
+                }
+                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Up || e.Key == Key.W))
+                {
+                    if (SelectVisuals.Count > 0)
+                    {
+                        foreach (var selectVisual in SelectVisuals)
+                        {
+                            var OldRect = selectVisual.GetRect();
+                            Rect rect = new Rect(OldRect.X, OldRect.Y - 2, OldRect.Width, OldRect.Height);
+                            selectVisual.SetRect(rect);
+                            Render();
+                        }
+                    }
+
+                    e.Handled = true;
+                }
+                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Down || e.Key == Key.S))
+                {
+                    if (SelectVisuals.Count > 0)
+                    {
+                        foreach (var selectVisual in SelectVisuals)
+                        {
+                            var OldRect = selectVisual.GetRect();
+                            Rect rect = new Rect(OldRect.X, OldRect.Y + 2, OldRect.Width, OldRect.Height);
+                            selectVisual.SetRect(rect);
+                            Render();
+                        }
+                    }
+
+                    e.Handled = true;
+                }
+                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Add || e.Key == Key.I))
+                {
+                    if (SelectVisuals.Count > 0)
+                    {
+                        foreach (var selectVisual in SelectVisuals)
+                        {
+                            var OldRect = selectVisual.GetRect();
+                            Rect rect = new Rect(OldRect.X - 1, OldRect.Y - 1, OldRect.Width + 2, OldRect.Height + 2);
+                            selectVisual.SetRect(rect);
+                            Render();
+                        }
+                    }
+                    e.Handled = true;
+                }
+                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Subtract || e.Key == Key.O))
+                {
+                    if (SelectVisuals.Count > 0)
+                    {
+                        foreach (var selectVisual in SelectVisuals)
+                        {
+                            var OldRect = selectVisual.GetRect();
+                            Rect rect = new Rect(OldRect.X + 1, OldRect.Y + 1, OldRect.Width - 2, OldRect.Height - 2);
+                            selectVisual.SetRect(rect);
+                            Render();
+                        }
+                    }
+                    e.Handled = true;
+                }
+                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Delete))
+                {
+
+                    foreach (var selectVisual in SelectVisuals.Cast<DrawingVisual>())
+                    {
+                        DrawCanvas.RemoveVisual(selectVisual);
+                    }
+                    ClearRender();
+                    e.Handled = true;
+
+                }
+            }
+        }
+
+
         public void Dispose()
         {
+            PropertyGrid?.Dispose();
             DrawCanvas?.RemoveVisual(this, false);
             if (ZoomboxSub != null)
                 ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;

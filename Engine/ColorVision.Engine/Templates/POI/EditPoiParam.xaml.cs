@@ -92,7 +92,7 @@ namespace ColorVision.Engine.Templates.POI
             DataContext = PoiParam;
 
             ImageViewModel = new ImageViewModel(ImageContentGrid, Zoombox1, ImageShow);
-            ImageViewModel.PropertyGrid = PropertyGrid2;
+            ImageViewModel.SelectEditorVisual.PropertyGrid = PropertyGrid2;
             ImageViewModel.ToolBarScaleRuler.IsShow = false;
             ImageViewModel.CircleManager.IsEnabled = false;
             ImageViewModel.RectangleManager.IsEnabled = false;

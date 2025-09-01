@@ -124,7 +124,7 @@ namespace ColorVision.ImageEditor.Draw
                 if (DrawingRectangleCache.Attribute.Rect.Width == DefalutWidth && DrawingRectangleCache.Attribute.Rect.Height == DefalutHeight)
                     DrawingRectangleCache.Render();
 
-                ImageViewModel.SelectDrawingVisual = DrawingRectangleCache;
+                ImageViewModel.SelectEditorVisual.SetRender(DrawingRectangleCache);
 
                 DefalutWidth = DrawingRectangleCache.Attribute.Rect.Width;
                 DefalutHeight = DrawingRectangleCache.Attribute.Rect.Height;

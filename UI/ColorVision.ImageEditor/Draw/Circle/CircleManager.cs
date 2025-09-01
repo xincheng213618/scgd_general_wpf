@@ -126,7 +126,7 @@ namespace ColorVision.ImageEditor.Draw
                 if (DrawCircleCache.Attribute.Radius == DefalutRadius)
                     DrawCircleCache.Render();
 
-                ImageViewModel.SelectDrawingVisual = DrawCircleCache;
+                ImageViewModel.SelectEditorVisual.SetRender(DrawCircleCache); 
 
                 DefalutRadius = DrawCircleCache.Radius;
 

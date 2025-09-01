@@ -104,7 +104,7 @@ namespace ColorVision.ImageEditor
                 }
             }
             ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow,Config);
-            ImageViewModel.PropertyGrid = PropertyGrid2;
+            ImageViewModel.SelectEditorVisual.PropertyGrid = PropertyGrid2;
             this.DataContext = this;
             AdvancedStackPanel.DataContext = this;
             ToolBarLeft.DataContext = Config;
@@ -330,14 +330,18 @@ namespace ColorVision.ImageEditor
                 {
                     if (ImageViewModel.ImageEditMode == true)
                     {
-                        if (drawCanvas.GetVisual(MouseDownP) is not ISelectVisual dv || !ImageViewModel.SelectEditorVisual.SelectVisuals.Contains(dv))
-                            ImageViewModel.SelectEditorVisual.ClearRender();
-
                         if (drawingVisual is ISelectVisual visual)
                         {
-                            ImageViewModel.SelectEditorVisual.SetRender(visual);
-                            if (!(ImageViewModel.SelectEditorVisual.GetContainingRect(MouseDownP)))
-                                Zoombox1.Cursor = Cursors.Cross;
+                            if (ImageViewModel.SelectEditorVisual.SelectVisuals.Contains(visual))
+                            {
+                                return;
+                            }
+                            else
+                            {
+                                ImageViewModel.SelectEditorVisual.SetRender(visual);
+                                if (!(ImageViewModel.SelectEditorVisual.GetContainingRect(MouseDownP)))
+                                    Zoombox1.Cursor = Cursors.Cross;
+                            }
                         }
                         else
                         {

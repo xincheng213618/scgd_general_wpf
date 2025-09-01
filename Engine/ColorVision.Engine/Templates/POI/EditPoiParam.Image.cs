@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using static ColorVision.ImageEditor.Draw.SelectEditorVisual;
 
 namespace ColorVision.Engine.Templates.POI
 {
@@ -137,22 +138,6 @@ namespace ColorVision.Engine.Templates.POI
         }
 
 
-        public void SelectDrawingVisualsClear()
-        {
-            if (ImageViewModel.SelectDrawingVisuals != null)
-            {
-                foreach (var item in ImageViewModel.SelectDrawingVisuals)
-                {
-                    if (item is IDrawingVisual id)
-                    {
-                        id.Pen.Brush = Brushes.Red;
-                        id.Render();
-                    }
-                }
-                ImageViewModel.SelectDrawingVisuals = null;
-            }
-        }
-
         public int CheckNo()
         {
             if (DrawingVisualLists.Count > 0 && DrawingVisualLists.Last() is DrawingVisualBase drawingVisual)
@@ -177,6 +162,15 @@ namespace ColorVision.Engine.Templates.POI
                 MouseDownP = e.GetPosition(drawCanvas);
                 IsMouseDown = true;
                 drawCanvas.CaptureMouse();
+
+                if (ImageViewModel.SelectEditorVisual.GetContainingRect(MouseDownP))
+                {
+                    return;
+                }
+                else
+                {
+                    ImageViewModel.SelectEditorVisual.ClearRender();
+                }
 
                 Brush brush = PoiConfig.IsUserDraw ? Brushes.Blue : Brushes.Red;
 
@@ -211,9 +205,7 @@ namespace ColorVision.Engine.Templates.POI
 
                     drawCanvas.AddVisual(DrawCircleCache);
 
-
-                    SelectDrawingVisualsClear();
-                    ImageViewModel.SelectDrawingVisual = null;
+                    ImageViewModel.SelectEditorVisual.ClearRender();
                     return;
                 }
                 if (ImageViewModel.DrawRect)
@@ -236,10 +228,7 @@ namespace ColorVision.Engine.Templates.POI
                     DrawingRectangleCache.Attribute.Text = "Point_" + id.ToString();
 
                     drawCanvas.AddVisual(DrawingRectangleCache);
-
-
-                    SelectDrawingVisualsClear();
-                    ImageViewModel.SelectDrawingVisual = null;
+                    ImageViewModel.SelectEditorVisual.ClearRender();
                     return;
                 }
                 if (ImageViewModel.DrawPolygon)
@@ -252,9 +241,7 @@ namespace ColorVision.Engine.Templates.POI
                         DrawingPolygonCache.Points.Add(MouseDownP);
                         drawCanvas.AddVisual(DrawingPolygonCache);
                     }
-
-                    SelectDrawingVisualsClear();
-                    ImageViewModel.SelectDrawingVisual = null;
+                    ImageViewModel.SelectEditorVisual.ClearRender();
                     return;
                 }
 
@@ -264,41 +251,32 @@ namespace ColorVision.Engine.Templates.POI
                     return;
                 if (MouseVisual is IDrawingVisual drawingVisual)
                 {
+                    ListView1.SelectedValue = drawingVisual;
+                    ListView1.ScrollIntoView(drawingVisual);
                     PropertyGrid2.SelectedObject = drawingVisual.BaseAttribute;
-
                     if (ImageViewModel.ImageEditMode == true)
                     {
-                        if (ImageViewModel.SelectDrawingVisuals != null && drawingVisual is DrawingVisual visual1 && ImageViewModel.SelectDrawingVisuals.Contains(visual1))
-                            return;
-
-                        if (drawingVisual is DrawingVisual visual)
+                        if (drawingVisual is ISelectVisual visual)
                         {
-                            ListView1.SelectedValue = visual;
-                            ListView1.ScrollIntoView(visual);
-                            ImageViewModel.SelectDrawingVisual = visual;
-                            if (!ImageViewModel.SelectEditorVisual.GetContainingRect(MouseDownP))
-                                Zoombox1.Cursor = Cursors.Cross;
-                        }
-
-                        if (ImageViewModel.SelectDrawingVisuals != null)
-                        {
-                            foreach (var item in ImageViewModel.SelectDrawingVisuals)
+                            if (ImageViewModel.SelectEditorVisual.SelectVisuals.Contains(visual))
                             {
-                                if (item is IDrawingVisual id)
-                                {
-                                    id.Pen.Brush = Brushes.Red;
-                                    id.Render();
-                                }
+                                return;
                             }
-                            ImageViewModel.SelectDrawingVisuals = null;
+                            else
+                            {
+                                ImageViewModel.SelectEditorVisual.SetRender(visual);
+                                if (!ImageViewModel.SelectEditorVisual.GetContainingRect(MouseDownP))
+                                    Zoombox1.Cursor = Cursors.Cross;
+                            }
+                        }
+                        else
+                        {
+                            ImageViewModel.SelectEditorVisual.ClearRender();
                         }
                     }
                     return;
                 }
-
-                SelectDrawingVisualsClear();
-                ImageViewModel.SelectDrawingVisual = null;
-
+                ImageViewModel.SelectEditorVisual.ClearRender();
                 ImageViewModel.DrawSelectRect(SelectRect, new System.Windows.Rect(MouseDownP, MouseDownP)); ;
                 drawCanvas.AddVisual(SelectRect);
             }
@@ -339,6 +317,7 @@ namespace ColorVision.Engine.Templates.POI
                         DrawingRectangleCache.Attribute.Rect = new System.Windows.Rect(MouseDownP, point);
                         DrawingRectangleCache.Render();
                     }
+
                     if (ImageViewModel.SelectEditorVisual.SelectVisuals.Count != 0)
                     {
                         if (Zoombox1.Cursor == Cursors.SizeAll)
@@ -360,60 +339,58 @@ namespace ColorVision.Engine.Templates.POI
                             }
                             ImageViewModel.SelectEditorVisual.Render();
 
+                        }
+                        //这里明天在优化
+                        if (ImageViewModel.SelectEditorVisual.SelectVisuals.Count == 1)
+                        {
+                            if (Zoombox1.Cursor == Cursors.SizeNWSE || Zoombox1.Cursor == Cursors.SizeNESW)
+                            {
+                                foreach (var selectVisual in ImageViewModel.SelectEditorVisual.SelectVisuals)
+                                {
+                                    if (!ImageViewModel.SelectEditorVisual.Cache.TryGetValue(selectVisual, out CacheClass cache)) continue;
 
-                        }
-                        else if (Zoombox1.Cursor == Cursors.SizeNWSE || Zoombox1.Cursor == Cursors.SizeNESW)
-                        {
-                            foreach (var selectVisual in ImageViewModel.SelectEditorVisual.SelectVisuals)
-                            {
-                                var oldRect = selectVisual.GetRect(); ;
-                                Point point1 = oldRect.TopLeft;
-                                Rect rect = new System.Windows.Rect(ImageViewModel.SelectEditorVisual.Cache[selectVisual].FixedPoint, point);
-                                selectVisual.SetRect(rect);
-                            }
-                            ImageViewModel.SelectEditorVisual.Render(); ;
-                        }
-                        else if (Zoombox1.Cursor == Cursors.SizeNS)
-                        {
-                            foreach (var selectVisual in ImageViewModel.SelectEditorVisual.SelectVisuals)
-                            {
-                                var oldRect = selectVisual.GetRect();
-                                Point point1 = ImageViewModel.SelectEditorVisual.Cache[selectVisual].FixedPoint1;
-                                point1.Y = point.Y;
+                                    var oldRect = selectVisual.GetRect(); ;
+                                    Point point1 = oldRect.TopLeft;
+                                    Point FixedPoint = ImageViewModel.SelectEditorVisual.Cache[selectVisual].FixedPoint;
 
-                                Rect rect = new System.Windows.Rect(ImageViewModel.SelectEditorVisual.Cache[selectVisual].FixedPoint, point1);
-                                selectVisual.SetRect(rect);
+                                    Rect rect = new System.Windows.Rect(FixedPoint, point);
+                                    selectVisual.SetRect(rect);
+                                }
+                                ImageViewModel.SelectEditorVisual.Render(); ;
                             }
-                            ImageViewModel.SelectEditorVisual.Render();
-                        }
-                        else if (Zoombox1.Cursor == Cursors.SizeWE)
-                        {
-                            foreach (var selectVisual in ImageViewModel.SelectEditorVisual.SelectVisuals)
+                            else if (Zoombox1.Cursor == Cursors.SizeNS)
                             {
-                                var oldRect = selectVisual.GetRect();
-                                Point point1 = ImageViewModel.SelectEditorVisual.Cache[selectVisual].FixedPoint1;
-                                point1.X = point.X;
+                                foreach (var selectVisual in ImageViewModel.SelectEditorVisual.SelectVisuals)
+                                {
+                                    if (!ImageViewModel.SelectEditorVisual.Cache.TryGetValue(selectVisual, out CacheClass cache)) continue;
 
-                                Rect rect = new System.Windows.Rect(ImageViewModel.SelectEditorVisual.Cache[selectVisual].FixedPoint, point1);
-                                selectVisual.SetRect(rect);
+                                    var oldRect = selectVisual.GetRect();
+                                    Point point1 = ImageViewModel.SelectEditorVisual.Cache[selectVisual].FixedPoint1;
+                                    point1.Y = point.Y;
+
+                                    Rect rect = new System.Windows.Rect(ImageViewModel.SelectEditorVisual.Cache[selectVisual].FixedPoint, point1);
+                                    selectVisual.SetRect(rect);
+                                }
+                                ImageViewModel.SelectEditorVisual.Render();
                             }
-                            ImageViewModel.SelectEditorVisual.Render();
-                        }
-                    }
-                    if (ImageViewModel.SelectDrawingVisuals != null)
-                    {
-                        foreach (var item in ImageViewModel.SelectDrawingVisuals)
-                        {
-                            if (item is IRectangle rectangle)
+                            else if (Zoombox1.Cursor == Cursors.SizeWE)
                             {
-                                var OldRect = rectangle.Rect;
-                                rectangle.Rect = new System.Windows.Rect(OldRect.X + point.X - LastMouseMove.X, OldRect.Y + point.Y - LastMouseMove.Y, OldRect.Width, OldRect.Height);
-                            }
-                            else if (item is ICircle Circl)
-                            {
-                                Circl.Center += point - LastMouseMove;
+                                foreach (var selectVisual in ImageViewModel.SelectEditorVisual.SelectVisuals)
+                                {
+                                    if (!ImageViewModel.SelectEditorVisual.Cache.TryGetValue(selectVisual, out CacheClass cache)) continue;
+                                    var oldRect = selectVisual.GetRect();
+
+
+                                    Point point1 = ImageViewModel.SelectEditorVisual.Cache[selectVisual].FixedPoint1;
+                                    point1.X = point.X;
+
+                                    Rect rect = new System.Windows.Rect(ImageViewModel.SelectEditorVisual.Cache[selectVisual].FixedPoint, point1);
+                                    selectVisual.SetRect(rect);
+                                }
+                                ImageViewModel.SelectEditorVisual.Render();
                             }
                         }
+
                     }
                 }
                 else
@@ -453,23 +430,15 @@ namespace ColorVision.Engine.Templates.POI
                         RenderPoiConfig();
                     }
 
-                    if (drawCanvas.GetVisual(MouseUpP) is not DrawingVisual dv || ImageViewModel.SelectDrawingVisuals == null || !ImageViewModel.SelectDrawingVisuals.Contains(dv))
-                        SelectDrawingVisualsClear();
+                    if (drawCanvas.GetVisual(MouseUpP) is not ISelectVisual dv || !ImageViewModel.SelectEditorVisual.SelectVisuals.Contains(dv))
+                        ImageViewModel.SelectEditorVisual.ClearRender();
 
                     if (drawCanvas.ContainsVisual(SelectRect))
                     {
-                        ImageViewModel.SelectDrawingVisuals = drawCanvas.GetVisuals(new RectangleGeometry(new System.Windows.Rect(MouseDownP, MouseUpP)));
-                        foreach (var item in ImageViewModel.SelectDrawingVisuals)
-                        {
-                            if (item is IDrawingVisual drawingVisual)
-                            {
-                                drawingVisual.Pen.Brush = Brushes.Yellow;
-                                drawingVisual.Render();
-                            }
-                        }
+                        var List = drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP)));
 
-                        if (ImageViewModel.SelectDrawingVisuals.Count == 0)
-                            ImageViewModel.SelectDrawingVisuals = null;
+                        ImageViewModel.SelectEditorVisual.SetRenders(List.Cast<ISelectVisual>());
+
                         drawCanvas.RemoveVisual(SelectRect, false);
                     }
 
@@ -488,7 +457,7 @@ namespace ColorVision.Engine.Templates.POI
                         ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawCircleCache);
 
                         PoiConfig.DefalutRadius = DrawCircleCache.Attribute.Radius;
-                        ImageViewModel.SelectDrawingVisual = DrawCircleCache;
+                        ImageViewModel.SelectEditorVisual.SetRender(DrawCircleCache);
 
                     }
                     else if (ImageViewModel.DrawRect)
@@ -501,7 +470,7 @@ namespace ColorVision.Engine.Templates.POI
 
                         PoiConfig.DefalutWidth = DrawingRectangleCache.Attribute.Rect.Width;
                         PoiConfig.DefalutHeight = DrawingRectangleCache.Attribute.Rect.Height;
-                        ImageViewModel.SelectDrawingVisual = DrawingRectangleCache;
+                        ImageViewModel.SelectEditorVisual.SetRender(DrawingRectangleCache)  ;
                     }
                     drawCanvas.ReleaseMouseCapture();
                 }
