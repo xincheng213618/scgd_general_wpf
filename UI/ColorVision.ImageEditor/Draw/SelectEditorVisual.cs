@@ -305,106 +305,93 @@ namespace ColorVision.ImageEditor.Draw
 
         private void PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (ImageViewModel.ImageEditMode)
+            if (SelectVisuals.Count == 0 || !ImageViewModel.ImageEditMode )
             {
-                if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Left || e.Key == Key.A))
-                {
-                    if (SelectVisuals.Count > 0)
-                    {
-                        foreach (var selectVisual in SelectVisuals)
-                        {
-                            var OldRect = selectVisual.GetRect();
-                            Rect rect = new Rect(OldRect.X - 2, OldRect.Y, OldRect.Width, OldRect.Height);
-                            selectVisual.SetRect(rect);
-                            Render();
-                        }
-                    }
-                    e.Handled = true;
-                }
-                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Right || e.Key == Key.D))
-                {
-                    if (SelectVisuals.Count > 0)
-                    {
-                        foreach (var selectVisual in SelectVisuals)
-                        {
-                            var OldRect = selectVisual.GetRect();
-                            Rect rect = new Rect(OldRect.X + 2, OldRect.Y, OldRect.Width, OldRect.Height);
-                            selectVisual.SetRect(rect);
-                            Render();
-                        }
-                    }
+                e.Handled = true;
+                return;
+            }
+            Key realKey = e.Key;
+            if (realKey == Key.ImeProcessed)
+            {
+                realKey = e.ImeProcessedKey;
+            }
 
-                    e.Handled = true;
-                }
-                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Up || e.Key == Key.W))
+            if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (realKey == Key.Left || realKey == Key.A))
+            {
+                foreach (var selectVisual in SelectVisuals)
                 {
-                    if (SelectVisuals.Count > 0)
-                    {
-                        foreach (var selectVisual in SelectVisuals)
-                        {
-                            var OldRect = selectVisual.GetRect();
-                            Rect rect = new Rect(OldRect.X, OldRect.Y - 2, OldRect.Width, OldRect.Height);
-                            selectVisual.SetRect(rect);
-                            Render();
-                        }
-                    }
+                    var OldRect = selectVisual.GetRect();
+                    Rect rect = new Rect(OldRect.X - 2, OldRect.Y, OldRect.Width, OldRect.Height);
+                    selectVisual.SetRect(rect);
+                    Render();
+                }
+                e.Handled = true;
+            }
+            else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (realKey == Key.Right || realKey == Key.D))
+            {
+                foreach (var selectVisual in SelectVisuals)
+                {
+                    var OldRect = selectVisual.GetRect();
+                    Rect rect = new Rect(OldRect.X + 2, OldRect.Y, OldRect.Width, OldRect.Height);
+                    selectVisual.SetRect(rect);
+                    Render();
+                }
 
-                    e.Handled = true;
-                }
-                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Down || e.Key == Key.S))
+                e.Handled = true;
+            }
+            else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (realKey == Key.Up || realKey == Key.W))
+            {
+                foreach (var selectVisual in SelectVisuals)
                 {
-                    if (SelectVisuals.Count > 0)
-                    {
-                        foreach (var selectVisual in SelectVisuals)
-                        {
-                            var OldRect = selectVisual.GetRect();
-                            Rect rect = new Rect(OldRect.X, OldRect.Y + 2, OldRect.Width, OldRect.Height);
-                            selectVisual.SetRect(rect);
-                            Render();
-                        }
-                    }
+                    var OldRect = selectVisual.GetRect();
+                    Rect rect = new Rect(OldRect.X, OldRect.Y - 2, OldRect.Width, OldRect.Height);
+                    selectVisual.SetRect(rect);
+                    Render();
+                }
+                e.Handled = true;
+            }
+            else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (realKey == Key.Down || realKey == Key.S))
+            {
+                foreach (var selectVisual in SelectVisuals)
+                {
+                    var OldRect = selectVisual.GetRect();
+                    Rect rect = new Rect(OldRect.X, OldRect.Y + 2, OldRect.Width, OldRect.Height);
+                    selectVisual.SetRect(rect);
+                    Render();
+                }
+                e.Handled = true;
+            }
+            else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (realKey == Key.Add || realKey == Key.I))
+            {
+                foreach (var selectVisual in SelectVisuals)
+                {
+                    var OldRect = selectVisual.GetRect();
+                    Rect rect = new Rect(OldRect.X - 1, OldRect.Y - 1, OldRect.Width + 2, OldRect.Height + 2);
+                    selectVisual.SetRect(rect);
+                    Render();
+                }
+                e.Handled = true;
+            }
+            else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (realKey == Key.Subtract || realKey == Key.O))
+            {
+                foreach (var selectVisual in SelectVisuals)
+                {
+                    var OldRect = selectVisual.GetRect();
+                    Rect rect = new Rect(OldRect.X + 1, OldRect.Y + 1, OldRect.Width - 2, OldRect.Height - 2);
+                    selectVisual.SetRect(rect);
+                    Render();
+                }
+                e.Handled = true;
+            }
+            else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (realKey == Key.Delete))
+            {
+                foreach (var selectVisual in SelectVisuals.Cast<DrawingVisual>())
+                {
+                    DrawCanvas.RemoveVisual(selectVisual);
+                }
+                ClearRender();
+                e.Handled = true;
 
-                    e.Handled = true;
-                }
-                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Add || e.Key == Key.I))
-                {
-                    if (SelectVisuals.Count > 0)
-                    {
-                        foreach (var selectVisual in SelectVisuals)
-                        {
-                            var OldRect = selectVisual.GetRect();
-                            Rect rect = new Rect(OldRect.X - 1, OldRect.Y - 1, OldRect.Width + 2, OldRect.Height + 2);
-                            selectVisual.SetRect(rect);
-                            Render();
-                        }
-                    }
-                    e.Handled = true;
-                }
-                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Subtract || e.Key == Key.O))
-                {
-                    if (SelectVisuals.Count > 0)
-                    {
-                        foreach (var selectVisual in SelectVisuals)
-                        {
-                            var OldRect = selectVisual.GetRect();
-                            Rect rect = new Rect(OldRect.X + 1, OldRect.Y + 1, OldRect.Width - 2, OldRect.Height - 2);
-                            selectVisual.SetRect(rect);
-                            Render();
-                        }
-                    }
-                    e.Handled = true;
-                }
-                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Delete))
-                {
-
-                    foreach (var selectVisual in SelectVisuals.Cast<DrawingVisual>())
-                    {
-                        DrawCanvas.RemoveVisual(selectVisual);
-                    }
-                    ClearRender();
-                    e.Handled = true;
-
-                }
             }
         }
 
