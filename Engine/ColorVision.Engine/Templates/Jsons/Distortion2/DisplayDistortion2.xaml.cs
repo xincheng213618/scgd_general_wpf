@@ -39,7 +39,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择畸变模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxTemplate, "请先选择畸变模板")) return;
 
             if (ComboxTemplate.SelectedValue is not TemplateJsonParam param) return;
 

@@ -130,8 +130,8 @@ namespace ColorVision.Engine.Templates.MTF
         }
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxMTFTemplate, "请先选择MTF模板")) return;
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxPoiTemplate2, "请先选择关注点模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxMTFTemplate, "请先选择MTF模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxPoiTemplate2, "请先选择关注点模板")) return;
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
                 string type = string.Empty;

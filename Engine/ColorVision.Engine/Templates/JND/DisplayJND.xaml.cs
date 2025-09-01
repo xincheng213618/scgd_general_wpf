@@ -43,7 +43,7 @@ namespace ColorVision.Engine.Templates.JND
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择JND模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxTemplate, "请先选择JND模板")) return;
 
             if (ComboxTemplate.SelectedValue is not JNDParam param) return;
 

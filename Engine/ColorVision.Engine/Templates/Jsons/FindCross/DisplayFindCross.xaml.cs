@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择FindCross模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxTemplate, "请先选择FindCross模板")) return;
 
             if (ComboxTemplate.SelectedValue is not TemplateJsonParam param) return;
 

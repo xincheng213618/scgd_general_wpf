@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择LEDStripDetection模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxTemplate, "请先选择LEDStripDetection模板")) return;
 
             if (ComboxTemplate.SelectedValue is not LEDStripDetectionParam param) return;
 

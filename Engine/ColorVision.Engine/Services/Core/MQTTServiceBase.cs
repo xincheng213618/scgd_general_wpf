@@ -21,6 +21,7 @@ namespace ColorVision.Engine.Services
         internal static readonly ILog log = LogManager.GetLogger(typeof(MQTTServiceBase));
         public MQTTControl MQTTControl { get; set; }
 
+        public MsgRecordManager MsgRecordManager { get; set; }
         public virtual DeviceStatusType DeviceStatus { get; set; }
         public event EventHandler Connected;
         public event EventHandler DisConnected;
@@ -38,6 +39,7 @@ namespace ColorVision.Engine.Services
             };
             _heartbeatTimer.Elapsed += Timer_Elapsed;
             _heartbeatTimer.Start();
+            MsgRecordManager = MsgRecordManager.GetInstance();
         }
 
         public void SubscribeCache() => MQTTControl.SubscribeCache(SubscribeTopic);
@@ -196,7 +198,7 @@ namespace ColorVision.Engine.Services
             {
                 lock (_locker)
                 {
-                    MsgConfig.Instance.MsgRecords.Insert(0, msgRecord);
+                    MsgRecordManager.Insertable(msgRecord);
                     _msgRecords.Add(msgRecord);
                 }
             }));

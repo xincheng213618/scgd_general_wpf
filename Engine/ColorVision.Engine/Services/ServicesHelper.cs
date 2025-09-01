@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
+using ColorVision.Themes.Controls;
 using System;
 using System.Globalization;
 using System.Threading.Tasks;
@@ -12,6 +13,15 @@ namespace ColorVision.Engine.Services
 
     internal static partial class ServicesHelper
     {
+        public static bool IsTemplateSelected(ComboBox comboBox, string errorMessage)
+        {
+            if (comboBox.SelectedIndex == -1)
+            {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), errorMessage, "ColorVision");
+                return false;
+            }
+            return true;
+        }
 
         public static async void SelectAndFocusFirstNode(TreeView treeView)
         {

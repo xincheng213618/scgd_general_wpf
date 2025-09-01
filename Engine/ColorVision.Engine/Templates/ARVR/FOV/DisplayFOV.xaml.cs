@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Templates.FOV
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxFOVTemplate, "请先选择FOV模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxFOVTemplate, "请先选择FOV模板")) return;
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {

@@ -117,7 +117,7 @@ namespace ColorVision.Engine.Templates.ImageCropping
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择发光区裁剪模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxTemplate, "请先选择发光区裁剪模板")) return;
             if (ComboxTemplate.SelectedValue is not ImageCroppingParam param) return;
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))

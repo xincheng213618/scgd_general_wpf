@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Templates.FindLightArea
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择发光区检测模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxTemplate, "请先选择发光区检测模板")) return;
 
             if (ComboxTemplate.SelectedValue is not RoiParam param) return;
 
