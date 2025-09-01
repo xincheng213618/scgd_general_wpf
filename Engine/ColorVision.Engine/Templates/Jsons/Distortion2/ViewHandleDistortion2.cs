@@ -103,12 +103,14 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
                     {
                         foreach (var points in item.DistortionReslut.TVDistortion.FinalPoints)
                         {
-                            DVCircle Circle = new();
-                            Circle.Attribute.Center = new System.Windows.Point(points.X, points.Y);
-                            Circle.Attribute.Radius = 20 / view.ImageView.Zoombox1.ContentMatrix.M11;
-                            Circle.Attribute.Brush = Brushes.Transparent;
-                            Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / view.ImageView.Zoombox1.ContentMatrix.M11);
-                            Circle.Attribute.Id = -1;
+                            CircleProperties circleProperties = new CircleProperties();
+                            circleProperties.Center = new System.Windows.Point(points.X, points.Y);
+                            circleProperties.Radius = 20 / view.ImageView.Zoombox1.ContentMatrix.M11;
+                            circleProperties.Brush = Brushes.Transparent;
+                            circleProperties.Pen = new Pen(Brushes.Red, 1 / view.ImageView.Zoombox1.ContentMatrix.M11);
+                            circleProperties.Id = -1;
+
+                            DVCircle Circle = new DVCircle(circleProperties);
                             Circle.Render();
                             view.ImageView.AddVisual(Circle);
                         }

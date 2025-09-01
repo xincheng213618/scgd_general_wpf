@@ -69,25 +69,29 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                     switch (item.PointType)
                     {
                         case POIPointTypes.Circle:
-                            DVCircleText Circle = new DVCircleText();
-                            Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
-                            Circle.Attribute.Radius = item.Radius;
-                            Circle.Attribute.Brush = Brushes.Transparent;
-                            Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                            Circle.Attribute.Id = item.Id ?? -1;
-                            Circle.Attribute.Text = item.Name;
-                            Circle.Attribute.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                            CircleTextProperties circleTextProperties = new CircleTextProperties();
+                            circleTextProperties.Center = new Point(item.PixelX, item.PixelY);
+                            circleTextProperties.Radius = item.Radius;
+                            circleTextProperties.Brush = Brushes.Transparent;
+                            circleTextProperties.Pen = new Pen(Brushes.Red, 1);
+                            circleTextProperties.Id = item.Id ?? -1;
+                            circleTextProperties.Text = item.Name;
+                            circleTextProperties.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+
+                            DVCircleText Circle = new DVCircleText(circleTextProperties);
                             Circle.Render();
                             view.ImageView.AddVisual(Circle);
                             break;
                         case POIPointTypes.Rect:
-                            DVRectangleText Rectangle = new DVRectangleText();
-                            Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
-                            Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                            Rectangle.Attribute.Id = item.Id ?? -1;
-                            Rectangle.Attribute.Text = item.Name;
-                            Rectangle.Attribute.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                            RectangleTextProperties rectangleTextProperties = new RectangleTextProperties();
+                            rectangleTextProperties.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
+                            rectangleTextProperties.Brush = Brushes.Transparent;
+                            rectangleTextProperties.Pen = new Pen(Brushes.Red, 1);
+                            rectangleTextProperties.Id = item.Id ?? -1;
+                            rectangleTextProperties.Text = item.Name;
+                            rectangleTextProperties.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+
+                            DVRectangleText Rectangle = new DVRectangleText(rectangleTextProperties);
                             Rectangle.Render();
                             view.ImageView.AddVisual(Rectangle);
                             break;

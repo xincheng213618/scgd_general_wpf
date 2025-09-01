@@ -852,29 +852,32 @@ namespace ProjectKB
                         {
                             foreach (var item in kBItem.Items)
                             {
-                                DVRectangle Rectangle = new();
-                                Rectangle.Attribute.Rect = new Rect(item.KBKeyRect.X, item.KBKeyRect.Y, item.KBKeyRect.Width, item.KBKeyRect.Height);
+                                RectangleProperties rectangleProperties = new RectangleProperties();
+                                rectangleProperties.Rect = new Rect(item.KBKeyRect.X, item.KBKeyRect.Y, item.KBKeyRect.Width, item.KBKeyRect.Height);
 
                                 if (item.Result == false)
                                 {
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, 10);
+                                    rectangleProperties.Pen = new Pen(Brushes.Red, 10);
                                 }
                                 else if (item.Name == DrakestKey)
                                 {
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Violet, 10);
+                                    rectangleProperties.Pen = new Pen(Brushes.Violet, 10);
                                 }
                                 else if (item.Name == BrightestKey)
                                 {
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.White, 10);
+                                    rectangleProperties.Pen = new Pen(Brushes.White, 10);
                                 }
                                 else
                                 {
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Gray, 5);
+                                    rectangleProperties.Pen = new Pen(Brushes.Gray, 5);
                                 }
 
-                                Rectangle.Attribute.Brush = Brushes.Transparent;
-                                Rectangle.Attribute.Name = item.Name;
-                                Rectangle.Attribute.Id = -1;
+                                rectangleProperties.Brush = Brushes.Transparent;
+                                rectangleProperties.Name = item.Name;
+                                rectangleProperties.Id = -1;
+
+                                DVRectangle Rectangle = new DVRectangle(rectangleProperties);
+
                                 Rectangle.Render();
                                 ImageView.AddVisual(Rectangle);
                             }

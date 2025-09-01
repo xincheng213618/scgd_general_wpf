@@ -15,6 +15,13 @@ namespace ColorVision.ImageEditor.Draw
             Attribute = new RectangleProperties();
             Attribute.PropertyChanged += (s, e) => Render();
         }
+        public DVRectangle(RectangleProperties rectangleProperties)
+        {
+            Attribute = rectangleProperties;
+            Attribute.PropertyChanged += (s, e) => Render();
+        }
+
+
         private TextAttribute TextAttribute = new();
 
         public override void Render()
