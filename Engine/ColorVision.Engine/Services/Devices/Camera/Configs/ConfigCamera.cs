@@ -51,6 +51,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public float Gain { get => _Gain; set { _Gain = value; OnPropertyChanged(); } }
         private float _Gain = 10;
 
+        public float GainMin { get => _GainMin; set { _GainMin = value; OnPropertyChanged(); } }
+        private float _GainMin = 10;
+
+        public float GainMax { get => _GainMax; set { _GainMax = value; OnPropertyChanged(); } }
+        private float _GainMax = 10;
+
+
         public double ScaleFactor { get => _ScaleFactor;set { _ScaleFactor = value; OnPropertyChanged(); } }
         private double _ScaleFactor = 1.0;
 

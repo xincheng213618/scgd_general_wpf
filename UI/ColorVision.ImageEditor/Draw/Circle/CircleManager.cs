@@ -99,13 +99,15 @@ namespace ColorVision.ImageEditor.Draw
 
             if (DrawCircleCache != null) return;
 
-            DVCircleText dVCircle = new DVCircleText();
+            CircleTextProperties circleTextProperties = new CircleTextProperties();
             int did = CheckNo();
-            dVCircle.Attribute.Id = did;
-            dVCircle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-            dVCircle.Attribute.Center = MouseDownP;
-            dVCircle.Attribute.Radius = DefalutRadius;
-            dVCircle.Attribute.Text = "Point_" + did;
+            circleTextProperties.Id = did;
+            circleTextProperties.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+            circleTextProperties.Center = MouseDownP;
+            circleTextProperties.Radius = DefalutRadius;
+            circleTextProperties.Text = "Point_" + did;
+            DVCircleText dVCircle = new DVCircleText(circleTextProperties);
+
             DrawCircleCache = dVCircle;
 
 

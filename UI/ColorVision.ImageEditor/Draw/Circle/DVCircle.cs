@@ -17,6 +17,13 @@ namespace ColorVision.ImageEditor.Draw
             Attribute.PropertyChanged += (s, e) => Render();
         }
 
+        public DVCircle(CircleProperties attribute)
+        {
+            Attribute = attribute;
+            Attribute.PropertyChanged += (s, e) => Render();
+        }
+
+
         private TextAttribute TextAttribute = new();
 
         public bool IsDrawing { get; set; }

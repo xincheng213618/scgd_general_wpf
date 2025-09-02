@@ -307,33 +307,39 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 switch (item.PointType)
                 {
                     case POIPointTypes.Circle:
-                        DVCircleText Circle = new();
-                        Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
-                        Circle.Attribute.Radius = item.Radius;
-                        Circle.Attribute.Brush = Brushes.Transparent;
-                        Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                        Circle.Attribute.Id = item.Id ?? -1;
-                        Circle.Attribute.Text = item.Name;
+                        CircleTextProperties circleTextProperties = new CircleTextProperties();
+                        circleTextProperties.Center = new Point(item.PixelX, item.PixelY);
+                        circleTextProperties.Radius = item.Radius;
+                        circleTextProperties.Brush = Brushes.Transparent;
+                        circleTextProperties.Pen = new Pen(Brushes.Red, 1);
+                        circleTextProperties.Id = item.Id ?? -1;
+                        circleTextProperties.Text = item.Name;
+
+                        DVCircleText Circle = new DVCircleText(circleTextProperties);
                         Circle.Render();
                         ImageView.AddVisual(Circle);
                         break;
                     case POIPointTypes.Rect:
-                        DVRectangleText Rectangle = new();
-                        Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
-                        Rectangle.Attribute.Brush = Brushes.Transparent;
-                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                        Rectangle.Attribute.Id = item.Id ?? -1;
-                        Rectangle.Attribute.Text = item.Name;
+                        RectangleTextProperties rectangleTextProperties = new RectangleTextProperties();
+                        rectangleTextProperties.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
+                        rectangleTextProperties.Brush = Brushes.Transparent;
+                        rectangleTextProperties.Pen = new Pen(Brushes.Red, 1);
+                        rectangleTextProperties.Id = item.Id ?? -1;
+                        rectangleTextProperties.Text = item.Name;
+
+                        DVRectangleText Rectangle = new DVRectangleText(rectangleTextProperties);
                         Rectangle.Render();
                         ImageView.AddVisual(Rectangle);
                         break;
                     case POIPointTypes.SolidPoint:
-                        DVCircle Circle1 = new();
-                        Circle1.Attribute.Center = new Point(item.PixelX, item.PixelY);
-                        Circle1.Attribute.Radius = 10;
-                        Circle1.Attribute.Brush = Brushes.Red;
-                        Circle1.Attribute.Pen = new Pen(Brushes.Red, 1);
-                        Circle1.Attribute.Id = item.Id ?? -1;
+                        CircleProperties circleProperties = new CircleProperties();
+                        circleProperties.Center = new Point(item.PixelX, item.PixelY);
+                        circleProperties.Radius = 10;
+                        circleProperties.Brush = Brushes.Red;
+                        circleProperties.Pen = new Pen(Brushes.Red, 1);
+                        circleProperties.Id = item.Id ?? -1;
+
+                        DVCircle Circle1 = new DVCircle(circleProperties);
                         Circle1.Render();
                         ImageView.AddVisual(Circle1);
                         break;

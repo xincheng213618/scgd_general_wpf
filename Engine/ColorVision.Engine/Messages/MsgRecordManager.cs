@@ -62,7 +62,6 @@ namespace ColorVision.Engine.Messages
             });
             // 确保表存在
             _db.CodeFirst.InitTables<MsgRecord>();
-            LoadAll(Config.Count);
         }
 
         public void EditConfig()

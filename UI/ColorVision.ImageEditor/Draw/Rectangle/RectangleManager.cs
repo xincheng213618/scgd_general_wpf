@@ -89,13 +89,14 @@ namespace ColorVision.ImageEditor.Draw
             {
                 ImageViewModel.SelectEditorVisual.ClearRender();
             }
-            DrawingRectangleCache = new DVRectangleText();
             int did = CheckNo();
-            DrawingRectangleCache.Attribute.Id = did;
-            DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + DefalutWidth, MouseDownP.Y + DefalutHeight));
-            DrawingRectangleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-            DrawingRectangleCache.Attribute.Text = "Point_" + did;
 
+            RectangleTextProperties rectangleTextProperties = new RectangleTextProperties();
+            rectangleTextProperties.Id = did;
+            rectangleTextProperties.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + DefalutWidth, MouseDownP.Y + DefalutHeight));
+            rectangleTextProperties.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+            rectangleTextProperties.Text = "Point_" + did;
+            DrawingRectangleCache = new DVRectangleText(rectangleTextProperties);
             DrawCanvas.AddVisual(DrawingRectangleCache);
 
             e.Handled = true;

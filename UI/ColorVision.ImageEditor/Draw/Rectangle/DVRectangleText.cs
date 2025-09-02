@@ -41,10 +41,17 @@ namespace ColorVision.ImageEditor.Draw
 
         public Rect Rect { get => Attribute.Rect; set => Attribute.Rect = value; }
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
+
         public DVRectangleText()
         {
             Attribute = new RectangleTextProperties();
             Attribute.PropertyChanged += (s, e) => Render(); 
+        }
+
+        public DVRectangleText(RectangleTextProperties rectangleTextProperties)
+        {
+            Attribute = rectangleTextProperties;
+            Attribute.PropertyChanged += (s, e) => Render();
         }
 
         public override void Render()

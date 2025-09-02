@@ -51,6 +51,14 @@ namespace ColorVision.ImageEditor.Draw
             Attribute.PropertyChanged += (s, e) => Render();
         }
 
+        public DVCircleText(CircleTextProperties circleTextProperties)
+        {
+            Attribute = circleTextProperties;
+            Attribute.PropertyChanged += (s, e) => Render();
+        }
+
+
+
         public override void Render()
         {
             using DrawingContext dc = RenderOpen();

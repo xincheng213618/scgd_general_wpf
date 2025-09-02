@@ -6,11 +6,13 @@ using ColorVision.UI.Extension;
 using ColorVision.Util.Draw.Rectangle;
 using Gu.Wpf.Geometry;
 using Newtonsoft.Json;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -338,6 +340,7 @@ namespace ColorVision.ImageEditor
                         double x1 = PoiConfig.CenterX + PoiConfig.AreaCircleRadius * Math.Cos(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
                         double y1 = PoiConfig.CenterY + PoiConfig.AreaCircleRadius * Math.Sin(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
 
+                        int did = start + i + 1; ;
                         switch (PoiConfig.DefaultPointType)
                         {
                             case GraphicTypes.Circle:
@@ -363,15 +366,16 @@ namespace ColorVision.ImageEditor
                                     }
                                 }
 
+                                CircleTextProperties circleTextProperties = new CircleTextProperties();
+                                circleTextProperties.Center = new Point(x1, y1);
+                                circleTextProperties.Radius = PoiConfig.DefaultCircleRadius;
+                                circleTextProperties.Brush = Brushes.Transparent;
+                                circleTextProperties.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultCircleRadius / 30);
+                                circleTextProperties.Id = did;
+                                circleTextProperties.Name = did.ToString();
+                                circleTextProperties.Text = string.Format("{0}{1}", TagName, did.ToString());
+                                DVCircleText Circle = new DVCircleText(circleTextProperties);
 
-                                DVCircleText Circle = new();
-                                Circle.Attribute.Center = new Point(x1, y1);
-                                Circle.Attribute.Radius = PoiConfig.DefaultCircleRadius;
-                                Circle.Attribute.Brush = Brushes.Transparent;
-                                Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultCircleRadius / 30);
-                                Circle.Attribute.Id = start + i + 1;
-                                Circle.Attribute.Name = Circle.Attribute.Id.ToString();
-                                Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Name);
                                 Circle.Render();
                                 ImageShow.AddVisual(Circle);
                                 break;
@@ -397,14 +401,15 @@ namespace ColorVision.ImageEditor
                                             break;
                                     }
                                 }
-
-                                DVRectangleText Rectangle = new();
-                                Rectangle.Attribute.Rect = new System.Windows.Rect(x1 - PoiConfig.DefaultRectWidth / 2, y1 - PoiConfig.DefaultRectHeight / 2, PoiConfig.DefaultRectWidth, PoiConfig.DefaultRectHeight);
-                                Rectangle.Attribute.Brush = Brushes.Transparent;
-                                Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultRectWidth / 30);
-                                Rectangle.Attribute.Id = start + i + 1;
-                                Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
-                                Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
+                                RectangleTextProperties rectangleTextProperties = new RectangleTextProperties();
+                                rectangleTextProperties.Rect = new System.Windows.Rect(x1 - PoiConfig.DefaultRectWidth / 2, y1 - PoiConfig.DefaultRectHeight / 2, PoiConfig.DefaultRectWidth, PoiConfig.DefaultRectHeight);
+                                rectangleTextProperties.Brush = Brushes.Transparent;
+                                rectangleTextProperties.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultRectWidth / 30);
+                                rectangleTextProperties.Id = did;
+                                rectangleTextProperties.Name = did.ToString();
+                                rectangleTextProperties.Text = string.Format("{0}{1}", TagName, did.ToString());
+                                DVRectangleText Rectangle = new DVRectangleText(rectangleTextProperties);
+       
                                 Rectangle.Render();
                                 ImageShow.AddVisual(Rectangle);
                                 break;
@@ -502,31 +507,36 @@ namespace ColorVision.ImageEditor
 
                             double x1 = startL + StepCol * j;
                             double y1 = startU + StepRow * i;
-
+                            int did = start + i * cols + j + 1;
                             switch (PoiConfig.DefaultPointType)
                             {
                                 case GraphicTypes.Circle:
-                                    DVCircleText Circle = new();
+                                    CircleTextProperties circleTextProperties = new CircleTextProperties();
+                                    circleTextProperties.Center = new Point(x1, y1);
+                                    circleTextProperties.Radius = PoiConfig.DefaultCircleRadius;
+                                    circleTextProperties.Brush = Brushes.Transparent;
+                                    circleTextProperties.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultCircleRadius / 30);
+                                    circleTextProperties.Id = did;
+                                    circleTextProperties.Name = did.ToString();
+                                    circleTextProperties.Text = string.Format("{0}{1}", TagName, did.ToString());
+
+                                    DVCircleText Circle = new DVCircleText(circleTextProperties);
                                     Circle.IsShowText = PoiConfig.IsShowText;
-                                    Circle.Attribute.Center = new Point(x1, y1);
-                                    Circle.Attribute.Radius = PoiConfig.DefaultCircleRadius;
-                                    Circle.Attribute.Brush = Brushes.Transparent;
-                                    Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultCircleRadius / 30);
-                                    Circle.Attribute.Id = start + i * cols + j + 1;
-                                    Circle.Attribute.Name = Circle.Attribute.Id.ToString();
-                                    Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Name);
+
                                     Circle.Render();
                                     ImageShow.AddVisual(Circle);
                                     break;
                                 case GraphicTypes.Rect:
-                                    DVRectangleText Rectangle = new();
+
+                                    RectangleTextProperties rectangleTextProperties = new RectangleTextProperties();
+                                    rectangleTextProperties.Rect = new System.Windows.Rect(x1 - (double)PoiConfig.DefaultRectWidth / 2, y1 - PoiConfig.DefaultRectHeight / 2, PoiConfig.DefaultRectWidth, PoiConfig.DefaultRectHeight);
+                                    rectangleTextProperties.Brush = Brushes.Transparent;
+                                    rectangleTextProperties.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultRectWidth / 30);
+                                    rectangleTextProperties.Id = did;
+                                    rectangleTextProperties.Name = did.ToString();
+                                    rectangleTextProperties.Text = string.Format("{0}{1}", TagName, did.ToString());
+                                    DVRectangleText Rectangle = new DVRectangleText(rectangleTextProperties);
                                     Rectangle.IsShowText = PoiConfig.IsShowText;
-                                    Rectangle.Attribute.Rect = new System.Windows.Rect(x1 - (double)PoiConfig.DefaultRectWidth / 2, y1 - PoiConfig.DefaultRectHeight / 2, PoiConfig.DefaultRectWidth, PoiConfig.DefaultRectHeight);
-                                    Rectangle.Attribute.Brush = Brushes.Transparent;
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultRectWidth / 30);
-                                    Rectangle.Attribute.Id = start + i * cols + j + 1;
-                                    Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
-                                    Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
                                     Rectangle.Render();
                                     ImageShow.AddVisual(Rectangle);
                                     break;
@@ -573,28 +583,32 @@ namespace ColorVision.ImageEditor
 
                             Point point = new(x, y);
 
+                            int did = start + i * cols + j + 1;
                             switch (PoiConfig.DefaultPointType)
                             {
                                 case GraphicTypes.Circle:
-                                    DVCircleText Circle = new();
-                                    Circle.Attribute.Center = new Point(point.X, point.Y);
-                                    Circle.Attribute.Radius = PoiConfig.DefaultCircleRadius;
-                                    Circle.Attribute.Brush = Brushes.Transparent;
-                                    Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultCircleRadius / 30);
-                                    Circle.Attribute.Id = start + i * cols + j + 1;
-                                    Circle.Attribute.Name = Circle.Attribute.Id.ToString();
-                                    Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Name);
+                                    CircleTextProperties circleTextProperties = new CircleTextProperties();
+                                    circleTextProperties.Center = new Point(point.X, point.Y);
+                                    circleTextProperties.Radius = PoiConfig.DefaultCircleRadius;
+                                    circleTextProperties.Brush = Brushes.Transparent;
+                                    circleTextProperties.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultCircleRadius / 30);
+                                    circleTextProperties.Id = did;
+                                    circleTextProperties.Name = did.ToString();
+                                    circleTextProperties.Text = string.Format("{0}{1}", TagName, did.ToString());
+                                    DVCircleText Circle = new DVCircleText(circleTextProperties);
                                     Circle.Render();
                                     ImageShow.AddVisual(Circle);
                                     break;
                                 case GraphicTypes.Rect:
-                                    DVRectangleText Rectangle = new();
-                                    Rectangle.Attribute.Rect = new System.Windows.Rect(point.X - PoiConfig.DefaultRectWidth / 2, point.Y - PoiConfig.DefaultRectHeight / 2, PoiConfig.DefaultRectWidth, PoiConfig.DefaultRectHeight);
-                                    Rectangle.Attribute.Brush = Brushes.Transparent;
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultRectWidth / 30);
-                                    Rectangle.Attribute.Id = start + i * cols + j + 1;
-                                    Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
-                                    Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
+                                    RectangleTextProperties rectangleTextProperties = new RectangleTextProperties();
+                                    rectangleTextProperties.Rect = new System.Windows.Rect(point.X - PoiConfig.DefaultRectWidth / 2, point.Y - PoiConfig.DefaultRectHeight / 2, PoiConfig.DefaultRectWidth, PoiConfig.DefaultRectHeight);
+                                    rectangleTextProperties.Brush = Brushes.Transparent;
+                                    rectangleTextProperties.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultRectWidth / 30);
+                                    rectangleTextProperties.Id = did;
+                                    rectangleTextProperties.Name = did.ToString();
+                                    rectangleTextProperties.Text = string.Format("{0}{1}", TagName, did.ToString());
+                                    DVRectangleText Rectangle = new DVRectangleText(rectangleTextProperties);
+
                                     Rectangle.Render();
                                     ImageShow.AddVisual(Rectangle);
                                     break;

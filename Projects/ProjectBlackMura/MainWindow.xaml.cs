@@ -728,18 +728,19 @@ namespace ProjectBlackMura
                 switch (item.POIPoint.PointType)
                 {
                     case POIPointTypes.Circle:
-                        DVCircleText Circle = new();
-                        Circle.Attribute.Center = new Point(item.POIPoint.PixelX, item.POIPoint.PixelY);
-                        Circle.Attribute.Radius = item.POIPoint.Radius;
-                        Circle.Attribute.Brush = Brushes.Transparent;
-                        Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                        Circle.Attribute.Id = item.Id;
-                        Circle.Attribute.Text = item.Name;
+                        CircleTextProperties circleTextProperties = new CircleTextProperties();
+                        circleTextProperties.Center = new Point(item.POIPoint.PixelX, item.POIPoint.PixelY);
+                        circleTextProperties.Radius = item.POIPoint.Radius;
+                        circleTextProperties.Brush = Brushes.Transparent;
+                        circleTextProperties.Pen = new Pen(Brushes.Red, 1);
+                        circleTextProperties.Id = item.Id;
+                        circleTextProperties.Text = item.Name;
+                        DVCircleText Circle = new DVCircleText(circleTextProperties);
                         Circle.Render();
                         ImageView.AddVisual(Circle);
                         break;
                     case POIPointTypes.Rect:
-                        DVRectangleText Rectangle = new();
+                        DVRectangleText Rectangle = new DVRectangleText();
                         Rectangle.Attribute.Rect = new Rect(item.POIPoint.PixelX - item.POIPoint.Width / 2, item.POIPoint.PixelY - item.POIPoint.Height / 2, item.POIPoint.Width, item.POIPoint.Height);
                         Rectangle.Attribute.Brush = Brushes.Transparent;
                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
