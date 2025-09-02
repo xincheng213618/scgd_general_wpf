@@ -318,6 +318,7 @@ namespace ProjectARVR
 
         public bool FlowWhiteTestReslut { get; set; } = false;
         public bool FlowWhite1TestReslut { get; set; } = false;
+        public bool FlowWhite2TestReslut { get; set; } = false;
 
         public bool FlowBlackTestReslut { get; set; } = false;
         public bool FlowChessboardTestReslut { get; set; } = false;
