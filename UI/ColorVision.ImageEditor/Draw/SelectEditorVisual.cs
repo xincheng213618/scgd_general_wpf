@@ -1,9 +1,7 @@
 ﻿#pragma warning disable CS8625,CS8602,CS8607,CS0103,CS0067
 using ColorVision.Common.Utilities;
-using Gu.Wpf.Geometry;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
@@ -30,14 +28,11 @@ namespace ColorVision.ImageEditor.Draw
         {
             DebounceTimer.AddOrResetTimerDispatcher("SelectEditorVisualRender" + Guid.ToString(), 20, () => Render());
         }
-        public System.Windows.Forms.PropertyGrid PropertyGrid { get; set; }
-
-        public Rect Rect { get => _Rect; set {  _Rect = value; }  }
-        private Rect _Rect;
 
         public List<ISelectVisual> SelectVisuals { get; set; } = new List<ISelectVisual>();
 
-        public bool IsEditor { get; set; }
+        public bool Contains(Point point)=> SelectVisuals.Any(v => v.GetRect().Contains(point));
+
         public class CacheClass
         {
             public Rect OldRect { get; set; }
@@ -45,10 +40,7 @@ namespace ColorVision.ImageEditor.Draw
             public Point FixedPoint { get; set; }
             public Point FixedPoint1 { get; set; }
         }
-
-
         public Dictionary<ISelectVisual, CacheClass> Cache { get; set; } = new Dictionary<ISelectVisual, CacheClass>();
-
 
         public bool GetContainingRect(Point point)
         {
@@ -141,6 +133,7 @@ namespace ColorVision.ImageEditor.Draw
                 return false;
 
             }
+
             Cache.Clear();
             foreach (var item in SelectVisuals)
             {
@@ -153,33 +146,27 @@ namespace ColorVision.ImageEditor.Draw
         }
         public void ClearRender()
         {
-            SelectVisuals.Clear();
-            DrawCanvas.PreviewKeyDown -= PreviewKeyDown;
-            ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
-            if (PropertyGrid.SelectedObject is IDrawingVisual drawingVisualold)
-                drawingVisualold.BaseAttribute.PropertyChanged -= Attribute_PropertyGrid2;
-
+            Clear();
             Render();
         }
-
-        public void SetRender<T>(T selectVisual)  where T :ISelectVisual
+        private void Clear()
         {
             SelectVisuals.Clear();
             DrawCanvas.PreviewKeyDown -= PreviewKeyDown;
             ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
-            if (PropertyGrid.SelectedObject is IDrawingVisual drawingVisualold)
-                drawingVisualold.BaseAttribute.PropertyChanged -= Attribute_PropertyGrid2;
+        }
+
+
+        public void SetRender<T>(T selectVisual)  where T :ISelectVisual
+        {
+            Clear();
 
             if (selectVisual != null)
             {
                 SelectVisuals.Add(selectVisual);
                 if (SelectVisuals.Count == 1)
                 {
-                    if (PropertyGrid != null && SelectVisuals[0] is IDrawingVisual drawingVisualBase)
-                    {
-                        PropertyGrid.SelectedObject = drawingVisualBase.BaseAttribute;
-                        drawingVisualBase.BaseAttribute.PropertyChanged += Attribute_PropertyGrid2;
-                    }
+                    SelectVisualChanged?.Invoke(this, SelectVisuals[0]);
                 }
                 DrawCanvas.Focus();
                 DrawCanvas.PreviewKeyDown += PreviewKeyDown;
@@ -187,14 +174,11 @@ namespace ColorVision.ImageEditor.Draw
             }
             Render();
         }
+        public event EventHandler<ISelectVisual> SelectVisualChanged;
 
         public void SetRenders<T>(IEnumerable<T> selectVisuals) where T : ISelectVisual
         {
-            SelectVisuals.Clear();
-            DrawCanvas.PreviewKeyDown -= PreviewKeyDown;
-            ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
-            if (PropertyGrid.SelectedObject is IDrawingVisual drawingVisualold)
-                drawingVisualold.BaseAttribute.PropertyChanged -= Attribute_PropertyGrid2;
+            Clear();
 
             if (selectVisuals != null)
             {
@@ -205,11 +189,7 @@ namespace ColorVision.ImageEditor.Draw
 
                 if (SelectVisuals.Count == 1)
                 {
-                    if (PropertyGrid != null && SelectVisuals[0] is IDrawingVisual drawingVisualBase)
-                    {
-                        PropertyGrid.SelectedObject = drawingVisualBase.BaseAttribute;
-                        drawingVisualBase.BaseAttribute.PropertyChanged += Attribute_PropertyGrid2;
-                    }
+                    SelectVisualChanged?.Invoke(this, SelectVisuals[0]);
                 }
 
                 DrawCanvas.PreviewKeyDown += PreviewKeyDown;
@@ -218,11 +198,6 @@ namespace ColorVision.ImageEditor.Draw
             }
 
             Render();
-        }
-
-        private void Attribute_PropertyGrid2(object? sender, PropertyChangedEventArgs e)
-        {
-            PropertyGrid.Refresh();
         }
 
 
@@ -398,11 +373,10 @@ namespace ColorVision.ImageEditor.Draw
 
         public void Dispose()
         {
-            PropertyGrid?.Dispose();
             DrawCanvas?.RemoveVisual(this, false);
             if (ZoomboxSub != null)
                 ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
-
+            SelectVisualChanged = null;
             GC.SuppressFinalize(this);
         }
     }

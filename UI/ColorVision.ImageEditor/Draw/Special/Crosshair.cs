@@ -13,16 +13,13 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         public DrawingVisual DrawVisualImage { get; set; }
 
-        public DrawingVisual DrawingVisualImage1 { get; set; }
-
         public Crosshair(ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
             DrawCanvas = drawCanvas;
             DrawVisualImage = new DrawingVisual();
-            DrawingVisualImage1 = new DrawingVisual();
         }
-
+        private bool _IsShow;
         public bool IsShow
         {
             get => _IsShow; set
@@ -32,19 +29,43 @@ namespace ColorVision.ImageEditor.Draw.Special
                 DrawVisualImageControl(value);
                 if (value)
                 {
-                    DrawCanvas.MouseMove += MouseMove;
-                    DrawCanvas.MouseEnter += MouseEnter;
-                    DrawCanvas.MouseLeave += MouseLeave;
+                    Load();
                 }
                 else
                 {
-                    DrawCanvas.MouseMove -= MouseMove;
-                    DrawCanvas.MouseEnter -= MouseEnter;
-                    DrawCanvas.MouseLeave -= MouseLeave;
+                    UnLoad();
                 }
             }
         }
-        private bool _IsShow;
+
+        public void Load()
+        {
+            DrawCanvas.MouseMove += MouseMove;
+            DrawCanvas.MouseEnter += MouseEnter;
+            DrawCanvas.MouseLeave += MouseLeave;
+
+        }
+
+        public void UnLoad()
+        {
+            DrawCanvas.MouseMove -= MouseMove;
+            DrawCanvas.MouseEnter -= MouseEnter;
+            DrawCanvas.MouseLeave -= MouseLeave;
+        }
+
+        public void DrawVisualImageControl(bool Control)
+        {
+            if (Control)
+            {
+                if (!DrawCanvas.ContainsVisual(DrawVisualImage))
+                    DrawCanvas.AddVisual(DrawVisualImage);
+            }
+            else
+            {
+                if (DrawCanvas.ContainsVisual(DrawVisualImage))
+                    DrawCanvas.RemoveVisual(DrawVisualImage);
+            }
+        }
 
         public void DrawImage(Point actPoint)
         {
@@ -131,20 +152,8 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         public void MouseEnter(object sender, MouseEventArgs e) => DrawVisualImageControl(true);
 
-        public void MouseLeave(object sender, MouseEventArgs e) => DrawVisualImageControl(true);
+        public void MouseLeave(object sender, MouseEventArgs e) => DrawVisualImageControl(false);
 
-        public void DrawVisualImageControl(bool Control)
-        {
-            if (Control)
-            {
-                if (!DrawCanvas.ContainsVisual(DrawVisualImage))
-                    DrawCanvas.AddVisual(DrawVisualImage);
-            }
-            else
-            {
-                if (DrawCanvas.ContainsVisual(DrawVisualImage))
-                    DrawCanvas.RemoveVisual(DrawVisualImage);
-            }
-        }
+
     }
 }

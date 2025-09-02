@@ -176,6 +176,34 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public CFWPORT CFW { get; set; } = new CFWPORT();
         public FileSeviceConfig FileServerCfg { get => _FileServerCfg; set { _FileServerCfg = value; OnPropertyChanged(); } } 
         private FileSeviceConfig _FileServerCfg = new FileSeviceConfig();
+
+        public CameraParameterLimit CameraParameterLimit { get; set; } = new CameraParameterLimit();
+
+    }
+
+    public class CameraParameterLimit : ViewModelBase
+    {
+        [DisplayName("增益默认值")]
+        public float GainDefault { get => _GainDefault; set { _GainDefault = value; OnPropertyChanged(); } }
+        private float _GainDefault = 10;
+        [DisplayName("增益最小值")]
+        public float GainMin { get => _GainMin; set { _GainMin = value; OnPropertyChanged(); } }
+        private float _GainMin;
+        [DisplayName("增益最大值")]
+        public float GainMax { get => _GainMax; set { _GainMax = value; OnPropertyChanged(); } }
+        private float _GainMax = 100;
+
+        [DisplayName("曝光默认值")]
+        public float ExpDefalut { get => _ExpDefalut; set { _ExpDefalut = value; OnPropertyChanged(); } }
+        private float _ExpDefalut = 100;
+
+        [DisplayName("曝光最小值")]
+        public float ExpMin { get => _ExpMin; set { _ExpMin = value; OnPropertyChanged(); } }
+        private float _ExpMin = 1;
+        [DisplayName("曝光最大值")]
+        public float ExpMax { get => _ExpMax; set { _ExpMax = value; OnPropertyChanged(); } }
+        private float _ExpMax = 60000;
+
     }
 
     public class FileSeviceConfig :ViewModelBase

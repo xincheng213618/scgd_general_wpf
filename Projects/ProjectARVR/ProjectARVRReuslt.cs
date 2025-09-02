@@ -68,8 +68,8 @@ namespace ProjectARVR
         /// <summary>
         /// 白画面
         /// </summary>
-        White,
         White2,
+        White,
         White1,
         /// <summary>
         /// 黑画面

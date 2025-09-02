@@ -135,6 +135,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             TextSerial1.ItemsSource = Serials;
 
             StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.CameraCfg));
+            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.CameraParameterLimit));
             StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.MotorConfig));
             StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg));
 

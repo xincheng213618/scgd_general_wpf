@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using cvColorVision;
@@ -52,10 +53,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         private float _Gain = 10;
 
         public float GainMin { get => _GainMin; set { _GainMin = value; OnPropertyChanged(); } }
-        private float _GainMin = 10;
+        private float _GainMin = 0;
 
         public float GainMax { get => _GainMax; set { _GainMax = value; OnPropertyChanged(); } }
-        private float _GainMax = 10;
+        private float _GainMax = 100;
 
 
         public double ScaleFactor { get => _ScaleFactor;set { _ScaleFactor = value; OnPropertyChanged(); } }

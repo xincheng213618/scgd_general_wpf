@@ -372,7 +372,7 @@ namespace ColorVision.Engine.Templates.POI
                     }
 
 
-                    if (drawCanvas.GetVisual(MouseUpP) is not ISelectVisual dv || !ImageViewModel.SelectEditorVisual.SelectVisuals.Contains(dv))
+                    if (drawCanvas.GetVisual(MouseUpP) is not IDrawingVisual dv || !ImageViewModel.SelectEditorVisual.Contains(MouseUpP))
                         ImageViewModel.SelectEditorVisual.ClearRender();
 
                     if (drawCanvas.ContainsVisual(SelectRect))

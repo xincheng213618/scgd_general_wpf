@@ -104,7 +104,22 @@ namespace ColorVision.ImageEditor
                 }
             }
             ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow,Config);
-            ImageViewModel.SelectEditorVisual.PropertyGrid = PropertyGrid2;
+
+
+
+            ImageViewModel.SelectEditorVisual.SelectVisualChanged += (s, e) => 
+            {
+                if (PropertyGrid2.SelectedObject is IDrawingVisual drawingVisualold)
+                    drawingVisualold.BaseAttribute.PropertyChanged -= BaseAttribute_PropertyChanged;
+
+                if (e is IDrawingVisual drawingVisual)
+                {
+                    PropertyGrid2.SelectedObject = drawingVisual.BaseAttribute;
+                    drawingVisual.BaseAttribute.PropertyChanged += BaseAttribute_PropertyChanged;
+                }
+            };
+
+
             this.DataContext = this;
             AdvancedStackPanel.DataContext = this;
             ToolBarLeft.DataContext = Config;
@@ -138,6 +153,10 @@ namespace ColorVision.ImageEditor
 
         }
 
+        private void BaseAttribute_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            PropertyGrid2.Refresh();
+        }
 
         public void Clear(object? sender, EventArgs e)
         {
@@ -469,15 +488,13 @@ namespace ColorVision.ImageEditor
                     IsMouseDown = false;
                     var MouseUpP = e.GetPosition(drawCanvas);
 
-                    if (drawCanvas.GetVisual(MouseUpP) is not ISelectVisual dv || !ImageViewModel.SelectEditorVisual.SelectVisuals.Contains(dv))
+                    if (drawCanvas.GetVisual(MouseUpP) is not IDrawingVisual dv || !ImageViewModel.SelectEditorVisual.Contains(MouseUpP))
                         ImageViewModel.SelectEditorVisual.ClearRender();
 
                     if (drawCanvas.ContainsVisual(SelectRect))
                     {
                         var List = drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP)));
-
                         ImageViewModel.SelectEditorVisual.SetRenders(List.Cast<ISelectVisual>());
-
                         drawCanvas.RemoveVisual(SelectRect, false);
                     }
 
@@ -1057,19 +1074,7 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        public void Dispose()
-        {
-            Clear();
-            ImageViewModel.ClearImageEventHandler -= Clear;
-            ImageViewModel.Dispose();
-            Zoombox1.LayoutUpdated -= Zoombox1_LayoutUpdated;
-            ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
-            ImageShow.VisualsRemove -= ImageShow_VisualsRemove;
-            PreviewKeyDown -= ImageView_PreviewKeyDown;
-            Drop -= ImageView_Drop;
 
-            GC.SuppressFinalize(this);
-        }
 
         private void PreviewSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
@@ -1304,6 +1309,21 @@ namespace ColorVision.ImageEditor
         {
             GraphicEditingWindow graphicEditingWindow = new GraphicEditingWindow(this) { Owner = Application.Current.GetActiveWindow()};
             graphicEditingWindow.Show();
+        }
+
+        public void Dispose()
+        {
+            Clear();
+            ImageViewModel.ClearImageEventHandler -= Clear;
+            ImageViewModel.Dispose();
+            PropertyGrid2.Dispose();
+            Zoombox1.LayoutUpdated -= Zoombox1_LayoutUpdated;
+            ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
+            ImageShow.VisualsRemove -= ImageShow_VisualsRemove;
+            PreviewKeyDown -= ImageView_PreviewKeyDown;
+            Drop -= ImageView_Drop;
+
+            GC.SuppressFinalize(this);
         }
     }
 }

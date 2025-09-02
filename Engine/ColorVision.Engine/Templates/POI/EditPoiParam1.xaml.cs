@@ -245,7 +245,18 @@ namespace ColorVision.Engine.Templates.POI
             ImageViewModel.CircleManager.IsEnabled = false;
             ImageViewModel.RectangleManager.IsEnabled = false;
             ImageViewModel.ToolBarScaleRuler.IsShow = false;
-            ImageViewModel.SelectEditorVisual.PropertyGrid = PropertyGrid2;
+
+            ImageViewModel.SelectEditorVisual.SelectVisualChanged += (s, e) =>
+            {
+                if (PropertyGrid2.SelectedObject is IDrawingVisual drawingVisualold)
+                    drawingVisualold.BaseAttribute.PropertyChanged -= BaseAttribute_PropertyChanged;
+
+                if (e is IDrawingVisual drawingVisual)
+                {
+                    PropertyGrid2.SelectedObject = drawingVisual.BaseAttribute;
+                    drawingVisual.BaseAttribute.PropertyChanged += BaseAttribute_PropertyChanged; ;
+                }
+            };
 
             ListView1.ItemsSource = DrawingVisualLists;
 
@@ -390,6 +401,11 @@ namespace ColorVision.Engine.Templates.POI
                 EditPoiParam1Config.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
+        }
+
+        private void BaseAttribute_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            PropertyGrid2.Refresh();
         }
 
         private ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
