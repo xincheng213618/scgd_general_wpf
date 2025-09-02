@@ -222,6 +222,8 @@
                         <hc:StepBar Grid.Row="0" StepIndex="{Binding StepIndex}" Margin="-5,3,0,2">
                             <hc:StepBarItem Content="初始化"/>
                             <hc:StepBarItem Content="White"/>
+                            <hc:StepBarItem Content="White2"/>
+                            <hc:StepBarItem Content="White1"/>
                             <hc:StepBarItem Content="Black"/>
                             <hc:StepBarItem Content="Chessboard"/>
                             <hc:StepBarItem Content="MTFH"/>

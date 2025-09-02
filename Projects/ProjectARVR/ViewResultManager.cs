@@ -32,11 +32,6 @@ namespace ProjectARVR
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; OnPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;
 
-        [DisplayName("预切换流程"), Category("View")]
-        public bool PreSwitchFlow { get => _PreSwitchFlow; set { _PreSwitchFlow = value; OnPropertyChanged(); } }
-        private bool _PreSwitchFlow;
-
-
         [DisplayName("Csv保存路径"), PropertyEditorType(PropertyEditorType.TextSelectFolder), Category("ARVR")]
         public string SavePathCsv { get => _SavePathCsv; set { _SavePathCsv = value; OnPropertyChanged(); } }
         private string _SavePathCsv = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");

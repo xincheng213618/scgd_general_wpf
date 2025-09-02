@@ -40,7 +40,6 @@ using log4net;
 using log4net.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Panuon.WPF.UI;
 using ProjectARVRLite;
 using ProjectARVRLite.PluginConfig;
 using ProjectARVRLite.Services;

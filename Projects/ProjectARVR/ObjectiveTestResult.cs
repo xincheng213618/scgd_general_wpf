@@ -30,7 +30,6 @@ using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Org.BouncyCastle.Asn1.Ocsp;
-using Panuon.WPF.UI;
 using ProjectARVR.Services;
 using ST.Library.UI.NodeEditor;
 using System;
@@ -319,6 +318,7 @@ namespace ProjectARVR
 
         public bool FlowWhiteTestReslut { get; set; } = false;
         public bool FlowWhite1TestReslut { get; set; } = false;
+        public bool FlowWhite2TestReslut { get; set; } = false;
 
         public bool FlowBlackTestReslut { get; set; } = false;
         public bool FlowChessboardTestReslut { get; set; } = false;
