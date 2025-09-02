@@ -245,7 +245,7 @@ namespace ColorVision.Engine.Templates.POI
             ImageViewModel.CircleManager.IsEnabled = false;
             ImageViewModel.RectangleManager.IsEnabled = false;
             ImageViewModel.ToolBarScaleRuler.IsShow = false;
-            ImageViewModel.PropertyGrid = PropertyGrid2;
+            ImageViewModel.SelectEditorVisual.PropertyGrid = PropertyGrid2;
 
             ListView1.ItemsSource = DrawingVisualLists;
 

@@ -28,9 +28,6 @@ namespace ColorVision.ImageEditor.Draw
     }
 
 
-
-
-
     public class ImageViewModel : ViewModelBase,IDisposable
     {
         public RelayCommand ZoomUniformToFill { get; set; }
@@ -89,43 +86,11 @@ namespace ColorVision.ImageEditor.Draw
 
         public ToolReferenceLine ToolConcentricCircle { get; set; }
 
-        public System.Windows.Forms.PropertyGrid PropertyGrid { get; set; }
-
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
 
 
-        public DrawingVisual? SelectDrawingVisual { get => _SelectDrawingVisual  ; set 
-            {
-                _SelectDrawingVisual = value;
-                if (_SelectDrawingVisual is ISelectVisual selectVisual)
-                {
-                    SelectEditorVisual.SetRender(selectVisual);
-
-                    if (PropertyGrid !=null && _SelectDrawingVisual is IDrawingVisual drawingVisualBase)
-                    {
-                        if (PropertyGrid.SelectedObject is IDrawingVisual drawingVisualold)
-                            drawingVisualold.BaseAttribute.PropertyChanged -= Attribute_PropertyGrid2;
-                        PropertyGrid.SelectedObject = drawingVisualBase.BaseAttribute;
-                        drawingVisualBase.BaseAttribute.PropertyChanged += Attribute_PropertyGrid2;
-                    }
-                }
-                else
-                {
-                    SelectEditorVisual.SetRender(null);
-                }
-            }
-        }
-
-        private void Attribute_PropertyGrid2(object? sender, PropertyChangedEventArgs e)
-        {
-             PropertyGrid.Refresh();
-        }
-        private DrawingVisual? _SelectDrawingVisual;
-
         public SelectEditorVisual SelectEditorVisual { get; set; }
 
-
-        public List<DrawingVisual>? SelectDrawingVisuals { get; set; }
 
         public static void DrawSelectRect(DrawingVisual drawingVisual, Rect rect)
         {
@@ -141,7 +106,7 @@ namespace ColorVision.ImageEditor.Draw
         public ImageViewModel(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas,ImageViewConfig config = null )
         {
             Config = config ?? new ImageViewConfig();
-            SelectEditorVisual = new SelectEditorVisual(drawCanvas, zoombox);
+            SelectEditorVisual = new SelectEditorVisual(this, drawCanvas, zoombox);
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.Print, (s, e) => Print(), (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, (s, e) => OpenImage(), (s, e) => { e.CanExecute = true; }));
@@ -567,212 +532,9 @@ namespace ColorVision.ImageEditor.Draw
                     MaxImage();
                 e.Handled = true;
             }
-
             if (_ImageEditMode == true)
             {
-                if (!Keyboard.IsKeyDown(Key.LeftCtrl) && ( e.Key == Key.Left || e.Key == Key.A))
-                {
-                    void Move(DrawingVisual item)
-                    {
-                        if (item is IRectangle rectangle)
-                        {
-                            var OldRect = rectangle.Rect;
-                            rectangle.Rect = new Rect(OldRect.X - 2, OldRect.Y, OldRect.Width, OldRect.Height);
-                        }
-                        else if (item is ICircle Circl)
-                        {
-                            Circl.Center += new Vector(-2, 0);
-                        }
-                    }
-                    if (SelectEditorVisual.SelectVisual != null)
-                    {
-                        var OldRect = SelectEditorVisual.Rect;
-                        SelectEditorVisual.Rect = new Rect(OldRect.X -2, OldRect.Y, OldRect.Width, OldRect.Height);
-                        SelectEditorVisual.SetRect();
-                    }
-                    if (SelectDrawingVisuals != null)
-                    {
-                        foreach (var item in SelectDrawingVisuals)
-                        {
-                            Move(item);
-                        }
-                    }
-                    e.Handled = true;
-                }
-                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Right || e.Key == Key.D))
-                {
-                    void Move(DrawingVisual item)
-                    {
-                        if (item is IRectangle rectangle)
-                        {
-                            var OldRect = rectangle.Rect;
-                            rectangle.Rect = new Rect(OldRect.X + 2, OldRect.Y, OldRect.Width, OldRect.Height);
-                        }
-                        else if (item is ICircle Circl)
-                        {
-                            Circl.Center += new Vector(2, 0);
-                        }
-                    }
-                    if (SelectEditorVisual.SelectVisual != null)
-                    {
-                        var OldRect = SelectEditorVisual.Rect;
-                        SelectEditorVisual.Rect = new Rect(OldRect.X +2, OldRect.Y, OldRect.Width, OldRect.Height);
-                        SelectEditorVisual.SetRect();
-                    }
-                    if (SelectDrawingVisuals != null)
-                    {
-                        foreach (var item in SelectDrawingVisuals)
-                        {
-                            Move(item);
-                        }
-                    }
-                    e.Handled = true;
-                }
-                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Up || e.Key == Key.W))
-                {
-                    void Move(DrawingVisual item)
-                    {
-                        if (item is IRectangle rectangle)
-                        {
-                            var OldRect = rectangle.Rect;
-                            rectangle.Rect = new Rect(OldRect.X, OldRect.Y - 2, OldRect.Width, OldRect.Height);
-                        }
-                        else if (item is ICircle Circl)
-                        {
-                            Circl.Center += new Vector(0, -2);
-                        }
-                    }
-                    if (SelectEditorVisual.SelectVisual != null)
-                    {
-                        var OldRect = SelectEditorVisual.Rect;
-                        SelectEditorVisual.Rect = new Rect(OldRect.X, OldRect.Y - 2, OldRect.Width, OldRect.Height);
-                        SelectEditorVisual.SetRect();
-                    }
-                    if (SelectDrawingVisuals != null)
-                    {
-                        foreach (var item in SelectDrawingVisuals)
-                        {
-                            Move(item);
-                        }
-                    }
-                    e.Handled = true;
-                }
-                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Down || e.Key == Key.S))
-                {
-                    void Move(DrawingVisual item)
-                    {
-                        if (item is IRectangle rectangle)
-                        {
-                            var OldRect = rectangle.Rect;
-                            rectangle.Rect = new Rect(OldRect.X, OldRect.Y + 2, OldRect.Width, OldRect.Height);
-                        }
-                        else if (item is ICircle Circl)
-                        {
-                            Circl.Center += new Vector(0, 2);
-                        }
-                    }
-                    if (SelectEditorVisual.SelectVisual != null)
-                    {
-                        var OldRect = SelectEditorVisual.Rect;
-                        SelectEditorVisual.Rect = new Rect(OldRect.X, OldRect.Y + 2, OldRect.Width, OldRect.Height);
-                        SelectEditorVisual.SetRect();
-                    }
-                    if (SelectDrawingVisuals != null)
-                    {
-                        foreach (var item in SelectDrawingVisuals)
-                        {
-                            Move(item);
-                        }
-                    }
-                    e.Handled = true;
-                }
-                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Add || e.Key == Key.I))
-                {
-                    void Move(DrawingVisual item)
-                    {
-                        if (item is IRectangle rectangle)
-                        {
-                            var OldRect = rectangle.Rect;
-                            rectangle.Rect = new Rect(OldRect.X - 1, OldRect.Y - 1, OldRect.Width + 2, OldRect.Height + 2);
-                        }
-                        else if (item is ICircle Circl)
-                        {
-                            Circl.Radius += 2;
-                        }
-                    }
-                    if (SelectEditorVisual.SelectVisual != null)
-                    {
-                        var OldRect = SelectEditorVisual.Rect;
-                        SelectEditorVisual.Rect = new Rect(OldRect.X -1, OldRect.Y -1, OldRect.Width +2, OldRect.Height +2);
-                        SelectEditorVisual.SetRect();
-                    }
-                    if (SelectDrawingVisuals != null)
-                    {
-                        foreach (var item in SelectDrawingVisuals)
-                        {
-                            Move(item);
-                        }
-                    }
-                    e.Handled = true;
-                }
-                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Subtract || e.Key == Key.O))
-                {
-                    void Move(DrawingVisual item)
-                    {
-                        if (item is IRectangle rectangle)
-                        {
-                            var OldRect = rectangle.Rect;
-
-                            if (OldRect.Width > 1 && OldRect.Height > 1)
-                            {
-                                rectangle.Rect = new Rect(OldRect.X + 1, OldRect.Y + 1, OldRect.Width - 2, OldRect.Height - 2);
-                            }
-                        }
-                        else if (item is ICircle Circl)
-                        {
-                            if (Circl.Radius > 2)
-                            {
-                                Circl.Radius -= 2;
-                            }
-                        }
-                    }
-                    if (SelectEditorVisual.SelectVisual != null)
-                    {
-                        var OldRect = SelectEditorVisual.Rect;
-                        SelectEditorVisual.Rect = new Rect(OldRect.X + 1, OldRect.Y + 1, OldRect.Width - 1 , OldRect.Height - 1);
-                        SelectEditorVisual.SetRect();
-                    }
-                    if (SelectDrawingVisuals != null)
-                    {
-                        foreach (var item in SelectDrawingVisuals)
-                        {
-                            Move(item);
-                        }
-                    }
-                    e.Handled = true;
-                }
-                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Delete))
-                {
-                    void Move(DrawingVisual item)
-                    {
-                        Image.RemoveVisual(item);
-                    }
-                    if (SelectDrawingVisual != null)
-                    {
-                        Move(SelectDrawingVisual);
-                    }
-                    if (SelectDrawingVisuals != null)
-                    {
-                        foreach (var item in SelectDrawingVisuals)
-                        {
-                            Move(item);
-                        }
-                    }
-
-                    e.Handled = true;
-
-                }
-                else if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Add || e.Key == Key.I))
+                if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Add || e.Key == Key.I))
                 {
                     ZoomInCommand.RaiseExecute(e);
                     e.Handled = true;

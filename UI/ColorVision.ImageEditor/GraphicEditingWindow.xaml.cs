@@ -171,7 +171,6 @@ namespace ColorVision.ImageEditor
         private bool _IsUserDraw;
 
 
-
         public int AreaCircleRadius { get => _AreaCircleRadius; set { _AreaCircleRadius = value; OnPropertyChanged(); } }
         private int _AreaCircleRadius = 100;
 

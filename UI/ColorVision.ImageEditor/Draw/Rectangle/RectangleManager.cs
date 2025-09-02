@@ -87,7 +87,7 @@ namespace ColorVision.ImageEditor.Draw
             }
             else
             {
-                ImageViewModel.SelectEditorVisual.SetRender(null);
+                ImageViewModel.SelectEditorVisual.ClearRender();
             }
             int did = CheckNo();
 
@@ -99,18 +99,6 @@ namespace ColorVision.ImageEditor.Draw
             DrawingRectangleCache = new DVRectangleText(rectangleTextProperties);
             DrawCanvas.AddVisual(DrawingRectangleCache);
 
-            if (ImageViewModel.SelectDrawingVisuals != null)
-            {
-                foreach (var item in ImageViewModel.SelectDrawingVisuals)
-                {
-                    if (item is IDrawingVisual id)
-                    {
-                        id.Pen.Brush = Brushes.Red;
-                        id.Render();
-                    }
-                }
-                ImageViewModel.SelectDrawingVisuals = null;
-            }
             e.Handled = true;
         }
         public int CheckNo()
@@ -137,7 +125,7 @@ namespace ColorVision.ImageEditor.Draw
                 if (DrawingRectangleCache.Attribute.Rect.Width == DefalutWidth && DrawingRectangleCache.Attribute.Rect.Height == DefalutHeight)
                     DrawingRectangleCache.Render();
 
-                ImageViewModel.SelectDrawingVisual = DrawingRectangleCache;
+                ImageViewModel.SelectEditorVisual.SetRender(DrawingRectangleCache);
 
                 DefalutWidth = DrawingRectangleCache.Attribute.Rect.Width;
                 DefalutHeight = DrawingRectangleCache.Attribute.Rect.Height;
