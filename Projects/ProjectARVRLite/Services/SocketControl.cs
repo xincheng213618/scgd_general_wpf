@@ -13,7 +13,7 @@ namespace ProjectARVRLite.Services
         public NetworkStream Stream { get; set; }
     }
     
-    public class FlowInit : ISocketEventHandler
+    public class FlowInit : ISocketJsonHandler
     {
         public string EventName => "ProjectARVRInit";
 
@@ -33,7 +33,7 @@ namespace ProjectARVRLite.Services
         }
     }
 
-    public class SwitchPGSocket: ISocketEventHandler
+    public class SwitchPGSocket: ISocketJsonHandler
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SwitchPGSocket));
         public string EventName => "SwitchPGCompleted";
@@ -60,7 +60,7 @@ namespace ProjectARVRLite.Services
 
 
 
-    public class FlowSocketMsgHandle : ISocketEventHandler
+    public class FlowSocketMsgHandle : ISocketJsonHandler
     {
         public string EventName => "  ";
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)

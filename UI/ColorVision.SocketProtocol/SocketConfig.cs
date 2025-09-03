@@ -4,6 +4,12 @@ using System.ComponentModel;
 
 namespace ColorVision.SocketProtocol
 {
+    public enum SocketPhraseType
+    {
+        Json,
+        Text
+    }
+
     public class SocketConfig : ViewModelBase,IConfig
     {
         public static SocketConfig Instance => ConfigService.Instance.GetRequiredService<SocketConfig>();
@@ -39,6 +45,10 @@ namespace ColorVision.SocketProtocol
         [DisplayName(nameof(SocketBufferSize))] 
         public int SocketBufferSize { get => _SocketBufferSize; set { _SocketBufferSize = value; OnPropertyChanged(); } }
         private int _SocketBufferSize = 10240;
+
+        [DisplayName(nameof(SocketPhraseType))]
+        public SocketPhraseType SocketPhraseType { get => _SocketPhraseType; set { _SocketPhraseType = value; OnPropertyChanged(); } }
+        private SocketPhraseType _SocketPhraseType = SocketPhraseType.Json;
 
         public SocketConfig()
         {

@@ -13,7 +13,7 @@ namespace ColorVision.Database
 
     public class BaseTableDao<T> : BaseTableDao where T : IPKModel ,new()
     {
-        public SqlSugar.SqlSugarClient Db => MySqlControl.GetInstance().DB;
+        public SqlSugarClient Db => MySqlControl.GetInstance().DB;
     }
 
     public static class BaseTableDaoExtensions
