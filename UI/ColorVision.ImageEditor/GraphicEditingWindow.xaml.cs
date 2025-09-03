@@ -180,11 +180,8 @@ namespace ColorVision.ImageEditor
         public int AreaCircleAngle { get => _AreaCircleAngle; set { _AreaCircleAngle = value; OnPropertyChanged(); } }
         private int _AreaCircleAngle;
 
-        public int AreaRectWidth { get => _AreaRectWidth; set { _AreaRectWidth = value; OnPropertyChanged(); } }
-        private int _AreaRectWidth = 200;
-
-        public int AreaRectHeight { get => _AreaRectHeight; set { _AreaRectHeight = value; OnPropertyChanged(); } }
-        private int _AreaRectHeight = 200;
+        public Rect AreaRect { get => _AreaRect; set { _AreaRect = value; OnPropertyChanged(); } }
+        private Rect _AreaRect = new Rect();
 
         public int AreaRectRow { get => _AreaRectRow; set { _AreaRectRow = value; OnPropertyChanged(); } }
         private int _AreaRectRow = 3;
@@ -192,6 +189,8 @@ namespace ColorVision.ImageEditor
         public int AreaRectCol { get => _AreaRectCol; set { _AreaRectCol = value; OnPropertyChanged(); } }
         private int _AreaRectCol = 3;
 
+        public bool AreaRectFull { get => _AreaRectFull; set { _AreaRectFull = value; OnPropertyChanged(); } }
+        private bool _AreaRectFull;
 
         public Point Center { get; set; } = new Point() { X = 200, Y = 200 };
 
@@ -430,14 +429,14 @@ namespace ColorVision.ImageEditor
                         MessageBox.Show("点阵数的行列不能小于1", "ColorVision");
                         return;
                     }
-                    double Width = PoiConfig.AreaRectWidth;
-                    double Height = PoiConfig.AreaRectHeight;
+                    double Width = PoiConfig.AreaRect.Width;
+                    double Height = PoiConfig.AreaRect.Height;
 
 
-                    double startU = PoiConfig.CenterY - Height / 2;
-                    double startD = bitmapImage.PixelHeight - PoiConfig.CenterY - Height / 2;
-                    double startL = PoiConfig.CenterX - Width / 2;
-                    double startR = bitmapImage.PixelWidth - PoiConfig.CenterX - Width / 2;
+                    double startU = PoiConfig.AreaRect.Y;
+                    double startD = PoiConfig.AreaRect.Y + PoiConfig.AreaRect.Height;
+                    double startL = PoiConfig.AreaRect.X;
+                    double startR = PoiConfig.AreaRect.X + PoiConfig.AreaRect.Width;
 
                     if (ComboBoxBorderType2.SelectedValue is DrawingGraphicPosition pOIPosition1)
                     {
@@ -527,6 +526,12 @@ namespace ColorVision.ImageEditor
                                     ImageShow.AddVisual(Circle);
                                     break;
                                 case GraphicTypes.Rect:
+
+                                    if (PoiConfig.AreaRectFull)
+                                    {
+                                        PoiConfig.DefaultRectWidth = (int)StepCol;
+                                        PoiConfig.DefaultRectHeight = (int)StepRow;
+                                    }
 
                                     RectangleTextProperties rectangleTextProperties = new RectangleTextProperties();
                                     rectangleTextProperties.Rect = new System.Windows.Rect(x1 - (double)PoiConfig.DefaultRectWidth / 2, y1 - PoiConfig.DefaultRectHeight / 2, PoiConfig.DefaultRectWidth, PoiConfig.DefaultRectHeight);
@@ -641,15 +646,21 @@ namespace ColorVision.ImageEditor
                         OpenCVMediaHelper.FreeResult(resultPtr);
                         MRect rect = Newtonsoft.Json.JsonConvert.DeserializeObject<MRect>(result);
 
-                        Application.Current.Dispatcher.Invoke(() =>
+                        if (rect != null)
                         {
-                            DVDatumRectangle Rectangle = new DVDatumRectangle();
-                            Rectangle.Attribute.Rect = new System.Windows.Rect(rect.X, rect.Y, rect.Width, rect.Height);
-                            Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Blue, 1 / ImageView.Zoombox1.ContentMatrix.M11);
-                            Rectangle.Render();
-                            ImageShow.AddVisual(Rectangle);
-                        });
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                PoiConfig.AreaRect = new Rect() { X = rect.X, Y = rect.Y, Width = rect.Width, Height = rect.Height };
+
+                                DVDatumRectangle Rectangle = new DVDatumRectangle();
+                                Rectangle.Attribute.Rect = new System.Windows.Rect(rect.X, rect.Y, rect.Width, rect.Height);
+                                Rectangle.Attribute.Brush = Brushes.Transparent;
+                                Rectangle.Attribute.Pen = new Pen(Brushes.Blue, 1 / ImageView.Zoombox1.ContentMatrix.M11);
+                                Rectangle.Render();
+                                ImageShow.AddVisual(Rectangle);
+                            });
+                        }
+
                     }
                     else
                     {

@@ -208,7 +208,7 @@
                         <StackPanel Visibility="{Binding Config.IsAutoExpose,Converter={StaticResource bool2VisibilityConverter1}}" Margin="0,0,0,3">
                             <DockPanel >
                                 <Button Content="{x:Static properties:Resources.AutoExposure}"  DockPanel.Dock="Right"  Click="AutoExplose_Click"  HorizontalAlignment="Left"/>
-                                <CheckBox DockPanel.Dock="Right" Content="ND" IsChecked="{Binding Config.IsWithND}" Visibility="{Binding Config.CFW.IsNDPort,Converter={StaticResource bool2VisibilityConverter}}"/>
+                                <CheckBox DockPanel.Dock="Right" Content="ND" Padding="2,0,0,0" IsChecked="{Binding Config.IsAutoExpWithND}" Visibility="{Binding Config.CFW.IsNDPort,Converter={StaticResource bool2VisibilityConverter}}" Margin="0,0,5,0"/>
                                 <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
                                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
                                         <TextBlock.RenderTransform>
@@ -240,6 +240,7 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
                                     <DockPanel Margin="0,0,0,3">
+                                        <CheckBox DockPanel.Dock="Right" Content="ND" Padding="2,0,0,0" IsChecked="{Binding Config.IsAutoExpWithND}" Visibility="{Binding Config.CFW.IsNDPort,Converter={StaticResource bool2VisibilityConverter}}" Margin="0,0,5,0"/>
                                         <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
                                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
                                                 <TextBlock.RenderTransform>
@@ -258,7 +259,6 @@
                                                 </Button.Triggers>
                                             </Button>
                                         </Grid>
-                                        <TextBlock Text="曝光"  Margin="0,0,5,0"/>
                                         <ComboBox x:Name="ComboxAutoExpTimeParamTemplate1"  d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" SelectedIndex="{Binding ExpTimeParamTemplate1Index}" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" SelectionChanged="ComboxAutoExpTimeParamTemplate1_SelectionChanged" />
                                     </DockPanel>
                                     <DockPanel Margin="0,0">
@@ -280,7 +280,6 @@
                                                 </Button.Triggers>
                                             </Button>
                                         </Grid>
-                                        <TextBlock Text="{x:Static properties:Resources.Calibration}"  Margin="0,0,5,0"/>
                                         <ComboBox x:Name="ComboxCalibrationTemplate" d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" SelectedIndex="{Binding CalibrationTemplateIndex}" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key"/>
                                     </DockPanel>
                                 </StackPanel>
@@ -292,7 +291,7 @@
 
                     <DockPanel Margin="0,2" Visibility="{Binding Config.CFW.IsNDPort,Converter={StaticResource bool2VisibilityConverter}}">
                         <Button  DockPanel.Dock="Right" Content="调整NDPort"  Click="NDport_Click" />
-                        <TextBlock Text="NDPort"  Width="40"  />
+                        <TextBlock Text="NDPort" />
                         <TextBox Text="{Binding Config.NDPort}"  BorderThickness="0,0,0,1" Margin="5,0"/>
                     </DockPanel>
 

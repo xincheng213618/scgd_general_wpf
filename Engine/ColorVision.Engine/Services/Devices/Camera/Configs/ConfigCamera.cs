@@ -112,8 +112,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
 
         public int NDPort { get => _NDPort; set { _NDPort = value; OnPropertyChanged(); } }
         private int _NDPort;
-        public bool IsWithND { get => _IsWithND; set { _IsWithND = value; OnPropertyChanged(); } }
-        private bool _IsWithND;
+
+        /// <summary>
+        /// 自动曝光ND
+        /// </summary>
+        public bool IsAutoExpWithND { get => _IsAutoExpWithND; set { _IsAutoExpWithND = value; OnPropertyChanged(); } }
+        private bool _IsAutoExpWithND;
 
         public double Saturation { get => _Saturation; set { _Saturation = value; OnPropertyChanged(); } }
         private double _Saturation = -1;
