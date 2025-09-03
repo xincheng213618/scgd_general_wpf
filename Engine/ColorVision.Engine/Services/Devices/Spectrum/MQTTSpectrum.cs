@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CS8604
+using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
@@ -21,16 +21,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
     public class MQTTSpectrum : MQTTDeviceService<ConfigSpectrum>
     {
-        public event EventHandler<SpectrumData> DataHandlerEvent;
-        public Dictionary<string, MsgSend> cmdMap { get; set; }
-
         public DeviceSpectrum DeviceSpectrum { get; set; }
 
         public MQTTSpectrum(DeviceSpectrum DeviceSpectrum) : base(DeviceSpectrum.Config)
         {
             this.DeviceSpectrum = DeviceSpectrum;
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
-            cmdMap = new Dictionary<string, MsgSend>();
         }
 
 
@@ -42,55 +38,50 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 log.Info(Msg);
                 try
                 {
-                    MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
-                    if (json == null)
+                    MsgReturn msg = JsonConvert.DeserializeObject<MsgReturn>(Msg);
+                    if (msg == null)
                         return Task.CompletedTask;
-                    if (json.Code == 0 || json.Code == 102)
+                    if (msg.Code == 0 || msg.Code == 102)
                     {
-                        if (json.EventName == "SetParam")
+                        if (msg.EventName == "SetParam")
                         {
                         }
-                        else if (json.EventName == "Open")
+                        else if (msg.EventName == "Open")
                         {
                         }
-                        else if (json.EventName == "GetData")
+                        else if (msg.EventName == "GetData")
                         {
-                            try
+                            if (msg !=null && msg.Data != null && msg.Data.MasterId != null && msg.Data.MasterId > 0)
                             {
-                                int MasterId = json.Data.MasterId;
-                                var sss = SpectumResultDao.Instance.GetById(MasterId);
-                                ViewResultSpectrum viewResultSpectrum = new(sss);
-                                Application.Current.Dispatcher.Invoke(() =>
+                                int masterId = msg.Data.MasterId;
+                                SpectumResultModel model = MySqlControl.GetInstance().DB.Queryable<SpectumResultModel>().Where(x => x.Id == masterId).First();
+                                if (model != null)
                                 {
-                                    DeviceSpectrum.View.AddViewResultSpectrum(viewResultSpectrum);
-                                });
+                                    ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        DeviceSpectrum.View.AddViewResultSpectrum(viewResultSpectrum);
+                                    });
+                                }
                             }
-                            catch
-                            {
-                                ///旧版本兼容
-
-                                JObject data = json.Data;
-                                SpectrumData? colorParam = JsonConvert.DeserializeObject<SpectrumData>(JsonConvert.SerializeObject(data));
-                                Application.Current.Dispatcher.Invoke(() => DataHandlerEvent?.Invoke(this,colorParam));
-                            }
-
-
                         }
-                        else if (json.EventName == "GetDataAuto")
+                        else if (msg.EventName == "GetDataAuto")
                         {
-                            JObject data = json.Data;
+                            JObject data = msg.Data;
                             SpectrumData? colorParam = JsonConvert.DeserializeObject<SpectrumData>(JsonConvert.SerializeObject(data));
-                            if (cmdMap.ContainsKey(json.MsgID))
+                            ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(colorParam.Data);
+                            Application.Current.Dispatcher.Invoke(() =>
                             {
-                                Application.Current.Dispatcher.Invoke(() => DataHandlerEvent?.Invoke(this,colorParam));
-                            }
+                                DeviceSpectrum.View.AddViewResultSpectrum(viewResultSpectrum);
+                            });
+
                         }
-                        else if (json.EventName == "Close")
+                        else if (msg.EventName == "Close")
                         {
                         }
-                        else if (json.EventName == "GetParam")
+                        else if (msg.EventName == "GetParam")
                         {
-                            AutoIntTimeParam param = JsonConvert.DeserializeObject<AutoIntTimeParam>(JsonConvert.SerializeObject(json.Data));
+                            AutoIntTimeParam param = JsonConvert.DeserializeObject<AutoIntTimeParam>(JsonConvert.SerializeObject(msg.Data));
                             Application.Current.Dispatcher.BeginInvoke(() =>
                             {
                                 DeviceSpectrum.Config.BeginIntegralTime = param.fTimeB;
@@ -163,7 +154,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
             };
             MsgRecord msgRecord= PublishAsyncClient(msg);
-            cmdMap.Add(msg.MsgID.ToString(), msg);
             return msgRecord;
         }
 
@@ -216,7 +206,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
             };
             PublishAsyncClient(msg);
-            cmdMap.Add(msg.MsgID.ToString(), msg);
         }
 
         public void GetDataAutoStop()
@@ -227,7 +216,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 ServiceName = Config.Code,
             };
             PublishAsyncClient(msg);
-            cmdMap.Clear();
         }
 
 

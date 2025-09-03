@@ -11,14 +11,14 @@ using System.Windows;
 
 namespace ColorVision.Engine.Impl.SolutionImpl
 {
-    [FileExtension(".cvraw")]
+    [FileExtension(".cvraw|.cvcie")]
     public class FileProcessorCVRaw : IFileProcessor
     {
         public int Order => 1;
 
         public bool CanProcess(string filePath)
         {
-            return filePath.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase);
+            return true;
         }
         public void Export(string filePath)
         {
@@ -71,7 +71,7 @@ namespace ColorVision.Engine.Impl.SolutionImpl
 
         public bool CanExport(string filePath)
         {
-            return filePath.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase);
+            return true;
         }
 
         public void Process(string filePath)

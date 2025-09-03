@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Templates;
+﻿using ColorVision.Database;
+using ColorVision.Engine.Templates;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using MQTTMessageLib.Sensor;
@@ -52,7 +53,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         {
             if (sender is MenuItem menuItem && menuItem.Tag is SensorCommand sensorCommand)
             {
-                ModDetailDao.Instance.DeleteById(sensorCommand.Model.Id, false);
+                MySqlControl.GetInstance().DB.Deleteable<ModDetailModel>().Where(x => x.Pid == sensorCommand.Model.Id).ExecuteCommand();
                 Param.ModDetailModels.Remove(sensorCommand.Model);
             }
         }

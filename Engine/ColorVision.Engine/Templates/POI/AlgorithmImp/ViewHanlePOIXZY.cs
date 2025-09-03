@@ -1,9 +1,7 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Media;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Database;
 using ColorVision.Engine.Templates.POI.Image;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
@@ -15,21 +13,22 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
     public class ViewHanlePOIXZY : IResultHandleBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleRealPOI));
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.POI_XYZ ,AlgorithmResultType.LEDStripDetection };
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.POI_XYZ ,ViewResultAlgType.LEDStripDetection };
         
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             string fileName = Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
             var PoiResultCIExyuvDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>();
             PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, fileName);
         }
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -44,7 +43,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                 result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmPoi), ImageFilePath = result.FilePath })) });
             }
         }
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
 
             if (File.Exists(result.FilePath))
@@ -54,7 +53,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
 
             List<string> header = new List<string> { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Shape, Properties.Resources.Size, "CCT", "Wave", "X", "Y", "Z", "u'", "v", "x", "y", "Validate" };
-            if (result.ResultType == AlgorithmResultType.LEDStripDetection)
+            if (result.ResultType == ViewResultAlgType.LEDStripDetection)
             {
                 header = new List<string> { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Shape };
             }
@@ -70,25 +69,29 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                     switch (item.PointType)
                     {
                         case POIPointTypes.Circle:
-                            DVCircleText Circle = new DVCircleText();
-                            Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
-                            Circle.Attribute.Radius = item.Radius;
-                            Circle.Attribute.Brush = Brushes.Transparent;
-                            Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                            Circle.Attribute.Id = item.Id ?? -1;
-                            Circle.Attribute.Text = item.Name;
-                            Circle.Attribute.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                            CircleTextProperties circleTextProperties = new CircleTextProperties();
+                            circleTextProperties.Center = new Point(item.PixelX, item.PixelY);
+                            circleTextProperties.Radius = item.Radius;
+                            circleTextProperties.Brush = Brushes.Transparent;
+                            circleTextProperties.Pen = new Pen(Brushes.Red, 1);
+                            circleTextProperties.Id = item.Id ?? -1;
+                            circleTextProperties.Text = item.Name;
+                            circleTextProperties.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+
+                            DVCircleText Circle = new DVCircleText(circleTextProperties);
                             Circle.Render();
                             view.ImageView.AddVisual(Circle);
                             break;
                         case POIPointTypes.Rect:
-                            DVRectangleText Rectangle = new DVRectangleText();
-                            Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
-                            Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                            Rectangle.Attribute.Id = item.Id ?? -1;
-                            Rectangle.Attribute.Text = item.Name;
-                            Rectangle.Attribute.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                            RectangleTextProperties rectangleTextProperties = new RectangleTextProperties();
+                            rectangleTextProperties.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
+                            rectangleTextProperties.Brush = Brushes.Transparent;
+                            rectangleTextProperties.Pen = new Pen(Brushes.Red, 1);
+                            rectangleTextProperties.Id = item.Id ?? -1;
+                            rectangleTextProperties.Text = item.Name;
+                            rectangleTextProperties.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+
+                            DVRectangleText Rectangle = new DVRectangleText(rectangleTextProperties);
                             Rectangle.Render();
                             view.ImageView.AddVisual(Rectangle);
                             break;
@@ -103,14 +106,14 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             }
 
 
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
-                view.listViewSide.ItemsSource = null;
+                view.ListView.ItemsSource = null;
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
         }
     }

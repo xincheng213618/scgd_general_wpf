@@ -1,8 +1,7 @@
 ﻿#pragma warning disable CA1707
-using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Database;
 using ColorVision.Engine.Messages;
-using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Video;
@@ -19,16 +18,16 @@ using FlowEngineLib.Algorithm;
 using log4net;
 using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using YamlDotNet.Core;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -93,7 +92,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _timer = new DispatcherTimer();
             _timer.Interval = TimeSpan.FromMilliseconds(100);
             _timer.Tick += Timer_Tick;
-            CommandBindings.Add(new CommandBinding(EngineCommands.TakePhotoCommand, GetData_Click, (s, e) => e.CanExecute = Device.Config.DeviceStatus == DeviceStatusType.Opened));
+            CommandBindings.Add(new CommandBinding(EngineCommands.TakePhotoCommand, GetData_Click, (s, e) => e.CanExecute = Device.DService.DeviceStatus == DeviceStatusType.Opened));
         }
 
 
@@ -426,8 +425,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void AutoFocus_Click(object sender, RoutedEventArgs e)
         {
             if (ComboxAutoFocus.SelectedValue is not AutoFocusParam param) return;
-            MsgRecord msgRecord = DService.AutoFocus(param);
-            ServicesHelper.SendCommand(msgRecord, "自动聚焦", false);
+            MsgRecord msg = DService.AutoFocus(param);
+            ServicesHelper.SendCommand(sender, msg);
         }
 
 
@@ -580,6 +579,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             var windowTemplate = new TemplateEditorWindow(new TemplateHDR(), ComboBoxHDRTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
+        }
+
+        private void NDport_Click(object sender, RoutedEventArgs e)
+        {
+            ServicesHelper.SendCommandEx(sender, () => DService.SetNDPort());
         }
     }
 }

@@ -1,6 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using System.Windows;
@@ -12,7 +10,7 @@ namespace ColorVision.Engine.Services.Devices.Motor
     {
         public MQTTMotor DService { get; set; }
 
-        public DeviceMotor(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceMotor(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTMotor(Config);
             this.SetIconResource("COMDrawingImage");

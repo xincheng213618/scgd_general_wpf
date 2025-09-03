@@ -115,7 +115,7 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 Column 的本地化字符串。
+        ///   查找类似 列 的本地化字符串。
         /// </summary>
         public static string Column {
             get {

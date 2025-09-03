@@ -1,6 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.UI.Authorizations;
@@ -8,7 +6,7 @@ using ColorVision.UI;
 using System.Windows;
 using System.Windows.Controls;
 using System.ComponentModel;
-using ColorVision.Engine.MySql;
+using ColorVision.Database;
 using ColorVision.Themes.Controls;
 using ColorVision.Engine.Templates;
 
@@ -20,7 +18,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
         public ViewSMU View { get; set; }
 
-        public DeviceSMU(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceSMU(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTSMU(Config);
             View = new ViewSMU();

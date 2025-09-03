@@ -75,7 +75,7 @@ namespace ColorVision.Projects
             PlatformHelper.OpenFolder(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"ColorVision"));
         }
 
-        public string SearchName { get => _SearchName; set { _SearchName = value; NotifyPropertyChanged(); }}
+        public string SearchName { get => _SearchName; set { _SearchName = value; OnPropertyChanged(); }}
         private string _SearchName;
 
 

@@ -1,6 +1,4 @@
-﻿using ColorVision.Engine.Abstractions;
-using ColorVision.Engine.MySql.ORM;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System.IO;
 
 namespace ColorVision.Engine.Templates.Jsons.Distortion2

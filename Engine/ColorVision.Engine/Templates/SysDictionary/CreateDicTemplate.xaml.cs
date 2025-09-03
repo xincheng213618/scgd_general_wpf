@@ -5,7 +5,7 @@ using System.Windows.Input;
 using ColorVision.Engine.Templates.Menus;
 using ColorVision.UI.Menus;
 
-namespace ColorVision.Engine.Templates.SysDictionary
+namespace ColorVision.Engine.Templates
 {
     /// <summary>
     /// EditTerminal.xaml 的交互逻辑

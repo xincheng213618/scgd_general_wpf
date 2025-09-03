@@ -1,6 +1,6 @@
 ﻿#pragma warning disable CS8603,CS0649,CS8604,CS8601
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.MySql;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Rbac;
@@ -36,13 +36,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         }
         private string propertyName = string.Empty;
 
-        public string FilePath { get { if (string.IsNullOrWhiteSpace(propertyName)) return GetValue(_FilePath); else return GetValue(_FilePath, propertyName); } set { if (string.IsNullOrWhiteSpace(propertyName)) { SetProperty(ref _FilePath, value); } else { SetProperty(ref _FilePath, value, propertyName); NotifyPropertyChanged(); } } }
+        public string FilePath { get { if (string.IsNullOrWhiteSpace(propertyName)) return GetValue(_FilePath); else return GetValue(_FilePath, propertyName); } set { if (string.IsNullOrWhiteSpace(propertyName)) { SetProperty(ref _FilePath, value); } else { SetProperty(ref _FilePath, value, propertyName); OnPropertyChanged(); } } }
         private string _FilePath = string.Empty;
 
-        public bool IsSelected { get { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) return GetValue(_IsSelected); else return GetValue(_IsSelected, propertyName + "IsSelected"); } set { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) SetProperty(ref _IsSelected, value); else SetProperty(ref _IsSelected, value, propertyName + "IsSelected"); NotifyPropertyChanged(); } }
+        public bool IsSelected { get { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) return GetValue(_IsSelected); else return GetValue(_IsSelected, propertyName + "IsSelected"); } set { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) SetProperty(ref _IsSelected, value); else SetProperty(ref _IsSelected, value, propertyName + "IsSelected"); OnPropertyChanged(); } }
         private bool _IsSelected;
 
-        public override int Id { get { if (string.IsNullOrWhiteSpace(propertyName + "Id")) return GetValue(_Id); else return GetValue(_Id, propertyName + "Id"); } set { if (string.IsNullOrWhiteSpace(propertyName + "Id")) SetProperty(ref _Id, value); else SetProperty(ref _Id, value, propertyName + "Id"); NotifyPropertyChanged(); } }
+        public override int Id { get { if (string.IsNullOrWhiteSpace(propertyName + "Id")) return GetValue(_Id); else return GetValue(_Id, propertyName + "Id"); } set { if (string.IsNullOrWhiteSpace(propertyName + "Id")) SetProperty(ref _Id, value); else SetProperty(ref _Id, value, propertyName + "Id"); OnPropertyChanged(); } }
         private int _Id;
     }
 
@@ -239,13 +239,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             if (!MySqlSetting.IsConnect)
                 return;
             var existingParams = ResourceParams.ToDictionary(rp => rp.Id, rp => rp);
-            ModMasterDao masterFlowDao = new ModMasterDao(2);
 
-            List<ModMasterModel> smus = masterFlowDao.GetResourceAll(UserConfig.Instance.TenantId, resourceId);
-
+            List<ModMasterModel> smus = MySqlControl.GetInstance().DB.Queryable<ModMasterModel>().Where(x=>x.Pid ==2).Where(x => x.ResourceId == resourceId).Where(x=>x.TenantId == UserConfig.Instance.TenantId).Where(x => x.IsDelete == false).ToList();
             foreach (var dbModel in smus)
             {
-                List<ModDetailModel> smuDetails = ModDetailDao.Instance.GetAllByPid(dbModel.Id);
+
+                List<ModDetailModel> smuDetails = MySqlControl.GetInstance().DB.Queryable<ModDetailModel>() .Where(x => x.Pid == dbModel.Id).ToList();
                 foreach (var dbDetail in smuDetails)
                 {
                     dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");

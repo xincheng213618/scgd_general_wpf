@@ -1,21 +1,20 @@
-﻿using ColorVision.Engine.Abstractions;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
+﻿using ColorVision.Database;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Controls;
 using System.Windows.Data;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Compliance
 {
     public class ViewHandleComplianceJND : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get;  } = new List<AlgorithmResultType>()
+        public override List<ViewResultAlgType> CanHandle { get;  } = new List<ViewResultAlgType>()
         {
-            AlgorithmResultType.Compliance_Math_JND,
+            ViewResultAlgType.Compliance_Math_JND,
         };
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             view.ImageView.ImageShow.Clear();
 
@@ -32,13 +31,13 @@ namespace ColorVision.Engine.Templates.Compliance
             header = new() { "名称", "h_jnd", "v_jnd", "Validate", "ValidateString" };
             bdHeader = new() { "Name", "DataValueH", "DataValueV", "Validate", "ValidateResult" };
 
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
         }
     }

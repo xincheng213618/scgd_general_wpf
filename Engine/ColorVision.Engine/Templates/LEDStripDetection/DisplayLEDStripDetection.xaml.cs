@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择LEDStripDetection模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxTemplate, "请先选择LEDStripDetection模板")) return;
 
             if (ComboxTemplate.SelectedValue is not LEDStripDetectionParam param) return;
 
@@ -52,7 +52,7 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(param,code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "LEDStripDetection");
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

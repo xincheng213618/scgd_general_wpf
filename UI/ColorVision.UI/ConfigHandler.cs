@@ -8,7 +8,6 @@ using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Windows;
-using static System.Windows.Forms.Design.AxImporter;
 
 namespace ColorVision.UI
 {
@@ -16,11 +15,11 @@ namespace ColorVision.UI
     public class ConfigOptions:ViewModelBase, IConfig
     {
         [DisplayName("是否启用定时备份")]
-        public bool EnableBackup { get => _EnableBackup; set { _EnableBackup = value; NotifyPropertyChanged(); } }
+        public bool EnableBackup { get => _EnableBackup; set { _EnableBackup = value; OnPropertyChanged(); } }
         private bool _EnableBackup = true;
 
         [DisplayName("最大备份数量"),Description("超过则自动清理旧备份")]
-        public int MaxBackupFiles { get => _MaxBackupFiles; set { _MaxBackupFiles = value; NotifyPropertyChanged(); } }
+        public int MaxBackupFiles { get => _MaxBackupFiles; set { _MaxBackupFiles = value; OnPropertyChanged(); } }
         private int _MaxBackupFiles;
     }
     /// <summary>
@@ -106,6 +105,53 @@ namespace ColorVision.UI
         internal readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings { Formatting = Formatting.Indented };
 
         public Dictionary<Type, IConfig> Configs { get; set; }
+
+        public IConfig GetRequiredService(Type type)
+        {
+            ArgumentNullException.ThrowIfNull(type);
+            if (!typeof(IConfig).IsAssignableFrom(type))
+                throw new ArgumentException("Type must implement IConfig.", nameof(type));
+
+            if (Configs.TryGetValue(type, out var service))
+            {
+                return (IConfig)service;
+            }
+
+            var configName = type.Name;
+            try
+            {
+                if (jsonObject.TryGetValue(configName, out JToken configToken))
+                {
+                    var config = configToken.ToObject(type, new JsonSerializer { Formatting = Formatting.Indented });
+                    if (config is IConfigSecure configSecure)
+                    {
+                        configSecure.Decrypt();
+                        Configs[type] = configSecure;
+                    }
+                    else if (config is IConfig configInstance)
+                    {
+                        Configs[type] = configInstance;
+                    }
+                }
+                else
+                {
+                    if (Activator.CreateInstance(type) is IConfig defaultConfig)
+                    {
+                        Configs[type] = defaultConfig;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warn(ex);
+                if (Activator.CreateInstance(type) is IConfig defaultConfig)
+                {
+                    Configs[type] = defaultConfig;
+                }
+            }
+            // 此处递归调用是为了确保缓存和异常处理逻辑一致
+            return GetRequiredService(type);
+        }
 
         public T1 GetRequiredService<T1>() where T1 : IConfig
         {
@@ -206,7 +252,7 @@ namespace ColorVision.UI
                 var files = Directory.GetFiles(BackupFolderPath, "ConfigBackup_*.json")
                     .OrderByDescending(f => f)
                     .ToList();
-                if (files.Any())
+                if (files.Count !=0)
                 {
                     LoadConfigs(files.First());
                     File.Copy(files.First(), ConfigFilePath, true);

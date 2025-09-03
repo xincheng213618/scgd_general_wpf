@@ -22,7 +22,7 @@ namespace ColorVision.Engine.Services.PhyCameras
     {
         public static PhyCameraManagerWindowConfig Instance => ConfigService.Instance.GetRequiredService<PhyCameraManagerWindowConfig>();
 
-        public bool AllowCreate { get => _AllowCreate; set { _AllowCreate = value; NotifyPropertyChanged(); } }
+        public bool AllowCreate { get => _AllowCreate; set { _AllowCreate = value; OnPropertyChanged(); } }
         private bool _AllowCreate;
     }
 
@@ -37,7 +37,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             InitializeComponent();
             this.ApplyCaption();
             Config.SetWindow(this);
-            SizeChanged += (s, e) => Config.SetConfig(this);
         }
 
 

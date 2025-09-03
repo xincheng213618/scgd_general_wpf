@@ -1,9 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Terminal;
 using Newtonsoft.Json;
+using ColorVision.Database;
 
-namespace ColorVision.Engine.Services.Core
+namespace ColorVision.Engine.Services
 {
     public static class ServiceObjectBaseExtensions
     {
@@ -40,19 +40,19 @@ namespace ColorVision.Engine.Services.Core
 
         public static bool ExistsDevice<T>(this T This,string Code) where T : ServiceObjectBase
         {
+            // 检查本地 VisualChildren 是否有 Code 重复
             foreach (var item in This.VisualChildren)
             {
-                if (item is DeviceService t && t.Code == Code)
+                if ((item is DeviceService ds && ds.Code == Code) ||
+                    (item is TerminalService ts && ts.Code == Code))
+                {
                     return true;
-                if (item is TerminalService t1 && t1.Code == Code)
-                    return true;
+                }
             }
-            //这里追加一个规则，所有服务下设备名称均不允许相同
             //这里追加一个规则，所有Code均不允许相同 2024.04.19
-            var deviceS = SysResourceDao.Instance.GetByParam(new System.Collections.Generic.Dictionary<string, object>() { { "code", Code } });
-            if (deviceS != null)
-                return true;
-            return false;
+            var exists = MySqlControl.GetInstance().DB.Queryable<SysResourceModel>() .Any(x => x.Code == Code);
+
+            return exists;
         }
 
         public static string NewCreateFileName<T>(this T t ,string FileName) where T : ServiceObjectBase

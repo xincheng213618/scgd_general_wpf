@@ -333,12 +333,6 @@
   <data name="Name" xml:space="preserve">
     <value>이름</value>
   </data>
-  <data name="MysqlConnectionConfiguration" xml:space="preserve">
-    <value>MySql 연결 구성</value>
-  </data>
-  <data name="MysqlConnection" xml:space="preserve">
-    <value>MySql 연결</value>
-  </data>
   <data name="MyLicense_R" xml:space="preserve">
     <value>내 라이센스(R)</value>
   </data>
@@ -436,7 +430,7 @@
     <value>고스트 템플릿 설정(G)</value>
   </data>
   <data name="MenuFOV" xml:space="preserve">
-    <value>FOV 템플릿 설정(B)";</value>
+    <value>FOV 템플릿 설정(B)</value>
   </data>
   <data name="MenuFocusPoints" xml:space="preserve">
     <value>발광 영역 감지 템플릿 설정(F)</value>

@@ -233,7 +233,7 @@ namespace ColorVision.Solution.V
                 bool isMonitoring = true;
                 while (isMonitoring)
                 {
-                    await Task.Delay(100);
+                    await Task.Delay(60000);
                     if (Setting.IsLackWarning)
                     {
                         if (DriveInfo.IsReady)

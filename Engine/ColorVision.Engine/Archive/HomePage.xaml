@@ -14,7 +14,7 @@
     </Page.Resources>
     <Grid>
         <UniformGrid x:Name="ContentStackPanel"  Columns="2" VerticalAlignment="Center">
-            <UserControl Width="200" MouseLeftButtonUp="UserControl_MouseLeftButtonUp" Tag="DataSummaryPage">
+            <UserControl Width="200" MouseLeftButtonUp="UserControl_MouseLeftButtonUp" Tag="MeasureBatchManagerPage">
                 <Grid >
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>

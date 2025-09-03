@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择BuildPoi模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxTemplate, "请先选择BuildPoi模板")) return;
 
             if (ComboxTemplate.SelectedValue is not ParamBuildPoi param) return;
 
@@ -91,7 +91,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
                 }
 
                 MsgRecord msg = IAlgorithm.SendCommand(param, POILayoutReq, Params, code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "关注点布点");
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

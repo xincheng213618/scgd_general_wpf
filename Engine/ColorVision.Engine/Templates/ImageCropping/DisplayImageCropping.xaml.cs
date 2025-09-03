@@ -1,10 +1,12 @@
-﻿using ColorVision.Engine.Services;
+﻿using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 
 namespace ColorVision.Engine.Templates.ImageCropping
 {
@@ -115,7 +117,7 @@ namespace ColorVision.Engine.Templates.ImageCropping
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择发光区裁剪模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxTemplate, "请先选择发光区裁剪模板")) return;
             if (ComboxTemplate.SelectedValue is not ImageCroppingParam param) return;
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
@@ -128,8 +130,8 @@ namespace ColorVision.Engine.Templates.ImageCropping
                     code = deviceService.Code;
                 }
 
-                var ss = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(ss, "发光区裁剪");
+                var msg = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

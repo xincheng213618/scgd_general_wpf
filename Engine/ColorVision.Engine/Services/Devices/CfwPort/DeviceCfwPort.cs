@@ -1,6 +1,4 @@
 ﻿using ColorVision.UI;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Common.MVVM;
@@ -12,7 +10,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
     {
         public MQTTCfwPort DService { get; set; }
 
-        public DeviceCfwPort(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceCfwPort(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTCfwPort(Config);
 

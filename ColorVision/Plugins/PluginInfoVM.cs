@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Properties;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
@@ -9,7 +10,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -41,11 +41,13 @@ namespace ColorVision.Plugins
 
         public PluginInfo PluginInfo { get; set; }
 
-        public Version LastVersion { get => _LastVersion; set { _LastVersion = value; NotifyPropertyChanged(); } }
+        public Version LastVersion { get => _LastVersion; set { _LastVersion = value; OnPropertyChanged(); } }
         private Version _LastVersion;
 
         public RelayCommand DeleteCommand { get; set; }
         public RelayCommand UpdateCommand { get; set; }
+        public RelayCommand OpenLocalPathCommand { get; set; }
+
         DownloadFile DownloadFile { get; set; }
         public PluginInfoVM(PluginInfo pluginInfo)
         {
@@ -60,10 +62,11 @@ namespace ColorVision.Plugins
 
             DeleteCommand = new RelayCommand(a => Delete());
             UpdateCommand = new RelayCommand(a => Update());
+            OpenLocalPathCommand = new RelayCommand(a => OpenLocalPath());
             ContextMenu = new ContextMenu();
 
             DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = ColorVision.Properties.Resources.Update + Name ;
+            DownloadFile.DownloadTile = Resources.Update + Name ;
 
             if (PluginInfo.Enabled)
             {
@@ -71,40 +74,20 @@ namespace ColorVision.Plugins
             }
 
             ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = ApplicationCommands.Delete });
-            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Properties.Resources.Update, Command = UpdateCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = ApplicationCommands.Delete });
+            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Update, Command = UpdateCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "OpenLocalPath", Command = OpenLocalPathCommand });
+
+
+
         }
-        public PluginInfoVM(IPlugin plugin, Assembly assembly)
+
+
+        public void OpenLocalPath()
         {
-            Name = plugin.Header;
-            Description = plugin.Description;
-            try
-            {
-                AssemblyName = assembly.GetName().Name;
-                AssemblyVersion = assembly.GetName().Version;
-                AssemblyBuildDate = File.GetLastWriteTime(assembly.Location);
-                AssemblyPath = assembly.Location;
-                AssemblyCulture = assembly.GetName().CultureInfo?.Name ?? "neutral";
-                AssemblyPublicKeyToken = BitConverter.ToString(assembly.GetName().GetPublicKeyToken() ?? Array.Empty<byte>());
-                PackageName = Path.GetFileNameWithoutExtension(assembly.Location);
-            }
-            catch (Exception ex)
-            {
-                // 记录错误日志
-                LogManager.GetLogger(typeof(PluginInfo)).Error("Error retrieving assembly info", ex);
-            }
-
-            DeleteCommand = new RelayCommand(a => Delete());
-            UpdateCommand = new RelayCommand(a => Update());
-            ContextMenu = new ContextMenu();
-
-            DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = ColorVision.Properties.Resources.Update + Name;
-            Task.Run(() => CheckVersion());
-
-            ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = ApplicationCommands.Delete });
-            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Properties.Resources.Update, Command = UpdateCommand });
+            string localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins", PackageName);
+            log.Info($"OpenLocalPath:{localPath}");
+            PlatformHelper.OpenFolder(localPath);
         }
 
         public async void CheckVersion()

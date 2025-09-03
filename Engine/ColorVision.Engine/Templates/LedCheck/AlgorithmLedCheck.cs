@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
@@ -29,14 +28,14 @@ namespace ColorVision.Engine.Templates.LedCheck
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
         }
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
 
         public void OpenTemplate()
         {
             new TemplateEditorWindow(new TemplateLedCheck(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
-        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplatePoiSelectedIndex;
         public void OpenTemplatePoi()
         {
@@ -56,25 +55,31 @@ namespace ColorVision.Engine.Templates.LedCheck
 
         public MsgRecord SendCommand(LedCheckParam param, PoiParam poiParam ,string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
         {
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
-            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
-                fileName = fullpath;
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
-           
-            Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
+            // 序列号生成优化
+            string sn = string.IsNullOrWhiteSpace(serialNumber) ? DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff"): serialNumber;
 
-            if (poiParam.Id == -1)
+            // 文件路径处理优化
+            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullPath))
             {
-                Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = string.Empty });
-            }
-            else
-            {
-                Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
+                fileName = fullPath;
             }
 
-            MsgSend msg = new()
+            // 组装参数，使用集合初始化器
+            var Params = new Dictionary<string, object>
+            {
+                ["ImgFileName"] = fileName,
+                ["FileType"] = fileExtType,
+                ["DeviceCode"] = deviceCode,
+                ["DeviceType"] = deviceType,
+                ["TemplateParam"] = new CVTemplateParam { ID = param.Id, Name = param.Name },
+                ["POITemplateParam"] = new CVTemplateParam
+                {
+                    ID = poiParam.Id,
+                    Name = poiParam.Id == -1 ? string.Empty : poiParam.Name
+                }
+            };
+
+            var msg = new MsgSend
             {
                 EventName = MQTTAlgorithmEventEnum.Event_LED_Check_GetData,
                 SerialNumber = sn,

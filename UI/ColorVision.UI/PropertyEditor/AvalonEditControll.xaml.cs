@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CA1847
-using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.CodeCompletion;
 using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
@@ -7,6 +6,7 @@ using ICSharpCode.AvalonEdit.Search;
 using Microsoft.Win32;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -249,7 +249,59 @@ namespace ColorVision.UI.PropertyEditor
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            textEditor.Save(currentFileName);
 
+            // 1. 查找 Python 路径（Windows 下）
+            string pythonPath = GetPythonPath();
+
+            if (pythonPath == null)
+            {
+                Console.WriteLine("没有找到 Python 环境。");
+                return;
+            }
+
+            // 2. 要执行的 Python 文件路径
+            string pythonFile = currentFileName; // 修改为你的文件路径
+
+            // 3. 构造启动参数，让 cmd 窗口弹出并执行 python 文件
+            ProcessStartInfo psi = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = $"/k \"{pythonPath} \"{pythonFile}\"\"",
+                UseShellExecute = true,          // 让窗口弹出
+                CreateNoWindow = false           // 让窗口显示
+                                                 // 不需要重定向输出
+            };
+
+            Process.Start(psi); // 直接启动，不需要捕获输出
+        }
+
+        // 自动查找 Python 路径
+        static string GetPythonPath()
+        {
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo
+                {
+                    FileName = "cmd",
+                    Arguments = "/c where python",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                };
+                using (Process process = Process.Start(psi))
+                {
+                    string result = process.StandardOutput.ReadToEnd();
+                    process.WaitForExit();
+                    if (!string.IsNullOrEmpty(result))
+                    {
+                        // 返回第一行路径
+                        return result.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries)[0];
+                    }
+                }
+            }
+            catch { }
+            return null;
         }
     }
 }

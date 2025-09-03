@@ -1,10 +1,15 @@
 ﻿#pragma warning disable CA1707,CA1711
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services;
+using ColorVision.ImageEditor;
+using ColorVision.UI.Sorts;
+using CVCommCore.CVAlgorithm;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Windows.Controls;
 
-namespace ColorVision.Engine.Abstractions
+namespace ColorVision.Engine
 {
-    public enum AlgorithmResultType
+    public enum ViewResultAlgType
     {
         None = -1,
         POI = 0,
@@ -65,18 +70,29 @@ namespace ColorVision.Engine.Abstractions
         Math_DataConvert = 70,
         BlackMura_Calc = 80
     }
+
+    public interface IViewImageA
+    {
+        ImageView ImageView { get; set; }
+        ListView ListView { get; set; }
+        ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; }
+
+        TextBox SideTextBox { get; set; }
+        void AddPOIPoint(List<POIPoint> PoiPoints);
+    }
+
     public interface IResultHandle
     {
-        public bool CanHandle1(AlgorithmResult result);
+        public bool CanHandle1(ViewResultAlg result);
 
-        void Handle(AlgorithmView view, AlgorithmResult result);
-        void SideSave(AlgorithmResult result, string selectedPath);
+        void Handle(IViewImageA view, ViewResultAlg result);
+        void SideSave(ViewResultAlg result, string selectedPath);
     }
 
     public abstract class IResultHandleBase : IResultHandle
     {
-        public abstract List<AlgorithmResultType> CanHandle { get; }
-        public virtual bool CanHandle1(AlgorithmResult result)
+        public abstract List<ViewResultAlgType> CanHandle { get; }
+        public virtual bool CanHandle1(ViewResultAlg result)
         {
             if (CanHandle.Contains(result.ResultType))
             {
@@ -85,13 +101,13 @@ namespace ColorVision.Engine.Abstractions
             return false;
         }
 
-        public abstract void Handle(AlgorithmView view, AlgorithmResult result);
+        public abstract void Handle(IViewImageA view, ViewResultAlg result);
 
-        public virtual void Load(AlgorithmView view, AlgorithmResult result)
+        public virtual void Load(IViewImageA view, ViewResultAlg result)
         {
 
         }
-        public virtual void SideSave(AlgorithmResult result, string selectedPath)
+        public virtual void SideSave(ViewResultAlg result, string selectedPath)
         {
 
         }

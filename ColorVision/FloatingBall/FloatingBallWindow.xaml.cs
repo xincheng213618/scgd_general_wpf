@@ -56,7 +56,6 @@ namespace ColorVision.FloatingBall
                 Config.Top = workingArea.Top * dpiY + 100;
             }
             Config.SetWindow(this);
-            SizeChanged += (s, e) => Config.SetConfig(this);
         }
 
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)

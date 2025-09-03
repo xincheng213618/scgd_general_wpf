@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.Jsons.LedCheck2;
@@ -45,7 +44,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
             }
         }
 
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
 
         public void OpenTemplate()
@@ -61,25 +60,25 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
         public UserControl UserControl { get; set; }
 
 
-        public POIStorageModel POIStorageModel { get => _POIStorageModel; set { _POIStorageModel = value; NotifyPropertyChanged(); } }
+        public POIStorageModel POIStorageModel { get => _POIStorageModel; set { _POIStorageModel = value; OnPropertyChanged(); } }
         private POIStorageModel _POIStorageModel = POIStorageModel.Db;
 
 
-        public POIBuildType POIBuildType { get => _POIBuildType; set { _POIBuildType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsPOIBuildCommon)); } }
+        public POIBuildType POIBuildType { get => _POIBuildType; set { _POIBuildType = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsPOIBuildCommon)); } }
         private POIBuildType _POIBuildType = POIBuildType.Common;
 
         public bool IsPOIBuildCommon => POIBuildType == POIBuildType.Common;
 
-        public PointVM Point1 { get => _Point1; set { _Point1 = value; NotifyPropertyChanged(); } }
+        public PointVM Point1 { get => _Point1; set { _Point1 = value; OnPropertyChanged(); } }
         private PointVM _Point1;
-        public PointVM Point2 { get => _Point2; set { _Point2 = value; NotifyPropertyChanged(); } }
+        public PointVM Point2 { get => _Point2; set { _Point2 = value; OnPropertyChanged(); } }
         private PointVM _Point2;
-        public PointVM Point3 { get => _Point3; set { _Point3 = value; NotifyPropertyChanged(); } }
+        public PointVM Point3 { get => _Point3; set { _Point3 = value; OnPropertyChanged(); } }
         private PointVM _Point3;
-        public PointVM Point4 { get => _Point4; set { _Point4 = value; NotifyPropertyChanged(); } }
+        public PointVM Point4 { get => _Point4; set { _Point4 = value; OnPropertyChanged(); } }
         private PointVM _Point4;
 
-        public string CADPosFileName { get => _CADPosFileName; set { _CADPosFileName = value; NotifyPropertyChanged(); } }
+        public string CADPosFileName { get => _CADPosFileName; set { _CADPosFileName = value; OnPropertyChanged(); } }
         private string _CADPosFileName = string.Empty;
 
         public MsgRecord SendCommand(ParamBuildPoi buildPOIParam, POILayoutTypes POILayoutReq, Dictionary<string, object> @params, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)

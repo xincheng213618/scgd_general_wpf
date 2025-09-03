@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System;
@@ -158,6 +158,11 @@ namespace ColorVision
         {
             ConfigHandler.GetInstance().SaveConfigs();
             MessageBox.Show("保存成功");
+        }
+
+        private void OpenFolder_Click(object sender, RoutedEventArgs e)
+        {
+            PlatformHelper.OpenFolderAndSelectFile(ConfigHandler.GetInstance().ConfigFilePath);
         }
     }
 }

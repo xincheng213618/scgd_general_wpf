@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
 using ColorVision.Themes;
 using System;
 using System.Collections.Generic;
@@ -7,7 +7,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Templates.SysDictionary
+namespace ColorVision.Engine.Templates
 {
     /// <summary>
     /// EditTerminal.xaml 的交互逻辑

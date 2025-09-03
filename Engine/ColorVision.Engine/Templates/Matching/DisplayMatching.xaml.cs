@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 
 namespace ColorVision.Engine.Templates.Matching
 {
@@ -123,8 +124,8 @@ namespace ColorVision.Engine.Templates.Matching
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                var ss = IAlgorithm.SendCommand(code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(ss, "Name");
+                var msg = IAlgorithm.SendCommand(code, type, imgFileName, fileExtType, sn);
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

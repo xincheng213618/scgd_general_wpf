@@ -1,9 +1,8 @@
-﻿using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
+﻿using ColorVision.Database;
+using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Themes;
-using ColorVision.Engine.Rbac;
 using Newtonsoft.Json;
 using System;
 using System.Windows;
@@ -57,13 +56,12 @@ namespace ColorVision.Engine.Services.Types
 
             sysResource.Value = JsonConvert.SerializeObject(terminalServiceConfig);
 
-            VSysResourceDao resourceDao = new();
-            resourceDao.Save(sysResource);
+            int pkId = MySqlControl.GetInstance().DB.Insertable(sysResource).ExecuteReturnIdentity();
+            sysResource.Id = pkId;
 
-            int pkId = sysResource.Id;
-            if (pkId > 0 && resourceDao.GetById(pkId) is SysResourceModel model)
+            if (pkId > 0)
             {
-                TerminalService terminalService = new TerminalService(model);
+                TerminalService terminalService = new TerminalService(sysResource);
                 TypeService.AddChild(terminalService);
                 ServiceManager.GetInstance().TerminalServices.Add(terminalService);
 

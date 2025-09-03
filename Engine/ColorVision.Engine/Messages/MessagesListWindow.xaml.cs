@@ -25,46 +25,9 @@ namespace ColorVision.Engine.Messages
         }
     }
 
-    public class MessagesListWindowConfig : IConfig
+    public class MessagesListWindowConfig : WindowConfig
     {
         public static MessagesListWindowConfig Instance => ConfigService.Instance.GetRequiredService<MessagesListWindowConfig>();
-
-        public bool IsRestoreWindow { get; set; } = true;
-        public double Width { get; set; }
-        public double Height { get; set; }
-        public double Left { get; set; }
-        public double Top { get; set; }
-        public int WindowState { get; set; }
-
-
-        public void SetWindow(Window window)
-        {
-            if (IsRestoreWindow && Height != 0 && Width != 0)
-            {
-                window.Top = Top;
-                window.Left = Left;
-                window.Height = Height;
-                window.Width = Width;
-                window.WindowState = (WindowState)WindowState;
-
-                if (Width > SystemParameters.WorkArea.Width)
-                {
-                    window.Width = SystemParameters.WorkArea.Width;
-                }
-                if (Height > SystemParameters.WorkArea.Height)
-                {
-                    window.Height = SystemParameters.WorkArea.Height;
-                }
-            }
-        }
-        public void SetConfig(Window window)
-        {
-            Top = window.Top;
-            Left = window.Left;
-            Height = window.Height;
-            Width = window.Width;
-            WindowState = (int)window.WindowState;
-        }
     }
 
 
@@ -76,20 +39,21 @@ namespace ColorVision.Engine.Messages
     {
         public ObservableCollection<MsgRecord> MsgRecords { get; set; }
 
+        MsgRecordManager MsgRecordManager { get; set; }
 
         public MessagesListWindow()
         {
             InitializeComponent();
             this.ApplyCaption();
             MessagesListWindowConfig.Instance.SetWindow(this);
-            this.SizeChanged +=(s,e) => MessagesListWindowConfig.Instance.SetConfig(this);
         }
 
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext =
-            MsgRecords = MsgConfig.Instance.MsgRecords;
+            MsgRecordManager = MsgRecordManager.GetInstance();
+            this.DataContext = MsgRecordManager;
+            MsgRecords = MsgRecordManager.MsgRecords;
             ListView1.ItemsSource = MsgRecords;
         }
 
@@ -191,7 +155,7 @@ namespace ColorVision.Engine.Messages
         {
             if (ListView1.SelectedIndex > -1)
             {
-                GridContent.DataContext = MsgConfig.Instance.MsgRecords[ListView1.SelectedIndex];
+                GridContent.DataContext = MsgRecords[ListView1.SelectedIndex];
             }
         }
 
@@ -201,13 +165,13 @@ namespace ColorVision.Engine.Messages
             {
                 Formatting = Formatting.Indented
             };
-            string text = JsonConvert.SerializeObject(MsgConfig.Instance.MsgRecords[ListView1.SelectedIndex].MsgSend, settings);
+            string text = JsonConvert.SerializeObject(MsgRecords[ListView1.SelectedIndex].MsgSend, settings);
             Common.NativeMethods.Clipboard.SetText(text);
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            string text = JsonConvert.SerializeObject(MsgConfig.Instance.MsgRecords[ListView1.SelectedIndex].MsgSend);
+            string text = JsonConvert.SerializeObject(MsgRecords[ListView1.SelectedIndex].MsgSend);
             Common.NativeMethods.Clipboard.SetText(text);
         }
 
@@ -217,14 +181,24 @@ namespace ColorVision.Engine.Messages
             {
                 Formatting = Formatting.Indented
             };
-            string text = JsonConvert.SerializeObject(MsgConfig.Instance.MsgRecords[ListView1.SelectedIndex].MsgReturn, settings);
+            string text = JsonConvert.SerializeObject(MsgRecords[ListView1.SelectedIndex].MsgReturn, settings);
             Common.NativeMethods.Clipboard.SetText(text);
         }
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
-            string text = JsonConvert.SerializeObject(MsgConfig.Instance.MsgRecords[ListView1.SelectedIndex].MsgReturn);
+            string text = JsonConvert.SerializeObject(MsgRecords[ListView1.SelectedIndex].MsgReturn);
             Common.NativeMethods.Clipboard.SetText(text);
+        }
+
+        private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void Inquire_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

@@ -1,9 +1,7 @@
 ﻿#pragma warning disable CS8602,CA1707
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Database;
 using ColorVision.Themes;
 using ColorVision.UI;
 using FlowEngineLib;
@@ -25,7 +23,7 @@ using ColorVision.Engine.Templates.Validate;
 using ColorVision.Engine.Templates.Compliance;
 using ColorVision.Engine.Services.RC;
 using FlowEngineLib.Base;
-using ColorVision.Engine.Abstractions;
+using ColorVision.Engine;
 
 namespace ColorVision.Projects.ProjectHeyuan
 {
@@ -293,7 +291,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                         List<ComplianceXYZModel> complianceXYZModels = new List<ComplianceXYZModel>();
                         foreach (var item in resultMaster)
                         {
-                            if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
+                            if (item.ImgFileType == ViewResultAlgType.POI_XYZ)
                             {
                                 List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
                                 foreach (var pointResultModel in POIPointResultModels)
@@ -302,7 +300,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                                     PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                                 }
                             }
-                            if (item.ImgFileType == AlgorithmResultType.Compliance_Math_CIE_XYZ)
+                            if (item.ImgFileType == ViewResultAlgType.Compliance_Math_CIE_XYZ)
                             {
                                 var lists = ComplianceXYZDao.Instance.GetAllByPid(item.Id);
                                 complianceXYZModels.AddRange(lists);
@@ -512,7 +510,7 @@ namespace ColorVision.Projects.ProjectHeyuan
 
         public static void BeginNewBatch(string sn, string name)
         {
-            BatchResultMasterModel batch = new();
+            MeasureBatchModel batch = new();
             batch.Name = string.IsNullOrEmpty(name) ? sn : name;
             batch.Code = sn;
             batch.CreateDate = DateTime.Now;

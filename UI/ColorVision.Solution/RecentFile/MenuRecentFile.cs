@@ -1,12 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Solution.Properties;
-using ColorVision.Themes;
 using ColorVision.UI.Menus;
-using System.Globalization;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
 
 namespace ColorVision.Solution.RecentFile
 {

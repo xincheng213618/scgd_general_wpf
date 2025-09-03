@@ -47,11 +47,9 @@ namespace ColorVision.Plugins
                         Company = company,
                         Product = product,
                         Culture = name.CultureInfo?.Name,
-                        PublicKeyToken = BitConverter.ToString(name.GetPublicKeyToken() ?? new byte[0]),
-                        ProcessorArchitecture = name.ProcessorArchitecture.ToString(),
+                        PublicKeyToken = BitConverter.ToString(name.GetPublicKeyToken() ?? Array.Empty<byte>()),
                         Location = a.IsDynamic ? "(dynamic)" : a.Location,
                         IsDynamic = a.IsDynamic,
-                        InGAC = a.GlobalAssemblyCache
                     };
                 })
                 .OrderBy(a => a.Name)

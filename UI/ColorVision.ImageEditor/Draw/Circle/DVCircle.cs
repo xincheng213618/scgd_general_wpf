@@ -5,30 +5,24 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public interface ISelectVisual
-    {
-        public Rect GetRect();
-        public void SetRect(Rect rect);
-
-
-    }
     public class DVCircle : DrawingVisualBase<CircleProperties>, IDrawingVisual,ICircle, ISelectVisual
     {
-        public bool AutoAttributeChanged { get; set; }
         public Point Center { get => Attribute.Center; set => Attribute.Center = value; }
         public double Radius { get => Attribute.Radius; set => Attribute.Radius = value; }
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
 
-        public DVCircle()
+        public DVCircle() 
         {
             Attribute = new CircleProperties();
-            Attribute.Id = No++;
-            Attribute.Brush = Brushes.Transparent;
-            Attribute.Pen = new Pen(Brushes.Red, 2);
-            Attribute.Center = new Point(50, 50);
-            Attribute.Radius = 30;
-            Attribute.PropertyChanged += (s,e)=> { if (AutoAttributeChanged && e.PropertyName != "ID") Render(); };
+            Attribute.PropertyChanged += (s, e) => Render();
         }
+
+        public DVCircle(CircleProperties attribute)
+        {
+            Attribute = attribute;
+            Attribute.PropertyChanged += (s, e) => Render();
+        }
+
 
         private TextAttribute TextAttribute = new();
 

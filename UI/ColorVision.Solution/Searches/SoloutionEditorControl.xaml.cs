@@ -1,7 +1,6 @@
 ﻿using AvalonDock.Layout;
 using ColorVision.Common.Utilities;
 using ColorVision.Solution.Editor;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -63,8 +62,6 @@ namespace ColorVision.Solution.Searches
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            MainFrame.Navigate(SolutionPageManager.Instance.GetPage("HomePage", MainFrame));
-
             if (Application.Current.FindResource("MenuItem4FrameStyle") is Style style)
             {
                 ContextMenu content1 = new() { ItemContainerStyle = style };

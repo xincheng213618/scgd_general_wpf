@@ -71,5 +71,4 @@ namespace ColorVision.Solution.Editor
             }
         }
     }
-
 }

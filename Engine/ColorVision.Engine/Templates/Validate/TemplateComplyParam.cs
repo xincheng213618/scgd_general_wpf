@@ -1,8 +1,5 @@
-﻿using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Database;
 using ColorVision.Engine.Rbac;
-using ColorVision.Engine.Templates.SysDictionary;
-using ColorVision.Engine.Templates.Validate.Dic;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -101,9 +98,9 @@ namespace ColorVision.Engine.Templates.Validate
             if (index >= 0 && index < TemplateParams.Count)
             {
                 int id = TemplateParams[index].Value.Id;
-                int ret = ValidateTemplateMasterDao.Instance.DeleteById(id);
-                ValidateTemplateDetailDao.Instance.DeleteAllByPid(id);
-                TemplateParams.RemoveAt(index);
+
+                Db.Deleteable<ValidateTemplateDetailModel>().Where(x => x.Pid == id).ExecuteCommand();
+                Db.Deleteable<ValidateTemplateMasterModel>().Where(x => x.Id == id).ExecuteCommand();
             }
         }
 

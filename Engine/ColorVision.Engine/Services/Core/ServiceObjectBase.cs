@@ -5,7 +5,7 @@ using ColorVision.UI.Authorizations;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 
-namespace ColorVision.Engine.Services.Core
+namespace ColorVision.Engine.Services
 {
     public class ServiceObjectBase : ViewModelBase
     {
@@ -29,7 +29,7 @@ namespace ColorVision.Engine.Services.Core
             set
             {
                 _Parent = value;
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
         private ServiceObjectBase _Parent;

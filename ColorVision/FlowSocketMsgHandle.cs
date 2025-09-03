@@ -7,7 +7,7 @@ using System.Windows;
 
 namespace ColorVision.UI
 {
-    public class FlowSocketMsgHandle : ISocketEventHandler
+    public class FlowSocketMsgHandle : ISocketJsonHandler
     {
         public string EventName => SocketConstants.Menu;
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)

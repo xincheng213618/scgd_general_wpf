@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Database;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -9,14 +7,15 @@ using System.IO;
 using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.ImageCropping
 {
     public class ViewHandleImageCropping : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.Image_Cropping };
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.Image_Cropping };
 
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             var ViewResults = result.ViewResults.ToSpecificViewResults<ResultImageModel>();
 
@@ -44,10 +43,10 @@ namespace ColorVision.Engine.Templates.ImageCropping
             AlgorithmView.ImageView.ImageViewModel.Save(saveng);
         }
 
-        public AlgorithmView AlgorithmView { get; set; }
+        public IViewImageA AlgorithmView { get; set; }
 
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -56,7 +55,7 @@ namespace ColorVision.Engine.Templates.ImageCropping
             }
         }
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             AlgorithmView = view;
 
@@ -68,13 +67,13 @@ namespace ColorVision.Engine.Templates.ImageCropping
             List<string> header = new() { "file_name", "order_index", "FileInfo" };
             List<string> bdHeader = new() { "FileName", "OrderIndex", "FileInfo" };
 
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
         }
 

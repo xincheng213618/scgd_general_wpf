@@ -44,10 +44,10 @@ namespace ColorVision.Engine.Templates.Validate
             Model = modDetails;
         }
 
-        public float ValMax { get => Model.ValMax; set { Model.ValMax = value; NotifyPropertyChanged(); } }
-        public float ValMin { get => Model.ValMin; set { Model.ValMin = value; NotifyPropertyChanged(); } }
-        public string ValEqual { get => Model.ValEqual; set { Model.ValEqual = value; NotifyPropertyChanged(); } }
-        public short ValRadix { get => Model.ValRadix; set { Model.ValRadix = value; NotifyPropertyChanged(); } }
-        public short ValType { get => Model.ValType; set { Model.ValType = value; NotifyPropertyChanged(); } }
+        public float ValMax { get => Model.ValMax; set { Model.ValMax = value; OnPropertyChanged(); } }
+        public float ValMin { get => Model.ValMin; set { Model.ValMin = value; OnPropertyChanged(); } }
+        public string ValEqual { get => Model.ValEqual; set { Model.ValEqual = value; OnPropertyChanged(); } }
+        public short ValRadix { get => Model.ValRadix; set { Model.ValRadix = value; OnPropertyChanged(); } }
+        public short ValType { get => Model.ValType; set { Model.ValType = value; OnPropertyChanged(); } }
     }
 }

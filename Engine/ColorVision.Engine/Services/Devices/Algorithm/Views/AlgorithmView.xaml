@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Views"
+             xmlns:se="clr-namespace:ColorVision.Engine.Services"
              xmlns:media="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:hc="https://handyorg.github.io/handycontrol" 
@@ -30,7 +31,6 @@
                 <RowDefinition x:Name="ListRow1" Height="*"/>
                 <RowDefinition x:Name="ListRow2" Height="Auto"/>
             </Grid.RowDefinitions>
-            <media:ImageView Grid.Row="0" x:Name="ImageView"></media:ImageView>
             <Grid  Grid.Row="1" >
                 <Grid.RowDefinitions>
                     <RowDefinition Height="32"/>
@@ -97,6 +97,12 @@
                     <ListView.ItemContainerStyle>
                         <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
                             <Setter Property="ContextMenu"  Value="{Binding ContextMenu}"/>
+                            <Setter Property="Opacity" Value="1"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsFileExists}" Value="False">
+                                    <Setter Property="Opacity" Value="0.7"/>
+                                </DataTrigger>
+                            </Style.Triggers>
                         </Style>
                     </ListView.ItemContainerStyle>
                     <ListView.View >
@@ -112,42 +118,42 @@
                             </GridView.ColumnHeaderContainerStyle>
                             <GridViewColumn  Header="{x:Static properties:Resources.SerialNumber1}" Width="50">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type  local:AlgorithmResult}">
+                                    <DataTemplate  DataType="{x:Type  se:ViewResultAlg}">
                                         <TextBlock Text="{Binding Id}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="ResultDesc" >
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
+                                    <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
                                         <TextBlock Text="{ Binding  ResultDesc}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="{x:Static properties:Resources.BatchNumber}" Width="160">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
+                                    <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
                                         <TextBlock Text="{ Binding  Batch}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="{x:Static properties:Resources.File}" >
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
+                                    <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
                                         <TextBlock Text="{ Binding   FilePath}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="{x:Static properties:Resources.Template}" >
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
+                                    <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
                                         <TextBlock Text="{ Binding   POITemplateName}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="img_result" >
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
+                                    <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
                                         <TextBlock Text="{ Binding  ResultImagFile}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
@@ -155,21 +161,21 @@
 
                             <GridViewColumn  Header="{x:Static properties:Resources.CreateTime}" >
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
+                                    <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
                                         <TextBlock Text="{ Binding  CreateTime}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="{x:Static properties:Resources.Duration}" >
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
+                                    <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
                                         <TextBlock Text="{ Binding  TotalTime}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="ResultType" >
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
+                                    <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
                                         <TextBlock Text="{ Binding  ResultType}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
@@ -205,7 +211,7 @@
             </ListView.View>
         </ListView>
 
-        <TextBox x:Name="SideTextBox" Visibility="Collapsed" Panel.ZIndex="9" Grid.Column="1" Width="{Binding ActualWidth,ElementName=listViewSide}" TextWrapping="WrapWithOverflow" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
+        <TextBox x:Name="TextBoxside" Visibility="Collapsed" Panel.ZIndex="9" Grid.Column="1" Width="{Binding ActualWidth,ElementName=listViewSide}" TextWrapping="WrapWithOverflow" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
 
         <GridSplitter  Grid.Column="1"  Panel.ZIndex="999" Background="#1FFFFFFF"  Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted1"  />
 

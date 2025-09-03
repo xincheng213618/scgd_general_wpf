@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.UI;
-using HelixToolkit.Wpf;
 using System;
 using System.Diagnostics;
 using System.Windows;

@@ -333,12 +333,6 @@
   <data name="Name" xml:space="preserve">
     <value>Имя</value>
   </data>
-  <data name="MysqlConnectionConfiguration" xml:space="preserve">
-    <value>Конфигурация соединения MySql</value>
-  </data>
-  <data name="MysqlConnection" xml:space="preserve">
-    <value>MySql-соединение</value>
-  </data>
   <data name="MyLicense_R" xml:space="preserve">
     <value>Моя лицензия(R)</value>
   </data>
@@ -436,7 +430,7 @@
     <value>Настройки шаблона призрака (G)</value>
   </data>
   <data name="MenuFOV" xml:space="preserve">
-    <value>Настройки шаблона поля зрения (B)";</value>
+    <value>Настройки шаблона поля зрения (B)</value>
   </data>
   <data name="MenuFocusPoints" xml:space="preserve">
     <value>Настройки шаблона определения светящейся области (F)</value>

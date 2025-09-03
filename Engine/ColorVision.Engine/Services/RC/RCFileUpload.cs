@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Messages;
 using MQTTMessageLib.FileServer;
 using System;
@@ -47,7 +46,7 @@ namespace ColorVision.Engine.Services.RC
                 log.Info($"UploadCalibrationFileAsync:{fileName}  状态{sender}  Operation time: {stopwatch.ElapsedMilliseconds} ms");
                 tcs.TrySetResult(msgRecord);
             };
-            MsgConfig.Instance.MsgRecords.Add(msgRecord);
+            MsgRecordManager.GetInstance().Insertable(msgRecord);
             msgRecord.MsgRecordStateChanged += handler;
             var timeoutTask = Task.Delay(timeout);
             try

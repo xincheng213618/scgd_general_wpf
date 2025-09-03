@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CS8602
-using ColorVision.Engine.Abstractions;
+using ColorVision.Database;
 using ColorVision.Engine.Messages;
-using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.FileIO;
 using CVCommCore;
@@ -92,33 +91,36 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     }
                     break;
                 default:
-                    List<AlgResultMasterModel> resultMaster = new List<AlgResultMasterModel>();
                     // 判断 msg.Data 不为 null 并且包含 MasterId 属性
                     if (msg.Data != null && msg.Data.MasterId != null && msg.Data.MasterId > 0)
                     {
-                        int MasterId = msg.Data.MasterId;
-                        AlgResultMasterModel model = AlgResultMasterDao.Instance.GetById(MasterId);
+                        int masterId = msg.Data.MasterId;
+                        AlgResultMasterModel model = AlgResultMasterDao.Instance.GetById(masterId);
                         if (model != null)
-                            resultMaster.Add(model);
-                    }
-                    foreach (AlgResultMasterModel result in resultMaster)
-                    {
-                        Application.Current.Dispatcher.BeginInvoke(() =>
                         {
-                            Device.View.AlgResultMasterModelDataDraw(result);
-                        });
+                            log.Debug($"FileUrl：{model.ImgFile}");
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                Device.View.AlgResultMasterModelDataDraw(model);
+                            });
+                        }
+                        else
+                        {
+                            log.Debug($"GetImgResult By Id is null: {masterId}");
+                        }
                     }
+
 
                     break;
             }
         }
 
-        public ObservableCollection<string> ImageFiles { get => _ImageFiles; set { _ImageFiles = value; NotifyPropertyChanged(); } }
+        public ObservableCollection<string> ImageFiles { get => _ImageFiles; set { _ImageFiles = value; OnPropertyChanged(); } }
         private ObservableCollection<string> _ImageFiles = new ObservableCollection<string>();
 
-        public List<string> RawImageFiles { get => _RawImageFiles; set { _RawImageFiles = value; NotifyPropertyChanged(); } } 
+        public List<string> RawImageFiles { get => _RawImageFiles; set { _RawImageFiles = value; OnPropertyChanged(); } } 
         private List<string> _RawImageFiles = new List<string>();
-        public List<string> CIEImageFiles { get => _CIEImageFiles; set { _CIEImageFiles = value; NotifyPropertyChanged(); } }
+        public List<string> CIEImageFiles { get => _CIEImageFiles; set { _CIEImageFiles = value; OnPropertyChanged(); } }
         private List<string> _CIEImageFiles = new List<string>();
 
         public Dictionary<string, string> HistoryFilePath { get; set; } = new Dictionary<string, string>() { };

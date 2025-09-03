@@ -129,53 +129,17 @@
   <data name="MenuAbout" xml:space="preserve">
     <value>について (_A)</value>
   </data>
-  <data name="MenuSettings" xml:space="preserve">
-    <value>設定 (_S)</value>
-  </data>
-  <data name="MenuOptions" xml:space="preserve">
-    <value>オプション (_O)</value>
-  </data>
   <data name="About" xml:space="preserve">
     <value>について</value>
   </data>
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>自動起動</value>
   </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>非表示</value>
-  </data>
-  <data name="Close" xml:space="preserve">
-    <value>キャンセル</value>
-  </data>
-  <data name="Minimize" xml:space="preserve">
-    <value>最小化</value>
-  </data>
-  <data name="Pin" xml:space="preserve">
-    <value>ピン留めする</value>
-  </data>
-  <data name="Restore" xml:space="preserve">
-    <value>リセットする</value>
-  </data>
-  <data name="Save" xml:space="preserve">
-    <value>保存</value>
-  </data>
-  <data name="Cancel" xml:space="preserve">
-    <value>キャンセル</value>
-  </data>
-  <data name="OK" xml:space="preserve">
-    <value>OK</value>
-  </data>
-  <data name="Settings" xml:space="preserve">
-    <value>設定</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>回復インターフェイスのレイアウトを開始します</value>
   </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>ソフトウェアバージョン</value>
-  </data>
-  <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
-    <value>ソフトウェアの起動時にローカルサービスを開きます</value>
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>ウィザード</value>
@@ -186,35 +150,14 @@
   <data name="CheckUpdatesOnStartup" xml:space="preserve">
     <value>ソフトウェアの起動時にアップデートを検出する</value>
   </data>
-  <data name="TransparentWindow" xml:space="preserve">
-    <value>透明な窓</value>
-  </data>
   <data name="Project" xml:space="preserve">
     <value>プロジェクト</value>
-  </data>
-  <data name="EnableDatabase" xml:space="preserve">
-    <value>データベースを有効にする</value>
   </data>
   <data name="Acquire" xml:space="preserve">
     <value>コレクション</value>
   </data>
-  <data name="RunAsAdmin" xml:space="preserve">
-    <value>管理者として実行</value>
-  </data>
-  <data name="NotRunAsAdmin" xml:space="preserve">
-    <value>非管理者として実行する</value>
-  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>正常に開始されました</value>
-  </data>
-  <data name="ExperimentalFeature" xml:space="preserve">
-    <value>実験的な機能</value>
-  </data>
-  <data name="InstallCertificate" xml:space="preserve">
-    <value>証明書のインストール</value>
-  </data>
-  <data name="SerialNumber" xml:space="preserve">
-    <value>シリアルナンバー</value>
   </data>
   <data name="CurrentVersionIsUpToDate" xml:space="preserve">
     <value>現在のバージョンはすでに最新バージョンです</value>
@@ -230,9 +173,6 @@
   </data>
   <data name="ErrorOccurred" xml:space="preserve">
     <value>エラーが発生しました</value>
-  </data>
-  <data name="ConnectionName" xml:space="preserve">
-    <value>接続名</value>
   </data>
   <data name="ChangeLog" xml:space="preserve">
     <value>変更ログ</value>
@@ -258,15 +198,6 @@
   <data name="Upgrade" xml:space="preserve">
     <value>アップグレード</value>
   </data>
-  <data name="Sended" xml:space="preserve">
-    <value>送信済み</value>
-  </data>
-  <data name="Local" xml:space="preserve">
-    <value>地元</value>
-  </data>
-  <data name="Alias" xml:space="preserve">
-    <value>エイリアス</value>
-  </data>
   <data name="Duration" xml:space="preserve">
     <value>時間コスト</value>
   </data>
@@ -291,9 +222,6 @@
   <data name="UploadFile" xml:space="preserve">
     <value>ファイルをアップロードする</value>
   </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>編集する (_E)</value>
-  </data>
   <data name="PluginManagerWindow" xml:space="preserve">
     <value>プラグインマネージャーウィンドウ</value>
   </data>
@@ -305,12 +233,6 @@
   </data>
   <data name="BuildDate" xml:space="preserve">
     <value>ビルド日</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>プロジェクト名</value>
-  </data>
-  <data name="Command" xml:space="preserve">
-    <value>コマンド</value>
   </data>
   <data name="Search" xml:space="preserve">
     <value>検索</value>

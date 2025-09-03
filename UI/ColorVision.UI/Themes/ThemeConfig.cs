@@ -12,7 +12,7 @@ namespace ColorVision.Themes
         /// </summary>
         public Theme Theme { get; set; } = Theme.UseSystem;
 
-        public bool TransparentWindow { get => _TransparentWindow; set { _TransparentWindow = value; NotifyPropertyChanged(); } }
+        public bool TransparentWindow { get => _TransparentWindow; set { _TransparentWindow = value; OnPropertyChanged(); } }
         private bool _TransparentWindow = true;
     }
 }

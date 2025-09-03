@@ -1,6 +1,6 @@
 ﻿
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Jsons;
@@ -82,8 +82,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
             }
         }
 
-        public override int Id { get => ModThirdPartyAlgorithmsModel.Id; set { ModThirdPartyAlgorithmsModel.Id = value; NotifyPropertyChanged(); } }
-        public override string Name { get => ModThirdPartyAlgorithmsModel.Name ?? string.Empty; set { ModThirdPartyAlgorithmsModel.Name = value; NotifyPropertyChanged(); } }
+        public override int Id { get => ModThirdPartyAlgorithmsModel.Id; set { ModThirdPartyAlgorithmsModel.Id = value; OnPropertyChanged(); } }
+        public override string Name { get => ModThirdPartyAlgorithmsModel.Name ?? string.Empty; set { ModThirdPartyAlgorithmsModel.Name = value; OnPropertyChanged(); } }
 
         public string JsonValue
         {
@@ -92,7 +92,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
                 if (JsonHelper.IsValidJson(value))
                 {
                     ModThirdPartyAlgorithmsModel.JsonVal = value;
-                    NotifyPropertyChanged();
+                    OnPropertyChanged();
                 }
                 else
                 {

@@ -6,12 +6,12 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ColorVision.Database;
 
 namespace ColorVision.Engine.Templates.Jsons.LargeFlow
 {
@@ -275,7 +275,7 @@ namespace ColorVision.Engine.Templates.Jsons.LargeFlow
                     LargeFlowConfig.Flows.Add(item.Key);
             }
             TJLargeFlowParam.JsonValue = JsonConvert.SerializeObject(LargeFlowConfig);
-            TemplateJsonDao.Instance.Save(TJLargeFlowParam.TemplateJsonModel);
+            MySqlControl.GetInstance().DB.Insertable(TJLargeFlowParam.TemplateJsonModel).ExecuteReturnIdentity();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

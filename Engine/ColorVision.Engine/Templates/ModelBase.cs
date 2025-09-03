@@ -1,5 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Database;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
@@ -12,15 +14,31 @@ namespace ColorVision.Engine.Templates
     public class ParamBase : ViewModelBase
     {
         [Browsable(false)]
-        public virtual int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
+        public virtual int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }
         private int _Id;
 
         [Browsable(false)]
-        public virtual string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        public virtual string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name;
     }
 
 
+    public class SymbolCache
+    {
+        public static SymbolCache Instance { get; set; } =  new SymbolCache();
+
+        public ConcurrentDictionary<int, SysDictionaryModDetaiModel> Cache { get; set; } = new ConcurrentDictionary<int, SysDictionaryModDetaiModel>();
+
+        public SymbolCache() 
+        {
+            MySqlControl.GetInstance().DB.Queryable<SysDictionaryModDetaiModel>().ToList().ForEach(item =>
+            {
+                Cache.TryAdd(item.Id, item);
+            });
+        }
+
+
+    }
 
     public class ModelBase : ParamBase
     {
@@ -33,19 +51,12 @@ namespace ColorVision.Engine.Templates
 
         public ModelBase(List<ModDetailModel> detail) : this()
         {
-            AddDetail(detail);
-        }
-
-        public void AddDetail(List<ModDetailModel> detail)
-        {
-            if (detail != null)
+            foreach (var flowDetailModel in detail)
             {
-                foreach (var flowDetailModel in detail)
+                SymbolCache.Instance.Cache.TryGetValue(flowDetailModel.SysPid, out SysDictionaryModDetaiModel? dicModel);
+                if (dicModel != null && dicModel.Symbol != null)
                 {
-                    if (flowDetailModel.Symbol != null && !parameters.ContainsKey(flowDetailModel.Symbol))
-                    {
-                        parameters.Add(flowDetailModel.Symbol, flowDetailModel);
-                    }
+                    parameters.TryAdd(dicModel.Symbol, flowDetailModel);
                 }
             }
         }
@@ -68,7 +79,7 @@ namespace ColorVision.Engine.Templates
                     }
                 }
             }
-            NotifyPropertyChanged(propertyName);
+            OnPropertyChanged(propertyName);
             return true;
         }
 

@@ -1,14 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Abstractions;
+using ColorVision.Engine;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Database;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes;
@@ -18,8 +15,6 @@ using CVCommCore.CVAlgorithm;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
-using MySqlConnector.Logging;
-using NPOI.SS.Formula.Functions;
 using Panuon.WPF.UI;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
@@ -27,33 +22,31 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Ports;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using WpfHexaEditor.Core.MethodExtention;
 
 namespace ProjectBlackMura
 {
 
     public class BlackMuraResult:ViewModelBase
     {
-        public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
+        public int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }
         private int _Id;
 
-        public string Model { get => _Model; set { _Model = value; NotifyPropertyChanged(); } }
+        public string Model { get => _Model; set { _Model = value; OnPropertyChanged(); } }
         private string _Model = string.Empty;
         public string Code { get; set; }
 
-        public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }
+        public string SN { get => _SN; set { _SN = value; OnPropertyChanged(); } }
         private string _SN;
-        public string WhiteFilePath { get => _WhiteFilePath; set { _WhiteFilePath = value; NotifyPropertyChanged(); } }
+        public string WhiteFilePath { get => _WhiteFilePath; set { _WhiteFilePath = value; OnPropertyChanged(); } }
         private string _WhiteFilePath = string.Empty;
 
 
-        public bool Result { get => _Result; set { _Result = value; NotifyPropertyChanged(); } }
+        public bool Result { get => _Result; set { _Result = value; OnPropertyChanged(); } }
         private bool _Result = true;
 
         public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
@@ -79,7 +72,6 @@ namespace ProjectBlackMura
             InitializeComponent();
             this.ApplyCaption();
             BlackMuraWindowConfig.Instance.SetWindow(this);
-            this.SizeChanged += (s, e) => BlackMuraWindowConfig.Instance.SetConfig(this);
 
         }
         private LogOutput? logOutput;
@@ -133,8 +125,6 @@ namespace ProjectBlackMura
             if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否删除 {item.SN} 测试结果？", "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 ViewResluts.Remove(item);
-                BatchResultMasterDao.Instance.DeleteById(item.Id);
-                log.Info($"删除测试结果 {item.SN}");
             }
         }
 
@@ -345,7 +335,7 @@ namespace ProjectBlackMura
             stopwatch.Reset();
             stopwatch.Start();
 
-            BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
+            BatchResultMasterDao.Instance.Save(new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
 
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
@@ -428,7 +418,7 @@ namespace ProjectBlackMura
             {
                 foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
                 {
-                    if (item.ImgFileType == AlgorithmResultType.BlackMura_Calc)
+                    if (item.ImgFileType == ViewResultAlgType.BlackMura_Calc)
                     {
                         List<BlackMuraModel> AlgResultModels = BlackMuraDao.Instance.GetAllByPid(item.Id);
                         if (AlgResultModels.Count > 0)
@@ -453,7 +443,7 @@ namespace ProjectBlackMura
                         }
                     }
 
-                    if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
+                    if (item.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
                         List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
                         int id = 0;
@@ -479,7 +469,7 @@ namespace ProjectBlackMura
             {
                 foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
                 {
-                    if (item.ImgFileType == AlgorithmResultType.BlackMura_Calc)
+                    if (item.ImgFileType == ViewResultAlgType.BlackMura_Calc)
                     {
                         List<BlackMuraModel> AlgResultModels = BlackMuraDao.Instance.GetAllByPid(item.Id);
                         if (AlgResultModels.Count > 0)
@@ -501,7 +491,7 @@ namespace ProjectBlackMura
 
                         }
                     }
-                    if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
+                    if (item.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
                         List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
                         int id = 0;
@@ -527,7 +517,7 @@ namespace ProjectBlackMura
             {
                 foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
                 {
-                    if (item.ImgFileType == AlgorithmResultType.BlackMura_Calc)
+                    if (item.ImgFileType == ViewResultAlgType.BlackMura_Calc)
                     {
                         List<BlackMuraModel> AlgResultModels = BlackMuraDao.Instance.GetAllByPid(item.Id);
                         if (AlgResultModels.Count > 0)
@@ -550,7 +540,7 @@ namespace ProjectBlackMura
 
                         }
                     }
-                    if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
+                    if (item.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
                         List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
                         int id = 0;
@@ -574,7 +564,7 @@ namespace ProjectBlackMura
             {
                 foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
                 {
-                    if (item.ImgFileType == AlgorithmResultType.BlackMura_Calc)
+                    if (item.ImgFileType == ViewResultAlgType.BlackMura_Calc)
                     {
                         List<BlackMuraModel> AlgResultModels = BlackMuraDao.Instance.GetAllByPid(item.Id);
                         if (AlgResultModels.Count > 0)
@@ -597,7 +587,7 @@ namespace ProjectBlackMura
 
                         }
                     }
-                    if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
+                    if (item.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
                         List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
                         int id = 0;
@@ -621,7 +611,7 @@ namespace ProjectBlackMura
             {
                 foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
                 {
-                    if (item.ImgFileType == AlgorithmResultType.BlackMura_Calc)
+                    if (item.ImgFileType == ViewResultAlgType.BlackMura_Calc)
                     {
                         List<BlackMuraModel> AlgResultModels = BlackMuraDao.Instance.GetAllByPid(item.Id);
                         if (AlgResultModels.Count > 0)
@@ -644,7 +634,7 @@ namespace ProjectBlackMura
 
                         }
                     }
-                    if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
+                    if (item.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
                         List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
                         int id = 0;
@@ -738,18 +728,19 @@ namespace ProjectBlackMura
                 switch (item.POIPoint.PointType)
                 {
                     case POIPointTypes.Circle:
-                        DVCircleText Circle = new();
-                        Circle.Attribute.Center = new Point(item.POIPoint.PixelX, item.POIPoint.PixelY);
-                        Circle.Attribute.Radius = item.POIPoint.Radius;
-                        Circle.Attribute.Brush = Brushes.Transparent;
-                        Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                        Circle.Attribute.Id = item.Id;
-                        Circle.Attribute.Text = item.Name;
+                        CircleTextProperties circleTextProperties = new CircleTextProperties();
+                        circleTextProperties.Center = new Point(item.POIPoint.PixelX, item.POIPoint.PixelY);
+                        circleTextProperties.Radius = item.POIPoint.Radius;
+                        circleTextProperties.Brush = Brushes.Transparent;
+                        circleTextProperties.Pen = new Pen(Brushes.Red, 1);
+                        circleTextProperties.Id = item.Id;
+                        circleTextProperties.Text = item.Name;
+                        DVCircleText Circle = new DVCircleText(circleTextProperties);
                         Circle.Render();
                         ImageView.AddVisual(Circle);
                         break;
                     case POIPointTypes.Rect:
-                        DVRectangleText Rectangle = new();
+                        DVRectangleText Rectangle = new DVRectangleText();
                         Rectangle.Attribute.Rect = new Rect(item.POIPoint.PixelX - item.POIPoint.Width / 2, item.POIPoint.PixelY - item.POIPoint.Height / 2, item.POIPoint.Width, item.POIPoint.Height);
                         Rectangle.Attribute.Brush = Brushes.Transparent;
                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
@@ -762,7 +753,6 @@ namespace ProjectBlackMura
                         break;
                 }
             }
-            ImageView.RaiseRenderCompleted();
         }
 
 

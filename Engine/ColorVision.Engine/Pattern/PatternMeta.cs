@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using Newtonsoft.Json;
 
 namespace ColorVision.Engine.Pattern
 {

@@ -24,13 +24,13 @@ namespace ColorVision.UI
 
         public string DownloadTile { get; set; }
 
-        public int ProgressValue { get => _ProgressValue; set { _ProgressValue = value; NotifyPropertyChanged(); } }
+        public int ProgressValue { get => _ProgressValue; set { _ProgressValue = value; OnPropertyChanged(); } }
         private int _ProgressValue;
 
-        public string SpeedValue { get => _SpeedValue; set { _SpeedValue = value; NotifyPropertyChanged(); } }
+        public string SpeedValue { get => _SpeedValue; set { _SpeedValue = value; OnPropertyChanged(); } }
         private string _SpeedValue;
 
-        public string RemainingTimeValue { get => _RemainingTimeValue; set { _RemainingTimeValue = value; NotifyPropertyChanged(); } }
+        public string RemainingTimeValue { get => _RemainingTimeValue; set { _RemainingTimeValue = value; OnPropertyChanged(); } }
         private string _RemainingTimeValue;
 
 

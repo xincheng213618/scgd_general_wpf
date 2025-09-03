@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
 using ColorVision.UI.Utilities;
 using Newtonsoft.Json;
 using System;
@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Templates.Jsons
     {
         [Browsable(false)]
         [JsonIgnore]
-        public TemplateJsonModel TemplateJsonModel { get; set; }
+        public ModMasterModel TemplateJsonModel { get; set; }
         [Browsable(false)]
         [JsonIgnore]
         public RelayCommand ResetCommand { get; set; }
@@ -23,23 +23,20 @@ namespace ColorVision.Engine.Templates.Jsons
         [JsonIgnore]
         public RelayCommand CheckCommand { get; set; }
 
-        [Browsable(false)]
-        public DicTemplateJsonModel? DicTemplateJsonModel => DicTemplateJsonDao.Instance.GetById(TemplateJsonModel.DicId);
-
         public RelayCommand OpenEditToolCommand { get; set; }
 
         public string Description { get;  }
 
         public TemplateJsonParam()
         {
-            TemplateJsonModel = new TemplateJsonModel();
+            TemplateJsonModel = new ModMasterModel();
             ResetCommand = new RelayCommand((a) => ResetValue());
             OpenEditToolCommand = new RelayCommand(a => OpenEditTool());
             CheckCommand = new RelayCommand(a => Check());
             Description = "Json配置";
         }
 
-        public TemplateJsonParam(TemplateJsonModel templateJsonModel)
+        public TemplateJsonParam(ModMasterModel templateJsonModel)
         {
             TemplateJsonModel = templateJsonModel;
             ResetCommand = new RelayCommand((a) => ResetValue());
@@ -72,8 +69,9 @@ namespace ColorVision.Engine.Templates.Jsons
         }
 
         public void ResetValue()
-        {
-            if (DicTemplateJsonModel is DicTemplateJsonModel dicnmodel && DicTemplateJsonModel.JsonVal is string str)
+        {        
+            SysDictionaryModModel? DicTemplateJsonModel = MySqlControl.GetInstance().DB.Queryable<SysDictionaryModModel>().Where(x => x.Id == TemplateJsonModel.Pid).First(); 
+            if (DicTemplateJsonModel !=null && DicTemplateJsonModel.JsonVal is string str)
             {
                 JsonValue = str;
                 JsonValueChanged?.Invoke(this, EventArgs.Empty);
@@ -84,8 +82,8 @@ namespace ColorVision.Engine.Templates.Jsons
             }
         }
 
-        public override int Id { get => TemplateJsonModel.Id; set { TemplateJsonModel.Id = value; NotifyPropertyChanged(); } }
-        public override string Name { get => TemplateJsonModel.Name ?? string.Empty; set { TemplateJsonModel.Name = value; NotifyPropertyChanged(); } }
+        public override int Id { get => TemplateJsonModel.Id; set { TemplateJsonModel.Id = value; OnPropertyChanged(); } }
+        public override string Name { get => TemplateJsonModel.Name ?? string.Empty; set { TemplateJsonModel.Name = value; OnPropertyChanged(); } }
 
         public event EventHandler JsonValueChanged;
 
@@ -96,7 +94,7 @@ namespace ColorVision.Engine.Templates.Jsons
                 if (JsonHelper.IsValidJson(value))
                 {
                     TemplateJsonModel.JsonVal = value;
-                    NotifyPropertyChanged();
+                    OnPropertyChanged();
                 }
             }
         }

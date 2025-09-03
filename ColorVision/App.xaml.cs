@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.NativeMethods;
+using ColorVision.Engine.Services.RC;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Languages;
@@ -71,6 +72,9 @@ namespace ColorVision
                 Assembly.LoadFrom("ColorVision.Solution.dll"); ;
             if (File.Exists("ColorVision.SocketProtocol.dll"))
                 Assembly.LoadFrom("ColorVision.SocketProtocol.dll"); ;
+            if (File.Exists("ColorVision.Database.dll"))
+                Assembly.LoadFrom("ColorVision.Database.dll"); ;
+            
 
             ConfigHandler.GetInstance();
             ConfigHandler.GetInstance().IsAutoSave = false;
@@ -110,9 +114,7 @@ namespace ColorVision
                 }
                 else
                 {
-                    MessageBox.Show("不支持的文件格式");
-                    Environment.Exit(0);
-                    return;
+
                 }
             }
 
@@ -216,12 +218,19 @@ namespace ColorVision
 
                 Task.Run(async () =>
                 {
-                    foreach (var item in _IComponentInitializers)
+                    foreach (var initializer in _IComponentInitializers)
                     {
-                        await item.InitializeAsync();
+                        //防止搞崩程序
+                        try
+                        {
+                            await initializer.InitializeAsync();
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error(ex);
+                        }
                     }  
                 });
-
 
                 MainWindow MainWindow = new MainWindow();
                 MainWindow.Show();

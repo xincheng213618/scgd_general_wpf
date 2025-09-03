@@ -1,8 +1,5 @@
 ﻿using ColorVision.Common.Algorithms;
-using ColorVision.Engine.Abstractions;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Database;
 using ColorVision.ImageEditor.Draw;
 using SqlSugar;
 using System.Collections.Generic;
@@ -13,6 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.FindLightArea
 {
@@ -37,9 +35,9 @@ namespace ColorVision.Engine.Templates.FindLightArea
 
     public class ViewHandleFindLightArea : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.LightArea, AlgorithmResultType.FindLightArea };
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.LightArea, ViewResultAlgType.FindLightArea };
 
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
             var ViewResults = result.ViewResults.ToSpecificViewResults<AlgResultLightAreaModel>();
@@ -48,12 +46,12 @@ namespace ColorVision.Engine.Templates.FindLightArea
         }
 
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             result.ViewResults ??= new ObservableCollection<IViewResult>(AlgResultLightAreaDao.Instance.GetAllByPid(result.Id));
         }
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             view.ImageView.ImageShow.Clear();
 
@@ -87,14 +85,14 @@ namespace ColorVision.Engine.Templates.FindLightArea
             List<string> bdHeader = new List<string> { "PosX", "PosY" };
 
 
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
-                view.listViewSide.ItemsSource = null;
+                view.ListView.ItemsSource = null;
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
         }
     }

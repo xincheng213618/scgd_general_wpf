@@ -26,7 +26,7 @@ namespace ColorVision.UI
         [JsonProperty("description")]
         public string Description { get; set; }
 
-        [JsonProperty("dll_name")]
+        [JsonProperty("dllpath")]
         public string DllName { get; set; }
 
         [JsonProperty("requires")]
@@ -69,12 +69,8 @@ namespace ColorVision.UI
 
         [JsonIgnore]
         public ImageSource? Icon { get; set; }
-
-
         [JsonIgnore]
         public Assembly Assembly { get; set; }
-        [JsonIgnore]
-        public IPlugin IPlugin { get; set; }
     }
 
     public class PluginManagerConfig : IConfig

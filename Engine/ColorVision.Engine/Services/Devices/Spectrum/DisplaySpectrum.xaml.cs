@@ -1,5 +1,4 @@
 ﻿using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.UI;
 using CVCommCore;
@@ -36,12 +35,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             this.ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
-
-            SpectrumService.DataHandlerEvent += (s,e) =>
-            {
-                if (e != null)
-                    View.SpectrumDrawPlot(e);
-            };
 
             void UpdateUI(DeviceStatusType status)
             {
@@ -106,23 +99,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
 
-        private void enableBtn(bool enable)
-        {
-            btn_connect.IsEnabled = enable;
-            btn_autoTest.IsEnabled = enable;
-            btn_oneTest.IsEnabled = enable;
-            btn_oneInitDark.IsEnabled = enable;
-            //btn_getPatam.IsEnabled = enable;
-        }
-
-        public void SpectrumClear()
-        {
-            View.Clear();
-        }
-        public void SpectrumDrawPlot(SpectrumData data)
-        {
-            View.SpectrumDrawPlot(data);
-        }
 
 
         #region MQTT
@@ -190,10 +166,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             };
         }
 
-        private void Button_Click_GetParam(object sender, RoutedEventArgs e)
-        {
-            SpectrumService.GetParam();
-        }
         #endregion
 
         private void Button_Click_Shutter_Connect(object sender, RoutedEventArgs e)

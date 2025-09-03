@@ -1,15 +1,9 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.SMU.Dao;
-using ColorVision.Engine.Services.Devices.SMU.Views;
-using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
-using cvColorVision;
-using Newtonsoft.Json;
 using ScottPlot;
 using ScottPlot.Plottables;
 using System;
@@ -287,29 +281,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             wpfplot1.Refresh();
         }
 
-        bool First;
-
-        public void SpectrumDrawPlot(SpectrumData data)
-        {
-            if (!First)
-            {
-                listView1.Visibility = Visibility.Visible;
-                listView2.Visibility = Visibility.Visible;
-                First = true;
-            }
-
-            COLOR_PARA colorParam = data.Data;
-
-            ViewResultSpectrum viewResultSpectrum = new(colorParam);
-            viewResultSpectrum.Id = data.ID;
-            viewResultSpectrum.V = data.V;
-            viewResultSpectrum.I = data.I;
-            ViewResults.Add(viewResultSpectrum);
-
-            ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
-            listView1.SelectedIndex = ViewResults.Count - 1;
-        }
-
         private List<Scatter> ScatterPlots { get; set; } = new List<Scatter>();
 
         private void Button1_Click(object sender, RoutedEventArgs e)
@@ -454,49 +425,25 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         {
             ViewResults.Clear();
             ScatterPlots.Clear();
-            if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text)&& SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
-            {
-                var list = SpectumResultDao.Instance.GetAll();
-                foreach (var item in list)
-                {
-                    ViewResultSpectrum viewResultSpectrum = new(item);
-                    viewResultSpectrum.V = float.NaN;
-                    viewResultSpectrum.I = float.NaN;
-                    ViewResults.Add(viewResultSpectrum);
-                    ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
-                };
-            }
-            else
-            {
 
-                var list = SpectumResultDao.Instance.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, SearchTimeSart.SelectedDateTime, SearchTimeEnd.SelectedDateTime);
-                foreach (var item in list)
-                {
-                    ViewResultSpectrum viewResultSpectrum = new(item);
-                    viewResultSpectrum.V = float.NaN;
-                    viewResultSpectrum.I = float.NaN;
-                    ViewResults.Add(viewResultSpectrum);
-                    ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
-                };
+            var list = MySqlControl.GetInstance().DB.Queryable<SpectumResultModel>().OrderByDescending(x => x.Id).ToList();
+            foreach (var item in list)
+            {
+                ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(item);
+                viewResultSpectrum.V = float.NaN;
+                viewResultSpectrum.I = float.NaN;
+                ViewResults.Add(viewResultSpectrum);
+                ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
             }
+            ;
             if (ViewResults.Count > 0)
             {
                 listView1.Visibility = Visibility.Visible;
                 listView2.Visibility = Visibility.Visible;
-                First = true;
                 listView1.SelectedIndex = 0;
             }
-            SerchPopup.IsOpen = false;
         }
 
-        private void Search1_Click(object sender, RoutedEventArgs e)
-        {
-            SearchTimeSart.SelectedDateTime = null;
-            SearchTimeEnd.SelectedDateTime = DateTime.Now;
-
-            SerchPopup.IsOpen = true;
-            TextBoxId.Text = string.Empty;
-        }
 
         private void ContextMenu_Click(object sender, RoutedEventArgs e)
         {
@@ -543,75 +490,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             }
         }
 
-        public static void SpectrumDrawPlotFromDB(string bid)
-        {
-            List<SpectrumData> datas = new();
-            List<SpectumResultModel> resultSpec;
-            List<SMUResultModel> resultSMU;
-            BatchResultMasterModel batch = BatchResultMasterDao.Instance.GetByCode(bid);
-            if (batch == null)
-            {
-                resultSMU = SMUResultDao.Instance.selectBySN(bid);
-                resultSpec = SpectumResultDao.Instance.selectBySN(bid);
-            }
-            else
-            {
-                resultSMU = SMUResultDao.Instance.GetAllByPid(batch.Id);
-                resultSpec = SpectumResultDao.Instance.GetAllByPid(batch.Id);
-            }
-
-            for (int i = 0; i < resultSpec.Count; i++)
-            {
-                var item = resultSpec[i];
-                COLOR_PARA param = new()
-                {
-                    fx = item.fx ?? 0,
-                    fy = item.fy ?? 0,
-                    fu = item.fu ?? 0,
-                    fv = item.fv ?? 0,
-                    fCCT = item.fCCT ?? 0,
-                    dC = item.dC ?? 0,
-                    fLd = item.fLd ?? 0,
-                    fPur = item.fPur ?? 0,
-                    fLp = item.fLp ?? 0,
-                    fHW = item.fHW ?? 0,
-                    fLav = item.fLav ?? 0,
-                    fRa = item.fRa ?? 0,
-                    fRR = item.fRR ?? 0,
-                    fGR = item.fGR ?? 0,
-                    fBR = item.fBR ?? 0,
-                    fIp = item.fIp ?? 0,
-                    fPh = item.fPh ?? 0,
-                    fPhe = item.fPhe ?? 0,
-                    fPlambda = item.fPlambda ?? 0,
-                    fSpect1 = item.fSpect1 ?? 0,
-                    fSpect2 = item.fSpect2 ?? 0,
-                    fInterval = item.fInterval ?? 0,
-                    fPL = JsonConvert.DeserializeObject<float[]>(item.fPL ?? string.Empty) ?? Array.Empty<float>(),
-                    fRi = JsonConvert.DeserializeObject<float[]>(item.fRi ?? string.Empty) ?? Array.Empty<float>(),
-                };
-                SpectrumData data = new(item.Id, param);
-                if (i < resultSMU.Count)
-                {
-                    data.V = resultSMU[i].VResult;
-                    data.I = resultSMU[i].IResult;
-                }
-                else
-                {
-                    data.V = float.NaN;
-                    data.I = float.NaN;
-                }
-
-                datas.Add(data);
-            }
-        }
-
-
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
             {
-                Type type = typeof(ViewResultCamera);
+                Type type = typeof(ViewResultImage);
 
                 var properties = type.GetProperties();
                 foreach (var property in properties)

@@ -3,4 +3,4 @@
   <Value Key="NeutralResourcesLanguage">zh-Hans</Value>
   <Value Key="Rules">{"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}</Value>
   <Value Key="PrefixTranslations">False</Value>
-</Values>
+<Value Key="ConfirmAddLanguageFile">True</Value></Values>

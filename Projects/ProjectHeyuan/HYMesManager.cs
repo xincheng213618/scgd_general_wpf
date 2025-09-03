@@ -23,7 +23,7 @@ namespace ColorVision.Projects.ProjectHeyuan
             OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
         }
 
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
         public void OpenTemplate()
         {
@@ -34,26 +34,26 @@ namespace ColorVision.Projects.ProjectHeyuan
         {
             new FlowEngineToolWindow(TemplateFlow.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-        public bool IsOpenConnect { get => _IsOpenConnect;set { _IsOpenConnect = value; NotifyPropertyChanged(); } }
+        public bool IsOpenConnect { get => _IsOpenConnect;set { _IsOpenConnect = value; OnPropertyChanged(); } }
         private bool _IsOpenConnect;
 
-        public string PortName { get => _PortName; set { _PortName = value; NotifyPropertyChanged(); } }
+        public string PortName { get => _PortName; set { _PortName = value; OnPropertyChanged(); } }
         private string _PortName;
 
-        public string FlowName { get => _FlowName; set { _FlowName = value; NotifyPropertyChanged(); } }
+        public string FlowName { get => _FlowName; set { _FlowName = value; OnPropertyChanged(); } }
         private string _FlowName;
 
-        public int DeviceId { get => _DeviceId; set { _DeviceId = value; NotifyPropertyChanged(); } }
+        public int DeviceId { get => _DeviceId; set { _DeviceId = value; OnPropertyChanged(); } }
         private int _DeviceId;
 
 
-        public string TestName { get => _TestName; set { _TestName = value; NotifyPropertyChanged(); } }
+        public string TestName { get => _TestName; set { _TestName = value; OnPropertyChanged(); } }
         private string _TestName = "WBROtest";
 
-        public string DataPath { get => _DataPath; set { _DataPath = value; NotifyPropertyChanged(); } }
+        public string DataPath { get => _DataPath; set { _DataPath = value; OnPropertyChanged(); } }
         private string _DataPath;
 
-        public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; NotifyPropertyChanged(); } }
+        public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; OnPropertyChanged(); } }
         private bool _IsAutoUploadSn;
 
     }
@@ -89,7 +89,7 @@ namespace ColorVision.Projects.ProjectHeyuan
             }
         }
 
-        public bool IsConnect { get => _IsConnect; set { _IsConnect = value; NotifyPropertyChanged(); } }
+        public bool IsConnect { get => _IsConnect; set { _IsConnect = value; OnPropertyChanged(); } }
         private bool _IsConnect;
 
         public int OpenPort(string portName)
@@ -201,24 +201,24 @@ namespace ColorVision.Projects.ProjectHeyuan
         public string SN { get => _SN; set {
                 if (_SN == value) return;
                 _SN = value; 
-                NotifyPropertyChanged();
+                OnPropertyChanged();
                 if (Config.IsAutoUploadSn)
                     UploadSN();
             }
         }
         private string _SN;
 
-        public bool? CSNResult { get => _CSNResult; set { _CSNResult = value; NotifyPropertyChanged(); } }
+        public bool? CSNResult { get => _CSNResult; set { _CSNResult = value; OnPropertyChanged(); } }
         private bool? _CSNResult;
 
-        public bool? CPTResult { get => _CPTResult; set { _CPTResult = value; NotifyPropertyChanged(); } }
+        public bool? CPTResult { get => _CPTResult; set { _CPTResult = value; OnPropertyChanged(); } }
         private bool? _CPTResult;
-        public bool? CGIResult { get => _CGIResult; set { _CGIResult = value; NotifyPropertyChanged(); } }
+        public bool? CGIResult { get => _CGIResult; set { _CGIResult = value; OnPropertyChanged(); } }
         private bool? _CGIResult;
 
-        public bool? CMIResult { get => _CMIResult; set { _CMIResult = value; NotifyPropertyChanged(); } }
+        public bool? CMIResult { get => _CMIResult; set { _CMIResult = value; OnPropertyChanged(); } }
         private bool? _CMIResult;
-        public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; NotifyPropertyChanged(); } }
+        public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; OnPropertyChanged(); } }
         private long _LastFlowTime;
 
         public void UploadSN()

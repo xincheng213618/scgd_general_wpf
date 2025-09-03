@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Templates
         [Browsable(false)]
         public ObservableCollection<ModDetailModel> ModDetailModels { get; set; } = new ObservableCollection<ModDetailModel>();
 
-        public ParamModBase() : base(new List<ModDetailModel>())
+        public ParamModBase() 
         {
         }
 

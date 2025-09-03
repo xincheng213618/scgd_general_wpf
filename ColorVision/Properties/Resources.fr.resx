@@ -129,56 +129,17 @@
   <data name="MenuAbout" xml:space="preserve">
     <value>À propos de)</value>
   </data>
-  <data name="MenuSettings" xml:space="preserve">
-    <value>Paramètre_s</value>
-  </data>
-  <data name="MenuOptions" xml:space="preserve">
-    <value>_Option</value>
-  </data>
   <data name="About" xml:space="preserve">
     <value>à propos</value>
   </data>
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>Démarrage (peut échouer)</value>
   </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>cacher</value>
-  </data>
-  <data name="Close" xml:space="preserve">
-    <value>fermeture</value>
-  </data>
-  <data name="Minimize" xml:space="preserve">
-    <value>minimiser</value>
-  </data>
-  <data name="Pin" xml:space="preserve">
-    <value>épingler en haut</value>
-  </data>
-  <data name="Restore" xml:space="preserve">
-    <value>Restaurer</value>
-  </data>
-  <data name="Save" xml:space="preserve">
-    <value>sauvegarder</value>
-  </data>
-  <data name="Cancel" xml:space="preserve">
-    <value>Annuler</value>
-  </data>
-  <data name="OK" xml:space="preserve">
-    <value>Bien sûr</value>
-  </data>
-  <data name="Settings" xml:space="preserve">
-    <value>installation</value>
-  </data>
-  <data name="EnableDatabase" xml:space="preserve">
-    <value>Activer la base de données</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>Démarrer la disposition de l’interface de récupération</value>
   </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>Une version de logiciel</value>
-  </data>
-  <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
-    <value>Ouvrez le service local au démarrage du logiciel</value>
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>magicien</value>
@@ -189,32 +150,14 @@
   <data name="CheckUpdatesOnStartup" xml:space="preserve">
     <value>Détecter les mises à jour au démarrage du logiciel</value>
   </data>
-  <data name="TransparentWindow" xml:space="preserve">
-    <value>fenêtre transparente</value>
-  </data>
   <data name="Project" xml:space="preserve">
     <value>projet</value>
   </data>
   <data name="Acquire" xml:space="preserve">
     <value>collection</value>
   </data>
-  <data name="RunAsAdmin" xml:space="preserve">
-    <value>Exécuter en tant qu'administrateur</value>
-  </data>
-  <data name="NotRunAsAdmin" xml:space="preserve">
-    <value>Exécuter en tant que non-administrateur</value>
-  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>Démarré avec succès</value>
-  </data>
-  <data name="ExperimentalFeature" xml:space="preserve">
-    <value>Fonctionnalités expérimentales</value>
-  </data>
-  <data name="InstallCertificate" xml:space="preserve">
-    <value>Installer le certificat</value>
-  </data>
-  <data name="SerialNumber" xml:space="preserve">
-    <value>numéro de série</value>
   </data>
   <data name="CurrentVersionIsUpToDate" xml:space="preserve">
     <value>La version actuelle est déjà la dernière version</value>
@@ -230,9 +173,6 @@
   </data>
   <data name="ErrorOccurred" xml:space="preserve">
     <value>Une erreur s'est produite</value>
-  </data>
-  <data name="ConnectionName" xml:space="preserve">
-    <value>nom de connexion</value>
   </data>
   <data name="ChangeLog" xml:space="preserve">
     <value>Journal des modifications</value>
@@ -258,15 +198,6 @@
   <data name="Upgrade" xml:space="preserve">
     <value>mise à niveau</value>
   </data>
-  <data name="Sended" xml:space="preserve">
-    <value>Envoyé</value>
-  </data>
-  <data name="Local" xml:space="preserve">
-    <value>locale</value>
-  </data>
-  <data name="Alias" xml:space="preserve">
-    <value>Alias</value>
-  </data>
   <data name="Duration" xml:space="preserve">
     <value>coût du temps</value>
   </data>
@@ -291,9 +222,6 @@
   <data name="UploadFile" xml:space="preserve">
     <value>Télécharger des fichiers</value>
   </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>Modifier(E)</value>
-  </data>
   <data name="PluginManagerWindow" xml:space="preserve">
     <value>FenêtreGestionnaireDePlugins</value>
   </data>
@@ -305,12 +233,6 @@
   </data>
   <data name="BuildDate" xml:space="preserve">
     <value>DateDeConstruction</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>NomDuProjet</value>
-  </data>
-  <data name="Command" xml:space="preserve">
-    <value>Commande</value>
   </data>
   <data name="Search" xml:space="preserve">
     <value>Recherche</value>

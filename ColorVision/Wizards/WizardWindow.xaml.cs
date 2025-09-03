@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Projects;
 using ColorVision.Themes;
 using ColorVision.UI;
 using log4net;
@@ -66,7 +65,6 @@ namespace ColorVision.Wizards
             InitializeComponent();
             this.ApplyCaption();
             WindowConfig.SetWindow(this);
-            this.SizeChanged +=(s,e)=> WindowConfig.SetConfig(this);
         }
 
         private void Window_Initialized(object sender, System.EventArgs e)

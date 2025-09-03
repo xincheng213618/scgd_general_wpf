@@ -9,10 +9,10 @@ namespace ColorVision.UI.Shell
     {
         public static TrayIconConfig Instance => ConfigService.Instance.GetRequiredService<TrayIconConfig>();
 
-        public bool IsShowTrayIcon { get => _IsShowTrayIcon; set { _IsShowTrayIcon = value; NotifyPropertyChanged(); } }
+        public bool IsShowTrayIcon { get => _IsShowTrayIcon; set { _IsShowTrayIcon = value; OnPropertyChanged(); } }
         private bool _IsShowTrayIcon;
 
-        public bool IsUseWPFContextMenu { get => _IsUseWPFContextMenu; set { _IsUseWPFContextMenu = value; NotifyPropertyChanged(); } }
+        public bool IsUseWPFContextMenu { get => _IsUseWPFContextMenu; set { _IsUseWPFContextMenu = value; OnPropertyChanged(); } }
         private bool _IsUseWPFContextMenu = true;
 
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()

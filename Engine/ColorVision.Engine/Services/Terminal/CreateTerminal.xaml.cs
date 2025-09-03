@@ -1,6 +1,5 @@
-﻿using ColorVision.Engine.Rbac;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
+﻿using ColorVision.Database;
+using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Calibration;
@@ -51,7 +50,7 @@ namespace ColorVision.Engine.Services.Terminal
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            SysDeviceModel? saveDevConfigInfo(DeviceServiceConfig deviceConfig, SysResourceModel sysResource)
+            SysResourceModel? saveDevConfigInfo(DeviceServiceConfig deviceConfig, SysResourceModel sysResource)
             {
                 deviceConfig.Name = CreateCode.Text;
                 deviceConfig.Code = CreateName.Text;
@@ -59,10 +58,9 @@ namespace ColorVision.Engine.Services.Terminal
                 deviceConfig.SendTopic = TerminalService.Config.SendTopic;
                 deviceConfig.SubscribeTopic = TerminalService.Config.SubscribeTopic;
                 sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
-                VSysResourceDao.Instance.Save(sysResource);
-                int pkId = sysResource.Id;
-                if (pkId > 0 && VSysDeviceDao.Instance.GetById(pkId) is SysDeviceModel model) return model;
-                else return null;
+                int pkId = MySqlControl.GetInstance().DB.Insertable(sysResource).ExecuteReturnIdentity();
+                sysResource.Id = pkId;
+                return sysResource;
             }
 
 
@@ -83,7 +81,7 @@ namespace ColorVision.Engine.Services.Terminal
             sysResource.TenantId = UserConfig.Instance.TenantId;
 
 
-            SysDeviceModel sysDevModel = null;
+            SysResourceModel sysDevModel = null;
             DeviceServiceConfig deviceConfig;
             int fromPort;
             switch (TerminalService.ServiceType)
@@ -257,9 +255,11 @@ namespace ColorVision.Engine.Services.Terminal
             {
                 TerminalService.AddChild(deviceService);
                 ServiceManager.GetInstance().DeviceServices.Add(deviceService);
-                if (sysDevModel != null && sysDevModel.TypeCode != null && sysDevModel.PCode != null && sysDevModel.Code != null)
-                    RC.MqttRCService.GetInstance().RestartServices(sysDevModel.TypeCode, sysDevModel.PCode, sysDevModel.Code);
-                //MessageBox.Show(WindowHelpers.GetActiveWindow(),"创建成功，正在重启服务", "ColorVision");
+
+                string TypeCode = MySqlControl.GetInstance().DB.Queryable<SysDictionaryModel>().Where(x => x.Pid == 1 && x.Value == sysDevModel.Pid).First().Key;
+                string PCode = MySqlControl.GetInstance().DB.Queryable<SysResourceModel>().InSingle(sysDevModel.Type).Code;
+
+                RC.MqttRCService.GetInstance().RestartServices(TypeCode, PCode, sysDevModel.Code);
                 Close();
             }
             else

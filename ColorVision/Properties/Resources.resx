@@ -129,56 +129,17 @@
   <data name="MenuAbout" xml:space="preserve">
     <value>关于(_A)</value>
   </data>
-  <data name="MenuSettings" xml:space="preserve">
-    <value>设置(_S)</value>
-  </data>
-  <data name="MenuOptions" xml:space="preserve">
-    <value>选项(_O)</value>
-  </data>
   <data name="About" xml:space="preserve">
     <value>关于</value>
   </data>
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>开机启动(可能会不成功)</value>
   </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>隐藏</value>
-  </data>
-  <data name="Close" xml:space="preserve">
-    <value>关闭</value>
-  </data>
-  <data name="Minimize" xml:space="preserve">
-    <value>最小化</value>
-  </data>
-  <data name="Pin" xml:space="preserve">
-    <value>置顶</value>
-  </data>
-  <data name="Restore" xml:space="preserve">
-    <value>向下还原</value>
-  </data>
-  <data name="Save" xml:space="preserve">
-    <value>保存</value>
-  </data>
-  <data name="Cancel" xml:space="preserve">
-    <value>取消</value>
-  </data>
-  <data name="OK" xml:space="preserve">
-    <value>确定</value>
-  </data>
-  <data name="Settings" xml:space="preserve">
-    <value>设置</value>
-  </data>
-  <data name="EnableDatabase" xml:space="preserve">
-    <value>启用数据库</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>恢复上次退出时窗口的大小和位置</value>
   </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>软件版本</value>
-  </data>
-  <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
-    <value>软件启动时打开本地服务</value>
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>向导</value>
@@ -189,32 +150,14 @@
   <data name="CheckUpdatesOnStartup" xml:space="preserve">
     <value>软件启动时检测更新</value>
   </data>
-  <data name="TransparentWindow" xml:space="preserve">
-    <value>透明窗口</value>
-  </data>
   <data name="Project" xml:space="preserve">
     <value>工程</value>
   </data>
   <data name="Acquire" xml:space="preserve">
     <value>采集</value>
   </data>
-  <data name="RunAsAdmin" xml:space="preserve">
-    <value>以管理员身份运行</value>
-  </data>
-  <data name="NotRunAsAdmin" xml:space="preserve">
-    <value>以非管理员身份运行</value>
-  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>启动成功</value>
-  </data>
-  <data name="ExperimentalFeature" xml:space="preserve">
-    <value>实验性功能</value>
-  </data>
-  <data name="InstallCertificate" xml:space="preserve">
-    <value>安装证书</value>
-  </data>
-  <data name="SerialNumber" xml:space="preserve">
-    <value>序列号</value>
   </data>
   <data name="CurrentVersionIsUpToDate" xml:space="preserve">
     <value>当前版本已经是最新版本</value>
@@ -230,9 +173,6 @@
   </data>
   <data name="ErrorOccurred" xml:space="preserve">
     <value>发生错误</value>
-  </data>
-  <data name="ConnectionName" xml:space="preserve">
-    <value>连接名</value>
   </data>
   <data name="ChangeLog" xml:space="preserve">
     <value>变更日志</value>
@@ -258,15 +198,6 @@
   <data name="Upgrade" xml:space="preserve">
     <value>升级</value>
   </data>
-  <data name="Sended" xml:space="preserve">
-    <value>已经发送</value>
-  </data>
-  <data name="Local" xml:space="preserve">
-    <value>本地</value>
-  </data>
-  <data name="Alias" xml:space="preserve">
-    <value>别名</value>
-  </data>
   <data name="Duration" xml:space="preserve">
     <value>用时</value>
   </data>
@@ -291,9 +222,6 @@
   <data name="UploadFile" xml:space="preserve">
     <value>上传文件</value>
   </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>编辑(_E)</value>
-  </data>
   <data name="PluginManagerWindow" xml:space="preserve">
     <value>插件管理器窗口</value>
   </data>
@@ -305,12 +233,6 @@
   </data>
   <data name="BuildDate" xml:space="preserve">
     <value>构建日期</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>项目名称</value>
-  </data>
-  <data name="Command" xml:space="preserve">
-    <value>命令</value>
   </data>
   <data name="Search" xml:space="preserve">
     <value>搜索</value>

@@ -1,7 +1,6 @@
 ﻿
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
 using ColorVision.Engine.Rbac;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
@@ -10,7 +9,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Templates.SysDictionary
+namespace ColorVision.Engine.Templates
 {
 
     public class TemplateModParam : ITemplate<DicModParam>
@@ -41,7 +40,8 @@ namespace ColorVision.Engine.Templates.SysDictionary
             if (index > -1 && index < TemplateParams.Count)
             {
                 var item = TemplateParams[index];
-                SysDictionaryModMasterDao.Instance.DeleteById(item.Value.Id,false);
+                Db.Deleteable<SysResourceModel>().Where(a => a.Id == item.Value.Id).ExecuteCommand();
+
                 TemplateParams.RemoveAt(index);
             }
         }

@@ -1,16 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Messages;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using log4net;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO.Ports;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Interop;
 
 namespace ProjectBlackMura
 {
@@ -26,7 +22,7 @@ namespace ProjectBlackMura
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
         }
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
         public void OpenTemplate()
         {
@@ -37,17 +33,17 @@ namespace ProjectBlackMura
         {
             new FlowEngineToolWindow(TemplateFlow.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-        public bool IsOpenConnect { get => _IsOpenConnect; set { _IsOpenConnect = value; NotifyPropertyChanged(); } }
+        public bool IsOpenConnect { get => _IsOpenConnect; set { _IsOpenConnect = value; OnPropertyChanged(); } }
         private bool _IsOpenConnect;
 
-        public string PortName { get => _PortName; set { _PortName = value; NotifyPropertyChanged(); } }
+        public string PortName { get => _PortName; set { _PortName = value; OnPropertyChanged(); } }
         private string _PortName;
 
-        public int DeviceId { get => _DeviceId; set { _DeviceId = value; NotifyPropertyChanged(); } }
+        public int DeviceId { get => _DeviceId; set { _DeviceId = value; OnPropertyChanged(); } }
         private int _DeviceId;
 
         [DisplayName("单独发送MES指令")]
-        public bool IsSingleMes { get => _IsSingleMes; set { _IsSingleMes = value; NotifyPropertyChanged(); } }
+        public bool IsSingleMes { get => _IsSingleMes; set { _IsSingleMes = value; OnPropertyChanged(); } }
         private bool _IsSingleMes;
 
     }
@@ -81,7 +77,7 @@ namespace ProjectBlackMura
             }
         }
 
-        public bool IsConnect { get => _IsConnect; set { _IsConnect = value; NotifyPropertyChanged(); } }
+        public bool IsConnect { get => _IsConnect; set { _IsConnect = value; OnPropertyChanged(); } }
         private bool _IsConnect;
 
         public async Task<int> OpenPortAsync(string portName)
@@ -233,7 +229,7 @@ namespace ProjectBlackMura
 
         }
 
-        public bool? CSNResult { get => _CSNResult; set { _CSNResult = value; NotifyPropertyChanged(); } }
+        public bool? CSNResult { get => _CSNResult; set { _CSNResult = value; OnPropertyChanged(); } }
         private bool? _CSNResult;
 
 
@@ -244,7 +240,7 @@ namespace ProjectBlackMura
         /// <summary>
         /// 上电结果
         /// </summary>
-        public bool? CONResult { get => _CONResult; set { _CONResult = value; NotifyPropertyChanged(); CONCompleted?.Invoke(this, value == true); } } 
+        public bool? CONResult { get => _CONResult; set { _CONResult = value; OnPropertyChanged(); CONCompleted?.Invoke(this, value == true); } } 
         private bool? _CONResult;
 
         /// <summary>
@@ -254,7 +250,7 @@ namespace ProjectBlackMura
         /// <summary>
         /// 上电结果
         /// </summary>
-        public bool? COFFResult { get => _COFFResult; set { _COFFResult = value; NotifyPropertyChanged(); COFFCompleted?.Invoke(this, value == true); } }
+        public bool? COFFResult { get => _COFFResult; set { _COFFResult = value; OnPropertyChanged(); COFFCompleted?.Invoke(this, value == true); } }
         private bool? _COFFResult;
 
 
@@ -265,18 +261,18 @@ namespace ProjectBlackMura
         /// <summary>
         /// 切图结果
         /// </summary>
-        public bool? CCPIResult { get => _CCPIResult; set { _CCPIResult = value; NotifyPropertyChanged(); CCPICompleted?.Invoke(this,value==true); } }
+        public bool? CCPIResult { get => _CCPIResult; set { _CCPIResult = value; OnPropertyChanged(); CCPICompleted?.Invoke(this,value==true); } }
         private bool? _CCPIResult;
         
 
-        public bool? CPTResult { get => _CPTResult; set { _CPTResult = value; NotifyPropertyChanged(); } }
+        public bool? CPTResult { get => _CPTResult; set { _CPTResult = value; OnPropertyChanged(); } }
         private bool? _CPTResult;
-        public bool? CGIResult { get => _CGIResult; set { _CGIResult = value; NotifyPropertyChanged(); } }
+        public bool? CGIResult { get => _CGIResult; set { _CGIResult = value; OnPropertyChanged(); } }
         private bool? _CGIResult;
 
-        public bool? CMIResult { get => _CMIResult; set { _CMIResult = value; NotifyPropertyChanged(); } }
+        public bool? CMIResult { get => _CMIResult; set { _CMIResult = value; OnPropertyChanged(); } }
         private bool? _CMIResult;
-        public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; NotifyPropertyChanged(); } }
+        public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; OnPropertyChanged(); } }
         private long _LastFlowTime;
 
         public async Task PGPowerOn()

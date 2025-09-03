@@ -14,17 +14,7 @@ namespace ColorVision.ImageEditor.Draw
         public DVDatumCircle()
         {
             Attribute = new CircleProperties();
-            Attribute.Id = No++;
-            Attribute.Brush = Brushes.Red;
-            Attribute.Pen = new Pen(Brushes.Red, 2);
-            Attribute.Center = new Point(50, 50);
-            Attribute.Radius = 30;
-
-            Attribute.PropertyChanged += (s, e) =>
-            {
-                if (AutoAttributeChanged && e.PropertyName!="Id")
-                    Render();
-            };
+            Attribute.PropertyChanged += (s, e) => Render();
         }
 
         public override void Render()

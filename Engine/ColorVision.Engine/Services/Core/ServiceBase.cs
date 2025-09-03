@@ -1,6 +1,7 @@
-﻿using ColorVision.Engine.Services.Dao;
+﻿using ColorVision.Database;
+using SqlSugar;
 
-namespace ColorVision.Engine.Services.Core
+namespace ColorVision.Engine.Services
 {
     public class ServiceFileBase : ServiceBase
     {
@@ -13,6 +14,8 @@ namespace ColorVision.Engine.Services.Core
 
     public class ServiceBase : ServiceObjectBase
     {
+        public static SqlSugarClient Db => MySqlControl.GetInstance().DB;
+
         public SysResourceModel SysResourceModel { get; set; }
         public int Id { get => SysResourceModel.Id; set { } }
 
@@ -25,13 +28,13 @@ namespace ColorVision.Engine.Services.Core
         public override void Save()
         {
             SysResourceModel.Name = Name;
-            VSysResourceDao.Instance.Save(SysResourceModel);
+            MySqlControl.GetInstance().DB.Updateable(SysResourceModel).ExecuteCommand();
         }
 
         public override void Delete()
         {
-            base.Delete();  
-            SysResourceDao.Instance.DeleteById(SysResourceModel.Id);
+            base.Delete();
+            int ret = Db.Deleteable<SysResourceModel>().Where(it => it.Id == SysResourceModel.Id).ExecuteCommand();
         }
 
     }

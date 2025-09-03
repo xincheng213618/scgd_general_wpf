@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.MySql;
+﻿using ColorVision.Database;
 using log4net;
 using Newtonsoft.Json;
 using System;
@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
             set
             {
                 JsonValue = JsonConvert.SerializeObject(value);
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -48,7 +48,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
         {
         }
 
-        public TJDFOVParam(TemplateJsonModel templateJsonModel) : base(templateJsonModel)
+        public TJDFOVParam(ModMasterModel templateJsonModel) : base(templateJsonModel)
         {
 
         }

@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
 using ColorVision.UI.Extension;
 using log4net;
 using Newtonsoft.Json;
@@ -67,9 +66,10 @@ namespace ColorVision.Engine.Templates.BuzProduct
                 if (index > -1 && index < TemplateParams.Count)
                 {
                     var item = TemplateParams[index];
-                    BuzProductMasterDao.Instance.Save(item.Value.BuzProductMasterModel);
-                    BuzProductDetailDao.Instance.SaveByPid(item.Value.BuzProductMasterModel.Id,item.Value.BuzProductDetailModels);
+                    item.Value.BuzProductMasterModel.Name = item.Value.Name;
+                    Db.Updateable(item.Value.BuzProductMasterModel).ExecuteCommand();
 
+                    Db.Updateable(item.Value.BuzProductDetailModels).ExecuteCommand();
                 }
             }
         }
@@ -81,6 +81,7 @@ namespace ColorVision.Engine.Templates.BuzProduct
 
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
+
 
                 var templates = BuzProductMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "is_delete", 0 } });
                 foreach (var template in templates)
@@ -114,9 +115,8 @@ namespace ColorVision.Engine.Templates.BuzProduct
             if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
             void DeleteSingle(int id)
             {
-                int ret = BuzProductDetailDao.Instance.DeleteById(id, false);
-                BuzProductDetailDao.Instance.DeleteAllByPid(id, false);
-                log.Info($"Delete Tempate：{TemplateParams[index].Key},ret{ret}");
+                Db.Deleteable<BuzProductMasterModel>().Where(x => x.Id == id).ExecuteCommand();
+                Db.Deleteable<BuzProductDetailModel>().Where(x => x.Pid == id).ExecuteCommand();
                 TemplateParams.RemoveAt(index);
             }
 

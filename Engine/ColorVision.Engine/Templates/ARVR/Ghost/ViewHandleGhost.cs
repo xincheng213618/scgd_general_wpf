@@ -1,11 +1,8 @@
 ﻿#pragma warning disable CS8602,CS8604
 
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Media;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Templates.FOV;
+using ColorVision.Database;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using System;
@@ -16,14 +13,15 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Ghost
 {
     public class  ViewHandleGhost : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.Ghost};
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.Ghost};
 
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             var ViewResults = result.ViewResults.ToSpecificViewResults<AlgResultGhostModel>();
             var csvBuilder = new StringBuilder();
@@ -91,7 +89,7 @@ namespace ColorVision.Engine.Templates.Ghost
             }
             return field;
         }
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -105,7 +103,7 @@ namespace ColorVision.Engine.Templates.Ghost
             }
         }
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults.Count != 0 && result.ViewResults[0] is AlgResultGhostModel viewResultGhost)
             {
@@ -170,13 +168,13 @@ namespace ColorVision.Engine.Templates.Ghost
             List<string> header = new() { "质心坐标", "光斑灰度", "鬼影灰度" };
             List<string> bdHeader = new() { "LEDCenters", "LEDBlobGray", "GhostAverageGray" };
 
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
         }
 

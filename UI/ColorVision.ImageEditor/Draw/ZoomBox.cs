@@ -6,9 +6,8 @@ using System;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class ZoomboxSub : Zoombox, INotifyPropertyChanged
+    public class ZoomboxSub : Zoombox
     {
-        public event PropertyChangedEventHandler? PropertyChanged;
 
         public ModifierKeys ActivateOn
         {
@@ -33,30 +32,25 @@ namespace ColorVision.ImageEditor.Draw
 
             if (ActivateOn == ModifierKeys.None || Keyboard.Modifiers.HasFlag(ActivateOn))
             {
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("OnMouseWheel"));
                 base.OnMouseWheel(e);
             }
         }
         public new void ZoomUniformToFill()
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ZoomUniformToFill"));
             base.ZoomUniformToFill();
         }
 
         public new void Zoom(double scale)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Zoom"));
             base.Zoom(scale);
         }
 
         public new void ZoomUniform()
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ZoomUniform"));
             base.ZoomUniform();
         }
         public new void ZoomNone()
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ZoomNone"));
             base.ZoomNone();
         }
 

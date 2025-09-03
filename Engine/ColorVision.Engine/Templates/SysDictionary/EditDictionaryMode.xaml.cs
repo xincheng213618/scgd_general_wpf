@@ -1,10 +1,11 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.Database;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Templates.SysDictionary
+namespace ColorVision.Engine.Templates
 {
 
     public class EditDictionaryModeConfig : IConfig
@@ -58,7 +59,7 @@ namespace ColorVision.Engine.Templates.SysDictionary
         {
             if (sender is MenuItem menuItem && menuItem.Tag is SysDictionaryModDetaiModel SysDictionaryModDetaiModel)
             {
-                SysDictionaryModDetailDao.Instance.DeleteById(SysDictionaryModDetaiModel.Id, false);
+                MySqlControl.GetInstance().DB.Deleteable<SysResourceModel>().Where(it => it.Id == SysDictionaryModDetaiModel.Id).ExecuteCommand();
                 Param.ModDetaiModels.Remove(SysDictionaryModDetaiModel);
             }
         }

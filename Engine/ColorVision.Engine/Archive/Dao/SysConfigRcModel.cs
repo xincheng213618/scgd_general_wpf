@@ -1,6 +1,5 @@
 ﻿using ColorVision.Engine.Archive.Dao;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
 using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
@@ -71,7 +70,7 @@ namespace ColorVision.Engine.Sys.Dao
 
         public SysConfigRcModel? GetByCode(string code)
         {
-            return GetByParam(new Dictionary<string, object>() { { "code", code } });
+            return this.GetByParam(new Dictionary<string, object>() { { "code", code } });
         }
     }
     public class MenuConfigArchive : MenuItemBase

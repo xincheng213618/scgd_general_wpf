@@ -1,5 +1,4 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
-using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
@@ -8,7 +7,7 @@ namespace ColorVision.Engine.Templates.MTF
 {
     public class ViewResultMTF : PoiResultData, IViewResult
     {
-        public double Articulation { get { return _Articulation; } set { _Articulation = value; NotifyPropertyChanged(); } }
+        public double Articulation { get { return _Articulation; } set { _Articulation = value; OnPropertyChanged(); } }
 
         private double _Articulation;
 

@@ -1,6 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.UI.Authorizations;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,7 +9,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
     {
         public MQTTSensor DService { get; set; }
 
-        public DeviceSensor(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceSensor(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTSensor(Config);
             EditCommand = new RelayCommand(a =>

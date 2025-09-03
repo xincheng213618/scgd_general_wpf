@@ -56,12 +56,12 @@ namespace ColorVision
 #endif
             Icon = null;
 
-            TextBlockVision.Text += Environment.NewLine + SystemHelper.LocalCpuInfo + "   " + SystemHelper.GetTotalPhysicalMemory();
+            TextBlockVision.Text += Environment.NewLine + SystemHelper.LocalCpuInfo.TrimEnd() + " " + SystemHelper.GetTotalPhysicalMemory();
 
             if (ConfigCuda.Instance.IsCudaSupported && ConfigCuda.Instance.DeviceCount >0)
             {
                 TextCUDAVision.Visibility = Visibility.Visible;
-                TextCUDAVision.Text = $"{ConfigCuda.Instance.DeviceNames[0]} - {ConfigCuda.Instance.ComputeCapabilities[0]} - { (double)(ConfigCuda.Instance.TotalMemories[0])/ (1024.0 * 1024 * 1024):F2} GB";
+                TextCUDAVision.Text = $"{ConfigCuda.Instance.DeviceNames[0]} { (ConfigCuda.Instance.TotalMemories[0])/ (1024.0 * 1024 * 1024):F0} GB - {ConfigCuda.Instance.ComputeCapabilities[0]}" ;
             }
 
             //LogoText.Text = string.Join(" ", ArgumentParser.GetInstance().CommandLineArgs.Select(arg => $"\"{arg}\""));
@@ -162,7 +162,6 @@ namespace ColorVision
 
         private void Image_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            Process.Start("explorer", "https://www.color-vision.com.cn/");
             Close();
         }
 

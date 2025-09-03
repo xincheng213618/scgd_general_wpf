@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
+using ColorVision.Database;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
@@ -8,7 +8,6 @@ using Microsoft.Win32;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
-using WindowsServicePlugin.Tools;
 
 
 namespace WindowsServicePlugin.CVWinSMS
@@ -30,7 +29,7 @@ namespace WindowsServicePlugin.CVWinSMS
             }
             Task.Run(Initialize);
         }
-        public int StepIndex { get => _StepIndex; set { _StepIndex = value; NotifyPropertyChanged(); } }
+        public int StepIndex { get => _StepIndex; set { _StepIndex = value; OnPropertyChanged(); } }
         private int _StepIndex = 0;
 
 
@@ -38,20 +37,20 @@ namespace WindowsServicePlugin.CVWinSMS
 
         private string url;
 
-        public string DownloadPath { get => _downloadPath; set { _downloadPath = value; NotifyPropertyChanged(); } }
+        public string DownloadPath { get => _downloadPath; set { _downloadPath = value; OnPropertyChanged(); } }
 
         private string _downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\";
 
-        public Version CurrentVerision { get => _CurrentVerision; set { _CurrentVerision = value; NotifyPropertyChanged(); } }
+        public Version CurrentVerision { get => _CurrentVerision; set { _CurrentVerision = value; OnPropertyChanged(); } }
         private Version _CurrentVerision = new Version();
 
-        public Version Verision { get => _Verision; set { _Verision = value; NotifyPropertyChanged(); } }
+        public Version Verision { get => _Verision; set { _Verision = value; OnPropertyChanged(); } }
         private Version _Verision = new Version();
 
-        public string RegistrationCenterService { get => _RegistrationCenterService; set { _RegistrationCenterService = value; NotifyPropertyChanged(); } }
+        public string RegistrationCenterService { get => _RegistrationCenterService; set { _RegistrationCenterService = value; OnPropertyChanged(); } }
         private string _RegistrationCenterService = string.Empty;
 
-        public string? InstallPath { get => _InstallPath; set { _InstallPath = value; NotifyPropertyChanged(); } }
+        public string? InstallPath { get => _InstallPath; set { _InstallPath = value; OnPropertyChanged(); } }
         private string? _InstallPath = string.Empty;
 
 

@@ -41,7 +41,7 @@ namespace ColorVision.Engine.Services
 
         public int ShowType { get; set; }
 
-        public bool IsAutoConfig { get => _IsAutoConfig; set { _IsAutoConfig = value; NotifyPropertyChanged(); } }
+        public bool IsAutoConfig { get => _IsAutoConfig; set { _IsAutoConfig = value; OnPropertyChanged(); } }
         private bool _IsAutoConfig = true;
 
     }

@@ -2,10 +2,11 @@
 using ColorVision.Common.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Abstractions;
+using ColorVision.Database;
+using ColorVision.Engine;
+using ColorVision.Engine.Archive.Dao;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
@@ -123,9 +124,27 @@ namespace ProjectARVRLite
 
             ContextMenu.Items.Add(new MenuItem() { Command = openFolderAndSelectFile, Header = "OpenFolderAndSelectFile" });
 
+            RelayCommand BatchDataHistoryCommand = new RelayCommand(a => BatchDataHistory(), e => BatchId > 0);
+            ContextMenu.Items.Add(new MenuItem() { Command = BatchDataHistoryCommand, Header = "流程结果查询" });
         }
 
-        public int BatchId { get => _BatchId; set { _BatchId = value; NotifyPropertyChanged(); } }
+        public void BatchDataHistory()
+        {
+            var Batch = MySqlControl.GetInstance().DB.Queryable<MeasureBatchModel>().Where(a => a.Id == BatchId).First();
+            if (Batch == null)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
+                return;
+            }
+            Frame frame = new Frame();
+            MeasureBatchPage batchDataHistory = new MeasureBatchPage(frame, Batch);
+            Window window = new Window() { Owner = Application.Current.GetActiveWindow() };
+            window.Content = batchDataHistory;
+            window.Show();
+        }
+
+
+        public int BatchId { get => _BatchId; set { _BatchId = value; OnPropertyChanged(); } }
         private int _BatchId;
 
         public string Model { get; set; } = string.Empty;

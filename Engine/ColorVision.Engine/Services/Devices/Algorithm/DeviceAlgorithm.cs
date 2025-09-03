@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using System;
 using System.Windows;
@@ -15,7 +13,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         public MQTTAlgorithm DService { get; set; }
         public AlgorithmView View { get; set; }
 
-        public DeviceAlgorithm(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceAlgorithm(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTAlgorithm(this, Config);
 

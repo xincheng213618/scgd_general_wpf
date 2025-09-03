@@ -1,7 +1,7 @@
-﻿using System.Windows.Media;
-using System.IO;
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.Menus;
+using System.IO;
+using System.Windows.Media;
 
 
 namespace ColorVision.Solution.FileMeta

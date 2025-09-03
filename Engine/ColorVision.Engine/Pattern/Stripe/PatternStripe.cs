@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Pattern.Solid;
 using ColorVision.UI;
-using Newtonsoft.Json;
 using OpenCvSharp;
 using System;
 using System.ComponentModel;
@@ -17,27 +15,27 @@ namespace ColorVision.Engine.Pattern.Stripe
     }
     public class PatternStripeConfig:ViewModelBase,IConfig
     {
-        public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; NotifyPropertyChanged(); } }
+        public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _MainBrush = Brushes.Black;
 
-        public SolidColorBrush AltBrush { get => _AltBrush; set { _AltBrush = value; NotifyPropertyChanged(); } }
+        public SolidColorBrush AltBrush { get => _AltBrush; set { _AltBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _AltBrush = Brushes.White;
 
-        public bool IsHorizontal { get => _IsHorizontal; set { _IsHorizontal = value; NotifyPropertyChanged(); } }
+        public bool IsHorizontal { get => _IsHorizontal; set { _IsHorizontal = value; OnPropertyChanged(); } }
         private bool _IsHorizontal = true;
 
         // 横线
-        public int HorizontalSpacing { get => _HorizontalSpacing; set { _HorizontalSpacing = value; NotifyPropertyChanged(); } }
+        public int HorizontalSpacing { get => _HorizontalSpacing; set { _HorizontalSpacing = value; OnPropertyChanged(); } }
         private int _HorizontalSpacing = 2;
 
-        public int HorizontalWidth { get => _HorizontalWidth; set { _HorizontalWidth = value; NotifyPropertyChanged(); } }
+        public int HorizontalWidth { get => _HorizontalWidth; set { _HorizontalWidth = value; OnPropertyChanged(); } }
         private int _HorizontalWidth = 1;
 
         // 竖线
-        public int VerticalSpacing { get => _VerticalSpacing; set { _VerticalSpacing = value; NotifyPropertyChanged(); } }
+        public int VerticalSpacing { get => _VerticalSpacing; set { _VerticalSpacing = value; OnPropertyChanged(); } }
         private int _VerticalSpacing = 2;
 
-        public int VerticalWidth { get => _VerticalWidth; set { _VerticalWidth = value; NotifyPropertyChanged(); } }
+        public int VerticalWidth { get => _VerticalWidth; set { _VerticalWidth = value; OnPropertyChanged(); } }
         private int _VerticalWidth = 1;
     }
 

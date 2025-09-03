@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Core;
 using CVCommCore;
-using System;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices
@@ -27,15 +25,8 @@ namespace ColorVision.Engine.Services.Devices
                 if (value == DeviceStatus) return;
                 _DeviceStatus = value;
 
-                try
-                {
-                    Application.Current?.Dispatcher.BeginInvoke(() => DeviceStatusChanged?.Invoke(value));
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex);
-                }
-                NotifyPropertyChanged(); NotifyPropertyChanged(nameof(DeviceStatusString));
+                Application.Current?.Dispatcher.BeginInvoke(() => DeviceStatusChanged?.Invoke(value));
+                OnPropertyChanged(); OnPropertyChanged(nameof(DeviceStatusString));
             }
         }
 
@@ -55,11 +46,7 @@ namespace ColorVision.Engine.Services.Devices
 
         public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; } }
 
-        public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; NotifyPropertyChanged(); } }
-
-        public override bool IsAlive { get => Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); } }
-
-        public override DateTime LastAliveTime { get => Config.LastAliveTime; set => Config.LastAliveTime = value; }
+        public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; OnPropertyChanged(); } }
 
         public override string ServiceToken { get => Config.ServiceToken; set => Config.ServiceToken = value; }
 

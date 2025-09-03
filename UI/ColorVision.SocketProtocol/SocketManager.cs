@@ -1,11 +1,14 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
+using ColorVision.UI.Extension;
 using log4net;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 using System.Windows;
 
@@ -34,17 +37,17 @@ namespace ColorVision.SocketProtocol
     }
 
 
-    public class SocketEventDispatcher
+    public class SocketJsonDispatcher
     {
-        private readonly Dictionary<string, ISocketEventHandler> _handlers = new();
+        private readonly Dictionary<string, ISocketJsonHandler> _handlers = new();
 
-        public SocketEventDispatcher()
+        public SocketJsonDispatcher()
         {
             foreach (var assembly in AssemblyService.Instance.GetAssemblies())
             {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(ISocketEventHandler).IsAssignableFrom(t) && !t.IsAbstract))
+                foreach (var type in assembly.GetTypes().Where(t => typeof(ISocketJsonHandler).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    if (Activator.CreateInstance(type) is ISocketEventHandler handler)
+                    if (Activator.CreateInstance(type) is ISocketJsonHandler handler)
                     {
                         if (!_handlers.ContainsKey(handler.EventName))
                             _handlers[handler.EventName] = handler;
@@ -64,6 +67,46 @@ namespace ColorVision.SocketProtocol
             return new SocketResponse { Code = 404, Msg = "Handler not found for event: " + request.EventName };
         }
     }
+    public interface ISocketTextDispatcher
+    {
+        string  Handle(NetworkStream stream, string request);
+    }
+
+    public class SocketTextDispatcher
+    {
+        private readonly List<ISocketTextDispatcher> _handlers = new List<ISocketTextDispatcher>();
+
+        public SocketTextDispatcher()
+        {
+            foreach (var assembly in AssemblyService.Instance.GetAssemblies())
+            {
+                foreach (var type in assembly.GetTypes().Where(t => typeof(ISocketTextDispatcher).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    {
+                        var displayNameAttr = type.GetCustomAttribute<DisplayNameAttribute>();
+                        var eventName = displayNameAttr?.DisplayName ?? type.Name;
+                        if (Activator.CreateInstance(type) is ISocketTextDispatcher handler)
+                        {
+                            _handlers.Add(handler);
+                        }
+                    }
+                }
+            }
+        }
+        public string Dispatch(NetworkStream stream, string request)
+        {
+            if(_handlers.Count > 0)
+            {
+                foreach (var handle in _handlers)
+                {
+                    string respose = handle.Handle(stream, request);
+                    if (!string.IsNullOrWhiteSpace(respose))
+                        return respose;
+                }
+            }
+            return "No Dispatcher Hanle";
+        }
+    }
 
 
     public class SocketManager:ViewModelBase
@@ -78,18 +121,20 @@ namespace ColorVision.SocketProtocol
 
         public RelayCommand EditCommand { get; set; } 
 
-        public SocketEventDispatcher Dispatcher { get; set; }
+        public SocketJsonDispatcher JsonDispatcher { get; set; }
 
+        public SocketTextDispatcher TextDispatcher { get;set; }
         public SocketManager()
         {
-            Dispatcher = new SocketEventDispatcher();
+            JsonDispatcher = new SocketJsonDispatcher();
+            TextDispatcher  = new SocketTextDispatcher();
             EditCommand = new RelayCommand(a =>  new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
 
 
         public event EventHandler<bool> SocketConnectChanged;
 
-        public bool IsConnect { get => _IsConnect; private set { if (_IsConnect == value) return;  _IsConnect = value; NotifyPropertyChanged(); SocketConnectChanged?.Invoke(this, _IsConnect); } }
+        public bool IsConnect { get => _IsConnect; private set { if (_IsConnect == value) return;  _IsConnect = value; OnPropertyChanged(); SocketConnectChanged?.Invoke(this, _IsConnect); } }
         private bool _IsConnect;
 
 
@@ -125,7 +170,7 @@ namespace ColorVision.SocketProtocol
         }
 
         public ObservableCollection<TcpClient> TcpClients { get; set; } = new ObservableCollection<TcpClient>();
-        public ObservableCollection<SocketMessageBase> SocketMessageBases { get; set; } = new ObservableCollection<SocketMessageBase>();
+        public ObservableCollection<string> SocketMessageBases { get; set; } = new ObservableCollection<string>();
 
         public void CheckUpdate()
         {
@@ -175,50 +220,73 @@ namespace ColorVision.SocketProtocol
                 while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
                 {
                     string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        SocketMessageBases.Add(message);
+                    });
                     log.Info("Received raw message: " + message);
-                    SocketRequest? request = null;
-                    try
+                    switch (Config.SocketPhraseType)
                     {
-                        request = JsonConvert.DeserializeObject<SocketRequest>(message);
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            SocketMessageBases.Add(request);
-                        });
-
-                        var response = Dispatcher.Dispatch(stream, request);
-
-                        if(response !=null)
-                        {
-                            Application.Current.Dispatcher.Invoke(() =>
+                        case SocketPhraseType.Json:
+                            SocketRequest? request = null;
+                            try
                             {
-                                SocketMessageBases.Add(response);
-                            });
-                            string respString = JsonConvert.SerializeObject(response);
-                            stream.Write(Encoding.UTF8.GetBytes(respString));
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        var response = new SocketResponse
-                        {
-                            Version = request?.Version ?? "1.0",
-                            MsgID = request?.MsgID ?? "",
-                            EventName = request?.EventName ?? "",
-                            SerialNumber = request?.SerialNumber ?? "",
-                            Code = -1,
-                            Msg = ex.Message,
-                            Data = null
-                        };
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            SocketMessageBases.Add(response);
-                        });
+                                request = JsonConvert.DeserializeObject<SocketRequest>(message);
 
-                        string respString = JsonConvert.SerializeObject(response);
-                        byte[] respBytes = Encoding.UTF8.GetBytes(respString);
-                        stream.Write(respBytes, 0, respBytes.Length);
-                        continue;
+
+                                var response = JsonDispatcher.Dispatch(stream, request);
+
+                                if (response != null)
+                                {
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        SocketMessageBases.Add(response.ToJsonN());
+                                    });
+                                    string respString = JsonConvert.SerializeObject(response);
+                                    stream.Write(Encoding.UTF8.GetBytes(respString));
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                var response = new SocketResponse
+                                {
+                                    Version = request?.Version ?? "1.0",
+                                    MsgID = request?.MsgID ?? "",
+                                    EventName = request?.EventName ?? "",
+                                    SerialNumber = request?.SerialNumber ?? "",
+                                    Code = -1,
+                                    Msg = ex.Message,
+                                    Data = null
+                                };
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    SocketMessageBases.Add(response.ToJsonN());
+                                });
+
+                                string respString = JsonConvert.SerializeObject(response);
+                                byte[] respBytes = Encoding.UTF8.GetBytes(respString);
+                                stream.Write(respBytes, 0, respBytes.Length);
+                                continue;
+                            }
+                            break;
+                        case SocketPhraseType.Text:
+                            try
+                            {
+                                var string1 = TextDispatcher.Dispatch(stream, message);
+                                byte[] respBytes = Encoding.UTF8.GetBytes(string1);
+                                stream.Write(respBytes, 0, respBytes.Length);
+                            }
+                            catch (Exception ex)
+                            {
+                                log.Error(ex);
+                                byte[] respBytes = Encoding.UTF8.GetBytes(ex.Message);
+                                stream.Write(respBytes, 0, respBytes.Length);
+                            }
+                            break;
+                        default:
+                            break;
                     }
+
                 }
             }
             catch (Exception ex)
@@ -232,7 +300,6 @@ namespace ColorVision.SocketProtocol
                 {
                     TcpClients.Remove(client);
                 });
-
                 client?.Dispose();
             }
         }

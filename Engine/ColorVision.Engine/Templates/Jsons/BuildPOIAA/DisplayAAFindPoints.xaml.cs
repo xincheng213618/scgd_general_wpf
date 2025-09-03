@@ -39,7 +39,7 @@ namespace ColorVision.Engine.Templates.Jsons.BuildPOIAA
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择AA布点模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxTemplate, "请先选择AA布点模板")) return;
 
             if (ComboxTemplate.SelectedValue is not TemplateJsonParam param) return;
 
@@ -57,7 +57,7 @@ namespace ColorVision.Engine.Templates.Jsons.BuildPOIAA
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "正在执行AA布点算法");
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

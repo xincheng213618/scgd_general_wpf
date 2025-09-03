@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8604,CS0168,CS8629,CA1822,CS8602
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
@@ -14,7 +13,6 @@ using CVCommCore;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
-using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +20,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.IO;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {
@@ -41,8 +39,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         public ThirdPartyAlgorithmsView View { get => Device.View; }
 
         public string DisPlayName => Device.Config.Name;
-
-        private IPendingHandler? handler { get; set; }
 
         private NetFileUtil netFileUtil;
 
@@ -65,7 +61,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                 });
             }
 
-            handler?.Close();
         }
 
 
@@ -127,7 +122,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                             Device.View.AlgResultMasterModelDataDraw(result);
                         });
                     }
-                    handler?.Close();
                     break;
             }
         }
@@ -238,11 +232,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 DService.UploadCIEFile(openFileDialog.FileName);
-                handler = PendingBox.Show(Application.Current.MainWindow, "", "上传", true);
-                handler.Cancelling += delegate
-                {
-                    handler?.Close();
-                };
             }
         }
 

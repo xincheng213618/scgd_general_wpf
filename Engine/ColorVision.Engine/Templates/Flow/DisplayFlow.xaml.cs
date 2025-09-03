@@ -1,6 +1,6 @@
 ﻿#pragma warning disable CS8602,CS8603,CS8601
+using ColorVision.Database;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Scheduler;
@@ -9,11 +9,9 @@ using ColorVision.UI;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
-using Panuon.WPF.UI;
 using Quartz;
 using ST.Library.UI.NodeEditor;
 using System;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
@@ -24,6 +22,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -46,7 +45,7 @@ namespace ColorVision.Engine.Templates.Flow
         }
     }
 
-    public class FlowSocketMsgHandle : ISocketEventHandler
+    public class FlowSocketMsgHandle : ISocketJsonHandler
     {
         public string EventName => "Flow";
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
@@ -82,9 +81,6 @@ namespace ColorVision.Engine.Templates.Flow
 
         private Timer timer;
         Stopwatch stopwatch = new Stopwatch();
-        IPendingHandler handler { get; set; }
-
-        static FlowEngineControl FlowEngineControl => FlowEngineManager.GetInstance().FlowEngineControl;
 
         public DisplayFlow()
         {
@@ -105,11 +101,6 @@ namespace ColorVision.Engine.Templates.Flow
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = FlowEngineManager.GetInstance();
-            this.ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = "开始执行(_S)", Command = EngineCommands.StartExecutionCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = "停止执行(_S)", Command = EngineCommands.StopExecutionCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = "属性", Command = Config.EditCommand });
-
             this.SetIconResource("DrawingImageFlow", View.View);
 
             this.AddViewConfig(View, ComboxView);
@@ -235,20 +226,16 @@ namespace ColorVision.Engine.Templates.Flow
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
+            measureBatchModel.FlowStatus = FlowControlData.FlowStatus;
+            measureBatchModel.TotalTime = (int)stopwatch.ElapsedMilliseconds;
+            measureBatchModel.Result = FlowControlData.Params;
+            MySqlControl.GetInstance().DB.Updateable(measureBatchModel).ExecuteReturnEntity();
+
+
             FlowEngineConfig.Instance.FlowRunTime[ComboBoxFlow.Text] = stopwatch.ElapsedMilliseconds;
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
 
             FlowEngineManager.GetInstance().CurrentFlowMsg = FlowControlData;
-
-
-            if (Config.IsNewMsgUI)
-            {
-                View.logTextBox.Text = FlowName +  Environment.NewLine+ FlowControlData.EventName;
-            }
-            else
-            {
-                handler?.Close();
-            }
 
             ButtonRun.Visibility = Visibility.Visible;
             ButtonStop.Visibility = Visibility.Collapsed;
@@ -257,17 +244,10 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 ErrorSign();
             }
-            if (FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
-            {
-                if (Config.IsNewMsgUI)
-                {
-                    View.logTextBox.Text = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}节点:{Msg1}{Environment.NewLine}{FlowControlData.Params}";
-                }
-                else
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
-                }
-            }
+            string msg = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}节点:{Msg1}{Environment.NewLine}{FlowControlData.Params}{Environment.NewLine}{stopwatch.ElapsedMilliseconds}ms";
+            View.logTextBox.Text = msg;
+            log.Info(msg);
+
         }
 
         public ImageSource Icon { get => _Icon; set { _Icon = value; } }
@@ -295,21 +275,11 @@ namespace ColorVision.Engine.Templates.Flow
                     TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                     string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                    msg = $"{FlowName} 上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
+                    msg = $"{FlowName}上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
                 }
                 Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
-                    if (flowControl.IsFlowRun)
-                    {
-                        if (Config.IsNewMsgUI)
-                        {
-                            View.logTextBox.Text = msg;
-                        }
-                        else
-                        {
-                            handler.UpdateMessage(msg);
-                        }
-                    }
+                    View.logTextBox.Text = msg;
                 });
             }
         }
@@ -374,6 +344,8 @@ namespace ColorVision.Engine.Templates.Flow
         {
             RunFlow();
         }
+
+        MeasureBatchModel measureBatchModel;
         string FlowName;
         public async void RunFlow()
         {
@@ -429,17 +401,7 @@ namespace ColorVision.Engine.Templates.Flow
                 }
             }
 
-            if (Config.IsNewMsgUI)
-            {
-                View.logTextBox.Text = "Run " + ComboBoxFlow.Text;
-            }
-            else
-            {
-
-                handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
-                handler.Cancelling -= Handler_Cancelling; ;
-                handler.Cancelling += Handler_Cancelling; ;
-            }
+            View.logTextBox.Text = "Run " + ComboBoxFlow.Text;
 
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
@@ -449,28 +411,10 @@ namespace ColorVision.Engine.Templates.Flow
             stopwatch.Start();
 
             timer.Change(0, 100); // 启动定时器
-            BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = sn, Code = sn, CreateDate = DateTime.Now });
+            measureBatchModel = new MeasureBatchModel() { TId = TemplateFlow.Params[ComboBoxFlow.SelectedIndex].Id, Name = sn, Code = sn };
+            measureBatchModel.Id = MySqlControl.GetInstance().DB.Insertable(measureBatchModel).ExecuteReturnIdentity();
+
             flowControl.Start(sn);
-        }
-
-
-        private void Handler_Cancelling(object? sender, CancelEventArgs e)
-        {
-            foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVCommonNode>())
-            {
-                item.nodeRunEvent -= UpdateMsg;
-                item.nodeEndEvent -= nodeEndEvent;
-            }
-
-            stopwatch.Stop();
-            timer.Change(Timeout.Infinite, 100); // 停止定时器
-            flowControl.Stop();
-
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                ButtonRun.Visibility = Visibility.Visible;
-                ButtonStop.Visibility = Visibility.Collapsed;
-            });
         }
 
         private void Button_FlowStop_Click(object sender, RoutedEventArgs e)
@@ -482,22 +426,15 @@ namespace ColorVision.Engine.Templates.Flow
         {
             ButtonRun.Visibility = Visibility.Visible;
             ButtonStop.Visibility = Visibility.Collapsed;
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                flowControl?.Stop();
-            });
+            flowControl?.Stop();
+            stopwatch.Stop();
+            timer.Change(Timeout.Infinite, 500); // 停止定时器
 
-            if (Config.IsNewMsgUI)
-            {
-                View.logTextBox.Text = "已经取消执行";
-            }
-            else
-            {
+            measureBatchModel.FlowStatus = FlowStatus.Canceled;
+            measureBatchModel.TotalTime = (int)stopwatch.ElapsedMilliseconds;
+            MySqlControl.GetInstance().DB.Updateable(measureBatchModel);
 
-                handler?.Close();
-            }
-
-
+            View.logTextBox.Text = "已经取消执行";
 
         }
 

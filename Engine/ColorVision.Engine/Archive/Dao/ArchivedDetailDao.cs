@@ -1,15 +1,9 @@
 ﻿#pragma warning disable CA1720,CS8601,CS8602,CS8603
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
-using log4net;
-using MySql.Data.MySqlClient;
+using ColorVision.Database;
 using Newtonsoft.Json.Linq;
 using SqlSugar;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,9 +11,11 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Archive.Dao
 {
     [SugarTable("t_scgd_archived_detail")]
-    public class ArchivedDetailModel : PKModel
+    public class ArchivedDetailModel 
     {
+        [SugarColumn(IsIgnore = true)]
         public RelayCommand ExportCommand { get; set; }
+        [SugarColumn(IsIgnore = true)]
         public ContextMenu ContextMenu { get; set; }
 
         public ArchivedDetailModel()
@@ -186,37 +182,5 @@ namespace ColorVision.Engine.Archive.Dao
         [SugarColumn(ColumnName ="input_cfg"),DisplayName("输入参数")]
         public string InputCfg { get; set; }
 
-    }
-    public class ArchivedDetailDao : BaseTableDao<ArchivedDetailModel>
-    {
-        private static readonly ILog log = LogManager.GetLogger(typeof(ArchivedDetailDao));
-
-        public static ArchivedDetailDao Instance { get; set; } = new ArchivedDetailDao();
-        public override MySqlConnection CreateConnection()
-        {
-            MySqlConfig MySqlConfig = GlobleCfgdDao.Instance.GetArchMySqlConfig();
-            if (MySqlConfig != null)
-            {
-                try
-                {
-                    string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={3};SSL Mode =None;Pooling=true";
-                    using MySqlConnection connection = new MySqlConnection(connStr);
-                    connection.Open();
-                    return connection;
-
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex);
-                }
-            }
-            return null;
-
-        }
-
-        public List<ArchivedDetailModel> ConditionalQuery(string batchCode)
-        {
-            return ConditionalQuery(new Dictionary<string, object>() { { "p_guid", batchCode } });
-        }
     }
 }

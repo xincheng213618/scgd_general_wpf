@@ -12,8 +12,7 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Tif
 {
-    [FileExtension(".tif", ".tiff")]
-    public class Opentif : IImageOpen, IFileProcessor
+    public class FileProcessorTif : IFileProcessor
     {
         public int Order => -1;
 
@@ -25,6 +24,11 @@ namespace ColorVision.ImageEditor.Tif
         public bool CanProcess(string filePath)
         {
             return true;
+        }
+
+        public void Export(string filePath)
+        {
+            throw new NotImplementedException();
         }
 
         public void Process(string filePath)
@@ -46,11 +50,12 @@ namespace ColorVision.ImageEditor.Tif
                 }));
             }
         }
+    }
 
-        public void Export(string filePath)
-        {
 
-        }
+    [FileExtension(".tif", ".tiff")]
+    public class Opentif : IImageOpen
+    {
 
         public static int GetChannelCount(BitmapSource source)
         {
@@ -94,7 +99,6 @@ namespace ColorVision.ImageEditor.Tif
             }
         }
 
-
         public static WriteableBitmap ConvertGray32FloatToBitmapSource(BitmapSource bitmapSource)
         {
             // 确保图像数据已加载
@@ -133,8 +137,6 @@ namespace ColorVision.ImageEditor.Tif
             if (string.IsNullOrEmpty(filePath)) return;
             if (imageView.Config.IsShowLoadImage)
             {
-                imageView.WaitControl.Visibility = Visibility.Visible;
-                await Task.Delay(30);
                 await Task.Run(() =>
                 {
                     Application.Current.Dispatcher.Invoke(() =>
@@ -168,7 +170,6 @@ namespace ColorVision.ImageEditor.Tif
                             imageView.SetImageSource(new WriteableBitmap(data));
                         }
                         imageView.UpdateZoomAndScale();
-                        imageView.WaitControl.Visibility = Visibility.Collapsed;
                     });
                 });
             }

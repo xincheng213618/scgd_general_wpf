@@ -9,8 +9,6 @@ namespace ColorVision
 {
     public class StartupRegistryChecker
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(StartupRegistryChecker));
-
         public static StartupRegistryChecker Instance => new StartupRegistryChecker();
 
         private const string RegistryPath = @"Software\ColorVision\ColorVision";
@@ -49,7 +47,7 @@ namespace ColorVision
         private static Stopwatch _stopwatch;
 
         public static void Start()
-       {
+        {
             _stopwatch = Stopwatch.StartNew();
         }
 

@@ -1,8 +1,6 @@
 ﻿#pragma warning disable CS8604,CS8631
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
@@ -11,8 +9,8 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;
-using ColorVision.UI.Views;
 using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.ComponentModel;
 using System.IO;
@@ -32,10 +30,10 @@ namespace ColorVision.Engine.Services
         public ServiceTypes ServiceTypes => (ServiceTypes)SysResourceModel.Type;
         public virtual int HeartbeatTime { get; set; }
 
-        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; OnPropertyChanged(); } }
         private bool _IsSelected;
 
-        public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
+        public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; OnPropertyChanged(); } }
         private bool _IsExpanded = true;
 
         public ContextMenu ContextMenu { get; set; }
@@ -59,14 +57,14 @@ namespace ColorVision.Engine.Services
         public RelayCommand UpdateFilecfgCommand { get; set; }
 
         public virtual ImageSource Icon { get; set; }
-        public SysDeviceModel SysResourceModel { get; set; }
+        public SysResourceModel SysResourceModel { get; set; }
 
         public virtual UserControl GetDeviceInfo()
         {
             throw new NotImplementedException();
         }
 
-        public bool IsDisplayOpen { get => _IsDisplayOpen; set { _IsDisplayOpen = value; NotifyPropertyChanged(); } }
+        public bool IsDisplayOpen { get => _IsDisplayOpen; set { _IsDisplayOpen = value; OnPropertyChanged(); } }
         private bool _IsDisplayOpen = true;
 
 
@@ -95,18 +93,20 @@ namespace ColorVision.Engine.Services
 
     public class DeviceService<T> : DeviceService where T : DeviceServiceConfig, new()
     {
+
+        public SqlSugarClient Db => MySqlControl.GetInstance().DB;
         public T Config { get; set; }
 
-        public override ImageSource Icon { get => _Icon; set { _Icon = value; NotifyPropertyChanged(); } }
+        public override ImageSource Icon { get => _Icon; set { _Icon = value; OnPropertyChanged(); } }
         private ImageSource _Icon;
 
         public override object GetConfig() => Config;
 
-        public override string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; NotifyPropertyChanged(); } }
-        public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
+        public override string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; OnPropertyChanged(); } }
+        public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; OnPropertyChanged(); } }
 
 
-        public DeviceService(SysDeviceModel sysResourceModel) : base()
+        public DeviceService(SysResourceModel sysResourceModel) : base()
         {
             SysResourceModel = sysResourceModel;
             ContextMenu = new ContextMenu();
@@ -199,11 +199,9 @@ namespace ColorVision.Engine.Services
             }
         }
 
-        public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; NotifyPropertyChanged(); } }
-        public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; NotifyPropertyChanged(); } }
-        public override bool IsAlive { get => Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); } }
-        public override DateTime LastAliveTime { get => Config.LastAliveTime; set { Config.LastAliveTime = value; NotifyPropertyChanged(); } }
-        public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; NotifyPropertyChanged(); } }
+        public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; OnPropertyChanged(); } }
+        public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; OnPropertyChanged(); } }
+        public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; OnPropertyChanged(); } }
 
         public event EventHandler ConfigChanged;
 
@@ -212,7 +210,7 @@ namespace ColorVision.Engine.Services
             SysResourceModel.Code = Config.Code;
             SysResourceModel.Name = Config.Name;
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            VSysResourceDao.Instance.Save(new SysResourceModel(SysResourceModel));
+            MySqlControl.GetInstance().DB.Updateable(SysResourceModel).ExecuteCommand();
         }
 
         public override void Save()
@@ -233,7 +231,10 @@ namespace ColorVision.Engine.Services
 
         public void RestartRCService()
         {
-            MqttRCService.GetInstance().RestartServices(SysResourceModel.TypeCode, SysResourceModel.PCode, Config.Code);
+            string TypeCode =MySqlControl.GetInstance().DB.Queryable<SysDictionaryModel>().Where(x=>x.Pid ==1 && x.Value ==SysResourceModel.Type).First().Key;
+            string PCode = MySqlControl.GetInstance().DB.Queryable<SysResourceModel>().InSingle(SysResourceModel.Pid).Code;
+
+            MqttRCService.GetInstance().RestartServices(TypeCode, PCode, Config.Code);
         }
 
 
@@ -246,7 +247,7 @@ namespace ColorVision.Engine.Services
 
             //删除数据库
             if (SysResourceModel != null)
-                SysResourceDao.Instance.DeleteById(SysResourceModel.Id,false);
+                 Db.Deleteable<SysResourceModel>().Where(it => it.Id == SysResourceModel.Id).ExecuteCommand();
 
             //删除设备服务
             ServiceManager.GetInstance().DeviceServices.Remove(this);

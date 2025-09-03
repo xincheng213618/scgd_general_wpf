@@ -1,8 +1,6 @@
 ﻿#pragma warning disable CS8603
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Types;
 using log4net;
 using System;
@@ -92,7 +90,7 @@ namespace ColorVision.Engine.Services.PhySpectrums
         }
 
 
-    public int Count { get => _Count; set { _Count = value; NotifyPropertyChanged(); } }
+    public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
     private int _Count;
 
 

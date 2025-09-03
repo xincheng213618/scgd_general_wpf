@@ -43,7 +43,7 @@ namespace ColorVision.Engine.Templates.Ghost
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择Ghost模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxTemplate, "请先选择Ghost模板")) return;
 
             if (ComboxTemplate.SelectedValue is not GhostParam param) return;
 
@@ -58,7 +58,7 @@ namespace ColorVision.Engine.Templates.Ghost
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(code, type, imgFileName, fileExtType, param, sn);
-                ServicesHelper.SendCommand(msg, "正在计算鬼影");
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

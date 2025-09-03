@@ -5,12 +5,15 @@
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<SignAssembly>True</SignAssembly>
 		<AssemblyOriginatorKeyFile>$(SolutionDir)ColorVision.snk</AssemblyOriginatorKeyFile>
-		<VersionPrefix>1.3.4.1</VersionPrefix>
+		<VersionPrefix>1.3.5.1</VersionPrefix>
 		<TargetFrameworks>net8.0-windows;net6.0-windows;net48</TargetFrameworks>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<NoWarn>NU5100</NoWarn>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -65,7 +68,8 @@
 		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\opencv_world401.dll" Link="runtimes\win-x64\native\opencv_world401.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\pthreadVC2.dll" Link="runtimes\win-x64\native\pthreadVC2.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
@@ -96,6 +100,29 @@
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
+		<None Include="libusb0.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="SpectraArsenal.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="USB_Driver.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\ColorVision.FileIO\ColorVision.FileIO.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Pattern.Dot;
 using ColorVision.UI;
 using OpenCvSharp;
 using System;
@@ -14,44 +13,44 @@ namespace ColorVision.Engine.Pattern.CrossGrid
     {
 
         // 网格参数
-        public int NumLinesHorizontal { get => _NumLinesHorizontal; set { _NumLinesHorizontal = value; NotifyPropertyChanged(); } }
+        public int NumLinesHorizontal { get => _NumLinesHorizontal; set { _NumLinesHorizontal = value; OnPropertyChanged(); } }
         private int _NumLinesHorizontal = 3;
 
-        public int NumLinesVertical { get => _NumLinesVertical; set { _NumLinesVertical = value; NotifyPropertyChanged(); } }
+        public int NumLinesVertical { get => _NumLinesVertical; set { _NumLinesVertical = value; OnPropertyChanged(); } }
         private int _NumLinesVertical = 3;
 
-        public int SpacingHorizontal { get => _SpacingHorizontal; set { _SpacingHorizontal = value; NotifyPropertyChanged(); } }
+        public int SpacingHorizontal { get => _SpacingHorizontal; set { _SpacingHorizontal = value; OnPropertyChanged(); } }
         private int _SpacingHorizontal = 400;
 
-        public int SpacingVertical { get => _SpacingVertical; set { _SpacingVertical = value; NotifyPropertyChanged(); } }
+        public int SpacingVertical { get => _SpacingVertical; set { _SpacingVertical = value; OnPropertyChanged(); } }
         private int _SpacingVertical = 400;
 
-        public int HorizontalLineWidth { get => _HorizontalLineWidth; set { _HorizontalLineWidth = value; NotifyPropertyChanged(); } }
+        public int HorizontalLineWidth { get => _HorizontalLineWidth; set { _HorizontalLineWidth = value; OnPropertyChanged(); } }
         private int _HorizontalLineWidth = 9;
 
-        public int VerticalLineWidth { get => _VerticalLineWidth; set { _VerticalLineWidth = value; NotifyPropertyChanged(); } }
+        public int VerticalLineWidth { get => _VerticalLineWidth; set { _VerticalLineWidth = value; OnPropertyChanged(); } }
         private int _VerticalLineWidth = 9;
 
 
-        public SolidColorBrush LineBrush { get => _LineBrush; set { _LineBrush = value; NotifyPropertyChanged(); } }
+        public SolidColorBrush LineBrush { get => _LineBrush; set { _LineBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _LineBrush = Brushes.White;
 
-        public SolidColorBrush BackgroundBrush { get => _BackgroundBrush; set { _BackgroundBrush = value; NotifyPropertyChanged(); } }
+        public SolidColorBrush BackgroundBrush { get => _BackgroundBrush; set { _BackgroundBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _BackgroundBrush = Brushes.Black;
 
 
         // 额外的边缘/内边距加粗线（模拟 MATLAB 中 200px 处的加粗线）
-        public bool AddEdgeLines { get => _AddEdgeLines; set { _AddEdgeLines = value; NotifyPropertyChanged(); } }
+        public bool AddEdgeLines { get => _AddEdgeLines; set { _AddEdgeLines = value; OnPropertyChanged(); } }
         private bool _AddEdgeLines = true;
 
-        public int EdgeOffsetPx { get => _EdgeOffsetPx; set { _EdgeOffsetPx = value; NotifyPropertyChanged(); } }
+        public int EdgeOffsetPx { get => _EdgeOffsetPx; set { _EdgeOffsetPx = value; OnPropertyChanged(); } }
         private int _EdgeOffsetPx = 200;
 
-        public int EdgeThickness { get => _EdgeThickness; set { _EdgeThickness = value; NotifyPropertyChanged(); } }
+        public int EdgeThickness { get => _EdgeThickness; set { _EdgeThickness = value; OnPropertyChanged(); } }
         private int _EdgeThickness = 9;
 
         // 是否水平拼接两张（等价于 [img, img]）
-        public bool DuplicateHorizontally { get => _DuplicateHorizontally; set { _DuplicateHorizontally = value; NotifyPropertyChanged(); } }
+        public bool DuplicateHorizontally { get => _DuplicateHorizontally; set { _DuplicateHorizontally = value; OnPropertyChanged(); } }
         private bool _DuplicateHorizontally = true;
     }
 

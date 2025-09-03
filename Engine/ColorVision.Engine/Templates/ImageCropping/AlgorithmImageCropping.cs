@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using MQTTMessageLib;
@@ -33,7 +32,7 @@ namespace ColorVision.Engine.Templates.ImageCropping
             new TemplateEditorWindow(new TemplateImageCropping(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
 
 
@@ -43,13 +42,13 @@ namespace ColorVision.Engine.Templates.ImageCropping
             return UserControl;
         }
         public UserControl UserControl { get; set; }
-        public PointFloat Point1 { get => _Point1; set { _Point1 = value; NotifyPropertyChanged(); } }
+        public PointFloat Point1 { get => _Point1; set { _Point1 = value; OnPropertyChanged(); } }
         private PointFloat _Point1 = new PointFloat();
-        public PointFloat Point2 { get => _Point2; set { _Point2 = value; NotifyPropertyChanged(); } }
+        public PointFloat Point2 { get => _Point2; set { _Point2 = value; OnPropertyChanged(); } }
         private PointFloat _Point2 = new PointFloat();
-        public PointFloat Point3 { get => _Point3; set { _Point3 = value; NotifyPropertyChanged(); } }
+        public PointFloat Point3 { get => _Point3; set { _Point3 = value; OnPropertyChanged(); } }
         private PointFloat _Point3 = new PointFloat();
-        public PointFloat Point4 { get => _Point4; set { _Point4 = value; NotifyPropertyChanged(); } }
+        public PointFloat Point4 { get => _Point4; set { _Point4 = value; OnPropertyChanged(); } }
         private PointFloat _Point4 = new PointFloat();
 
 

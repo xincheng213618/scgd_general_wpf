@@ -1,12 +1,10 @@
 ﻿#pragma warning disable CA1822
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
 using ColorVision.Engine.Rbac;
-using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.UI.Extension;
 using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -20,6 +18,7 @@ namespace ColorVision.Engine.Templates.Flow
     public class TemplateFlow : ITemplate<FlowParam>, IITemplateLoad
     {
         public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
+
 
         public TemplateFlow()
         {
@@ -38,19 +37,33 @@ namespace ColorVision.Engine.Templates.Flow
             return Params.Any(a => a.Key.Equals(templateName, StringComparison.OrdinalIgnoreCase));
         }
 
-        private static ModMasterDao masterFlowDao = new ModMasterDao(11);
         public override void Load()
         {
+            
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                List<ModMasterModel> flows = masterFlowDao.GetAll(UserConfig.Instance.TenantId);
+                List<ModMasterModel> flows = MySqlControl.GetInstance().DB.Queryable<ModMasterModel>().Where(x => x.Pid == 11).Where(x => x.TenantId == UserConfig.Instance.TenantId).Where(x => x.IsDelete == false).ToList();
                 foreach (var dbModel in flows)
                 {
-                    List<ModFlowDetailModel> flowDetails = ModFlowDetailDao.Instance.GetAllByPid(dbModel.Id);
+                    var details = Db.Queryable<ModDetailModel>().Where(x=>x.Pid == dbModel.Id)
+                        .Select(it => new ModDetailModel
+                        {
+                            SysPid = it.SysPid,
+                            Pid = it.Pid,
+                            ValueA = it.ValueA,
+                            ValueB = it.ValueB,
+                            IsEnable = it.IsEnable,
+                            IsDelete = it.IsDelete,
+                            Value = SqlFunc.Subqueryable<SysResourceModel>()
+                                .Where(r => r.Id == SqlFunc.ToInt32(it.ValueA))
+                                .Select(r => r.Value)     
+                        })
+                        .ToList();
 
 
-                    var param = new FlowParam(dbModel, flowDetails);
+
+                    var param = new FlowParam(dbModel, details);
 
                     if (backup.TryGetValue(param.Id, out var model))
                     {
@@ -68,6 +81,40 @@ namespace ColorVision.Engine.Templates.Flow
             SaveIndex.Clear();
         }
 
+        public override void Delete(int index)
+        {
+            int selectedCount = TemplateParams.Count(item => item.IsSelected);
+            if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
+
+            void DeleteSingle(int id)
+            {
+                List<ModDetailModel> de = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id).ToList();
+                int ret = Db.Deleteable<ModMasterModel>().Where(x => x.Id == id).ExecuteCommand();
+
+                Db.Deleteable<ModDetailModel>().Where(x => x.Pid == id).ExecuteCommand();
+                foreach (ModDetailModel model in de)
+                {
+                    string code = Cryptography.GetMd5Hash(model.ValueA + model.Id);
+                    ret = Db.Deleteable<SysResourceModel>().Where(x => x.Code == code).ExecuteCommand();
+                }
+            }
+
+            if (selectedCount <= 1)
+            {
+                int id = TemplateParams[index].Value.Id;
+                DeleteSingle(id);
+                TemplateParams.RemoveAt(index);
+            }
+            else
+            {
+                foreach (var item in TemplateParams.Where(item => item.IsSelected == true).ToList())
+                {
+                    DeleteSingle(item.Id);
+                    TemplateParams.Remove(item);
+                }
+            }
+        }
+
         public override void Save()
         {
             if (SaveIndex.Count == 0) return;
@@ -77,10 +124,64 @@ namespace ColorVision.Engine.Templates.Flow
                 if (index > -1 && index < TemplateParams.Count)
                 {
                     var item = TemplateParams[index];
-                    FlowParam.Save2DB(item.Value);
+                    Save2DB(item.Value);
                 }
             }
         }
+
+        public static void Save2DB(FlowParam flowParam)
+        {
+            var db = MySqlControl.GetInstance().DB;
+
+            flowParam.ModMaster.Name = flowParam.Name;
+            db.Updateable(flowParam.ModMaster).ExecuteCommand();
+
+            List<ModDetailModel> details = new();
+            flowParam.GetDetail(details);
+            if (details.Count > 0)
+            {
+                var model = details[0];
+                SysResourceModel res = null;
+                int id = 0;
+                bool hasId = int.TryParse(model.ValueA, out id);
+                if (hasId)
+                {
+                    res = db.Queryable<SysResourceModel>().InSingle(id);
+                }
+
+                if (res != null)
+                {
+                    // 资源已存在，更新
+                    res.Code = flowParam.Id + Cryptography.GetMd5Hash(flowParam.DataBase64);
+                    res.Name = flowParam.Name;
+                    res.Value = flowParam.DataBase64;
+                    db.Updateable(res).ExecuteCommand();
+                    model.ValueA = res.Id.ToString();
+                }
+                else
+                {
+                    // 新建资源
+                    res = new SysResourceModel
+                    {
+                        Name = flowParam.Name,
+                        Type = 101,
+                        Value = flowParam.DataBase64,
+                        Code = hasId
+                            ? (flowParam.Id + Cryptography.GetMd5Hash(flowParam.DataBase64))
+                            : Cryptography.GetMd5Hash(flowParam.DataBase64)
+                    };
+                    db.Insertable(res).ExecuteCommand();
+                    // 获取新资源id（SqlSugar自动回写Id）
+                    model.ValueA = res.Id.ToString();
+                }
+
+                // 3. 更新明细表
+                db.Updateable(details)
+                    .Where(md => md.Pid == flowParam.Id)
+                    .ExecuteCommand();
+            }
+        }
+
 
         public override void Export(int index)
         {
@@ -189,7 +290,7 @@ namespace ColorVision.Engine.Templates.Flow
                 if (ImportTemp != null)
                 {
                     param.DataBase64 = ImportTemp.DataBase64;
-                    param.Save();
+                    Save2DB(param);
                     ImportTemp = null;
                 }
                 var a = new TemplateModel<FlowParam>(templateName, param);
@@ -202,43 +303,45 @@ namespace ColorVision.Engine.Templates.Flow
         }
         public FlowParam? AddFlowParam(string templateName)
         {
-            ModMasterModel flowMaster = new ModMasterModel(11, templateName, UserConfig.Instance.TenantId);
-            ModMasterDao.Instance.Save(flowMaster);
-            List<ModDetailModel> list = new();
-            List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(flowMaster.Pid);
-            foreach (var item in sysDic)
-            {
-                list.Add(new ModDetailModel(item.Id, flowMaster.Id, item.DefaultValue));
-            }
-            ModDetailDao.Instance.SaveByPid(flowMaster.Id, list);
+            var flowMaster = new ModMasterModel() { Pid = 11, Name = templateName, TenantId = UserConfig.Instance.TenantId };
+            int id = Db.Insertable(flowMaster).ExecuteReturnIdentity(); // 自增id自动回写
+            flowMaster.Id = id;
+
+            List<ModDetailModel> list = new List<ModDetailModel>();
+            foreach (var item in SysDictionaryModDetailDao.Instance.GetAllByPid(flowMaster.Pid))
+                list.Add(new ModDetailModel() { SysPid = item.Id, Pid = flowMaster.Id, ValueA = item.DefaultValue });
+
+            Db.Deleteable<ModDetailModel>().Where(x => x.Pid == flowMaster.Id).ExecuteCommand();
+            Db.Insertable(list).ExecuteCommand();
 
             int pkId = flowMaster.Id;
             if (pkId > 0)
             {
-                List<ModFlowDetailModel> flowDetail = ModFlowDetailDao.Instance.GetAllByPid(pkId);
-                if (int.TryParse(flowDetail[0].ValueA, out int id))
+                var flowDetail = Db.Queryable<ModDetailModel>().Where(it => it.Pid == pkId).ToList();
+
+                if (flowDetail.Count > 0 && int.TryParse(flowDetail[0].ValueA, out int sid))
                 {
-                    SysResourceModel sysResourceModeldefault = VSysResourceDao.Instance.GetById(id);
+                    var sysResourceModeldefault = Db.Queryable<SysResourceModel>().InSingle(sid);
                     if (sysResourceModeldefault != null)
                     {
-                        SysResourceModel sysResourceModel = new SysResourceModel();
-                        sysResourceModel.Name = flowMaster.Name;
-                        sysResourceModel.Code = pkId.ToString()+ sysResourceModeldefault.Code;
-                        sysResourceModel.Type = sysResourceModeldefault.Type;
-                        sysResourceModel.Value = sysResourceModeldefault.Value;
-                        SysResourceDao.Instance.Save(sysResourceModel);
+                        flowDetail[0].Value = sysResourceModeldefault.Value;
+                        var sysResourceModel = new SysResourceModel
+                        {
+                            Name = flowMaster.Name,
+                            Code = pkId.ToString() + sysResourceModeldefault.Code,
+                            Type = sysResourceModeldefault.Type,
+                            Value = sysResourceModeldefault.Value
+                        };
+                        id = Db.Insertable(sysResourceModel).ExecuteReturnIdentity();
 
-                        flowDetail[0].ValueA = sysResourceModel.Id.ToString();
-                        ModFlowDetailDao.Instance.Save(flowDetail[0]);
+                        flowDetail[0].ValueA = id.ToString();
+                        Db.Updateable(flowDetail[0]).ExecuteCommand();
+
                     }
                 }
-                if (flowMaster != null) return new FlowParam(flowMaster, flowDetail);
-                else return null;
+                return new FlowParam(flowMaster, flowDetail);
             }
             return null;
         }
-
-
-
     }
 }

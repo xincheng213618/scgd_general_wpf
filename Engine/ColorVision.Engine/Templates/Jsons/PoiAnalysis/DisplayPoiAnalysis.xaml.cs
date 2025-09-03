@@ -1,6 +1,5 @@
 ﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
@@ -38,7 +37,7 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择PoiAnalysis模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxTemplate, "请先选择PoiAnalysis模板")) return;
 
             if (ComboxTemplate.SelectedValue is not TemplateJsonParam param) return;
 
@@ -52,7 +51,7 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "正在执行PoiAnalysis算法");
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
 

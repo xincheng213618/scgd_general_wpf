@@ -1,4 +1,6 @@
-﻿using ColorVision.Solution.Searches;
+﻿using ColorVision.Engine.Archive.Dao;
+using ColorVision.Solution.Searches;
+using ColorVision.UI.Menus;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -7,6 +9,24 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Archive
 {
+    public class MenuArchiveManager : MenuItemBase
+    {
+        public override string OwnerGuid => nameof(MenuArchive);
+        public override string Header => "归档查询";
+
+        public override void Execute()
+        {
+
+            Frame frame = new Frame();
+            HomePage homePage = new HomePage(frame);
+            frame.Navigate(homePage);
+
+            Window window = new Window();
+            window.Content = frame;
+            window.Show();
+        }
+    }
+
     /// <summary>
     /// HomePage.xaml 的交互逻辑
     /// </summary>

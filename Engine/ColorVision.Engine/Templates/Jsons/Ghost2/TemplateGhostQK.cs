@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.MySql;
+﻿using ColorVision.Database;
 using log4net;
 using Newtonsoft.Json;
 using System;
@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
             set
             {
                 JsonValue = JsonConvert.SerializeObject(value);
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -48,7 +48,7 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
         {
         }
 
-        public TemplateJsonGhost2(TemplateJsonModel templateJsonModel) : base(templateJsonModel)
+        public TemplateJsonGhost2(ModMasterModel templateJsonModel) : base(templateJsonModel)
         {
 
         }

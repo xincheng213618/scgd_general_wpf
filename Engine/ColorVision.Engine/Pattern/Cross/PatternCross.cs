@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Pattern.CrossGrid;
 using ColorVision.UI;
 using OpenCvSharp;
 using System.ComponentModel;
@@ -11,17 +10,17 @@ namespace ColorVision.Engine.Pattern.Cross
 
     public class PatternCrossConfig:ViewModelBase,IConfig
     {
-        public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; NotifyPropertyChanged(); } }
+        public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _MainBrush = Brushes.Black;
 
-        public SolidColorBrush AltBrush { get => _AltBrush; set { _AltBrush = value; NotifyPropertyChanged(); } }
+        public SolidColorBrush AltBrush { get => _AltBrush; set { _AltBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _AltBrush = Brushes.White;
 
 
-        public int HorizontalWidth { get => _HorizontalWidth; set { _HorizontalWidth = value; NotifyPropertyChanged(); } }
+        public int HorizontalWidth { get => _HorizontalWidth; set { _HorizontalWidth = value; OnPropertyChanged(); } }
         private int _HorizontalWidth = 3;
 
-        public int VerticalWidth { get => _VerticalWidth; set { _VerticalWidth = value; NotifyPropertyChanged(); } }
+        public int VerticalWidth { get => _VerticalWidth; set { _VerticalWidth = value; OnPropertyChanged(); } }
         private int _VerticalWidth = 3;
     }
 

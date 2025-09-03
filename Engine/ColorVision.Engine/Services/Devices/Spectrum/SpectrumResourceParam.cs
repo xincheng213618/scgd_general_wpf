@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.MySql;
+﻿using ColorVision.Database;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
@@ -57,11 +57,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             CalibrationParamModes.Clear();
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                ModMasterDao masterFlowDao = new ModMasterDao(17);
-                List<ModMasterModel> smus = masterFlowDao.GetResourceAll(UserConfig.Instance.TenantId, resourceId);
+                List<ModMasterModel> smus = MySqlControl.GetInstance().DB.Queryable<ModMasterModel>().Where(x => x.Pid == 7).Where(x => x.ResourceId == resourceId).Where(x => x.TenantId == UserConfig.Instance.TenantId).Where(x => x.IsDelete == false).ToList();
                 foreach (var dbModel in smus)
                 {
-                    List<ModDetailModel> smuDetails = ModDetailDao.Instance.GetAllByPid(dbModel.Id);
+                    List<ModDetailModel> smuDetails = MySqlControl.GetInstance().DB.Queryable<ModDetailModel>().Where(it => it.Pid == dbModel.Id).ToList();
                     foreach (var dbDetail in smuDetails)
                     {
                         dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");

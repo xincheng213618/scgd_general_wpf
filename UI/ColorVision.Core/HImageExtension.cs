@@ -128,8 +128,9 @@ namespace ColorVision
         public static HImage ToHImage(this WriteableBitmap writeableBitmap)
         {
             // Determine the number of channels and Depth based on the pixel format
-            int channels;
-            int depth;
+            int channels, depth;
+            int bytesPerPixel;
+
             switch (writeableBitmap.Format.ToString())
             {
                 case "Bgr32":
@@ -168,6 +169,9 @@ namespace ColorVision
                     throw new NotSupportedException("The pixel format is not supported.");
             }
 
+            bytesPerPixel = channels * (depth / 8);
+            int stride = writeableBitmap.PixelWidth * bytesPerPixel;
+
             // Create a new HImageCache instance
             HImage hImage = new()
             {
@@ -181,21 +185,25 @@ namespace ColorVision
             // Copy the pixel data from the WriteableBitmap to the HImageCache
             writeableBitmap.Lock();
             //RtlMoveMemory(hImage.pData, writeableBitmap.BackBuffer, (uint)(hImage.cols * hImage.rows * hImage.channels*(depth / 8)));
-            unsafe
+            try
             {
-                byte* src = (byte*)writeableBitmap.BackBuffer;
-                byte* dst = (byte*)hImage.pData;
-
-                for (int y = 0; y < hImage.rows; y++)
+                unsafe
                 {
-                    RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)(hImage.cols * hImage.channels * (hImage.depth / 8)));
-                    src += writeableBitmap.BackBufferStride;
-                    dst += hImage.cols * hImage.channels * (hImage.depth / 8);
+                    byte* src = (byte*)writeableBitmap.BackBuffer;
+                    byte* dst = (byte*)hImage.pData;
+
+                    for (int y = 0; y < hImage.rows; y++)
+                    {
+                        RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)stride);
+                        src += writeableBitmap.BackBufferStride;
+                        dst += stride;
+                    }
                 }
             }
-
-
-            writeableBitmap.Unlock();
+            finally
+            {
+                writeableBitmap.Unlock();
+            }
             return hImage;
         }
     }

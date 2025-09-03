@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
+using ColorVision.Database;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using cvColorVision;
@@ -107,7 +106,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public override void Save()
         {
             SysResourceModel.Remark = JsonConvert.SerializeObject(Config);
-            VSysResourceDao.Instance.Save(SysResourceModel);
+
+            MySqlControl.GetInstance().DB.Updateable(SysResourceModel).ExecuteCommand();
         }
     }
 }

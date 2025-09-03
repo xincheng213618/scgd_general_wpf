@@ -1,6 +1,6 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Engine.Media;
-using ColorVision.Engine.MySql;
+using ColorVision.Database;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
@@ -101,7 +101,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                     {
                         switch (item.PointType)
                         {
-                            case RiPointTypes.Circle:
+                            case GraphicTypes.Circle:
                                 DVCircleText Circle = new();
                                 Circle.Attribute.Center = new Point(item.PixX, item.PixY);
                                 Circle.Attribute.Radius = item.PixHeight / 2;
@@ -112,7 +112,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                                 Circle.Render();
                                 imageView.ImageShow.AddVisual(Circle);
                                 break;
-                            case RiPointTypes.Rect:
+                            case GraphicTypes.Rect:
                                 DVRectangleText Rectangle = new();
                                 Rectangle.Attribute.Rect = new Rect(item.PixX - item.PixWidth / 2, item.PixY - item.PixHeight / 2, item.PixWidth, item.PixHeight);
                                 Rectangle.Attribute.Brush = Brushes.Transparent;
@@ -122,7 +122,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                                 Rectangle.Render();
                                 imageView.ImageShow.AddVisual(Rectangle);
                                 break;
-                            case RiPointTypes.Mask:
+                            case GraphicTypes.Quadrilateral:
                                 break;
                         }
                     }
@@ -146,6 +146,12 @@ namespace ColorVision.Engine.Templates.POI.Image
                 {
                     MessageBox1.Show("需要配置关注点");
                     return;
+                }
+
+                if (!imageView.Config.GetProperties<bool>("IsBufferSet"))
+                {
+                    Action action = imageView.Config.GetProperties<Action>("LoadBuffer");
+                    action?.Invoke();
                 }
 
 

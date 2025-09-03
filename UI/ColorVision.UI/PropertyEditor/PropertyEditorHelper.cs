@@ -1,15 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI.Extension;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Resources;
-using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -23,20 +19,20 @@ namespace ColorVision.UI
     public static class PropertyEditorHelper
     {
         // Constants
-        private const double LabelMinWidth = 120;
-        private const double ControlMinWidth = 150;
+        public const double LabelMinWidth = 120;
+        public const double ControlMinWidth = 150;
 
         // Cache for resources and reflection results
         public static ConcurrentDictionary<Type, Lazy<ResourceManager?>> ResourceManagerCache { get; set; } = new();
 
         // Cached resource lookups per app lifetime (lookups are cheap but repeated hundreds of times in dynamic editors)
-        private static Brush GlobalTextBrush => (Brush)Application.Current.FindResource("GlobalTextBrush");
-        private static Brush GlobalBorderBrush => (Brush)Application.Current.FindResource("GlobalBorderBrush");
-        private static Brush BorderBrush => (Brush)Application.Current.FindResource("BorderBrush");
-        private static Style ButtonCommandStyle => (Style)Application.Current.FindResource("ButtonCommand");
-        private static Style ComboBoxSmallStyle => (Style)Application.Current.FindResource("ComboBox.Small");
-        private static Style TextBoxSmallStyle => (Style)Application.Current.FindResource("TextBox.Small");
-        private static IValueConverter? Bool2VisibilityConverter => Application.Current.TryFindResource("bool2VisibilityConverter") as IValueConverter;
+        public static Brush GlobalTextBrush => (Brush)Application.Current.FindResource("GlobalTextBrush");
+        public static Brush GlobalBorderBrush => (Brush)Application.Current.FindResource("GlobalBorderBrush");
+        public static Brush BorderBrush => (Brush)Application.Current.FindResource("BorderBrush");
+        public static Style ButtonCommandStyle => (Style)Application.Current.FindResource("ButtonCommand");
+        public static Style ComboBoxSmallStyle => (Style)Application.Current.FindResource("ComboBox.Small");
+        public static Style TextBoxSmallStyle => (Style)Application.Current.FindResource("TextBox.Small");
+        public static IValueConverter? Bool2VisibilityConverter => Application.Current.TryFindResource("bool2VisibilityConverter") as IValueConverter;
 
         public static ResourceManager? GetResourceManager(object obj)
         {

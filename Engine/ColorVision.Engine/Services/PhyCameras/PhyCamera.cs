@@ -1,9 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Configs;
@@ -79,9 +77,9 @@ namespace ColorVision.Engine.Services.PhyCameras
         [CommandDisplay("校正生成工具")]
         public RelayCommand OepnCalibrationToolCommand { get; set; }
 
-        public ImageSource? QRIcon { get => _QRIcon; set { _QRIcon = value; NotifyPropertyChanged(); } }
+        public ImageSource? QRIcon { get => _QRIcon; set { _QRIcon = value; OnPropertyChanged(); } }
         private ImageSource? _QRIcon;
-        public ImageSource Icon { get => _Icon; set{ _Icon = value; NotifyPropertyChanged(); } }
+        public ImageSource Icon { get => _Icon; set{ _Icon = value; OnPropertyChanged(); } }
         private ImageSource _Icon;
 
         public ContextMenu ContextMenu { get; set; }
@@ -240,12 +238,13 @@ namespace ColorVision.Engine.Services.PhyCameras
                 this.VisualChildren.Clear();
                 Task.Run(() =>
                 {
-                    SysResourceDao.Instance.DeleteAllByPid(Id ,false);
-                    foreach (var item in ModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "res_pid", Id } }))
+                    Db.Deleteable<SysResourceModel>().Where(x => x.Pid == SysResourceModel.Id).ExecuteCommand();
+                    var ModMasterModels = Db.Queryable<ModMasterModel>().Where(x => x.ResourceId == Id).ToList();
+                    foreach (var item in ModMasterModels)
                     {
-                        ModDetailDao.Instance.DeleteAllByPid(item.Id, false);
+                        Db.Deleteable<ModDetailModel>().Where(x => x.Pid == item.Id).ExecuteCommand();
                     }
-                    ModMasterDao.Instance.DeleteAllByParam(new Dictionary<string, object>() { { "res_pid", Id } }, false);
+                    Db.Deleteable<ModMasterModel>().Where(x => x.ResourceId == Id).ExecuteCommand();
                 });
             }
         }
@@ -255,13 +254,15 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.ConfirmDelete, "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
             CalibrationParams.Clear();
             this.VisualChildren.Clear();
-            SysResourceDao.Instance.DeleteAllByPid(Id, false);
-            foreach (var item in ModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "res_pid", Id } }))
-            {
-                ModDetailDao.Instance.DeleteAllByPid(item.Id, false);
-            }
-            ModMasterDao.Instance.DeleteAllByParam(new Dictionary<string, object>() { { "res_pid", Id } }, false);
 
+            Db.Deleteable<SysResourceModel>().Where(x => x.Pid == SysResourceModel.Id).ExecuteCommand();
+
+            var ModMasterModels = Db.Queryable<ModMasterModel>().Where(x => x.ResourceId == Id).ToList();
+            foreach (var item in ModMasterModels)
+            {
+                Db.Deleteable<ModDetailModel>().Where(x => x.Pid == item.Id).ExecuteCommand();
+            }
+            Db.Deleteable<ModMasterModel>().Where(x => x.ResourceId == Id).ExecuteCommand();
 
             SysResourceModel.Value = null;
             SysResourceDao.Instance.Save(SysResourceModel);
@@ -342,7 +343,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         #region License
 
-        public LicenseModel? CameraLicenseModel { get => _CameraLicenseModel; set { _CameraLicenseModel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsLicensed)); NotifyPropertyChanged(nameof(LicenseSolidColorBrush)); } }
+        public LicenseModel? CameraLicenseModel { get => _CameraLicenseModel; set { _CameraLicenseModel = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsLicensed)); OnPropertyChanged(nameof(LicenseSolidColorBrush)); } }
         private LicenseModel? _CameraLicenseModel;
 
         public LicenseState LicenseState { get 
@@ -567,7 +568,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             uploadwindow.ShowDialog();
         }
 
-        public string Msg { get => _Msg; set { _Msg = value; Application.Current.Dispatcher.Invoke(() => NotifyPropertyChanged()); } }
+        public string Msg { get => _Msg; set { _Msg = value; Application.Current.Dispatcher.Invoke(() => OnPropertyChanged()); } }
         private string _Msg;
 
         public event EventHandler UploadClosed;
@@ -796,7 +797,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                                         {
                                             if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
                                             {
-                                                SysResourceDao.Instance.ADDGroup(groupResource.SysResourceModel.Id, colorVisionVCalibratioItems.SysResourceModel.Id);
+                                                Db.Insertable(new SysResourceGoupModel { ResourceId = groupResource.SysResourceModel.Id, GroupId = colorVisionVCalibratioItems.SysResourceModel.Id }).ExecuteCommand();
                                                 groupResource.AddChild(colorVisionVCalibratioItems);
                                             }
                                         }

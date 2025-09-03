@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Services;
+﻿using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
@@ -6,6 +7,7 @@ using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 
 namespace ColorVision.Engine.Templates.MTF
 {
@@ -128,8 +130,8 @@ namespace ColorVision.Engine.Templates.MTF
         }
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxMTFTemplate, "请先选择MTF模板")) return;
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxPoiTemplate2, "请先选择关注点模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxMTFTemplate, "请先选择MTF模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxPoiTemplate2, "请先选择关注点模板")) return;
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
                 string type = string.Empty;
@@ -141,8 +143,8 @@ namespace ColorVision.Engine.Templates.MTF
                 }
                 var pm = TemplateMTF.Params[ComboxMTFTemplate.SelectedIndex].Value;
                 var poi_pm = TemplatePoi.Params[ComboxPoiTemplate2.SelectedIndex].Value;
-                var ss = IAlgorithm.SendCommand(code, type, imgFileName, fileExtType, pm.Id, ComboxMTFTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate2.Text);
-                ServicesHelper.SendCommand(ss, "MTF");
+                var msg = IAlgorithm.SendCommand(code, type, imgFileName, fileExtType, pm.Id, ComboxMTFTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate2.Text);
+                ServicesHelper.SendCommand(sender, msg);
             }
         }
     }

@@ -1,8 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -14,6 +11,7 @@ using ColorVision.Engine.Services.Types;
 using ColorVision.UI.Authorizations;
 using cvColorVision;
 using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -34,6 +32,8 @@ namespace ColorVision.Engine.Services.PhyCameras
         private static PhyCameraManager _instance;
         private static readonly object Locker = new();
         public static PhyCameraManager GetInstance() { lock (Locker) { return _instance ??= new PhyCameraManager(); } }
+        public static SqlSugar.SqlSugarClient Db => MySqlControl.GetInstance().DB;
+
         public RelayCommand CreateCommand { get; set; }
 
         public RelayCommand ImportCommand { get; set; }
@@ -57,18 +57,18 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public void RefreshEmptyCamera()
         {
-            Count = SysResourceDao.Instance.GetAllEmptyCameraId().Count;
+            Count = MySqlControl.GetInstance().DB.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).Count();
         }
 
 
-        public int Count { get => _Count; set { _Count = value; NotifyPropertyChanged(); } }
+        public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count;
 
         public PhyCamera? GetPhyCamera(string? Code) => PhyCameras.FirstOrDefault(a => a.Code == Code);
 
         public void Create()
         {
-            if (SysResourceDao.Instance.GetAllEmptyCameraId().Count <= 0)
+            if (MySqlControl.GetInstance().DB.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).Count() <= 0)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到未创建的相机,请插上相机后在尝试",nameof(PhyCameraManager));
                 foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>())
@@ -257,8 +257,9 @@ namespace ColorVision.Engine.Services.PhyCameras
         public void LoadPhyCamera()
         {
             var phyCameraBackup = PhyCameras.ToDictionary(pc => pc.Id, pc => pc);
-                
-            var list = SysResourceDao.Instance.GetAllType((int)ServiceTypes.PhyCamera);
+
+          
+            var list = MySqlControl.GetInstance().DB.Queryable<SysResourceModel>().Where(x => x.Type == (int)ServiceTypes.PhyCamera).ToList();
             foreach (var item in list)
             {
                 if (!string.IsNullOrWhiteSpace(item.Value))
@@ -301,7 +302,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         private static void LoadPhyCameraResources(PhyCamera phyCamera)
         {
-            var sysResourceModels = SysResourceDao.Instance.GetResourceItems(phyCamera.SysResourceModel.Id);
+            var sysResourceModels =  Db.Queryable<SysResourceModel>().Where(it => it.Pid == phyCamera.SysResourceModel.Id && it.IsDelete == false && it.IsEnable == true).ToList();
             foreach (var sysResourceModel in sysResourceModels)
             {
                 switch (sysResourceModel.Type)

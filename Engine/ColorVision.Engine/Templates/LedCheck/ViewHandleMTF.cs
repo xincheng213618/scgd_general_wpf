@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Database;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.ToolPlugins;
 using System;
@@ -13,14 +11,15 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.LedCheck
 {
     public class ViewHandleLedCheck : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { };
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { };
 
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             string fileName = Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
             var ViewResults = result.ViewResults.ToSpecificViewResults<ViewResultLedCheck>();
@@ -44,7 +43,7 @@ namespace ColorVision.Engine.Templates.LedCheck
 
 
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             base.Load(view, result);
             if (result.ViewResults == null)
@@ -62,7 +61,7 @@ namespace ColorVision.Engine.Templates.LedCheck
         }
 
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
 
             if (File.Exists(result.FilePath))
@@ -113,13 +112,13 @@ namespace ColorVision.Engine.Templates.LedCheck
                 hImage.Dispose();
             });
 
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
         }
 

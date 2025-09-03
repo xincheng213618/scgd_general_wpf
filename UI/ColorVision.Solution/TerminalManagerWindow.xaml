@@ -1,0 +1,14 @@
+﻿<Window x:Class="ColorVision.Solution.TerminalManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Solution"
+        mc:Ignorable="d"
+        Title="TerminalManager" Height="450" Width="800" Initialized="Window_Initialized">
+    <Grid>
+        <RichTextBox Name="rtbOutput" IsReadOnly="True" VerticalScrollBarVisibility="Auto" Margin="10,10,10,50"/>
+        <TextBox Name="tbInput" Height="30" VerticalAlignment="Bottom" Margin="10,0,10,10"
+                 PreviewKeyDown="tbInput_KeyDown"/>
+    </Grid>
+</Window>

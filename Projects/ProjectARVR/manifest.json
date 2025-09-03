@@ -5,5 +5,5 @@
   "version": "1.0",
   "description": "",
   "dllpath": "ProjectARVR.dll",
-  "requires": "1.3.6.36"
+  "requires": "1.3.9.10"
 }

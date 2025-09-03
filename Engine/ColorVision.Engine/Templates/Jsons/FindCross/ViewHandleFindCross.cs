@@ -2,8 +2,7 @@
 
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Abstractions;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
@@ -20,6 +19,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using static iText.StyledXmlParser.Jsoup.Select.Evaluator;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Jsons.FindCross
 {
@@ -95,14 +95,14 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleFindCross));
 
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.FindCross };
-        public override bool CanHandle1(AlgorithmResult result)
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.FindCross };
+        public override bool CanHandle1(ViewResultAlg result)
         {
             if (result.Version != "1.0") return false;
             return base.CanHandle1(result);
         }
 
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             string filePath = selectedPath + "//" + result.Batch + result.ResultType + ".csv";
 
@@ -127,7 +127,7 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
             }
         }
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -158,7 +158,7 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
             }
         }
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
@@ -172,7 +172,7 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
                     {
                         var header = new List<string> { "id","name", "x", "y", "w", "h", "center_x", "center_y", "rotationAngle", "tilt_tilt_x", "tilt_tilt_y" };
                         // For binding, you may want to use a value converter or custom object, or expose computed properties
-                        if (view.listViewSide.View is GridView gridView)
+                        if (view.ListView.View is GridView gridView)
                         {
                             view.LeftGridViewColumnVisibilitys.Clear();
                             gridView.Columns.Clear();
@@ -216,7 +216,7 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
                                     tilt_tilt_y = item.tilt.tilt_y
                                 });
                             }
-                            view.listViewSide.ItemsSource = flatList;
+                            view.ListView.ItemsSource = flatList;
                         }
                     }
                 }

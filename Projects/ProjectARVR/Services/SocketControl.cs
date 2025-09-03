@@ -12,7 +12,7 @@ namespace ProjectARVR.Services
         public NetworkStream Stream { get; set; }
     }
     
-    public class FlowInit : ISocketEventHandler
+    public class FlowInit : ISocketJsonHandler
     {
         public string EventName => "ProjectARVRInit";
 
@@ -32,7 +32,7 @@ namespace ProjectARVR.Services
         }
     }
 
-    public class SwitchPGSocket: ISocketEventHandler
+    public class SwitchPGSocket: ISocketJsonHandler
     {
         public string EventName => "SwitchPGCompleted";
 
@@ -57,7 +57,7 @@ namespace ProjectARVR.Services
 
 
 
-    public class FlowSocketMsgHandle : ISocketEventHandler
+    public class FlowSocketMsgHandle : ISocketJsonHandler
     {
         public string EventName => "ProjectARVR";
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)

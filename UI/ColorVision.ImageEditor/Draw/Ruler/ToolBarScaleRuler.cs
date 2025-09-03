@@ -70,35 +70,43 @@ namespace ColorVision.ImageEditor.Draw.Ruler
                 _IsShow = value;
                 if (value)
                 {
-                    GridEx.Children.Add(ScalRuler);
-                    ScalRuler.ParentWidth = GridEx.ActualWidth;
-                    ScalRuler.ParentHeight = GridEx.ActualHeight;
-                    drawCanvas.MouseWheel += DrawCanvas_MouseWheel;
-                    GridEx.SizeChanged += GridEx_SizeChanged;
-
-                    if (Window.GetWindow(Parent) is Window window)
-                    {
-                        window.SizeChanged -= GridEx_SizeChanged;
-                        window.SizeChanged += GridEx_SizeChanged;
-                    }
-
-                    Render();
+                    Load();
                 }
                 else
                 {
-                    GridEx.Children.Remove(ScalRuler);
-                    drawCanvas.MouseWheel -= DrawCanvas_MouseWheel;
-                    GridEx.SizeChanged -= GridEx_SizeChanged;
-
-                    if (Window.GetWindow(Parent) is Window window)
-                    {
-                        Window.GetWindow(Parent).SizeChanged -= GridEx_SizeChanged;
-                    }
+                    UnLoad();
                 }
 
             }
         }
 
+        public void Load()
+        {
+            GridEx.Children.Add(ScalRuler);
+            ScalRuler.ParentWidth = GridEx.ActualWidth;
+            ScalRuler.ParentHeight = GridEx.ActualHeight;
+            drawCanvas.MouseWheel += DrawCanvas_MouseWheel;
+            GridEx.SizeChanged += GridEx_SizeChanged;
+
+            if (Window.GetWindow(Parent) is Window window)
+            {
+                window.SizeChanged -= GridEx_SizeChanged;
+                window.SizeChanged += GridEx_SizeChanged;
+            }
+
+            Render();
+        }
+        public void UnLoad()
+        {
+            GridEx.Children.Remove(ScalRuler);
+            drawCanvas.MouseWheel -= DrawCanvas_MouseWheel;
+            GridEx.SizeChanged -= GridEx_SizeChanged;
+
+            if (Window.GetWindow(Parent) is Window window)
+            {
+                Window.GetWindow(Parent).SizeChanged -= GridEx_SizeChanged;
+            }
+        }
 
 
     }

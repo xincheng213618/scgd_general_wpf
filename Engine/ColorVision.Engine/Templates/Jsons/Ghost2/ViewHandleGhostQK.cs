@@ -2,10 +2,7 @@
 
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Abstractions;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Templates.Jsons.FOV2;
+using ColorVision.Database;
 using ColorVision.UI;
 using log4net;
 using System.Collections.Generic;
@@ -15,6 +12,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Jsons.Ghost2
 {
@@ -23,15 +21,15 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleGhostQK));
 
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.Ghost};
-        public override bool CanHandle1(AlgorithmResult result)
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.Ghost};
+        public override bool CanHandle1(ViewResultAlg result)
         {
             if (result.Version != "2.0") return false;
             return base.CanHandle1(result);
         }
 
 
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             var blackMuraViews = result.ViewResults.ToSpecificViewResults<GhostView>();
             var csvBuilder = new StringBuilder();
@@ -43,7 +41,7 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
         }
 
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -76,7 +74,7 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
             }
         }
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             foreach (var item in result.ViewResults)
             {
@@ -91,13 +89,13 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
             List<string> header = new() { "Analysis", "Bright", "Ghost" };
             List<string> bdHeader = new() { "GhostReslut.Analysis", "GhostReslut.Bright", "GhostReslut.Ghost" };
 
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
         }
 

@@ -21,7 +21,7 @@
     <StackPanel Margin="0,3">
         <DockPanel Margin="0,0,5,0">
             <Grid DockPanel.Dock="Right" >
-                <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
+                <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="{Binding  DService.IsAlive,Mode=OneWay}" IsEnabled="False" />
                 <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
                 <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
             </Grid>
@@ -58,7 +58,7 @@
                         <TabItem x:Name="RadioLocal" Background="Transparent" Header="{x:Static properties:Resources.Local}" >
                             <StackPanel Orientation="Horizontal" Margin="0,2">
                                 <TextBlock Text="文件" Margin="10,0,0,0" Width="40"/>
-                                <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}"  Width="150" Text="{Binding ImageFilePath}" Margin="0,0,2,0" HorizontalAlignment="Left" />
+                                <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}"  Width="150" Text="" Margin="0,0,2,0" HorizontalAlignment="Left" />
                                 <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open_File" />
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_OpenLocal_Click" />
                             </StackPanel>

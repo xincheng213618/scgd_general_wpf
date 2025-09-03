@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
+using ColorVision.Database;
 
 
 namespace ColorVision.Engine.Services.Devices.Spectrum

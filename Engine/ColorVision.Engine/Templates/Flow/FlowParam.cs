@@ -1,100 +1,26 @@
 ﻿#pragma warning disable CA1822
-using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Dao;
-using CVCommCore;
 using System.Collections.Generic;
 
 namespace ColorVision.Engine.Templates.Flow
 {
-
-    public static class FlowParamExtension
-    {
-        public static void Save(this FlowParam flowParam)
-        {
-            FlowParam.Save2DB(flowParam);
-        }
-    }
-
     /// <summary>
     /// 流程引擎模板
     /// </summary>
     public class FlowParam : ParamModBase
     {
-        public static void Save2DB(FlowParam flowParam)
-        {
-            flowParam.ModMaster.Name = flowParam.Name;
-            ModMasterDao modMasterDao = new ModMasterDao(11);
-            modMasterDao.Save(flowParam.ModMaster);
-
-
-            List<ModDetailModel> list = new();
-            flowParam.GetDetail(list);
-            if (list.Count > 0 && list[0] is ModDetailModel model)
-            {
-                if (int.TryParse(model.ValueA, out int id))
-                {
-                    SysResourceModel res = VSysResourceDao.Instance.GetById(id);
-                    if (res != null)
-                    {
-                        res.Code = flowParam.Id + Cryptography.GetMd5Hash(flowParam.DataBase64);
-                        res.Name = flowParam.Name;
-                        res.Value = flowParam.DataBase64;
-                        VSysResourceDao.Instance.Save(res);
-                        model.ValueA = res.Id.ToString();
-                    }
-                    else
-                    {
-                        res = new SysResourceModel();
-                        res.Name = flowParam.Name;
-                        res.Type = (int)PhysicalResourceType.FlowFile;
-                        if (!string.IsNullOrEmpty(flowParam.DataBase64))
-                        {
-                            res.Code = flowParam.Id + Cryptography.GetMd5Hash(flowParam.DataBase64);
-                            res.Value = flowParam.DataBase64;
-                        }
-                        VSysResourceDao.Instance.Save(res);
-                        model.ValueA = res.Id.ToString();
-                    }
-                }
-                else
-                {
-                    SysResourceModel res = new();
-                    res.Name = flowParam.Name;
-                    res.Type = (int)PhysicalResourceType.FlowFile;
-                    if (!string.IsNullOrEmpty(flowParam.DataBase64))
-                    {
-                        res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
-                        res.Value = flowParam.DataBase64;
-                    }
-                    VSysResourceDao.Instance.Save(res);
-                    model.ValueA = res.Id.ToString();
-                }
-                ModDetailDao.Instance.UpdateByPid(flowParam.Id, list);
-            }
-        }
-
-        public FlowParam()
+        public FlowParam() 
         {
 
         }
 
-        public FlowParam(ModMasterModel dbModel, List<ModFlowDetailModel> flowDetail) : base()
+        public FlowParam(ModMasterModel dbModel, List<ModDetailModel> flowDetail) : base(dbModel, flowDetail)
         {
-            ModMaster = dbModel;
-            Id = dbModel.Id;
-            Name = dbModel.Name ?? string.Empty;
-            List<ModDetailModel> modDetailModels = new();
-            foreach (var model in flowDetail)
-            {
-                ModDetailModel mod = new() { Id = model.Id, Pid = model.Pid, IsDelete = model.IsDelete, IsEnable = model.IsEnable, Symbol = model.Symbol, SysPid = model.SysPid, ValueA = model.ValueA, ValueB = model.ValueB };
-                modDetailModels.Add(mod);
-                _DataBase64 = model.Value ?? string.Empty;
-            }
-            AddDetail(modDetailModels);
+            _DataBase64 = flowDetail.Count >0 ? flowDetail[0].Value ?? string.Empty : string.Empty;
         }
 
-        private string _DataBase64;
         public string DataBase64 { get => _DataBase64; set { _DataBase64 = value; } }
+        private string _DataBase64;
+
 
         private const string propertyName = "filename";
 

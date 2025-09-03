@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
@@ -15,10 +14,10 @@ namespace ColorVision.Engine.Templates.Jsons.KB
     public class AlgorithmKBConfig : ViewModelBase, IConfig,IConfigSettingProvider
     {
         public static AlgorithmKBConfig Instance =>ConfigService.Instance.GetRequiredService<AlgorithmKBConfig>();
-        public double KBLVSacle { get => _KBLVSacle; set { _KBLVSacle = value; NotifyPropertyChanged(); } }
+        public double KBLVSacle { get => _KBLVSacle; set { _KBLVSacle = value; OnPropertyChanged(); } }
         private double _KBLVSacle = 0.006583904;
 
-        public bool KBCanDrag { get => _KBCanDrag; set { _KBCanDrag = value; NotifyPropertyChanged(); } }
+        public bool KBCanDrag { get => _KBCanDrag; set { _KBCanDrag = value; OnPropertyChanged(); } }
         private bool _KBCanDrag;
 
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
@@ -74,7 +73,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             new EditPoiParam1(TemplateKB.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
 
         public override UserControl GetUserControl()

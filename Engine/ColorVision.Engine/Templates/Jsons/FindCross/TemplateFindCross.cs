@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.MySql;
+﻿using ColorVision.Database;
 using log4net;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
         {
         }
 
-        public TJFindCrossParam(TemplateJsonModel templateJsonModel) : base(templateJsonModel)
+        public TJFindCrossParam(ModMasterModel templateJsonModel) : base(templateJsonModel)
         {
 
         }

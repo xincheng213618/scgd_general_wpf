@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.MySql;
+﻿using ColorVision.Database;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Templates.FindLightArea

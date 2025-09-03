@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Calibration.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using log4net;
@@ -9,7 +7,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.UI.Authorizations;
-using ColorVision.Engine.MySql;
+using ColorVision.Database;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using System.ComponentModel;
@@ -27,7 +25,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         public ViewCalibration View{ get; set; }
 
-        public DeviceCalibration(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceCalibration(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTCalibration(Config);
             View = new ViewCalibration(this);

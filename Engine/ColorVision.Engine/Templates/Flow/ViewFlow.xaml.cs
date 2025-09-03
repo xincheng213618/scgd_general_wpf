@@ -1,7 +1,5 @@
 ﻿#pragma warning disable CA1720,CS8602
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Archive.Dao;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
@@ -24,9 +22,13 @@ namespace ColorVision.Engine.Services.Flow
     public partial class ViewFlow : UserControl,IView, INotifyPropertyChanged,IDisposable
     {
         public event PropertyChangedEventHandler? PropertyChanged;
-        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+        public void OnPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
         public  FlowEngineControl FlowEngineControl { get; set; }
+
+        public static FlowEngineManager FlowEngineManager => FlowEngineManager.GetInstance();
+
         public View View { get; set; }
         public RelayCommand AutoSizeCommand { get; set; }
 
@@ -43,7 +45,7 @@ namespace ColorVision.Engine.Services.Flow
 
         public static FlowEngineConfig FlowConfig => FlowEngineConfig.Instance;
 
-        public bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; NotifyPropertyChanged(); } }
+        public bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; OnPropertyChanged(); } }
         private bool _IsEditMode = true;
 
         public DisplayFlow DisplayFlow { get; set; }
@@ -135,7 +137,7 @@ namespace ColorVision.Engine.Services.Flow
         {
             if (!STNodeEditorHelper.CheckFlow()) return;
             FlowParam.DataBase64 = Convert.ToBase64String(STNodeEditorMain.GetCanvasData());
-            FlowParam.Save();
+            TemplateFlow.Save2DB(FlowParam);
             MessageBox.Show(Application.Current.GetActiveWindow(),"保存成功","Flow");
         }
 
@@ -153,7 +155,7 @@ namespace ColorVision.Engine.Services.Flow
 
         public FlowParam FlowParam { get; set; }
 
-        public float CanvasScale { get => STNodeEditorHelper.CanvasScale; set { STNodeEditorMain.ScaleCanvas(value, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2); NotifyPropertyChanged(); } }
+        public float CanvasScale { get => STNodeEditorHelper.CanvasScale; set { STNodeEditorMain.ScaleCanvas(value, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2); OnPropertyChanged(); } }
 
         STNodeTreeView STNodeTreeView1 = new STNodeTreeView();
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -253,13 +255,13 @@ namespace ColorVision.Engine.Services.Flow
                 else if (e.Key == Key.Add)
                 {
                     STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.1f, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
-                    NotifyPropertyChanged(nameof(CanvasScale));
+                    OnPropertyChanged(nameof(CanvasScale));
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Subtract)
                 {
                     STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.1f, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
-                    NotifyPropertyChanged(nameof(CanvasScale));
+                    OnPropertyChanged(nameof(CanvasScale));
                     e.Handled = true;
                 }
             }
@@ -345,7 +347,6 @@ namespace ColorVision.Engine.Services.Flow
         private void STNodeEditorMain_MouseUp(object sender, System.Windows.Forms.MouseEventArgs e)
         {
             IsMouseDown = false;
-            
         }
 
         private void STNodeEditorMain_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
@@ -413,23 +414,22 @@ namespace ColorVision.Engine.Services.Flow
             }
             Frame frame = new Frame();
 
-            BatchDataHistory batchDataHistory = new BatchDataHistory(frame, new ViewBatchResult(Batch));
+            MeasureBatchPage batchDataHistory = new MeasureBatchPage(frame, Batch);
 
-            Window window = new Window();
+            Window window = new Window() { Owner = Application.Current.GetActiveWindow() };
             window.Content = batchDataHistory;
             window.Show();
 
         }
 
-        private void Button1_Click(object sender, RoutedEventArgs e)
+        private void Grid1_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            Frame frame = new Frame();
+            if (sender is Grid grid)
+            {
+                winf2.Visibility = grid.ActualHeight < 500 || grid.ActualWidth < 300 ? Visibility.Collapsed : Visibility.Visible;
 
-            DataSummaryPage batchDataHistory = new DataSummaryPage(frame);
-
-            Window window = new Window();
-            window.Content = batchDataHistory;
-            window.Show();
+                winf1.Visibility = grid.ActualHeight < 200 || grid.ActualWidth < 100 ? Visibility.Collapsed : Visibility.Visible;
+            }
         }
     }
 }

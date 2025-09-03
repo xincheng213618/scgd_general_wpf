@@ -7,18 +7,15 @@
 		<ImplicitUsings>disable</ImplicitUsings>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<VersionPrefix>1.3.4.1</VersionPrefix>
+		<VersionPrefix>1.3.5.1</VersionPrefix>
 		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 	<ItemGroup>
-	  <None Remove="Assets\Image\background0.png" />
 	  <None Remove="Assets\Image\ColorVision.ico" />
 	  <None Remove="Assets\Image\ColorVision1.ico" />
-	  <None Remove="Assets\Image\归档查询.png" />
-	  <None Remove="Assets\Image\综合查询.png" />
 	  <None Remove="Assets\uploadbg.avif" />
 	</ItemGroup>
 
@@ -28,14 +25,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Resource Include="Assets\Image\background0.png">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </Resource>
 	  <Resource Include="Assets\Image\ColorVision.ico" />
 	  <Resource Include="Assets\Image\ColorVision1.ico" />
 	  <Resource Include="Assets\Image\uploadbg.avif" />
-	  <Resource Include="Assets\Image\归档查询.png" />
-	  <Resource Include="Assets\Image\综合查询.png" />
 	</ItemGroup>
 
 	<ItemGroup>

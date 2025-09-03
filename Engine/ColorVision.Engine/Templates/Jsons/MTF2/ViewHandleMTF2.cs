@@ -2,16 +2,14 @@
 
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Abstractions;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Database;
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Templates.POI;
+using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using log4net;
-using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
-using SqlSugar;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -93,15 +91,15 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleMTF2));
 
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.MTF};
-        public override bool CanHandle1(AlgorithmResult result)
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.MTF};
+        public override bool CanHandle1(ViewResultAlg result)
         {
             if (result.Version != "2.0") return false;
             return base.CanHandle1(result);
         }
 
 
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             string filePath = selectedPath + "//" + result.Batch + result.ResultType + ".csv";
 
@@ -148,7 +146,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
         }
 
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -174,13 +172,49 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
 
                     result.ContextMenu.Items.Add(new MenuItem() { Header = "选中2.0结果集", Command = SelectrelayCommand });
                     result.ContextMenu.Items.Add(new MenuItem() { Header = "打开2.0结果集", Command = OpenrelayCommand });
+
+
+
+                    void ExportToPoi()
+                    {
+                        int old1 = TemplatePoi.Params.Count;
+                        TemplatePoi templatePoi1 = new TemplatePoi();
+                        templatePoi1.ImportTemp = new PoiParam() { Name = templatePoi1.NewCreateFileName("poi") };
+                        templatePoi1.ImportTemp.Height = 400;
+                        templatePoi1.ImportTemp.Width = 300;
+                        templatePoi1.ImportTemp.PoiConfig.BackgroundFilePath = result.FilePath;
+                        foreach (var item in mtfresult.MTFResult.result)
+                        {
+                            PoiPoint poiPoint = new PoiPoint()
+                            {
+                                Name = item.name,
+                                PixX = item.x,
+                                PixY = item.y,
+                                PixHeight =item.w,
+                                PixWidth = item.h,
+                                PointType = GraphicTypes.Rect,
+                                Id = item.id
+                            };
+                            templatePoi1.ImportTemp.PoiPoints.Add(poiPoint);
+                        }
+
+
+                        templatePoi1.OpenCreate();
+                        int next1 = TemplatePoi.Params.Count;
+                        if (next1 == old1 + 1)
+                        {
+                            new EditPoiParam(TemplatePoi.Params[next1 - 1].Value).ShowDialog();
+                        }
+                    }
+                    RelayCommand ExportToPoiCommand = new RelayCommand(a => ExportToPoi());
+                    result.ContextMenu.Items.Add(new MenuItem() { Header = "创建到POI", Command = ExportToPoiCommand });
                 }
 
                 result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmMTF2), ImageFilePath = result.FilePath })) });
             }
         }
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
@@ -206,19 +240,17 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
                             view.ImageView.AddVisual(Rectangle);
                         }
                     }
-                    view.ImageView.RaiseRenderCompleted();
-
 
                     List<string> header = new() { "name", "x","y","w","h","mtfvalue" };
                     List<string> bdHeader = new() { "name", "x", "y", "w", "h", "mtfValue" };
 
-                    if (view.listViewSide.View is GridView gridView)
+                    if (view.ListView.View is GridView gridView)
                     {
                         view.LeftGridViewColumnVisibilitys.Clear();
                         gridView.Columns.Clear();
                         for (int i = 0; i < header.Count; i++)
                             gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                        view.listViewSide.ItemsSource = mTFDetailViewReslut?.MTFResult?.result;
+                        view.ListView.ItemsSource = mTFDetailViewReslut?.MTFResult?.result;
                     }
                 }
             }

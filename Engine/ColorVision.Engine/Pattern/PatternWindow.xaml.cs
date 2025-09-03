@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Templates;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
@@ -36,10 +35,10 @@ namespace ColorVision.Engine.Pattern
     {
         public static PatternWindowConfig Instance => ConfigService.Instance.GetRequiredService<PatternWindowConfig>();
 
-        public int Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); } }
+        public int Width { get => _Width; set { _Width = value; OnPropertyChanged(); } }
         private int _Width = 640;
 
-        public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
+        public int Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private int _Height = 480;
     }
 

@@ -6,7 +6,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Abstractions
+namespace ColorVision.Engine
 {
     public class DisplayAlgorithmParam
     {
@@ -30,9 +30,9 @@ namespace ColorVision.Engine.Abstractions
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IResultHandleBase).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    if (Activator.CreateInstance(type) is IResultHandleBase algorithmResultRender)
+                    if (Activator.CreateInstance(type) is IResultHandleBase ViewResultAlgRender)
                     {
-                        ResultHandles.Add(algorithmResultRender);
+                        ResultHandles.Add(ViewResultAlgRender);
                     }
                 }
             }
@@ -73,10 +73,10 @@ namespace ColorVision.Engine.Abstractions
 
     public abstract class DisplayAlgorithmBase : ViewModelBase, IDisplayAlgorithm
     {
-        public bool IsLocalFile { get => _IsLocalFile; set { _IsLocalFile = value; NotifyPropertyChanged(); } }
+        public bool IsLocalFile { get => _IsLocalFile; set { _IsLocalFile = value; OnPropertyChanged(); } }
         private bool _IsLocalFile;
 
-        public string ImageFilePath { get => _ImageFilePath; set { _ImageFilePath = value; NotifyPropertyChanged(); } }
+        public string ImageFilePath { get => _ImageFilePath; set { _ImageFilePath = value; OnPropertyChanged(); } }
         private string _ImageFilePath;
 
 

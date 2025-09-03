@@ -1,8 +1,7 @@
 ﻿#pragma warning disable CS8604,CS8602
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Database;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using CVCommCore.CVAlgorithm;
 using log4net;
@@ -12,19 +11,19 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Templates.Jsons.KB
 {
     public class ViewHandleKB : IResultHandleBase
     {
         private static ILog log = LogManager.GetLogger(nameof(ViewHandleKB));
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.KB , AlgorithmResultType.KB_Raw};
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.KB , ViewResultAlgType.KB_Raw};
 
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             if (!File.Exists(result.ResultImagFile)) return;
             try
@@ -66,7 +65,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         }
 
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -75,40 +74,18 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             }
         }
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             if (File.Exists(result.ResultImagFile))
             {
-                Task.Run(async () =>
-                {
-                    try
-                    {
-                        var fileInfo = new FileInfo(result.ResultImagFile);
-                        log.Warn($"fileInfo.Length{fileInfo.Length}");
-                        using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
-                        {
-                            log.Warn("文件可以读取，没有被占用。");
-                        }
-                        if (fileInfo.Length > 0)
-                        {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                view.ImageView.OpenImage(result.ResultImagFile);
-                            });
-                        }
-                    }
-                    catch
-                    {
-                        log.Warn("文件还在写入");
-                        await Task.Delay(view.Config.ViewImageReadDelay);
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            view.ImageView.OpenImage(result.ResultImagFile);
-                        });
-                    }
-                });
-                view.ImageView.OpenImage(result.ResultImagFile);
-            }
+				using (var stream = File.OpenRead(result.ResultImagFile))
+				{
+					BitmapDecoder decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+					BitmapSource bitmapSource = decoder.Frames[0];
+					WriteableBitmap writeableBitmap = new WriteableBitmap(bitmapSource);
+					view.ImageView.OpenImage(writeableBitmap); // 你的方法如果支持这样调用
+				}
+			}
             else
             {
                 if (File.Exists(result.FilePath))
@@ -132,13 +109,13 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             header = new() { "PoiName", "Value" };
             bdHeader = new() { "PoiName", "Value" };
 
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
         }
     }

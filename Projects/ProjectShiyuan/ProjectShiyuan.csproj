@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.2.1.1</VersionPrefix>
+		<VersionPrefix>1.3.2.1</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -31,14 +31,8 @@
 		<Reference Include="CVCommCore">
 			<HintPath>..\..\DLL\CVCommCore.dll</HintPath>
 		</Reference>
-		<Reference Include="FlowEngineLib">
-			<HintPath>..\..\DLL\FlowEngineLib.dll</HintPath>
-		</Reference>
 		<Reference Include="MQTTMessageLib">
 			<HintPath>..\..\DLL\MQTTMessageLib.dll</HintPath>
-		</Reference>
-		<Reference Include="ST.Library.UI">
-			<HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
 		</Reference>
 	</ItemGroup>
 

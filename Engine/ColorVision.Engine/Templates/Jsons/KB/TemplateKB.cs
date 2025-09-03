@@ -1,6 +1,6 @@
 ﻿#pragma warning disable CS8603
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.MySql;
+using ColorVision.Database;
 using ColorVision.Engine.Templates.POI;
 using log4net;
 using Newtonsoft.Json;
@@ -42,14 +42,14 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             }
             set {
                 JsonValue = JsonConvert.SerializeObject(value);
-                NotifyPropertyChanged(); 
+                OnPropertyChanged(); 
             } }
 
         public TemplateJsonKBParam() : base()
         {
         }
 
-        public TemplateJsonKBParam(TemplateJsonModel templateJsonModel):base(templateJsonModel) 
+        public TemplateJsonKBParam(ModMasterModel templateJsonModel):base(templateJsonModel) 
         {
 
         }

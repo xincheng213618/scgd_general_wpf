@@ -1,9 +1,6 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Abstractions;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Dao;
+using ColorVision.Database;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
@@ -31,13 +28,19 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
+
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
-    public partial class AlgorithmView : UserControl,IView,IDisposable
+    public partial class AlgorithmView : UserControl,IView,IDisposable, IViewImageA
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AlgorithmView));
         public View View { get; set; }
+        public ImageView ImageView { get; set; }
+
+        public ListView ListView { get; set; }
+
+        public TextBox SideTextBox { get; set; }
 
         public AlgorithmView()
         {
@@ -51,7 +54,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
-
+            ImageView = new ImageView();
+            ListView = listViewSide;
+            SideTextBox = TextBoxside;
+            Grid1.Children.Add(ImageView);
             View = new View();
             if (listView1.View is GridView gridView)
             {
@@ -69,28 +75,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
 
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
-
-            ImageView.RenderCompleted += RenderCompleted;
         }
-
-        private void RenderCompleted(object? sender, EventArgs e)
-        {
-            if (!Config.AutoSaveRendering) return;
-            if (!Directory.Exists(Config.SaveSideDataDirPath)) return;
-
-            try
-            {
-                string fileNameWithoutExt = Path.GetFileNameWithoutExtension(ImageView.Config.FilePath);
-                string filePath = Path.Combine(Config.SaveSideDataDirPath, $"{fileNameWithoutExt}.png");
-                ImageView.ImageViewModel.Save(filePath);
-                log.Info($"渲染完成，已保存图片到 {filePath}");
-            }
-            catch (Exception ex)
-            {
-                log.Error($"渲染完成但保存图片失败: {ex.Message}", ex);
-            }
-        }
-
 
         private void Delete()
         {
@@ -99,7 +84,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             else
             {
                 listView1.SelectedIndex = -1;
-                foreach (var item in listView1.SelectedItems.Cast<AlgorithmResult>().ToList())
+                foreach (var item in listView1.SelectedItems.Cast<ViewResultAlg>().ToList())
                     ViewResults.Remove(item);
             }
         }
@@ -126,14 +111,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
-        public ObservableCollection<AlgorithmResult> ViewResults => Config.ViewResults;
+        public ObservableCollection<ViewResultAlg> ViewResults => Config.ViewResults;
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.SelectedIndex < 0) return;
 
   
-            if (listView1.SelectedIndex < 0 ||listView1.Items[listView1.SelectedIndex] is not AlgorithmResult result)
+            if (listView1.SelectedIndex < 0 ||listView1.Items[listView1.SelectedIndex] is not ViewResultAlg result)
             {
                 MessageBox.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
                 return;
@@ -179,16 +164,16 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         {
             if (result != null)
             {
-                AlgorithmResult algorithmResult = new AlgorithmResult(result);
+                ViewResultAlg ViewResultAlg = new ViewResultAlg(result);
 
-                var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(algorithmResult));
-                    ResultHandle?.Load(this,algorithmResult);
+                var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(ViewResultAlg));
+                    ResultHandle?.Load(this,ViewResultAlg);
 
-                ViewResults.AddUnique(algorithmResult, Config.InsertAtBeginning);
+                ViewResults.AddUnique(ViewResultAlg, Config.InsertAtBeginning);
                 if (Config.AutoRefreshView)
                     RefreshResultListView();
                 if (Config.AutoSaveSideData)
-                    SideSave(algorithmResult, Config.SaveSideDataDirPath);
+                    SideSave(ViewResultAlg, Config.SaveSideDataDirPath);
             }
         }
 
@@ -202,7 +187,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (listView1.SelectedIndex < 0) return;
-            if (ViewResults[listView1.SelectedIndex] is not AlgorithmResult result) return;
+            if (ViewResults[listView1.SelectedIndex] is not ViewResultAlg result) return;
             var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(result));
             if (ResultHandle != null)
             {
@@ -224,12 +209,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
             switch (result.ResultType)
             {
-                case AlgorithmResultType.POI_XYZ_File:
-                case AlgorithmResultType.POI_Y_File:
+                case ViewResultAlgType.POI_XYZ_File:
+                case ViewResultAlgType.POI_Y_File:
                     header = new List<string> { "file_name", "FileUrl", "FileType" };
                     bdHeader = new List<string> { "FileName", "FileUrl", "FileType", };
                     break;
-                case AlgorithmResultType.POI:
+                case ViewResultAlgType.POI:
                     if (result.ViewResults == null)
                     {
                         result.ViewResults = new ObservableCollection<IViewResult>();
@@ -322,33 +307,39 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 switch (item.PointType)
                 {
                     case POIPointTypes.Circle:
-                        DVCircleText Circle = new();
-                        Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
-                        Circle.Attribute.Radius = item.Radius;
-                        Circle.Attribute.Brush = Brushes.Transparent;
-                        Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                        Circle.Attribute.Id = item.Id ?? -1;
-                        Circle.Attribute.Text = item.Name;
+                        CircleTextProperties circleTextProperties = new CircleTextProperties();
+                        circleTextProperties.Center = new Point(item.PixelX, item.PixelY);
+                        circleTextProperties.Radius = item.Radius;
+                        circleTextProperties.Brush = Brushes.Transparent;
+                        circleTextProperties.Pen = new Pen(Brushes.Red, 1);
+                        circleTextProperties.Id = item.Id ?? -1;
+                        circleTextProperties.Text = item.Name;
+
+                        DVCircleText Circle = new DVCircleText(circleTextProperties);
                         Circle.Render();
                         ImageView.AddVisual(Circle);
                         break;
                     case POIPointTypes.Rect:
-                        DVRectangleText Rectangle = new();
-                        Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
-                        Rectangle.Attribute.Brush = Brushes.Transparent;
-                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                        Rectangle.Attribute.Id = item.Id ?? -1;
-                        Rectangle.Attribute.Text = item.Name;
+                        RectangleTextProperties rectangleTextProperties = new RectangleTextProperties();
+                        rectangleTextProperties.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
+                        rectangleTextProperties.Brush = Brushes.Transparent;
+                        rectangleTextProperties.Pen = new Pen(Brushes.Red, 1);
+                        rectangleTextProperties.Id = item.Id ?? -1;
+                        rectangleTextProperties.Text = item.Name;
+
+                        DVRectangleText Rectangle = new DVRectangleText(rectangleTextProperties);
                         Rectangle.Render();
                         ImageView.AddVisual(Rectangle);
                         break;
                     case POIPointTypes.SolidPoint:
-                        DVCircle Circle1 = new();
-                        Circle1.Attribute.Center = new Point(item.PixelX, item.PixelY);
-                        Circle1.Attribute.Radius = 10;
-                        Circle1.Attribute.Brush = Brushes.Red;
-                        Circle1.Attribute.Pen = new Pen(Brushes.Red, 1);
-                        Circle1.Attribute.Id = item.Id ?? -1;
+                        CircleProperties circleProperties = new CircleProperties();
+                        circleProperties.Center = new Point(item.PixelX, item.PixelY);
+                        circleProperties.Radius = 10;
+                        circleProperties.Brush = Brushes.Red;
+                        circleProperties.Pen = new Pen(Brushes.Red, 1);
+                        circleProperties.Id = item.Id ?? -1;
+
+                        DVCircle Circle1 = new DVCircle(circleProperties);
                         Circle1.Render();
                         ImageView.AddVisual(Circle1);
                         break;
@@ -356,7 +347,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         break;
                 }
             }
-            ImageView.RaiseRenderCompleted();
         }
 
 
@@ -401,7 +391,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
-        public void SideSave(AlgorithmResult result,string selectedPath)
+        public void SideSave(ViewResultAlg result,string selectedPath)
         {
             var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle.Contains(result.ResultType));
             if (ResultHandle != null)
@@ -423,7 +413,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                 foreach (var selectedItem in listView1.SelectedItems)
                 {
-                    if (selectedItem is AlgorithmResult result)
+                    if (selectedItem is ViewResultAlg result)
                     {
                         SideSave(result, selectedPath);
                     }
@@ -439,7 +429,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
             {
-                Type type = typeof(AlgorithmResult);
+                Type type = typeof(ViewResultAlg);
 
                 var properties = type.GetProperties();
                 foreach (var property in properties)
@@ -463,7 +453,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public void Dispose()
         {
-            ImageView.RenderCompleted -= RenderCompleted;
             ImageView?.Dispose();
 
             GC.SuppressFinalize(this);
@@ -477,14 +466,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
             foreach (var item in dbList)
             {
-                AlgorithmResult algorithmResult = new AlgorithmResult(item);
-                ViewResults.AddUnique(algorithmResult);
+                ViewResultAlg ViewResultAlg = new ViewResultAlg(item);
+                ViewResults.AddUnique(ViewResultAlg);
             }
         }
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            GenericQuery<AlgResultMasterModel, AlgorithmResult> genericQuery = new GenericQuery<AlgResultMasterModel, AlgorithmResult>(MySqlControl.GetInstance().DB, ViewResults, t => new AlgorithmResult(t));
+            GenericQuery<AlgResultMasterModel, ViewResultAlg> genericQuery = new GenericQuery<AlgResultMasterModel, ViewResultAlg>(MySqlControl.GetInstance().DB, ViewResults, t => new ViewResultAlg(t));
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
         }

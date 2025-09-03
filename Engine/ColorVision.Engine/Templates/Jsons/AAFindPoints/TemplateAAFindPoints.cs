@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.MySql;
+﻿using ColorVision.Database;
 using log4net;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
         {
         }
 
-        public TAAFindPointsParam(TemplateJsonModel templateJsonModel) : base(templateJsonModel)
+        public TAAFindPointsParam(ModMasterModel templateJsonModel) : base(templateJsonModel)
         {
 
         }

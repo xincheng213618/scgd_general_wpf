@@ -8,25 +8,19 @@ namespace ColorVision.ImageEditor.Draw
     {
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
 
-        public bool AutoAttributeChanged { get; set; } = true;
 
         public bool IsComple { get; set; }
 
         public DVDatumPolygon()
         {
             Attribute = new PolygonProperties();
-            Attribute.Id = No++;
-            Attribute.Brush = Brushes.Transparent;
+
             Attribute.Pen = new Pen(Brushes.Red, 2);
             Attribute.Points = new List<Point>();
-            Attribute.PropertyChanged += (s, e) =>
-            {
-                if (AutoAttributeChanged)
-                    Render();
-            };
+            Attribute.PropertyChanged += (s, e) => Render();
         }
         public List<Point> Points { get => Attribute.Points; }
-        public Point? MovePoints { get; set; }
+
 
         public override void Render()
         {

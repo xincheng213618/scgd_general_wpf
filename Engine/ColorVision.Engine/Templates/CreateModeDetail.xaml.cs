@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Templates.SysDictionary;
+﻿using ColorVision.Database;
 using ColorVision.Themes;
 using System;
 using System.Collections.Generic;
@@ -34,7 +33,7 @@ namespace ColorVision.Engine.Templates
             CreateConfig = new ModDetailModel() { Pid = Param.Id};
             CreateConfig.Pid = Param.Id;
             CreateConfig.SysPid = 500;
-            SysDictionaryModDetaiModels = SysDictionaryModDetailDao.Instance.GetAllByPid(Param.ModMaster.Pid,true,false);
+            SysDictionaryModDetaiModels = SysDictionaryModDetailDao.Instance.GetAllByPid(Param.ModMaster.Pid);
             BorderEdit.DataContext = CreateConfig;
 
             if (SysDictionaryModDetaiModels.Count == 0)
@@ -54,8 +53,9 @@ namespace ColorVision.Engine.Templates
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            int i = ModDetailDao.Instance.Save(CreateConfig);
-            if (i > 0)
+            int id  = MySqlControl.GetInstance().DB.Insertable(CreateConfig).ExecuteReturnIdentity();
+            CreateConfig.Id = id;
+            if (id > 0)
             {
                 Param.ModDetailModels.Add(CreateConfig);
                 this.Close();
@@ -80,8 +80,6 @@ namespace ColorVision.Engine.Templates
             if (sender is ComboBox comboBox && comboBox.SelectedIndex > -1)
             {
                 CreateConfig.ValueA = SysDictionaryModDetaiModels[comboBox.SelectedIndex].DefaultValue;
-                CreateConfig.Symbol = SysDictionaryModDetaiModels[comboBox.SelectedIndex].Symbol;
-                CreateConfig.SymbolName = SysDictionaryModDetaiModels[comboBox.SelectedIndex].Name;
             }
         }
     }

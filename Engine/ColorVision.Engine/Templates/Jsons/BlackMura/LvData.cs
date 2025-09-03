@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.MySql.ORM;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System.Collections.Generic;
 
 namespace ColorVision.Engine.Templates.Jsons.BlackMura

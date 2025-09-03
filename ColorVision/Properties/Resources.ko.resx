@@ -129,53 +129,17 @@
   <data name="MenuAbout" xml:space="preserve">
     <value>소개 (_A)</value>
   </data>
-  <data name="MenuSettings" xml:space="preserve">
-    <value>구성 (_S)</value>
-  </data>
-  <data name="MenuOptions" xml:space="preserve">
-    <value>옵션 (_O)</value>
-  </data>
   <data name="About" xml:space="preserve">
     <value>소개</value>
   </data>
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>자동 시작</value>
   </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>숨기기</value>
-  </data>
-  <data name="Close" xml:space="preserve">
-    <value>닫기</value>
-  </data>
-  <data name="Minimize" xml:space="preserve">
-    <value>최소화</value>
-  </data>
-  <data name="Pin" xml:space="preserve">
-    <value>상단 고정</value>
-  </data>
-  <data name="Restore" xml:space="preserve">
-    <value>아래로 복원</value>
-  </data>
-  <data name="Save" xml:space="preserve">
-    <value>저장</value>
-  </data>
-  <data name="Cancel" xml:space="preserve">
-    <value>취소</value>
-  </data>
-  <data name="OK" xml:space="preserve">
-    <value>OK</value>
-  </data>
-  <data name="Settings" xml:space="preserve">
-    <value>설정</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>복구 인터페이스 레이아웃 시작</value>
   </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>소프트웨어 버전</value>
-  </data>
-  <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
-    <value>소프트웨어가 시작될 때 로컬 서비스 열기</value>
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>마법사</value>
@@ -186,35 +150,14 @@
   <data name="CheckUpdatesOnStartup" xml:space="preserve">
     <value>소프트웨어가 시작될 때 업데이트 감지</value>
   </data>
-  <data name="TransparentWindow" xml:space="preserve">
-    <value>투명한 창</value>
-  </data>
   <data name="Project" xml:space="preserve">
     <value>프로젝트</value>
-  </data>
-  <data name="EnableDatabase" xml:space="preserve">
-    <value>데이터베이스 활성화</value>
   </data>
   <data name="Acquire" xml:space="preserve">
     <value>수집</value>
   </data>
-  <data name="RunAsAdmin" xml:space="preserve">
-    <value>관리자로 실행</value>
-  </data>
-  <data name="NotRunAsAdmin" xml:space="preserve">
-    <value>비관리자로 실행</value>
-  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>성공적으로 시작되었습니다</value>
-  </data>
-  <data name="ExperimentalFeature" xml:space="preserve">
-    <value>실험적 기능</value>
-  </data>
-  <data name="InstallCertificate" xml:space="preserve">
-    <value>인증서 설치</value>
-  </data>
-  <data name="SerialNumber" xml:space="preserve">
-    <value>일련번호</value>
   </data>
   <data name="CurrentVersionIsUpToDate" xml:space="preserve">
     <value>현재 버전은 이미 최신 버전입니다</value>
@@ -230,9 +173,6 @@
   </data>
   <data name="ErrorOccurred" xml:space="preserve">
     <value>에러 발생됨</value>
-  </data>
-  <data name="ConnectionName" xml:space="preserve">
-    <value>연결 이름</value>
   </data>
   <data name="ChangeLog" xml:space="preserve">
     <value>변경 로그</value>
@@ -258,15 +198,6 @@
   <data name="Upgrade" xml:space="preserve">
     <value>업그레이드</value>
   </data>
-  <data name="Sended" xml:space="preserve">
-    <value>보냄</value>
-  </data>
-  <data name="Local" xml:space="preserve">
-    <value>현지의</value>
-  </data>
-  <data name="Alias" xml:space="preserve">
-    <value>별명</value>
-  </data>
   <data name="Duration" xml:space="preserve">
     <value>시간 비용</value>
   </data>
@@ -291,9 +222,6 @@
   <data name="UploadFile" xml:space="preserve">
     <value>파일 업로드</value>
   </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>편집 (_E)</value>
-  </data>
   <data name="PluginManagerWindow" xml:space="preserve">
     <value>플러그인 관리자 창</value>
   </data>
@@ -305,12 +233,6 @@
   </data>
   <data name="BuildDate" xml:space="preserve">
     <value>빌드 날짜</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>프로젝트명</value>
-  </data>
-  <data name="Command" xml:space="preserve">
-    <value>명령</value>
   </data>
   <data name="Search" xml:space="preserve">
     <value>찾다</value>

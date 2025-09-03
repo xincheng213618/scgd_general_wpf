@@ -1,6 +1,6 @@
 ﻿#pragma warning disable 
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.MySql;
+using ColorVision.Database;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.SysDictionary;
@@ -14,6 +14,7 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
@@ -67,22 +68,26 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         {
             SensorParam? AddParamMode()
             {
-                ModMasterModel modMaster = new ModMasterModel(TemplateDicId, templateName, UserConfig.Instance.TenantId);
-                ModMasterDao.Instance.Save(modMaster);
-                List<ModDetailModel> list = new List<ModDetailModel>();
+                ModMasterModel modMaster = new ModMasterModel() { Pid = TemplateDicId, Name =templateName, TenantId = UserConfig.Instance.TenantId };
+                int id = Db.Insertable(modMaster).ExecuteReturnIdentity();
+                modMaster.Id = id;
+
+                List<ModDetailModel> details = new List<ModDetailModel>();
                 if (CreateTemp != null)
                 {
-                    CreateTemp.GetDetail(list);
-                    foreach (var item in list)
+                    CreateTemp.GetDetail(details);
+                    foreach (var item in details)
                     {
                         item.Pid = modMaster.Id;
                     }
                 }
-                ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
+                Db.Deleteable<ModDetailModel>().Where(x => x.Pid == modMaster.Id).ExecuteCommand();
+                Db.Insertable(details).ExecuteCommand();
+
                 if (modMaster.Id > 0)
                 {
-                    ModMasterModel modMasterModel = ModMasterDao.Instance.GetById(modMaster.Id);
-                    List<ModDetailModel> modDetailModels = ModDetailDao.Instance.GetAllByPid(modMaster.Id);
+                    ModMasterModel modMasterModel = Db.Queryable<ModMasterModel>().InSingle(modMaster.Id);
+                    var modDetailModels = Db.Queryable<ModDetailModel>().Where(it => it.Pid == modMaster.Id).ToList(); 
                     if (modMasterModel != null)
                         return (SensorParam)Activator.CreateInstance(typeof(SensorParam), new object[] { modMasterModel, modDetailModels });
                 }
@@ -128,15 +133,12 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                 {
                     var item = TemplateParams[index];
 
-                    var modMasterModel = ModMasterDao.Instance.GetById(item.Value.Id);
+                    item.Value.ModMaster.Name = item.Value.Name;
+                    Db.Updateable(item.Value.ModMaster).ExecuteCommand();
 
-                    if (modMasterModel?.Pcode != null)
-                    {
-                        modMasterModel.Name = item.Value.Name;
-                        var modMasterDao = new ModMasterDao(modMasterModel.Pcode);
-                        modMasterDao.Save(modMasterModel);
-                    }
-                    ModDetailDao.Instance.UpdateByPid(item.Value.Id, item.Value.ModDetailModels.ToList());
+
+                    Db.Updateable(item.Value.ModDetailModels.ToList()).ExecuteCommand();
+
                 }
             }
         }
@@ -196,26 +198,26 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         public void GenerateRequestString()
         {
             Model.ValueA = $"{Request},{Response},{SensorCmdType},{Timeout}/{Delay},{RetryCount}";
-            NotifyPropertyChanged(nameof(OriginText));
+            OnPropertyChanged(nameof(OriginText));
         }
 
         public string? OriginText { get => Model.ValueA; set { } }
 
-        public SensorCmdType SensorCmdType { get => _SensorCmdType; set { _SensorCmdType = value; NotifyPropertyChanged(); GenerateRequestString(); } }
+        public SensorCmdType SensorCmdType { get => _SensorCmdType; set { _SensorCmdType = value; OnPropertyChanged(); GenerateRequestString(); } }
         private SensorCmdType _SensorCmdType = SensorCmdType.Ascii;
 
-        public string Request { get => _Request; set { _Request = value; NotifyPropertyChanged(); GenerateRequestString(); } }
+        public string Request { get => _Request; set { _Request = value; OnPropertyChanged(); GenerateRequestString(); } }
         private string _Request = string.Empty;
-        public string Response { get => _Response; set { _Response = value; NotifyPropertyChanged(); GenerateRequestString(); } }
+        public string Response { get => _Response; set { _Response = value; OnPropertyChanged(); GenerateRequestString(); } }
         private string _Response = string.Empty;
 
-        public int Timeout { get => _Timeout; set { _Timeout = value; NotifyPropertyChanged(); GenerateRequestString(); } }
+        public int Timeout { get => _Timeout; set { _Timeout = value; OnPropertyChanged(); GenerateRequestString(); } }
         private int _Timeout = 1000;
 
-        public int Delay { get => _Delay; set { _Delay = value; NotifyPropertyChanged(); GenerateRequestString(); } }
+        public int Delay { get => _Delay; set { _Delay = value; OnPropertyChanged(); GenerateRequestString(); } }
         private int _Delay;
 
-        public int RetryCount { get => _RetryCount; set { _RetryCount = value; NotifyPropertyChanged(); GenerateRequestString(); } }
+        public int RetryCount { get => _RetryCount; set { _RetryCount = value; OnPropertyChanged(); GenerateRequestString(); } }
         private int _RetryCount;
     }
 

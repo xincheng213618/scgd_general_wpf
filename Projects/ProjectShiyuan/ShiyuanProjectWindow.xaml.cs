@@ -1,10 +1,8 @@
 ﻿#pragma warning disable CS8602,CA1707
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Abstractions;
+using ColorVision.Engine;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Database;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Compliance;
 using ColorVision.Engine.Templates.Flow;
@@ -330,7 +328,7 @@ namespace ColorVision.Projects.ProjectShiYuan
                     var resultMaster = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
                     foreach (var item in resultMaster)
                     {
-                        if (item.ImgFileType == AlgorithmResultType.Compliance_Math_JND)
+                        if (item.ImgFileType == ViewResultAlgType.Compliance_Math_JND)
                         {
                             var complianceJNDModels = ComplianceJNDDao.Instance.GetAllByPid(item.Id);
                             log.Info($"获取JDN信息：  Id{item.Id},nums{complianceJNDModels.Count}");
@@ -346,7 +344,7 @@ namespace ColorVision.Projects.ProjectShiYuan
                     List<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
                     foreach (var item in resultMaster)
                     {
-                        if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
+                        if (item.ImgFileType == ViewResultAlgType.POI_XYZ)
                         {
                             List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
 
@@ -358,7 +356,7 @@ namespace ColorVision.Projects.ProjectShiYuan
 
                         }
 
-                        if (item.ImgFileType == AlgorithmResultType.OLED_JND_CalVas)
+                        if (item.ImgFileType == ViewResultAlgType.OLED_JND_CalVas)
                         {
                             ObservableCollection<ViewRsultJND> ViewRsultJNDs = new ObservableCollection<ViewRsultJND>();
                             foreach (var model in PoiPointResultDao.Instance.GetAllByPid(item.Id))
@@ -540,7 +538,7 @@ namespace ColorVision.Projects.ProjectShiYuan
 
         public static void BeginNewBatch(string sn, string name)
         {
-            BatchResultMasterModel batch = new();
+            MeasureBatchModel batch = new();
             batch.Name = string.IsNullOrEmpty(name) ? sn : name;
             batch.Code = sn;
             batch.CreateDate = DateTime.Now;

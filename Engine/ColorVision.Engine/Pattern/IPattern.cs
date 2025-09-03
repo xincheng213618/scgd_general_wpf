@@ -1,6 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Pattern.Solid;
-using ColorVision.Engine.Pattern.Stripe;
 using Newtonsoft.Json;
 using System.Windows.Controls;
 

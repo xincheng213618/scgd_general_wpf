@@ -64,19 +64,19 @@ namespace ProjectARVRLite
             ProjectWindowInstance.WindowInstance.InitTest(string.Empty);
         }
 
-        public int StepIndex { get => _StepIndex; set { _StepIndex = value; NotifyPropertyChanged(); } }
+        public int StepIndex { get => _StepIndex; set { _StepIndex = value; OnPropertyChanged(); } }
         private int _StepIndex;
 
-        public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; NotifyPropertyChanged(); } }
+        public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; OnPropertyChanged(); } }
         private bool _LogControlVisibility = true;
 
 
         [DisplayName("重试次数")]
-        public int TryCountMax { get => _TryCountMax; set { _TryCountMax = value; NotifyPropertyChanged(); } }
+        public int TryCountMax { get => _TryCountMax; set { _TryCountMax = value; OnPropertyChanged(); } }
         private int _TryCountMax = 2;
 
         [DisplayName("允许测试失败")]
-        public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; NotifyPropertyChanged(); } }
+        public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; OnPropertyChanged(); } }
         private bool _AllowTestFailures = true;
 
         public void OpenConfig()
@@ -133,10 +133,10 @@ namespace ProjectARVRLite
         }
 
         [JsonIgnore]
-        public ObservableCollection<TemplateModel<FlowParam>> TemplateItemSource { get => _TemplateItemSource; set { _TemplateItemSource = value; NotifyPropertyChanged(); } }
+        public ObservableCollection<TemplateModel<FlowParam>> TemplateItemSource { get => _TemplateItemSource; set { _TemplateItemSource = value; OnPropertyChanged(); } }
         private ObservableCollection<TemplateModel<FlowParam>> _TemplateItemSource;
 
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
         public void OpenTemplate()
         {
@@ -149,9 +149,9 @@ namespace ProjectARVRLite
         }
 
         [JsonIgnore]
-        public ObservableCollection<TemplateModel<TJLargeFlowParam>> TemplateLargeItemSource { get => _TemplateLargeItemSource; set { _TemplateLargeItemSource = value; NotifyPropertyChanged(); } }
+        public ObservableCollection<TemplateModel<TJLargeFlowParam>> TemplateLargeItemSource { get => _TemplateLargeItemSource; set { _TemplateLargeItemSource = value; OnPropertyChanged(); } }
         private ObservableCollection<TemplateModel<TJLargeFlowParam>> _TemplateLargeItemSource;
-        public int TemplateLargeSelectedIndex { get => _TemplateLargeSelectedIndex; set { _TemplateLargeSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplateLargeSelectedIndex { get => _TemplateLargeSelectedIndex; set { _TemplateLargeSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateLargeSelectedIndex;
         public void OpenTemplateLarge()
         {
@@ -166,11 +166,11 @@ namespace ProjectARVRLite
         public event EventHandler<string> SNChanged;
 
         [DisplayName("SN锁")]
-        public bool SNlocked { get => _SNlocked; set { _SNlocked = value; NotifyPropertyChanged(); } }
+        public bool SNlocked { get => _SNlocked; set { _SNlocked = value; OnPropertyChanged(); } }
         private bool _SNlocked;
 
         [JsonIgnore]
-        public string SN { get => _SN; set { if (SNlocked) return; _SN = value; NotifyPropertyChanged(); SNChanged?.Invoke(this, value); } }
+        public string SN { get => _SN; set { if (SNlocked) return; _SN = value; OnPropertyChanged(); SNChanged?.Invoke(this, value); } }
         private string _SN = string.Empty;
     }
 }

@@ -8,6 +8,8 @@ using ColorVision.Util.Draw.Special;
 using Gu.Wpf.Geometry;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -24,9 +26,6 @@ namespace ColorVision.ImageEditor.Draw
     {
         public List<MenuItemMetadata> GetContextMenuItems(ImageViewConfig config);
     }
-
-
-
 
 
     public class ImageViewModel : ViewModelBase,IDisposable
@@ -63,7 +62,16 @@ namespace ColorVision.ImageEditor.Draw
 
         private DrawCanvas Image { get; set; }
 
-        private BezierCurveImp BezierCurveImp { get; set; }
+        public BezierCurveManager BezierCurveManager { get; set; }
+
+        public CircleManager CircleManager { get; set; }
+
+        public RectangleManager RectangleManager { get; set; }
+
+        public EraseManager EraseManager { get; set; }
+
+        public PolygonManager PolygonManager { get; set; }
+
 
         public MouseMagnifier MouseMagnifier { get; set; }
 
@@ -78,41 +86,27 @@ namespace ColorVision.ImageEditor.Draw
 
         public ToolReferenceLine ToolConcentricCircle { get; set; }
 
-        public DrawingVisual? SelectDrawingVisual { get => _SelectDrawingVisual  ; set 
-            {
-                _SelectDrawingVisual = value;
-                if (_SelectDrawingVisual is ISelectVisual selectVisual)
-                {
-                    SelectEditorVisual.SetRender(selectVisual);
-                }
-                else
-                {
-                    SelectEditorVisual.SetRender(null);
-                }
-            }
-        }
-        private DrawingVisual? _SelectDrawingVisual;
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
+
 
         public SelectEditorVisual SelectEditorVisual { get; set; }
 
-
-        public List<DrawingVisual>? SelectDrawingVisuals { get; set; }
 
         public static void DrawSelectRect(DrawingVisual drawingVisual, Rect rect)
         {
             using DrawingContext dc = drawingVisual.RenderOpen();
             dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
         }
-        public ImageViewConfig Config { get; set; } = new ImageViewConfig();
+        public ImageViewConfig Config { get; set; }
 
         public ContextMenu ContextMenu { get; set; }
         public List<MenuItemMetadata> MenuItemMetadatas { get; set; }
         public IImageOpen? IImageOpen { get; set; }
 
-        public ImageViewModel(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas)
+        public ImageViewModel(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas,ImageViewConfig config = null )
         {
-            SelectEditorVisual = new SelectEditorVisual(drawCanvas, zoombox);
-
+            Config = config ?? new ImageViewConfig();
+            SelectEditorVisual = new SelectEditorVisual(this, drawCanvas, zoombox);
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.Print, (s, e) => Print(), (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, (s, e) => OpenImage(), (s, e) => { e.CanExecute = true; }));
@@ -141,7 +135,12 @@ namespace ColorVision.ImageEditor.Draw
             ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zoombox, drawCanvas);
             ToolConcentricCircle = new ToolReferenceLine(this,zoombox, drawCanvas);
 
-            BezierCurveImp = new BezierCurveImp(this, zoombox, drawCanvas);
+            PolygonManager = new PolygonManager(this, zoombox, drawCanvas);
+            BezierCurveManager = new BezierCurveManager(this, zoombox, drawCanvas);
+
+            CircleManager = new CircleManager(this, zoombox, drawCanvas);
+            RectangleManager = new RectangleManager(this, zoombox, drawCanvas);
+            EraseManager = new EraseManager(this, zoombox, drawCanvas);
 
             ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill(), a => Image != null && Image.Source != null);
             ZoomUniformCommand = new RelayCommand(a => ZoomboxSub.ZoomUniform(),a => Image != null && Image.Source != null);
@@ -533,212 +532,9 @@ namespace ColorVision.ImageEditor.Draw
                     MaxImage();
                 e.Handled = true;
             }
-
             if (_ImageEditMode == true)
             {
-                if (!Keyboard.IsKeyDown(Key.LeftCtrl) && ( e.Key == Key.Left || e.Key == Key.A))
-                {
-                    void Move(DrawingVisual item)
-                    {
-                        if (item is IRectangle rectangle)
-                        {
-                            var OldRect = rectangle.Rect;
-                            rectangle.Rect = new Rect(OldRect.X - 2, OldRect.Y, OldRect.Width, OldRect.Height);
-                        }
-                        else if (item is ICircle Circl)
-                        {
-                            Circl.Center += new Vector(-2, 0);
-                        }
-                    }
-                    if (SelectEditorVisual.SelectVisual != null)
-                    {
-                        var OldRect = SelectEditorVisual.Rect;
-                        SelectEditorVisual.Rect = new Rect(OldRect.X -2, OldRect.Y, OldRect.Width, OldRect.Height);
-                        SelectEditorVisual.SetRect();
-                    }
-                    if (SelectDrawingVisuals != null)
-                    {
-                        foreach (var item in SelectDrawingVisuals)
-                        {
-                            Move(item);
-                        }
-                    }
-                    e.Handled = true;
-                }
-                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Right || e.Key == Key.D))
-                {
-                    void Move(DrawingVisual item)
-                    {
-                        if (item is IRectangle rectangle)
-                        {
-                            var OldRect = rectangle.Rect;
-                            rectangle.Rect = new Rect(OldRect.X + 2, OldRect.Y, OldRect.Width, OldRect.Height);
-                        }
-                        else if (item is ICircle Circl)
-                        {
-                            Circl.Center += new Vector(2, 0);
-                        }
-                    }
-                    if (SelectEditorVisual.SelectVisual != null)
-                    {
-                        var OldRect = SelectEditorVisual.Rect;
-                        SelectEditorVisual.Rect = new Rect(OldRect.X +2, OldRect.Y, OldRect.Width, OldRect.Height);
-                        SelectEditorVisual.SetRect();
-                    }
-                    if (SelectDrawingVisuals != null)
-                    {
-                        foreach (var item in SelectDrawingVisuals)
-                        {
-                            Move(item);
-                        }
-                    }
-                    e.Handled = true;
-                }
-                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Up || e.Key == Key.W))
-                {
-                    void Move(DrawingVisual item)
-                    {
-                        if (item is IRectangle rectangle)
-                        {
-                            var OldRect = rectangle.Rect;
-                            rectangle.Rect = new Rect(OldRect.X, OldRect.Y - 2, OldRect.Width, OldRect.Height);
-                        }
-                        else if (item is ICircle Circl)
-                        {
-                            Circl.Center += new Vector(0, -2);
-                        }
-                    }
-                    if (SelectEditorVisual.SelectVisual != null)
-                    {
-                        var OldRect = SelectEditorVisual.Rect;
-                        SelectEditorVisual.Rect = new Rect(OldRect.X, OldRect.Y - 2, OldRect.Width, OldRect.Height);
-                        SelectEditorVisual.SetRect();
-                    }
-                    if (SelectDrawingVisuals != null)
-                    {
-                        foreach (var item in SelectDrawingVisuals)
-                        {
-                            Move(item);
-                        }
-                    }
-                    e.Handled = true;
-                }
-                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Down || e.Key == Key.S))
-                {
-                    void Move(DrawingVisual item)
-                    {
-                        if (item is IRectangle rectangle)
-                        {
-                            var OldRect = rectangle.Rect;
-                            rectangle.Rect = new Rect(OldRect.X, OldRect.Y + 2, OldRect.Width, OldRect.Height);
-                        }
-                        else if (item is ICircle Circl)
-                        {
-                            Circl.Center += new Vector(0, 2);
-                        }
-                    }
-                    if (SelectEditorVisual.SelectVisual != null)
-                    {
-                        var OldRect = SelectEditorVisual.Rect;
-                        SelectEditorVisual.Rect = new Rect(OldRect.X, OldRect.Y + 2, OldRect.Width, OldRect.Height);
-                        SelectEditorVisual.SetRect();
-                    }
-                    if (SelectDrawingVisuals != null)
-                    {
-                        foreach (var item in SelectDrawingVisuals)
-                        {
-                            Move(item);
-                        }
-                    }
-                    e.Handled = true;
-                }
-                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Add || e.Key == Key.I))
-                {
-                    void Move(DrawingVisual item)
-                    {
-                        if (item is IRectangle rectangle)
-                        {
-                            var OldRect = rectangle.Rect;
-                            rectangle.Rect = new Rect(OldRect.X - 1, OldRect.Y - 1, OldRect.Width + 2, OldRect.Height + 2);
-                        }
-                        else if (item is ICircle Circl)
-                        {
-                            Circl.Radius += 2;
-                        }
-                    }
-                    if (SelectEditorVisual.SelectVisual != null)
-                    {
-                        var OldRect = SelectEditorVisual.Rect;
-                        SelectEditorVisual.Rect = new Rect(OldRect.X -1, OldRect.Y -1, OldRect.Width +2, OldRect.Height +2);
-                        SelectEditorVisual.SetRect();
-                    }
-                    if (SelectDrawingVisuals != null)
-                    {
-                        foreach (var item in SelectDrawingVisuals)
-                        {
-                            Move(item);
-                        }
-                    }
-                    e.Handled = true;
-                }
-                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Subtract || e.Key == Key.O))
-                {
-                    void Move(DrawingVisual item)
-                    {
-                        if (item is IRectangle rectangle)
-                        {
-                            var OldRect = rectangle.Rect;
-
-                            if (OldRect.Width > 1 && OldRect.Height > 1)
-                            {
-                                rectangle.Rect = new Rect(OldRect.X + 1, OldRect.Y + 1, OldRect.Width - 2, OldRect.Height - 2);
-                            }
-                        }
-                        else if (item is ICircle Circl)
-                        {
-                            if (Circl.Radius > 2)
-                            {
-                                Circl.Radius -= 2;
-                            }
-                        }
-                    }
-                    if (SelectEditorVisual.SelectVisual != null)
-                    {
-                        var OldRect = SelectEditorVisual.Rect;
-                        SelectEditorVisual.Rect = new Rect(OldRect.X + 1, OldRect.Y + 1, OldRect.Width - 1 , OldRect.Height - 1);
-                        SelectEditorVisual.SetRect();
-                    }
-                    if (SelectDrawingVisuals != null)
-                    {
-                        foreach (var item in SelectDrawingVisuals)
-                        {
-                            Move(item);
-                        }
-                    }
-                    e.Handled = true;
-                }
-                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Delete))
-                {
-                    void Move(DrawingVisual item)
-                    {
-                        Image.RemoveVisual(item);
-                    }
-                    if (SelectDrawingVisual != null)
-                    {
-                        Move(SelectDrawingVisual);
-                    }
-                    if (SelectDrawingVisuals != null)
-                    {
-                        foreach (var item in SelectDrawingVisuals)
-                        {
-                            Move(item);
-                        }
-                    }
-
-                    e.Handled = true;
-
-                }
-                else if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Add || e.Key == Key.I))
+                if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Add || e.Key == Key.I))
                 {
                     ZoomInCommand.RaiseExecute(e);
                     e.Handled = true;
@@ -845,7 +641,7 @@ namespace ColorVision.ImageEditor.Draw
             {
                 if (ToolBarScaleRuler.IsShow == value) return;
                 ToolBarScaleRuler.IsShow = value;
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -867,7 +663,7 @@ namespace ColorVision.ImageEditor.Draw
                 if (_Crosshair == value) return;
                 _Crosshair = value;
                 Crosshair.IsShow = value;
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -881,7 +677,7 @@ namespace ColorVision.ImageEditor.Draw
                 _ShowImageInfo = value;
 
                 MouseMagnifier.IsShow = value;
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -912,45 +708,44 @@ namespace ColorVision.ImageEditor.Draw
 
                     LastChoice = string.Empty;
                 }
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
-        private bool _DrawCircle;
         /// <summary>
         /// 是否画圆形
         /// </summary>
-        public bool DrawCircle {  get => _DrawCircle;
+        public bool DrawCircle {
+            get => CircleManager.IsShow;
             set
             {
-                if (_DrawCircle == value) return;
-                _DrawCircle = value;
+                if (CircleManager.IsShow == value) return;
+                CircleManager.IsShow = value;
                 if (value)
                 {
                     ImageEditMode = true;
                     LastChoice = nameof(DrawCircle);
                 }
-                NotifyPropertyChanged(); 
+                OnPropertyChanged();
             }
         }
 
-        private bool _DrawRect;
         /// <summary>
         /// 是否画圆形
         /// </summary>
         public bool DrawRect
         {
-            get => _DrawRect;
+            get => RectangleManager.IsShow;
             set
             {
-                if (_DrawRect == value) return;
-                _DrawRect = value;
+                if (RectangleManager.IsShow == value) return;
+                RectangleManager.IsShow = value;
                 if (value)
                 {
                     ImageEditMode = true;
                     LastChoice = nameof(DrawRect);
                 }
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -967,45 +762,42 @@ namespace ColorVision.ImageEditor.Draw
                     LastChoice = nameof(Measure);
                 }
                 ToolBarMeasure.Measure = value;
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
         private bool _Measure;
 
 
-
-        private bool _DrawPolygon;
-
         public bool DrawPolygon
         {
-            get => _DrawPolygon;
+            get => PolygonManager.IsShow;
             set
             {
-                if (_DrawPolygon == value) return;
-                _DrawPolygon = value;
+                if (PolygonManager.IsShow == value) return;
+                PolygonManager.IsShow = value;
                 if (value)
                 {
                     ImageEditMode = true;
                     LastChoice = nameof(DrawPolygon);
                 }
 
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
         public bool DrawBezierCurve
         {
-            get => BezierCurveImp.IsShow;
+            get => BezierCurveManager.IsShow;
             set
             {
-                if (BezierCurveImp.IsShow == value) return;
-                BezierCurveImp.IsShow = value;
+                if (BezierCurveManager.IsShow == value) return;
+                BezierCurveManager.IsShow = value;
                 if (value)
                 {
                     ImageEditMode = true;
                     LastChoice = nameof(DrawBezierCurve);
                 }
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -1022,7 +814,7 @@ namespace ColorVision.ImageEditor.Draw
                     LastChoice = nameof(ConcentricCircle);
                 }
                 ToolConcentricCircle.IsShow = value;
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -1046,13 +838,12 @@ namespace ColorVision.ImageEditor.Draw
 
         private string _LastChoice { get; set; }
 
-        private bool _EraseVisual;
 
-        public bool EraseVisual {  get => _EraseVisual;
+        public bool EraseVisual {  get => EraseManager.IsShow;
             set
             {
-                if (_EraseVisual == value) return;
-                    _EraseVisual = value;
+                if (EraseManager.IsShow == value) return;
+                EraseManager.IsShow = value;
 
                 if (value)
                 {
@@ -1070,7 +861,7 @@ namespace ColorVision.ImageEditor.Draw
                     ZoomboxSub.Cursor = Cursors.Cross;
                 }
 
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -1079,6 +870,14 @@ namespace ColorVision.ImageEditor.Draw
         public void Dispose()
         {
             SelectEditorVisual.Dispose();
+            CircleManager.Dispose();
+            EraseManager.Dispose();
+            RectangleManager.Dispose();
+            PolygonManager.Dispose();
+            BezierCurveManager.Dispose();
+            DrawingVisualLists.Clear();
+            DrawingVisualLists = null;
+
             Parent = null;
             ZoomboxSub = null;
             Image = null;

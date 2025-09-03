@@ -1,7 +1,9 @@
-﻿using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Database;
 using ColorVision.Solution.Searches;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
+using NPOI.SS.Formula.Functions;
+using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -35,10 +37,28 @@ namespace ColorVision.Engine.Archive.Dao
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
-            foreach (var item in ArchivedMasterDao.Instance.GetAll())
+
+            var MySqlConfig = GlobleCfgdDao.Instance.GetArchMySqlConfig();
+            if (MySqlConfig != null)
             {
-                ViewResults.Add(item);
+                string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={3};SSL Mode =None;Pooling=true";
+                SqlSugarClient DB = new SqlSugarClient(new ConnectionConfig
+                {
+                    ConnectionString = connStr,
+                    DbType = SqlSugar.DbType.MySql,
+                    IsAutoCloseConnection = true
+                });
+
+                var list = DB.Queryable<T>();
+                foreach (var item in DB.Queryable<ArchivedMasterModel>().ToList())
+                {
+                    ViewResults.Add(item);
+                }
             }
+
+
+
+
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -54,17 +74,44 @@ namespace ColorVision.Engine.Archive.Dao
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             ViewResults.Clear();
-            foreach (var item in ArchivedMasterDao.Instance.ConditionalQuery(SearchBox.Text))
+
+            var MySqlConfig = GlobleCfgdDao.Instance.GetArchMySqlConfig();
+            if (MySqlConfig != null)
             {
-                ViewResults.Add(item);
+                string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={3};SSL Mode =None;Pooling=true";
+                SqlSugarClient DB = new SqlSugarClient(new ConnectionConfig
+                {
+                    ConnectionString = connStr,
+                    DbType = SqlSugar.DbType.MySql,
+                    IsAutoCloseConnection = true
+                });
+
+                var list = DB.Queryable<T>();
+                foreach (var item in DB.Queryable<ArchivedMasterModel>().Where(x=>x.Code.Contains(SearchBox.Text)).ToList())
+                {
+                    ViewResults.Add(item);
+                }
             }
         }
 
         private void Query_Click(object sender, RoutedEventArgs e)
         {
-            foreach (var item in ArchivedMasterDao.Instance.ConditionalQuery(SearchBox.Text))
+            var MySqlConfig = GlobleCfgdDao.Instance.GetArchMySqlConfig();
+            if (MySqlConfig != null)
             {
-                ViewResults.Add(item);
+                string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={3};SSL Mode =None;Pooling=true";
+                SqlSugarClient DB = new SqlSugarClient(new ConnectionConfig
+                {
+                    ConnectionString = connStr,
+                    DbType = SqlSugar.DbType.MySql,
+                    IsAutoCloseConnection = true
+                });
+
+                var list = DB.Queryable<T>();
+                foreach (var item in DB.Queryable<ArchivedMasterModel>().Where(x => x.Code.Contains(SearchBox.Text)).ToList())
+                {
+                    ViewResults.Add(item);
+                }
             }
         }
 
@@ -145,12 +192,28 @@ namespace ColorVision.Engine.Archive.Dao
                 string Save1Path = Path.Combine(SavePath,archivedMasterModel.Code);
                 if (!Directory.Exists(Save1Path)) 
                     Directory.CreateDirectory(Save1Path);
-
-                foreach (var item in ArchivedDetailDao.Instance.GetAllByParam(new System.Collections.Generic.Dictionary<string, object>() { { "p_guid", archivedMasterModel.Code } }))
-                {
-                    item.Save(Save1Path);
-                }
             }
+        }
+
+        private void AdvanceQuery_Click(object sender, RoutedEventArgs e)
+        {
+            var MySqlConfig = GlobleCfgdDao.Instance.GetArchMySqlConfig();
+            if (MySqlConfig != null)
+            {
+                string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={3};SSL Mode =None;Pooling=true";
+                SqlSugarClient DB = new SqlSugarClient(new ConnectionConfig
+                {
+                    ConnectionString = connStr,
+                    DbType = SqlSugar.DbType.MySql,
+                    IsAutoCloseConnection = true
+                });
+
+                //GenericQuery<ArchivedMasterModel> genericQuery = new GenericQuery<ArchivedMasterModel>(DB, ViewResults);
+                //GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
+                //genericQueryWindow.ShowDialog();
+            }
+
+
         }
     }
 }

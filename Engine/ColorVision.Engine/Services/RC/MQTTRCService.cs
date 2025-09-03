@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8603
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
@@ -15,7 +14,6 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.ServiceProcess;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -49,7 +47,7 @@ namespace ColorVision.Engine.Services.RC
         private NodeToken? Token;
         private bool TryTestRegist;
 
-        public bool IsConnect { get => _IsConnect; set { if (_IsConnect == value) return;  _IsConnect = value; if (value) initialized = false; NotifyPropertyChanged(); } }
+        public bool IsConnect { get => _IsConnect; set { if (_IsConnect == value) return;  _IsConnect = value; if (value) initialized = false; OnPropertyChanged(); } }
         private bool _IsConnect ;
 
         public List<MQTTServiceInfo> ServiceTokens { get; set; } = new List<MQTTServiceInfo>();
@@ -162,60 +160,34 @@ namespace ColorVision.Engine.Services.RC
         }
         public static void UpdateServiceStatus(List<MQTTNodeServiceStatus> services)
         {
-            foreach (var serviceKind in ServiceManager.GetInstance().TypeServices.ToList())
+            foreach (var serviceTerminal in ServiceManager.GetInstance().TerminalServices)
             {
-                foreach (var baseObject in serviceKind.VisualChildren)
+                var MQTTNodeServiceStatus = services.FirstOrDefault(x => x.ServiceCode == serviceTerminal.Code);
+                if (MQTTNodeServiceStatus == null) continue;
+                DateTime lastLive = DateTime.Now;
+                if (!string.IsNullOrEmpty(MQTTNodeServiceStatus.LiveTime))
                 {
-                    if (baseObject is TerminalService serviceTerminal)
+                    if (DateTime.TryParse(MQTTNodeServiceStatus.LiveTime, out  lastLive))
                     {
-                        foreach (var svr in services) 
-                        {
-                            bool updateTime = false;
-                            DateTime lastLive = DateTime.Now;
-                            if (string.Equals(svr.ServiceType, serviceKind.ServiceTypes.ToString(),StringComparison.OrdinalIgnoreCase) && svr.ServiceCode == serviceTerminal.Code)
-                            {
-                                if (!string.IsNullOrEmpty(svr.LiveTime))
-                                {
-                                    if (DateTime.TryParse(svr.LiveTime, out lastLive))
-                                    {
-                                        serviceTerminal.Config.LastAliveTime = lastLive;
-                                        updateTime = true;
-                                    }
-                                }
-                                if (svr.OverTime > 0) serviceTerminal.Config.HeartbeatTime = svr.OverTime;
-                                foreach (var devNew in svr.DeviceList)
-                                {
-                                    foreach (var dev in serviceTerminal.VisualChildren)
-                                    {
-                                        if (dev is DeviceService baseChannel && baseChannel.GetConfig() is DeviceServiceConfig baseDeviceConfig)
-                                        {
-                                            if (devNew.Code == baseDeviceConfig.Code)
-                                            {
-                                                baseDeviceConfig.DeviceStatus = (DeviceStatusType)Enum.Parse(typeof(DeviceStatusType), devNew.Status);
-
-                                                if (dev is DeviceService deviceService && deviceService.GetMQTTService() is MQTTServiceBase serviceBase)
-                                                {
-                                                    serviceBase.DeviceStatus = baseDeviceConfig.DeviceStatus;
-
-                                                    if (serviceBase.DeviceStatus == DeviceStatusType.Unknown)
-                                                    {
-                                                    }
-                                                }
-
-                                                if(updateTime) baseDeviceConfig.LastAliveTime = lastLive;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
                     }
+                }
+                if (MQTTNodeServiceStatus.OverTime > 0) serviceTerminal.Config.HeartbeatTime = MQTTNodeServiceStatus.OverTime;
 
+                foreach (var baseChannel in serviceTerminal.VisualChildren.Cast<DeviceService>())
+                {
+                    if (baseChannel.GetConfig() is DeviceServiceConfig baseDeviceConfig)
+                    {
+                        var devNew = MQTTNodeServiceStatus.DeviceList.FirstOrDefault(x => x.Code == baseDeviceConfig.Code);
+                        if (devNew == null) continue;
+                        MQTTServiceBase mQTTServiceBase = baseChannel.GetMQTTService();
+                        if (mQTTServiceBase == null) continue;
+                        mQTTServiceBase.DeviceStatus = (DeviceStatusType)Enum.Parse(typeof(DeviceStatusType), devNew.Status);
+                        mQTTServiceBase.LastAliveTime = lastLive;
+                    }
                 }
 
             }
+
         }
         public void UpdateServices(Dictionary<CVServiceType, List<MQTTNodeService>> services)
         {
@@ -231,7 +203,7 @@ namespace ColorVision.Engine.Services.RC
             {
                 foreach (var nodeService in itemService)
                 {
-                    FlowEngineLib.MQTTServiceInfo serviceInfo = new()
+                    MQTTServiceInfo serviceInfo = new()
                     {
                         ServiceType = nodeService.ServiceType,
                         ServiceCode = nodeService.ServiceCode,
@@ -243,7 +215,6 @@ namespace ColorVision.Engine.Services.RC
                     {
                         serviceInfo.AddDevice(dev.Key, dev.Value.Code);
                     }
-
                     tokens.Add(serviceInfo);
                 }
             }
@@ -262,26 +233,23 @@ namespace ColorVision.Engine.Services.RC
                 ServiceTypes cvSType = EnumTool.ParseEnum<ServiceTypes>(itemService.Key.ToString());
                 var serviceKind  = ServiceManager.GetInstance().TypeServices.FirstOrDefault(serviceKind => cvSType == serviceKind.ServiceTypes);
                 if (serviceKind == null) { continue; }
-                foreach (var baseObject in serviceKind.VisualChildren)
+                foreach (var serviceTerminal in serviceKind.VisualChildren.Cast<TerminalService>())
                 {
-                    if (baseObject is TerminalService serviceTerminal)
-                    {
-                        var nodeService = itemService.Value.FirstOrDefault(nodeService => nodeService.ServiceCode == serviceTerminal.Code);
-                        if (nodeService == null) { continue; }
-                        serviceTerminal.Config.SendTopic = nodeService.UpChannel;
-                        serviceTerminal.Config.SubscribeTopic = nodeService.DownChannel;
-                        if (nodeService.OverTime > 0) serviceTerminal.Config.HeartbeatTime = nodeService.OverTime;
-                        serviceTerminal.MQTTServiceTerminalBase.ServiceToken = nodeService.ServiceToken;
+                    var nodeService = itemService.Value.FirstOrDefault(nodeService => nodeService.ServiceCode == serviceTerminal.Code);
+                    if (nodeService == null) { continue; }
+                    serviceTerminal.Config.SendTopic = nodeService.UpChannel;
+                    serviceTerminal.Config.SubscribeTopic = nodeService.DownChannel;
+                    if (nodeService.OverTime > 0) serviceTerminal.Config.HeartbeatTime = nodeService.OverTime;
+                    serviceTerminal.MQTTServiceTerminalBase.ServiceToken = nodeService.ServiceToken;
 
-                        foreach (var deviceObj in serviceTerminal.VisualChildren)
+                    foreach (var baseChannel in serviceTerminal.VisualChildren.Cast<DeviceService>())
+                    {
+                        if ( baseChannel.GetConfig() is DeviceServiceConfig baseDeviceConfig)
                         {
-                            if (deviceObj is DeviceService baseChannel && baseChannel.GetConfig() is DeviceServiceConfig baseDeviceConfig)
-                            {
-                                baseDeviceConfig.ServiceToken = nodeService.ServiceToken;
-                                baseDeviceConfig.SendTopic = nodeService.UpChannel;
-                                baseDeviceConfig.SubscribeTopic = nodeService.DownChannel;
-                                baseChannel.GetMQTTService()?.SubscribeCache();
-                            }
+                            baseDeviceConfig.ServiceToken = nodeService.ServiceToken;
+                            baseDeviceConfig.SendTopic = nodeService.UpChannel;
+                            baseDeviceConfig.SubscribeTopic = nodeService.DownChannel;
+                            baseChannel.GetMQTTService()?.SubscribeCache();
                         }
                     }
                 }
@@ -354,6 +322,7 @@ namespace ColorVision.Engine.Services.RC
 
         public void RestartServices(string? nodeType = null, string? svrCode =null)
         {
+            log.Info($"RestartServices {nodeType} {svrCode}");
             if (Token != null)
             {
                 nodeType ??= string.Empty;
@@ -363,6 +332,7 @@ namespace ColorVision.Engine.Services.RC
         }
         public void RestartServices(string nodeType, string svrCode, string devCode)
         {
+            log.Info($"RestartServices {nodeType} {svrCode} {devCode}");
             if (Token != null)
             {
                 MQTTRCServicesRestartRequest reg = new(AppId, NodeName, nodeType, Token.AccessToken, svrCode, devCode);

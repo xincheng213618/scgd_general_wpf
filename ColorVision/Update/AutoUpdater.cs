@@ -24,13 +24,13 @@ namespace ColorVision.Update
     {
         public static AutoUpdateConfig Instance  => ConfigService.Instance.GetRequiredService<AutoUpdateConfig>();    
 
-        public string UpdatePath { get => _UpdatePath; set { _UpdatePath = value; NotifyPropertyChanged(); } }
+        public string UpdatePath { get => _UpdatePath; set { _UpdatePath = value; OnPropertyChanged(); } }
         private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A/ColorVision";
 
         /// <summary>
         /// 是否自动更新
         /// </summary>
-        public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; NotifyPropertyChanged(); } }
+        public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; OnPropertyChanged(); } }
         private bool _IsAutoUpdate = true;
 
     }
@@ -43,13 +43,13 @@ namespace ColorVision.Update
         private static readonly object _locker = new();
         public static AutoUpdater GetInstance() { lock (_locker) { return _instance ??= new AutoUpdater(); } }
         
-        public string UpdateUrl { get => _UpdateUrl; set { _UpdateUrl = value; NotifyPropertyChanged(); } }
+        public string UpdateUrl { get => _UpdateUrl; set { _UpdateUrl = value; OnPropertyChanged(); } }
         private string _UpdateUrl = AutoUpdateConfig.Instance.UpdatePath + "/LATEST_RELEASE";
 
-        public string CHANGELOGUrl { get => _CHANGELOG; set { _CHANGELOG = value; NotifyPropertyChanged(); } }
+        public string CHANGELOGUrl { get => _CHANGELOG; set { _CHANGELOG = value; OnPropertyChanged(); } }
         private string _CHANGELOG = AutoUpdateConfig.Instance.UpdatePath + "/CHANGELOG.md";
 
-        public Version LatestVersion { get => _LatestVersion; set { _LatestVersion = value; NotifyPropertyChanged(); } }
+        public Version LatestVersion { get => _LatestVersion; set { _LatestVersion = value; OnPropertyChanged(); } }
         private Version _LatestVersion;
 
 
@@ -322,16 +322,16 @@ namespace ColorVision.Update
             return new Version(versionString.Trim());
         }
 
-        public int ProgressValue { get => _ProgressValue; set { _ProgressValue = value; NotifyPropertyChanged(); } }
+        public int ProgressValue { get => _ProgressValue; set { _ProgressValue = value; OnPropertyChanged(); } }
         private int _ProgressValue;
 
-        public string SpeedValue { get => _SpeedValue; set { _SpeedValue = value; NotifyPropertyChanged(); } }
+        public string SpeedValue { get => _SpeedValue; set { _SpeedValue = value; OnPropertyChanged(); } }
         private string _SpeedValue;
 
-        public string RemainingTimeValue { get => _RemainingTimeValue; set { _RemainingTimeValue = value; NotifyPropertyChanged(); } }
+        public string RemainingTimeValue { get => _RemainingTimeValue; set { _RemainingTimeValue = value; OnPropertyChanged(); } }
         private string _RemainingTimeValue;
 
-        public string DownloadTile { get => _DownloadTile; set{ _DownloadTile = value; NotifyPropertyChanged(); } }
+        public string DownloadTile { get => _DownloadTile; set{ _DownloadTile = value; OnPropertyChanged(); } }
         private string _DownloadTile = Resources.ColorVisionUpdater;
 
 
@@ -353,69 +353,6 @@ namespace ColorVision.Update
 
             await DownloadFileAsync(downloadUrl, filePath, cancellationToken);
             UpdateApplication(filePath, isIncrement);
-        }
-
-        private async Task SilenceDownloadAndUpdate(Version latestVersion, string downloadPath, CancellationToken cancellationToken)
-        {
-            string downloadUrl;
-            string filePath;
-            downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/Update/ColorVision-Update-[{latestVersion}].zip";
-            filePath = Path.Combine(downloadPath, $"ColorVision-Update-[{latestVersion}].zip");
-
-            await DownloadFileAsync(downloadUrl, filePath, cancellationToken);
-
-
-            void update()
-            {
-                try
-                {
-                    // 解压缩 ZIP 文件到临时目录
-                    string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionUpdate");
-                    if (Directory.Exists(tempDirectory))
-                    {
-                        Directory.Delete(tempDirectory, true);
-                    }
-                    ZipFile.ExtractToDirectory(filePath, tempDirectory);
-
-                    // 创建批处理文件内容
-                    string batchFilePath = Path.Combine(tempDirectory, "update.bat");
-                    string programDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                    string? executableName = Path.GetFileName(Environment.ProcessPath);
-
-                    string batchContent = $@"
-@echo off
-taskkill /f /im ""{executableName}""
-timeout /t 0
-xcopy /y /e ""{tempDirectory}\*"" ""{programDirectory}""
-rd /s /q ""{tempDirectory}""
-del ""%~f0"" & exit
-";
-
-                    File.WriteAllText(batchFilePath, batchContent);
-                    // 设置批处理文件的启动信息
-                    ProcessStartInfo startInfo = new()
-                    {
-                        FileName = batchFilePath,
-                        UseShellExecute = true,
-                        WindowStyle = ProcessWindowStyle.Hidden // 隐藏命令行窗口
-                    };
-
-                    if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
-                    {
-                        startInfo.Verb = "runas"; // 请求管理员权限
-                        startInfo.WindowStyle = ProcessWindowStyle.Normal;
-                    }
-
-                    // 启动批处理文件并退出当前程序
-                    Process.Start(startInfo);
-                    Environment.Exit(0);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"更新失败: {ex.Message}");
-                }
-            }
-            AppDomain.CurrentDomain.ProcessExit += (s, e) => update();
         }
 
         private void UpdateApplication(string downloadPath, bool isIncrement)

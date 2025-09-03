@@ -15,10 +15,12 @@
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0" Margin="0,2">
-            <StackPanel Orientation="Horizontal">
-                <Button Content="保存" Click="Save_Click"/>
+            <StackPanel Orientation="Horizontal" Margin="5">
+                <Button Content="保存配置" Click="Save_Click" Margin="0,0,5,0"/>
+                <Button Content="打开配置文件夹" Click="OpenFolder_Click"/>
+
             </StackPanel>
-            <Grid x:Name="SearchGrid" Margin="10,1" HorizontalAlignment="Stretch" VerticalAlignment="Center" >
+            <Grid x:Name="SearchGrid" Margin="5,1" HorizontalAlignment="Stretch" VerticalAlignment="Center" >
                 <hc:TextBox x:Name="Searchbox"  Style="{DynamicResource TextBoxPlus.Small}" Padding="20,1,2,1"  BorderThickness="1" GotFocus="Searchbox_GotFocus" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" MaxLength="15"  VerticalContentAlignment="Center" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged"  />
                 <Viewbox Width="12 " Height="12" HorizontalAlignment="Left" Margin="4,0,0,0">
                     <Rectangle Width="16 " Height="16" >

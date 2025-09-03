@@ -1,6 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.UI.Authorizations;
@@ -14,7 +12,7 @@ namespace ColorVision.Engine.Services.Devices.FileServer
 
         public ImageView View { get; set; }
 
-        public DeviceFileServer(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceFileServer(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTFileServer(Config);
             View = new ImageView();

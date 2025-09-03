@@ -7,9 +7,9 @@ namespace ColorVision.Engine.Templates.ImageCropping
 {
     public class PointFloat:ViewModelBase
     {
-        public float X { get => _X; set { _X = value; NotifyPropertyChanged(); } }
+        public float X { get => _X; set { _X = value; OnPropertyChanged(); } }
         private float _X;
-        public float Y { get => _Y; set { _Y = value; NotifyPropertyChanged(); } }
+        public float Y { get => _Y; set { _Y = value; OnPropertyChanged(); } }
         private float _Y;
     }
 

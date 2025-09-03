@@ -1,8 +1,6 @@
 ﻿#pragma warning disable CS8604,CS8602,CS8629
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Database;
 using ColorVision.ImageEditor.Draw;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -12,19 +10,20 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Distortion
 {
     public class ViewHandleDistortion : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.Distortion };
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.Distortion };
 
-        public override bool CanHandle1(AlgorithmResult result)
+        public override bool CanHandle1(ViewResultAlg result)
         {
             return base.CanHandle1(result);
         }
 
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
             var ViewResults = result.ViewResults.ToSpecificViewResults<ViewResultDistortion>();
@@ -67,7 +66,7 @@ namespace ColorVision.Engine.Templates.Distortion
         }
 
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -78,7 +77,7 @@ namespace ColorVision.Engine.Templates.Distortion
             }
         }
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
@@ -89,12 +88,14 @@ namespace ColorVision.Engine.Templates.Distortion
                 foreach (var point in item.FinalPoints)
                 {
                     id++;
-                    DVCircle Circle = new();
-                    Circle.Attribute.Center = new Point(point.X, point.Y);
-                    Circle.Attribute.Radius = 20 / view.ImageView.Zoombox1.ContentMatrix.M11;
-                    Circle.Attribute.Brush = Brushes.Transparent;
-                    Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / view.ImageView.Zoombox1.ContentMatrix.M11);
-                    Circle.Attribute.Id = -1;
+                    CircleProperties circleProperties = new CircleProperties();
+                    circleProperties.Center = new Point(point.X, point.Y);
+                    circleProperties.Radius = 20 / view.ImageView.Zoombox1.ContentMatrix.M11;
+                    circleProperties.Brush = Brushes.Transparent;
+                    circleProperties.Pen = new Pen(Brushes.Red, 1 / view.ImageView.Zoombox1.ContentMatrix.M11);
+                    circleProperties.Id = -1;
+
+                    DVCircle Circle = new DVCircle(circleProperties);
                     Circle.Render();
                     view.ImageView.AddVisual(Circle);
 
@@ -104,14 +105,14 @@ namespace ColorVision.Engine.Templates.Distortion
             List<string> header = new() { "类型", "斜率", "布点", "角点", "畸变率" };
             List<string> bdHeader = new() { "DisTypeDesc", "SlopeTypeDesc", "LayoutTypeDesc", "CornerTypeDesc", "MaxRatio" };
 
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
-                view.listViewSide.ItemsSource = null;
+                view.ListView.ItemsSource = null;
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
         }
     }

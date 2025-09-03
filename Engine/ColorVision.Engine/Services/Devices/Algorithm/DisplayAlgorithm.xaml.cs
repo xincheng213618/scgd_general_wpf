@@ -1,13 +1,9 @@
-﻿using AvalonDock.Controls;
-using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using CVCommCore;
-using LiveChartsCore.SkiaSharpView.Painting.ImageFilters;
 using log4net;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
@@ -28,11 +24,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
     {
         public static DisplayAlgorithmConfig Instance => ConfigService.Instance.GetRequiredService<DisplayAlgorithmConfig>();
 
-        public string LastSelectTemplate { get => _LastSelectTemplate; set { _LastSelectTemplate = value; NotifyPropertyChanged(); } }
+        public string LastSelectTemplate { get => _LastSelectTemplate; set { _LastSelectTemplate = value; OnPropertyChanged(); } }
         private string _LastSelectTemplate = "POI";
 
 
-        public string LastSelectGroup { get => _LastSelectGroup; set { _LastSelectGroup = value; NotifyPropertyChanged(); } }
+        public string LastSelectGroup { get => _LastSelectGroup; set { _LastSelectGroup = value; OnPropertyChanged(); } }
         private string _LastSelectGroup = "All";
 
     }
@@ -238,10 +234,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             Device.DService.DeviceStatusChanged += UpdateUI;
         }
 
-        private void DisplayAlgorithm_SelectTypeChanged(object? sender, Type e)
-        {
-            throw new NotImplementedException();
-        }
 
         public event RoutedEventHandler Selected;
         public event RoutedEventHandler Unselected;

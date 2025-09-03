@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.UI;
 
 namespace ColorVision.Settings
 {
@@ -32,6 +33,7 @@ namespace ColorVision.Settings
         public override void Execute()
         {
             new SettingWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            ConfigService.Instance.SaveConfigs();
         }
     }
 }

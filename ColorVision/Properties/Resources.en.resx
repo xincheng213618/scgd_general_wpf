@@ -129,53 +129,17 @@
   <data name="MenuAbout" xml:space="preserve">
     <value>_About</value>
   </data>
-  <data name="MenuSettings" xml:space="preserve">
-    <value>_Settings</value>
-  </data>
-  <data name="MenuOptions" xml:space="preserve">
-    <value>_Options</value>
-  </data>
   <data name="About" xml:space="preserve">
     <value>About</value>
   </data>
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>Start on boot</value>
   </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>Hide</value>
-  </data>
-  <data name="Close" xml:space="preserve">
-    <value>Close</value>
-  </data>
-  <data name="Minimize" xml:space="preserve">
-    <value>Minimize</value>
-  </data>
-  <data name="Pin" xml:space="preserve">
-    <value>Pin</value>
-  </data>
-  <data name="Restore" xml:space="preserve">
-    <value>Restore</value>
-  </data>
-  <data name="Save" xml:space="preserve">
-    <value>Save</value>
-  </data>
-  <data name="Cancel" xml:space="preserve">
-    <value>Cancel</value>
-  </data>
-  <data name="OK" xml:space="preserve">
-    <value>OK</value>
-  </data>
-  <data name="Settings" xml:space="preserve">
-    <value>Settings</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>Start recovery interface layout</value>
   </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>Software Version</value>
-  </data>
-  <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
-    <value>Open the local service when the software starts</value>
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>Wizard</value>
@@ -186,35 +150,14 @@
   <data name="CheckUpdatesOnStartup" xml:space="preserve">
     <value>Detect updates when software starts</value>
   </data>
-  <data name="TransparentWindow" xml:space="preserve">
-    <value>Transparent window</value>
-  </data>
   <data name="Project" xml:space="preserve">
     <value>Project</value>
-  </data>
-  <data name="EnableDatabase" xml:space="preserve">
-    <value>Enable Database</value>
   </data>
   <data name="Acquire" xml:space="preserve">
     <value>Acquire</value>
   </data>
-  <data name="RunAsAdmin" xml:space="preserve">
-    <value>Run as administrator</value>
-  </data>
-  <data name="NotRunAsAdmin" xml:space="preserve">
-    <value>Run as non-administrator</value>
-  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>Started successfully</value>
-  </data>
-  <data name="ExperimentalFeature" xml:space="preserve">
-    <value>Experimental features</value>
-  </data>
-  <data name="InstallCertificate" xml:space="preserve">
-    <value>Install Certificate</value>
-  </data>
-  <data name="SerialNumber" xml:space="preserve">
-    <value>Serial Number</value>
   </data>
   <data name="CurrentVersionIsUpToDate" xml:space="preserve">
     <value>The current version is already the latest version</value>
@@ -230,9 +173,6 @@
   </data>
   <data name="ErrorOccurred" xml:space="preserve">
     <value>An error occurred</value>
-  </data>
-  <data name="ConnectionName" xml:space="preserve">
-    <value>Connection Name</value>
   </data>
   <data name="ChangeLog" xml:space="preserve">
     <value>Change log</value>
@@ -258,15 +198,6 @@
   <data name="Upgrade" xml:space="preserve">
     <value>Upgrade</value>
   </data>
-  <data name="Sended" xml:space="preserve">
-    <value>Sended</value>
-  </data>
-  <data name="Local" xml:space="preserve">
-    <value>local</value>
-  </data>
-  <data name="Alias" xml:space="preserve">
-    <value>Aliases</value>
-  </data>
   <data name="Duration" xml:space="preserve">
     <value>Duration</value>
   </data>
@@ -291,9 +222,6 @@
   <data name="UploadFile" xml:space="preserve">
     <value>Upload files</value>
   </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>_Edit</value>
-  </data>
   <data name="PluginManagerWindow" xml:space="preserve">
     <value>PluginManagerWindow</value>
   </data>
@@ -305,12 +233,6 @@
   </data>
   <data name="BuildDate" xml:space="preserve">
     <value>BuildDate</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>Name</value>
-  </data>
-  <data name="Command" xml:space="preserve">
-    <value>Command</value>
   </data>
   <data name="Search" xml:space="preserve">
     <value>Search</value>

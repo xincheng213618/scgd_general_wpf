@@ -50,7 +50,7 @@
                     <GridViewColumn  Header="{x:Static properties:Resources.Status}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type terminal:TerminalService}">
-                                <TextBlock Text="{ Binding  Config.IsAlive}"/>
+                                <TextBlock Text="{ Binding  DService.IsAlive}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

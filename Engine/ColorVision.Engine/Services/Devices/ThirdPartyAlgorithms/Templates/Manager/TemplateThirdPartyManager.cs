@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.MySql;
+﻿using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Templates;
 using System;
@@ -97,7 +96,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Man
 
             void DeleteSingle(int id)
             {
-                ThirdPartyAlgorithmsDao.Instance.DeleteById(id, false);
+                Db.Deleteable<ThirdPartyAlgorithmsModel>().Where(it => it.Id == id).ExecuteCommand();
                 TemplateParams.RemoveAt(index);
             }
 

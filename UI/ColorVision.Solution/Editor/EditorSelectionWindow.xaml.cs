@@ -1,9 +1,7 @@
 ﻿using ColorVision.Common.NativeMethods;
 using ColorVision.Themes;
-using Microsoft.Win32;
 using System.IO;
 using System.Windows;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace ColorVision.Solution.Editor
 {

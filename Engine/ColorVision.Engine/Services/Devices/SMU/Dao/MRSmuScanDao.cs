@@ -1,8 +1,6 @@
-﻿using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Database;
 using SqlSugar;
 using System;
-using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Dao
 {
@@ -40,18 +38,6 @@ namespace ColorVision.Engine.Services.Devices.SMU.Dao
     public class MRSmuScanDao : BaseTableDao<SmuScanModel>
     {
         public static MRSmuScanDao Instance { get; set; } = new MRSmuScanDao();
-        public List<SmuScanModel> ConditionalQuery(string id, string batchid, DateTime? dateTimeSTART, DateTime? dateTimeEnd)
-        {
-            Dictionary<string, object> keyValuePairs = new();
-            keyValuePairs.Add("id", id);
-            keyValuePairs.Add("batch_id", batchid);
-
-#pragma warning disable CS8604 // 引用类型参数可能为 null。
-            keyValuePairs.Add(">create_date", dateTimeSTART);
-            keyValuePairs.Add("<create_date", dateTimeEnd);
-#pragma warning restore CS8604 // 引用类型参数可能为 null。
-            return ConditionalQuery(keyValuePairs);
-        }
 
     }
 }

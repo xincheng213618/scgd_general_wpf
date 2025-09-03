@@ -129,53 +129,17 @@
   <data name="MenuAbout" xml:space="preserve">
     <value>Об</value>
   </data>
-  <data name="MenuSettings" xml:space="preserve">
-    <value>Настройки</value>
-  </data>
-  <data name="MenuOptions" xml:space="preserve">
-    <value>Вариант(_О)</value>
-  </data>
   <data name="About" xml:space="preserve">
     <value>о</value>
   </data>
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>Запуск (может быть неудачным)</value>
   </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>скрывать</value>
-  </data>
-  <data name="Close" xml:space="preserve">
-    <value>закрытие</value>
-  </data>
-  <data name="Minimize" xml:space="preserve">
-    <value>минимизировать</value>
-  </data>
-  <data name="Pin" xml:space="preserve">
-    <value>прикрепить сверху</value>
-  </data>
-  <data name="Restore" xml:space="preserve">
-    <value>Восстановить вниз</value>
-  </data>
-  <data name="Save" xml:space="preserve">
-    <value>сохранять</value>
-  </data>
-  <data name="Cancel" xml:space="preserve">
-    <value>Отмена</value>
-  </data>
-  <data name="OK" xml:space="preserve">
-    <value>Конечно</value>
-  </data>
-  <data name="Settings" xml:space="preserve">
-    <value>Настройки</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>Макет интерфейса запуска восстановления</value>
   </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>Версия ПО</value>
-  </data>
-  <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
-    <value>Откройте локальную службу при запуске программного обеспечения</value>
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>волшебник</value>
@@ -186,35 +150,14 @@
   <data name="CheckUpdatesOnStartup" xml:space="preserve">
     <value>Обнаружение обновлений при запуске программного обеспечения</value>
   </data>
-  <data name="TransparentWindow" xml:space="preserve">
-    <value>прозрачное окно</value>
-  </data>
   <data name="Project" xml:space="preserve">
     <value>проект</value>
-  </data>
-  <data name="EnableDatabase" xml:space="preserve">
-    <value>Включить базу данных</value>
   </data>
   <data name="Acquire" xml:space="preserve">
     <value>коллекция</value>
   </data>
-  <data name="RunAsAdmin" xml:space="preserve">
-    <value>Запустить от имени администратора</value>
-  </data>
-  <data name="NotRunAsAdmin" xml:space="preserve">
-    <value>Запуск от имени администратора</value>
-  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>Началось успешно</value>
-  </data>
-  <data name="ExperimentalFeature" xml:space="preserve">
-    <value>Экспериментальные возможности</value>
-  </data>
-  <data name="InstallCertificate" xml:space="preserve">
-    <value>Установить сертификат</value>
-  </data>
-  <data name="SerialNumber" xml:space="preserve">
-    <value>серийный номер</value>
   </data>
   <data name="CurrentVersionIsUpToDate" xml:space="preserve">
     <value>Текущая версия уже является последней версией</value>
@@ -230,9 +173,6 @@
   </data>
   <data name="ErrorOccurred" xml:space="preserve">
     <value>Произошла ошибка</value>
-  </data>
-  <data name="ConnectionName" xml:space="preserve">
-    <value>название соединения</value>
   </data>
   <data name="ChangeLog" xml:space="preserve">
     <value>Журнал изменений</value>
@@ -258,15 +198,6 @@
   <data name="Upgrade" xml:space="preserve">
     <value>обновление</value>
   </data>
-  <data name="Sended" xml:space="preserve">
-    <value>Отправлено</value>
-  </data>
-  <data name="Local" xml:space="preserve">
-    <value>местный</value>
-  </data>
-  <data name="Alias" xml:space="preserve">
-    <value>Псевдоним</value>
-  </data>
   <data name="Duration" xml:space="preserve">
     <value>затраты времени</value>
   </data>
@@ -291,9 +222,6 @@
   <data name="UploadFile" xml:space="preserve">
     <value>Загрузить файлы</value>
   </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>Изменить (Е)</value>
-  </data>
   <data name="PluginManagerWindow" xml:space="preserve">
     <value>ОкноМенеджераПлагинов</value>
   </data>
@@ -305,12 +233,6 @@
   </data>
   <data name="BuildDate" xml:space="preserve">
     <value>ДатаСборки</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>НазваниеПроекта</value>
-  </data>
-  <data name="Command" xml:space="preserve">
-    <value>Команда</value>
   </data>
   <data name="Search" xml:space="preserve">
     <value>поиск</value>

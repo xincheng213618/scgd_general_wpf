@@ -1,13 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Abstractions;
+using ColorVision.Database;
+using ColorVision.Engine;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
@@ -62,7 +59,6 @@ namespace ProjectKB
             InitializeComponent();
             this.ApplyCaption(false);
             Config.SetWindow(this);
-            SizeChanged += (s, e) => Config.SetConfig(this);
             this.Title += "-" + Assembly.GetAssembly(typeof(ProjectKBWindow))?.GetName().Version?.ToString() ?? "";
         }
         public LogOutput logOutput { get; set; }
@@ -289,7 +285,7 @@ namespace ProjectKB
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
             stopwatch.Reset();
             stopwatch.Start();
-            BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
+            BatchResultMasterDao.Instance.Save(new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
 
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
@@ -360,7 +356,7 @@ namespace ProjectKB
 
                 if (CurrentFlowResult.Msg.Contains("SDK return failed"))
                 {
-                    BatchResultMasterModel Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
+                    MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
                     if (Batch != null)
                     {
                         var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
@@ -397,9 +393,15 @@ namespace ProjectKB
             KBItemMaster.BatchId = Batch.Id;
             foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
             {
-                if (item.ImgFileType == AlgorithmResultType.KB || item.ImgFileType == AlgorithmResultType.KB_Raw)
+                if (item.ImgFileType == ViewResultAlgType.KB || item.ImgFileType == ViewResultAlgType.KB_Raw)
                 {
-                    var mod = TemplateJsonDao.Instance.GetByParam(new Dictionary<string, object>() { { "name", item.TName }, { "mm_id", 150 } });
+                   
+                    var mod = MySqlControl.GetInstance().DB.Queryable<ModMasterModel>().Where(x => x.Name == item.TName && x.Pid == 150).First();
+                    if (mod == null)
+                    {
+                        log.Warn($"item.TName{item.TName},Cant find template");
+                        continue;
+                    }
 
                     KBJson kBJson = JsonConvert.DeserializeObject<KBJson>(mod.JsonVal);
                     log.Info(JsonConvert.SerializeObject(kBJson));
@@ -417,7 +419,7 @@ namespace ProjectKB
 
                     }
                 }
-                if (item.ImgFileType == AlgorithmResultType.POI_Y)
+                if (item.ImgFileType == ViewResultAlgType.POI_Y)
                 {
                     var pois = PoiPointResultDao.Instance.GetAllByPid(item.Id);
                     if (pois != null)
@@ -440,7 +442,7 @@ namespace ProjectKB
                         }
                     }
                 }
-                if (item.ImgFileType == AlgorithmResultType.POI_Y_V2)
+                if (item.ImgFileType == ViewResultAlgType.POI_Y_V2)
                 {
                     var pois = PoiPointResultDao.Instance.GetAllByPid(item.Id);
                     if (pois != null)
@@ -850,29 +852,32 @@ namespace ProjectKB
                         {
                             foreach (var item in kBItem.Items)
                             {
-                                DVRectangle Rectangle = new();
-                                Rectangle.Attribute.Rect = new Rect(item.KBKeyRect.X, item.KBKeyRect.Y, item.KBKeyRect.Width, item.KBKeyRect.Height);
+                                RectangleProperties rectangleProperties = new RectangleProperties();
+                                rectangleProperties.Rect = new Rect(item.KBKeyRect.X, item.KBKeyRect.Y, item.KBKeyRect.Width, item.KBKeyRect.Height);
 
                                 if (item.Result == false)
                                 {
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, 10);
+                                    rectangleProperties.Pen = new Pen(Brushes.Red, 10);
                                 }
                                 else if (item.Name == DrakestKey)
                                 {
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Violet, 10);
+                                    rectangleProperties.Pen = new Pen(Brushes.Violet, 10);
                                 }
                                 else if (item.Name == BrightestKey)
                                 {
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.White, 10);
+                                    rectangleProperties.Pen = new Pen(Brushes.White, 10);
                                 }
                                 else
                                 {
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Gray, 5);
+                                    rectangleProperties.Pen = new Pen(Brushes.Gray, 5);
                                 }
 
-                                Rectangle.Attribute.Brush = Brushes.Transparent;
-                                Rectangle.Attribute.Name = item.Name;
-                                Rectangle.Attribute.Id = -1;
+                                rectangleProperties.Brush = Brushes.Transparent;
+                                rectangleProperties.Name = item.Name;
+                                rectangleProperties.Id = -1;
+
+                                DVRectangle Rectangle = new DVRectangle(rectangleProperties);
+
                                 Rectangle.Render();
                                 ImageView.AddVisual(Rectangle);
                             }
@@ -937,6 +942,8 @@ namespace ProjectKB
         {
             if (Summary.AutoUploadSN)
             {
+                if (string.IsNullOrWhiteSpace(ProjectKBConfig.Instance.SN)) return;
+
                 DebounceTimer.AddOrResetTimer("KBUploadSN", 500, e => UploadSN(), 0);
             }
         }
@@ -949,6 +956,7 @@ namespace ProjectKB
             IsCheckWIP = false;
             if (Summary.UseMes)
             {
+
                 log.Info($"CheckWIP Stage{SummaryManager.GetInstance().Summary.Stage},SN:{ProjectKBConfig.Instance.SN}");
                 IntPtr a = MesDll.CheckWIP(SummaryManager.GetInstance().Summary.Stage, ProjectKBConfig.Instance.SN);
                 var result = MesDll.PtrToString(a);

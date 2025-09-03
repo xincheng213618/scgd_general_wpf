@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using MQTTMessageLib;
@@ -30,7 +29,7 @@ namespace ColorVision.Engine.Templates.Ghost
         {
             new TemplateEditorWindow(new TemplateGhost(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
 
 
@@ -41,7 +40,7 @@ namespace ColorVision.Engine.Templates.Ghost
         }
         public UserControl UserControl { get; set; }
 
-        public CVOLEDCOLOR CVOLEDCOLOR { get => _CVOLEDCOLOR; set { _CVOLEDCOLOR = value; NotifyPropertyChanged(); } }
+        public CVOLEDCOLOR CVOLEDCOLOR { get => _CVOLEDCOLOR; set { _CVOLEDCOLOR = value; OnPropertyChanged(); } }
         private CVOLEDCOLOR _CVOLEDCOLOR;
 
         public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, GhostParam ghostParam, string serialNumber)

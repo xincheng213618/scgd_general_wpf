@@ -40,7 +40,6 @@ namespace ColorVision.ImageEditor.Draw
     public class DVCircleText : DrawingVisualBase<CircleTextProperties>, IDrawingVisual,ICircle
     {
         public TextAttribute TextAttribute { get => Attribute.TextAttribute; }
-        public bool AutoAttributeChanged { get; set; } = true;
 
         public Point Center { get => Attribute.Center; set => Attribute.Center = value; }
         public double Radius { get => Attribute.Radius; set => Attribute.Radius = value; }
@@ -49,19 +48,16 @@ namespace ColorVision.ImageEditor.Draw
         public DVCircleText()
         {
             Attribute = new CircleTextProperties();
-            Attribute.Id = No++;
-            Attribute.Brush = Brushes.Transparent;
-            Attribute.Pen = new Pen(Brushes.Red, 2);
-            Attribute.Center = new Point(50, 50);
-            Attribute.Radius = 30;
-            Attribute.PropertyChanged += (s, e) =>
-            { 
-                if (AutoAttributeChanged && e.PropertyName != "Id")
-                {
-                    Render();
-                }
-            };
+            Attribute.PropertyChanged += (s, e) => Render();
         }
+
+        public DVCircleText(CircleTextProperties circleTextProperties)
+        {
+            Attribute = circleTextProperties;
+            Attribute.PropertyChanged += (s, e) => Render();
+        }
+
+
 
         public override void Render()
         {

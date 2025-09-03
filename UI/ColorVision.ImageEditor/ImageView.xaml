@@ -14,6 +14,9 @@
              d:DataContext="{d:DesignInstance local:ImageView}"
              d:DesignHeight="600" d:DesignWidth="1000" Initialized="UserControl_Initialized" AllowDrop="True">
     <UserControl.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        </Style>
         <Style TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}">
             <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
         </Style>
@@ -67,7 +70,7 @@
         <Grid x:Name="ImageContentGrid" Grid.Row="1" >
             <Grid Background="{StaticResource LargeGridLinesDrawingBrush}" Visibility="Collapsed"/>
 
-            <Grid x:Name="ImageGroupGrid" HorizontalAlignment="Right" Width="400"  Visibility="{Binding ElementName=PropertyIsChecked,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+            <Grid x:Name="ImageGroupGrid" HorizontalAlignment="Right" Width="400"  Visibility="{Binding Config.IsShowPropertyEdit,Converter={StaticResource bool2VisibilityConverter}}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="300"/>
@@ -130,6 +133,9 @@
                                     <Button Content="锁定" Command="{Binding ToolConcentricCircle.LockCommand}" Click="reference1_Click" Width="80"  Tag="1"/>
                                 </StackPanel>
                             </Popup>
+                            <Button Click="EditDIExpand_Click" Padding="5"   >
+                                <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DIExpand}" />
+                            </Button>
                         </StackPanel>
 
                     </Grid>
@@ -244,20 +250,6 @@
                     </StackPanel>
                 </Border>
             </Grid>
-
-
-            <Grid x:Name="WaitControl"  x:FieldModifier="public" Grid.Row="0" Grid.ColumnSpan="2" Panel.ZIndex="9" Visibility="Collapsed">
-                <Grid   Background="Black"  Opacity="0.3"/>
-                <Border   Background="#F9F9F9"  Height="250" Width="250"  CornerRadius="10">
-                    <Border Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" CornerRadius="5" Margin="5">
-                        <Grid>
-                            <base:ProgressRing  BorderBrush="Red" Margin="30" />
-                            <TextBlock x:Name="WaitControlText"   x:FieldModifier="public" Text="DataLoading" HorizontalAlignment="Center" FontSize="16"/>
-                            <ProgressBar x:Name="WaitControlProgressBar"  x:FieldModifier="public" Visibility="Collapsed" BorderThickness="0"  Maximum="100" Minimum="0"  Margin="5" VerticalAlignment="Bottom" />
-                        </Grid>
-                    </Border>
-                </Border>
-            </Grid>
         </Grid>
 
         <Grid Grid.Column="1" Width="300" Visibility="{Binding ElementName=AdvancedButton, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
@@ -270,7 +262,7 @@
                     <Border Grid.Column="1" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"  Margin="0,5" CornerRadius="5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,0,0,5">
-                                <ui:ToggleSwitch x:Name="PropertyIsChecked"  DockPanel.Dock="Right" IsChecked="False"/>
+                                <ui:ToggleSwitch  DockPanel.Dock="Right" IsChecked="{Binding Config.IsShowPropertyEdit}"/>
                                 <TextBlock Text="显示编辑属性" Width="100" HorizontalAlignment="Left"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">

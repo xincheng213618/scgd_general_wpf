@@ -1,10 +1,10 @@
 ﻿#pragma warning disable
 using ColorVision.Common.Algorithms;
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
+using ColorVision.Database;
+using ColorVision.Engine;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
@@ -30,8 +30,6 @@ using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Org.BouncyCastle.Asn1.Ocsp;
-using Panuon.WPF.UI;
-using ProjectARVR.Config;
 using ProjectARVR.Services;
 using ST.Library.UI.NodeEditor;
 using System;
@@ -310,7 +308,7 @@ namespace ProjectARVR
         /// <summary>
         /// 总体测试结果（true表示通过，false表示不通过）
         /// </summary>
-        public bool TotalResult { get => _TotalResult; set { _TotalResult = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(TotalResultString)); } } 
+        public bool TotalResult { get => _TotalResult; set { _TotalResult = value; OnPropertyChanged(); OnPropertyChanged(nameof(TotalResultString)); } } 
         private bool _TotalResult = false;
 
         /// <summary>
@@ -320,6 +318,7 @@ namespace ProjectARVR
 
         public bool FlowWhiteTestReslut { get; set; } = false;
         public bool FlowWhite1TestReslut { get; set; } = false;
+        public bool FlowWhite2TestReslut { get; set; } = false;
 
         public bool FlowBlackTestReslut { get; set; } = false;
         public bool FlowChessboardTestReslut { get; set; } = false;

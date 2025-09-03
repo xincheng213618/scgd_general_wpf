@@ -1,10 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.UI.Authorizations;
-using ColorVision.Engine.MySql;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.PG.Templates;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
@@ -20,7 +18,7 @@ namespace ColorVision.Engine.Services.Devices.PG
         public RelayCommand EditPGTemplateCommand { get; set; }
 
 
-        public DevicePG(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        public DevicePG(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTPG(Config);
 

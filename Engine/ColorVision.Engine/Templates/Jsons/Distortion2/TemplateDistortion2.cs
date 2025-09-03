@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.MySql;
+﻿using ColorVision.Database;
 using log4net;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
         {
         }
 
-        public TemplateJsonDistortion2(TemplateJsonModel templateJsonModel) : base(templateJsonModel)
+        public TemplateJsonDistortion2(ModMasterModel templateJsonModel) : base(templateJsonModel)
         {
 
         }

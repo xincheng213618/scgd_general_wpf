@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Database;
 using SqlSugar;
 using System;
 
@@ -10,19 +9,19 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
     {
 
         [SugarColumn(ColumnName ="code")]
-        public string? Code { get => _Code; set { _Code = value; NotifyPropertyChanged(); } }
+        public string? Code { get => _Code; set { _Code = value; OnPropertyChanged(); } }
         private string? _Code;
 
         [SugarColumn(ColumnName ="name")]
-        public string? Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        public string? Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string? _Name;
 
         [SugarColumn(ColumnName ="dll_file_name")]
-        public string? DLLFileName { get => _DLLFileName; set { _DLLFileName = value; NotifyPropertyChanged(); } }
+        public string? DLLFileName { get => _DLLFileName; set { _DLLFileName = value; OnPropertyChanged(); } }
         private string? _DLLFileName;
 
         [SugarColumn(ColumnName ="cfg_json", ColumnDataType ="json")]
-        public string? CfgJson { get => _CfgJson; set { _CfgJson = value; NotifyPropertyChanged(); } }
+        public string? CfgJson { get => _CfgJson; set { _CfgJson = value; OnPropertyChanged(); } }
         private string? _CfgJson;
 
         [SugarColumn(ColumnName ="tenant_id")]

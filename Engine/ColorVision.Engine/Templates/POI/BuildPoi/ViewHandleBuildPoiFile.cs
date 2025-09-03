@@ -1,9 +1,7 @@
 ﻿#pragma warning disable CS8604,CS8603
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Media;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Database;
 using ColorVision.FileIO;
 using CsvHelper;
 using CVCommCore.CVAlgorithm;
@@ -17,13 +15,14 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using ColorVision.Engine.Services;
+using ColorVision.ImageEditor;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi
 {
     public class ViewHandleBuildPoiFile : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.BuildPOI_File};
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.BuildPOI_File};
 
         public static void CovertPoiParam(PoiParam poiParam ,string fileName)
         {
@@ -31,7 +30,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
             poiParam.PoiPoints.Clear();
             foreach (var item in poiInfo.Positions)
             {
-                poiParam.PoiPoints.Add(new PoiPoint() { PixX = item.PixelX, PixY = item.PixelY ,PointType = (RiPointTypes)poiInfo.HeaderInfo.PointType ,PixWidth = poiInfo .HeaderInfo.Width, PixHeight = poiInfo.HeaderInfo.Height });
+                poiParam.PoiPoints.Add(new PoiPoint() { PixX = item.PixelX, PixY = item.PixelY ,PointType = (GraphicTypes)poiInfo.HeaderInfo.PointType ,PixWidth = poiInfo .HeaderInfo.Width, PixHeight = poiInfo.HeaderInfo.Height });
             }
             poiParam.PoiConfig.AreaRectRow = poiInfo.HeaderInfo.Rows;
             poiParam.PoiConfig.AreaRectCol = poiInfo.HeaderInfo.Cols;
@@ -108,7 +107,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
             return poiInfo;
         }
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -124,7 +123,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
         }
 
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
 
             if (result.ViewResults.Count > 0 && result.ViewResults[0] is PoiCieFileModel model)
@@ -171,13 +170,13 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
 
             var header = new List<string> { "id", "file_name", "file_url", "fileType" };
             var bdHeader = new List<string> { "Id", "FileName", "FileUrl", "file_type" };
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
 
         }

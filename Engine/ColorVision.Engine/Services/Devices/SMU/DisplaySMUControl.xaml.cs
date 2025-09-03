@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.MySql;
+﻿using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Engine.Templates;
@@ -177,7 +177,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         {
             if (sender is Button button)
             {
-                if (Config.DeviceStatus != DeviceStatusType.Opened)
+                if (DService.DeviceStatus != DeviceStatusType.Opened)
                 {
                     ServicesHelper.SendCommand(button, DService.Open(Config.IsNet, Config.DevName));
                 }

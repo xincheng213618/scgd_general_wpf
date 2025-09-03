@@ -1,9 +1,7 @@
 ﻿#pragma warning disable CS8602
 
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Database;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
@@ -20,6 +18,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Jsons.BlackMura
 {
@@ -29,23 +28,23 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
         public static BlackMuraConfig Instance =>  ConfigService.Instance.GetRequiredService<BlackMuraConfig>();
 
-        public double WLvMaxScale { get => _WLvMaxScale; set { _WLvMaxScale = value; NotifyPropertyChanged(); } }
+        public double WLvMaxScale { get => _WLvMaxScale; set { _WLvMaxScale = value; OnPropertyChanged(); } }
         private double _WLvMaxScale = 1;
 
-        public double WLvMinScale { get => _WLvMinScale; set { _WLvMinScale = value; NotifyPropertyChanged(); } }
+        public double WLvMinScale { get => _WLvMinScale; set { _WLvMinScale = value; OnPropertyChanged(); } }
         private double _WLvMinScale = 1;
 
-        public double WZaRelMaxScale { get => _WZaRelMaxScale; set { _WZaRelMaxScale = value; NotifyPropertyChanged(); } }
+        public double WZaRelMaxScale { get => _WZaRelMaxScale; set { _WZaRelMaxScale = value; OnPropertyChanged(); } }
         private double _WZaRelMaxScale = 1;
 
 
-        public double BLvMaxScale { get => _BLvMaxScale; set { _BLvMaxScale = value; NotifyPropertyChanged(); } }
+        public double BLvMaxScale { get => _BLvMaxScale; set { _BLvMaxScale = value; OnPropertyChanged(); } }
         private double _BLvMaxScale = 1;
 
-        public double BLvMinScale { get => _BLvMinScale; set { _BLvMinScale = value; NotifyPropertyChanged(); } }
+        public double BLvMinScale { get => _BLvMinScale; set { _BLvMinScale = value; OnPropertyChanged(); } }
         private double _BLvMinScale = 1;
 
-        public double BZaRelMaxScale { get => _BZaRelMaxScale; set { _BZaRelMaxScale = value; NotifyPropertyChanged(); } }
+        public double BZaRelMaxScale { get => _BZaRelMaxScale; set { _BZaRelMaxScale = value; OnPropertyChanged(); } }
         private double _BZaRelMaxScale = 1;
 
 
@@ -84,7 +83,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleBlackMura));
 
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.BlackMura_Calc};
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.BlackMura_Calc};
 
         private static string EscapeCsvField(string field)
         {
@@ -96,7 +95,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
             return field;
         }
 
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             var blackMuraViews = result.ViewResults.ToSpecificViewResults<BlackMuraView>();
             var csvBuilder = new StringBuilder();
@@ -172,7 +171,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
         }
 
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -278,7 +277,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
             }
         }
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             void OpenSource()
             {
@@ -318,13 +317,13 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
             List<string> header = new() { "LvAvg", "LvMax", "LvMin", "Uniformity(%)", "ZaRelMax", "AreaJsonVal" };
             List<string> bdHeader = new() { "ResultJson.LvAvg", "ResultJson.LvMax", "ResultJson.LvMin", "ResultJson.Uniformity", "ResultJson.ZaRelMax", "AreaJsonVal" };
 
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
 
             view.SideTextBox.Visibility = System.Windows.Visibility.Visible;

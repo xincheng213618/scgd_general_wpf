@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using MQTTMessageLib;
@@ -28,7 +27,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
 
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
 
         public void OpenTemplate()
@@ -36,7 +35,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
             new TemplateEditorWindow(new TemplateDistortion2(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
-        public string CIEFileName { get => _CIEFileName; set { _CIEFileName = value; NotifyPropertyChanged(); } }
+        public string CIEFileName { get => _CIEFileName; set { _CIEFileName = value; OnPropertyChanged(); } }
         private string _CIEFileName;
 
 

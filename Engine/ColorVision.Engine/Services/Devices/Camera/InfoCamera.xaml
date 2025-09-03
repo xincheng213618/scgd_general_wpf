@@ -47,7 +47,7 @@
                 </Grid.ColumnDefinitions>
                 <Border  Grid.Row="0" Background="{DynamicResource RegionBrush}" CornerRadius="5" >
                     <DockPanel  Margin="10,5">
-                        <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}"/>
+                        <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding  DService.IsAlive,Mode=OneWay}"/>
                         <Grid  Height="18"   HorizontalAlignment="Left"  Margin="0,0,4,0">
                             <Image Source="{Binding Icon}"/>
                         </Grid>

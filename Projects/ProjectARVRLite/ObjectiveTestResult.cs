@@ -1,10 +1,10 @@
 ﻿#pragma warning disable
 using ColorVision.Common.Algorithms;
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
+using ColorVision.Engine;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
@@ -401,7 +401,7 @@ namespace ProjectARVRLite
         /// <summary>
         /// 总体测试结果（true表示通过，false表示不通过）
         /// </summary>
-        public bool TotalResult { get => _TotalResult; set { _TotalResult = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(TotalResultString)); } } 
+        public bool TotalResult { get => _TotalResult; set { _TotalResult = value; OnPropertyChanged(); OnPropertyChanged(nameof(TotalResultString)); } } 
         private bool _TotalResult = false;
 
         /// <summary>

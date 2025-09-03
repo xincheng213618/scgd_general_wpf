@@ -86,7 +86,7 @@
                         </StackPanel>
                     </Grid>
                     <Grid  Grid.Row="1">
-                        <ListView x:Name="listView1" BorderThickness="0" Padding="0" SelectedIndex="{Binding ViewResultManager.ViewReslutsSelectedIndex}"  SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" Grid.RowSpan="2" >
+                        <ListView x:Name="listView1" BorderThickness="0" Padding="0" SelectedIndex="{Binding ViewResultManager.ViewReslutsSelectedIndex}"  SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
                             <ListView.Resources >
                                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                             </ListView.Resources>
@@ -105,7 +105,7 @@
                                             <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                         </Style>
                                     </GridView.ColumnHeaderContainerStyle>
-                                    <GridViewColumn Header="Id" Width="50">
+                                    <GridViewColumn Header="Id">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
                                                 <TextBlock Text="{Binding Id}" />
@@ -116,6 +116,13 @@
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
                                                 <TextBlock Text="{Binding FlowStatus}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="PASS" Width="50">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                                <TextBlock Text="{Binding Result}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -150,14 +157,14 @@
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn Header="RunTime" Width="150">
+                                    <GridViewColumn Header="RunTime" Width="80">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
                                                 <TextBlock Text="{Binding RunTime}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn Header="RunMsg" Width="150">
+                                    <GridViewColumn Header="RunMsg">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
                                                 <TextBlock Text="{Binding Msg}" />

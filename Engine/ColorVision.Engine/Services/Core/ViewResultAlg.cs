@@ -1,0 +1,268 @@
+﻿#pragma warning disable CS8601
+using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Database;
+using ColorVision.Engine.Media;
+using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.FileIO;
+using ColorVision.ImageEditor;
+using ColorVision.Themes.Controls;
+using ColorVision.UI.Sorts;
+using System;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+
+namespace ColorVision.Engine.Services
+{
+
+
+
+    public class ViewResultAlg : ViewModelBase, ISortID
+    {
+        public ObservableCollection<IViewResult> ViewResults { get; set; }
+
+        public ContextMenu ContextMenu { get; set; }
+        public RelayCommand ExportCVCIECommand { get; set; }
+        public RelayCommand CopyToCommand { get; set; }
+        public RelayCommand OpenContainingFolderCommand { get; set; }
+
+        public RelayCommand ExportToPoiCommand { get; set; }
+
+        public ViewResultAlg()
+        {
+
+        }
+
+        public ViewResultAlg(AlgResultMasterModel item)
+        {
+            Id = item.Id;
+            Batch = BatchResultMasterDao.Instance.GetById(item.BatchId)?.Code;
+            FilePath = item.ImgFile;
+            POITemplateName = item.TName;
+            CreateTime = item.CreateDate;
+            ResultType = item.ImgFileType;
+            ResultCode = item.ResultCode;
+            TotalTime = item.TotalTime;
+            ResultDesc = item.Result;
+            ResultImagFile = item.ResultImagFile;
+            Version = item.version;
+
+            ExportCVCIECommand = new RelayCommand(a => Export(), a => File.Exists(FilePath));
+            CopyToCommand = new RelayCommand(a => CopyTo(), a => File.Exists(FilePath));
+            OpenContainingFolderCommand = new RelayCommand(a => OpenContainingFolder());
+
+            ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = "选中", Command = OpenContainingFolderCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "导出", Command = ExportCVCIECommand });
+            ExportToPoiCommand = new RelayCommand(a => ExportToPoi(), a => ViewResults?.ToSpecificViewResults<PoiResultData>().Count != 0 || ViewResults?.ToSpecificViewResults<PoiPointResultModel>().Count != 0);
+            ContextMenu.Items.Add(new MenuItem() { Header = "创建到POI", Command = ExportToPoiCommand });
+            Task.Run(() =>
+            {
+                bool exists = !string.IsNullOrEmpty(FilePath) && File.Exists(FilePath);
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    IsFileExists = exists;
+                });
+            });
+
+        }
+
+        public bool IsFileExists { get => _IsFileExists; set { if (_IsFileExists == value) return; _IsFileExists = value; OnPropertyChanged(); } }
+        private bool _IsFileExists = true;
+
+        public string? Version { get; set; }
+        public void OpenContainingFolder()
+        {
+            PlatformHelper.OpenFolderAndSelectFile(FilePath);
+        }
+
+
+        public void ExportToPoi()
+        {
+            var list = ViewResults?.ToSpecificViewResults<PoiResultData>();
+            if (list == null) return;
+            if (list.Count ==0 )
+            {
+                var list1 = ViewResults?.ToSpecificViewResults<PoiPointResultModel>();
+                if (list1 == null)
+                    return;
+
+                int old1 = TemplatePoi.Params.Count;
+                TemplatePoi templatePoi1 = new TemplatePoi();
+                templatePoi1.ImportTemp = new PoiParam() { Name = templatePoi1.NewCreateFileName("poi") };
+                templatePoi1.ImportTemp.Height = 400;
+                templatePoi1.ImportTemp.Width = 300;
+                templatePoi1.ImportTemp.PoiConfig.BackgroundFilePath = FilePath;
+                foreach (var item in list1)
+                {
+                    PoiPoint poiPoint = new PoiPoint()
+                    {
+                        Name = item.PoiName,
+                        PixX = (double)item.PoiX,
+                        PixY = (double)item.PoiY,
+                        PixHeight = (double)item.PoiHeight,
+                        PixWidth = (double)item.PoiWidth,
+                        PointType = (GraphicTypes)item.PoiType,
+                        Id = -1
+                    };
+                    templatePoi1.ImportTemp.PoiPoints.Add(poiPoint);
+                }
+
+
+                templatePoi1.OpenCreate();
+                int next1 = TemplatePoi.Params.Count;
+                if (next1 == old1 + 1)
+                {
+                    new EditPoiParam(TemplatePoi.Params[next1 - 1].Value).ShowDialog();
+                }
+                return;
+            }
+
+
+            int old = TemplatePoi.Params.Count;
+            TemplatePoi templatePoi = new TemplatePoi();
+            templatePoi.ImportTemp = new PoiParam() {  Name = templatePoi.NewCreateFileName("poi")};
+            templatePoi.ImportTemp.Height = 400;
+            templatePoi.ImportTemp.Width = 300;
+            templatePoi.ImportTemp.PoiConfig.BackgroundFilePath = FilePath;
+            foreach (var item in list)
+            {
+                PoiPoint poiPoint = new PoiPoint() {
+                    Name = item.Name, 
+                    PixX = item.Point.PixelX, 
+                    PixY = item.Point.PixelY,
+                    PixHeight = item.Point.Height,
+                    PixWidth = item.Point.Width,    
+                    PointType = (GraphicTypes)item.Point.PointType,
+                    Id =-1
+                };
+                templatePoi.ImportTemp.PoiPoints.Add(poiPoint);
+            }
+
+
+            templatePoi.OpenCreate();
+            int next = TemplatePoi.Params.Count;
+            if (next ==old + 1)
+            {
+                new EditPoiParam(TemplatePoi.Params[next-1].Value).ShowDialog();
+            }
+
+        }
+
+        public void CopyTo()
+        {
+            if (File.Exists(FilePath))
+            {
+                if (CVFileUtil.IsCIEFile(FilePath))
+                {
+                    int index = CVFileUtil.ReadCIEFileHeader(FilePath, out var meta);
+                    if (index > 0)
+                    {
+                        if (meta.srcFileName != null && !File.Exists(meta.srcFileName))
+                        {
+                            meta.srcFileName = Path.Combine(Path.GetDirectoryName(FilePath) ?? string.Empty, meta.srcFileName);
+
+                        }
+                        else
+                        {
+                            meta.srcFileName = string.Empty;
+                        }
+                    }
+
+                    System.Windows.Forms.FolderBrowserDialog dialog = new();
+                    dialog.UseDescriptionForTitle = true;
+                    dialog.Description = "选择要保存到得位置";
+                    if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                    {
+                        if (string.IsNullOrEmpty(dialog.SelectedPath))
+                        {
+                            MessageBox.Show("文件夹路径不能为空", "提示");
+                            return;
+                        }
+                        string savePath = dialog.SelectedPath;
+                        // Copy the file to the new location
+                        string newFilePath = Path.Combine(savePath, Path.GetFileName(FilePath));
+                        File.Copy(FilePath, newFilePath, true);
+
+                        // If srcFileName exists, copy it to the new location as well
+                        if (File.Exists(meta.srcFileName))
+                        {
+                            string newSrcFilePath = Path.Combine(savePath, Path.GetFileName(meta.srcFileName));
+                            File.Copy(meta.srcFileName, newSrcFilePath, true);
+                        }
+                    }
+
+                }
+                else
+                {
+                    MessageBox1.Show(WindowHelpers.GetActiveWindow(), "目前支持CVRAW图像", "ColorVision");
+                }
+            }
+            else
+            {
+                MessageBox1.Show(WindowHelpers.GetActiveWindow(), "找不到原始文件", "ColorVision");
+            }
+        }
+
+
+        public void Export()
+        {
+
+            if (FilePath != null)
+            {
+                if (!CVFileUtil.IsCIEFile(FilePath))
+                {
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "导出仅支持CIE文件", "ColorVision");
+                    return;
+                }
+                ExportCVCIE exportCVCIE = new ExportCVCIE(FilePath);
+                exportCVCIE.Owner = Application.Current.GetActiveWindow();
+                exportCVCIE.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                exportCVCIE.ShowDialog();
+            }
+
+        }
+
+
+
+
+        [DisplayName("SerialNumber1")]
+        public int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }
+        private int _Id;
+        [DisplayName("BatchNumber")]
+        public string? Batch { get { return _Batch; } set { _Batch = value; OnPropertyChanged(); } }
+        private string? _Batch;
+        [DisplayName("File")]
+        public string? FilePath { get { return _FilePath; } set { _FilePath = value; OnPropertyChanged(); } }
+        private string? _FilePath;
+        [DisplayName("Template")]
+        public string POITemplateName { get { return _POITemplateName; } set { _POITemplateName = value; OnPropertyChanged(); } }
+        private string _POITemplateName;
+        [DisplayName("CreateTime")]
+        public DateTime? CreateTime { get { return _CreateTime; } set { _CreateTime = value; OnPropertyChanged(); } }
+        private DateTime? _CreateTime;
+
+        [DisplayName("ResultType")]
+        public ViewResultAlgType ResultType {get=> _ResultType; set { _ResultType = value; OnPropertyChanged(); } }
+        private ViewResultAlgType _ResultType;
+
+        [DisplayName("ResultDesc")]
+        public string ResultDesc { get { return _ResultDesc; } set { _ResultDesc = value; OnPropertyChanged(); } }
+        private string _ResultDesc;
+        [DisplayName("img_result")]
+        public string ResultImagFile { get; set; }
+        [DisplayName("Duration")]
+        public long TotalTime { get => _TotalTime; set { _TotalTime = value; OnPropertyChanged(); } }
+        private long _TotalTime;
+
+        public int? ResultCode { get { return _ResultCode; } set { _ResultCode = value; OnPropertyChanged(); } }
+        private int? _ResultCode;
+
+
+    }
+}

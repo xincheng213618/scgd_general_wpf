@@ -1,64 +1,60 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Pattern.NineDot;
 using ColorVision.UI;
-using NPOI.SS.UserModel;
 using OpenCvSharp;
-using SkiaSharp;
 using System;
 using System.ComponentModel;
 using System.Windows.Controls;
 using System.Windows.Media;
-using static iText.Kernel.Pdf.Colorspace.PdfPattern;
 
 namespace ColorVision.Engine.Pattern.Dot
 {
     public class PatternDotConfig:ViewModelBase,IConfig
     {
-        public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; NotifyPropertyChanged(); } }
+        public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _MainBrush = Brushes.Black;
 
-        public SolidColorBrush AltBrush { get => _AltBrush; set { _AltBrush = value; NotifyPropertyChanged(); } }
+        public SolidColorBrush AltBrush { get => _AltBrush; set { _AltBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _AltBrush = Brushes.Green;
 
-        public int Spacing { get => _Spacing; set { _Spacing = value; NotifyPropertyChanged(); } }
+        public int Spacing { get => _Spacing; set { _Spacing = value; OnPropertyChanged(); } }
         private int _Spacing = 20;
-        public int Radius { get => _Radius; set { _Radius = value; NotifyPropertyChanged(); } }
+        public int Radius { get => _Radius; set { _Radius = value; OnPropertyChanged(); } }
         private int _Radius = 3;
 
-        public int StartX { get => _StartX; set { _StartX = value; NotifyPropertyChanged(); } }
+        public int StartX { get => _StartX; set { _StartX = value; OnPropertyChanged(); } }
         private int _StartX = -1;
 
-        public int StartY { get => _StartY; set { _StartY = value; NotifyPropertyChanged(); } }
+        public int StartY { get => _StartY; set { _StartY = value; OnPropertyChanged(); } }
         private int _StartY = -1;
 
         /// <summary>
         /// 列数，-1表示自适应
         /// </summary>
-        public int Col { get => _Col; set { _Col = value; NotifyPropertyChanged(); } }
+        public int Col { get => _Col; set { _Col = value; OnPropertyChanged(); } }
         private int _Col = -1;
 
         /// <summary>
         /// 行数，-1表示自适应
         /// </summary>
-        public int Row { get => _Row; set { _Row = value; NotifyPropertyChanged(); } }
+        public int Row { get => _Row; set { _Row = value; OnPropertyChanged(); } }
         private int _Row = -1;
 
         /// <summary>
         /// 是否使用矩形（为 false 时使用圆形）
         /// </summary>
-        public bool UseRectangle { get => _UseRectangle; set { _UseRectangle = value; NotifyPropertyChanged(); } }
+        public bool UseRectangle { get => _UseRectangle; set { _UseRectangle = value; OnPropertyChanged(); } }
         private bool _UseRectangle = false;
 
         /// <summary>
         /// 矩形宽度（像素）
         /// </summary>
-        public int RectWidth { get => _RectWidth; set { _RectWidth = value; NotifyPropertyChanged(); } }
+        public int RectWidth { get => _RectWidth; set { _RectWidth = value; OnPropertyChanged(); } }
         private int _RectWidth = 6;
 
         /// <summary>
         /// 矩形高度（像素）
         /// </summary>
-        public int RectHeight { get => _RectHeight; set { _RectHeight = value; NotifyPropertyChanged(); } }
+        public int RectHeight { get => _RectHeight; set { _RectHeight = value; OnPropertyChanged(); } }
         private int _RectHeight = 6;
 
     }

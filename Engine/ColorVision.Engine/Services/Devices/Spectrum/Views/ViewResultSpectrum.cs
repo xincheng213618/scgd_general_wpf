@@ -20,7 +20,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         public int Id { get; set; }
 
         [DisplayName("CreateTime")]
-        public DateTime? CreateTime { get; set; }
+        public DateTime? CreateTime { get; set; } = DateTime.Now;
         public string? Batch { get; set; }
         public int? BatchID { get; set; }
 

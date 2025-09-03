@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.MySql;
+﻿using ColorVision.Database;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam
 {

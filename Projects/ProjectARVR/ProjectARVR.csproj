@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.4.7.9</VersionPrefix>
+		<VersionPrefix>1.5.4.1</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -22,12 +22,6 @@
 	<ItemGroup>
 		<Reference Include="CVCommCore">
 		  <HintPath>..\..\DLL\CVCommCore.dll</HintPath>
-		</Reference>
-		<Reference Include="FlowEngineLib">
-			<HintPath>..\..\DLL\FlowEngineLib.dll</HintPath>
-		</Reference>
-		<Reference Include="ST.Library.UI">
-			<HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
 		</Reference>
 	</ItemGroup>
 

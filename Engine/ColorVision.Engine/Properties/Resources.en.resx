@@ -333,12 +333,6 @@
   <data name="Name" xml:space="preserve">
     <value>Name</value>
   </data>
-  <data name="MysqlConnectionConfiguration" xml:space="preserve">
-    <value>Mysql Connection Configuration</value>
-  </data>
-  <data name="MysqlConnection" xml:space="preserve">
-    <value>Mysql Connection</value>
-  </data>
   <data name="MyLicense_R" xml:space="preserve">
     <value>My License(R)</value>
   </data>

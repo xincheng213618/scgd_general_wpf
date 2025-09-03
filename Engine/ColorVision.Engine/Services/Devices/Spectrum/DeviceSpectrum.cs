@@ -1,8 +1,6 @@
 ﻿#pragma warning disable CS8601,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Services.PhyCameras.Dao;
@@ -22,6 +20,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.Database;
+
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
@@ -46,7 +46,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public RelayCommand EmissionSP100SettingCommand { get; set; }
 
 
-        public DeviceSpectrum(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTSpectrum(this);
             View = new ViewSpectrum(this);
@@ -241,7 +241,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
              Count = SysResourceDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "type", 103 } }).Where(a => string.IsNullOrWhiteSpace(a.Value)).ToList().Count;
         }
 
-        public int Count { get => _Count; set { _Count = value; NotifyPropertyChanged(); } }
+        public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count;
 
         public override UserControl GetDeviceInfo() => new InfoSpectrum(this);

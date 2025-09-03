@@ -1,9 +1,7 @@
 ﻿#pragma warning disable CS8602
 
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Database;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI.Extension;
 using log4net;
@@ -14,6 +12,7 @@ using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
+using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Jsons.Distortion2
 {
@@ -22,13 +21,13 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleDistortion2));
 
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.Distortion};
-        public override bool CanHandle1(AlgorithmResult result)
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.Distortion};
+        public override bool CanHandle1(ViewResultAlg result)
         {
             if (result.Version != "2.0") return false;
             return base.CanHandle1(result);
         }
-        public override void SideSave(AlgorithmResult result, string selectedPath)
+        public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
 
@@ -69,7 +68,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
             return value;
         }
 
-        public override void Load(AlgorithmView view, AlgorithmResult result)
+        public override void Load(IViewImageA view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -84,7 +83,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
             }
         }
 
-        public override void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             void OpenSource()
             {
@@ -98,18 +97,20 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
 
             foreach (var item in result.ViewResults.ToSpecificViewResults<Distortion2View>())
             {
-                if (item.DistortionReslut.TVDistortion !=null)
+                if (item.DistortionReslut !=null && item.DistortionReslut.TVDistortion !=null)
                 {
                     if (item.DistortionReslut.TVDistortion.FinalPoints != null)
                     {
                         foreach (var points in item.DistortionReslut.TVDistortion.FinalPoints)
                         {
-                            DVCircle Circle = new();
-                            Circle.Attribute.Center = new System.Windows.Point(points.X, points.Y);
-                            Circle.Attribute.Radius = 20 / view.ImageView.Zoombox1.ContentMatrix.M11;
-                            Circle.Attribute.Brush = Brushes.Transparent;
-                            Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / view.ImageView.Zoombox1.ContentMatrix.M11);
-                            Circle.Attribute.Id = -1;
+                            CircleProperties circleProperties = new CircleProperties();
+                            circleProperties.Center = new System.Windows.Point(points.X, points.Y);
+                            circleProperties.Radius = 20 / view.ImageView.Zoombox1.ContentMatrix.M11;
+                            circleProperties.Brush = Brushes.Transparent;
+                            circleProperties.Pen = new Pen(Brushes.Red, 1 / view.ImageView.Zoombox1.ContentMatrix.M11);
+                            circleProperties.Id = -1;
+
+                            DVCircle Circle = new DVCircle(circleProperties);
                             Circle.Render();
                             view.ImageView.AddVisual(Circle);
                         }
@@ -120,13 +121,13 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
             List<string> header = new() { "Point9Distortion", "TVDistortion", "OpticDistortion" };
             List<string> bdHeader = new() { "DistortionReslut.Point9Distortion", "DistortionReslut.TVDistortion", "DistortionReslut.OpticDistortion" };
 
-            if (view.listViewSide.View is GridView gridView)
+            if (view.ListView.View is GridView gridView)
             {
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.listViewSide.ItemsSource = result.ViewResults;
+                view.ListView.ItemsSource = result.ViewResults;
             }
 
             view.SideTextBox.Visibility = System.Windows.Visibility.Visible;

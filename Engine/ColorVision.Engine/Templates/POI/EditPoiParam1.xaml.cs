@@ -3,19 +3,17 @@ using ColorVision.Common.Adorners.ListViewAdorners;
 using ColorVision.Common.Collections;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Database;
 using ColorVision.Engine.Messages;
-using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
-using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;
+using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Tif;
-using ColorVision.FileIO;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
@@ -26,6 +24,7 @@ using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using OpenCvSharp.WpfExtensions;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -88,27 +87,84 @@ namespace ColorVision.Engine.Templates.POI
             }
         }
 
-        public bool DefaultDoKey { get => _DefaultDoKey; set { _DefaultDoKey = value; NotifyPropertyChanged(); } }
+        public bool DefaultDoKey { get => _DefaultDoKey; set { _DefaultDoKey = value; OnPropertyChanged(); } }
         private bool _DefaultDoKey = true;
-        public bool DefaultDoHalo { get => _DefaultDoHalo; set { _DefaultDoHalo = value; NotifyPropertyChanged(); } }
+        public bool DefaultDoHalo { get => _DefaultDoHalo; set { _DefaultDoHalo = value; OnPropertyChanged(); } }
         private bool _DefaultDoHalo;
 
         /// <summary>
         /// 校正文件
         /// </summary>
-        public string LuminFile { get => _LuminFile; set { _LuminFile = value; NotifyPropertyChanged(); } }
+        public string LuminFile { get => _LuminFile; set { _LuminFile = value; OnPropertyChanged(); } }
         private string _LuminFile = string.Empty;
 
-        public int SaveProcessData { get => _saveProcessData; set { _saveProcessData = value; NotifyPropertyChanged(); } }
+        public int SaveProcessData { get => _saveProcessData; set { _saveProcessData = value; OnPropertyChanged(); } }
         private int _saveProcessData;
 
-        public float Exp { get => _Exp; set { _Exp = value; NotifyPropertyChanged(); } }
+        public float Exp { get => _Exp; set { _Exp = value; OnPropertyChanged(); } }
         private float _Exp = 600;
 
-        public string SaveFolderPath { get => _SaveFolderPath; set { _SaveFolderPath = value; NotifyPropertyChanged(); } }
+        public string SaveFolderPath { get => _SaveFolderPath; set { _SaveFolderPath = value; OnPropertyChanged(); } }
         private string _SaveFolderPath =Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
 
     }
+
+    public class KBPoiVMParam : ViewModelBase
+    {
+        /// <summary>
+        /// 结果缩放
+        /// </summary>
+        public double KeyScale { get => _KeyScale; set { _KeyScale = value; OnPropertyChanged(); } }
+        private double _KeyScale = 1;
+        /// <summary>
+        /// 结果缩放
+        /// </summary>
+        public double HaloScale { get => _HaloScale; set { _HaloScale = value; OnPropertyChanged(); } }
+        private double _HaloScale = 1;
+
+        public int HaloThreadV { get => _HaloThreadV; set { _HaloThreadV = value; OnPropertyChanged(); } }
+        private int _HaloThreadV = 500;
+
+        public int KeyThreadV { get => _KeyThreadV; set { _KeyThreadV = value; OnPropertyChanged(); } }
+        private int _KeyThreadV = 3000;
+
+        public int HaloOutMOVE { get => _HaloOutMOVE; set { _HaloOutMOVE = value; OnPropertyChanged(); } }
+        private int _HaloOutMOVE = 20;
+
+        public int KeyOutMOVE { get => _KeyOutMOVE; set { _KeyOutMOVE = value; OnPropertyChanged(); } }
+        private int _KeyOutMOVE = 5;
+
+        public int KeyOffsetX { get => _KeyOffsetX; set { _KeyOffsetX = value; OnPropertyChanged(); } }
+        private int _KeyOffsetX;
+        public int KeyOffsetY { get => _KeyOffsetY; set { _KeyOffsetY = value; OnPropertyChanged(); } }
+        private int _KeyOffsetY;
+
+        public int HaloOffsetX { get => _HaloOffsetX; set { _HaloOffsetX = value; OnPropertyChanged(); } }
+        private int _HaloOffsetX;
+
+        public int HaloSize { get => _HaloSize; set { _HaloSize = value; OnPropertyChanged(); } }
+        private int _HaloSize;
+
+
+        public int HaloOffsetY { get => _HaloOffsetY; set { _HaloOffsetY = value; OnPropertyChanged(); } }
+        private int _HaloOffsetY;
+
+        /// <summary>
+        /// 面积
+        /// </summary>
+        public double Area { get => _Area; set { _Area = value; OnPropertyChanged(); } }
+        private double _Area = 1;
+
+        /// <summary>
+        /// 辉度
+        /// </summary>
+        public double Brightness { get => _Brightness; set { _Brightness = value; OnPropertyChanged(); } }
+        private double _Brightness;
+    }
+
+
+
+
 
 
     public partial class EditPoiParam1 : Window
@@ -148,15 +204,14 @@ namespace ColorVision.Engine.Templates.POI
                 }))));
             }));
         }
-        
 
-        public BulkObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new BulkObservableCollection<IDrawingVisual>();
+
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.DrawingVisualLists;
         public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
         private void Window_Initialized(object sender, EventArgs e)
         {
             DataContext = KBJson;
 
-            ListView1.ItemsSource = DrawingVisualLists;
             if (AlgorithmKBConfig.Instance.KBCanDrag)
             {
                 ListViewDragDropManager<IDrawingVisual> listViewDragDropManager = new Common.Adorners.ListViewAdorners.ListViewDragDropManager<IDrawingVisual>(ListView1);
@@ -177,18 +232,24 @@ namespace ColorVision.Engine.Templates.POI
                 };
             }
            
-            ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()  select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
+            ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(GraphicBorderType)).Cast<GraphicBorderType>()  select new KeyValuePair<GraphicBorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;
 
-            ComboBoxBorderType11.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>() select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
+            ComboBoxBorderType11.ItemsSource = from e1 in Enum.GetValues(typeof(GraphicBorderType)).Cast<GraphicBorderType>() select new KeyValuePair<GraphicBorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType11.SelectedIndex = 0;
 
-            ComboBoxBorderType2.ItemsSource = from e1 in Enum.GetValues(typeof(DrawingPOIPosition)).Cast<DrawingPOIPosition>() select new KeyValuePair<DrawingPOIPosition, string>(e1, e1.ToDescription());
+            ComboBoxBorderType2.ItemsSource = from e1 in Enum.GetValues(typeof(DrawingGraphicPosition)).Cast<DrawingGraphicPosition>() select new KeyValuePair<DrawingGraphicPosition, string>(e1, e1.ToDescription());
             ComboBoxBorderType2.SelectedIndex = 0;
 
             ImageViewModel = new ImageViewModel(ImageContentGrid, Zoombox1, ImageShow);
-
+            ImageViewModel.CircleManager.IsEnabled = false;
+            ImageViewModel.RectangleManager.IsEnabled = false;
             ImageViewModel.ToolBarScaleRuler.IsShow = false;
+            ImageViewModel.SelectEditorVisual.PropertyGrid = PropertyGrid2;
+
+            ListView1.ItemsSource = DrawingVisualLists;
+
+
             ToolBar1.DataContext = ImageViewModel;
             ToolBarRight.DataContext = ImageViewModel;
             ImageViewModel.EditModeChanged += (s, e) =>
@@ -218,7 +279,7 @@ namespace ColorVision.Engine.Templates.POI
                         {
                             if (visual.BaseAttribute is RectangleTextProperties rectangle)
                             {
-                                PoiPointParam poiPointParam = new PoiPointParam();
+                                KBPoiVMParam poiPointParam = new KBPoiVMParam();
                                 visual.BaseAttribute.Param = poiPointParam;
                                 poiPointParam.PropertyChanged += (s, e) =>
                                 {
@@ -300,21 +361,13 @@ namespace ColorVision.Engine.Templates.POI
 
             if (KBJson.Height != 0 && KBJson.Width != 0)
             {
-                WaitControl.Visibility = Visibility.Visible;
-                WaitControlProgressBar.Visibility = Visibility.Visible;
-                WaitControlProgressBar.Value = 0;
-
                 if (File.Exists(PoiConfig.BackgroundFilePath))
                     OpenImage(PoiConfig.BackgroundFilePath);
                 else
                     CreateImage(KBJson.Width, KBJson.Height, Colors.White, false);
 
-                WaitControlProgressBar.Value = 20;
                 RenderPoiConfig();
                 PoiParamToDrawingVisual(KBJson);
-                WaitControl.Visibility = Visibility.Collapsed;
-                WaitControlProgressBar.Visibility = Visibility.Collapsed;
-                log.Debug("Render Poi end");
             }
             else
             {
@@ -324,23 +377,6 @@ namespace ColorVision.Engine.Templates.POI
             }
             PreviewKeyDown += (s, e) =>
             {
-                if (e.Key == Key.Escape)
-                {
-                    if (DrawingPolygonCache != null)
-                    {
-                        ImageShow.RemoveVisual(DrawingPolygonCache);
-                        DrawingPolygonCache.Render();
-                        DrawingPolygonCache = null;
-                    }
-                }
-                if (e.Key == Key.Back)
-                {
-                    if (DrawingPolygonCache != null && DrawingPolygonCache.Attribute.Points.Count > 0)
-                    {
-                        DrawingPolygonCache.Attribute.Points.Remove(DrawingPolygonCache.Attribute.Points.Last());
-                        DrawingPolygonCache.Render();
-                    }
-                }
                 if (e.KeyboardDevice.Modifiers == ModifierKeys.Control && e.Key ==Key.S)
                 {
                     SavePoiParam();
@@ -376,9 +412,7 @@ namespace ColorVision.Engine.Templates.POI
                         if (Name == Properties.Resources.SerialNumber1)
                         {
                             item.IsSortD = !item.IsSortD;
-                            var sortedItems = DrawingVisualLists.ToList();
-                            sortedItems.Sort((x, y) => item.IsSortD ? y.BaseAttribute.Id.CompareTo(x.BaseAttribute.Id) : x.BaseAttribute.Id.CompareTo(y.BaseAttribute.Id));
-                            DrawingVisualLists.UpdateCollection(sortedItems);
+                            DrawingVisualLists.Sort((x, y) => item.IsSortD ? y.BaseAttribute.Id.CompareTo(x.BaseAttribute.Id) : x.BaseAttribute.Id.CompareTo(y.BaseAttribute.Id));
                         }
                     }
                 }
@@ -562,11 +596,6 @@ namespace ColorVision.Engine.Templates.POI
                         DrawingVisualLists.Clear();
                         PropertyGrid2.SelectedObject = null;
                     }
-                    if (Init)
-                    {
-                        WaitControl.Visibility = Visibility.Collapsed;
-                        WaitControlProgressBar.Visibility = Visibility.Collapsed;
-                    }
                     Init = true;
                     ImageShow.RaiseImageInitialized();
 
@@ -597,12 +626,6 @@ namespace ColorVision.Engine.Templates.POI
                 foreach (var item in poiParam.KBKeyRects)
                 {
                     No++;
-
-                    if (No % WaitNum == 0)
-                    {
-                        WaitControlProgressBar.Value = 20 + No * 79 / poiParam.KBKeyRects.Count;
-                        await Task.Delay(10);
-                    }
                     DVRectangleText Rectangle = new();
                     Rectangle.IsShowText = PoiConfig.IsShowText;
                     Rectangle.Attribute.Rect = new System.Windows.Rect(item.X , item.Y, item.Width, item.Height);
@@ -612,7 +635,7 @@ namespace ColorVision.Engine.Templates.POI
                     Rectangle.Attribute.Text = item.Name;
                     Rectangle.Attribute.Name = No.ToString();
 
-                    PoiPointParam poiPointParam = new PoiPointParam()
+                    KBPoiVMParam poiPointParam = new KBPoiVMParam()
                     {
                         HaloScale = item.KBHalo.HaloScale,
                         HaloOffsetX = item.KBHalo.OffsetX,
@@ -644,7 +667,6 @@ namespace ColorVision.Engine.Templates.POI
                     ImageShow.AddVisual(Rectangle);
                     DBIndex.Add(Rectangle, No);
                 }
-                WaitControlProgressBar.Value = 99;
                 ImageShow.ClearActionCommand();
             }
             catch
@@ -662,7 +684,7 @@ namespace ColorVision.Engine.Templates.POI
 
             switch (PoiConfig.PointType)
             {
-                case RiPointTypes.Circle:
+                case GraphicTypes.Circle:
                     if (PoiConfig.AreaCircleNum < 1)
                     {
                         MessageBox.Show("绘制的个数不能小于1", "ColorVision");
@@ -671,9 +693,6 @@ namespace ColorVision.Engine.Templates.POI
 
                     if (PoiConfig.AreaCircleNum > 1000)
                     {
-                        WaitControl.Visibility = Visibility.Visible;
-                        WaitControlProgressBar.Visibility = Visibility.Visible;
-                        WaitControlProgressBar.Value = 0;
                         PoiConfig.IsLayoutUpdated = false;
                     }
 
@@ -681,32 +700,28 @@ namespace ColorVision.Engine.Templates.POI
                     for (int i = 0; i < PoiConfig.AreaCircleNum; i++)
                     {
                         Num++;
-                        if (Num % 100 == 0 && WaitControl.Visibility == Visibility.Visible)
-                        {
-                            WaitControlProgressBar.Value = Num * 1000 / PoiConfig.AreaCircleNum;
-                            await Task.Delay(1);
-                        }
+
 
                         double x1 = PoiConfig.CenterX + PoiConfig.AreaCircleRadius * Math.Cos(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
                         double y1 = PoiConfig.CenterY + PoiConfig.AreaCircleRadius * Math.Sin(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
 
                         switch (PoiConfig.DefaultPointType)
                         {
-                            case RiPointTypes.Circle:
+                            case GraphicTypes.Circle:
 
-                                if (ComboBoxBorderType2.SelectedValue is DrawingPOIPosition pOIPosition)
+                                if (ComboBoxBorderType2.SelectedValue is DrawingGraphicPosition pOIPosition)
                                 {
                                     switch (pOIPosition)
                                     {
-                                        case DrawingPOIPosition.LineOn:
+                                        case DrawingGraphicPosition.LineOn:
                                             x1 = PoiConfig.CenterX + PoiConfig.AreaCircleRadius * Math.Cos(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
                                             y1 = PoiConfig.CenterY + PoiConfig.AreaCircleRadius * Math.Sin(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
                                             break;
-                                        case DrawingPOIPosition.Internal:
+                                        case DrawingGraphicPosition.Internal:
                                             x1 = PoiConfig.CenterX + (PoiConfig.AreaCircleRadius - PoiConfig.DefaultCircleRadius) * Math.Cos(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
                                             y1 = PoiConfig.CenterY + (PoiConfig.AreaCircleRadius - PoiConfig.DefaultCircleRadius) * Math.Sin(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
                                             break;
-                                        case DrawingPOIPosition.External:
+                                        case DrawingGraphicPosition.External:
                                             x1 = PoiConfig.CenterX + (PoiConfig.AreaCircleRadius + PoiConfig.DefaultCircleRadius) * Math.Cos(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
                                             y1 = PoiConfig.CenterY + (PoiConfig.AreaCircleRadius + PoiConfig.DefaultCircleRadius) * Math.Sin(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
                                             break;
@@ -727,21 +742,21 @@ namespace ColorVision.Engine.Templates.POI
                                 Circle.Render();
                                 ImageShow.AddVisual(Circle);
                                 break;
-                            case RiPointTypes.Rect:
+                            case GraphicTypes.Rect:
 
-                                if (ComboBoxBorderType2.SelectedValue is DrawingPOIPosition pOIPosition2)
+                                if (ComboBoxBorderType2.SelectedValue is DrawingGraphicPosition pOIPosition2)
                                 {
                                     switch (pOIPosition2)
                                     {
-                                        case DrawingPOIPosition.LineOn:
+                                        case DrawingGraphicPosition.LineOn:
                                             x1 = PoiConfig.CenterX + PoiConfig.AreaCircleRadius * Math.Cos(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
                                             y1 = PoiConfig.CenterY + PoiConfig.AreaCircleRadius * Math.Sin(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
                                             break;
-                                        case DrawingPOIPosition.Internal:
+                                        case DrawingGraphicPosition.Internal:
                                             x1 = PoiConfig.CenterX + (PoiConfig.AreaCircleRadius - PoiConfig.DefaultRectWidth / 2) * Math.Cos(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
                                             y1 = PoiConfig.CenterY + (PoiConfig.AreaCircleRadius - PoiConfig.DefaultRectHeight / 2) * Math.Sin(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
                                             break;
-                                        case DrawingPOIPosition.External:
+                                        case DrawingGraphicPosition.External:
                                             x1 = PoiConfig.CenterX + (PoiConfig.AreaCircleRadius + PoiConfig.DefaultRectWidth / 2) * Math.Cos(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
                                             y1 = PoiConfig.CenterY + (PoiConfig.AreaCircleRadius + PoiConfig.DefaultRectHeight / 2) * Math.Sin(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
                                             break;
@@ -760,14 +775,14 @@ namespace ColorVision.Engine.Templates.POI
                                 Rectangle.Render();
                                 ImageShow.AddVisual(Rectangle);
                                 break;
-                            case RiPointTypes.Mask:
+                            case GraphicTypes.Quadrilateral:
                                 break;
                             default:
                                 break;
                         }
                     }
                     break;
-                case RiPointTypes.Rect:
+                case GraphicTypes.Rect:
 
                     int cols = PoiConfig.AreaRectCol;
                     int rows = PoiConfig.AreaRectRow;
@@ -786,22 +801,22 @@ namespace ColorVision.Engine.Templates.POI
                     double startL = PoiConfig.CenterX - Width / 2;
                     double startR = bitmapImage.PixelWidth - PoiConfig.CenterX - Width / 2;
 
-                    if (ComboBoxBorderType2.SelectedValue is DrawingPOIPosition pOIPosition1)
+                    if (ComboBoxBorderType2.SelectedValue is DrawingGraphicPosition pOIPosition1)
                     {
                         switch (PoiConfig.DefaultPointType)
                         {
-                            case RiPointTypes.Circle:
+                            case GraphicTypes.Circle:
                                 switch (pOIPosition1)
                                 {
-                                    case DrawingPOIPosition.LineOn:
+                                    case DrawingGraphicPosition.LineOn:
                                         break;
-                                    case DrawingPOIPosition.Internal:
+                                    case DrawingGraphicPosition.Internal:
                                         startU += PoiConfig.DefaultCircleRadius;
                                         startD += PoiConfig.DefaultCircleRadius;
                                         startL += PoiConfig.DefaultCircleRadius;
                                         startR += PoiConfig.DefaultCircleRadius;
                                         break;
-                                    case DrawingPOIPosition.External:
+                                    case DrawingGraphicPosition.External:
                                         startU -= PoiConfig.DefaultCircleRadius;
                                         startD -= PoiConfig.DefaultCircleRadius;
                                         startL -= PoiConfig.DefaultCircleRadius;
@@ -811,18 +826,18 @@ namespace ColorVision.Engine.Templates.POI
                                         break;
                                 }
                                 break;
-                            case RiPointTypes.Rect:
+                            case GraphicTypes.Rect:
                                 switch (pOIPosition1)
                                 {
-                                    case DrawingPOIPosition.LineOn:
+                                    case DrawingGraphicPosition.LineOn:
                                         break;
-                                    case DrawingPOIPosition.Internal:
+                                    case DrawingGraphicPosition.Internal:
                                         startU += PoiConfig.DefaultRectWidth / 2;
                                         startD += PoiConfig.DefaultRectWidth / 2;
                                         startL += PoiConfig.DefaultRectHeight / 2;
                                         startR += PoiConfig.DefaultRectHeight / 2;
                                         break;
-                                    case DrawingPOIPosition.External:
+                                    case DrawingGraphicPosition.External:
                                         startU -= PoiConfig.DefaultRectWidth / 2;
                                         startD -= PoiConfig.DefaultRectWidth / 2;
                                         startL -= PoiConfig.DefaultRectHeight / 2;
@@ -832,7 +847,7 @@ namespace ColorVision.Engine.Templates.POI
                                         break;
                                 }
                                 break;
-                            case RiPointTypes.Mask:
+                            case GraphicTypes.Quadrilateral:
                                 break;
                             default:
                                 break;
@@ -847,10 +862,6 @@ namespace ColorVision.Engine.Templates.POI
                     int all = rows * cols;
                     if (all > 1000)
                     {
-                        DrawingVisualLists.SuspendUpdate();
-                        WaitControl.Visibility = Visibility.Visible;
-                        WaitControlProgressBar.Visibility = Visibility.Visible;
-                        WaitControlProgressBar.Value = 0;
                         PoiConfig.IsLayoutUpdated = false;
                     }
 
@@ -860,18 +871,13 @@ namespace ColorVision.Engine.Templates.POI
                         for (int j = 0; j < cols; j++)
                         {
                             Num++;
-                            if (Num % 10000 == 0 && WaitControl.Visibility == Visibility.Visible)
-                            {
-                                WaitControlProgressBar.Value = Num * 10000 / all;
-                                await Task.Delay(1);
-                            }
 
                             double x1 = startL + StepCol * j;
                             double y1 = startU + StepRow * i;
 
                             switch (PoiConfig.DefaultPointType)
                             {
-                                case RiPointTypes.Circle:
+                                case GraphicTypes.Circle:
                                     DVCircleText Circle = new();
                                     Circle.IsShowText = PoiConfig.IsShowText;
                                     Circle.Attribute.Center = new Point(x1, y1);
@@ -884,7 +890,7 @@ namespace ColorVision.Engine.Templates.POI
                                     Circle.Render();
                                     ImageShow.AddVisual(Circle);
                                     break;
-                                case RiPointTypes.Rect:
+                                case GraphicTypes.Rect:
                                     DVRectangleText Rectangle = new();
                                     Rectangle.IsShowText = PoiConfig.IsShowText;
                                     Rectangle.Attribute.Rect = new System.Windows.Rect(x1 - (double)PoiConfig.DefaultRectWidth / 2, y1 - PoiConfig.DefaultRectHeight / 2, PoiConfig.DefaultRectWidth, PoiConfig.DefaultRectHeight);
@@ -896,20 +902,15 @@ namespace ColorVision.Engine.Templates.POI
                                     Rectangle.Render();
                                     ImageShow.AddVisual(Rectangle);
                                     break;
-                                case RiPointTypes.Mask:
+                                case GraphicTypes.Quadrilateral:
                                     break;
                                 default:
                                     break;
                             }
                         }
                     }
-                    if (all <= 1000000)
-                    {
-                        DrawingVisualLists.ResumeUpdate();
-                    }
-
                     break;
-                case RiPointTypes.Mask:
+                case GraphicTypes.Quadrilateral:
                     List<Point> pts_src =
                     [
                         PoiConfig.Polygon1,
@@ -946,7 +947,7 @@ namespace ColorVision.Engine.Templates.POI
 
                             switch (PoiConfig.DefaultPointType)
                             {
-                                case RiPointTypes.Circle:
+                                case GraphicTypes.Circle:
                                     DVCircleText Circle = new();
                                     Circle.Attribute.Center = new Point(point.X, point.Y);
                                     Circle.Attribute.Radius = PoiConfig.DefaultCircleRadius;
@@ -958,7 +959,7 @@ namespace ColorVision.Engine.Templates.POI
                                     Circle.Render();
                                     ImageShow.AddVisual(Circle);
                                     break;
-                                case RiPointTypes.Rect:
+                                case GraphicTypes.Rect:
                                     DVRectangleText Rectangle = new();
                                     Rectangle.Attribute.Rect = new System.Windows.Rect(point.X - PoiConfig.DefaultRectWidth / 2, point.Y - PoiConfig.DefaultRectHeight / 2, PoiConfig.DefaultRectWidth, PoiConfig.DefaultRectHeight);
                                     Rectangle.Attribute.Brush = Brushes.Transparent;
@@ -969,91 +970,7 @@ namespace ColorVision.Engine.Templates.POI
                                     Rectangle.Render();
                                     ImageShow.AddVisual(Rectangle);
                                     break;
-                                case RiPointTypes.Mask:
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
-                    }
-
-                    break;
-
-                case RiPointTypes.Polygon:
-
-                    int No = 0;
-                    for (int i = 0; i < PoiConfig.Polygons.Count - 1; i++)
-                    {
-                        double dx = (PoiConfig.Polygons[i + 1].X - PoiConfig.Polygons[i].X) / (PoiConfig.Polygons[i].SplitNumber + 1);
-                        double dy = (PoiConfig.Polygons[i + 1].Y - PoiConfig.Polygons[i].Y) / (PoiConfig.Polygons[i].SplitNumber + 1);
-
-                        for (int j = 1; j < PoiConfig.Polygons[i].SplitNumber + 1; j++)
-                        {
-                            No++;
-                            switch (PoiConfig.DefaultPointType)
-                            {
-                                case RiPointTypes.Circle:
-
-                                    DVCircleText Circle = new();
-                                    Circle.Attribute.Center = new Point(PoiConfig.Polygons[i].X + dx * j, PoiConfig.Polygons[i].Y + dy * j);
-                                    Circle.Attribute.Radius = PoiConfig.DefaultCircleRadius;
-                                    Circle.Attribute.Brush = Brushes.Transparent;
-                                    Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultCircleRadius / 30);
-                                    Circle.Attribute.Id = start + No;
-                                    Circle.Attribute.Name = Circle.Attribute.Id.ToString();
-                                    Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Id);
-                                    Circle.Render();
-                                    ImageShow.AddVisual(Circle);
-                                    break;
-                                case RiPointTypes.Rect:
-                                    DVRectangleText Rectangle = new();
-                                    Rectangle.Attribute.Rect = new System.Windows.Rect(PoiConfig.Polygons[i].X + dx * j - PoiConfig.DefaultRectWidth / 2, PoiConfig.Polygons[i].Y + dy * j - PoiConfig.DefaultRectHeight / 2, PoiConfig.DefaultRectWidth, PoiConfig.DefaultRectHeight);
-                                    Rectangle.Attribute.Brush = Brushes.Transparent;
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultRectWidth / 30);
-                                    Rectangle.Attribute.Id = start + No;
-                                    Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
-                                    Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
-                                    Rectangle.Render();
-                                    ImageShow.AddVisual(Rectangle);
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
-
-
-                    }
-
-                    for (int i = 0; i < PoiConfig.Polygons.Count; i++)
-                    {
-                        if (PoiConfig.AreaPolygonUsNode)
-                        {
-                            switch (PoiConfig.DefaultPointType)
-                            {
-                                case RiPointTypes.Circle:
-
-                                    DVCircleText Circle = new();
-                                    Circle.Attribute.Center = new Point(PoiConfig.Polygons[i].X, PoiConfig.Polygons[i].Y);
-                                    Circle.Attribute.Radius = PoiConfig.DefaultCircleRadius;
-                                    Circle.Attribute.Brush = Brushes.Transparent;
-                                    Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultCircleRadius / 30);
-                                    Circle.Attribute.Id = start + i + 1;
-                                    Circle.Attribute.Name = Circle.Attribute.Id.ToString();
-                                    Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Id);
-
-                                    Circle.Render();
-                                    ImageShow.AddVisual(Circle);
-                                    break;
-                                case RiPointTypes.Rect:
-                                    DVRectangleText Rectangle = new();
-                                    Rectangle.Attribute.Rect = new System.Windows.Rect(PoiConfig.Polygons[i].X - PoiConfig.DefaultRectWidth / 2, PoiConfig.Polygons[i].Y - PoiConfig.DefaultRectHeight / 2, PoiConfig.DefaultRectWidth, PoiConfig.DefaultRectHeight);
-                                    Rectangle.Attribute.Brush = Brushes.Transparent;
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultRectWidth / 30);
-                                    Rectangle.Attribute.Id = start + i + 1;
-                                    Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
-                                    Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
-                                    Rectangle.Render();
-                                    ImageShow.AddVisual(Rectangle);
+                                case GraphicTypes.Quadrilateral:
                                     break;
                                 default:
                                     break;
@@ -1069,13 +986,6 @@ namespace ColorVision.Engine.Templates.POI
             {
                 UpdateVisualLayout(true);
                 ScrollViewer1.ScrollToEnd();
-            }
-            //这里我不推荐添加
-            if (WaitControl.Visibility == Visibility.Visible)
-            {
-                WaitControl.Visibility = Visibility.Collapsed;
-                WaitControlProgressBar.Visibility = Visibility.Collapsed;
-                WaitControlProgressBar.Value = 0;
             }
         }
 
@@ -1167,7 +1077,7 @@ namespace ColorVision.Engine.Templates.POI
             {
                 switch (PoiConfig.PointType)
                 {
-                    case RiPointTypes.Circle:
+                    case GraphicTypes.Circle:
                         DVDatumCircle Circle = new();
                         Circle.Attribute.Center = PoiConfig.Center;
                         Circle.Attribute.Radius = PoiConfig.AreaCircleRadius;
@@ -1177,7 +1087,7 @@ namespace ColorVision.Engine.Templates.POI
                         drawingVisualDatum = Circle;
                         ImageShow.AddVisual(drawingVisualDatum);
                         break;
-                    case RiPointTypes.Rect:
+                    case GraphicTypes.Rect:
                         double Width = PoiConfig.AreaRectWidth;
                         double Height = PoiConfig.AreaRectHeight;
                         DVDatumRectangle Rectangle = new();
@@ -1188,7 +1098,7 @@ namespace ColorVision.Engine.Templates.POI
                         drawingVisualDatum = Rectangle;
                         ImageShow.AddVisual(drawingVisualDatum);
                         break;
-                    case RiPointTypes.Mask:
+                    case GraphicTypes.Quadrilateral:
 
                         List<Point> pts_src = new();
                         pts_src.Add(PoiConfig.Polygon1);
@@ -1208,7 +1118,7 @@ namespace ColorVision.Engine.Templates.POI
                         drawingVisualDatum = Polygon;
                         ImageShow.AddVisual(drawingVisualDatum);
                         break;
-                    case RiPointTypes.Polygon:
+                    case GraphicTypes.Polygon:
                         DVDatumPolygon Polygon1 = new() { IsComple = false };
                         Polygon1.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                         Polygon1.Attribute.Brush = Brushes.Transparent;
@@ -1234,7 +1144,7 @@ namespace ColorVision.Engine.Templates.POI
             Rect rect = new Rect(0, 0, KBJson.Width, KBJson.Height);
             foreach (var item in DrawingVisualLists)
             {
-                int index = DBIndex.TryGetValue(item, out int value) ? value : -1;
+                int index = DBIndex.TryGetValue(item, out int value) ? value : 0;
 
                 BaseProperties drawAttributeBase = item.BaseAttribute;
                if (drawAttributeBase is RectangleTextProperties rectangle)
@@ -1267,16 +1177,16 @@ namespace ColorVision.Engine.Templates.POI
                     {
                         Id = index,
                         Name = rectangle.Text,
-                        PointType = RiPointTypes.Rect,
+                        PointType = GraphicTypes.Rect,
                         PixX = rectangle.Rect.X + rectangle.Rect.Width / 2,
                         PixY = rectangle.Rect.Y + rectangle.Rect.Height / 2,
                         PixWidth = rectangle.Rect.Width,
                         PixHeight = rectangle.Rect.Height,
                     };
                     KBKeyRect kBKeyRect = new KBKeyRect();
-                    if (rectangle.Param is not PoiPointParam param)
+                    if (rectangle.Param is not KBPoiVMParam param)
                     {
-                        param = new PoiPointParam();
+                        param = new KBPoiVMParam();
                     }
                     kBKeyRect.DoHalo = PoiConfig.DefaultDoHalo;
                     kBKeyRect.DoKey = PoiConfig.DefaultDoKey ;
@@ -1311,7 +1221,7 @@ namespace ColorVision.Engine.Templates.POI
                 }
             }
             TemplateJsonKBParam.JsonValue = JsonConvert.SerializeObject(KBJson);
-            TemplateJsonDao.Instance.Save(TemplateJsonKBParam.TemplateJsonModel);
+            MySqlControl.GetInstance().DB.Updateable(TemplateJsonKBParam.TemplateJsonModel).ExecuteCommand();
 
             MessageBox.Show(WindowHelpers.GetActiveWindow(), "保存成功", "ColorVision");
         }
@@ -1322,37 +1232,37 @@ namespace ColorVision.Engine.Templates.POI
         }
         private void Service_Click(object sender, RoutedEventArgs e)
         {
-            if (MeasureImgResultDao.Instance.GetLatestResult() is MeasureImgResultModel measureImgResultModel)
+            var db = MySqlControl.GetInstance().DB;
+
+            var recentItems = db.Queryable<MeasureResultImgModel>()
+                   .OrderBy(it => it.CreateDate, OrderByType.Desc)
+                   .Take(6)
+                   .ToList();
+
+            if (recentItems.Count == 0)
             {
-                try
+                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到刚拍摄的图像");
+                return;
+            }
+            try
+            {
+                foreach (var item in recentItems)
                 {
-                    if (measureImgResultModel.FileUrl != null)
+                    if (File.Exists(item.FileUrl))
                     {
-                        foreach (var item in MeasureImgResultDao.Instance.GetByCreateDate(6))
-                        {
-                            if (!item.FileUrl.Contains("result"))
-                            {
-                                OpenImage(new NetFileUtil().OpenLocalCVFile(item.FileUrl));
-                                PoiConfig.BackgroundFilePath = item.FileUrl;
-                                return;
-                            }
-                        }
-                        MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
-                    }
-                    else
-                    {
-                        MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址" );
+                        OpenImage(new NetFileUtil().OpenLocalCVFile(item.FileUrl));
+                        PoiConfig.BackgroundFilePath = item.FileUrl;
+                        return;
                     }
                 }
-                catch(Exception ex)
-                {
-                    MessageBox.Show("打开最近服务拍摄的图像失败",ex.Message);
-                }
+                MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show(this, "找不到刚拍摄的图像");
+                MessageBox.Show("打开最近服务拍摄的图像失败", ex.Message);
             }
+
+
         }
 
 
@@ -1386,7 +1296,7 @@ namespace ColorVision.Engine.Templates.POI
 
 
 
-        private ObservableCollection<MeasureImgResultModel> MeasureImgResultModels = new();
+        private ObservableCollection<MeasureResultImgModel> MeasureImgResultModels = new();
         private void Button_RefreshImg_Click(object sender, RoutedEventArgs e)
         {
             MeasureImgResultModels.Clear();
@@ -1407,7 +1317,7 @@ namespace ColorVision.Engine.Templates.POI
             {
                 try
                 {
-                    if (MeasureImgResultModels[ComboBoxImg.SelectedIndex] is MeasureImgResultModel model && model.FileUrl != null)
+                    if (MeasureImgResultModels[ComboBoxImg.SelectedIndex] is MeasureResultImgModel model && model.FileUrl != null)
                     {
                         OpenImage(new NetFileUtil().OpenLocalCVFile(model.FileUrl, CVType.Raw));
                         PoiConfig.BackgroundFilePath = model.FileUrl;
@@ -1439,7 +1349,7 @@ namespace ColorVision.Engine.Templates.POI
                 double startL = ParseDoubleOrDefault(TextBoxLeft1.Text);
                 double startR = ParseDoubleOrDefault(TextBoxRight1.Text);
 
-                if (ComboBoxBorderType1.SelectedItem is KeyValuePair<BorderType, string> KeyValue && KeyValue.Key == BorderType.Relative)
+                if (ComboBoxBorderType1.SelectedItem is KeyValuePair<GraphicBorderType, string> KeyValue && KeyValue.Key == GraphicBorderType.Relative)
                 {
                     startU = bitmapImage.PixelHeight * startU / 100;
                     startD = bitmapImage.PixelHeight * startD / 100;
@@ -1472,7 +1382,7 @@ namespace ColorVision.Engine.Templates.POI
                 double startL = ParseDoubleOrDefault(TextBoxLeft2.Text);
                 double startR = ParseDoubleOrDefault(TextBoxRight2.Text);
 
-                if (ComboBoxBorderType11.SelectedItem is KeyValuePair<BorderType, string> KeyValue && KeyValue.Key == BorderType.Relative)
+                if (ComboBoxBorderType11.SelectedItem is KeyValuePair<GraphicBorderType, string> KeyValue && KeyValue.Key == GraphicBorderType.Relative)
                 {
                     startU = PoiConfig.AreaRectHeight * startU / 100;
                     startD = PoiConfig.AreaRectHeight * startD / 100;
@@ -1660,7 +1570,7 @@ namespace ColorVision.Engine.Templates.POI
         private void CalPoiPointParamB(RectangleTextProperties rectangle)
         {
             if (!IsInitialKB) return;
-            if (rectangle.Param is PoiPointParam poiPointParam)
+            if (rectangle.Param is KBPoiVMParam poiPointParam)
             {
                 IRECT rect = new IRECT((int)rectangle.Rect.X, (int)rectangle.Rect.Y, (int)rectangle.Rect.Width, (int)rectangle.Rect.Height);
                 if (PoiConfig.DefaultDoKey)
@@ -1875,7 +1785,7 @@ namespace ColorVision.Engine.Templates.POI
                 foreach (var drawingVisual in DrawingVisualLists)
                 {
                     BaseProperties drawAttributeBase = drawingVisual.BaseAttribute;
-                    if (drawAttributeBase is RectangleTextProperties rectangle && rectangle.Param is PoiPointParam poiPointParam)
+                    if (drawAttributeBase is RectangleTextProperties rectangle && rectangle.Param is KBPoiVMParam poiPointParam)
                     { 
                         try
                         {
@@ -2005,17 +1915,17 @@ namespace ColorVision.Engine.Templates.POI
                 msgRecord.MsgSucessed += (arg) =>
                 {
                     int masterId = Convert.ToInt32(arg.Data.MasterId);
-                    List<MeasureImgResultModel> resultMaster = null;
+                    List<MeasureResultImgModel> resultMaster = null;
                     if (masterId > 0)
                     {
-                        resultMaster = new List<MeasureImgResultModel>();
-                        MeasureImgResultModel model = MeasureImgResultDao.Instance.GetById(masterId);
+                        resultMaster = new List<MeasureResultImgModel>();
+                        MeasureResultImgModel model = MeasureImgResultDao.Instance.GetById(masterId);
                         if (model != null)
                             resultMaster.Add(model);
                     }
                     if (resultMaster != null)
                     {
-                        foreach (MeasureImgResultModel result in resultMaster)
+                        foreach (MeasureResultImgModel result in resultMaster)
                         {
                             try
                             {

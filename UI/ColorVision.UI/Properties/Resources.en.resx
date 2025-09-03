@@ -291,4 +291,10 @@
   <data name="General" xml:space="preserve">
     <value>Universal</value>
   </data>
+  <data name="Column" xml:space="preserve">
+    <value>Column</value>
+  </data>
+  <data name="Line" xml:space="preserve">
+    <value>Line</value>
+  </data>
 </root>

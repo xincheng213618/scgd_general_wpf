@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Abstractions;
 using System.Windows;
 
 namespace ColorVision.Engine.Templates.LedCheck

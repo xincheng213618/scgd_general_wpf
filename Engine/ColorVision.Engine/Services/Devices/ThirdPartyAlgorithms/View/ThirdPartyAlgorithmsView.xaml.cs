@@ -1,16 +1,12 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629,CA1822
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Abstractions;
+using ColorVision.Database;
 using ColorVision.Engine.Media;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
-using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using CVCommCore.CVAlgorithm;
@@ -88,14 +84,14 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
             }
         }
 
-        public ObservableCollection<AlgorithmResult> ViewResults { get; set; } = new ObservableCollection<AlgorithmResult>();
+        public ObservableCollection<ViewResultAlg> ViewResults { get; set; } = new ObservableCollection<ViewResultAlg>();
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.SelectedIndex < 0) return;
 
   
-            if (listView1.SelectedIndex < 0 ||listView1.Items[listView1.SelectedIndex] is not AlgorithmResult result)
+            if (listView1.SelectedIndex < 0 ||listView1.Items[listView1.SelectedIndex] is not ViewResultAlg result)
             {
                 MessageBox.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
                 return;
@@ -110,7 +106,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
 
                 switch (result.ResultType)
                 {   
-                    case AlgorithmResultType.POI_XYZ:
+                    case ViewResultAlgType.POI_XYZ:
                         var PoiResultCIExyuvDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>();
                         PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, dialog.FileName);
                         ImageUtils.SaveImageSourceToFile(ImageView.ImageShow.Source, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
@@ -152,16 +148,16 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
         {
             if (result != null)
             {
-                AlgorithmResult algorithmResult = new AlgorithmResult(result);
+                ViewResultAlg ViewResultAlg = new ViewResultAlg(result);
 
-                var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(algorithmResult));
-                //ResultHandle?.Load(this, algorithmResult);
+                var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(ViewResultAlg));
+                //ResultHandle?.Load(this, ViewResultAlg);
 
-                ViewResults.AddUnique(algorithmResult, Config.InsertAtBeginning);
+                ViewResults.AddUnique(ViewResultAlg, Config.InsertAtBeginning);
                 if (Config.AutoRefreshView)
                     RefreshResultListView();
                 if (Config.AutoSaveSideData)
-                    SideSave(algorithmResult, Config.SaveSideDataDirPath);
+                    SideSave(ViewResultAlg, Config.SaveSideDataDirPath);
             }
         }
 
@@ -181,7 +177,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
                 return;
             }
 
-            if (ViewResults[listView1.SelectedIndex] is AlgorithmResult result)
+            if (ViewResults[listView1.SelectedIndex] is ViewResultAlg result)
             {
                 ImageView.ImageShow.Clear();
                 if (File.Exists(result.FilePath))
@@ -310,12 +306,13 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
                         ImageView.AddVisual(Rectangle);
                         break;
                     case POIPointTypes.SolidPoint:
-                        DVCircle Circle1 = new();
-                        Circle1.Attribute.Center = new Point(item.PixelX, item.PixelY);
-                        Circle1.Attribute.Radius = 10;
-                        Circle1.Attribute.Brush = Brushes.Red;
-                        Circle1.Attribute.Pen = new Pen(Brushes.Red, 1);
-                        Circle1.Attribute.Id = item.Id ?? -1;
+                        CircleProperties circleProperties = new CircleProperties();
+                        circleProperties.Center = new Point(item.PixelX, item.PixelY);
+                        circleProperties.Radius = 10;
+                        circleProperties.Brush = Brushes.Red;
+                        circleProperties.Pen = new Pen(Brushes.Red, 1);
+                        circleProperties.Id = item.Id ?? -1;
+                        DVCircle Circle1 = new DVCircle(circleProperties);
                         Circle1.Render();
                         ImageView.AddVisual(Circle1);
                         break;
@@ -368,7 +365,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
             }
         }
 
-        public void SideSave(AlgorithmResult result,string selectedPath)
+        public void SideSave(ViewResultAlg result,string selectedPath)
         {
             string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
             try
@@ -394,7 +391,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
 
                 foreach (var selectedItem in listView1.SelectedItems)
                 {
-                    if (selectedItem is AlgorithmResult result)
+                    if (selectedItem is ViewResultAlg result)
                     {
                         SideSave(result, selectedPath);
                     }
@@ -414,14 +411,14 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
             foreach (var item in dbList)
             {
-                AlgorithmResult algorithmResult = new AlgorithmResult(item);
-                ViewResults.AddUnique(algorithmResult);
+                ViewResultAlg ViewResultAlg = new ViewResultAlg(item);
+                ViewResults.AddUnique(ViewResultAlg);
             }
         }
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            GenericQuery<AlgResultMasterModel, AlgorithmResult> genericQuery = new GenericQuery<AlgResultMasterModel, AlgorithmResult>(MySqlControl.GetInstance().DB, ViewResults, t => new AlgorithmResult(t));
+            GenericQuery<AlgResultMasterModel, ViewResultAlg> genericQuery = new GenericQuery<AlgResultMasterModel, ViewResultAlg>(MySqlControl.GetInstance().DB, ViewResults, t => new ViewResultAlg(t));
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
         }

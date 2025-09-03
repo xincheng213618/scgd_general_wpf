@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Templates.Jsons.LargeFlow
             }
             set {
                 JsonValue = JsonConvert.SerializeObject(value);
-                NotifyPropertyChanged(); 
+                OnPropertyChanged(); 
             } }
 
 
@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Templates.Jsons.LargeFlow
         {
         }
 
-        public TJLargeFlowParam(TemplateJsonModel templateJsonModel):base(templateJsonModel) 
+        public TJLargeFlowParam(ModMasterModel templateJsonModel):base(templateJsonModel) 
         {
 
         }

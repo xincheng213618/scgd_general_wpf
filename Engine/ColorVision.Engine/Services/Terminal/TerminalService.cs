@@ -1,13 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
+using ColorVision.Database;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using Newtonsoft.Json;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -16,10 +14,10 @@ namespace ColorVision.Engine.Services.Terminal
 {
     public class TerminalServiceBase : ServiceObjectBase, ITreeViewItem
     {
-        public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
+        public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; OnPropertyChanged(); } }
         private bool _IsExpanded = true;
 
-        public bool IsSelected { get => _IsChecked; set { _IsChecked = value; NotifyPropertyChanged(); } }
+        public bool IsSelected { get => _IsChecked; set { _IsChecked = value; OnPropertyChanged(); } }
         private bool _IsChecked;
         public ContextMenu ContextMenu { get; set; }
 
@@ -39,9 +37,9 @@ namespace ColorVision.Engine.Services.Terminal
 
         public ServiceTypes ServiceType { get => (ServiceTypes)SysResourceModel.Type; }
 
-        public override string Name { get => SysResourceModel.Name??string.Empty ; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
+        public override string Name { get => SysResourceModel.Name??string.Empty ; set { SysResourceModel.Name = value; OnPropertyChanged(); } }
 
-        public string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; NotifyPropertyChanged(); } }
+        public string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; OnPropertyChanged(); } }
 
         public ImageSource Icon { get; set; }
 
@@ -51,6 +49,8 @@ namespace ColorVision.Engine.Services.Terminal
         public TerminalService(SysResourceModel sysResourceModel) : base()
         {
             SysResourceModel = sysResourceModel;
+
+
             Config = ServiceObjectBaseExtensions.TryDeserializeConfig<TerminalServiceConfig>(SysResourceModel.Value);
 
             Config.Code = Code;
@@ -59,10 +59,12 @@ namespace ColorVision.Engine.Services.Terminal
             RefreshCommand = new RelayCommand(a => MqttRCService.GetInstance().RestartServices(Config.ServiceType.ToString(),sysResourceModel.Code ??string.Empty));
             EditCommand = new RelayCommand(a =>
             {
-                EditTerminal window = new(this);
+                PropertyEditorWindow window = new PropertyEditorWindow(Config);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
+
+
             }, a => AccessControl.Check(PermissionMode.Administrator));
 
             OpenCreateWindowCommand = new RelayCommand(a =>
@@ -76,36 +78,29 @@ namespace ColorVision.Engine.Services.Terminal
             switch (ServiceType)
             {
                 case ServiceTypes.Camera:
-                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.Algorithm:
                     this.SetIconResource("DrawingImageAlgorithm");
-                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.SMU:
                     this.SetIconResource("SMUDrawingImage");
-                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.Motor:
                     this.SetIconResource("COMDrawingImage");
-                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.FilterWheel:
                     this.SetIconResource("CfwPortDrawingImage");
-                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.Calibration:
                     this.SetIconResource("DICalibrationIcon");
-                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.Spectrum:
                     this.SetIconResource("DISpectrumIcon");
-                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 default:
-                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
             }
+            MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
 
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Create, Command = OpenCreateWindowCommand });
@@ -120,28 +115,14 @@ namespace ColorVision.Engine.Services.Terminal
             Parent.RemoveChild(this);
             if (SysResourceModel != null)
             {
-                VSysResourceDao.Instance.DeleteById(SysResourceModel.Id);
-                VSysResourceDao.Instance.DeleteAllByPid(SysResourceModel.Id);
+
+                MySqlControl.GetInstance().DB.Deleteable<SysResourceModel>().Where(x => x.Pid == SysResourceModel.Id).ExecuteCommand();
+                MySqlControl.GetInstance().DB.Deleteable<SysResourceModel>().Where(x => x.Id == SysResourceModel.Id).ExecuteCommand();
+
             }
             ServiceManager.GetInstance().TerminalServices.Remove(this);
         }
 
-        public List<string> ServicesCodes
-        {
-            get
-            {
-                List<string> codes = new();
-                foreach (var item in VisualChildren)
-                {
-                    if (item is DeviceService baseChannel)
-                    {
-                        if (!string.IsNullOrWhiteSpace(baseChannel.SysResourceModel.Code))
-                            codes.Add(baseChannel.SysResourceModel.Code);
-                    }
-                }
-                return codes;
-            }
-        }
 
         public override UserControl GenDeviceControl() => new TerminalServiceControl(this);
 
@@ -151,8 +132,7 @@ namespace ColorVision.Engine.Services.Terminal
             SysResourceModel.Name = Config.Name;
             SysResourceModel.Code = Config.Code;
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            VSysResourceDao.Instance.Save(SysResourceModel);
-           
+            MySqlControl.GetInstance().DB.Updateable<SysResourceModel>().ExecuteCommand();
             MqttRCService.GetInstance().RestartServices(Config.ServiceType.ToString());
         }
     }

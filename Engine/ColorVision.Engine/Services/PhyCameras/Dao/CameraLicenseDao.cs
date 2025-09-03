@@ -1,8 +1,7 @@
 ﻿#pragma warning disable CS0618
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
+using ColorVision.Database;
 using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
 using SqlSugar;
@@ -79,7 +78,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
     {
         public static CameraLicenseDao Instance { get; set; } = new CameraLicenseDao();
 
-        public LicenseModel? GetByMAC(string Code) => GetByParam(new Dictionary<string, object>() { { "mac_sn", Code } });
+        public LicenseModel? GetByMAC(string Code) => this.GetByParam(new Dictionary<string, object>() { { "mac_sn", Code } });
     
     }
 

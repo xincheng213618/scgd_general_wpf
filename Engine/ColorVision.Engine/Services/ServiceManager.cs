@@ -1,8 +1,5 @@
-﻿using ColorVision.Engine.MySql;
-using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Database;
 using ColorVision.Engine.Rbac;
-using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -19,8 +16,8 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.UI;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -36,6 +33,8 @@ namespace ColorVision.Engine.Services
         private static readonly object _locker = new();
         public static ServiceManager GetInstance() { lock (_locker) { return _instance ??= new ServiceManager(); } }
         public static UserConfig UserConfig => UserConfig.Instance;
+
+        public static SqlSugarClient Db => MySqlControl.GetInstance().DB;
 
         public ObservableCollection<TypeService> TypeServices { get; set; } = new ObservableCollection<TypeService>();
         public ObservableCollection<TerminalService> TerminalServices { get; set; } = new ObservableCollection<TerminalService>();
@@ -137,12 +136,11 @@ namespace ColorVision.Engine.Services
                 }
             }
 
-            List<SysDeviceModel> sysResourceModelDevices = VSysDeviceDao.Instance.GetAll(UserConfig.TenantId);
             DeviceServices.Clear();
 
             foreach (var terminalService in TerminalServices)
             {
-                var sysResourceModels = sysResourceModelDevices.FindAll((x) => x.Pid == (int)terminalService.SysResourceModel.Id);
+                var sysResourceModels = Db.Queryable<SysResourceModel>().Where(it => it.Pid == terminalService.SysResourceModel.Id && it.TenantId == UserConfig.TenantId && it.IsEnable == true && it.IsDelete == false).ToList();
                 foreach (var sysResourceModel in sysResourceModels)
                 {
                     DeviceService deviceService =null;
@@ -202,7 +200,7 @@ namespace ColorVision.Engine.Services
 
             foreach (var deviceService in DeviceServices)
             {
-                List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetResourceItems(deviceService.SysResourceModel.Id, UserConfig.TenantId);
+                List<SysResourceModel> sysResourceModels = Db.Queryable<SysResourceModel>().Where(it => it.Pid == deviceService.SysResourceModel.Id && it.IsDelete == false && it.IsEnable == true).ToList();
                 foreach (var sysResourceModel in sysResourceModels)
                 {
                     if (sysResourceModel.Type == (int)ServiceTypes.Group)
@@ -233,7 +231,8 @@ namespace ColorVision.Engine.Services
 
         public void LoadgroupResource(GroupResource groupResource)
         {
-            SysResourceDao.Instance.CreatResourceGroup();
+            Db.CodeFirst.InitTables<SysResourceGoupModel>();
+
             List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetGroupResourceItems(groupResource.SysResourceModel.Id);
             foreach (var sysResourceModel in sysResourceModels)
             {
