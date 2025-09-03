@@ -228,8 +228,18 @@ namespace ProjectARVRLite
                     CurrentTestType = TestType;
                     RunTemplate();
                 }
-                CurrentTestType = TestType;
-                RunTemplate();
+                if (CurrentTestType != TestType)
+                {
+                    log.Info("无法找到测试类型对应的测试模板,正在切换下一张图");
+                    if (!IsTestTypeCompleted())
+                    {
+                        SwitchPG();
+                    }
+                    else
+                    {
+                        TestCompleted();
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -1534,7 +1544,7 @@ namespace ProjectARVRLite
                 nextIndex = (nextIndex + 1) % values.Length;
             ARVR1TestType aRVRTestType = (ARVR1TestType)values.GetValue(nextIndex);
 
-            return aRVRTestType >= ARVR1TestType.Ghost;
+            return aRVRTestType >= ProjectConfig.TestTypeCompleted;
         }
 
         private void SwitchPG()

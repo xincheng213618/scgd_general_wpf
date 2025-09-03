@@ -229,6 +229,11 @@ public class FlowEngineControl : FlowEngineAPI
 
 	public void StopNode(string name, string serialNumber)
 	{
+		if (string.IsNullOrEmpty(name))
+        {
+            _IsRunning = false;
+            return;
+        }
 		if (startNodeNames.ContainsKey(name))
 		{
 			startNodeNames[name].Stop(serialNumber);
