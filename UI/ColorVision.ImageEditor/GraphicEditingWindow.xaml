@@ -126,7 +126,7 @@
 
                             </DockPanel>
                             <StackPanel Orientation="Horizontal"  Margin="2" HorizontalAlignment="Left">
-                                <TextBox  Text="{Binding AreaRect}" Width="55"  />
+                                <TextBox  Text="{Binding AreaRect}"  />
                             </StackPanel>
                             <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
                             <StackPanel Margin="5">

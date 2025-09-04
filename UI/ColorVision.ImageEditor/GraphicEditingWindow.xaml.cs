@@ -531,68 +531,55 @@ namespace ColorVision.ImageEditor
                         MessageBox.Show("点阵数的行列不能小于1", "ColorVision");
                         return;
                     }
-                    double Width = Config.AreaRect.Width;
-                    double Height = Config.AreaRect.Height;
-
 
                     double startU = Config.AreaRect.Y;
                     double startD = Config.AreaRect.Y + Config.AreaRect.Height;
                     double startL = Config.AreaRect.X;
                     double startR = Config.AreaRect.X + Config.AreaRect.Width;
 
+                    double offsetX = 0;
+                    double offsetY = 0;
+
                     switch (Config.DefaultPointType)
                     {
                         case GraphicTypes.Circle:
-                            switch (pOIPosition)
-                            {
-                                case DrawingGraphicPosition.LineOn:
-                                    break;
-                                case DrawingGraphicPosition.Internal:
-                                    startU += Config.DefaultCircleRadius;
-                                    startD += Config.DefaultCircleRadius;
-                                    startL += Config.DefaultCircleRadius;
-                                    startR += Config.DefaultCircleRadius;
-                                    break;
-                                case DrawingGraphicPosition.External:
-                                    startU -= Config.DefaultCircleRadius;
-                                    startD -= Config.DefaultCircleRadius;
-                                    startL -= Config.DefaultCircleRadius;
-                                    startR -= Config.DefaultCircleRadius;
-                                    break;
-                                default:
-                                    break;
-                            }
+                            offsetX = Config.DefaultCircleRadius;
+                            offsetY = Config.DefaultCircleRadius;
                             break;
                         case GraphicTypes.Rect:
-                            switch (pOIPosition)
-                            {
-                                case DrawingGraphicPosition.LineOn:
-                                    break;
-                                case DrawingGraphicPosition.Internal:
-                                    startU += Config.DefaultRectHeight / 2;
-                                    startD += Config.DefaultRectHeight / 2;
-                                    startL += Config.DefaultRectWidth / 2;
-                                    startR += Config.DefaultRectWidth / 2;
-                                    break;
-                                case DrawingGraphicPosition.External:
-                                    startU -= Config.DefaultRectHeight / 2;
-                                    startD -= Config.DefaultRectHeight / 2;
-                                    startL -= Config.DefaultRectWidth / 2;
-                                    startR -= Config.DefaultRectWidth / 2;
-                                    break;
-                                default:
-                                    break;
-                            }
-                            break;
-                        case GraphicTypes.Quadrilateral:
-                            break;
-                        default:
+                            offsetX = Config.DefaultRectWidth / 2.0;
+                            offsetY = Config.DefaultRectHeight / 2.0;
                             break;
                     }
 
+                    if (offsetX > 0 || offsetY > 0)
+                    {
+                        switch (pOIPosition)
+                        {
+                            case DrawingGraphicPosition.Internal:
+                                startL += offsetX;
+                                startR -= offsetX;
+                                startU += offsetY;
+                                startD -= offsetY;
+                                break;
+                            case DrawingGraphicPosition.External:
+                                startL -= offsetX;
+                                startR += offsetX;
+                                startU -= offsetY;
+                                startD += offsetY;
+                                break;
+                            case DrawingGraphicPosition.LineOn:
+                            default:
+                                // Do nothing
+                                break;
+                        }
+                    }
 
-                    double StepRow = (rows > 1) ? (bitmapImage.PixelHeight - startD - startU) / (rows - 1) : 0;
-                    double StepCol = (cols > 1) ? (bitmapImage.PixelWidth - startL - startR) / (cols - 1) : 0;
+                    double rectWidth = startR - startL;
+                    double rectHeight = startD - startU;
+
+                    double StepRow = (rows > 1) ? rectHeight / (rows - 1) : 0;
+                    double StepCol = (cols > 1) ? rectWidth / (cols - 1) : 0;
 
 
                     int all = rows * cols;
@@ -674,10 +661,10 @@ namespace ColorVision.ImageEditor
                         switch (pOIPosition)
                         {
                             case DrawingGraphicPosition.Internal:
-                                points = ImageEditorHelper.InsetPolygon(points, offset);
+                                points = ImageEditorHelper.InsetPolygon(points, -offset);
                                 break;
                             case DrawingGraphicPosition.External:
-                                points = ImageEditorHelper.InsetPolygon(points, -offset);
+                                points = ImageEditorHelper.InsetPolygon(points, offset);
                                 break;
                             case DrawingGraphicPosition.LineOn:
                             default:
