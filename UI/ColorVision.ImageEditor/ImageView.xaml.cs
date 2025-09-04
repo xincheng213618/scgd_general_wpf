@@ -1308,6 +1308,23 @@ namespace ColorVision.ImageEditor
         private void EditDIExpand_Click(object sender, RoutedEventArgs e)
         {
             GraphicEditingWindow graphicEditingWindow = new GraphicEditingWindow(this) { Owner = Application.Current.GetActiveWindow()};
+
+            // 屏幕坐标
+            var point = this.PointToScreen(new Point(this.ActualWidth, this.ActualHeight));
+
+            // 转换为WPF坐标
+            var source = PresentationSource.FromVisual(this);
+            if (source != null)
+            {
+                var targetPoint = source.CompositionTarget.TransformFromDevice.Transform(point);
+
+                // 设置弹窗的位置
+                graphicEditingWindow.WindowStartupLocation = WindowStartupLocation.Manual;
+                graphicEditingWindow.Left = targetPoint.X - graphicEditingWindow.Width;
+                graphicEditingWindow.Top = targetPoint.Y - graphicEditingWindow.Height;
+            }
+
+
             graphicEditingWindow.Show();
         }
 

@@ -1593,7 +1593,7 @@ namespace ColorVision.Engine.Templates.POI
         };
 
                 // 调用新的缩放方法
-                var scaledPolygon = ScalePolygon(polygonPoints, topMargin, bottomMargin, leftMargin, rightMargin);
+                var scaledPolygon = ImageEditorHelper.ScalePolygon(polygonPoints, topMargin, bottomMargin, leftMargin, rightMargin);
 
                 // 更新 PoiConfig 中的顶点坐标
                 PoiConfig.Polygon1X = (int)scaledPolygon[0].X;
@@ -1609,68 +1609,6 @@ namespace ColorVision.Engine.Templates.POI
             ImportMarinPopup.IsOpen =  false;
             RenderPoiConfig();
         }
-
-        /// <summary>
-        /// 根据指定的边距缩放一个四边形
-        /// </summary>
-        /// <param name="points">多边形的四个顶点列表</param>
-        /// <param name="top">上边距</param>
-        /// <param name="bottom">下边距</param>
-        /// <param name="left">左边距</param>
-        /// <param name="right">右边距</param>
-        /// <returns>缩放后的新顶点列表</returns>
-        private List<Point> ScalePolygon(List<Point> points, double top, double bottom, double left, double right)
-        {
-            if (points.Count != 4)
-            {
-                // 如果不是四边形，则直接返回原点
-                return points;
-            }
-
-            // 1. 计算多边形的几何中心
-            double centerX = (points[0].X + points[1].X + points[2].X + points[3].X) / 4;
-            double centerY = (points[0].Y + points[1].Y + points[2].Y + points[3].Y) / 4;
-            var center = new Point(centerX, centerY);
-
-            // 2. 计算原始多边形的宽度和高度
-            // 这里我们假设点是按顺序排列的，例如左上、右上、右下、左下
-            double originalWidth = Math.Max(points[1].X, points[2].X) - Math.Min(points[0].X, points[3].X);
-            double originalHeight = Math.Max(points[2].Y, points[3].Y) - Math.Min(points[0].Y, points[1].Y);
-
-            if (originalWidth <= 0 || originalHeight <= 0)
-            {
-                // 避免除以零的错误
-                return points;
-            }
-
-            // 3. 计算水平和垂直方向的缩放比例
-            // 新宽度 = 原宽度 - 左边距 - 右边距
-            // 新高度 = 原高度 - 上边距 - 下边距
-            double scaleX = (originalWidth - left - right) / originalWidth;
-            double scaleY = (originalHeight - top - bottom) / originalHeight;
-
-            var newPoints = new List<Point>();
-            foreach (var point in points)
-            {
-                // 4. 对每个顶点进行缩放
-                // a. 计算顶点相对于中心的向量
-                double vecX = point.X - center.X;
-                double vecY = point.Y - center.Y;
-
-                // b. 根据比例缩放向量
-                double scaledVecX = vecX * scaleX;
-                double scaledVecY = vecY * scaleY;
-
-                // c. 将缩放后的向量加回中心点，得到新顶点的位置
-                double newX = center.X + scaledVecX;
-                double newY = center.Y + scaledVecY;
-
-                newPoints.Add(new Point(newX, newY));
-            }
-
-            return newPoints;
-        }
-
 
         private static double ParseDoubleOrDefault(string input, double defaultValue = 0) => double.TryParse(input, out double result) ? result : defaultValue;
 
