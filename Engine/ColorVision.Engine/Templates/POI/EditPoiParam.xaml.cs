@@ -1570,32 +1570,107 @@ namespace ColorVision.Engine.Templates.POI
         {
             if (ImageShow.Source is BitmapSource bitmapImage)
             {
-                double startU = ParseDoubleOrDefault(TextBoxUp1.Text);
-                double startD = ParseDoubleOrDefault(TextBoxDown1.Text);
-                double startL = ParseDoubleOrDefault(TextBoxLeft1.Text);
-                double startR = ParseDoubleOrDefault(TextBoxRight1.Text);
+                double topMargin = ParseDoubleOrDefault(TextBoxUp1.Text);
+                double bottomMargin = ParseDoubleOrDefault(TextBoxDown1.Text);
+                double leftMargin = ParseDoubleOrDefault(TextBoxLeft1.Text);
+                double rightMargin = ParseDoubleOrDefault(TextBoxRight1.Text);
 
                 if (ComboBoxBorderType1.SelectedItem is KeyValuePair<GraphicBorderType, string> KeyValue && KeyValue.Key == GraphicBorderType.Relative)
                 {
-                    startU = bitmapImage.PixelHeight * startU / 100;
-                    startD = bitmapImage.PixelHeight * startD / 100;
-                    startL = bitmapImage.PixelWidth * startL / 100;
-                    startR = bitmapImage.PixelWidth * startR / 100;
+                    // 将百分比边距转换为像素值
+                    topMargin = bitmapImage.PixelHeight * topMargin / 100;
+                    bottomMargin = bitmapImage.PixelHeight * bottomMargin / 100;
+                    leftMargin = bitmapImage.PixelWidth * leftMargin / 100;
+                    rightMargin = bitmapImage.PixelWidth * rightMargin / 100;
                 }
+                // 将当前多边形顶点存入一个列表中以便处理
+                var polygonPoints = new List<Point>
+        {
+            new Point(PoiConfig.Polygon1X, PoiConfig.Polygon1Y),
+            new Point(PoiConfig.Polygon2X, PoiConfig.Polygon2Y),
+            new Point(PoiConfig.Polygon3X, PoiConfig.Polygon3Y),
+            new Point(PoiConfig.Polygon4X, PoiConfig.Polygon4Y)
+        };
 
-                PoiConfig.Polygon1X += (int)startL;
-                PoiConfig.Polygon1Y += (int)startU;
-                PoiConfig.Polygon2X -= (int)startR;
-                PoiConfig.Polygon2Y += (int)startU;
-                PoiConfig.Polygon3X -= (int)startR;
-                PoiConfig.Polygon3Y -= (int)startD;
-                PoiConfig.Polygon4X += (int)startL;
-                PoiConfig.Polygon4Y -= (int)startD;
+                // 调用新的缩放方法
+                var scaledPolygon = ScalePolygon(polygonPoints, topMargin, bottomMargin, leftMargin, rightMargin);
+
+                // 更新 PoiConfig 中的顶点坐标
+                PoiConfig.Polygon1X = (int)scaledPolygon[0].X;
+                PoiConfig.Polygon1Y = (int)scaledPolygon[0].Y;
+                PoiConfig.Polygon2X = (int)scaledPolygon[1].X;
+                PoiConfig.Polygon2Y = (int)scaledPolygon[1].Y;
+                PoiConfig.Polygon3X = (int)scaledPolygon[2].X;
+                PoiConfig.Polygon3Y = (int)scaledPolygon[2].Y;
+                PoiConfig.Polygon4X = (int)scaledPolygon[3].X;
+                PoiConfig.Polygon4Y = (int)scaledPolygon[3].Y;
 
             }
             ImportMarinPopup.IsOpen =  false;
             RenderPoiConfig();
         }
+
+        /// <summary>
+        /// 根据指定的边距缩放一个四边形
+        /// </summary>
+        /// <param name="points">多边形的四个顶点列表</param>
+        /// <param name="top">上边距</param>
+        /// <param name="bottom">下边距</param>
+        /// <param name="left">左边距</param>
+        /// <param name="right">右边距</param>
+        /// <returns>缩放后的新顶点列表</returns>
+        private List<Point> ScalePolygon(List<Point> points, double top, double bottom, double left, double right)
+        {
+            if (points.Count != 4)
+            {
+                // 如果不是四边形，则直接返回原点
+                return points;
+            }
+
+            // 1. 计算多边形的几何中心
+            double centerX = (points[0].X + points[1].X + points[2].X + points[3].X) / 4;
+            double centerY = (points[0].Y + points[1].Y + points[2].Y + points[3].Y) / 4;
+            var center = new Point(centerX, centerY);
+
+            // 2. 计算原始多边形的宽度和高度
+            // 这里我们假设点是按顺序排列的，例如左上、右上、右下、左下
+            double originalWidth = Math.Max(points[1].X, points[2].X) - Math.Min(points[0].X, points[3].X);
+            double originalHeight = Math.Max(points[2].Y, points[3].Y) - Math.Min(points[0].Y, points[1].Y);
+
+            if (originalWidth <= 0 || originalHeight <= 0)
+            {
+                // 避免除以零的错误
+                return points;
+            }
+
+            // 3. 计算水平和垂直方向的缩放比例
+            // 新宽度 = 原宽度 - 左边距 - 右边距
+            // 新高度 = 原高度 - 上边距 - 下边距
+            double scaleX = (originalWidth - left - right) / originalWidth;
+            double scaleY = (originalHeight - top - bottom) / originalHeight;
+
+            var newPoints = new List<Point>();
+            foreach (var point in points)
+            {
+                // 4. 对每个顶点进行缩放
+                // a. 计算顶点相对于中心的向量
+                double vecX = point.X - center.X;
+                double vecY = point.Y - center.Y;
+
+                // b. 根据比例缩放向量
+                double scaledVecX = vecX * scaleX;
+                double scaledVecY = vecY * scaleY;
+
+                // c. 将缩放后的向量加回中心点，得到新顶点的位置
+                double newX = center.X + scaledVecX;
+                double newY = center.Y + scaledVecY;
+
+                newPoints.Add(new Point(newX, newY));
+            }
+
+            return newPoints;
+        }
+
 
         private static double ParseDoubleOrDefault(string input, double defaultValue = 0) => double.TryParse(input, out double result) ? result : defaultValue;
 
