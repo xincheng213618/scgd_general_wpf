@@ -4,25 +4,17 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.Util.Draw.Rectangle;
-using Gu.Wpf.Geometry;
 using Newtonsoft.Json;
-using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace ColorVision.ImageEditor
 {
@@ -172,6 +164,14 @@ namespace ColorVision.ImageEditor
         Polygon = 4
     }
 
+    public enum GraphicDrawTypes
+    {
+        Circle = 0,
+        Rect = 1,
+    }
+
+
+
     public enum GraphicBorderType
     {
         [Description("无")]
@@ -193,7 +193,7 @@ namespace ColorVision.ImageEditor
     }
 
 
-    public class GraphicEditingConfig:ViewModelBase
+    public class GraphicEditingConfig : ViewModelBase
     {
         [JsonIgnore]
         public RelayCommand FindLuminousAreaEditCommand { get; set; }
@@ -220,27 +220,22 @@ namespace ColorVision.ImageEditor
         [JsonIgnore]
         public bool IsAreaCircle { get => GraphicTypes == GraphicTypes.Circle; set { if (value) GraphicTypes = GraphicTypes.Circle; OnPropertyChanged(); } }
         [JsonIgnore]
-        public bool IsAreaRect { get => GraphicTypes == GraphicTypes.Rect; set { if (value) GraphicTypes = GraphicTypes.Rect; OnPropertyChanged(); } }
-        [JsonIgnore]
         public bool IsQuadrilateral { get => GraphicTypes == GraphicTypes.Quadrilateral; set { if (value) GraphicTypes = GraphicTypes.Quadrilateral; OnPropertyChanged(); } }
 
-        [JsonIgnore]
-        public bool IsAreaPolygon { get => GraphicTypes == GraphicTypes.Polygon; set { if (value) GraphicTypes = GraphicTypes.Polygon; OnPropertyChanged(); } }
 
+        public GraphicDrawTypes DefaultPointType { set; get; }
 
         [JsonIgnore]
-        public bool IsPointCircle { get => DefaultPointType == GraphicTypes.Circle; set { if (value) DefaultPointType = GraphicTypes.Circle; OnPropertyChanged(); } }
+        public bool IsPointCircle { get => DefaultPointType == GraphicDrawTypes.Circle; set { if (value) DefaultPointType = GraphicDrawTypes.Circle; OnPropertyChanged(); } }
         [JsonIgnore]
-        public bool IsPointRect { get => DefaultPointType == GraphicTypes.Rect; set { if (value) DefaultPointType = GraphicTypes.Rect; OnPropertyChanged(); } }
+        public bool IsPointRect { get => DefaultPointType == GraphicDrawTypes.Rect; set { if (value) DefaultPointType = GraphicDrawTypes.Rect; OnPropertyChanged(); } }
         [JsonIgnore]
-
-        public GraphicTypes DefaultPointType { set; get; }
 
 
         public bool LockDeafult { get => _LockDeafult; set { _LockDeafult = value; OnPropertyChanged(); } }
         private bool _LockDeafult;
         public bool UseCenter { get => _UseCenter; set { _UseCenter = value; OnPropertyChanged(); } }
-        private bool _UseCenter = false;
+        private bool _UseCenter;
 
         public double DefalutWidth { get => _DefalutWidth; set { if (LockDeafult) return; _DefalutWidth = value; OnPropertyChanged(); } }
         private double _DefalutWidth = 30;
@@ -298,9 +293,6 @@ namespace ColorVision.ImageEditor
         public int AreaCircleAngle { get => _AreaCircleAngle; set { _AreaCircleAngle = value; OnPropertyChanged(); } }
         private int _AreaCircleAngle;
 
-        public Rect AreaRect { get => _AreaRect; set { _AreaRect = value; OnPropertyChanged(); } }
-        private Rect _AreaRect;
-
         public int AreaRectRow { get => _AreaRectRow; set { _AreaRectRow = value; OnPropertyChanged(); } }
         private int _AreaRectRow = 3;
 
@@ -342,10 +334,6 @@ namespace ColorVision.ImageEditor
         {
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(GraphicBorderType)).Cast<GraphicBorderType>() select new KeyValuePair<GraphicBorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;
-
-            ComboBoxBorderType11.ItemsSource = from e1 in Enum.GetValues(typeof(GraphicBorderType)).Cast<GraphicBorderType>() select new KeyValuePair<GraphicBorderType, string>(e1, e1.ToDescription());
-            ComboBoxBorderType11.SelectedIndex = 0;
-
             ComboBoxBorderType2.ItemsSource = from e1 in Enum.GetValues(typeof(DrawingGraphicPosition)).Cast<DrawingGraphicPosition>() select new KeyValuePair<DrawingGraphicPosition, string>(e1, e1.ToDescription());
             ComboBoxBorderType2.SelectedIndex = 0;
 
@@ -367,36 +355,53 @@ namespace ColorVision.ImageEditor
                         string result = Marshal.PtrToStringAnsi(resultPtr);
                         Console.WriteLine("Result: " + result);
                         OpenCVMediaHelper.FreeResult(resultPtr);
-                        var jObj = Newtonsoft.Json.Linq.JObject.Parse(result);
+
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            var corners = jObj["Corners"].ToObject<List<List<float>>>();
-                            if (corners.Count == 4)
+                            if (Config.FindLuminousAreaCorner.UseRotatedRect)
                             {
-                                Config.Polygon1X = (int)corners[0][0];
-                                Config.Polygon1Y = (int)corners[0][1];
-                                Config.Polygon2X = (int)corners[1][0];
-                                Config.Polygon2Y = (int)corners[1][1];
-                                Config.Polygon3X = (int)corners[2][0];
-                                Config.Polygon3Y = (int)corners[2][1];
-                                Config.Polygon4X = (int)corners[3][0];
-                                Config.Polygon4Y = (int)corners[3][1];
+                                var jObj = Newtonsoft.Json.Linq.JObject.Parse(result);
+                                var corners = jObj["Corners"].ToObject<List<List<float>>>();
+                                if (corners.Count == 4)
+                                {
+                                    Config.Polygon1X = (int)corners[0][0];
+                                    Config.Polygon1Y = (int)corners[0][1];
+                                    Config.Polygon2X = (int)corners[1][0];
+                                    Config.Polygon2Y = (int)corners[1][1];
+                                    Config.Polygon3X = (int)corners[2][0];
+                                    Config.Polygon3Y = (int)corners[2][1];
+                                    Config.Polygon4X = (int)corners[3][0];
+                                    Config.Polygon4Y = (int)corners[3][1];
+                                }
                             }
-
+                            else
+                            {
+                                MRect rect = Newtonsoft.Json.JsonConvert.DeserializeObject<MRect>(result);
+                                {
+                                    Config.Polygon1X = rect.X;
+                                    Config.Polygon1Y = rect.Y;
+                                    Config.Polygon2X = rect.X + rect.Width;
+                                    Config.Polygon2Y = rect.Y;
+                                    Config.Polygon3X = rect.X + rect.Width;
+                                    Config.Polygon3Y = rect.Y + rect.Height;
+                                    Config.Polygon4X = rect.X;
+                                    Config.Polygon4Y = rect.Y + rect.Height;
+                                }
+                            }
                             List<Point> pts_src = new();
                             pts_src.Add(Config.Polygon1);
                             pts_src.Add(Config.Polygon2);
                             pts_src.Add(Config.Polygon3);
                             pts_src.Add(Config.Polygon4);
 
-                            List<Point> result = Helpers.SortPolyPoints(pts_src);
+                            List<Point> result1 = Helpers.SortPolyPoints(pts_src);
                             DVDatumPolygon Polygon = new() { IsComple = true };
                             Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / ImageView.Zoombox1.ContentMatrix.M11);
                             Polygon.Attribute.Brush = Brushes.Transparent;
-                            Polygon.Attribute.Points.Add(result[0]);
-                            Polygon.Attribute.Points.Add(result[1]);
-                            Polygon.Attribute.Points.Add(result[2]);
-                            Polygon.Attribute.Points.Add(result[3]);
+                            Polygon.Attribute.Points.Add(result1[0]);
+                            Polygon.Attribute.Points.Add(result1[1]);
+                            Polygon.Attribute.Points.Add(result1[2]);
+                            Polygon.Attribute.Points.Add(result1[3]);
                             Polygon.Render();
                             ImageShow.AddVisual(Polygon);
                         });
@@ -424,8 +429,9 @@ namespace ColorVision.ImageEditor
         {
             if (ImageShow.Source is not BitmapSource bitmapImage) return;
             DrawingGraphicPosition pOIPosition = DrawingGraphicPosition.Internal;
+            List<Point> pts_src = new List<Point>();
 
-            if (ComboBoxBorderType2.SelectedValue is  DrawingGraphicPosition pOIPosition1)
+            if (ComboBoxBorderType2.SelectedValue is DrawingGraphicPosition pOIPosition1)
             {
                 pOIPosition = pOIPosition1;
             }
@@ -450,7 +456,7 @@ namespace ColorVision.ImageEditor
                         int did = start + i + 1; ;
                         switch (Config.DefaultPointType)
                         {
-                            case GraphicTypes.Circle:
+                            case GraphicDrawTypes.Circle:
 
                                 switch (pOIPosition)
                                 {
@@ -483,7 +489,7 @@ namespace ColorVision.ImageEditor
                                 Circle.Render();
                                 ImageShow.AddVisual(Circle);
                                 break;
-                            case GraphicTypes.Rect:
+                            case GraphicDrawTypes.Rect:
 
                                 switch (pOIPosition)
                                 {
@@ -510,277 +516,126 @@ namespace ColorVision.ImageEditor
                                 rectangleTextProperties.Name = did.ToString();
                                 rectangleTextProperties.Text = string.Format("{0}{1}", TagName, did.ToString());
                                 DVRectangleText Rectangle = new DVRectangleText(rectangleTextProperties);
-       
+
                                 Rectangle.Render();
                                 ImageShow.AddVisual(Rectangle);
                                 break;
-                            case GraphicTypes.Quadrilateral:
-                                break;
                             default:
                                 break;
                         }
                     }
-                    break;
-                case GraphicTypes.Rect:
-
-                    int cols = Config.AreaRectCol;
-                    int rows = Config.AreaRectRow;
-
-                    if (rows < 1 || cols < 1)
-                    {
-                        MessageBox.Show("点阵数的行列不能小于1", "ColorVision");
-                        return;
-                    }
-
-                    double startU = Config.AreaRect.Y;
-                    double startD = Config.AreaRect.Y + Config.AreaRect.Height;
-                    double startL = Config.AreaRect.X;
-                    double startR = Config.AreaRect.X + Config.AreaRect.Width;
-
-                    double offsetX = 0;
-                    double offsetY = 0;
-
-                    switch (Config.DefaultPointType)
-                    {
-                        case GraphicTypes.Circle:
-                            offsetX = Config.DefaultCircleRadius;
-                            offsetY = Config.DefaultCircleRadius;
-                            break;
-                        case GraphicTypes.Rect:
-                            offsetX = Config.DefaultRectWidth / 2.0;
-                            offsetY = Config.DefaultRectHeight / 2.0;
-                            break;
-                    }
-
-                    if (offsetX > 0 || offsetY > 0)
-                    {
-                        switch (pOIPosition)
-                        {
-                            case DrawingGraphicPosition.Internal:
-                                startL += offsetX;
-                                startR -= offsetX;
-                                startU += offsetY;
-                                startD -= offsetY;
-                                break;
-                            case DrawingGraphicPosition.External:
-                                startL -= offsetX;
-                                startR += offsetX;
-                                startU -= offsetY;
-                                startD += offsetY;
-                                break;
-                            case DrawingGraphicPosition.LineOn:
-                            default:
-                                // Do nothing
-                                break;
-                        }
-                    }
-
-                    double rectWidth = startR - startL;
-                    double rectHeight = startD - startU;
-
-                    double StepRow = (rows > 1) ? rectHeight / (rows - 1) : 0;
-                    double StepCol = (cols > 1) ? rectWidth / (cols - 1) : 0;
-
-
-                    int all = rows * cols;
-
-                    for (int i = 0; i < rows; i++)
-                    {
-                        for (int j = 0; j < cols; j++)
-                        {
-                            Num++;
-
-                            double x1 = startL + StepCol * j;
-                            double y1 = startU + StepRow * i;
-                            int did = start + i * cols + j + 1;
-                            switch (Config.DefaultPointType)
-                            {
-                                case GraphicTypes.Circle:
-                                    CircleTextProperties circleTextProperties = new CircleTextProperties();
-                                    circleTextProperties.Center = new Point(x1, y1);
-                                    circleTextProperties.Radius = Config.DefaultCircleRadius;
-                                    circleTextProperties.Brush = Brushes.Transparent;
-                                    circleTextProperties.Pen = new Pen(Brushes.Red, (double)Config.DefaultCircleRadius / 30);
-                                    circleTextProperties.Id = did;
-                                    circleTextProperties.Name = did.ToString();
-                                    circleTextProperties.Text = string.Format("{0}{1}", TagName, did.ToString());
-
-                                    DVCircleText Circle = new DVCircleText(circleTextProperties);
-                                    Circle.IsShowText = Config.IsShowText;
-
-                                    Circle.Render();
-                                    ImageShow.AddVisual(Circle);
-                                    break;
-                                case GraphicTypes.Rect:
-                                    RectangleTextProperties rectangleTextProperties = new RectangleTextProperties();
-                                    rectangleTextProperties.Rect = new System.Windows.Rect(x1 - (double)Config.DefaultRectWidth / 2, y1 - Config.DefaultRectHeight / 2, Config.DefaultRectWidth, Config.DefaultRectHeight);
-                                    rectangleTextProperties.Brush = Brushes.Transparent;
-                                    rectangleTextProperties.Pen = new Pen(Brushes.Red, (double)Config.DefaultRectWidth / 30);
-                                    rectangleTextProperties.Id = did;
-                                    rectangleTextProperties.Name = did.ToString();
-                                    rectangleTextProperties.Text = string.Format("{0}{1}", TagName, did.ToString());
-                                    DVRectangleText Rectangle = new DVRectangleText(rectangleTextProperties);
-                                    Rectangle.IsShowText = Config.IsShowText;
-                                    Rectangle.Render();
-                                    ImageShow.AddVisual(Rectangle);
-                                    break;
-                                case GraphicTypes.Quadrilateral:
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
-                    }
-
                     break;
                 case GraphicTypes.Quadrilateral:
-                    List<Point> pts_src =
+                    List<Point> quadPoints =
                     [
                         Config.Polygon1,
-                        Config.Polygon2,
-                        Config.Polygon3,
-                        Config.Polygon4,
-                    ];
-
-                    List<Point> points = Helpers.SortPolyPoints(pts_src);
-
-
-                    double offset = 0;
-                    switch (Config.DefaultPointType)
-                    {
-                        case GraphicTypes.Circle:
-                            offset = Config.DefaultCircleRadius;
-                            break;
-                        case GraphicTypes.Rect:
-                            offset = Math.Min(Config.DefaultRectWidth, Config.DefaultRectHeight) / 2.0;
-                            break;
-                    }
-
-                    if (offset > 0)
-                    {
-                        switch (pOIPosition)
-                        {
-                            case DrawingGraphicPosition.Internal:
-                                points = ImageEditorHelper.InsetPolygon(points, -offset);
-                                break;
-                            case DrawingGraphicPosition.External:
-                                points = ImageEditorHelper.InsetPolygon(points, offset);
-                                break;
-                            case DrawingGraphicPosition.LineOn:
-                            default:
-                                // Do nothing
-                                break;
-                        }
-                    }
-
-                    cols = Config.AreaRectCol;
-                    rows = Config.AreaRectRow;
-
-
-
-
-
-                    double rowStep = (rows > 1) ? 1.0 / (rows - 1) : 0;
-                    double columnStep = (rows > 1) ? 1.0 / (cols - 1) : 0;
-                    for (int i = 0; i < rows; i++)
-                    {
-                        for (int j = 0; j < cols; j++)
-                        {
-                            // Calculate the position of the point within the quadrilateral
-                            double x = (1 - i * rowStep) * (1 - j * columnStep) * points[0].X +
-                                       (1 - i * rowStep) * (j * columnStep) * points[1].X +
-                                       (i * rowStep) * (1 - j * columnStep) * points[3].X +
-                                       (i * rowStep) * (j * columnStep) * points[2].X;
-
-                            double y = (1 - i * rowStep) * (1 - j * columnStep) * points[0].Y +
-                                       (1 - i * rowStep) * (j * columnStep) * points[1].Y +
-                                       (i * rowStep) * (1 - j * columnStep) * points[3].Y +
-                                       (i * rowStep) * (j * columnStep) * points[2].Y;
-
-                            Point point = new(x, y);
-
-                            int did = start + i * cols + j + 1;
-                            switch (Config.DefaultPointType)
-                            {
-                                case GraphicTypes.Circle:
-                                    CircleTextProperties circleTextProperties = new CircleTextProperties();
-                                    circleTextProperties.Center = new Point(point.X, point.Y);
-                                    circleTextProperties.Radius = Config.DefaultCircleRadius;
-                                    circleTextProperties.Brush = Brushes.Transparent;
-                                    circleTextProperties.Pen = new Pen(Brushes.Red, (double)Config.DefaultCircleRadius / 30);
-                                    circleTextProperties.Id = did;
-                                    circleTextProperties.Name = did.ToString();
-                                    circleTextProperties.Text = string.Format("{0}{1}", TagName, did.ToString());
-                                    DVCircleText Circle = new DVCircleText(circleTextProperties);
-                                    Circle.Render();
-                                    ImageShow.AddVisual(Circle);
-                                    break;
-                                case GraphicTypes.Rect:
-                                    RectangleTextProperties rectangleTextProperties = new RectangleTextProperties();
-                                    rectangleTextProperties.Rect = new System.Windows.Rect(point.X - Config.DefaultRectWidth / 2, point.Y - Config.DefaultRectHeight / 2, Config.DefaultRectWidth, Config.DefaultRectHeight);
-                                    rectangleTextProperties.Brush = Brushes.Transparent;
-                                    rectangleTextProperties.Pen = new Pen(Brushes.Red, (double)Config.DefaultRectWidth / 30);
-                                    rectangleTextProperties.Id = did;
-                                    rectangleTextProperties.Name = did.ToString();
-                                    rectangleTextProperties.Text = string.Format("{0}{1}", TagName, did.ToString());
-                                    DVRectangleText Rectangle = new DVRectangleText(rectangleTextProperties);
-
-                                    Rectangle.Render();
-                                    ImageShow.AddVisual(Rectangle);
-                                    break;
-                                case GraphicTypes.Quadrilateral:
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
-                    }
-
+                            Config.Polygon2,
+                            Config.Polygon3,
+                            Config.Polygon4,
+                        ];
+                    GenerateGridInQuadrilateral(quadPoints);
                     break;
                 default:
                     break;
             }
         }
 
-        private void FindLuminousArea_Click(object sender, RoutedEventArgs e)
+        private void GenerateGridInQuadrilateral(List<Point> initialPoints)
         {
-            if (ImageView.HImageCache != null)
+            List<Point> points = Helpers.SortPolyPoints(initialPoints);
+
+            if (ComboBoxBorderType2.SelectedValue is DrawingGraphicPosition pOIPosition)
             {
-                string FindLuminousAreajson = Config.FindLuminousArea.ToJsonN();
-                Task.Run(() =>
+                double offset = 0;
+                switch (Config.DefaultPointType)
                 {
-                    int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)ImageView.HImageCache, FindLuminousAreajson, out IntPtr resultPtr);
-                    if (length > 0)
+                    case GraphicDrawTypes.Circle:
+                        offset = Config.DefaultCircleRadius;
+                        break;
+                    case GraphicDrawTypes.Rect:
+                        offset = Math.Min(Config.DefaultRectWidth, Config.DefaultRectHeight) / 2.0;
+                        break;
+                }
+
+                if (offset > 0)
+                {
+                    switch (pOIPosition)
                     {
-                        string result = Marshal.PtrToStringAnsi(resultPtr);
-                        Console.WriteLine("Result: " + result);
-                        OpenCVMediaHelper.FreeResult(resultPtr);
-                        MRect rect = Newtonsoft.Json.JsonConvert.DeserializeObject<MRect>(result);
-
-                        if (rect != null)
-                        {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                Config.AreaRect = new Rect() { X = rect.X, Y = rect.Y, Width = rect.Width, Height = rect.Height };
-
-                                DVDatumRectangle Rectangle = new DVDatumRectangle();
-                                Rectangle.Attribute.Rect = new System.Windows.Rect(rect.X, rect.Y, rect.Width, rect.Height);
-                                Rectangle.Attribute.Brush = Brushes.Transparent;
-                                Rectangle.Attribute.Pen = new Pen(Brushes.Blue, 1 / ImageView.Zoombox1.ContentMatrix.M11);
-                                Rectangle.Render();
-                                ImageShow.AddVisual(Rectangle);
-                            });
-                        }
-
+                        case DrawingGraphicPosition.Internal:
+                            points = ImageEditorHelper.InsetPolygon(points, -offset);
+                            break;
+                        case DrawingGraphicPosition.External:
+                            points = ImageEditorHelper.InsetPolygon(points, offset);
+                            break;
+                        case DrawingGraphicPosition.LineOn:
+                        default:
+                            // Do nothing
+                            break;
                     }
-                    else
-                    {
-                        Console.WriteLine("Error occurred, code: " + length);
-                    }
-                });
+                }
             }
 
+            int cols = Config.AreaRectCol;
+            int rows = Config.AreaRectRow;
+
+            if (rows < 1 || cols < 1)
+            {
+                MessageBox.Show("点阵数的行列不能小于1", "ColorVision");
+                return;
+            }
+
+            double rowStep = (rows > 1) ? 1.0 / (rows - 1) : 0;
+            double columnStep = (cols > 1) ? 1.0 / (cols - 1) : 0;
+
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < cols; j++)
+                {
+                    // Bilinear interpolation to find the point
+                    double u = i * rowStep;
+                    double v = j * columnStep;
+
+                    // Using sorted points: 0=TL, 1=TR, 2=BR, 3=BL
+                    double x = (1 - u) * (1 - v) * points[0].X + (1 - u) * v * points[1].X + u * v * points[2].X + u * (1 - v) * points[3].X;
+                    double y = (1 - u) * (1 - v) * points[0].Y + (1 - u) * v * points[1].Y + u * v * points[2].Y + u * (1 - v) * points[3].Y;
+
+                    Point point = new(x, y);
+
+                    int did = start + i * cols + j + 1;
+                    switch (Config.DefaultPointType)
+                    {
+                        case GraphicDrawTypes.Circle:
+                            CircleTextProperties circleTextProperties = new CircleTextProperties();
+                            circleTextProperties.Center = point;
+                            circleTextProperties.Radius = Config.DefaultCircleRadius;
+                            circleTextProperties.Brush = Brushes.Transparent;
+                            circleTextProperties.Pen = new Pen(Brushes.Red, (double)Config.DefaultCircleRadius / 30);
+                            circleTextProperties.Id = did;
+                            circleTextProperties.Name = did.ToString();
+                            circleTextProperties.Text = string.Format("{0}{1}", TagName, did.ToString());
+                            DVCircleText Circle = new DVCircleText(circleTextProperties);
+                            Circle.Render();
+                            ImageShow.AddVisual(Circle);
+                            break;
+                        case GraphicDrawTypes.Rect:
+                            RectangleTextProperties rectangleTextProperties = new RectangleTextProperties();
+                            rectangleTextProperties.Rect = new System.Windows.Rect(point.X - Config.DefaultRectWidth / 2, point.Y - Config.DefaultRectHeight / 2, Config.DefaultRectWidth, Config.DefaultRectHeight);
+                            rectangleTextProperties.Brush = Brushes.Transparent;
+                            rectangleTextProperties.Pen = new Pen(Brushes.Red, (double)Config.DefaultRectWidth / 30);
+                            rectangleTextProperties.Id = did;
+                            rectangleTextProperties.Name = did.ToString();
+                            rectangleTextProperties.Text = string.Format("{0}{1}", TagName, did.ToString());
+                            DVRectangleText Rectangle = new DVRectangleText(rectangleTextProperties);
+                            Rectangle.Render();
+                            ImageShow.AddVisual(Rectangle);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
         }
+
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
@@ -797,10 +652,6 @@ namespace ColorVision.ImageEditor
 
         }
 
-        private void RadioButtonArea_Checked(object sender, RoutedEventArgs e)
-        {
-
-        }
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
@@ -824,46 +675,79 @@ namespace ColorVision.ImageEditor
 
         private void AreaRectFull(object sender, RoutedEventArgs e)
         {
-            switch (Config.GraphicTypes)
+            // 对于圆形区域，此功能可能不适用或需要不同逻辑，暂时跳过
+            if (Config.GraphicTypes == GraphicTypes.Circle)
             {
-                case GraphicTypes.Circle:
-                    break;
-                case GraphicTypes.Rect:
-                    Config.DefaultRectHeight = (int) Config.AreaRect.Height / Config.AreaRectRow;
-                    Config.DefaultRectWidth = (int) Config.AreaRect.Width / Config.AreaRectCol;
-                    break;
-                case GraphicTypes.Quadrilateral:
-
-                    // 1. 获取四边形的四个顶点X, Y坐标
-                    var xCoords = new[] { Config.Polygon1X, Config.Polygon2X, Config.Polygon3X, Config.Polygon4X };
-                    var yCoords = new[] { Config.Polygon1Y, Config.Polygon2Y, Config.Polygon3Y, Config.Polygon4Y };
-
-                    // 2. 找出X和Y坐标的最大值和最小值
-                    double minX = xCoords.Min();
-                    double maxX = xCoords.Max();
-                    double minY = yCoords.Min();
-                    double maxY = yCoords.Max();
-
-                    // 3. 计算包围盒的宽度和高度
-                    double quadrilateralWidth = maxX - minX;
-                    double quadrilateralHeight = maxY - minY;
-
-                    // 4. 与矩形情况一样，计算默认的宽度和高度
-                    // 避免除以零的错误
-                    if (Config.AreaRectRow > 0 && Config.AreaRectCol > 0)
-                    {
-                        Config.DefaultRectHeight = (int)(quadrilateralHeight / Config.AreaRectRow);
-                        Config.DefaultRectWidth = (int)(quadrilateralWidth / Config.AreaRectCol);
-                    }
-
-                    break;
-                case GraphicTypes.Point:
-                    break;
-                case GraphicTypes.Polygon:
-                    break;
-                default:
-                    break;
+                return;
             }
+
+            // 1. 获取四边形的四个顶点
+            List<Point> points = new List<Point>();
+
+            if (Config.GraphicTypes == GraphicTypes.Quadrilateral)
+            {
+                points.Add(new Point(Config.Polygon1X, Config.Polygon1Y));
+                points.Add(new Point(Config.Polygon2X, Config.Polygon2Y));
+                points.Add(new Point(Config.Polygon3X, Config.Polygon3Y));
+                points.Add(new Point(Config.Polygon4X, Config.Polygon4Y));
+            }
+
+            if (!points.Any()) return;
+
+            // 2. 找出包围盒
+            double minX = points.Min(p => p.X);
+            double maxX = points.Max(p => p.X);
+            double minY = points.Min(p => p.Y);
+            double maxY = points.Max(p => p.Y);
+
+            double areaWidth = maxX - minX;
+            double areaHeight = maxY - minY;
+
+            int cols = Config.AreaRectCol;
+            int rows = Config.AreaRectRow;
+
+            // 避免无效计算
+            if (rows <= 0 || cols <= 0) return;
+
+            // 3. 根据内切/外切/在线设置，确定除数
+            double divisorCol = cols > 1 ? (double)cols - 1 : 1.0;
+            double divisorRow = rows > 1 ? (double)rows - 1 : 1.0;
+
+            if (ComboBoxBorderType2.SelectedValue is DrawingGraphicPosition pOIPosition)
+            {
+                switch (pOIPosition)
+                {
+                    case DrawingGraphicPosition.Internal:
+                        divisorCol = cols;
+                        divisorRow = rows;
+                        break;
+                    case DrawingGraphicPosition.External:
+                        // 当点数为2时，除数为0，会导致问题。至少需要3个点才能定义外切。
+                        if (cols > 2) divisorCol = cols - 1.5;
+                        if (rows > 2) divisorRow = rows - 1.5;
+                        break;
+                    case DrawingGraphicPosition.LineOn:
+                    default:
+                        // 使用默认的 N-1 除数
+                        break;
+                }
+            }
+
+            // 确保除数有效，防止除以零或负数
+            if (divisorCol <= 0) divisorCol = 1.0;
+            if (divisorRow <= 0) divisorRow = 1.0;
+
+            // 4. 计算并设置默认的宽度和高度
+            Config.DefaultRectHeight = (int)(areaHeight / divisorRow);
+            Config.DefaultRectWidth = (int)(areaWidth / divisorCol);
+
+            // 对于圆形，让其直径等于矩形较短的边
+            Config.DefaultCircleRadius = Math.Min(Config.DefaultRectWidth, Config.DefaultRectHeight) / 2;
+        }
+
+        private void Button3_Click(object sender, RoutedEventArgs e)
+        {
+            ImageView.ImageShow.Clear();
         }
     }
 }
