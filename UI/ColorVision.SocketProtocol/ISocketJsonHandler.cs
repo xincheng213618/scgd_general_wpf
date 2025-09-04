@@ -9,7 +9,7 @@ namespace ColorVision.SocketProtocol
     }
 
 
-    public interface ISocketEventHandler
+    public interface ISocketJsonHandler
     {
         string EventName { get; }
         SocketResponse Handle(NetworkStream stream, SocketRequest request);

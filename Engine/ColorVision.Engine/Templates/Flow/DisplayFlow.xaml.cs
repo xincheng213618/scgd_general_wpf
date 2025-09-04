@@ -45,7 +45,7 @@ namespace ColorVision.Engine.Templates.Flow
         }
     }
 
-    public class FlowSocketMsgHandle : ISocketEventHandler
+    public class FlowSocketMsgHandle : ISocketJsonHandler
     {
         public string EventName => "Flow";
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)

@@ -6,14 +6,14 @@
         xmlns:local="clr-namespace:ColorVision.SocketProtocol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:SocketManager}"
-        Title="SocketManagerWindow" Height="450" Width="800" Initialized="Window_Initialized">
+        Title="SocketManagerWindow" Height="450" Width="900" Initialized="Window_Initialized">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0">
-            <Button Grid.Column="1" Margin="0,1,5,0" HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="25" Width="25" >
+            <Button Grid.Column="1" Margin="5,1,5,5" HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="25" Width="25" >
                 <Button.Triggers>
                     <EventTrigger RoutedEvent="Button.Click">
                         <BeginStoryboard>

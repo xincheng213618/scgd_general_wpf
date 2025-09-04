@@ -1,20 +1,48 @@
 ﻿using ColorVision.Engine.Templates.Flow;
 using ColorVision.SocketProtocol;
-using ProjectARVR.PluginConfig;
+using Dm.util;
+using ProjectLUX.PluginConfig;
 using System.Net.Sockets;
 using System.Windows;
+using static iText.Svg.SvgConstants;
 
-namespace ProjectARVR.Services
+namespace ProjectLUX.Services
 {
     public class SocketControl
     {
         public static SocketControl Current { get; set; } = new SocketControl();
         public NetworkStream Stream { get; set; }
     }
-    
+
+    public class TestSocket:ISocketTextDispatcher
+    {
+        public string Handle(NetworkStream stream, string request)
+        {
+            var list = request.split(",");
+
+            if (list.Length == 2)
+            {
+                string code = list[0];
+                string sn = list[1];
+
+                List<string> strings = new List<string>();
+                strings.add("H0301");
+                strings.add(sn);
+                strings.add("00");
+
+                return string.Join(",", strings);
+            }
+            else
+            {
+                return "No SN";
+            }
+        }
+    }
+
+
     public class FlowInit : ISocketJsonHandler
     {
-        public string EventName => "ProjectARVRInit";
+        public string EventName => "ProjectLUXInit";
 
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
@@ -23,11 +51,11 @@ namespace ProjectARVR.Services
             {
                 ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
                 //现在先切换PG
-                return new SocketResponse() { MsgID = request.MsgID, EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = (ARVRTestType)1 } };
+                return new SocketResponse() { MsgID = request.MsgID, EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.White } };
             }
             else
             {
-                return new SocketResponse { Code = -3, MsgID = request.MsgID, Msg = $"ProjectARVR Wont Open", EventName = EventName };
+                return new SocketResponse { Code = -3, MsgID = request.MsgID, Msg = $"ProjectLUX Wont Open", EventName = EventName };
             }
         }
     }
@@ -49,7 +77,7 @@ namespace ProjectARVR.Services
             }
             else
             {
-                return new SocketResponse { MsgID = request.MsgID, SerialNumber = request.SerialNumber, Code = -3, Msg = $"ProjectARVR Wont Open", EventName = EventName };
+                return new SocketResponse { MsgID = request.MsgID, SerialNumber = request.SerialNumber, Code = -3, Msg = $"ProjectLUX Wont Open", EventName = EventName };
             }
         }
     }
@@ -59,7 +87,7 @@ namespace ProjectARVR.Services
 
     public class FlowSocketMsgHandle : ISocketJsonHandler
     {
-        public string EventName => "ProjectARVR";
+        public string EventName => "ProjectLUX";
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
             SocketControl.Current.Stream = stream;
@@ -81,7 +109,7 @@ namespace ProjectARVR.Services
             }
             else
             {
-                return new SocketResponse { Code = -3, Msg = $"ProjectARVR Wont Open", EventName = EventName };
+                return new SocketResponse { Code = -3, Msg = $"ProjectLUX Wont Open", EventName = EventName };
             }
         }
     }
