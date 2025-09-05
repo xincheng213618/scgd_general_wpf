@@ -68,7 +68,7 @@ namespace ColorVision.Database
                 DB = new SqlSugarClient(new ConnectionConfig
                 {
                     ConnectionString = GetConnectionString(Config),
-                    DbType = SqlSugar.DbType.MySql,
+                    DbType = Config.DbType,
                     IsAutoCloseConnection = true
                 });
                 //修复管理员权限下bulk创建文件权限错误的问题

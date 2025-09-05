@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using SqlSugar;
 
 namespace ColorVision.Database
 {
@@ -49,6 +50,9 @@ namespace ColorVision.Database
         /// </summary>
         public string Database { get => _Database; set { _Database = value; OnPropertyChanged(); } }
         private string _Database = string.Empty;
+
+        public DbType DbType { get => _DbType; set { _DbType = value; OnPropertyChanged(); } }
+        private DbType _DbType = DbType.MySql;
 
     }
 }
