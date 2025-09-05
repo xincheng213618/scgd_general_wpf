@@ -3,7 +3,7 @@ using System;
 
 namespace ColorVision.Database.SqliteLog
 {
-    public class LogEntry:IPKModel
+    public class LogEntry:IEntity
     {
         [SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
         public int Id { get; set; }

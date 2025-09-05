@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Messages
     public delegate void MsgRecordSucessChangedHandler(MsgReturn msgReturn);
 
     [SqlSugar.SugarTable("MsgRecord")]
-    public class MsgRecord : VPKModel
+    public class MsgRecord : ViewEntity 
     {
         public event MsgRecordStateChangedHandler MsgRecordStateChanged;
 

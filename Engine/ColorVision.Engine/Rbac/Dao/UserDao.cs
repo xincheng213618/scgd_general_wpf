@@ -7,7 +7,7 @@ namespace ColorVision.Engine.Rbac
 {
 
     [SugarTable("t_scgd_sys_user")]
-    public class UserModel : VPKModel
+    public class UserModel : ViewEntity 
     {
         [SugarColumn(ColumnName ="name")]
         public string UserName { get => _UserName; set { _UserName = value; OnPropertyChanged(); } }
@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Rbac
 
 
     [SugarTable("t_scgd_sys_user_detail")]
-    public class UserDetailModel : VPKModel
+    public class UserDetailModel : ViewEntity 
     {
         [SugarColumn(ColumnName ="user_id")]
         public int UserId { get => _UserId; set { _UserId = value; OnPropertyChanged(); } }

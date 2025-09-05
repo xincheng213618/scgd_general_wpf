@@ -5,7 +5,7 @@ using System;
 namespace ColorVision.Engine.Templates.POI
 {
     [SugarTable("t_scgd_algorithm_poi_template_master")]
-    public class PoiMasterModel : PKModel
+    public class PoiMasterModel : EntityBase
     {
         public PoiMasterModel()
         {

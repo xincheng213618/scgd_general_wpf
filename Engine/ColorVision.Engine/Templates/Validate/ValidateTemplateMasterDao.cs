@@ -6,7 +6,7 @@ using System;
 namespace ColorVision.Engine.Templates.Validate
 {
     [SugarTable("t_scgd_rule_validate_template_master")]
-    public class ValidateTemplateMasterModel : PKModel
+    public class ValidateTemplateMasterModel : EntityBase
     {
         [SugarColumn(ColumnName ="dic_pid")]
         public int? DId { get; set; }

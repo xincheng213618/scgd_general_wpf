@@ -6,7 +6,7 @@ using System;
 namespace ColorVision.Engine
 {
     [@SugarTable("t_scgd_algorithm_result_master")]
-    public class AlgResultMasterModel : PKModel
+    public class AlgResultMasterModel : EntityBase
     {
         public AlgResultMasterModel() { }
 

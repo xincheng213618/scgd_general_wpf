@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
 
     [SugarTable("t_scgd_algorithm_result_detail_blackmura")]
-    public class BlackMuraModel : PKModel, IInitTables
+    public class BlackMuraModel : EntityBase, IInitTables
     {
         [SugarColumn(ColumnName ="pid")]
         public int PId { get; set; }

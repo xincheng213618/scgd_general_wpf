@@ -5,7 +5,7 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
 {
 
     [SugarTable("t_scgd_algorithm_result_detail_binocular_fusion")]
-    public class BinocularFusionModel : PKModel, IViewResult, IInitTables
+    public class BinocularFusionModel : EntityBase, IViewResult, IInitTables
     {
         [SugarColumn(ColumnName ="pid")]
         public int PId { get; set; }

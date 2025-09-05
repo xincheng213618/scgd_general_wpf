@@ -4,7 +4,7 @@ using SqlSugar;
 namespace ColorVision.Engine.Templates.SFR
 {
     [SugarTable("t_scgd_algorithm_result_detail_sfr")]
-    public class AlgResultSFRModel : PKModel,IViewResult, IInitTables
+    public class AlgResultSFRModel : EntityBase,IViewResult, IInitTables
     {
         [SugarColumn(ColumnName ="pid")]
         public int? Pid { get; set; }

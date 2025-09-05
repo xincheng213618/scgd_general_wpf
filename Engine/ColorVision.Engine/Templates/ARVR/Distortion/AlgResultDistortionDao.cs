@@ -5,7 +5,7 @@ using SqlSugar;
 namespace ColorVision.Engine.Templates.Distortion
 {
     [SugarTable("t_scgd_algorithm_result_detail_distortion")]
-    public class AlgResultDistortionModel : PKModel, IInitTables
+    public class AlgResultDistortionModel : EntityBase, IInitTables
     {
         [SugarColumn(ColumnName ="pid")]
         public int? Pid { get; set; }

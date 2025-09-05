@@ -104,7 +104,7 @@ namespace ColorVision.Database
     }
 
 
-    public class GenericQuery<T> : GenericQueryBase where T : class ,IPKModel,new()
+    public class GenericQuery<T> : GenericQueryBase where T : class ,IEntity,new()
     {
         public ISugarQueryable<T> Query { get; set; }
         public IList<T> ViewResluts { get; set; }
@@ -256,7 +256,7 @@ namespace ColorVision.Database
 
     }
 
-    public class GenericQuery<T,T1> : GenericQueryBase where T :class, IPKModel, new() where T1 : new()
+    public class GenericQuery<T,T1> : GenericQueryBase where T :class, IEntity, new() where T1 : new()
     {
         public ISugarQueryable<T> Query { get; set; }
         public IList<T1> ViewResluts { get; set; }

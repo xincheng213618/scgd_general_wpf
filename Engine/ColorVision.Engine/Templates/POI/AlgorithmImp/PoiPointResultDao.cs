@@ -5,7 +5,7 @@ using SqlSugar;
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
     [SugarTable("t_scgd_algorithm_result_detail_poi_mtf")]
-    public class PoiPointResultModel : PKModel,IViewResult
+    public class PoiPointResultModel : EntityBase,IViewResult
     {
         [SugarColumn(ColumnName ="pid")]
         public int? Pid { get; set; }

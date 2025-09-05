@@ -114,7 +114,7 @@ namespace ProjectLUX
     }
 
     [SugarTable("ARVRReuslt")]
-    public class ProjectLUXReuslt : VPKModel
+    public class ProjectLUXReuslt : ViewEntity 
     {
         [SqlSugar.SugarColumn(IsIgnore = true)]
         public ContextMenu ContextMenu { get; set; }

@@ -5,7 +5,7 @@ using System;
 namespace ColorVision.Engine
 {
     [SugarTable("t_scgd_sys_resource")]
-    public class SysResourceModel : PKModel
+    public class SysResourceModel : EntityBase
     {
 
         public SysResourceModel()

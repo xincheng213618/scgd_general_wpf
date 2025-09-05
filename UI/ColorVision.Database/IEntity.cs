@@ -3,17 +3,17 @@ using SqlSugar;
 
 namespace ColorVision.Database
 {
-    public interface IPKModel
+    public interface IEntity
     {
         public int Id { get; set; }
     }
 
-    public class PKModel : IPKModel
+    public class EntityBase : IEntity
     {
-        [SugarColumn(ColumnName ="id",IsPrimaryKey = true, IsIdentity = true)]
-        public int Id { get; set; }  
+        [SugarColumn(ColumnName = "id", IsPrimaryKey = true, IsIdentity = true)]
+        public int Id { get; set; }
     }
-    public class VPKModel : ViewModelBase ,IPKModel
+    public class ViewEntity : ViewModelBase, IEntity
     {
         [SugarColumn(ColumnName = "id", IsPrimaryKey = true, IsIdentity = true)]
         public int Id { get; set; }

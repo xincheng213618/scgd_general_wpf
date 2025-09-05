@@ -5,7 +5,7 @@ using System;
 namespace ColorVision.Engine
 {
     [SugarTable("t_scgd_sys_dictionary_mod_master")]
-    public class SysDictionaryModModel : VPKModel, IInitTables
+    public class SysDictionaryModModel : ViewEntity , IInitTables
     {
         [SugarColumn(ColumnName = "code", Length = 32)]
         public string Code { get => _Code; set { _Code = value; OnPropertyChanged(); } }

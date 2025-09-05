@@ -5,7 +5,7 @@ using SqlSugar;
 namespace ColorVision.Engine
 {
     [SugarTable("t_scgd_mod_param_master")]
-    public class ModMasterModel : PKModel
+    public class ModMasterModel : EntityBase
     {
 
         [SugarColumn(ColumnName = "code", IsNullable = true)]

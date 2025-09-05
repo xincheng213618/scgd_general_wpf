@@ -6,7 +6,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Dao
 {
 
     [SugarTable("t_scgd_measure_result_smu")]
-    public class SMUResultModel : PKModel, IInitTables
+    public class SMUResultModel : EntityBase, IInitTables
     {
 
         [SugarColumn(ColumnName ="pid")]

@@ -4,7 +4,7 @@ using SqlSugar;
 namespace ColorVision.Engine
 {
     [SugarTable("t_scgd_sys_dictionary_mod_item_validate")]
-    public class SysDictionaryModItemValidateModel : VPKModel
+    public class SysDictionaryModItemValidateModel : ViewEntity 
     {
         [SugarColumn(ColumnName ="pid")]
         public int? Pid { get; set; }

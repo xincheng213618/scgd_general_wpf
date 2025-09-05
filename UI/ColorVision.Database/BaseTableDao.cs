@@ -11,7 +11,7 @@ namespace ColorVision.Database
     {
     }
 
-    public class BaseTableDao<T> : BaseTableDao where T : IPKModel ,new()
+    public class BaseTableDao<T> : BaseTableDao where T : IEntity ,new()
     {
         public SqlSugarClient Db => MySqlControl.GetInstance().DB;
     }
@@ -20,7 +20,7 @@ namespace ColorVision.Database
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseTableDaoExtensions));
 
-        public static List<T> GetAll<T>(this BaseTableDao<T> dao, int limit = -1) where T : IPKModel, new()
+        public static List<T> GetAll<T>(this BaseTableDao<T> dao, int limit = -1) where T : IEntity, new()
         {
             if (!MySqlControl.GetInstance().IsConnect) return new List<T>();
 
@@ -38,7 +38,7 @@ namespace ColorVision.Database
             }
         }
 
-        public static List<T> GetAllByPid<T>(this BaseTableDao<T> dao, int pid) where T : IPKModel, new()
+        public static List<T> GetAllByPid<T>(this BaseTableDao<T> dao, int pid) where T : IEntity, new()
         {
             if (!MySqlControl.GetInstance().IsConnect) return new List<T>();
 
@@ -56,7 +56,7 @@ namespace ColorVision.Database
         }
 
 
-        public static T? GetById<T>(this BaseTableDao<T> dao, int? id) where T : IPKModel, new()
+        public static T? GetById<T>(this BaseTableDao<T> dao, int? id) where T : IEntity, new()
         {
             if (!MySqlControl.GetInstance().IsConnect) return default;
 
@@ -76,7 +76,7 @@ namespace ColorVision.Database
             }
         }
 
-        public static List<T> GetAllByBatchId<T>(this BaseTableDao<T> dao, int batchid) where T : IPKModel, new()
+        public static List<T> GetAllByBatchId<T>(this BaseTableDao<T> dao, int batchid) where T : IEntity, new()
         {
             if (!MySqlControl.GetInstance().IsConnect) return new List<T>();
 
@@ -93,7 +93,7 @@ namespace ColorVision.Database
             }
         }
 
-        public static List<T> GetAllByParam<T>(this BaseTableDao<T> dao, Dictionary<string, object> param, int limit = -1) where T : IPKModel, new()
+        public static List<T> GetAllByParam<T>(this BaseTableDao<T> dao, Dictionary<string, object> param, int limit = -1) where T : IEntity, new()
         {
             if (!MySqlControl.GetInstance().IsConnect) return new List<T>();
 
@@ -146,14 +146,14 @@ namespace ColorVision.Database
             return query.ToList();
         }
 
-        public static T? GetByParam<T>(this BaseTableDao<T> dao, Dictionary<string, object> param) where T : IPKModel, new()
+        public static T? GetByParam<T>(this BaseTableDao<T> dao, Dictionary<string, object> param) where T : IEntity, new()
         {
             if (!MySqlControl.GetInstance().IsConnect) return default;
 
             return dao.GetAllByParam(param, 1).FirstOrDefault();
         }
 
-        public static int Save<T>(this BaseTableDao<T> dao, T item) where T : class, IPKModel, new()
+        public static int Save<T>(this BaseTableDao<T> dao, T item) where T : class, IEntity, new()
         {
             try
             {
@@ -186,7 +186,7 @@ namespace ColorVision.Database
             }
         }
 
-        public static int GetNextAvailableId<T>(this BaseTableDao<T> dao) where T : IPKModel, new()
+        public static int GetNextAvailableId<T>(this BaseTableDao<T> dao) where T : IEntity, new()
         {
             using (SqlSugarClient db = new SqlSugarClient(new ConnectionConfig
             {
