@@ -132,7 +132,7 @@ namespace ColorVision.Engine.Templates.POI.Image
 
             void CalculPOI_Click(object sender, RoutedEventArgs e)
             {
-                if (!imageView.Config.GetProperties<bool>("IsCVCIE") == true)
+                if (!imageView.Config.GetProperties<bool>("IsCVCIE"))
                 {
                     MessageBox1.Show("仅对CVCIE图像支持");
                     return;

@@ -153,9 +153,9 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                         {
                             var fileInfo = new FileInfo(data.FileUrl);
                             log.Warn($"fileInfo.Length{fileInfo.Length}");
-                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
+                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                             {
-                                log.Warn("文件可以读取，没有被占用。");
+                                log.Debug("文件可以读取，没有被占用。");
                             }
                             if (fileInfo.Length > 0)
                             {

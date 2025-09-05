@@ -16,6 +16,8 @@
         </Grid.RowDefinitions>
         <Grid Margin="5">
             <DockPanel>
+                <Button DockPanel.Dock="Right" Content="清空表" Command="{Binding DeleteAllCommand}" Margin="5,0,0,0"/>
+                <Button DockPanel.Dock="Right" Content="截断表" Command="{Binding TruncateTableCommand}" Margin="5,0,0,0"/>
                 <Button DockPanel.Dock="Right" Content="添加查询" Click="AddPropertyInfo_Click" Margin="5,0,0,0"/>
                 <ComboBox  x:Name="PropertyInfoCB" DisplayMemberPath="Key" SelectedValuePath="Value"/>
             </DockPanel>

@@ -61,9 +61,16 @@ namespace ColorVision.Database
         public string Sql { get => _Sql; set { _Sql = value;OnPropertyChanged(); } }
         private string _Sql;
 
+        public RelayCommand DeleteAllCommand { get; set; }
+        public RelayCommand TruncateTableCommand { get; set; }
+
+
         public GenericQueryBase(SqlSugarClient db)
         {
             Db = db;
+
+            DeleteAllCommand = new RelayCommand(a => DeleteAll());
+            TruncateTableCommand = new RelayCommand(a => TruncateTable());
         }
 
         public virtual FrameworkElement GetControl()
@@ -80,10 +87,24 @@ namespace ColorVision.Database
         {
 
         }
+
+        /// <summary>
+        /// 清空表数据（Delete All Rows, 保留表结构，自增不重置）
+        /// </summary>
+        public virtual void DeleteAll()
+        {
+        }
+
+        /// <summary>
+        /// 截断表（Truncate Table，删除所有数据且重置自增主键）
+        /// </summary>
+        public virtual void TruncateTable()
+        {
+        }
     }
 
 
-    public class GenericQuery<T> : GenericQueryBase where T : IPKModel,new()
+    public class GenericQuery<T> : GenericQueryBase where T : class ,IPKModel,new()
     {
         public ISugarQueryable<T> Query { get; set; }
         public IList<T> ViewResluts { get; set; }
@@ -212,9 +233,30 @@ namespace ColorVision.Database
             }
         }
 
+        /// <summary>
+        /// 清空表数据（Delete All Rows, 保留表结构，自增不重置）
+        /// </summary>
+        public override void DeleteAll()
+        {
+            var tableName = Db.EntityMaintenance.GetTableName<T>();
+            Db.Deleteable<T>().ExecuteCommand();
+            log.InfoFormat("Delete all rows from {0}", tableName);
+        }
+
+        /// <summary>
+        /// 截断表（Truncate Table，删除所有数据且重置自增主键）
+        /// </summary>
+        public override void TruncateTable()
+        {
+            var tableName = Db.EntityMaintenance.GetTableName<T>();
+            var sql = $"TRUNCATE TABLE {tableName}";
+            Db.Ado.ExecuteCommand(sql);
+            log.InfoFormat("Truncate table {0}", tableName);
+        }
+
     }
 
-    public class GenericQuery<T,T1> : GenericQueryBase where T : IPKModel, new() where T1 : new()
+    public class GenericQuery<T,T1> : GenericQueryBase where T :class, IPKModel, new() where T1 : new()
     {
         public ISugarQueryable<T> Query { get; set; }
         public IList<T1> ViewResluts { get; set; }
@@ -342,6 +384,28 @@ namespace ColorVision.Database
             {
                 ViewResluts.Add(Converter(dbItem));
             }
+        }
+
+
+        /// <summary>
+        /// 清空表数据（Delete All Rows, 保留表结构，自增不重置）
+        /// </summary>
+        public override void DeleteAll()
+        {
+            var tableName = Db.EntityMaintenance.GetTableName<T>();
+            Db.Deleteable<T>().ExecuteCommand();
+            log.InfoFormat("Delete all rows from {0}", tableName);
+        }
+
+        /// <summary>
+        /// 截断表（Truncate Table，删除所有数据且重置自增主键）
+        /// </summary>
+        public override void TruncateTable()
+        {
+            var tableName = Db.EntityMaintenance.GetTableName<T>();
+            var sql = $"TRUNCATE TABLE {tableName}";
+            Db.Ado.ExecuteCommand(sql);
+            log.InfoFormat("Truncate table {0}", tableName);
         }
 
     }

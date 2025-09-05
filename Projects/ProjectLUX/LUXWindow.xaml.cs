@@ -1686,7 +1686,7 @@ namespace ProjectLUX
                         {
                             var fileInfo = new FileInfo(result.FileName);
                             log.Debug($"fileInfo.Length{fileInfo.Length}");
-                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
+                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                             {
                                 log.Debug("文件可以读取，没有被占用。");
                             }

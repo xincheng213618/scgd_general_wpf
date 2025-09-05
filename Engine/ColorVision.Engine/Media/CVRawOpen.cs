@@ -127,7 +127,7 @@ namespace ColorVision.Engine.Media
             }
             void ShowCVCIE(object sender, ImageInfo imageInfo)
             {
-                if (imageView.Config.GetProperties<bool>("IsBufferSet"))
+                if (!imageView.Config.GetProperties<bool>("IsBufferSet"))
                 {
                     Action action = imageView.Config.GetProperties<Action>("LoadBuffer");
                     action?.Invoke();
