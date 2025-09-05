@@ -84,12 +84,12 @@ namespace ColorVision.ImageEditor
 
 
         /// <summary>
-        /// Insets or outsets a convex polygon by a given offset.
+        /// Insets or outsets a convex polygon by a given offsetx.
         /// </summary>
         /// <param name="polygon">The list of points defining the polygon.</param>
         /// <param name="offset">The distance to inset (positive) or outset (negative).</param>
-        /// <returns>A new list of points for the offset polygon.</returns>
-        public static List<Point> InsetPolygon(List<Point> polygon, double offset)
+        /// <returns>A new list of points for the offsetx polygon.</returns>
+        public static List<Point> InsetPolygon(List<Point> polygon, double offsetX,double offsetY)
         {
             if (polygon == null || polygon.Count < 3) return polygon;
 
@@ -127,9 +127,12 @@ namespace ColorVision.ImageEditor
                 double sin_half_angle = Math.Sin(Math.PI * angle / 360.0);
                 if (Math.Abs(sin_half_angle) < 1e-9) continue;
 
-                double shift = offset / sin_half_angle;
+                double shift = offsetX / sin_half_angle;
+                double shift1 = offsetY / sin_half_angle;
 
-                newPoints.Add(p_curr + bisector * shift);
+                //newPoints.Add(p_curr + bisector * shift);
+
+                newPoints.Add(new Point(p_curr.X + bisector.X * shift, p_curr.Y + bisector.Y * shift1));
             }
 
             return newPoints;
@@ -546,26 +549,29 @@ namespace ColorVision.ImageEditor
 
             if (ComboBoxBorderType2.SelectedValue is DrawingGraphicPosition pOIPosition)
             {
-                double offset = 0;
+                double offsetx = 0;
+                double offsety = 0;
+
                 switch (Config.DefaultPointType)
                 {
                     case GraphicDrawTypes.Circle:
-                        offset = Config.DefaultCircleRadius;
+                        offsetx = Config.DefaultCircleRadius;
                         break;
                     case GraphicDrawTypes.Rect:
-                        offset = Math.Min(Config.DefaultRectWidth, Config.DefaultRectHeight) / 2.0;
+                        offsetx = Math.Min(Config.DefaultRectWidth, Config.DefaultRectHeight) / 2.0;
+                        offsety = Math.Max(Config.DefaultRectWidth, Config.DefaultRectHeight) / 2.0;
                         break;
                 }
 
-                if (offset > 0)
+                if (offsetx > 0)
                 {
                     switch (pOIPosition)
                     {
                         case DrawingGraphicPosition.Internal:
-                            points = ImageEditorHelper.InsetPolygon(points, -offset);
+                            points = ImageEditorHelper.InsetPolygon(points, -offsetx,-offsety);
                             break;
                         case DrawingGraphicPosition.External:
-                            points = ImageEditorHelper.InsetPolygon(points, offset);
+                            points = ImageEditorHelper.InsetPolygon(points, offsetx, offsety);
                             break;
                         case DrawingGraphicPosition.LineOn:
                         default:

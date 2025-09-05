@@ -172,6 +172,10 @@ namespace ColorVision.ImageEditor.Draw
                 DrawCanvas.PreviewKeyDown += PreviewKeyDown;
                 ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
             }
+            if (!DrawCanvas.ContainsVisual(this))
+            {
+                DrawCanvas.AddVisual(this, false);
+            }
             Render();
         }
         public event EventHandler<ISelectVisual> SelectVisualChanged;
@@ -196,13 +200,17 @@ namespace ColorVision.ImageEditor.Draw
                 DrawCanvas.Focus();
                 ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
             }
-
+            if (!DrawCanvas.ContainsVisual(this))
+            {
+                DrawCanvas.AddVisual(this, false);
+            }
             Render();
         }
 
 
         public void Render()
         {
+
             using DrawingContext dc = this.RenderOpen();
             if (SelectVisuals.Count == 0)
                 return;
