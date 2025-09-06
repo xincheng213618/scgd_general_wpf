@@ -7,7 +7,7 @@ using System.ServiceProcess;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.Engine.Mysql
+namespace ColorVision.Engine
 {
     public class MySqlInitializer : InitializerBase
     {
