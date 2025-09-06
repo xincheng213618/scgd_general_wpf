@@ -2,6 +2,7 @@ using FlowEngineLib.Algorithm;
 using FlowEngineLib.MQTT;
 using log4net;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
@@ -320,7 +321,7 @@ public class CVBaseServerNode : CVCommonNode
 
 	public bool DoServerStatusRecv(CVBaseDataFlowResp statusEvent)
 	{
-		if (statusEvent.ZIndex != base.ZIndex)
+        if (statusEvent.ZIndex != base.ZIndex)
 		{
 			return false;
 		}
@@ -335,19 +336,19 @@ public class CVBaseServerNode : CVCommonNode
 		{
 			logger.DebugFormat("[{0}] {1} => {2}", ToShortString(), eventName, serialNumber);
 		}
-		CVTransAction cVTransByEvent = GetCVTransByEvent(serialNumber, eventName);
-		if (cVTransByEvent != null)
+        CVTransAction cVTransByEvent = GetCVTransByEvent(serialNumber, eventName);
+        if (cVTransByEvent != null)
 		{
 			CVServerResponse serverResponse = GetServerResponse(cVTransByEvent, statusEvent);
-			if (serverResponse.Status != ActionStatusEnum.Pending && cVTransByEvent.m_sever_actionEvent.ContainsKey(serverResponse.Id))
+            if (serverResponse.Status != ActionStatusEnum.Pending && cVTransByEvent.m_sever_actionEvent.ContainsKey(serverResponse.Id))
 			{
-				CVBaseEventCmd cVBaseEventCmd = cVTransByEvent.m_sever_actionEvent[serverResponse.Id];
+                CVBaseEventCmd cVBaseEventCmd = cVTransByEvent.m_sever_actionEvent[serverResponse.Id];
 				//cVBaseEventCmd.waiter.SignalMessageReceived();
 				cVBaseEventCmd.resp = serverResponse;
 				OnServerResponse(serverResponse, cVTransByEvent.trans_action);
-				if (!IsCacheActResponse(cVTransByEvent, serverResponse))
+                if (!IsCacheActResponse(cVTransByEvent, serverResponse))
 				{
-					DoOutAction(cVTransByEvent, cVBaseEventCmd);
+                    DoOutAction(cVTransByEvent, cVBaseEventCmd);
 				}
 				return true;
 			}
@@ -517,7 +518,7 @@ public class CVBaseServerNode : CVCommonNode
 
 	private void DoTransNodeEndOut(CVTransAction trans, CVBaseEventCmd cmd)
 	{
-		CVServerResponse resp = cmd.resp;
+        CVServerResponse resp = cmd.resp;
 
         CVStartCFC cVStartCFC = new CVStartCFC();
         cVStartCFC.StartTime = trans.trans_action.StartTime;
@@ -653,8 +654,8 @@ public class CVBaseServerNode : CVCommonNode
 	}
 
 	private void DoOutAction(CVTransAction trans, CVBaseEventCmd cmd)
-	{
-		CVServerResponse resp = cmd.resp;
+    {
+        CVServerResponse resp = cmd.resp;
 		if (m_is_out_release)
 		{
 			logger.DebugFormat("[{0}]Remove request => {1}/{2}", ToShortString(), trans.trans_action.SerialNumber, cmd.cmd.MsgID);

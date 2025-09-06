@@ -1,6 +1,9 @@
-﻿using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services.Devices.SMU.Configs;
+﻿using ColorVision.Database;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.MQTT;
+using ColorVision.Engine.Services.Devices.SMU.Configs;
+using ColorVision.Engine.Services.Devices.SMU.Dao;
+using ColorVision.Engine.Services.Devices.SMU.Views;
 using MQTTMessageLib.SMU;
 using MQTTnet.Client;
 using Newtonsoft.Json;
@@ -14,10 +17,10 @@ namespace ColorVision.Engine.Services.Devices.SMU
 {
     public class MQTTSMU : MQTTDeviceService<ConfigSMU>
     {
-        public event MQTTSMUScanResultHandler ScanResultEvent;
-        public event MQTTSMUResultHandler ResultEvent;
-        public MQTTSMU(ConfigSMU sMUConfig) : base(sMUConfig)
+        public DeviceSMU DeviceSMU { get; set; }
+        public MQTTSMU(DeviceSMU deviceSMU, ConfigSMU sMUConfig) : base(sMUConfig)
         {
+            DeviceSMU = deviceSMU;
             Config = sMUConfig;
 
             SendTopic = sMUConfig.SendTopic;
@@ -35,41 +38,42 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
                 try
                 {
-                    MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
-                    if (json == null)
+                    MsgReturn msg = JsonConvert.DeserializeObject<MsgReturn>(Msg);
+                    if (msg == null)
                         return Task.CompletedTask;
 
-                    if (json.Code == 0)
+                    if (msg.EventName == "GetData")
                     {
-                        if (json.EventName == "Init")
+                        if (msg != null && msg.Data != null && msg.Data.MasterId != null && msg.Data.MasterId > 0)
                         {
+                            int masterId = msg.Data.MasterId;
+                            SMUResultModel model = MySqlControl.GetInstance().DB.Queryable<SMUResultModel>().Where(x => x.Id == masterId).First();
+                            if (model != null)
+                            {
+                                ViewResultSMU viewResultSpectrum = new ViewResultSMU(model);
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    DeviceSMU.View.AddViewResultSMU(viewResultSpectrum);
+                                    Config.I = model.IResult;
+                                    Config.V = model.VResult;
+                                });
+                            }
                         }
-                        else if (json.EventName == "SetParam")
+
+
+                    }
+                    else if (msg.EventName == "Scan")
+                    {
+                        Configs.SMUScanResultData data = JsonConvert.DeserializeObject<Configs.SMUScanResultData>(JsonConvert.SerializeObject(msg.Data));
+                        Application.Current.Dispatcher.Invoke(() =>
                         {
-                        }
-                        else if (json.EventName == "Open")
-                        {
-                        }
-                        else if (json.EventName == "GetData")
-                        {
-                            Configs.SMUResultData data = JsonConvert.DeserializeObject<Configs.SMUResultData>(JsonConvert.SerializeObject(json.Data));
-                            Application.Current.Dispatcher.Invoke(() => ResultEvent?.Invoke(data));
-                        }
-                        else if (json.EventName == "Scan")
-                        {
-                            Configs.SMUScanResultData data = JsonConvert.DeserializeObject<Configs.SMUScanResultData>(JsonConvert.SerializeObject(json.Data));
-                            Application.Current.Dispatcher.Invoke(() => ScanResultEvent?.Invoke(data));
-                        }
-                        else if (json.EventName == "Close")
-                        {
-                        }
-                        else if (json.EventName == "Uninit")
-                        {
-                        }
+                            DeviceSMU.View.AddViewResultSMU(new ViewResultSMU(Config.IsSourceV ? MeasurementType.Voltage : MeasurementType.Current, (float)Config.StopMeasureVal, data.VList, data.IList));
+                        });
                     }
                 }
-                catch
+                catch(Exception ex)
                 {
+                    log.Error(ex);
                     return Task.CompletedTask;
                 }
             }
@@ -104,9 +108,10 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 EventName = MQTTSMUEventEnum.Event_GetData,
                 Params = new SMUGetDataParam() { IsSourceV = isSourceV, MeasureValue = measureVal, LimitValue = lmtVal }
             };
-            PublishAsyncClient(msg);
+            MsgRecord msgRecord = PublishAsyncClient(msg);
             return true;
         }
+
 
         public MsgRecord Close()
         {

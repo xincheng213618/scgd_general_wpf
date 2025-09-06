@@ -1,16 +1,21 @@
-using System.Drawing;
 using FlowEngineLib.Base;
 using FlowEngineLib.MQTT;
 using FlowEngineLib.SMU;
+using log4net;
+using log4net.Repository.Hierarchy;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
+using System.Drawing;
+using System.Windows.Forms;
 
 namespace FlowEngineLib;
 
 [STNode("/04 源表")]
 public class SMUModelNode : CVBaseServerNode
 {
-	private STNodeOption m_in_next;
+    private static readonly ILog logger = LogManager.GetLogger(typeof(SMUModelNode));
+
+    private STNodeOption m_in_next;
 
 	private STNodeEditText<string> m_ctrl_editText;
 
@@ -101,23 +106,23 @@ public class SMUModelNode : CVBaseServerNode
 
 	private void updateUI()
 	{
-		if (IsStarted)
-		{
-			if (m_step_count == 0)
-			{
-				m_ctrl_editText.Value = $"{m_begin_val}-{m_end_val}/{m_point_num}";
-			}
-			else
-			{
-				m_ctrl_editText.Value = string.Format("{2:F4}:{0}/{1}", m_step_count, m_point_num, m_cur_val);
-			}
-		}
-		else
-		{
-			m_ctrl_editText.Value = "";
-		}
-		m_ctrl_model.Value = modelName;
-	}
+        if (IsStarted)
+        {
+            if (m_step_count == 0)
+            {
+                m_ctrl_editText.Value = $"{m_begin_val}-{m_end_val}/{m_point_num}";
+            }
+            else
+            {
+                m_ctrl_editText.Value = string.Format("{2:F4}:{0}/{1}", m_step_count, m_point_num, m_cur_val);
+            }
+        }
+        else
+        {
+            m_ctrl_editText.Value = "";
+        }
+        m_ctrl_model.Value = modelName;
+    }
 
 	private void end()
 	{
@@ -131,7 +136,8 @@ public class SMUModelNode : CVBaseServerNode
 		{
 			return;
 		}
-		CVLoopCFC cVLoopCFC = (CVLoopCFC)e.TargetOption.Data;
+		logger.Info("!1111");
+        CVLoopCFC cVLoopCFC = (CVLoopCFC)e.TargetOption.Data;
 		CVTransAction trans = null;
 		if (HasTransAction(cVLoopCFC.SerialNumber, ref trans) && trans.trans_action.IsRunning)
 		{
@@ -195,22 +201,24 @@ public class SMUModelNode : CVBaseServerNode
 	{
 		if (resp != null && resp.Status == ActionStatusEnum.Finish && resp.EventName == "ModelGetData")
 		{
-			IsStarted = true;
-			m_source = ((!(bool)resp.Data.ScanRequestParam.IsSourceV) ? SourceType.电流 : SourceType.电压);
-			m_begin_val = (float)resp.Data.ScanRequestParam.BeginValue;
-			m_end_val = (float)resp.Data.ScanRequestParam.EndValue;
-			m_limit_val = (float)resp.Data.ScanRequestParam.LimitValue;
-			m_point_num = (int)resp.Data.ScanRequestParam.Points;
-			double num = m_end_val - m_begin_val;
-			if (m_point_num > 1)
-			{
-				m_step_val = num / (double)(m_point_num - 1);
-			}
-			else
-			{
-				m_step_val = num;
-			}
-			m_cur_val = m_begin_val;
+			logger.Info(JsonConvert.SerializeObject(resp));
+            IsStarted = true;
+			//新版本没有这些参数了
+			//m_source = ((!(bool)resp.Data.ScanRequestParam.IsSourceV) ? SourceType.电流 : SourceType.电压);
+			//m_begin_val = (float)resp.Data.ScanRequestParam.BeginValue;
+			//m_end_val = (float)resp.Data.ScanRequestParam.EndValue;
+			//m_limit_val = (float)resp.Data.ScanRequestParam.LimitValue;
+			//m_point_num = (int)resp.Data.ScanRequestParam.Points;
+			//double num = m_end_val - m_begin_val;
+			//if (m_point_num > 1)
+			//{
+			//	m_step_val = num / (double)(m_point_num - 1);
+			//}
+			//else
+			//{
+			//	m_step_val = num;
+			//}
+			//m_cur_val = m_begin_val;
 			updateUI();
 		}
 	}

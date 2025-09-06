@@ -91,10 +91,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             UpdateUI(DService.DeviceStatus);
             DService.DeviceStatusChanged += UpdateUI;
 
-
-            DService.ScanResultEvent += SMUService_ScanResultHandler;
-            DService.ResultEvent += SMUService_ResultHandler;
-
             ComboxVITemplate.ItemsSource = TemplateSMUParam.Params;
             ComboxVITemplate.SelectionChanged += (s, e) =>
             {
@@ -119,23 +115,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
-        private void SMUService_ResultHandler(SMUResultData data)
-        {
-            Config.V = data.V;
-            Config.I = data.I;
-        }
 
-        private void SMUService_ScanResultHandler(SMUScanResultData data)
-        {
-            try
-            {
-                View.DrawPlot(Config.IsSourceV, Config.StopMeasureVal, data.VList, data.IList);
-            }
-            catch 
-            {
-
-            }
-        }
 
 
         PassSxSource passSxSource = new();
@@ -190,7 +170,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
         private void MeasureData_Click(object sender, RoutedEventArgs e)
         {
-            //double V = 0, I = 0;
             DService.GetData(Config.IsSourceV, Config.MeasureVal, Config.LmtVal);
         }
         private void StepMeasureData_Click(object sender, RoutedEventArgs e)

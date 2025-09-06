@@ -33,6 +33,29 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             Gen();
         }
 
+
+        public ViewResultSMU(SMUResultModel item)
+        {
+            Id = item.Id;
+            CreateTime = item.CreateDate;
+            BatchID = item.Batchid;
+            MeasurementType = item.IsSourceV ? MeasurementType.Voltage : MeasurementType.Current;
+            VList = new double[3];
+            IList = new double[3];
+            LimitEnd = item.LimitValue;
+            VResult = item.VResult;
+            IResult = item.IResult;
+            if (VList != null && IList != null)
+            {
+                for (int i = 0; i < VList.Length; i++)
+                {
+                    SMUDatas.Add(new SMUData() { Voltage = VList[i], Current = IList[i] });
+                }
+            }
+            Gen();
+        }
+
+
         public ViewResultSMU(MeasurementType measurementType , float LimitEnd ,double[] VList, double[] IList)
         {
             Id = 0;
@@ -44,7 +67,8 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             Gen();
         }
 
-
+        public double VResult { get; set; }
+        public double IResult { get; set; }
 
         public double[] VList { get; set; }
         public double[] IList { get; set; }

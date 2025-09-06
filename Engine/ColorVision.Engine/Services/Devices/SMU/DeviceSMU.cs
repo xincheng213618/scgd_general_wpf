@@ -20,7 +20,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
         public DeviceSMU(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            DService = new MQTTSMU(Config);
+            DService = new MQTTSMU(this,Config);
             View = new ViewSMU();
             View.View.Title = $"源表视图 - {Config.Code}";
             this.SetIconResource("SMUDrawingImage", View.View);
