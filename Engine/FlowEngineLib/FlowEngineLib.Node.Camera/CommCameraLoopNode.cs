@@ -29,6 +29,6 @@ public class CommCameraLoopNode : CVBaseLoopServerNode<CommCameraNodeProperty>
 
 	protected override object getBaseEventData(CVStartCFC start, CommCameraNodeProperty property)
 	{
-		return new CommCameraData(property.CamTempName, bool.Parse(property.IsAutoExpTime), property.ExpTempName, bool.Parse(property.IsAutoFocus), property.FocusTempName, property.CaliTempName, property.POITempName, property.POIFilterTempName, property.POIReviseTempName, string.Empty);
+		return new CommCameraData(property.CamTempName, isWithND: false, bool.Parse(property.IsAutoExpTime), property.ExpTempName, property.CaliTempName, property.POITempName, property.POIFilterTempName, property.POIReviseTempName, string.Empty);
 	}
 }

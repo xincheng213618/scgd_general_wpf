@@ -126,10 +126,6 @@ public class POICADMappingNode : CVBaseServerNode
 	{
 		POICADMappingData pOICADMappingData = new POICADMappingData(_TemplateName, _PrefixName, _CADFileName, _MappingType);
 		getPreStepParam(start, pOICADMappingData);
-		if (start.Data.ContainsKey("Image"))
-		{
-			start.Data.Remove("Image");
-		}
 		return pOICADMappingData;
 	}
 }

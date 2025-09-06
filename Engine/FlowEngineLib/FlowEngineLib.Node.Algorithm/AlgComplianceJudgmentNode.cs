@@ -4,7 +4,6 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
 
-[STNode("/09 合规验证")]
 public class AlgComplianceJudgmentNode : CVBaseServerNode
 {
 	private bool _IsBreak;

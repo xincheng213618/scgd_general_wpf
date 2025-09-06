@@ -182,7 +182,7 @@ public class SMUNode : CVBaseServerNode
 	{
 		CVStartCFC trans_action = trans.trans_action;
 		string token = GetToken();
-		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, operatorCode, trans_action.SerialNumber, new SMUData(Source == SourceType.电压, m_cur_val, LimitVal), token);
+		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, operatorCode, trans_action.SerialNumber, new SMUData(Source == SourceType.电压, m_cur_val, LimitVal), token, base.ZIndex);
 		CVBaseEventCmd cmd = AddActionCmd(trans, cVMQTTRequest);
 		string message = JsonConvert.SerializeObject(cVMQTTRequest, Formatting.None);
 		MQActionEvent mQActionEvent = new MQActionEvent(cVMQTTRequest.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), cVMQTTRequest.EventName, message, token);
@@ -219,7 +219,7 @@ public class SMUNode : CVBaseServerNode
 			m_cur_val = BeginVal;
 			m_step_count = 0;
 			m_op_end.TransferData(null);
-			result = new CVMQTTRequest(GetServiceName(), GetDeviceCode(), operatorCode, cVStartCFC.SerialNumber, new SMUData(Source == SourceType.电压, m_cur_val, LimitVal), GetToken());
+			result = new CVMQTTRequest(GetServiceName(), GetDeviceCode(), operatorCode, cVStartCFC.SerialNumber, new SMUData(Source == SourceType.电压, m_cur_val, LimitVal), GetToken(), base.ZIndex);
 			m_step_count++;
 			updateUI();
 			AddCFCData(cVStartCFC);

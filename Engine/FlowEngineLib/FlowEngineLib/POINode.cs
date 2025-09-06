@@ -184,12 +184,6 @@ public class POINode : CVBaseServerNode
 	{
 		AlgorithmPreStepParam param = new AlgorithmPreStepParam();
 		getPreStepParam(start, param);
-		POIDataParam result = new POIDataParam(_ImgFileName, _TempId, _TemplateName, _FilterTemplateName, _ReviseTemplateName, _OutputTemplateName, param, _IsSubPixel, _IsCCTWave);
-		if (start.Data.ContainsKey("Image"))
-		{
-			_ = start.Data["Image"];
-			start.Data.Remove("Image");
-		}
-		return result;
+		return new POIDataParam(_ImgFileName, _TempId, _TemplateName, _FilterTemplateName, _ReviseTemplateName, _OutputTemplateName, param, _IsSubPixel, _IsCCTWave);
 	}
 }

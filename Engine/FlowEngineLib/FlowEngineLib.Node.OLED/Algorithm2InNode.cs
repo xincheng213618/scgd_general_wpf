@@ -110,7 +110,7 @@ public class Algorithm2InNode : CVBaseServerNodeIn2Hub
 	}
 
 	public Algorithm2InNode()
-		: base("AI算法2", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default", 2)
+		: base("AI算法2", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
 		operatorCode = "OLED.JND.CalVas";
 		_Algorithm = Algorithm2Type.JND;
@@ -166,13 +166,9 @@ public class Algorithm2InNode : CVBaseServerNodeIn2Hub
 	{
 		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
 		Algorithm2InParam algorithm2InParam = new Algorithm2InParam(_TempName, _IsAdd, -1, _OrderIndex, _BufferLen);
-		getPreStepParam(masterInput[0], algorithm2InParam);
-		getPreStepParam(masterInput[1], algorithmPreStepParam);
+		getPreStepParam(0, algorithm2InParam);
+		getPreStepParam(1, algorithmPreStepParam);
 		algorithm2InParam.POI_MasterId = algorithmPreStepParam.MasterId;
-		if (start.Data.ContainsKey("Image"))
-		{
-			start.Data.Remove("Image");
-		}
 		return algorithm2InParam;
 	}
 }

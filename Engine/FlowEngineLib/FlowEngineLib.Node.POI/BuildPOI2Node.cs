@@ -202,7 +202,7 @@ public class BuildPOI2Node : CVBaseServerNodeIn2Hub
 	}
 
 	public BuildPOI2Node()
-		: base("关注点布点2", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default", 2)
+		: base("关注点布点2", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
 		operatorCode = "BuildPOI";
 		m_in_text = "IN_IMG";
@@ -259,18 +259,14 @@ public class BuildPOI2Node : CVBaseServerNodeIn2Hub
 	private object buildCADMappingParam(CVStartCFC start)
 	{
 		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
-		getPreStepParam(masterInput[1], algorithmPreStepParam);
+		getPreStepParam(1, algorithmPreStepParam);
 		POITypeData pOITypeData = default(POITypeData);
 		pOITypeData.PointType = _POIType;
 		pOITypeData.Width = _POIWidth;
 		pOITypeData.Height = _POIHeight;
 		POITypeData poiData = pOITypeData;
 		BuildPOIData buildPOIData = new BuildPOIData(_ImgFileName, new CADMappingParam(algorithmPreStepParam.MasterId), _TempId, _TemplateName, _POIOutput, _OutputFileName, _PrefixName, _BuildType, poiData, _SavePOITempName, string.Empty, _BufferLen);
-		getPreStepParam(masterInput[0], buildPOIData);
-		if (start.Data.ContainsKey("Image"))
-		{
-			start.Data.Remove("Image");
-		}
+		getPreStepParam(0, buildPOIData);
 		return buildPOIData;
 	}
 

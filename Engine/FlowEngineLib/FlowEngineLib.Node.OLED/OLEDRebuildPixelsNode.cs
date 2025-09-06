@@ -62,7 +62,7 @@ public class OLEDRebuildPixelsNode : CVBaseServerNodeIn2Hub
 	}
 
 	public OLEDRebuildPixelsNode()
-		: base("OLED数据提取", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default", 2)
+		: base("OLED数据提取", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
 		operatorCode = "OLED.RebuildPixels";
 		m_in_text = "IN_IMG";
@@ -85,13 +85,9 @@ public class OLEDRebuildPixelsNode : CVBaseServerNodeIn2Hub
 	{
 		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
 		OLEDRebuildPixelsParam oLEDRebuildPixelsParam = new OLEDRebuildPixelsParam(_OutputTemplateName, _TempName, _ImgFileName);
-		getPreStepParam(masterInput[0], oLEDRebuildPixelsParam);
-		getPreStepParam(masterInput[1], algorithmPreStepParam);
+		getPreStepParam(0, oLEDRebuildPixelsParam);
+		getPreStepParam(1, algorithmPreStepParam);
 		oLEDRebuildPixelsParam.POI_MasterId = algorithmPreStepParam.MasterId;
-		if (start.Data.ContainsKey("Image"))
-		{
-			start.Data.Remove("Image");
-		}
 		return oLEDRebuildPixelsParam;
 	}
 }

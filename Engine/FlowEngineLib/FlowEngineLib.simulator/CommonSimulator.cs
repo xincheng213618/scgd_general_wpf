@@ -121,7 +121,7 @@ internal class CommonSimulator : STNodeInHub
 	{
 		CVMQTTRequest cVMQTTRequest = JsonConvert.DeserializeObject<CVMQTTRequest>(msg.Message);
 		CVServerResponse data = new CVServerResponse(cVMQTTRequest.MsgID, ActionStatusEnum.Finish, "", cVMQTTRequest.EventName, cVMQTTRequest.Data);
-		return new CVMQTTRequest(msg.ServiceCode, msg.DeviceCode, serverRespEventName, cVMQTTRequest.SerialNumber, data, string.Empty);
+		return new CVMQTTRequest(msg.ServiceCode, msg.DeviceCode, serverRespEventName, cVMQTTRequest.SerialNumber, data, string.Empty, -1);
 	}
 
 	protected override void DoInputConnected(STNodeOption sender, STNodeOptionEventArgs e)

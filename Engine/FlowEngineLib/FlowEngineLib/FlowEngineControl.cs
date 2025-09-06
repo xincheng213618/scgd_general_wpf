@@ -142,6 +142,11 @@ public class FlowEngineControl : FlowEngineAPI
 	private void clear()
 	{
 		NodeEditor.Nodes.Clear();
+		foreach (KeyValuePair<string, BaseStartNode> startNodeName in startNodeNames)
+		{
+			startNodeName.Value.Finished -= Start_Finished;
+			startNodeName.Value.Dispose();
+		}
 		startNodeNames.Clear();
 		services.Clear();
 		loadedCanvas.Clear();
@@ -229,11 +234,6 @@ public class FlowEngineControl : FlowEngineAPI
 
 	public void StopNode(string name, string serialNumber)
 	{
-		if (string.IsNullOrEmpty(name))
-        {
-            _IsRunning = false;
-            return;
-        }
 		if (startNodeNames.ContainsKey(name))
 		{
 			startNodeNames[name].Stop(serialNumber);

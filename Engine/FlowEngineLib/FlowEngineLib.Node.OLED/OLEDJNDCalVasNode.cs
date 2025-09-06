@@ -88,7 +88,7 @@ public class OLEDJNDCalVasNode : CVBaseServerNodeIn2Hub
 	}
 
 	public OLEDJNDCalVasNode()
-		: base("JND算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default", 2)
+		: base("JND算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
 		operatorCode = "OLED.JND.CalVas";
 		_Algorithm = Algorithm2Type.JND;
@@ -134,13 +134,9 @@ public class OLEDJNDCalVasNode : CVBaseServerNodeIn2Hub
 	{
 		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
 		AlgorithmCalVasParam algorithmCalVasParam = new AlgorithmCalVasParam(_TempName, _IsAdd, -1, _OrderIndex, _BufferLen);
-		getPreStepParam(masterInput[0], algorithmCalVasParam);
-		getPreStepParam(masterInput[1], algorithmPreStepParam);
+		getPreStepParam(0, algorithmCalVasParam);
+		getPreStepParam(1, algorithmPreStepParam);
 		algorithmCalVasParam.POI_MasterId = algorithmPreStepParam.MasterId;
-		if (start.Data.ContainsKey("Image"))
-		{
-			start.Data.Remove("Image");
-		}
 		return algorithmCalVasParam;
 	}
 }

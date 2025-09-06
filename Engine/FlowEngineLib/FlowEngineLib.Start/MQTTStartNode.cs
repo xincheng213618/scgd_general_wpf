@@ -154,13 +154,13 @@ public class MQTTStartNode : BaseStartNode
 			{
 				_MQTTHelper.SubscribeAsync_Client(GetStartTopic());
 				base.Ready = true;
-				logger.Debug("MQTT Connected");
+				logger.Info("MQTT Connected");
 			}
 		}
 		else if (resultData_MQTT.EventType == EventTypeEnum.ClientDisconnected)
 		{
 			base.Ready = false;
-			logger.Debug("MQTT DisConnected");
+			logger.Info("MQTT DisConnected");
 		}
 	}
 

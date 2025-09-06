@@ -34,7 +34,7 @@ public class CVMQTTRequest
 	}
 
 	public CVMQTTRequest(MQTTServiceInfo service, string deviceCode, string eventName, string sn, object data)
-		: this(service.ServiceCode, deviceCode, eventName, sn, data, service.Token)
+		: this(service.ServiceCode, deviceCode, eventName, sn, data, service.Token, -1)
 	{
 	}
 
@@ -49,16 +49,16 @@ public class CVMQTTRequest
 	}
 
 	public CVMQTTRequest(string serviceCode, string deviceCode, string eventName, string sn, string token)
-		: this(serviceCode, deviceCode, eventName, sn, null, token)
+		: this(serviceCode, deviceCode, eventName, sn, null, token, -1)
 	{
 	}
 
-	public CVMQTTRequest(string serviceCode, string deviceCode, string eventName, string sn, object data, string token)
-		: this("1.1", serviceCode, deviceCode, eventName, sn, data, token)
+	public CVMQTTRequest(string serviceCode, string deviceCode, string eventName, string sn, object data, string token, int zIdx)
+		: this("1.1", serviceCode, deviceCode, eventName, sn, data, token, zIdx)
 	{
 	}
 
-	public CVMQTTRequest(string version, string serviceCode, string deviceCode, string eventName, string sn, object data, string token)
+	public CVMQTTRequest(string version, string serviceCode, string deviceCode, string eventName, string sn, object data, string token, int zIdx = -1)
 	{
 		MsgID = Guid.NewGuid().ToString();
 		SendTime = DateTime.Now.Ticks;
@@ -69,5 +69,6 @@ public class CVMQTTRequest
 		SerialNumber = sn;
 		Token = token;
 		Data = data;
+		ZIndex = zIdx;
 	}
 }

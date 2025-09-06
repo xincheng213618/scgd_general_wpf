@@ -120,11 +120,6 @@ public class CalibrationNode : CVBaseServerNode
 	{
 		AlgorithmPreStepParam param = new AlgorithmPreStepParam();
 		getPreStepParam(start, param);
-		if (start.Data.ContainsKey("Image"))
-		{
-			_ = start.Data["Image"];
-			start.Data.Remove("Image");
-		}
 		CalibrationData calibrationData = new CalibrationData(_ImgFileName, _TempId, _TempName, _ExpTempName, param, _GlobalVariableName, _OrderIndex);
 		if (!string.IsNullOrEmpty(_ImgFileName))
 		{

@@ -1,4 +1,3 @@
-using System;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using ST.Library.UI.NodeEditor;
@@ -90,11 +89,8 @@ public class AlgComplianceMathNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		int masterId = -1;
-		if (start.Data.ContainsKey("MasterId"))
-		{
-			masterId = Convert.ToInt32(start.Data["MasterId"]);
-		}
-		return new ComplianceMathParam(masterId, _TempName, _ComplianceMath);
+		ComplianceMathParam complianceMathParam = new ComplianceMathParam(-1, _TempName, _ComplianceMath);
+		getPreStepParam(start, complianceMathParam);
+		return complianceMathParam;
 	}
 }

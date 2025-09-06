@@ -44,7 +44,7 @@ public class PGNode : CVBaseServerNode
 		base.Controls.Add(m_ctrl_editText);
 	}
 
-	protected override CVBaseEventObj getBaseEvent(CVStartCFC start)
+	protected override object getBaseEventData(CVStartCFC start)
 	{
 		List<PGParamFunction> list = new List<PGParamFunction>();
 		PGParamFunction pGParamFunction = null;
@@ -92,6 +92,6 @@ public class PGNode : CVBaseServerNode
 		{
 			list.Add(pGParamFunction);
 		}
-		return new CVBaseEventObj(operatorCode, list);
+		return list;
 	}
 }

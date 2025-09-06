@@ -77,7 +77,7 @@ public class AlgorithmGhostV2Node : CVBaseServerNodeIn2Hub
 	}
 
 	public AlgorithmGhostV2Node()
-		: base("ARVR.Ghost算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default", 2)
+		: base("ARVR.Ghost算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
 		operatorCode = "Ghost";
 		m_in_text = "IN_IMG";
@@ -97,13 +97,9 @@ public class AlgorithmGhostV2Node : CVBaseServerNodeIn2Hub
 	protected override object getBaseEventData(CVStartCFC start)
 	{
 		AlgorithmGhostInputParam algorithmGhostInputParam = new AlgorithmGhostInputParam(_TempId, _TempName, _BufferLen);
-		if (start.Data.ContainsKey("Image"))
-		{
-			start.Data.Remove("Image");
-		}
-		getPreStepParam(masterInput[0], algorithmGhostInputParam);
+		getPreStepParam(0, algorithmGhostInputParam);
 		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
-		getPreStepParam(masterInput[1], algorithmPreStepParam);
+		getPreStepParam(1, algorithmPreStepParam);
 		algorithmGhostInputParam.CIE_MasterId = algorithmPreStepParam.MasterId;
 		algorithmGhostInputParam.FileType = GetImageFileType(_ImgFileName);
 		algorithmGhostInputParam.ImgFileName = _ImgFileName;

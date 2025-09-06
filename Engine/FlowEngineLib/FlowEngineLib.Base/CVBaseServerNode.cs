@@ -1,14 +1,14 @@
-using FlowEngineLib.Algorithm;
-using FlowEngineLib.MQTT;
-using log4net;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using FlowEngineLib.Algorithm;
+using FlowEngineLib.MQTT;
+using log4net;
+using Newtonsoft.Json;
+using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Base;
 
@@ -24,7 +24,7 @@ public class CVBaseServerNode : CVCommonNode
 
 	protected bool _IsPublishStatus;
 
-	protected STNodeOption m_op_act;
+	protected STNodeOption m_op_svr_out_act;
 
 	protected STNodeOption m_op_end;
 
@@ -44,7 +44,7 @@ public class CVBaseServerNode : CVCommonNode
 
 	protected string m_in_text;
 
-	protected STNodeDevText devNameCtrl;
+	protected CVServerResponse svrRecvResp;
 
 	[STNodeProperty("Token", "Token", true)]
 	public string Token
@@ -98,8 +98,6 @@ public class CVBaseServerNode : CVCommonNode
 		}
 	}
 
-	protected string opEventName => operatorCode;
-
 	public string DefaultPublishTopic => m_nodeType + "/CMD/" + m_nodeName;
 
 	public string DefaultSubscribeTopic => m_nodeType + "/STATUS/" + m_nodeName;
@@ -144,7 +142,7 @@ public class CVBaseServerNode : CVCommonNode
 		if (m_has_svr_item)
 		{
 			m_in_act_status = base.InputOptions.Add("IN_SVR_RESP", typeof(CVMQTTRequest), bSingle: true);
-			m_op_act = base.OutputOptions.Add("OUT_SVR", typeof(MQActionEvent), bSingle: false);
+			m_op_svr_out_act = base.OutputOptions.Add("OUT_SVR", typeof(MQActionEvent), bSingle: false);
 			m_in_act_status.Connected += m_in_op_Connected;
 			m_in_act_status.DataTransfer += m_in_act_status_DataTransfer;
 		}
@@ -296,16 +294,17 @@ public class CVBaseServerNode : CVCommonNode
 
 	protected void DoTransferToServer(CVTransAction trans, MQActionEvent act, CVBaseEventCmd cmd)
 	{
+		svrRecvResp = null;
 		base.nodeRunEvent?.Invoke(this, new FlowEngineNodeRunEventArgs());
 		if (m_in_act_status == null || m_in_act_status.ConnectionCount == 0)
 		{
 			trans.trans_action.GetStartNode().DoSubscribe(GetRecvTopic(), this);
 		}
 		trans.ResetStartTime();
-		if (m_op_act != null && m_op_act.ConnectionCount > 0)
+		if (m_op_svr_out_act != null && m_op_svr_out_act.ConnectionCount > 0)
 		{
 			act.Topic = GetRecvTopic();
-			m_op_act.TransferData(act);
+			m_op_svr_out_act.TransferData(act);
 		}
 		else
 		{
@@ -315,13 +314,11 @@ public class CVBaseServerNode : CVCommonNode
 		//{
 		//	WaitingOverTime(cmd);
 		//});
-		//Thread thread = new Thread(()=>WaitingOverTime(cmd));
-		//thread.Start();
 	}
 
 	public bool DoServerStatusRecv(CVBaseDataFlowResp statusEvent)
 	{
-        if (statusEvent.ZIndex != base.ZIndex)
+		if (!IsThisNode(statusEvent))
 		{
 			return false;
 		}
@@ -336,19 +333,19 @@ public class CVBaseServerNode : CVCommonNode
 		{
 			logger.DebugFormat("[{0}] {1} => {2}", ToShortString(), eventName, serialNumber);
 		}
-        CVTransAction cVTransByEvent = GetCVTransByEvent(serialNumber, eventName);
-        if (cVTransByEvent != null)
+		CVTransAction cVTransByEvent = GetCVTransByEvent(serialNumber, eventName);
+		if (cVTransByEvent != null)
 		{
-			CVServerResponse serverResponse = GetServerResponse(cVTransByEvent, statusEvent);
-            if (serverResponse.Status != ActionStatusEnum.Pending && cVTransByEvent.m_sever_actionEvent.ContainsKey(serverResponse.Id))
+			CVServerResponse cVServerResponse = BuildServerResponse(cVTransByEvent, statusEvent);
+			if (cVServerResponse.Status != ActionStatusEnum.Pending && cVTransByEvent.m_sever_actionEvent.ContainsKey(cVServerResponse.Id))
 			{
-                CVBaseEventCmd cVBaseEventCmd = cVTransByEvent.m_sever_actionEvent[serverResponse.Id];
+				CVBaseEventCmd cVBaseEventCmd = cVTransByEvent.m_sever_actionEvent[cVServerResponse.Id];
 				//cVBaseEventCmd.waiter.SignalMessageReceived();
-				cVBaseEventCmd.resp = serverResponse;
-				OnServerResponse(serverResponse, cVTransByEvent.trans_action);
-                if (!IsCacheActResponse(cVTransByEvent, serverResponse))
+				cVBaseEventCmd.resp = cVServerResponse;
+				OnServerResponse(cVServerResponse, cVTransByEvent.trans_action);
+				if (!IsCacheActResponse(cVTransByEvent, cVServerResponse))
 				{
-                    DoOutAction(cVTransByEvent, cVBaseEventCmd);
+					DoThisNodeCompleted(cVTransByEvent, cVBaseEventCmd);
 				}
 				return true;
 			}
@@ -360,8 +357,18 @@ public class CVBaseServerNode : CVCommonNode
 		return false;
 	}
 
+	private bool IsThisNode(CVBaseDataFlowResp statusEvent)
+	{
+		if (statusEvent.ZIndex == base.ZIndex && statusEvent.EventName == operatorCode)
+		{
+			return true;
+		}
+		return false;
+	}
+
 	protected virtual void OnServerResponse(CVServerResponse resp, CVStartCFC startCFC)
 	{
+		svrRecvResp = resp;
 	}
 
 	private void m_in_act_status_DataTransfer(object sender, STNodeOptionEventArgs e)
@@ -393,7 +400,7 @@ public class CVBaseServerNode : CVCommonNode
 		return null;
 	}
 
-	private CVServerResponse GetServerResponse(CVTransAction trans, CVBaseDataFlowResp statusEvent)
+	private CVServerResponse BuildServerResponse(CVTransAction trans, CVBaseDataFlowResp statusEvent)
 	{
 		CVServerResponse cVServerResponse = null;
 		if (statusEvent.Code == 0)
@@ -409,6 +416,10 @@ public class CVBaseServerNode : CVCommonNode
 
 	protected virtual void m_in_start_DataTransfer(object sender, STNodeOptionEventArgs e)
 	{
+		if (e.Status != ConnectionStatus.Connected)
+		{
+			return;
+		}
 		if (HasData(e))
 		{
 			if (e.TargetOption.Data is CVStartCFC cVStartCFC)
@@ -417,8 +428,7 @@ public class CVBaseServerNode : CVCommonNode
 				{
 					logger.DebugFormat("[{0}]DoServerTransfer => {1}", ToShortString(), cVStartCFC.ToShortString());
 				}
-
-                if (cVStartCFC.FlowStatus == StatusTypeEnum.Runing)
+				if (cVStartCFC.FlowStatus == StatusTypeEnum.Runing)
 				{
 					if (m_trans_action.ContainsKey(cVStartCFC.SerialNumber))
 					{
@@ -460,10 +470,9 @@ public class CVBaseServerNode : CVCommonNode
 						logger.DebugFormat("[{0}]DoServerTransfer Cancel.", ToShortString());
 					}
 					cVTransByEvent.Cancel();
-                }
-
-                m_op_end.TransferData(e.TargetOption.Data);
-                Reset();
+				}
+				m_op_end.TransferData(e.TargetOption.Data);
+				Reset();
 			}
 			else
 			{
@@ -473,9 +482,9 @@ public class CVBaseServerNode : CVCommonNode
 		else
 		{
 			m_op_end.TransferData(e.TargetOption.Data);
-			if (m_op_act != null)
+			if (m_op_svr_out_act != null)
 			{
-				m_op_act.TransferData(null);
+				m_op_svr_out_act.TransferData(null);
 			}
 		}
 	}
@@ -518,84 +527,38 @@ public class CVBaseServerNode : CVCommonNode
 
 	private void DoTransNodeEndOut(CVTransAction trans, CVBaseEventCmd cmd)
 	{
-        CVServerResponse resp = cmd.resp;
-
-        CVStartCFC cVStartCFC = new CVStartCFC();
-        cVStartCFC.StartTime = trans.trans_action.StartTime;
-        cVStartCFC.Id = trans.trans_action.Id;
-        cVStartCFC.TTL = trans.trans_action.TTL;
-        cVStartCFC.IsDel = trans.trans_action.IsDel;
-        cVStartCFC.SerialNumber = trans.trans_action.SerialNumber;
-        cVStartCFC.SetActionType(trans.trans_action.GetActionType());
-        cVStartCFC.FlowStatus = trans.trans_action.FlowStatus;
-        cVStartCFC.SetStartNode(trans.trans_action.GetStartNode());
-
-        if (resp.Status == ActionStatusEnum.Finish)
+		CVServerResponse resp = cmd.resp;
+		if (resp.Status == ActionStatusEnum.Finish)
 		{
 			dynamic data = resp.Data;
-			int masterResultType = -1;
 			if (data != null)
 			{
-				string masterValue = data.MasterValue;
-				int masterId = data.MasterId;
-				if (data.MasterResultType == null && data.ResultType == null)
-				{
-					string nodeType = base.NodeType;
-					if (!(nodeType == "Spectrum"))
-					{
-						if (nodeType == "SMU")
-						{
-							masterResultType = 200;
-						}
-					}
-					else
-					{
-						masterResultType = 300;
-					}
-				}
-				else
-				{
-					masterResultType = ((data.MasterResultType != null) ? data.MasterResultType : data.ResultType);
-				}
-
-				cVStartCFC.MasterValue(masterValue, masterId, masterResultType);
-
-            }
-        }
+				trans.NodeFinished(base.NodeType, data);
+			}
+		}
 		else if (resp.Status == ActionStatusEnum.Failed)
 		{
-			cVStartCFC.Failed(cmd.resp.Message, base.DeviceCode, trans.startTime);
-
-			logger.InfoFormat("[{0}]CVTransAction Failed => {1}", ToShortString(), JsonConvert.SerializeObject(cVStartCFC));
+			trans.NodeFailed(cmd.resp.Message, base.DeviceCode);
+			logger.InfoFormat("[{0}]CVTransAction Failed => {1}", ToShortString(), JsonConvert.SerializeObject(trans.trans_action));
 		}
 		if (_IsPublishStatus)
 		{
-			string serverName = GetServiceName();
-			string deviceCode = GetDeviceCode();
-			string nodeName = GetFullNodeName();
-			CVServerResponse status = resp;
-            cVStartCFC.AddResult(nodeName, status, trans.startTime);
-            cVStartCFC.BuildStatusMsg(serverName, deviceCode);
-            cVStartCFC.GetStartNode().DoPublishStatus(serverName);
+			trans.DoPublishStatus(GetServiceName(), GetDeviceCode(), GetFullNodeName(), resp, base.ZIndex);
 		}
 		else
 		{
-            cVStartCFC.AddTTL(trans.startTime);
-        }
-
+			trans.AddTTL();
+		}
 		TimeSpan timeSpan = DateTime.Now - trans.startTime;
 		if (logger.IsInfoEnabled)
 		{
 			logger.InfoFormat("[{0}]Node completed. Transfer to the next node. TotalTime={1}/{2}", ToShortString(), timeSpan.ToString(), trans.startTime.ToString("O"));
 		}
-        m_op_end.TransferData(cVStartCFC);
-        base.nodeEndEvent?.Invoke(this, new FlowEngineNodeEndEventArgs());
-    }
-    private static readonly object trans = new();
+		m_op_end.TransferData(trans.trans_action);
+		base.nodeEndEvent?.Invoke(this, new FlowEngineNodeEndEventArgs());
+	}
 
-
-
-    protected virtual void release(string serialNumber)
+	protected virtual void release(string serialNumber)
 	{
 		if (m_trans_action.ContainsKey(serialNumber))
 		{
@@ -606,33 +569,59 @@ public class CVBaseServerNode : CVCommonNode
 			}
 			m_trans_action.Remove(serialNumber);
 		}
-		if (m_op_act != null)
+		if (m_op_svr_out_act != null)
 		{
-			m_op_act.TransferData(null);
+			m_op_svr_out_act.TransferData(null);
 		}
 		Reset();
 	}
 
 	protected virtual CVMQTTRequest getActionEvent(STNodeOptionEventArgs e)
 	{
-		CVMQTTRequest cVMQTTRequest = null;
+		CVMQTTRequest result = null;
 		CVStartCFC cVStartCFC = (CVStartCFC)e.TargetOption.Data;
 		CVBaseEventObj baseEvent = getBaseEvent(cVStartCFC);
 		if (baseEvent != null)
 		{
-			cVMQTTRequest = new CVMQTTRequest(GetServiceName(), GetDeviceCode(), baseEvent.EventName, cVStartCFC.SerialNumber, baseEvent.Data, GetToken());
-			cVMQTTRequest.ZIndex = base.ZIndex;
+			result = new CVMQTTRequest(GetServiceName(), GetDeviceCode(), baseEvent.EventName, cVStartCFC.SerialNumber, baseEvent.Data, GetToken(), base.ZIndex);
 		}
-		return cVMQTTRequest;
+		return result;
+	}
+
+	protected CVBaseServerNode GetInputOpOwnerSvrNode(int idx)
+	{
+		if (idx < 0 || idx >= base.InputOptions.Count)
+		{
+			logger.ErrorFormat("[{0}]Input count less input index => {1} < {2}", ToShortString(), base.InputOptions.Count, idx);
+			return null;
+		}
+		STNodeOption sTNodeOption = base.InputOptions[idx];
+		CVBaseServerNode result = null;
+		if (sTNodeOption.ConnectionCount == 1)
+		{
+			STNodeOption sTNodeOption2 = sTNodeOption.ConnectedOption.First();
+			if (sTNodeOption2.Owner.GetType().IsSubclassOf(typeof(CVBaseServerNode)))
+			{
+				result = sTNodeOption2.Owner as CVBaseServerNode;
+			}
+		}
+		else
+		{
+			logger.ErrorFormat("[{0}]Input[{1}] is disconnected", ToShortString(), idx);
+		}
+		return result;
 	}
 
 	protected virtual CVBaseEventObj getBaseEvent(CVStartCFC start)
 	{
-		return new CVBaseEventObj
+		CVBaseEventObj cVBaseEventObj = new CVBaseEventObj();
+		if (start.Data.ContainsKey("Image"))
 		{
-			Data = getBaseEventData(start),
-			EventName = operatorCode
-		};
+			start.Data.Remove("Image");
+		}
+		cVBaseEventObj.Data = getBaseEventData(start);
+		cVBaseEventObj.EventName = operatorCode;
+		return cVBaseEventObj;
 	}
 
 	protected virtual object getBaseEventData(CVStartCFC start)
@@ -653,9 +642,9 @@ public class CVBaseServerNode : CVCommonNode
 		}
 	}
 
-	private void DoOutAction(CVTransAction trans, CVBaseEventCmd cmd)
-    {
-        CVServerResponse resp = cmd.resp;
+	private void DoThisNodeCompleted(CVTransAction trans, CVBaseEventCmd cmd)
+	{
+		CVServerResponse resp = cmd.resp;
 		if (m_is_out_release)
 		{
 			logger.DebugFormat("[{0}]Remove request => {1}/{2}", ToShortString(), trans.trans_action.SerialNumber, cmd.cmd.MsgID);
@@ -679,9 +668,9 @@ public class CVBaseServerNode : CVCommonNode
 			new LockFreeMessageWaiter().WaitForMessage(_MinTime);
 		}
 		DoTransNodeEndOut(trans, cmd);
-		if (m_op_act != null)
+		if (m_op_svr_out_act != null)
 		{
-			m_op_act.TransferData(null);
+			m_op_svr_out_act.TransferData(null);
 		}
 	}
 
@@ -696,8 +685,53 @@ public class CVBaseServerNode : CVCommonNode
 		return result;
 	}
 
+	protected bool GetRecvMasterResult(AlgorithmPreStepParam param)
+	{
+		if (svrRecvResp != null)
+		{
+			dynamic data = svrRecvResp.Data;
+			_ = (string)data.MasterValue;
+			int masterResultType = -1;
+			int masterId = data.MasterId;
+			if (data.MasterResultType == null && data.ResultType == null)
+			{
+				string nodeType = base.NodeType;
+				if (!(nodeType == "Spectrum"))
+				{
+					if (nodeType == "SMU")
+					{
+						masterResultType = 200;
+					}
+				}
+				else
+				{
+					masterResultType = 300;
+				}
+			}
+			else
+			{
+				masterResultType = ((data.MasterResultType != null) ? data.MasterResultType : data.ResultType);
+			}
+			param.MasterId = masterId;
+			param.MasterResultType = masterResultType;
+			return true;
+		}
+		return false;
+	}
+
+	protected void getPreStepParam(int idx, AlgorithmPreStepParam param)
+	{
+		GetInputOpOwnerSvrNode(idx)?.GetRecvMasterResult(param);
+	}
+
 	protected void getPreStepParam(CVStartCFC start, AlgorithmPreStepParam param)
 	{
+		CVBaseServerNode inputOpOwnerSvrNode = GetInputOpOwnerSvrNode(0);
+		if (inputOpOwnerSvrNode != null)
+		{
+			inputOpOwnerSvrNode.GetRecvMasterResult(param);
+			return;
+		}
 		int value = -1;
 		int masterResultType = -1;
 		string key = "MasterResultType";

@@ -65,7 +65,7 @@ public class CVStartCFC : CVBaseCFC
 		StartNode = startNode;
 	}
 
-	public string BuildStatusMsg(string serverCode, string deviceCode)
+	public string BuildStatusMsg(string serverCode, string deviceCode, int zIdx)
 	{
 		Dictionary<string, object> dictionary = new Dictionary<string, object>();
 		dictionary.Add("TTL", TTL);
@@ -73,7 +73,7 @@ public class CVStartCFC : CVBaseCFC
 		{
 			dictionary.Add(datum.Key, datum.Value);
 		}
-		return JsonConvert.SerializeObject(new CVMQTTRequest(serverCode, deviceCode, FlowStatus.ToString(), SerialNumber, dictionary, string.Empty), Formatting.None);
+		return JsonConvert.SerializeObject(new CVMQTTRequest(serverCode, deviceCode, FlowStatus.ToString(), SerialNumber, dictionary, string.Empty, zIdx), Formatting.None);
 	}
 
 	public TimeSpan GetTotalTime()

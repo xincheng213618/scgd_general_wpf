@@ -213,10 +213,6 @@ public class AlgorithmARVRNode : CVBaseServerNode
 			Name = _TempName
 		};
 		getPreStepParam(start, algorithmParam_ROI);
-		if (start.Data.ContainsKey("Image"))
-		{
-			start.Data.Remove("Image");
-		}
 		return algorithmParam_ROI;
 	}
 }

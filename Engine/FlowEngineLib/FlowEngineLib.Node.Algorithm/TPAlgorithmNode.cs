@@ -160,10 +160,6 @@ public class TPAlgorithmNode : CVBaseServerNode
 	protected override object getBaseEventData(CVStartCFC start)
 	{
 		TPAlgorithmInputParam tPAlgorithmInputParam = new TPAlgorithmInputParam(_TempId, _TempName, 1);
-		if (start.Data.ContainsKey("Image"))
-		{
-			start.Data.Remove("Image");
-		}
 		if (!string.IsNullOrEmpty(_ImgFileName))
 		{
 			tPAlgorithmInputParam.InputParam = _ImgFileName;

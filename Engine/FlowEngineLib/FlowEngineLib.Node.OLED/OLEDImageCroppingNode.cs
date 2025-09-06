@@ -41,7 +41,7 @@ public class OLEDImageCroppingNode : CVBaseServerNodeIn2Hub
 	}
 
 	public OLEDImageCroppingNode()
-		: base("图像裁剪2", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default", 2)
+		: base("图像裁剪2", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
 		base.Height = 90;
 		operatorCode = "OLED.GetRIAand";
@@ -84,13 +84,9 @@ public class OLEDImageCroppingNode : CVBaseServerNodeIn2Hub
 		{
 			oLEDImageCroppingParam.FileType = FileExtType.None;
 		}
-		getPreStepParam(masterInput[0], oLEDImageCroppingParam);
-		getPreStepParam(masterInput[1], algorithmPreStepParam);
+		getPreStepParam(0, oLEDImageCroppingParam);
+		getPreStepParam(1, algorithmPreStepParam);
 		oLEDImageCroppingParam.ROI_MasterId = algorithmPreStepParam.MasterId;
-		if (start.Data.ContainsKey("Image"))
-		{
-			start.Data.Remove("Image");
-		}
 		return oLEDImageCroppingParam;
 	}
 }

@@ -67,7 +67,7 @@ public abstract class BaseStartNode : CVCommonNode
 		CVStartCFC cFC = GetCFC(next.SerialNumber);
 		if (cFC != null)
 		{
-			string msg = cFC.BuildStatusMsg(base.NodeName, base.DeviceCode);
+			string msg = cFC.BuildStatusMsg(base.NodeName, base.DeviceCode, -1);
 			DoPublishStatus(msg);
 		}
 		STNodeOption[] op_loop = m_op_loop;
@@ -271,7 +271,7 @@ public abstract class BaseStartNode : CVCommonNode
 	public virtual void DoFinishing(CVStartCFC startAction)
 	{
 		RemoveStartAction(startAction);
-		string msg = startAction.BuildStatusMsg(m_nodeName, m_deviceCode);
+		string msg = startAction.BuildStatusMsg(m_nodeName, m_deviceCode, -1);
 		DoPublishStatus(msg);
 		Running = false;
 	}
@@ -372,7 +372,8 @@ public abstract class BaseStartNode : CVCommonNode
 		{
 			message = startAction.Data["Msg"].ToString();
 		}
+		logger.InfoFormat("Fire Flow Finished Before");
 		this.Finished?.Invoke(this, new FlowStartEventArgs(startAction.SerialNumber, flowStatus, (long)startAction.GetTotalTime().TotalMilliseconds, message));
-		logger.InfoFormat("Flow Finished End");
+		logger.InfoFormat("Fire Flow Finished End");
 	}
 }

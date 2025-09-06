@@ -282,10 +282,6 @@ public class AlgorithmNode : CVBaseServerNode
 			Name = _TempName
 		};
 		getPreStepParam(start, algorithmParam);
-		if (start.Data.ContainsKey("Image"))
-		{
-			start.Data.Remove("Image");
-		}
 		return algorithmParam;
 	}
 }

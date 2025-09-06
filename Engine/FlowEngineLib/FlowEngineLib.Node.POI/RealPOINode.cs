@@ -2,6 +2,7 @@ using System;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using log4net;
+using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.POI;
@@ -172,7 +173,7 @@ public class RealPOINode : CVBaseServerNodeIn2Hub
 	}
 
 	public RealPOINode()
-		: base("实时关注点算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default", 2)
+		: base("实时关注点算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
 		base.Height += 50;
 		operatorCode = "Real_POI";
@@ -188,9 +189,9 @@ public class RealPOINode : CVBaseServerNodeIn2Hub
 		_IsResultAdd = false;
 		_IsSubPixel = false;
 		_IsCCTWave = true;
-    }
+	}
 
-    protected override void OnCreate()
+	protected override void OnCreate()
 	{
 		base.OnCreate();
 		m_ctrl_type = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "类型:", getTypeSize());
@@ -285,18 +286,14 @@ public class RealPOINode : CVBaseServerNodeIn2Hub
 		for (int i = 0; i < masterInput.Length; i++)
 		{
 			AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
-			getPreStepParam(masterInput[i], algorithmPreStepParam);
+			getPreStepParam(i, algorithmPreStepParam);
 			array[i] = algorithmPreStepParam;
 		}
-		if(logger.IsDebugEnabled)
-			logger.Debug($"RealPOINode Input1 MasterId: {array[0].MasterId}, Input2 MasterId: {array[1].MasterId}");
-
-        RealPOIData result = new RealPOIData(_FilterTemplateName, _ReviseTemplateName, _ReviseFileName, _OutputTemplateName, poiData, array[0].MasterId, array[1].MasterId, _IsResultAdd, _IsSubPixel, _IsCCTWave);
-		if (start.Data.ContainsKey("Image"))
+		if (logger.IsDebugEnabled)
 		{
-			start.Data.Remove("Image");
+			logger.DebugFormat("PreStepParams => {0}", JsonConvert.SerializeObject(array));
 		}
-		return result;
+		return new RealPOIData(_FilterTemplateName, _ReviseTemplateName, _ReviseFileName, _OutputTemplateName, poiData, array[0].MasterId, array[1].MasterId, _IsResultAdd, _IsSubPixel, _IsCCTWave);
 	}
 
 	private void setTypeSize()

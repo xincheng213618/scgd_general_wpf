@@ -63,7 +63,7 @@ public class TPAlgorithm2Node : CVBaseServerNodeIn2Hub
 	}
 
 	public TPAlgorithm2Node()
-		: base("第三方算法2", "ThirdPartyAlgorithms", "SVR.TPAlgorithms.Default", "DEV.ThirdPartyAlgorithms.Default", 2)
+		: base("第三方算法2", "ThirdPartyAlgorithms", "SVR.TPAlgorithms.Default", "DEV.ThirdPartyAlgorithms.Default")
 	{
 		operatorCode = "";
 		_TempName = "";
@@ -83,14 +83,10 @@ public class TPAlgorithm2Node : CVBaseServerNodeIn2Hub
 	protected override object getBaseEventData(CVStartCFC start)
 	{
 		TPAlgorithmInputParam tPAlgorithmInputParam = new TPAlgorithmInputParam(_TempId, _TempName, 2);
-		if (start.Data.ContainsKey("Image"))
-		{
-			start.Data.Remove("Image");
-		}
 		for (int i = 0; i < masterInput.Length; i++)
 		{
 			AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
-			getPreStepParam(masterInput[i], algorithmPreStepParam);
+			getPreStepParam(i, algorithmPreStepParam);
 			tPAlgorithmInputParam.MasterResult[i] = algorithmPreStepParam;
 		}
 		return tPAlgorithmInputParam;

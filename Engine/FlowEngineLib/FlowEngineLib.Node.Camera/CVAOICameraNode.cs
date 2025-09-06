@@ -6,13 +6,13 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.Camera;
 
 [STNode("/02 相机")]
-public class CommCameraNode : CVBaseServerNode
+public class CVAOICameraNode : CVBaseServerNode
 {
-	protected string _GlobalVariableName;
-
 	protected bool _IsHDR;
 
 	private string _CamTempName;
+
+	private bool _IsSaveRawImg;
 
 	protected CVImageFlipMode _FlipMode;
 
@@ -28,19 +28,19 @@ public class CommCameraNode : CVBaseServerNode
 
 	protected string _CalibTempName;
 
-	private string _POITempName;
+	private AOITypeEnum _AOIType;
 
-	protected string _POIFilterTempName;
+	protected string _AlgTempName;
 
-	protected string _POIReviseTempName;
-
-	private STNodeEditText<string> m_ctrl_caliTemp;
+	private STNodeEditText<string> m_ctrl_algTemp;
 
 	private STNodeEditText<string> m_ctrl_camTemp;
 
-	private STNodeEditText<string> m_ctrl_poiTemp;
+	private STNodeEditText<string> m_ctrl_caliTemp;
 
 	private STNodeEditText<string> m_ctrl_expAutoTemp;
+
+	private STNodeEditText<string> m_ctrl_img;
 
 	[STNodeProperty("HDR", "HDR", true)]
 	public bool IsHDR
@@ -71,6 +71,20 @@ public class CommCameraNode : CVBaseServerNode
 		}
 	}
 
+	[STNodeProperty("保存原图", "是否保存原图", true)]
+	public bool IsSaveRawImg
+	{
+		get
+		{
+			return _IsSaveRawImg;
+		}
+		set
+		{
+			_IsSaveRawImg = value;
+			setImgValue();
+		}
+	}
+
 	[STNodeProperty("图像翻转", "图像翻转", true)]
 	public CVImageFlipMode FlipMode
 	{
@@ -81,6 +95,7 @@ public class CommCameraNode : CVBaseServerNode
 		set
 		{
 			_FlipMode = value;
+			setImgValue();
 		}
 	}
 
@@ -139,45 +154,30 @@ public class CommCameraNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("POI模板", "POI算法模板", true)]
-	public string POITempName
+	[STNodeProperty("AOI算法", "AOI算法", true)]
+	public AOITypeEnum AOIType
 	{
 		get
 		{
-			return _POITempName;
+			return _AOIType;
 		}
 		set
 		{
-			_POITempName = value;
-			setPOITemp();
+			_AOIType = value;
 		}
 	}
 
-	[STNodeProperty("POI过滤", "POI过滤模板", true)]
-	public string POIFilterTempName
+	[STNodeProperty("算法模板", "算法模板", true)]
+	public string AlgTempName
 	{
 		get
 		{
-			return _POIFilterTempName;
+			return _AlgTempName;
 		}
 		set
 		{
-			_POIFilterTempName = value;
-			setPOITemp();
-		}
-	}
-
-	[STNodeProperty("POI修正", "POI修正模板", true)]
-	public string POIReviseTempName
-	{
-		get
-		{
-			return _POIReviseTempName;
-		}
-		set
-		{
-			_POIReviseTempName = value;
-			setPOITemp();
+			_AlgTempName = value;
+			m_ctrl_algTemp.Value = value;
 		}
 	}
 
@@ -186,20 +186,23 @@ public class CommCameraNode : CVBaseServerNode
 		m_ctrl_camTemp.Value = GetCameraTempDis();
 	}
 
-	public CommCameraNode()
-		: base("通用相机", "Camera", "SVR.Camera.Default", "DEV.Camera.Default")
+	public CVAOICameraNode()
+		: base("通用AOI相机", "Camera", "SVR.Camera.Default", "DEV.Camera.Default")
 	{
-		operatorCode = "GetData";
+		operatorCode = "GetDataAndAlgorithm";
 		_MaxTime = 60000;
-		_CalibTempName = "";
+		_AlgTempName = "";
 		_CamTempName = "";
 		_TempName = "";
-		_POITempName = "";
-		_POIFilterTempName = "";
+		_CalibTempName = "";
 		_FlipMode = CVImageFlipMode.None;
+		_IsWithND = false;
 		_IsAutoFocus = false;
+		_IsSaveRawImg = false;
 		_FocusTempName = string.Empty;
-		base.Height += 75;
+		base.Width = 180;
+		m_custom_item.Width += 30;
+		base.Height += 100;
 	}
 
 	protected override void OnCreate()
@@ -208,44 +211,43 @@ public class CommCameraNode : CVBaseServerNode
 		initCtrl();
 	}
 
-	private string GetCameraTempDis()
-	{
-		return string.Format("{0}:{1}", _IsHDR ? "HDR" : "Nor", _CamTempName);
-	}
-
-	private void initCtrl()
-	{
-		Rectangle custom_item = m_custom_item;
-		m_ctrl_expAutoTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "自动曝光/ND:", GetAutoExpDis());
-		custom_item.Y += 25;
-		m_ctrl_camTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "相机:", GetCameraTempDis());
-		custom_item.Y += 25;
-		m_ctrl_caliTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "校正:", _CalibTempName);
-		custom_item.Y += 25;
-		m_ctrl_poiTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "POI:", _POITempName);
-	}
-
 	private string GetAutoExpDis()
 	{
 		return $"{_IsAutoExp}/{_IsWithND}";
 	}
 
-	private string GetPOITempDisplay()
+	private string GetCameraTempDis()
 	{
-		if (string.IsNullOrEmpty(_POITempName))
-		{
-			return string.Empty;
-		}
-		return $"{_POITempName}/{_POIFilterTempName}/{_POIReviseTempName}";
+		return string.Format("{0}:{1}", _IsHDR ? "HDR" : "Nor", _CamTempName);
 	}
 
-	private void setPOITemp()
+	private void setImgValue()
 	{
-		m_ctrl_poiTemp.Value = GetPOITempDisplay();
+		m_ctrl_img.Value = GetImgTempDis();
+	}
+
+	private string GetImgTempDis()
+	{
+		return $"{_IsSaveRawImg}:{_FlipMode.ToString()}";
+	}
+
+	private void initCtrl()
+	{
+		Rectangle custom_item = m_custom_item;
+		m_ctrl_camTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "相机:", GetCameraTempDis());
+		custom_item.Y += 25;
+		m_ctrl_expAutoTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "自动曝光/ND:", GetAutoExpDis());
+		custom_item.Y += 25;
+		m_ctrl_img = CreateControl(typeof(STNodeEditText<string>), custom_item, "保存/翻转:", GetImgTempDis());
+		custom_item.Y += 25;
+		m_ctrl_caliTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "校正:", _CalibTempName);
+		custom_item.Y += 25;
+		m_ctrl_algTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "算法:", _AlgTempName);
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		return new CommCameraData(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, _POITempName, _POIFilterTempName, _POIReviseTempName, _GlobalVariableName, _IsHDR);
+		string algParamType = "FindLed";
+		return new CVAOICameraParam(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, algParamType, _AlgTempName, _IsHDR, _IsSaveRawImg);
 	}
 }

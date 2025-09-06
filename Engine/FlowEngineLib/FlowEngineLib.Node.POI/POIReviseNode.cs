@@ -1,6 +1,7 @@
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using log4net;
+using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.POI;
@@ -80,7 +81,7 @@ public class POIReviseNode : CVBaseServerNodeIn2Hub
 	}
 
 	public POIReviseNode()
-		: base("关注点修正标定", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default", 2)
+		: base("关注点修正标定", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
 		base.Height += 50;
 		operatorCode = "POIReviseGen";
@@ -107,8 +108,12 @@ public class POIReviseNode : CVBaseServerNodeIn2Hub
 		for (int i = 0; i < masterInput.Length; i++)
 		{
 			AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
-			getPreStepParam(masterInput[i], algorithmPreStepParam);
+			getPreStepParam(i, algorithmPreStepParam);
 			array[i] = algorithmPreStepParam;
+		}
+		if (logger.IsDebugEnabled)
+		{
+			logger.DebugFormat("PreStepParams => {0}", JsonConvert.SerializeObject(array));
 		}
 		return new POIReviseData(array[1].MasterId, array[0].MasterId, _TemplateName, _Output, _POIPointName, _IsSelfResultRevise);
 	}

@@ -68,7 +68,7 @@ public class AlgComplianceContrastNode : CVBaseServerNodeIn2Hub
 	}
 
 	public AlgComplianceContrastNode()
-		: base("对比度", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default", 2)
+		: base("对比度", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
 		base.Height += 25;
 		operatorCode = "Compliance_Contrast";
@@ -94,7 +94,7 @@ public class AlgComplianceContrastNode : CVBaseServerNodeIn2Hub
 		for (int i = 0; i < masterInput.Length; i++)
 		{
 			AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
-			getPreStepParam(masterInput[i], algorithmPreStepParam);
+			getPreStepParam(i, algorithmPreStepParam);
 			array[i] = algorithmPreStepParam;
 		}
 		return new ComplianceContrastParam(_TempName, (int)_Operation, array[0].MasterId, array[1].MasterId);

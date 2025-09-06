@@ -179,10 +179,6 @@ public class AlgorithmFindLEDNode : CVBaseServerNode
 			Name = _TempName
 		};
 		getPreStepParam(start, algorithmOLEDParam);
-		if (start.Data.ContainsKey("Image"))
-		{
-			start.Data.Remove("Image");
-		}
 		algorithmOLEDParam.FDAType = _FDAType;
 		return algorithmOLEDParam;
 	}

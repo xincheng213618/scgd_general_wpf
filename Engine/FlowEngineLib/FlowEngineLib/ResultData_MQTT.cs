@@ -11,12 +11,9 @@ public class ResultData_MQTT
 
 	public string ResultMsg { get; set; } = string.Empty;
 
-
 	[JsonIgnore]
 	public object ResultObject1 { get; set; } = string.Empty;
 
-
 	[JsonIgnore]
 	public object ResultObject2 { get; set; } = string.Empty;
-
 }

@@ -137,10 +137,10 @@ public class CVServiceProxy
 		{
 			trans.trans_action.GetStartNode().DoPublish(act);
 		}
-		Task.Run(delegate
-		{
-			WaitingOverTime(cmd);
-		});
+		//Task.Run(delegate
+		//{
+		//	WaitingOverTime(cmd);
+		//});
 	}
 
 	public void DoServerStatusDataTransfer(object data)
@@ -254,7 +254,7 @@ public class CVServiceProxy
 			trans.trans_action.SetStatusType(StatusTypeEnum.Runing);
 			if (cmd.resp.Data != null)
 			{
-				trans.trans_action.Data["MasterId"] = (object)cmd.resp.Data.MasterId;
+				trans.NodeFinished(m_nodeType, cmd.resp.Data);
 			}
 		}
 		else if (resp.Status == ActionStatusEnum.Failed)
@@ -271,7 +271,7 @@ public class CVServiceProxy
 		}
 		if (_IsPublishStatus)
 		{
-			trans.DoPublishStatus(GetServiceName(), GetDeviceCode(), GetFullNodeName(), resp);
+			trans.DoPublishStatus(GetServiceName(), GetDeviceCode(), GetFullNodeName(), resp, ZIndex);
 		}
 		else
 		{
@@ -288,7 +288,7 @@ public class CVServiceProxy
 		CVBaseEventObj baseEvent = getBaseEvent(cVStartCFC);
 		if (baseEvent != null)
 		{
-			cVMQTTRequest = new CVMQTTRequest(GetServiceName(), GetDeviceCode(), baseEvent.EventName, cVStartCFC.SerialNumber, baseEvent.Data, GetToken());
+			cVMQTTRequest = new CVMQTTRequest(GetServiceName(), GetDeviceCode(), baseEvent.EventName, cVStartCFC.SerialNumber, baseEvent.Data, GetToken(), ZIndex);
 			cVMQTTRequest.ZIndex = ZIndex;
 		}
 		return cVMQTTRequest;

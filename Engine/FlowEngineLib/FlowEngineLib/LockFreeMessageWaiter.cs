@@ -11,18 +11,18 @@ public class LockFreeMessageWaiter
 	private readonly TimeSpan _defaultTimeout = TimeSpan.FromSeconds(60.0);
     private readonly object _lock = new object();
 
-    public Task<bool> WaitForMessageAsync(TimeSpan? timeout = null)
-    {
+	public Task<bool> WaitForMessageAsync(TimeSpan? timeout = null)
+	{
 		lock (_lock)
 		{
-			TaskCompletionSource<bool> tcs = _tcs;
-			_cts.CancelAfter(timeout ?? _defaultTimeout);
-			_cts.Token.Register(delegate
-			{
-				tcs.TrySetResult(result: false);
-			});
-			return tcs.Task;
-		}
+		TaskCompletionSource<bool> tcs = _tcs;
+		_cts.CancelAfter(timeout ?? _defaultTimeout);
+		_cts.Token.Register(delegate
+		{
+			tcs.TrySetResult(result: false);
+		});
+		return tcs.Task;
+	}
 	}
 
 	public Task<bool> WaitForMessageAsync(int milliseconds = 6000)
@@ -42,21 +42,21 @@ public class LockFreeMessageWaiter
         lock (_lock)
         {
             _tcs.TrySetResult(true);
-        }
+	}
     }
 
 	public void Reset()
-    {
+	{
 		lock (_lock)
 		{
-			TaskCompletionSource<bool> tcs = _tcs;
-			if (!tcs.Task.IsCompleted)
-			{
-				tcs.TrySetResult(result: false);
-			}
-			_tcs = new TaskCompletionSource<bool>();
-			_cts.Dispose();
-			_cts = new CancellationTokenSource();
+		TaskCompletionSource<bool> tcs = _tcs;
+		if (!tcs.Task.IsCompleted)
+		{
+			tcs.TrySetResult(result: false);
 		}
+		_tcs = new TaskCompletionSource<bool>();
+		_cts.Dispose();
+		_cts = new CancellationTokenSource();
 	}
+}
 }

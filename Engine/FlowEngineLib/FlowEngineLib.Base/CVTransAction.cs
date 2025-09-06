@@ -23,10 +23,10 @@ public class CVTransAction
 		trans_action.AddTTL(startTime);
 	}
 
-	public void DoPublishStatus(string serverName, string deviceCode, string nodeName, CVServerResponse status)
+	public void DoPublishStatus(string serverName, string deviceCode, string nodeName, CVServerResponse status, int zIdx)
 	{
 		trans_action.AddResult(nodeName, status, startTime);
-		trans_action.BuildStatusMsg(serverName, deviceCode);
+		trans_action.BuildStatusMsg(serverName, deviceCode, zIdx);
 		trans_action.GetStartNode().DoPublishStatus(serverName);
 	}
 
@@ -40,6 +40,32 @@ public class CVTransAction
 		trans_action.MasterValue(masterValue, masterId, masterResultType);
 	}
 
+	public void NodeFinished(string nodeType, dynamic respData)
+	{
+		string masterValue = respData.MasterValue;
+		int masterResultType = -1;
+		int masterId = respData.MasterId;
+		if (respData.MasterResultType == null && respData.ResultType == null)
+		{
+			if (!(nodeType == "Spectrum"))
+			{
+				if (nodeType == "SMU")
+				{
+					masterResultType = 200;
+				}
+			}
+			else
+			{
+				masterResultType = 300;
+			}
+		}
+		else
+		{
+			masterResultType = ((respData.MasterResultType != null) ? respData.MasterResultType : respData.ResultType);
+		}
+		NodeFinished(masterValue, masterId, masterResultType);
+	}
+
 	public void NodeFailed(string msg, string nodeName)
 	{
 		trans_action.Failed(msg, nodeName, startTime);
@@ -47,10 +73,10 @@ public class CVTransAction
 
 	public void Cancel()
 	{
-		foreach (KeyValuePair<string, CVBaseEventCmd> item in m_sever_actionEvent)
-		{
-			//item.Value.waiter.SignalMessageReceived();
-		}
+		//foreach (KeyValuePair<string, CVBaseEventCmd> item in m_sever_actionEvent)
+		//{
+		//	item.Value.waiter.SignalMessageReceived();
+		//}
 	}
 
 	public void ResetStartTime()

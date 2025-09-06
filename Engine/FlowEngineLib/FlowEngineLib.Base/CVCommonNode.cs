@@ -89,6 +89,8 @@ public class CVCommonNode : STNode
 
 	public FlowEngineNodeEndEvent nodeEndEvent { get; set; }
 
+	protected string NodeKey => $"{NodeID}:{m_zIndex}";
+
 	protected virtual void OnNodeNameChanged(string oldValue, string newValue)
 	{
 	}

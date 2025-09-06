@@ -140,7 +140,7 @@ internal class BaseSimulator : STNode
 	{
 		CVMQTTRequest cVMQTTRequest = JsonConvert.DeserializeObject<CVMQTTRequest>(msg.Message);
 		CVServerResponse data = new CVServerResponse(cVMQTTRequest.MsgID, ActionStatusEnum.Finish, "", cVMQTTRequest.EventName, cVMQTTRequest.Data);
-		return new CVMQTTRequest(nodeCode, deviceCode, serverRespEventName, cVMQTTRequest.SerialNumber, data, string.Empty);
+		return new CVMQTTRequest(nodeCode, deviceCode, serverRespEventName, cVMQTTRequest.SerialNumber, data, string.Empty, -1);
 	}
 
 	private void m_in_Connected(object sender, STNodeOptionEventArgs e)

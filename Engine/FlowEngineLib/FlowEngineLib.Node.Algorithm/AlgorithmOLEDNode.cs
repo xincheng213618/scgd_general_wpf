@@ -204,11 +204,6 @@ public class AlgorithmOLEDNode : CVBaseServerNode
 			Name = _TempName
 		};
 		getPreStepParam(start, algorithmOLEDParam);
-		if (start.Data.ContainsKey("Image"))
-		{
-			_ = start.Data["Image"];
-			start.Data.Remove("Image");
-		}
 		algorithmOLEDParam.FDAType = _FDAType;
 		return algorithmOLEDParam;
 	}

@@ -1,4 +1,5 @@
 using log4net;
+using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Base;
@@ -13,7 +14,7 @@ public class CVBaseServerNodeIn2Hub : CVBaseServerNode
 
 	protected string m_in2_text;
 
-	protected CVBaseServerNodeIn2Hub(string title, string nodeType, string nodeName, string deviceCode, int inNum)
+	protected CVBaseServerNodeIn2Hub(string title, string nodeType, string nodeName, string deviceCode, int inNum = 2)
 		: base(title, nodeType, nodeName, deviceCode)
 	{
 		m_in_text = "IN_1";
@@ -30,22 +31,25 @@ public class CVBaseServerNodeIn2Hub : CVBaseServerNode
 		m_in2_start.Connected += m_in_op_Connected;
 		m_in2_start.DataTransfer += m_in_start_DataTransfer;
 	}
-	
-    protected override void m_in_start_DataTransfer(object sender, STNodeOptionEventArgs e)
-    {
-        DoInputDataTransfer(sender as STNodeOption, e);
-    }
 
-
-    private void DoInputDataTransfer(STNodeOption sender, STNodeOptionEventArgs e)
+	protected override void m_in_start_DataTransfer(object sender, STNodeOptionEventArgs e)
 	{
+		DoInputDataTransfer(sender as STNodeOption, e);
+	}
+
+	private void DoInputDataTransfer(STNodeOption sender, STNodeOptionEventArgs e)
+	{
+		if (e.Status != ConnectionStatus.Connected)
+		{
+			return;
+		}
 		if (HasData(e))
 		{
 			bool flag = true;
 			if (e.TargetOption.DataType == typeof(CVStartCFC))
 			{
 				CVStartCFC cVStartCFC = e.TargetOption.Data as CVStartCFC;
-                if (cVStartCFC.IsPaused)
+				if (cVStartCFC.IsPaused)
 				{
 					DoTransferToServer(cVStartCFC, e);
 					return;
@@ -54,8 +58,7 @@ public class CVBaseServerNodeIn2Hub : CVBaseServerNode
 				sender.Data = data;
 				int num = 0;
 				StatusTypeEnum statusType = StatusTypeEnum.Runing;
-
-                for (int i = 0; i < base.InputOptionsCount; i++)
+				for (int i = 0; i < base.InputOptionsCount; i++)
 				{
 					STNodeOption sTNodeOption = base.InputOptions[i];
 					if (sTNodeOption.DataType == typeof(CVStartCFC))
@@ -63,13 +66,17 @@ public class CVBaseServerNodeIn2Hub : CVBaseServerNode
 						CVStartCFC cVStartCFC2 = (CVStartCFC)sTNodeOption.Data;
 						if (cVStartCFC2 != null)
 						{
-							if (!cVStartCFC2.IsRunning)
-                            {
-                                statusType = cVStartCFC2.FlowStatus;
-								flag = false;
-                            }
+							if (cVStartCFC2.IsRunning)
+							{
+								flag = flag;
+							}
+							else
+							{
+								statusType = cVStartCFC2.FlowStatus;
+								flag = !flag && false;
+							}
 							masterInput[i] = cVStartCFC2;
-                            num++;
+							num++;
 						}
 					}
 					else
@@ -79,7 +86,7 @@ public class CVBaseServerNodeIn2Hub : CVBaseServerNode
 				}
 				if (logger.IsDebugEnabled)
 				{
-					logger.DebugFormat("[{0}][{1}/{2}]DoServerTransfer => {3}", ToShortString(), num, base.InputOptionsCount, cVStartCFC.ToShortString());
+					logger.DebugFormat("[{0}][{1}/{2}] DoServerTransfer => {3} [{4}/{5}]", ToShortString(), num, base.InputOptionsCount, cVStartCFC.ToShortString(), sender.Text, JsonConvert.SerializeObject(cVStartCFC.Data));
 				}
 				if (num == base.InputOptionsCount)
 				{
@@ -90,9 +97,9 @@ public class CVBaseServerNodeIn2Hub : CVBaseServerNode
 					}
 					else
 					{
-                        cVStartCFC.SetStatusType(statusType);
-                        DoNodeEndedTransferData(cVStartCFC);
-                    }
+						cVStartCFC.SetStatusType(statusType);
+						DoNodeEndedTransferData(cVStartCFC);
+					}
 					clearInCFC();
 				}
 			}
