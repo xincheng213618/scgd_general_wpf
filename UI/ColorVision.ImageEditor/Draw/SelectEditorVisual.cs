@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8625,CS8602,CS8607,CS0103,CS0067
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using System;
 using System.Collections.Generic;
@@ -56,11 +57,11 @@ namespace ColorVision.ImageEditor.Draw
             double halfSmallRectSize = smallRectSize / 2;
 
 
-            bool Check(ISelectVisual selectVisual)
+            bool Check(ISelctRect selectVisual)
             {
-                ISelectVisual = selectVisual;
+                ISelectVisual = selectVisual.ISelectVisual;
 
-                Rect Rect = selectVisual.GetRect();
+                Rect Rect = selectVisual.rect;
 
                 OldRect = new Rect(Rect.X, Rect.Y, Rect.Width, Rect.Height);
 
@@ -76,33 +77,32 @@ namespace ColorVision.ImageEditor.Draw
                 Rect middleLeft = new Rect(Rect.Left - halfSmallRectSize, Rect.Top + (Rect.Height / 2) - halfSmallRectSize, smallRectSize, smallRectSize);
                 Rect middleRight = new Rect(Rect.Right - halfSmallRectSize, Rect.Top + (Rect.Height / 2) - halfSmallRectSize, smallRectSize, smallRectSize);
 
-
                 // 检查点在哪个小矩形内
-                if (topLeft.Contains(point))
+                if (selectVisual.topLeft.Contains(point))
                 {
                     ZoomboxSub.Cursor = Cursors.SizeNWSE;
                     FixedPoint = OldRect.BottomRight;
                     return true;
                 }
-                else if (topRight.Contains(point))
+                else if (selectVisual.topRight.Contains(point))
                 {
                     FixedPoint = OldRect.BottomLeft;
                     ZoomboxSub.Cursor = Cursors.SizeNESW;
                     return true;
                 }
-                else if (bottomLeft.Contains(point))
+                else if (selectVisual.bottomLeft.Contains(point))
                 {
                     FixedPoint = OldRect.TopRight;
                     ZoomboxSub.Cursor = Cursors.SizeNESW;
                     return true;
                 }
-                else if (bottomRight.Contains(point))
+                else if (selectVisual.bottomRight.Contains(point))
                 {
                     FixedPoint = OldRect.TopLeft;
                     ZoomboxSub.Cursor = Cursors.SizeNWSE;
                     return true;
                 }
-                else if (middleTop.Contains(point))
+                else if (selectVisual.middleTop.Contains(point))
                 {
                     FixedPoint = OldRect.BottomLeft;
                     FixedPoint1 = OldRect.BottomRight;
@@ -110,39 +110,44 @@ namespace ColorVision.ImageEditor.Draw
 
                     return true;
                 }
-                else if (middleBottom.Contains(point))
+                else if (selectVisual.middleBottom.Contains(point))
                 {
                     FixedPoint = OldRect.TopLeft;
                     FixedPoint1 = OldRect.TopRight;
                     ZoomboxSub.Cursor = Cursors.SizeNS;
                     return true;
                 }
-                else if (middleLeft.Contains(point))
+                else if (selectVisual.middleLeft.Contains(point))
                 {
                     FixedPoint = OldRect.TopRight;
                     FixedPoint1 = OldRect.BottomRight;
                     ZoomboxSub.Cursor = Cursors.SizeWE;
                     return true;
                 }
-                else if (middleRight.Contains(point))
+                else if (selectVisual.middleRight.Contains(point))
                 {
                     FixedPoint = OldRect.TopLeft;
                     FixedPoint1 = OldRect.BottomLeft;
                     ZoomboxSub.Cursor = Cursors.SizeWE;
                     return true;
                 }
-                else if (Rect.Contains(point))
-                {
-                    ZoomboxSub.Cursor = Cursors.SizeAll;
-                    return true;
-                }
                 return false;
-
             }
-            foreach (var item in SelectVisuals)
+
+
+            foreach (var item in ISelctRects)
             {
                 if (Check(item))
                 {
+                    return true;
+                }
+            }
+
+            foreach (var item in ISelctRects)
+            {
+                if (item.rect.Contains(point))
+                {
+                    ZoomboxSub.Cursor = Cursors.SizeAll;
                     return true;
                 }
             }
@@ -217,6 +222,27 @@ namespace ColorVision.ImageEditor.Draw
             Render();
         }
 
+        internal class ISelctRect:IDisposable
+        {
+            internal ISelectVisual ISelectVisual;
+            internal Rect rect;
+            internal Rect topLeft;
+            internal Rect topRight;
+            internal Rect bottomLeft;
+            internal Rect bottomRight;
+            internal Rect middleTop;
+            internal Rect middleBottom;
+            internal Rect middleLeft;
+            internal Rect middleRight;
+
+            public void Dispose()
+            {
+                ISelectVisual = null;
+            }
+        }
+
+        private List<ISelctRect> ISelctRects = new List<ISelctRect>();
+
 
         public void Render()
         {
@@ -224,15 +250,16 @@ namespace ColorVision.ImageEditor.Draw
             using DrawingContext dc = this.RenderOpen();
             if (SelectVisuals.Count == 0)
                 return;
+            ISelctRects.Clear();
             foreach (var item in SelectVisuals)
             {
-                RederRecct(item.GetRect());
+                RederRecct(item);
             }
-            void RederRecct(Rect rect)
+            void RederRecct(ISelectVisual selectVisual)
             {
+                Rect rect = selectVisual.GetRect();
                 double thickness = 1 / ZoomboxSub.ContentMatrix.M11;
                 double thickness1 = thickness * 1.5;
-                ;
                 dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), rect);
                 dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), rect);
 
@@ -251,6 +278,20 @@ namespace ColorVision.ImageEditor.Draw
                 Rect middleBottom = new Rect(rect.Left + (rect.Width / 2) - halfSmallRectSize, rect.Bottom - halfSmallRectSize, smallRectSize, smallRectSize);
                 Rect middleLeft = new Rect(rect.Left - halfSmallRectSize, rect.Top + (rect.Height / 2) - halfSmallRectSize, smallRectSize, smallRectSize);
                 Rect middleRight = new Rect(rect.Right - halfSmallRectSize, rect.Top + (rect.Height / 2) - halfSmallRectSize, smallRectSize, smallRectSize);
+
+                ISelctRect selctRect = new ISelctRect();
+                selctRect.rect = rect;
+                selctRect.ISelectVisual = selectVisual;
+                selctRect.topLeft = topLeft;
+                selctRect.topRight = topRight;
+                selctRect.bottomLeft = bottomLeft;
+                selctRect.bottomRight = bottomRight;
+                selctRect.middleTop = middleTop;
+                selctRect.middleBottom = middleBottom;
+                selctRect.middleLeft = middleLeft;
+                selctRect.middleRight = middleRight;
+                ISelctRects.Add(selctRect);
+
                 // 绘制小矩形
 
 
