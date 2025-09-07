@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1822
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -20,15 +19,5 @@ namespace ColorVision.Engine.Templates.Flow
 
         public string DataBase64 { get => _DataBase64; set { _DataBase64 = value; } }
         private string _DataBase64;
-
-
-        private const string propertyName = "filename";
-
-        public string? ResId
-        {
-            set { SetProperty(ref _ResId, value?.ToString(), propertyName); }
-            get => GetValue(_ResId, propertyName);
-        }
-        private string? _ResId;
     }
 }

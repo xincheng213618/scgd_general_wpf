@@ -264,7 +264,7 @@ namespace ColorVision.ImageEditor
             if (ImageViewModel.ImageEditMode)
             {
                 var Point = Mouse.GetPosition(ImageShow);
-                var DrawingVisual = ImageShow.GetVisual(Point);
+                var DrawingVisual = ImageShow.GetVisual<Visual>(Point);
 
                 //if (DrawingVisual != null && ImageViewModel.SelectDrawingVisual != DrawingVisual && DrawingVisual is IDrawingVisual drawing)
                 //{
@@ -342,7 +342,7 @@ namespace ColorVision.ImageEditor
                 {
                     return;
                 }
-                var MouseVisual = drawCanvas.GetVisual(MouseDownP);
+                var MouseVisual = drawCanvas.GetVisual<Visual>(MouseDownP);
                 if (MouseVisual == ImageViewModel.SelectEditorVisual)
                     return;
                 if (MouseVisual is IDrawingVisual drawingVisual)
@@ -470,7 +470,7 @@ namespace ColorVision.ImageEditor
                 }
                 else
                 {
-                    if (!(drawCanvas.GetVisual(point) == ImageViewModel.SelectEditorVisual && ImageViewModel.SelectEditorVisual.GetContainingRect(point)))
+                    if (!(drawCanvas.GetVisual<Visual>(point) == ImageViewModel.SelectEditorVisual && ImageViewModel.SelectEditorVisual.GetContainingRect(point)))
                         Zoombox1.Cursor = Cursors.Cross;
 
                 }

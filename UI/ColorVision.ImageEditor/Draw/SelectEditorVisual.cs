@@ -176,6 +176,7 @@ namespace ColorVision.ImageEditor.Draw
             {
                 DrawCanvas.AddVisual(this, false);
             }
+            DrawCanvas.TopVisual(this);
             Render();
         }
         public event EventHandler<ISelectVisual> SelectVisualChanged;
@@ -204,6 +205,7 @@ namespace ColorVision.ImageEditor.Draw
             {
                 DrawCanvas.AddVisual(this, false);
             }
+            DrawCanvas.TopVisual(this);
             Render();
         }
 

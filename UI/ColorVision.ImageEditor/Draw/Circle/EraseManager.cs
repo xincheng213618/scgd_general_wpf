@@ -108,8 +108,8 @@ namespace ColorVision.ImageEditor.Draw
 
             IsMouseDown = false;
 
-            DrawCanvas.RemoveVisual(DrawCanvas.GetVisual(MouseDownP));
-            DrawCanvas.RemoveVisual(DrawCanvas.GetVisual(MouseUpP));
+            DrawCanvas.RemoveVisual(DrawCanvas.GetVisual<Visual>(MouseDownP));
+            DrawCanvas.RemoveVisual(DrawCanvas.GetVisual<Visual>(MouseUpP));
 
             foreach (var item in DrawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP))))
             {

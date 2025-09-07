@@ -30,7 +30,7 @@ namespace ColorVision.Database
         { 
             get
             {
-                if (_DB.Ado.Connection.State == ConnectionState.Closed)
+                if (_DB !=null && _DB.Ado.Connection.State == ConnectionState.Closed)
                 {
                     log.Info("数据库连接已关闭，正在尝试重新打开连接...");
                     _DB.Ado.Connection.Open();
