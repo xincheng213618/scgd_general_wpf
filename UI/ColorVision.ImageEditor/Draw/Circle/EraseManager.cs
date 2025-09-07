@@ -93,7 +93,10 @@ namespace ColorVision.ImageEditor.Draw
             MouseDownP = e.GetPosition(DrawCanvas);
             IsMouseDown = true;
 
-            ImageViewModel.DrawSelectRect(EraseVisual, new Rect(MouseDownP, MouseDownP)); ;
+
+
+            using DrawingContext dc = EraseVisual.RenderOpen();
+            dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), new Rect(MouseDownP, MouseDownP));
             DrawCanvas.AddVisual(EraseVisual);
 
             ImageViewModel.SelectEditorVisual.ClearRender();
@@ -128,7 +131,9 @@ namespace ColorVision.ImageEditor.Draw
                 if (EraseVisual != null)
                 {
                     var point = e.GetPosition(DrawCanvas);
-                    ImageViewModel.DrawSelectRect(EraseVisual, new Rect(MouseDownP, point));
+
+                    using DrawingContext dc = EraseVisual.RenderOpen();
+                    dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), new Rect(MouseDownP, point));
                 }
             }
             e.Handled = true;

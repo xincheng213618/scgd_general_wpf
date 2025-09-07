@@ -91,12 +91,6 @@ namespace ColorVision.ImageEditor.Draw
 
         public SelectEditorVisual SelectEditorVisual { get; set; }
 
-
-        public static void DrawSelectRect(DrawingVisual drawingVisual, Rect rect)
-        {
-            using DrawingContext dc = drawingVisual.RenderOpen();
-            dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
-        }
         public ImageViewConfig Config { get; set; }
 
         public ContextMenu ContextMenu { get; set; }
@@ -820,7 +814,20 @@ namespace ColorVision.ImageEditor.Draw
 
 
 
-
+        public bool GetLastChoice()
+        {
+            if (!string.IsNullOrWhiteSpace(_LastChoice))
+            {
+                Type type = GetType();
+                PropertyInfo property = type.GetProperty(_LastChoice);
+                if (property?.GetValue(this) is bool b)
+                {
+                    return b;
+                }
+                return false;
+            }
+            return false;
+        }
 
         public string LastChoice { get => _LastChoice; set 
             {
@@ -835,7 +842,6 @@ namespace ColorVision.ImageEditor.Draw
                 _LastChoice = value;
             }
         }
-
         private string _LastChoice { get; set; }
 
 
