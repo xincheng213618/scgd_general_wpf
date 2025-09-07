@@ -85,7 +85,7 @@
 
             <Grid x:Name="ZoomGrid" Background="{StaticResource TransparentGridBrush}">
                 <draw:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding MaxZoom}"  MinZoom="{Binding MinZoom}" Grid.Row="1" Grid.RowSpan="2">
-                    <draw:DrawCanvas x:Name="ImageShow"  x:FieldModifier="public" Initialized="ImageShow_Initialized"  FocusVisualStyle="{x:Null}"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto" MouseMove="ImageShow_MouseMove">
+                    <draw:DrawCanvas x:Name="ImageShow"  x:FieldModifier="public" Initialized="ImageShow_Initialized"  FocusVisualStyle="{x:Null}"   RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto">
                     </draw:DrawCanvas>
                 </draw:ZoomboxSub>
                 <ComboBox x:Name="ComboBoxLayers" HorizontalAlignment="Right" VerticalAlignment="Top"  Style="{StaticResource ComboBox.Small}" x:FieldModifier="public"  SelectedIndex="0" Margin="5"/>
