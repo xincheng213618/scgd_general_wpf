@@ -27,42 +27,6 @@ namespace ColorVision.Engine.Templates.POI
         {
             e.Handled = new Regex("[^0-9]+").IsMatch(e.Text);
         }
-        private void ImageShow_Initialized(object sender, EventArgs e)
-        {
-            ImageShow.ContextMenuOpening += MainWindow_ContextMenuOpening;
-        }
-        private void MainWindow_ContextMenuOpening(object sender, ContextMenuEventArgs e)
-        {
-            var Point = Mouse.GetPosition(ImageShow);
-            var DrawingVisual = ImageShow.GetVisual<Visual>(Point);
-
-            //if (DrawingVisual != null && ImageViewModel.SelectEditorVisual.SelectVisual != DrawingVisual && DrawingVisual is IDrawingVisual drawing)
-            //{
-            //    var ContextMenu = new ContextMenu();
-
-            //    MenuItem menuItem = new() { Header = "隐藏(_H)" };
-            //    menuItem.Click += (s, e) =>
-            //    {
-            //        drawing.BaseAttribute.IsShow = false;
-            //    };
-            //    MenuItem menuIte2 = new() { Header = "删除(_D)" };
-
-            //    menuIte2.Click += (s, e) =>
-            //    {
-            //        ImageShow.RemoveVisual(DrawingVisual);
-            //        PropertyGrid2.SelectedObject = null;
-            //    };
-            //    ContextMenu.Items.Add(menuItem);
-            //    ContextMenu.Items.Add(menuIte2);
-            //    ImageShow.ContextMenu = ContextMenu;
-            //}
-            //else
-            //{
-            //    ImageShow.ContextMenu = null;
-            //}
-
-        }
-
         private bool IsMouseDown;
         private Point MouseDownP;
 

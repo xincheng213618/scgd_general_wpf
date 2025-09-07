@@ -200,6 +200,7 @@ namespace ColorVision.ImageEditor
                     DrawingVisualLists.Remove(visual);
         }
 
+
         private void ImageView_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Tab)
@@ -247,15 +248,6 @@ namespace ColorVision.ImageEditor
                     item.Render();
                 }
             }
-        }
-
-
-        private bool IsMouseDown;
-        private Point MouseDownP;
-
-        private void ImageShow_Initialized(object sender, EventArgs e)
-        {
-            ImageShow.ContextMenuOpening += MainWindow_ContextMenuOpening;
         }
 
         private void MainWindow_ContextMenuOpening(object sender, ContextMenuEventArgs e)
@@ -521,7 +513,6 @@ namespace ColorVision.ImageEditor
             ImageShow.Source = ViewBitmapSource;
 
             ImageShow.RaiseImageInitialized();
-            ImageViewModel.Opened();
             ImageViewModel.ToolBarScaleRuler.IsShow = true;
 
         }

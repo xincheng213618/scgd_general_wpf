@@ -158,32 +158,48 @@ namespace ColorVision.ImageEditor.Draw
 
             ContextMenu = new ContextMenu();
             MenuItemMetadatas = new List<MenuItemMetadata>();
-            ContextMenu.Initialized += (s, e) => Opened();
-            OpenedImage += (s, e) =>
+            Image.ContextMenuOpening += ContextMenu_ContextMenuOpening;
+            Image.ContextMenu = ContextMenu;
+        }
+
+        private void ContextMenu_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            ContextMenu.Items.Clear();
+            if (_ImageEditMode)
             {
-                IsInitContextMenu = false;
-                Opened();
-            };
-            EditModeChanged += (s, e) =>
-            {
-                if (e)
+                Point MouseDownP = Mouse.GetPosition(Image);
+
+                var MouseVisual = Image.GetVisual<Visual>(MouseDownP);
+
+                if (MouseVisual is IDrawingVisual drawingVisual)
                 {
-                    ContextMenu.Items.Clear();
+                    MenuItem menuItem = new() { Header = "隐藏(_H)" };
+                    menuItem.Click += (s, e) =>
+                    {
+                        drawingVisual.BaseAttribute.IsShow = false;
+                    };
+                    MenuItem menuIte2 = new() { Header = "删除" };
+                    menuIte2.Click += (s, e) =>
+                    {
+                        Image.RemoveVisual(MouseVisual);
+                    };
+                    ContextMenu.Items.Add(menuItem);
+                    ContextMenu.Items.Add(menuIte2);
                 }
                 else
                 {
-                    IsInitContextMenu = false;
                     Opened();
                 }
-            };
+            }
+            else
+            {
+                Opened();
+            }
         }
 
-        private bool IsInitContextMenu;
 
         public void Opened()
         {
-            if (IsInitContextMenu) return;
-            IsInitContextMenu = true;
             InitMenuItem(); 
             InitContextMenu();
         }
