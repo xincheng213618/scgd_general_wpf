@@ -157,14 +157,14 @@ namespace ColorVision.Engine.Templates.POI
             {
                 if (!PoiConfig.IsShowText)
                 {
-                    if (s is IDrawingVisual visual)
+                    if (e.Visual is IDrawingVisual visual)
                     {
                         DrawingVisualLists.Add(visual);
                     }
                 }
                 else
                 {
-                    if (s is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && s is Visual visual1)
+                    if (e.Visual is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && s is Visual visual1)
                     {
 
                         DrawingVisualLists.Add(visual);
@@ -201,7 +201,7 @@ namespace ColorVision.Engine.Templates.POI
             //如果是不显示
             ImageShow.VisualsRemove += (s, e) =>
             {
-                if (s is IDrawingVisual visual)
+                if (e.Visual is IDrawingVisual visual)
                 {
                     if (visual.BaseAttribute.IsShow)
                         DrawingVisualLists.Remove(visual);

@@ -153,6 +153,7 @@ namespace ColorVision.ImageEditor
 
         }
 
+
         private void BaseAttribute_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             PropertyGrid2.Refresh();
@@ -164,9 +165,9 @@ namespace ColorVision.ImageEditor
         }
 
 
-        private void ImageShow_VisualsAdd(object? sender, EventArgs e)
+        private void ImageShow_VisualsAdd(object? sender, VisualChangedEventArgs e)
         {
-            if (sender is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && sender is Visual visual1)
+            if (e.Visual is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && sender is Visual visual1)
             {
                 DrawingVisualLists.Add(visual);
                 visual.BaseAttribute.PropertyChanged += (s1, e1) =>
@@ -193,9 +194,9 @@ namespace ColorVision.ImageEditor
 
         }
 
-        private void ImageShow_VisualsRemove(object? sender, EventArgs e)
+        private void ImageShow_VisualsRemove(object? sender, VisualChangedEventArgs e)
         {
-            if (sender is IDrawingVisual visual)
+            if (e.Visual is IDrawingVisual visual)
                 if (visual.BaseAttribute.IsShow)
                     DrawingVisualLists.Remove(visual);
         }
@@ -249,39 +250,6 @@ namespace ColorVision.ImageEditor
                 }
             }
         }
-
-        private void MainWindow_ContextMenuOpening(object sender, ContextMenuEventArgs e)
-        {
-            if (ImageViewModel.ImageEditMode)
-            {
-                var Point = Mouse.GetPosition(ImageShow);
-                var DrawingVisual = ImageShow.GetVisual<Visual>(Point);
-
-                //if (DrawingVisual != null && ImageViewModel.SelectDrawingVisual != DrawingVisual && DrawingVisual is IDrawingVisual drawing)
-                //{
-                //    Zoombox1.ContextMenu ??= new ContextMenu();
-                //    Zoombox1.ContextMenu.Items.Clear();
-                //    var ContextMenu = Zoombox1.ContextMenu;
-                //    MenuItem menuItem = new() { Header = "隐藏(_H)" };
-                //    menuItem.Click += (s, e) =>
-                //    {
-                //        drawing.BaseAttribute.IsShow = false;
-                //    };
-                //    MenuItem menuIte2 = new() { Header = "删除" };
-                //    menuIte2.Click += (s, e) =>
-                //    {
-                //        ImageShow.RemoveVisual(DrawingVisual);
-                //    };
-                //    ContextMenu.Items.Add(menuItem);
-                //    ContextMenu.Items.Add(menuIte2);
-                //}
-                //else
-                //{
-                //    Zoombox1.ContextMenu.Items.Clear();
-                //}
-            }
-        }
-
 
 
         private void Button7_Click(object sender, RoutedEventArgs e)

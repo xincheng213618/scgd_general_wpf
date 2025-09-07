@@ -40,14 +40,12 @@ namespace ColorVision.ImageEditor.Draw
 
         public bool Contains(Point point)=> SelectVisuals.Any(v => v.GetRect().Contains(point));
 
-        public class CacheClass
-        {
-            public Rect OldRect { get; set; }
+        public ISelectVisual ISelectVisual { get; set; }
 
-            public Point FixedPoint { get; set; }
-            public Point FixedPoint1 { get; set; }
-        }
-        public Dictionary<ISelectVisual, CacheClass> Cache { get; set; } = new Dictionary<ISelectVisual, CacheClass>();
+        public Rect OldRect { get; set; }
+
+        public Point FixedPoint { get; set; }
+        public Point FixedPoint1 { get; set; }
 
         public bool GetContainingRect(Point point)
         {
@@ -60,11 +58,12 @@ namespace ColorVision.ImageEditor.Draw
 
             bool Check(ISelectVisual selectVisual)
             {
-                Rect Rect = selectVisual.GetRect();
-                CacheClass cacheClass = new CacheClass();
-                Cache.Add(selectVisual,cacheClass);
+                ISelectVisual = selectVisual;
 
-                cacheClass.OldRect = new Rect(Rect.X, Rect.Y, Rect.Width, Rect.Height);
+                Rect Rect = selectVisual.GetRect();
+
+                OldRect = new Rect(Rect.X, Rect.Y, Rect.Width, Rect.Height);
+
                 // 计算每个角落的小矩形，使其中心在角落
                 Rect topLeft = new Rect(Rect.Left - halfSmallRectSize, Rect.Top - halfSmallRectSize, smallRectSize, smallRectSize);
                 Rect topRight = new Rect(Rect.Right - halfSmallRectSize, Rect.Top - halfSmallRectSize, smallRectSize, smallRectSize);
@@ -82,53 +81,53 @@ namespace ColorVision.ImageEditor.Draw
                 if (topLeft.Contains(point))
                 {
                     ZoomboxSub.Cursor = Cursors.SizeNWSE;
-                    cacheClass.FixedPoint = cacheClass.OldRect.BottomRight;
+                    FixedPoint = OldRect.BottomRight;
                     return true;
                 }
                 else if (topRight.Contains(point))
                 {
-                    cacheClass.FixedPoint = cacheClass.OldRect.BottomLeft;
+                    FixedPoint = OldRect.BottomLeft;
                     ZoomboxSub.Cursor = Cursors.SizeNESW;
                     return true;
                 }
                 else if (bottomLeft.Contains(point))
                 {
-                    cacheClass.FixedPoint = cacheClass.OldRect.TopRight;
+                    FixedPoint = OldRect.TopRight;
                     ZoomboxSub.Cursor = Cursors.SizeNESW;
                     return true;
                 }
                 else if (bottomRight.Contains(point))
                 {
-                    cacheClass.FixedPoint = cacheClass.OldRect.TopLeft;
+                    FixedPoint = OldRect.TopLeft;
                     ZoomboxSub.Cursor = Cursors.SizeNWSE;
                     return true;
                 }
                 else if (middleTop.Contains(point))
                 {
-                    cacheClass.FixedPoint = cacheClass.OldRect.BottomLeft;
-                    cacheClass.FixedPoint1 = cacheClass.OldRect.BottomRight;
+                    FixedPoint = OldRect.BottomLeft;
+                    FixedPoint1 = OldRect.BottomRight;
                     ZoomboxSub.Cursor = Cursors.SizeNS;
 
                     return true;
                 }
                 else if (middleBottom.Contains(point))
                 {
-                    cacheClass.FixedPoint = cacheClass.OldRect.TopLeft;
-                    cacheClass.FixedPoint1 = cacheClass.OldRect.TopRight;
+                    FixedPoint = OldRect.TopLeft;
+                    FixedPoint1 = OldRect.TopRight;
                     ZoomboxSub.Cursor = Cursors.SizeNS;
                     return true;
                 }
                 else if (middleLeft.Contains(point))
                 {
-                    cacheClass.FixedPoint = cacheClass.OldRect.TopRight;
-                    cacheClass.FixedPoint1 = cacheClass.OldRect.BottomRight;
+                    FixedPoint = OldRect.TopRight;
+                    FixedPoint1 = OldRect.BottomRight;
                     ZoomboxSub.Cursor = Cursors.SizeWE;
                     return true;
                 }
                 else if (middleRight.Contains(point))
                 {
-                    cacheClass.FixedPoint = cacheClass.OldRect.TopLeft;
-                    cacheClass.FixedPoint1 = cacheClass.OldRect.BottomLeft;
+                    FixedPoint = OldRect.TopLeft;
+                    FixedPoint1 = OldRect.BottomLeft;
                     ZoomboxSub.Cursor = Cursors.SizeWE;
                     return true;
                 }
@@ -140,8 +139,6 @@ namespace ColorVision.ImageEditor.Draw
                 return false;
 
             }
-
-            Cache.Clear();
             foreach (var item in SelectVisuals)
             {
                 if (Check(item))
@@ -414,25 +411,25 @@ namespace ColorVision.ImageEditor.Draw
                 {
                     if (drawingVisual is ISelectVisual visual)
                     {
-                        if (ImageViewModel.SelectEditorVisual.SelectVisuals.Contains(visual))
+                        if (SelectVisuals.Contains(visual))
                         {
                             return;
                         }
                         else
                         {
-                            ImageViewModel.SelectEditorVisual.SetRender(visual);
-                            if (!(ImageViewModel.SelectEditorVisual.GetContainingRect(MouseDownP)))
+                            SetRender(visual);
+                            if (!(GetContainingRect(MouseDownP)))
                                 ZoomboxSub.Cursor = Cursors.Cross;
                         }
                     }
                     else
                     {
-                        ImageViewModel.SelectEditorVisual.ClearRender();
+                        ClearRender();
                     }
                 }
                 return;
             }
-            ImageViewModel.SelectEditorVisual.ClearRender();
+            ClearRender();
 
             using DrawingContext dc = SelectRect.RenderOpen();
             dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), new Rect(MouseDownP, MouseDownP));
@@ -450,11 +447,11 @@ namespace ColorVision.ImageEditor.Draw
                     using DrawingContext dc = SelectRect.RenderOpen();
                     dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), new Rect(MouseDownP, point));
 
-                    if (ImageViewModel.SelectEditorVisual.SelectVisuals.Count != 0)
+                    if (SelectVisuals.Count != 0)
                     {
                         if (ZoomboxSub.Cursor == Cursors.SizeAll)
                         {
-                            foreach (var selectVisual in ImageViewModel.SelectEditorVisual.SelectVisuals)
+                            foreach (var selectVisual in SelectVisuals)
                             {
                                 var oldRect = selectVisual.GetRect(); ;
                                 var deltaX = point.X - LastMouseMove.X;
@@ -469,65 +466,42 @@ namespace ColorVision.ImageEditor.Draw
                                );
                                 selectVisual.SetRect(rect);
                             }
-                            ImageViewModel.SelectEditorVisual.Render();
+                            Render();
 
                         }
-                        //这里明天在优化
-                        if (ImageViewModel.SelectEditorVisual.SelectVisuals.Count == 1)
+                        if (ZoomboxSub.Cursor == Cursors.SizeNWSE || ZoomboxSub.Cursor == Cursors.SizeNESW)
                         {
-                            if (ZoomboxSub.Cursor == Cursors.SizeNWSE || ZoomboxSub.Cursor == Cursors.SizeNESW)
-                            {
-                                foreach (var selectVisual in ImageViewModel.SelectEditorVisual.SelectVisuals)
-                                {
-                                    if (!ImageViewModel.SelectEditorVisual.Cache.TryGetValue(selectVisual, out CacheClass cache)) continue;
+                            var oldRect = ISelectVisual.GetRect();
+                            Point point1 = oldRect.TopLeft;
 
-                                    var oldRect = selectVisual.GetRect(); ;
-                                    Point point1 = oldRect.TopLeft;
-                                    Point FixedPoint = ImageViewModel.SelectEditorVisual.Cache[selectVisual].FixedPoint;
-
-                                    Rect rect = new System.Windows.Rect(FixedPoint, point);
-                                    selectVisual.SetRect(rect);
-                                }
-                                ImageViewModel.SelectEditorVisual.Render(); ;
-                            }
-                            else if (ZoomboxSub.Cursor == Cursors.SizeNS)
-                            {
-                                foreach (var selectVisual in ImageViewModel.SelectEditorVisual.SelectVisuals)
-                                {
-                                    if (!ImageViewModel.SelectEditorVisual.Cache.TryGetValue(selectVisual, out CacheClass cache)) continue;
-
-                                    var oldRect = selectVisual.GetRect();
-                                    Point point1 = ImageViewModel.SelectEditorVisual.Cache[selectVisual].FixedPoint1;
-                                    point1.Y = point.Y;
-
-                                    Rect rect = new System.Windows.Rect(ImageViewModel.SelectEditorVisual.Cache[selectVisual].FixedPoint, point1);
-                                    selectVisual.SetRect(rect);
-                                }
-                                ImageViewModel.SelectEditorVisual.Render();
-                            }
-                            else if (ZoomboxSub.Cursor == Cursors.SizeWE)
-                            {
-                                foreach (var selectVisual in ImageViewModel.SelectEditorVisual.SelectVisuals)
-                                {
-                                    if (!ImageViewModel.SelectEditorVisual.Cache.TryGetValue(selectVisual, out CacheClass cache)) continue;
-                                    var oldRect = selectVisual.GetRect();
-
-
-                                    Point point1 = ImageViewModel.SelectEditorVisual.Cache[selectVisual].FixedPoint1;
-                                    point1.X = point.X;
-
-                                    Rect rect = new System.Windows.Rect(ImageViewModel.SelectEditorVisual.Cache[selectVisual].FixedPoint, point1);
-                                    selectVisual.SetRect(rect);
-                                }
-                                ImageViewModel.SelectEditorVisual.Render();
-                            }
+                            Rect rect = new System.Windows.Rect(FixedPoint, point);
+                            ISelectVisual.SetRect(rect);
+                            Render(); ;
                         }
+                        else if (ZoomboxSub.Cursor == Cursors.SizeNS)
+                        {
+                            var oldRect = ISelectVisual.GetRect();
+                            Point point1 = FixedPoint1;
+                            point1.Y = point.Y;
 
+                            Rect rect = new System.Windows.Rect(FixedPoint, point1);
+                            ISelectVisual.SetRect(rect);
+                            Render();
+                        }
+                        else if (ZoomboxSub.Cursor == Cursors.SizeWE)
+                        {
+                            var oldRect = ISelectVisual.GetRect();
+                            Point point1 = FixedPoint1;
+                            point1.X = point.X;
+                            Rect rect = new System.Windows.Rect(FixedPoint, point1);
+                            ISelectVisual.SetRect(rect);
+                            Render();
+                        }
                     }
                 }
                 else
                 {
-                    if (!(drawCanvas.GetVisual<Visual>(point) == ImageViewModel.SelectEditorVisual && ImageViewModel.SelectEditorVisual.GetContainingRect(point)))
+                    if (!(drawCanvas.GetVisual<Visual>(point) == ImageViewModel.SelectEditorVisual && GetContainingRect(point)))
                         ZoomboxSub.Cursor = Cursors.Cross;
                 }
                 LastMouseMove = point;
