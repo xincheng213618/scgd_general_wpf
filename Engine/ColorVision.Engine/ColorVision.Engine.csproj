@@ -11,21 +11,6 @@
     <PackageReadmeFile></PackageReadmeFile>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="Controls\**" />
-    <Compile Remove="libs\**" />
-    <Compile Remove="Services\Devices\Spectrum\Templates\**" />
-    <EmbeddedResource Remove="Controls\**" />
-    <EmbeddedResource Remove="libs\**" />
-    <EmbeddedResource Remove="Services\Devices\Spectrum\Templates\**" />
-    <None Remove="Controls\**" />
-    <None Remove="libs\**" />
-    <None Remove="Services\Devices\Spectrum\Templates\**" />
-    <Page Remove="Controls\**" />
-    <Page Remove="libs\**" />
-    <Page Remove="Services\Devices\Spectrum\Templates\**" />
-  </ItemGroup>
-
 	<ItemGroup>
 		<PackageReference Include="Dapper" Version="2.1.66" />
 		<PackageReference Include="CsvHelper" Version="33.1.0" />
