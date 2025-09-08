@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 
@@ -40,6 +42,45 @@ namespace ColorVision.ImageEditor.Draw
                 if (IsComple)
                     dc.DrawLine(Attribute.Pen, Attribute.Points[Attribute.Points.Count - 1], Attribute.Points[0]);
             }
+        }
+
+        public override Rect GetRect()
+        {
+            if (Points == null || Points.Count == 0)
+                return Rect.Empty;
+
+            double minX = Points.Min(p => p.X);
+            double minY = Points.Min(p => p.Y);
+            double maxX = Points.Max(p => p.X);
+            double maxY = Points.Max(p => p.Y);
+
+            return new Rect(new Point(minX, minY), new Point(maxX, maxY));
+        }
+
+        public override void SetRect(Rect rect)
+        {
+            if (Points == null || Points.Count == 0)
+                return;
+
+            Rect oldRect = GetRect();
+            if (oldRect == Rect.Empty)
+                return;
+
+            double scaleX = rect.Width / oldRect.Width;
+            double scaleY = rect.Height / oldRect.Height;
+
+            for (int i = 0; i < Points.Count; i++)
+            {
+                double relativeX = (Points[i].X - oldRect.X) * scaleX + rect.X;
+                double relativeY = (Points[i].Y - oldRect.Y) * scaleY + rect.Y;
+
+                // 限制在目标 rect 范围内
+                relativeX = Math.Max(rect.X, Math.Min(relativeX, rect.X + rect.Width));
+                relativeY = Math.Max(rect.Y, Math.Min(relativeY, rect.Y + rect.Height));
+
+                Points[i] = new Point(relativeX, relativeY);
+            }
+            Render();
         }
 
 

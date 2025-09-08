@@ -62,7 +62,12 @@ namespace ColorVision.ImageEditor.Draw
 
         private void DrawCanvas_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key ==Key.End || e.Key==Key.Escape || e.Key == Key.Enter)
+            Key realKey = e.Key;
+            if (realKey == Key.ImeProcessed)
+            {
+                realKey = e.ImeProcessedKey;
+            }
+            if (realKey == Key.End || realKey == Key.Escape || realKey == Key.Enter || realKey == Key.Tab | realKey == Key.Space)
             {
                 if (DVBezierCurveCache != null)
                 {
@@ -87,6 +92,7 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.CaptureMouse();
             MouseDownP = e.GetPosition(DrawCanvas);
             IsMouseDown = true;
+            DrawCanvas.Focus();
 
             if (DVBezierCurveCache == null)
             {

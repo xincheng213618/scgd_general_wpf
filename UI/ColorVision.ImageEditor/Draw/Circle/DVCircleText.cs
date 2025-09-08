@@ -72,7 +72,7 @@ namespace ColorVision.ImageEditor.Draw
                 size = formattedText.Width / 2;
                 dc.DrawText(formattedText, new Point(Attribute.Center.X - size, Attribute.Center.Y - formattedText.Height / 2));
             }
-            dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.Radius);
+            dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.RadiusY);
 
             if (!string.IsNullOrWhiteSpace(Attribute.Msg))
             {
@@ -84,12 +84,13 @@ namespace ColorVision.ImageEditor.Draw
         }
         public override Rect GetRect()
         {
-            return new Rect(Attribute.Center.X - Attribute.Radius, Attribute.Center.Y - Attribute.Radius, Attribute.Radius * 2, Attribute.Radius * 2);
+            return new Rect(Attribute.Center.X - Attribute.Radius, Attribute.Center.Y - Attribute.RadiusY, Attribute.Radius * 2, Attribute.RadiusY * 2);
         }
         public override void SetRect(Rect rect)
         {
             Attribute.Center = new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
-            Attribute.Radius = Math.Min(rect.Width, rect.Height) / 2;
+            Attribute.Radius = rect.Width / 2;
+            Attribute.RadiusY = rect.Height / 2;
             Render();
         }
     }

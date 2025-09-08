@@ -20,8 +20,11 @@ namespace ColorVision.ImageEditor.Draw
         private Point _Center = new Point(50, 50);
 
         [Category("Circle"), DisplayName("半径")]
-        public double Radius { get => _Radius; set { _Radius = value; NotifyPropertyChanged(); } }
+        public double Radius { get => _Radius; set { _Radius = value; _RadiusY = value; NotifyPropertyChanged(); } }
         private double _Radius = 30;
 
+        [Category("Circle"), DisplayName("半径")]
+        public double RadiusY { get => _RadiusY; set { _RadiusY = value; NotifyPropertyChanged(); } }
+        private double _RadiusY = 30;  
     }
 }
