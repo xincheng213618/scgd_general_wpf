@@ -8,23 +8,23 @@ namespace ColorVision.ImageEditor.Draw
     {
 
         [Browsable(false)]
-        public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
+        public Pen Pen { get => _Pen; set { _Pen = value; OnPropertyChanged(); } }
         private Pen _Pen = new Pen(Brushes.Red, 2);
 
         [Category("Circle"), DisplayName("颜色")]
-        public Brush Brush { get => _Brush; set { _Brush = value; NotifyPropertyChanged(); } }
+        public Brush Brush { get => _Brush; set { _Brush = value; OnPropertyChanged(); } }
         private Brush _Brush = DefaultBrush;
 
         [Category("Circle"), DisplayName("圆心")]
-        public Point Center { get => _Center; set { if (_Center.Equals(value)) return; _Center = value; NotifyPropertyChanged(); } }
+        public Point Center { get => _Center; set { if (_Center.Equals(value)) return; _Center = value; OnPropertyChanged(); } }
         private Point _Center = new Point(50, 50);
 
         [Category("Circle"), DisplayName("半径")]
-        public double Radius { get => _Radius; set { _Radius = value; _RadiusY = value; NotifyPropertyChanged(); } }
+        public double Radius { get => _Radius; set { _Radius = value; _RadiusY = value; OnPropertyChanged(); } }
         private double _Radius = 30;
 
         [Category("Circle"), DisplayName("半径")]
-        public double RadiusY { get => _RadiusY; set { _RadiusY = value; NotifyPropertyChanged(); } }
+        public double RadiusY { get => _RadiusY; set { _RadiusY = value; OnPropertyChanged(); } }
         private double _RadiusY = 30;  
     }
 }

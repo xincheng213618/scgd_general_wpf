@@ -91,18 +91,6 @@ namespace ColorVision.ImageEditor
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            List<IToolCommand> IToolCommands = new List<IToolCommand>();
-
-            foreach (var assembly in AssemblyService.Instance.GetAssemblies())
-            {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IToolCommand).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is IToolCommand iMenuItem)
-                    {
-                        IToolCommands.Add(iMenuItem);
-                    }
-                }
-            }
             ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow,Config);
 
 

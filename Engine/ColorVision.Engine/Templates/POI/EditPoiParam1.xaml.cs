@@ -43,7 +43,7 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Templates.POI
 {
-    public class EditPoiParam1Config : ViewModelBase, IConfig
+    public class EditPoiParam1Config : Common.MVVM.ViewModelBase, IConfig
     {
         public static EditPoiParam1Config Instance => ConfigService.Instance.GetRequiredService<EditPoiParam1Config>();
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
@@ -109,7 +109,7 @@ namespace ColorVision.Engine.Templates.POI
 
     }
 
-    public class KBPoiVMParam : ViewModelBase
+    public class KBPoiVMParam : Common.MVVM.ViewModelBase
     {
         /// <summary>
         /// 结果缩放

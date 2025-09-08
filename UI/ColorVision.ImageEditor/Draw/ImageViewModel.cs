@@ -29,7 +29,7 @@ namespace ColorVision.ImageEditor.Draw
     }
 
 
-    public class ImageViewModel : ViewModelBase,IDisposable
+    public class ImageViewModel : Common.MVVM.ViewModelBase,IDisposable
     {
         public RelayCommand ZoomUniformToFill { get; set; }
         public RelayCommand ZoomUniformCommand { get; set; }

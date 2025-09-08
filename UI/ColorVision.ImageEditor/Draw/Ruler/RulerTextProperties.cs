@@ -10,11 +10,11 @@ namespace ColorVision.ImageEditor.Draw
         public List<Point> Points { get; set; } = new List<Point>();
 
         [Category("DrawingVisual"), DisplayName("笔刷")]
-        public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
+        public Pen Pen { get => _Pen; set { _Pen = value; OnPropertyChanged(); } }
         private Pen _Pen;
 
         [Category("Circle"), DisplayName("颜色")]
-        public Brush Brush { get => _Brush; set { _Brush = value; NotifyPropertyChanged(); } }
+        public Brush Brush { get => _Brush; set { _Brush = value; OnPropertyChanged(); } }
         private Brush _Brush;
 
 
@@ -22,24 +22,24 @@ namespace ColorVision.ImageEditor.Draw
         public TextAttribute TextAttribute { get; set; } = new TextAttribute();
 
         [Category("TextAttribute"), DisplayName("Text")]
-        public  string Text { get => TextAttribute.Text; set { TextAttribute.Text = value; NotifyPropertyChanged(); } }
+        public  string Text { get => TextAttribute.Text; set { TextAttribute.Text = value; OnPropertyChanged(); } }
         [Category("TextAttribute"), DisplayName("FontSize")]
-        public double FontSize { get => TextAttribute.FontSize; set { TextAttribute.FontSize = value; NotifyPropertyChanged(); } }
+        public double FontSize { get => TextAttribute.FontSize; set { TextAttribute.FontSize = value; OnPropertyChanged(); } }
 
         [Category("TextAttribute"), DisplayName("Brush")]
-        public Brush Foreground { get => TextAttribute.Brush; set { TextAttribute.Brush = value; NotifyPropertyChanged(); } }
+        public Brush Foreground { get => TextAttribute.Brush; set { TextAttribute.Brush = value; OnPropertyChanged(); } }
 
         [Category("TextAttribute"), DisplayName("FontFamily")]
-        public FontFamily FontFamily { get => TextAttribute.FontFamily; set { TextAttribute.FontFamily = value; NotifyPropertyChanged(); } }
+        public FontFamily FontFamily { get => TextAttribute.FontFamily; set { TextAttribute.FontFamily = value; OnPropertyChanged(); } }
 
         [Category("TextAttribute"), DisplayName("FontStyle")]
-        public FontStyle FontStyle { get => TextAttribute.FontStyle; set { TextAttribute.FontStyle = value; NotifyPropertyChanged(); } }
+        public FontStyle FontStyle { get => TextAttribute.FontStyle; set { TextAttribute.FontStyle = value; OnPropertyChanged(); } }
         [Category("TextAttribute"), DisplayName("FontWeight")]
-        public FontWeight FontWeight { get => TextAttribute.FontWeight; set { TextAttribute.FontWeight = value; NotifyPropertyChanged(); } }
+        public FontWeight FontWeight { get => TextAttribute.FontWeight; set { TextAttribute.FontWeight = value; OnPropertyChanged(); } }
         [Category("TextAttribute"), DisplayName("FontStretch")]
-        public FontStretch FontStretch { get => TextAttribute.FontStretch; set { TextAttribute.FontStretch = value; NotifyPropertyChanged(); } }
+        public FontStretch FontStretch { get => TextAttribute.FontStretch; set { TextAttribute.FontStretch = value; OnPropertyChanged(); } }
 
         [Category("TextAttribute"), DisplayName("FlowDirection")]
-        public FlowDirection FlowDirection { get => TextAttribute.FlowDirection; set { TextAttribute.FlowDirection = value; NotifyPropertyChanged(); } }
+        public FlowDirection FlowDirection { get => TextAttribute.FlowDirection; set { TextAttribute.FlowDirection = value; OnPropertyChanged(); } }
     }
 }
