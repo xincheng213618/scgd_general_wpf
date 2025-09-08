@@ -6,12 +6,7 @@ using System.Linq;
 
 namespace ColorVision.Database
 {
-
-    public class BaseTableDao
-    {
-    }
-
-    public class BaseTableDao<T> : BaseTableDao where T : IEntity ,new()
+    public class BaseTableDao<T> where T : IEntity ,new()
     {
         public SqlSugarClient Db => MySqlControl.GetInstance().DB;
     }

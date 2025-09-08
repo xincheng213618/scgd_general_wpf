@@ -75,9 +75,6 @@ namespace ColorVision.ImageEditor
 
         public int Ochannel { get; set; }
 
-        public bool IsShowLoadImage { get => _IsShowLoadImage; set { _IsShowLoadImage = value; OnPropertyChanged(); } }
-        private bool _IsShowLoadImage = true;
-
         public event EventHandler ColormapTypesChanged;
 
         public ColormapTypes ColormapTypes { get => _ColormapTypes; set { _ColormapTypes = value; OnPropertyChanged(); ColormapTypesChanged?.Invoke(this, new EventArgs()); } }
