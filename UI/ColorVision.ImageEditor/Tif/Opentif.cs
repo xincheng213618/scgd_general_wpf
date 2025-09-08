@@ -52,6 +52,37 @@ namespace ColorVision.ImageEditor.Tif
         }
     }
 
+    [FileExtension(".bmp|.jpg|.jpeg|.png|.webp|.ico|gif")]
+    public class OpenCommon: IImageOpen
+    {
+
+        public async void OpenImage(ImageView imageView, string? filePath)
+        {
+            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return;
+
+            await Task.Run(() =>
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    byte[] imageData = File.ReadAllBytes(filePath);
+                    BitmapImage bitmapImage = ImageUtils.CreateBitmapImage(imageData);
+                    imageView.SetImageSource(bitmapImage.ToWriteableBitmap());
+
+                    imageView.ComboBoxLayers.SelectedIndex = 0;
+                    imageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src", "R", "G", "B" };
+                    imageView.AddSelectionChangedHandler(imageView.ComboBoxLayersSelectionChanged);
+
+                    imageView.UpdateZoomAndScale();
+                });
+            });
+
+        }
+        public List<MenuItemMetadata> GetContextMenuItems(ImageViewConfig imageView) 
+        {
+            return new List<MenuItemMetadata>();
+        }
+    }
+
 
     [FileExtension(".tif|.tiff")]
     public class Opentif : IImageOpen

@@ -5,6 +5,7 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
 using log4net;
+using log4net.Util;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -226,7 +227,7 @@ namespace ColorVision.ImageEditor
             _handlers.Clear();
         }
 
-        public async void OpenImage(string? filePath)
+        public void OpenImage(string? filePath)
         {
             //如果文件已经打开，不会重复打开
             if (filePath == null || filePath.Equals(Config.FilePath, StringComparison.Ordinal)) return;
@@ -234,48 +235,34 @@ namespace ColorVision.ImageEditor
             Config.AddProperties("FilePath", filePath);
             ClearSelectionChangedHandlers();
             Config.FilePath = filePath;
-            if (filePath != null && File.Exists(filePath))
+            try
             {
-                long fileSize = new FileInfo(filePath).Length;
-                Config.AddProperties("FileSize", fileSize);
-
-                bool isLargeFile = fileSize > 1024 * 1024 * 100;//例如，文件大于1MB时认为是大文件
-
-                string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
-                if (ComponentManager.GetInstance().IImageOpens.TryGetValue(ext, out var imageOpen))
+                if (filePath != null && File.Exists(filePath))
                 {
-                    ImageViewModel.IImageOpen = imageOpen;
-                    Config.AddProperties("ImageViewOpen", ImageViewModel.IImageOpen);
-                    ImageViewModel.IImageOpen.OpenImage(this, filePath);
-                    return;
-                }
+                    long fileSize = new FileInfo(filePath).Length;
+                    Config.AddProperties("FileSize", fileSize);
 
-                try
-                {
-                    ComboBoxLayers.SelectedIndex = 0;
-                    ComboBoxLayers.ItemsSource = ComboBoxLayerItems;
-                    AddSelectionChangedHandler(ComboBoxLayersSelectionChanged);
-                    await Task.Run(() =>
+                    string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
+                    if (ComponentManager.GetInstance().IImageOpens.TryGetValue(ext, out var imageOpen))
                     {
-                        byte[] imageData = File.ReadAllBytes(filePath);
-                        BitmapImage bitmapImage = ImageUtils.CreateBitmapImage(imageData);
-                        Application.Current.Dispatcher.BeginInvoke(() =>
-                        {
-                            SetImageSource(bitmapImage.ToWriteableBitmap());
-                            UpdateZoomAndScale();
-                        });
-                    });
-
+                        ImageViewModel.IImageOpen = imageOpen;
+                        Config.AddProperties("ImageViewOpen", ImageViewModel.IImageOpen);
+                        ImageViewModel.IImageOpen.OpenImage(this, filePath);
+                        return;
+                    }
+                    else
+                    {
+                        MessageBox.Show($"不支持的图片格式 {ext}");
+                    }
                 }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message);
-                }
-
+            }
+            catch(Exception ex)
+            {
+                log.Error(ex);
+                MessageBox.Show(ex.Message);
             }
 
-
-        }
+      }
 
         public HImage? HImageCache
         {

@@ -689,24 +689,89 @@ namespace ColorVision.ImageEditor
                 }
                 else if (e.Key == Key.Up)
                 {
-                    TranslateTransform translateTransform = new();
-                    Vector vector = new(0, -10);
-                    translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
-                    translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
-                    ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
+                    // 调用辅助方法获取上一个文件
+                    string? previousFile = GetAdjacentImageFile(Config.FilePath, moveNext: false);
+                    if (!string.IsNullOrEmpty(previousFile))
+                    {
+                        // 更新 openFileDialog 的文件名，以便下次操作基于新文件
+                        OpeningImage?.Invoke(this, previousFile);
+                    }
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Down)
                 {
-                    TranslateTransform translateTransform = new();
-                    Vector vector = new(0, 10);
-                    translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
-                    translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
-                    ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
+                    // 调用辅助方法获取下一个文件
+                    string? nextFile = GetAdjacentImageFile(Config.FilePath, moveNext: true);
+                    if (!string.IsNullOrEmpty(nextFile))
+                    {
+                        // 更新 openFileDialog 的文件名
+                        OpeningImage?.Invoke(this, nextFile);
+                    }
                     e.Handled = true;
                 }
             }
         }
+
+        /// <summary>
+        /// 获取指定文件所在目录中的相邻文件。
+        /// </summary>
+        /// <param name="currentFilePath">当前文件的完整路径。</param>
+        /// <param name="moveNext">为 true 表示获取下一个文件，为 false 表示获取上一个文件。</param>
+        /// <returns>相邻文件的完整路径，如果找不到则返回 null。</returns>
+        private string? GetAdjacentImageFile(string currentFilePath, bool moveNext)
+        {
+            // 1. 定义支持的图片文件扩展名
+
+            var supportedExtensions = ComponentManager.GetInstance().IImageOpens.Keys.ToList();
+            try
+            {
+                // 2. 获取当前文件所在的目录
+                string? directory = Path.GetDirectoryName(currentFilePath);
+                if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
+                {
+                    return null;
+                }
+
+                // 3. 获取目录中所有支持的图片文件，并按名称排序
+                List<string> imageFiles = Directory.GetFiles(directory)
+                    .Where(f => supportedExtensions.Contains(Path.GetExtension(f)))
+                    .OrderBy(f => f) // 按文件名排序，确保顺序一致
+                    .ToList();
+
+                if (imageFiles.Count <= 1)
+                {
+                    return null; // 文件夹中没有其他图片
+                }
+
+                // 4. 在列表中找到当前文件的索引
+                int currentIndex = imageFiles.FindIndex(f => string.Equals(f, currentFilePath, StringComparison.OrdinalIgnoreCase));
+                if (currentIndex == -1)
+                {
+                    return null; // 当前文件不在列表中（可能已重命名或删除）
+                }
+
+                // 5. 计算上一个或下一个文件的索引
+                int newIndex;
+                if (moveNext) // 获取下一个
+                {
+                    newIndex = (currentIndex + 1) % imageFiles.Count;
+                }
+                else // 获取上一个
+                {
+                    newIndex = (currentIndex - 1 + imageFiles.Count) % imageFiles.Count;
+                }
+
+                // 6. 返回新的文件路径
+                return imageFiles[newIndex];
+            }
+            catch (Exception ex)
+            {
+                // 可以添加日志记录
+                Console.WriteLine($"Error finding adjacent image file: {ex.Message}");
+                return null;
+            }
+        }
+
 
         public bool ScaleRulerShow
         { 
