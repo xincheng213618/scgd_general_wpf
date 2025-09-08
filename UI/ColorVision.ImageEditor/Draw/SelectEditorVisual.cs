@@ -40,6 +40,7 @@ namespace ColorVision.ImageEditor.Draw
         public List<ISelectVisual> SelectVisuals { get; set; } = new List<ISelectVisual>();
 
         public bool Contains(Point point)=> SelectVisuals.Any(v => v.GetRect().Contains(point));
+        public ISelectVisual? GetVisual(Point point) => SelectVisuals.FirstOrDefault(v => v.GetRect().Contains(point));
 
         public ISelectVisual ISelectVisual { get; set; }
 

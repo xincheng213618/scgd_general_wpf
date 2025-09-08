@@ -18,6 +18,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.Media3D;
 
 namespace ColorVision.ImageEditor.Draw
 {
@@ -75,6 +76,8 @@ namespace ColorVision.ImageEditor.Draw
 
         public MouseMagnifier MouseMagnifier { get; set; }
 
+        public LineManager LineManager { get; set; }
+
         public Crosshair Crosshair { get; set; }
         public Gridline Gridline { get; set; }
 
@@ -87,8 +90,6 @@ namespace ColorVision.ImageEditor.Draw
         public ToolReferenceLine ToolConcentricCircle { get; set; }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
-
-
         public SelectEditorVisual SelectEditorVisual { get; set; }
 
         public ImageViewConfig Config { get; set; }
@@ -130,6 +131,7 @@ namespace ColorVision.ImageEditor.Draw
 
             PolygonManager = new PolygonManager(this, zoombox, drawCanvas);
             BezierCurveManager = new BezierCurveManager(this, zoombox, drawCanvas);
+            LineManager = new LineManager(this, zoombox, drawCanvas);
 
             CircleManager = new CircleManager(this, zoombox, drawCanvas);
             RectangleManager = new RectangleManager(this, zoombox, drawCanvas);
@@ -170,7 +172,39 @@ namespace ColorVision.ImageEditor.Draw
 
                 var MouseVisual = Image.GetVisual<Visual>(MouseDownP);
 
-                if (MouseVisual is IDrawingVisual drawingVisual)
+                if (MouseVisual is SelectEditorVisual selectEditorVisual && selectEditorVisual.GetVisual(MouseDownP) is ISelectVisual selectVisual)
+                {
+                    if (selectVisual is IDrawingVisual drawingVisual)
+                    {
+                        MenuItem menuItem = new() { Header = "隐藏(_H)" };
+                        menuItem.Click += (s, e) =>
+                        {
+                            drawingVisual.BaseAttribute.IsShow = false;
+                            selectEditorVisual.ClearRender();
+                        };
+                        ContextMenu.Items.Add(menuItem);
+                    }
+                    if (selectVisual is Visual visual)
+                    {
+                        MenuItem menuIte2 = new() { Header = "删除" };
+                        menuIte2.Click += (s, e) =>
+                        {
+                            Image.RemoveVisualCommand(visual);
+                            selectEditorVisual.ClearRender();
+                        };
+                        ContextMenu.Items.Add(menuIte2);
+
+                        MenuItem menuIte3 = new() { Header = "Top" };
+                        menuIte3.Click += (s, e) =>
+                        {
+                            Image.TopVisual(visual);
+                        };
+                        ContextMenu.Items.Add(menuIte3);
+                    }
+
+
+                }
+                else if (MouseVisual is IDrawingVisual drawingVisual)
                 {
                     MenuItem menuItem = new() { Header = "隐藏(_H)" };
                     menuItem.Click += (s, e) =>
@@ -184,6 +218,13 @@ namespace ColorVision.ImageEditor.Draw
                     };
                     ContextMenu.Items.Add(menuItem);
                     ContextMenu.Items.Add(menuIte2);
+
+                    MenuItem menuIte3 = new() { Header = "Top" };
+                    menuIte3.Click += (s, e) =>
+                    {
+                        Image.TopVisual(MouseVisual);
+                    };
+                    ContextMenu.Items.Add(menuIte3);
                 }
                 else
                 {
@@ -803,6 +844,24 @@ namespace ColorVision.ImageEditor.Draw
             }
         }
 
+        public bool DrawLine
+        {
+            get => LineManager.IsShow;
+            set
+            {
+                if (LineManager.IsShow == value) return;
+                LineManager.IsShow = value;
+                if (value)
+                {
+                    ImageEditMode = true;
+                    LastChoice = nameof(DrawLine);
+                }
+                OnPropertyChanged();
+            }
+        }
+
+
+
 
         public bool ConcentricCircle
         {
@@ -883,6 +942,7 @@ namespace ColorVision.ImageEditor.Draw
 
         public void Dispose()
         {
+            LineManager.Dispose();
             SelectEditorVisual.Dispose();
             CircleManager.Dispose();
             EraseManager.Dispose();

@@ -117,6 +117,9 @@
                             <ToggleButton IsChecked="{Binding DrawPolygon}"  Padding="5" Margin="0,0,2,0"  >
                                 <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}" />
                             </ToggleButton>
+                            <ToggleButton IsChecked="{Binding DrawLine}"  Padding="5" Margin="0,0,2,0"  >
+                                <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}" />
+                            </ToggleButton>
                             <ToggleButton IsChecked="{Binding DrawBezierCurve}"  Padding="5" Margin="0,0,2,0"  >
                                 <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}" />
                             </ToggleButton>

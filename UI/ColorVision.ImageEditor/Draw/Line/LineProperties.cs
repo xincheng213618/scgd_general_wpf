@@ -16,7 +16,7 @@ namespace ColorVision.ImageEditor.Draw
         public Brush Brush { get => _Brush; set { _Brush = value; NotifyPropertyChanged(); } }
         private Brush _Brush;
 
-        public List<Point> Points { get; set; }
+        public List<Point> Points { get; set; } = new List<Point>();
     }
 
 
