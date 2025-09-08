@@ -97,7 +97,7 @@ namespace ColorVision.ImageEditor.Draw
 
             using DrawingContext dc = EraseVisual.RenderOpen();
             dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), new Rect(MouseDownP, MouseDownP));
-            DrawCanvas.AddVisual(EraseVisual);
+            DrawCanvas.AddVisualCommand(EraseVisual);
 
             ImageViewModel.SelectEditorVisual.ClearRender();
             e.Handled = true;
@@ -111,14 +111,14 @@ namespace ColorVision.ImageEditor.Draw
 
             IsMouseDown = false;
 
-            DrawCanvas.RemoveVisual(DrawCanvas.GetVisual<Visual>(MouseDownP));
-            DrawCanvas.RemoveVisual(DrawCanvas.GetVisual<Visual>(MouseUpP));
+            DrawCanvas.RemoveVisualCommand(DrawCanvas.GetVisual<Visual>(MouseDownP));
+            DrawCanvas.RemoveVisualCommand(DrawCanvas.GetVisual<Visual>(MouseUpP));
 
             foreach (var item in DrawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP))))
             {
-                DrawCanvas.RemoveVisual(item);
+                DrawCanvas.RemoveVisualCommand(item);
             }
-            DrawCanvas.RemoveVisual(EraseVisual);
+            DrawCanvas.RemoveVisualCommand(EraseVisual);
             e.Handled = true;
         }
 

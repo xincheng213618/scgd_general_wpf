@@ -111,7 +111,7 @@ namespace ColorVision.ImageEditor.Draw
             DrawCircleCache = dVCircle;
 
 
-            DrawCanvas.AddVisual(DrawCircleCache);
+            DrawCanvas.AddVisualCommand(DrawCircleCache);
             e.Handled = true;
         }
 

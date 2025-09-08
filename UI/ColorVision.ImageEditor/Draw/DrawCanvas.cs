@@ -32,7 +32,6 @@ namespace ColorVision.ImageEditor.Draw
 
         public IReadOnlyList<Visual> Visuals => visuals;
 
-
         public DrawCanvas()
         {
             this.Focusable = true;
@@ -128,14 +127,21 @@ namespace ColorVision.ImageEditor.Draw
             VisualsChanged?.Invoke(this, new VisualChangedEventArgs(null, VisualChangeType.Clear));
         }
 
-        public void OnlyAddVisual(Visual visual)
+        public void AddVisual(Visual visual)
         {
             if (visual == null || visuals.Contains(visual)) return;
             visuals.Add(visual);
             AddVisualTree(visual);
         }
+        public void RemoveVisual(Visual visual)
+        {
+            if (visual == null || !visuals.Contains(visual)) return;
+            visuals.Remove(visual);
+            RemoveVisualTree(visual);
+        }
 
-        public void AddVisual(Visual visual, bool recordAction = true)
+
+        public void AddVisualCommand(Visual visual)
         {
             if (visual == null || visuals.Contains(visual)) return;
 
@@ -145,15 +151,12 @@ namespace ColorVision.ImageEditor.Draw
             VisualsAdd?.Invoke(this, new VisualChangedEventArgs(visual, VisualChangeType.Add));
             VisualsChanged?.Invoke(this, new VisualChangedEventArgs(visual, VisualChangeType.Add));
 
-            if (recordAction)
-            {
-                Action undoaction = () => RemoveVisual(visual, false);
-                Action redoaction = () => AddVisual(visual, false);
-                AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "添加" });
-            }
+            Action undoaction = () => RemoveVisual(visual);
+            Action redoaction = () => AddVisual(visual);
+            AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "添加" });
         }
 
-        public void RemoveVisual(Visual? visual, bool recordAction = true)
+        public void RemoveVisualCommand(Visual? visual)
         {
             if (visual == null || !visuals.Contains(visual)) return;
 
@@ -163,12 +166,9 @@ namespace ColorVision.ImageEditor.Draw
             VisualsRemove?.Invoke(this, new VisualChangedEventArgs(visual, VisualChangeType.Remove));
             VisualsChanged?.Invoke(this, new VisualChangedEventArgs(visual, VisualChangeType.Remove));
 
-            if (recordAction)
-            {
-                Action undoaction = () => AddVisual(visual, false);
-                Action redoaction = () => RemoveVisual(visual, false);
-                AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "移除" });
-            }
+            Action undoaction = () => AddVisual(visual);
+            Action redoaction = () => RemoveVisual(visual);
+            AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "移除" });
         }
 
         public void TopVisual(Visual visual)

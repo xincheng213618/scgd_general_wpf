@@ -97,7 +97,7 @@ namespace ColorVision.ImageEditor.Draw
             rectangleTextProperties.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
             rectangleTextProperties.Text = "Point_" + did;
             DrawingRectangleCache = new DVRectangleText(rectangleTextProperties);
-            DrawCanvas.AddVisual(DrawingRectangleCache);
+            DrawCanvas.AddVisualCommand(DrawingRectangleCache);
 
             e.Handled = true;
         }

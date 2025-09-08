@@ -96,7 +96,7 @@ namespace ColorVision.ImageEditor.Draw
 
                 DVBezierCurveCache.Attribute.Pen = new Pen(Brushes.Red, 1 / ZoomboxSub.ContentMatrix.M11);
                 DVBezierCurveCache.Render();
-                DrawCanvas.AddVisual(DVBezierCurveCache);
+                DrawCanvas.AddVisualCommand(DVBezierCurveCache);
             }
             else
             {

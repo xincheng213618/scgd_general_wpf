@@ -110,7 +110,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                                 Circle.Attribute.Id = item.Id;
                                 Circle.Attribute.Text = item.Name;
                                 Circle.Render();
-                                imageView.ImageShow.AddVisual(Circle);
+                                imageView.ImageShow.AddVisualCommand(Circle);
                                 break;
                             case GraphicTypes.Rect:
                                 DVRectangleText Rectangle = new();
@@ -120,7 +120,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                                 Rectangle.Attribute.Id = item.Id;
                                 Rectangle.Attribute.Text = item.Name;
                                 Rectangle.Render();
-                                imageView.ImageShow.AddVisual(Rectangle);
+                                imageView.ImageShow.AddVisualCommand(Rectangle);
                                 break;
                             case GraphicTypes.Quadrilateral:
                                 break;

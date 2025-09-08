@@ -94,7 +94,6 @@ namespace ColorVision.ImageEditor.Draw
         public ImageViewConfig Config { get; set; }
 
         public ContextMenu ContextMenu { get; set; }
-        public List<MenuItemMetadata> MenuItemMetadatas { get; set; }
         public IImageOpen? IImageOpen { get; set; }
 
         public ImageViewModel(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas,ImageViewConfig config = null )
@@ -157,9 +156,9 @@ namespace ColorVision.ImageEditor.Draw
             RotateRightCommand = new RelayCommand(a => RotateRight());
 
             ContextMenu = new ContextMenu();
-            MenuItemMetadatas = new List<MenuItemMetadata>();
             Image.ContextMenuOpening += ContextMenu_ContextMenuOpening;
             Image.ContextMenu = ContextMenu;
+            ZoomboxSub.ContextMenu = ContextMenu;
         }
 
         private void ContextMenu_ContextMenuOpening(object sender, ContextMenuEventArgs e)
@@ -181,7 +180,7 @@ namespace ColorVision.ImageEditor.Draw
                     MenuItem menuIte2 = new() { Header = "删除" };
                     menuIte2.Click += (s, e) =>
                     {
-                        Image.RemoveVisual(MouseVisual);
+                        Image.RemoveVisualCommand(MouseVisual);
                     };
                     ContextMenu.Items.Add(menuItem);
                     ContextMenu.Items.Add(menuIte2);
@@ -200,11 +199,36 @@ namespace ColorVision.ImageEditor.Draw
 
         public void Opened()
         {
-            InitMenuItem(); 
-            InitContextMenu();
-        }
-        public virtual void InitContextMenu()
-        {
+            List<MenuItemMetadata> MenuItemMetadatas = new List<MenuItemMetadata>();
+            if (IImageOpen != null)
+                MenuItemMetadatas.AddRange(IImageOpen.GetContextMenuItems(Config));
+
+            foreach (var item in AssemblyService.Instance.LoadImplementations<IImageContentMenu>())
+            {
+                MenuItemMetadatas.AddRange(item.GetContextMenuItems(Config));
+            }
+
+
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenImage", Order = 10, Header = ColorVision.ImageEditor.Properties.Resources.Open, Command = OpenImageCommand, Icon = MenuItemIcon.TryFindResource("DIOpen") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 11, Header = ColorVision.ImageEditor.Properties.Resources.Clear, Command = ClearImageCommand, Icon = MenuItemIcon.TryFindResource("DIDelete") });
+
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Zoom", Order = 100, Header = Properties.Resources.Zoom, Icon = MenuItemIcon.TryFindResource("DIZoom") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomIn", Order = 1, Header = Properties.Resources.ZoomIn, Command = ZoomInCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomOut", Order = 2, Header = Properties.Resources.ZoomOut, Command = ZoomOutCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomNone", Order = 3, Header = ColorVision.ImageEditor.Properties.Resources.ZoomNone, Command = ZoomNoneCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomUniform", Order = 4, Header = ColorVision.ImageEditor.Properties.Resources.ZoomUniform, Command = ZoomUniformCommand });
+
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Rotate", Order = 101, Header = ColorVision.ImageEditor.Properties.Resources.Rotate, Icon = MenuItemIcon.TryFindResource("DIRotate") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "RotateLeft", Order = 1, Header = ColorVision.ImageEditor.Properties.Resources.RotateLeft, Command = RotateLeftCommand, Icon = MenuItemIcon.TryFindResource("DIRotateLeft") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "RotateRight", Order = 2, Header = ColorVision.ImageEditor.Properties.Resources.RotateRight, Command = RotateRightCommand, Icon = MenuItemIcon.TryFindResource("DIRotateRight") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "FlipHorizontal", Order = 3, Header = ColorVision.ImageEditor.Properties.Resources.FlipHorizontal, Command = FlipHorizontalCommand, Icon = MenuItemIcon.TryFindResource("DIFlipHorizontal") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "FlipVertical", Order = 4, Header = ColorVision.ImageEditor.Properties.Resources.FlipVertical, Command = FlipVerticalCommand, Icon = MenuItemIcon.TryFindResource("DIFlipVertical") });
+
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Full", Order = 200, Header = ColorVision.ImageEditor.Properties.Resources.FullScreen, Command = FullCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "SaveAsImage", Order = 300, Header = ColorVision.ImageEditor.Properties.Resources.SaveAsImage, Command = SaveAsImageCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Print", Order = 300, Header = ColorVision.ImageEditor.Properties.Resources.Print, Command = PrintImageCommand, Icon = MenuItemIcon.TryFindResource("DIPrint"), InputGestureText = "Ctrl+P" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = PropertyCommand, Header = ColorVision.ImageEditor.Properties.Resources.Property, Icon = MenuItemIcon.TryFindResource("DIProperty"), InputGestureText = "Tab" });
+
             var iMenuItems = MenuItemMetadatas.OrderBy(item => item.Order).ToList();
 
             void CreateMenu(MenuItem parentMenuItem, string OwnerGuid)
@@ -281,39 +305,7 @@ namespace ColorVision.ImageEditor.Draw
             menuItemBitmapScalingMode.SubmenuOpened += (s, e) => UpdateBitmapScalingMode();
             UpdateBitmapScalingMode();
             ContextMenu.Items.Insert(4, menuItemBitmapScalingMode);
-        }
 
-        public virtual void InitMenuItem()
-        {
-            MenuItemMetadatas.Clear();
-            if (IImageOpen != null)
-                MenuItemMetadatas.AddRange(IImageOpen.GetContextMenuItems(Config));
-
-            foreach (var item in AssemblyService.Instance.LoadImplementations<IImageContentMenu>())
-            {
-                MenuItemMetadatas.AddRange(item.GetContextMenuItems(Config));
-            }
-
-
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenImage", Order = 10, Header = ColorVision.ImageEditor.Properties.Resources.Open, Command = OpenImageCommand , Icon = MenuItemIcon.TryFindResource("DIOpen") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 11, Header = ColorVision.ImageEditor.Properties.Resources.Clear, Command = ClearImageCommand, Icon = MenuItemIcon.TryFindResource("DIDelete") });
-           
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Zoom", Order = 100, Header = Properties.Resources.Zoom, Icon = MenuItemIcon.TryFindResource("DIZoom") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomIn", Order = 1, Header = Properties.Resources.ZoomIn, Command = ZoomInCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomOut", Order = 2, Header = Properties.Resources.ZoomOut, Command = ZoomOutCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomNone", Order = 3, Header = ColorVision.ImageEditor.Properties.Resources.ZoomNone, Command = ZoomNoneCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomUniform", Order = 4, Header = ColorVision.ImageEditor.Properties.Resources.ZoomUniform, Command = ZoomUniformCommand });
-
-            MenuItemMetadatas.Add(new MenuItemMetadata() {GuidId = "Rotate", Order = 101, Header = ColorVision.ImageEditor.Properties.Resources.Rotate,Icon =MenuItemIcon.TryFindResource("DIRotate") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "RotateLeft", Order = 1, Header = ColorVision.ImageEditor.Properties.Resources.RotateLeft, Command = RotateLeftCommand ,Icon = MenuItemIcon.TryFindResource("DIRotateLeft") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "RotateRight", Order = 2, Header = ColorVision.ImageEditor.Properties.Resources.RotateRight, Command = RotateRightCommand, Icon = MenuItemIcon.TryFindResource("DIRotateRight") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "FlipHorizontal", Order = 3, Header = ColorVision.ImageEditor.Properties.Resources.FlipHorizontal, Command = FlipHorizontalCommand, Icon = MenuItemIcon.TryFindResource("DIFlipHorizontal") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "FlipVertical", Order = 4, Header = ColorVision.ImageEditor.Properties.Resources.FlipVertical, Command = FlipVerticalCommand, Icon = MenuItemIcon.TryFindResource("DIFlipVertical") });
-
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Full", Order = 200, Header = ColorVision.ImageEditor.Properties.Resources.FullScreen, Command = FullCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "SaveAsImage", Order = 300, Header = ColorVision.ImageEditor.Properties.Resources.SaveAsImage, Command = SaveAsImageCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Print", Order = 300, Header = ColorVision.ImageEditor.Properties.Resources.Print, Command = PrintImageCommand, Icon = MenuItemIcon.TryFindResource("DIPrint") ,InputGestureText ="Ctrl+P" });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = PropertyCommand, Header = ColorVision.ImageEditor.Properties.Resources.Property, Icon = MenuItemIcon.TryFindResource("DIProperty"), InputGestureText = "Tab" });
         }
 
         public void OpenImage()

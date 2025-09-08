@@ -100,7 +100,7 @@ namespace ColorVision.ImageEditor.Draw
 
                 DrawingVisualPolygonCache.Attribute.Pen = new Pen(Brushes.Red, 1 / ZoomboxSub.ContentMatrix.M11);
                 DrawingVisualPolygonCache.Render();
-                DrawCanvas.AddVisual(DrawingVisualPolygonCache);
+                DrawCanvas.AddVisualCommand(DrawingVisualPolygonCache);
             }
             else
             {

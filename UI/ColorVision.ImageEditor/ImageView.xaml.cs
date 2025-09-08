@@ -132,8 +132,6 @@ namespace ColorVision.ImageEditor
 
             foreach (var item in ComponentManager.GetInstance().IImageComponents)
                 item.Execute(this);
-
-            Zoombox1.ContextMenu = ImageViewModel.ContextMenu;
             ToolBar1.DataContext = ImageViewModel;
             ToolBarRight.DataContext = ImageViewModel;
             ToolBarBottom.DataContext = ImageViewModel;
@@ -178,14 +176,14 @@ namespace ColorVision.ImageEditor
                         {
                             if (!ImageShow.ContainsVisual(visual1))
                             {
-                                ImageShow.AddVisual(visual1);
+                                ImageShow.AddVisualCommand(visual1);
                             }
                         }
                         else
                         {
                             if (ImageShow.ContainsVisual(visual1))
                             {
-                                ImageShow.RemoveVisual(visual1);
+                                ImageShow.RemoveVisualCommand(visual1);
                             }
                         }
                     }
@@ -545,7 +543,7 @@ namespace ColorVision.ImageEditor
         }
 
 
-        public void AddVisual(Visual visual) => ImageShow.AddVisual(visual);
+        public void AddVisual(Visual visual) => ImageShow.AddVisualCommand(visual);
 
 
         private void reference_Click(object sender, RoutedEventArgs e)

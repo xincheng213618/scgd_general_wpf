@@ -239,12 +239,12 @@ namespace ColorVision.Util.Draw.Special
             if (Control)
             {
                 if (!Image.ContainsVisual(DrawVisualImage))
-                    Image.AddVisual(DrawVisualImage);
+                    Image.AddVisualCommand(DrawVisualImage);
             }
             else
             {
                 if (Image.ContainsVisual(DrawVisualImage))
-                    Image.RemoveVisual(DrawVisualImage);
+                    Image.RemoveVisualCommand(DrawVisualImage);
             }
         }
     }

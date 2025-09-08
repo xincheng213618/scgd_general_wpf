@@ -178,14 +178,14 @@ namespace ColorVision.Engine.Templates.POI
                                 {
                                     if (!ImageShow.ContainsVisual(visual1))
                                     {
-                                        ImageShow.AddVisual(visual1);
+                                        ImageShow.AddVisualCommand(visual1);
                                     }
                                 }
                                 else
                                 {
                                     if (ImageShow.ContainsVisual(visual1))
                                     {
-                                        ImageShow.RemoveVisual(visual1);
+                                        ImageShow.RemoveVisualCommand(visual1);
                                     }
                                 }
                             }
@@ -256,7 +256,7 @@ namespace ColorVision.Engine.Templates.POI
                 {
                     if (DrawingPolygonCache != null)
                     {
-                        ImageShow.RemoveVisual(DrawingPolygonCache);
+                        ImageShow.RemoveVisualCommand(DrawingPolygonCache);
                         DrawingPolygonCache.Render();
                         DrawingPolygonCache = null;
                     }
@@ -582,7 +582,7 @@ namespace ColorVision.Engine.Templates.POI
                             Circle.Attribute.Name = item.Id.ToString();
 
                             Circle.Render();
-                            ImageShow.AddVisual(Circle);
+                            ImageShow.AddVisualCommand(Circle);
                             DBIndex.Add(Circle,item.Id);
                             break;
                         case GraphicTypes.Rect:
@@ -596,7 +596,7 @@ namespace ColorVision.Engine.Templates.POI
                             Rectangle.Attribute.Name = item.Id.ToString();
 
                             Rectangle.Render();
-                            ImageShow.AddVisual(Rectangle);
+                            ImageShow.AddVisualCommand(Rectangle);
                             DBIndex.Add(Rectangle, item.Id);
                             break;
                         case GraphicTypes.Quadrilateral:
@@ -717,7 +717,7 @@ namespace ColorVision.Engine.Templates.POI
                                 Circle.Attribute.Name = Circle.Attribute.Id.ToString();
                                 Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Name);
                                 Circle.Render();
-                                ImageShow.AddVisual(Circle);
+                                ImageShow.AddVisualCommand(Circle);
                                 break;
                             case GraphicTypes.Rect:
 
@@ -750,7 +750,7 @@ namespace ColorVision.Engine.Templates.POI
                                 Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
                                 Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
                                 Rectangle.Render();
-                                ImageShow.AddVisual(Rectangle);
+                                ImageShow.AddVisualCommand(Rectangle);
                                 break;
                             case GraphicTypes.Quadrilateral:
                                 break;
@@ -886,7 +886,7 @@ namespace ColorVision.Engine.Templates.POI
                                         Circle.Attribute.Name = Circle.Attribute.Id.ToString();
                                         Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Name);
                                         Circle.Render();
-                                        ImageShow.AddVisual(Circle);
+                                        ImageShow.AddVisualCommand(Circle);
                                     }
                                     break;
                                 case GraphicTypes.Rect:
@@ -905,7 +905,7 @@ namespace ColorVision.Engine.Templates.POI
                                         Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
                                         Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
                                         Rectangle.Render();
-                                        ImageShow.AddVisual(Rectangle);
+                                        ImageShow.AddVisualCommand(Rectangle);
                                     }
                                     break;
                                 case GraphicTypes.Quadrilateral:
@@ -1035,7 +1035,7 @@ namespace ColorVision.Engine.Templates.POI
                                         Circle.Attribute.Name = Circle.Attribute.Id.ToString();
                                         Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Name);
                                         Circle.Render();
-                                        ImageShow.AddVisual(Circle);
+                                        ImageShow.AddVisualCommand(Circle);
                                     }
                                     break;
                                 case GraphicTypes.Rect:
@@ -1053,7 +1053,7 @@ namespace ColorVision.Engine.Templates.POI
                                         Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
                                         Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
                                         Rectangle.Render();
-                                        ImageShow.AddVisual(Rectangle);
+                                        ImageShow.AddVisualCommand(Rectangle);
                                     }
 
                                     break;
@@ -1148,7 +1148,7 @@ namespace ColorVision.Engine.Templates.POI
                                     Circle.Attribute.Name = Circle.Attribute.Id.ToString();
                                     Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Id);
                                     Circle.Render();
-                                    ImageShow.AddVisual(Circle);
+                                    ImageShow.AddVisualCommand(Circle);
                                     break;
                                 case GraphicTypes.Rect:
                                     DVRectangleText Rectangle = new();
@@ -1159,7 +1159,7 @@ namespace ColorVision.Engine.Templates.POI
                                     Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
                                     Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
                                     Rectangle.Render();
-                                    ImageShow.AddVisual(Rectangle);
+                                    ImageShow.AddVisualCommand(Rectangle);
                                     break;
                                 default:
                                     break;
@@ -1187,7 +1187,7 @@ namespace ColorVision.Engine.Templates.POI
                                     Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Id);
 
                                     Circle.Render();
-                                    ImageShow.AddVisual(Circle);
+                                    ImageShow.AddVisualCommand(Circle);
                                     break;
                                 case GraphicTypes.Rect:
                                     DVRectangleText Rectangle = new();
@@ -1198,7 +1198,7 @@ namespace ColorVision.Engine.Templates.POI
                                     Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
                                     Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
                                     Rectangle.Render();
-                                    ImageShow.AddVisual(Rectangle);
+                                    ImageShow.AddVisualCommand(Rectangle);
                                     break;
                                 default:
                                     break;
@@ -1238,7 +1238,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             foreach (var item in DrawingVisualLists.ToList())
                 if (item is Visual visual)
-                    ImageShow.RemoveVisual(visual);
+                    ImageShow.RemoveVisualCommand(visual);
             PropertyGrid2.SelectedObject = null;
         }
 
@@ -1261,7 +1261,7 @@ namespace ColorVision.Engine.Templates.POI
             if (sender is MenuItem menuItem && menuItem.Tag is Visual visual &&visual is IDrawingVisual drawing)
             {
                 PropertyGrid2.SelectedObject = null;
-                ImageShow.RemoveVisual(visual);
+                ImageShow.RemoveVisualCommand(visual);
                 DrawingVisualLists.Remove(drawing);
             }
         }
@@ -1285,7 +1285,7 @@ namespace ColorVision.Engine.Templates.POI
 
                     foreach (var visual in visualsToRemove)
                     {
-                        ImageShow.RemoveVisual(visual);
+                        ImageShow.RemoveVisualCommand(visual);
                     }
 
                     PropertyGrid2.SelectedObject = null;
@@ -1308,7 +1308,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             if (drawingVisualDatum != null)
             {
-                ImageShow.RemoveVisual(drawingVisualDatum);
+                ImageShow.RemoveVisualCommand(drawingVisualDatum);
             }
             if (PoiConfig.IsShowPoiConfig)
             {
@@ -1322,7 +1322,7 @@ namespace ColorVision.Engine.Templates.POI
                         Circle.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                         Circle.Render();
                         drawingVisualDatum = Circle;
-                        ImageShow.AddVisual(drawingVisualDatum);
+                        ImageShow.AddVisualCommand(drawingVisualDatum);
                         break;
                     case GraphicTypes.Rect:
                         double Width = PoiConfig.AreaRectWidth;
@@ -1333,7 +1333,7 @@ namespace ColorVision.Engine.Templates.POI
                         Rectangle.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                         Rectangle.Render();
                         drawingVisualDatum = Rectangle;
-                        ImageShow.AddVisual(drawingVisualDatum);
+                        ImageShow.AddVisualCommand(drawingVisualDatum);
                         break;
                     case GraphicTypes.Quadrilateral:
 
@@ -1353,7 +1353,7 @@ namespace ColorVision.Engine.Templates.POI
                         Polygon.Attribute.Points.Add(result[3]);
                         Polygon.Render();
                         drawingVisualDatum = Polygon;
-                        ImageShow.AddVisual(drawingVisualDatum);
+                        ImageShow.AddVisualCommand(drawingVisualDatum);
                         break;
                     case GraphicTypes.Polygon:
                         DVDatumPolygon Polygon1 = new() { IsComple = false };
@@ -1365,7 +1365,7 @@ namespace ColorVision.Engine.Templates.POI
                         }
                         Polygon1.Render();
                         drawingVisualDatum = Polygon1;
-                        ImageShow.AddVisual(drawingVisualDatum);
+                        ImageShow.AddVisualCommand(drawingVisualDatum);
 
                         break;
                     default:

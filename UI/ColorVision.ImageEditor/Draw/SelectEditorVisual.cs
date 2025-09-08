@@ -25,7 +25,7 @@ namespace ColorVision.ImageEditor.Draw
             ImageViewModel = imageViewModel;
             DrawCanvas = drawCanvas;
             ZoomboxSub = zoomboxSub;
-            DrawCanvas.AddVisual(this, false);
+            DrawCanvas.AddVisual(this);
             DrawCanvas.PreviewMouseLeftButtonDown += DrawCanvas_PreviewMouseLeftButtonDown;
             DrawCanvas.MouseMove += DrawCanvas_MouseMove;
             DrawCanvas.PreviewMouseUp += DrawCanvas_PreviewMouseUp;
@@ -183,7 +183,7 @@ namespace ColorVision.ImageEditor.Draw
             }
             if (!DrawCanvas.ContainsVisual(this))
             {
-                DrawCanvas.AddVisual(this, false);
+                DrawCanvas.AddVisual(this);
             }
             DrawCanvas.TopVisual(this);
             Render();
@@ -216,7 +216,7 @@ namespace ColorVision.ImageEditor.Draw
             }
             if (!DrawCanvas.ContainsVisual(this))
             {
-                DrawCanvas.AddVisual(this, false);
+                DrawCanvas.AddVisual(this);
             }
             DrawCanvas.TopVisual(this);
             Render();
@@ -421,7 +421,7 @@ namespace ColorVision.ImageEditor.Draw
             {
                 foreach (var selectVisual in SelectVisuals.Cast<DrawingVisual>())
                 {
-                    DrawCanvas.RemoveVisual(selectVisual);
+                    DrawCanvas.RemoveVisualCommand(selectVisual);
                 }
                 ClearRender();
                 e.Handled = true;
@@ -474,7 +474,7 @@ namespace ColorVision.ImageEditor.Draw
 
             using DrawingContext dc = SelectRect.RenderOpen();
             dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), new Rect(MouseDownP, MouseDownP));
-            DrawCanvas.AddVisual(SelectRect, false);
+            DrawCanvas.AddVisual(SelectRect);
 
         }
         private void DrawCanvas_MouseMove(object sender, MouseEventArgs e)
@@ -565,7 +565,7 @@ namespace ColorVision.ImageEditor.Draw
                     {
                         var List = drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP)));
                         ImageViewModel.SelectEditorVisual.SetRenders(List.Cast<ISelectVisual>());
-                        drawCanvas.RemoveVisual(SelectRect, false);
+                        drawCanvas.RemoveVisual(SelectRect);
                     }
 
                     drawCanvas.ReleaseMouseCapture();
@@ -577,7 +577,7 @@ namespace ColorVision.ImageEditor.Draw
 
         public void Dispose()
         {
-            DrawCanvas?.RemoveVisual(this, false);
+            DrawCanvas?.RemoveVisual(this);
             if (ZoomboxSub != null)
                 ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
             SelectVisualChanged = null;

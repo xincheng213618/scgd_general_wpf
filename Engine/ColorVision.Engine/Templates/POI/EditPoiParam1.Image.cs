@@ -119,7 +119,7 @@ namespace ColorVision.Engine.Templates.POI
                     DrawCircleCache.Attribute.Radius = PoiConfig.DefalutRadius;
                     DrawCircleCache.Attribute.Text = "Point_" + no.ToString();
 
-                    drawCanvas.AddVisual(DrawCircleCache);
+                    drawCanvas.AddVisualCommand(DrawCircleCache);
 
                     ImageViewModel.SelectEditorVisual.ClearRender(); 
                     return;
@@ -142,7 +142,7 @@ namespace ColorVision.Engine.Templates.POI
                     DrawingRectangleCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
                     DrawingRectangleCache.Attribute.Text = "Point_" + no.ToString();
 
-                    drawCanvas.AddVisual(DrawingRectangleCache);
+                    drawCanvas.AddVisualCommand(DrawingRectangleCache);
 
 
                     ImageViewModel.SelectEditorVisual.ClearRender();
@@ -240,7 +240,7 @@ namespace ColorVision.Engine.Templates.POI
                             PoiConfig.CenterX = (int)DrawCircleCache.Attribute.Center.X;
                             PoiConfig.CenterY = (int)DrawCircleCache.Attribute.Center.Y;
                             PoiConfig.AreaCircleRadius = (int)DrawCircleCache.Attribute.Radius;
-                            drawCanvas.RemoveVisual(DrawCircleCache);
+                            drawCanvas.RemoveVisualCommand(DrawCircleCache);
                         }
 
                         if (PoiConfig.IsAreaRect && ImageViewModel.DrawRect)
@@ -249,7 +249,7 @@ namespace ColorVision.Engine.Templates.POI
                             PoiConfig.CenterY = (int)(DrawingRectangleCache.Attribute.Rect.Height / 2 + DrawingRectangleCache.Attribute.Rect.Y);
                             PoiConfig.AreaRectWidth = (int)DrawingRectangleCache.Attribute.Rect.Width;
                             PoiConfig.AreaRectHeight = (int)DrawingRectangleCache.Attribute.Rect.Height;
-                            drawCanvas.RemoveVisual(DrawingRectangleCache);
+                            drawCanvas.RemoveVisualCommand(DrawingRectangleCache);
                         }
                         RenderPoiConfig();
                     }

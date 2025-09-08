@@ -406,7 +406,7 @@ namespace ColorVision.ImageEditor
                             Polygon.Attribute.Points.Add(result1[2]);
                             Polygon.Attribute.Points.Add(result1[3]);
                             Polygon.Render();
-                            ImageShow.AddVisual(Polygon);
+                            ImageShow.AddVisualCommand(Polygon);
                         });
                     }
                     else
@@ -490,7 +490,7 @@ namespace ColorVision.ImageEditor
                                 DVCircleText Circle = new DVCircleText(circleTextProperties);
 
                                 Circle.Render();
-                                ImageShow.AddVisual(Circle);
+                                ImageShow.AddVisualCommand(Circle);
                                 break;
                             case GraphicDrawTypes.Rect:
 
@@ -521,7 +521,7 @@ namespace ColorVision.ImageEditor
                                 DVRectangleText Rectangle = new DVRectangleText(rectangleTextProperties);
 
                                 Rectangle.Render();
-                                ImageShow.AddVisual(Rectangle);
+                                ImageShow.AddVisualCommand(Rectangle);
                                 break;
                             default:
                                 break;
@@ -621,7 +621,7 @@ namespace ColorVision.ImageEditor
                             circleTextProperties.Text = string.Format("{0}{1}", TagName, did.ToString());
                             DVCircleText Circle = new DVCircleText(circleTextProperties);
                             Circle.Render();
-                            ImageShow.AddVisual(Circle);
+                            ImageShow.AddVisualCommand(Circle);
                             break;
                         case GraphicDrawTypes.Rect:
                             RectangleTextProperties rectangleTextProperties = new RectangleTextProperties();
@@ -633,7 +633,7 @@ namespace ColorVision.ImageEditor
                             rectangleTextProperties.Text = string.Format("{0}{1}", TagName, did.ToString());
                             DVRectangleText Rectangle = new DVRectangleText(rectangleTextProperties);
                             Rectangle.Render();
-                            ImageShow.AddVisual(Rectangle);
+                            ImageShow.AddVisualCommand(Rectangle);
                             break;
                         default:
                             break;

@@ -58,12 +58,12 @@ namespace ColorVision.ImageEditor.Draw.Special
             if (Control)
             {
                 if (!DrawCanvas.ContainsVisual(DrawVisualImage))
-                    DrawCanvas.AddVisual(DrawVisualImage);
+                    DrawCanvas.AddVisualCommand(DrawVisualImage);
             }
             else
             {
                 if (DrawCanvas.ContainsVisual(DrawVisualImage))
-                    DrawCanvas.RemoveVisual(DrawVisualImage);
+                    DrawCanvas.RemoveVisualCommand(DrawVisualImage);
             }
         }
 
