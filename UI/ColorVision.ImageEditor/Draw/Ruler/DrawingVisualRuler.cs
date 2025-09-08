@@ -82,9 +82,9 @@ namespace ColorVision.ImageEditor.Draw
                 }
 
             }
-
-
         }
+
+
         public static double GetDistance(Point startPoint, Point endPoint)
         {
             double x = Math.Abs(endPoint.X - startPoint.X);
