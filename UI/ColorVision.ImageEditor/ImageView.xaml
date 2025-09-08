@@ -11,7 +11,7 @@
              xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance local:ImageView}"
+             d:DataContext="{d:DesignInstance local:ImageViewModel}"
              d:DesignHeight="600" d:DesignWidth="1000" Initialized="UserControl_Initialized" AllowDrop="True">
     <UserControl.Resources>
         <Style TargetType="TextBlock">
@@ -204,7 +204,7 @@
                     </ToolBar>
                 </ToolBarTray>
 
-                <ToolBarTray x:Name="ToolBarLeft"   d:DataContext="{Binding Config}" Orientation="Vertical" Margin="2,50,2,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top">
+                <ToolBarTray x:Name="ToolBarLeft"  Orientation="Vertical" Margin="2,50,2,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top">
                     <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
                         <ToggleButton x:Name="AdvancedButton" Margin="0,0,0,2"  Padding="5">
                             <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIExpand}" />

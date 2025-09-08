@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.UI;
+using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -8,6 +9,11 @@ using System.Linq;
 
 namespace ColorVision.ImageEditor
 {
+    public interface IImageEditorContextMenuItemProvider
+    {
+        IEnumerable<MenuItemMetadata> GetMenuItems();
+    }
+
     public class ComponentManager
     {
         private static ComponentManager _instance;
@@ -16,6 +22,8 @@ namespace ColorVision.ImageEditor
 
         public ObservableCollection<IImageComponent> IImageComponents { get; set; } = new ObservableCollection<IImageComponent>();
         public Dictionary<string, IImageOpen> IImageOpens { get; set; } = new Dictionary<string, IImageOpen>();
+
+
 
 
         public ComponentManager()

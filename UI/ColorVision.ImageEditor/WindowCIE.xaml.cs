@@ -1,10 +1,9 @@
 ﻿using ColorVision.ImageEditor.Draw.Ruler;
-using ColorVision.ImageEditor.Draw;
 using System.Windows;
 using System;
-using ColorVision.Util.Draw.Special;
 using ColorVision.Themes;
 using System.Windows.Media.Imaging;
+using ColorVision.ImageEditor.Draw.Special;
 
 namespace ColorVision.ImageEditor
 {

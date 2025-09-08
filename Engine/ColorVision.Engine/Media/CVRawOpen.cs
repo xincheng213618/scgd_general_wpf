@@ -1,10 +1,10 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.ImageEditor;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI.Menus;
-using ColorVision.Util.Draw.Special;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
@@ -351,23 +351,15 @@ namespace ColorVision.Engine.Media
 
             try
             {
-                if (imageView.Config.IsShowLoadImage)
-                {
-                    await Task.Run(() =>
-                    {
-                        CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filePath);
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            imageView.OpenImage(cVCIEFile.ToWriteableBitmap());
-                            imageView.UpdateZoomAndScale();
-                        });
-                    });
-                }
-                else
+                await Task.Run(() =>
                 {
                     CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filePath);
-                    imageView.OpenImage(cVCIEFile.ToWriteableBitmap());
-                };
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        imageView.OpenImage(cVCIEFile.ToWriteableBitmap());
+                        imageView.UpdateZoomAndScale();
+                    });
+                });
             }
             catch (Exception ex)
             {

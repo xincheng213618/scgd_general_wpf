@@ -3,8 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
-using ColorVision.UI;
-using ColorVision.Util.Draw.Special;
+using ColorVision.ImageEditor.Draw.Special;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -20,10 +19,10 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using static ColorVision.ImageEditor.Draw.SelectEditorVisual;
 
 namespace ColorVision.ImageEditor
 {
+
     /// <summary>
     /// ImageShow.xaml 的交互逻辑
     /// </summary>
@@ -31,50 +30,19 @@ namespace ColorVision.ImageEditor
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
         Guid Guid { get; set; } = Guid.NewGuid();
-        public ImageViewConfig Config { get; set; } = new ImageViewConfig();
 
+        public ImageViewConfig Config { get; set; } = new ImageViewConfig();
         public ImageViewModel ImageViewModel { get; set; }
         public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.DrawingVisualLists;
-
 
         public ImageView()
         {
             InitializeComponent();
         }
 
-        public static Dictionary<ColormapTypes, string> GetColormapHDictionary()
-        {
-            var colormapDictionary = new Dictionary<ColormapTypes, string>
-        {
-            { ColormapTypes.COLORMAP_AUTUMN, "Assets/Colormap/colorscale_autumn.jpg" },
-            { ColormapTypes.COLORMAP_BONE, "Assets/Colormap/colorscale_bone.jpg" },
-            { ColormapTypes.COLORMAP_JET, "Assets/Colormap/colorscale_jet.jpg" },
-            { ColormapTypes.COLORMAP_WINTER, "Assets/Colormap/colorscale_winter.jpg" },
-            { ColormapTypes.COLORMAP_RAINBOW, "Assets/Colormap/colorscale_rainbow.jpg" },
-            { ColormapTypes.COLORMAP_OCEAN, "Assets/Colormap/colorscale_ocean.jpg" },
-            { ColormapTypes.COLORMAP_SUMMER, "Assets/Colormap/colorscale_summer.jpg" },
-            { ColormapTypes.COLORMAP_SPRING, "Assets/Colormap/colorscale_spring.jpg" },
-            { ColormapTypes.COLORMAP_COOL, "Assets/Colormap/colorscale_cool.jpg" },
-            { ColormapTypes.COLORMAP_HSV, "Assets/Colormap/colorscale_hsv.jpg" },
-            { ColormapTypes.COLORMAP_PINK, "Assets/Colormap/colorscale_pink.jpg" },
-            { ColormapTypes.COLORMAP_HOT, "Assets/Colormap/colorscale_hot.jpg" },
-            { ColormapTypes.COLORMAP_PARULA, "Assets/Colormap/colorscale_parula.jpg" },
-            { ColormapTypes.COLORMAP_MAGMA, "Assets/Colormap/colorscale_magma.jpg" },
-            { ColormapTypes.COLORMAP_INFERNO, "Assets/Colormap/colorscale_inferno.jpg" },
-            { ColormapTypes.COLORMAP_PLASMA, "Assets/Colormap/colorscale_plasma.jpg" },
-            { ColormapTypes.COLORMAP_VIRIDIS, "Assets/Colormap/colorscale_viridis.jpg" },
-            { ColormapTypes.COLORMAP_CIVIDIS, "Assets/Colormap/colorscale_cividis.jpg" },
-            { ColormapTypes.COLORMAP_TWILIGHT, "Assets/Colormap/colorscale_twilight.jpg" },
-            { ColormapTypes.COLORMAP_TWILIGHT_SHIFTED, "Assets/Colormap/colorscale_twilight_shifted.jpg" },
-            { ColormapTypes.COLORMAP_TURBO, "Assets/Colormap/colorscale_turbo.jpg" },
-            { ColormapTypes.COLORMAP_DEEPGREEN, "Assets/Colormap/colorscale_deepgreen.jpg" }
-        };
-            return colormapDictionary;
-        }
-
         private void Config_ColormapTypesChanged(object? sender, EventArgs e)
         {
-            var ColormapTypes = GetColormapHDictionary().First(x => x.Key == Config.ColormapTypes);
+            var ColormapTypes = ColormapConstats.GetColormapHDictionary().First(x => x.Key == Config.ColormapTypes);
             string valuepath = ColormapTypes.Value;
             if (ColormapTypesImage.Dispatcher.CheckAccess())
                 ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative));
@@ -93,8 +61,6 @@ namespace ColorVision.ImageEditor
         {
             ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow,Config);
 
-
-
             ImageViewModel.SelectEditorVisual.SelectVisualChanged += (s, e) => 
             {
                 if (PropertyGrid2.SelectedObject is IDrawingVisual drawingVisualold)
@@ -106,20 +72,17 @@ namespace ColorVision.ImageEditor
                     drawingVisual.BaseAttribute.PropertyChanged += BaseAttribute_PropertyChanged;
                 }
             };
-
-
-            this.DataContext = this;
-            AdvancedStackPanel.DataContext = this;
-            ToolBarLeft.DataContext = Config;
-            Zoombox1.DataContext = Config;
             ImageViewModel.PropertyCommand = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(Parent), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
 
+
+            this.DataContext = ImageViewModel;
             Config.ColormapTypesChanged -= Config_ColormapTypesChanged;
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
             Config.BalanceChanged += ImageViewConfig_BalanceChanged;
 
             foreach (var item in ComponentManager.GetInstance().IImageComponents)
                 item.Execute(this);
+
             ToolBar1.DataContext = ImageViewModel;
             ToolBarRight.DataContext = ImageViewModel;
             ToolBarBottom.DataContext = ImageViewModel;
@@ -132,11 +95,10 @@ namespace ColorVision.ImageEditor
             PreviewKeyDown += ImageView_PreviewKeyDown;
             Drop += ImageView_Drop;
 
-            ComColormapTypes.ItemsSource = GetColormapHDictionary();
+            ComColormapTypes.ItemsSource = ColormapConstats.GetColormapHDictionary();
 
             ComboxeType.ItemsSource = from e1 in Enum.GetValues(typeof(MagnigifierType)).Cast<MagnigifierType>()
                                       select new KeyValuePair<MagnigifierType, string>(e1, e1.ToString());
-
         }
 
 
@@ -317,28 +279,16 @@ namespace ColorVision.ImageEditor
                     ComboBoxLayers.SelectedIndex = 0;
                     ComboBoxLayers.ItemsSource = ComboBoxLayerItems;
                     AddSelectionChangedHandler(ComboBoxLayersSelectionChanged);
-
-                    if (Config.IsShowLoadImage)
+                    await Task.Run(() =>
                     {
-                        await Task.Run(() =>
+                        byte[] imageData = File.ReadAllBytes(filePath);
+                        BitmapImage bitmapImage = ImageUtils.CreateBitmapImage(imageData);
+                        Application.Current.Dispatcher.BeginInvoke(() =>
                         {
-                            byte[] imageData = File.ReadAllBytes(filePath);
-                            BitmapImage bitmapImage = ImageUtils.CreateBitmapImage(imageData);
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                SetImageSource(bitmapImage.ToWriteableBitmap());
-                                UpdateZoomAndScale();
-                            });
+                            SetImageSource(bitmapImage.ToWriteableBitmap());
+                            UpdateZoomAndScale();
                         });
-
-                    }
-                    else
-                    {
-                        BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
-                        SetImageSource(bitmapImage.ToWriteableBitmap());
-                        UpdateZoomAndScale();
-                    }
-                    ;
+                    });
 
                 }
                 catch (Exception ex)

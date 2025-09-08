@@ -6,7 +6,6 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.FileIO;
 using ColorVision.Themes.Controls;
-using ColorVision.Util.Draw.Special;
 using cvColorVision;
 using CVCommCore.CVAlgorithm;
 using System;
@@ -16,6 +15,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ColorVision.ImageEditor.Draw.Special;
 
 namespace ColorVision.Engine.Templates.POI.Image
 {

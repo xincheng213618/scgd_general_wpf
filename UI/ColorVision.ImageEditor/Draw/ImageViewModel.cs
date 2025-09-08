@@ -1,15 +1,14 @@
 ﻿#pragma warning disable CS8625,CS8602,CS8607,CS0103,CS0067
 using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
-using ColorVision.Util.Draw.Special;
 using Gu.Wpf.Geometry;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -18,18 +17,17 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Media.Media3D;
 
-namespace ColorVision.ImageEditor.Draw
+namespace ColorVision.ImageEditor
 {
 
-    public interface IImageContentMenu
+    public interface IImageContentMenuProvider
     {
         public List<MenuItemMetadata> GetContextMenuItems(ImageViewConfig config);
     }
 
 
-    public class ImageViewModel : Common.MVVM.ViewModelBase,IDisposable
+    public class ImageViewModel : ViewModelBase,IDisposable
     {
         public RelayCommand ZoomUniformToFill { get; set; }
         public RelayCommand ZoomUniformCommand { get; set; }
@@ -244,7 +242,7 @@ namespace ColorVision.ImageEditor.Draw
             if (IImageOpen != null)
                 MenuItemMetadatas.AddRange(IImageOpen.GetContextMenuItems(Config));
 
-            foreach (var item in AssemblyService.Instance.LoadImplementations<IImageContentMenu>())
+            foreach (var item in AssemblyService.Instance.LoadImplementations<IImageContentMenuProvider>())
             {
                 MenuItemMetadatas.AddRange(item.GetContextMenuItems(Config));
             }
@@ -452,7 +450,7 @@ namespace ColorVision.ImageEditor.Draw
             }
         }
 
-        private ImageWindowStatus OldWindowStatus { get; set; }
+        private ImagePlacementContext OldWindowStatus { get; set; }
         public bool IsMax { get; set; }
         public void MaxImage()
         {
@@ -471,7 +469,7 @@ namespace ColorVision.ImageEditor.Draw
                 IsMax = true;
                 if (Parent.Parent is Panel p)
                 {
-                    OldWindowStatus = new ImageWindowStatus();
+                    OldWindowStatus = new ImagePlacementContext();
                     OldWindowStatus.Parent = p;
                     OldWindowStatus.WindowState = window.WindowState;
                     OldWindowStatus.WindowStyle = window.WindowStyle;
@@ -488,7 +486,7 @@ namespace ColorVision.ImageEditor.Draw
                 }
                 else if (Parent.Parent is ContentControl content)
                 {
-                    OldWindowStatus = new ImageWindowStatus();
+                    OldWindowStatus = new ImagePlacementContext();
                     OldWindowStatus.ContentParent = content;
                     OldWindowStatus.WindowState = window.WindowState;
                     OldWindowStatus.WindowStyle = window.WindowStyle;

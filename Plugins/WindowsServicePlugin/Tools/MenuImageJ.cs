@@ -63,7 +63,7 @@ namespace WindowsServicePlugin.Tools
 
 
 
-    public class ImageViewExTension: IImageContentMenu
+    public class ImageViewExTension: IImageContentMenuProvider
     {
 
 

@@ -4,7 +4,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.ImageEditor
 {
-    public class ImageWindowStatus
+    public class ImagePlacementContext
     {
         public object Root { get; set; }
         public Panel Parent { get; set; }
