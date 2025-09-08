@@ -145,7 +145,7 @@
                 </Border>
 
 
-                <ToolBarTray x:Name="ToolBar1"  DataContext="{Binding ToolBarTop}" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                <ToolBarTray x:Name="ToolBar1"  VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
                     <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True">
                         <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding ImageEditMode}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>

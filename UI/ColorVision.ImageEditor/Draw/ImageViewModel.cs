@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8625,CS8602,CS8607,CS0103,CS0067
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
@@ -29,6 +30,8 @@ namespace ColorVision.ImageEditor
 
     public class ImageViewModel : ViewModelBase,IDisposable
     {
+        Guid Guid { get; set; } = Guid.NewGuid();
+
         public RelayCommand ZoomUniformToFill { get; set; }
         public RelayCommand ZoomUniformCommand { get; set; }
         public RelayCommand ZoomInCommand { get; set; }
@@ -159,7 +162,37 @@ namespace ColorVision.ImageEditor
             Image.ContextMenuOpening += ContextMenu_ContextMenuOpening;
             Image.ContextMenu = ContextMenu;
             ZoomboxSub.ContextMenu = ContextMenu;
+
+            ZoomboxSub.LayoutUpdated += Zoombox1_LayoutUpdated;
         }
+
+        double oldMax;
+        private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
+        {
+            if (oldMax != ZoomboxSub.ContentMatrix.M11)
+            {
+                oldMax = ZoomboxSub.ContentMatrix.M11;
+                if (Config.IsLayoutUpdated)
+                {
+                    double scale = 1 / ZoomboxSub.ContentMatrix.M11;
+                    DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + Guid.ToString(), 20, () => ImageLayoutUpdatedRender(scale, DrawingVisualLists));
+                }
+            }
+
+        }
+
+        public static void ImageLayoutUpdatedRender(double scale, ObservableCollection<IDrawingVisual> DrawingVisualLists)
+        {
+            if (DrawingVisualLists != null)
+            {
+                foreach (var item in DrawingVisualLists)
+                {
+                    item.Pen.Thickness = scale;
+                    item.Render();
+                }
+            }
+        }
+
 
         private void ContextMenu_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
@@ -949,6 +982,9 @@ namespace ColorVision.ImageEditor
             BezierCurveManager.Dispose();
             DrawingVisualLists.Clear();
             DrawingVisualLists = null;
+
+
+            ZoomboxSub.LayoutUpdated -= Zoombox1_LayoutUpdated;
 
             Parent = null;
             ZoomboxSub = null;

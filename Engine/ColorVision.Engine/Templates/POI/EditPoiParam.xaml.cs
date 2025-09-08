@@ -58,28 +58,20 @@ namespace ColorVision.Engine.Templates.POI
             PoiParam = poiParam;
             InitializeComponent();
             this.ApplyCaption();
-            Task.Run(() => DelayClose());
 
+            this.DelayClearImage((Action)(() => Application.Current.Dispatcher.Invoke((Action)(() =>
+            {
+                ImageViewModel?.ClearImage();
+                if (HImageCache != null)
+                {
+                    HImageCache?.Dispose();
+                    HImageCache = null;
+                }
+                this.ViewBitmapSource = null;
+            }))));
             this.Title = poiParam.Name + "-" + this.Title;
         }
 
-        public async void DelayClose()
-        {
-            await Task.Delay(100);
-            Application.Current.Dispatcher.Invoke((Action)(() =>
-            {
-                this.DelayClearImage((Action)(() => Application.Current.Dispatcher.Invoke((Action)(() =>
-                {
-                    ImageViewModel?.ClearImage();
-                    if (HImageCache != null)
-                    {
-                        HImageCache?.Dispose();
-                        HImageCache = null;
-                    };
-                    this.ViewBitmapSource = null;
-                }))));
-            }));
-        }
 
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.DrawingVisualLists;
@@ -126,6 +118,7 @@ namespace ColorVision.Engine.Templates.POI
 
             ToolBar1.DataContext = ImageViewModel;
             ToolBarRight.DataContext = ImageViewModel;
+
             ImageViewModel.EditModeChanged += (s, e) =>
             {
                 if (e)
@@ -205,16 +198,6 @@ namespace ColorVision.Engine.Templates.POI
                 {
                     if (visual.BaseAttribute.IsShow)
                         DrawingVisualLists.Remove(visual);
-                }
-            };
-
-            double oldMax = Zoombox1.ContentMatrix.M11;
-            Zoombox1.LayoutUpdated += (s, e) =>
-            {
-                if (oldMax != Zoombox1.ContentMatrix.M11)
-                {
-                    oldMax = Zoombox1.ContentMatrix.M11;
-                    UpdateVisualLayout(PoiConfig.IsLayoutUpdated);
                 }
             };
 

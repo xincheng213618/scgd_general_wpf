@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Forms.Integration;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -39,6 +40,7 @@ namespace ColorVision.ImageEditor
         {
             InitializeComponent();
         }
+
 
         private void Config_ColormapTypesChanged(object? sender, EventArgs e)
         {
@@ -75,7 +77,7 @@ namespace ColorVision.ImageEditor
             ImageViewModel.PropertyCommand = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(Parent), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
 
 
-            this.DataContext = ImageViewModel;
+            DataContext = ImageViewModel;
             Config.ColormapTypesChanged -= Config_ColormapTypesChanged;
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
             Config.BalanceChanged += ImageViewConfig_BalanceChanged;
@@ -83,13 +85,10 @@ namespace ColorVision.ImageEditor
             foreach (var item in ComponentManager.GetInstance().IImageComponents)
                 item.Execute(this);
 
-            ToolBar1.DataContext = ImageViewModel;
-            ToolBarRight.DataContext = ImageViewModel;
-            ToolBarBottom.DataContext = ImageViewModel;
-            ImageViewModel.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
+
             ImageViewModel.ClearImageEventHandler += Clear;
             ImageViewModel.OpeningImage += (s, e) => OpenImage(e);
-            Zoombox1.LayoutUpdated += Zoombox1_LayoutUpdated;
+
             ImageShow.VisualsAdd += ImageShow_VisualsAdd;
             ImageShow.VisualsRemove += ImageShow_VisualsRemove;
             PreviewKeyDown += ImageView_PreviewKeyDown;
@@ -176,29 +175,6 @@ namespace ColorVision.ImageEditor
                 }
             }
         }
-
-
-        private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
-        {
-            if (Config.IsLayoutUpdated)
-            {
-                double scale = 1 / Zoombox1.ContentMatrix.M11;
-                DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + Guid.ToString(), 20, () => ImageLayoutUpdatedRender(scale, DrawingVisualLists));
-            }
-        }
-
-        public static void ImageLayoutUpdatedRender(double scale, ObservableCollection<IDrawingVisual> DrawingVisualLists)
-        {
-            if (DrawingVisualLists != null)
-            {
-                foreach (var item in DrawingVisualLists)
-                {
-                    item.Pen.Thickness = scale;
-                    item.Render();
-                }
-            }
-        }
-
 
         private void Button7_Click(object sender, RoutedEventArgs e)
         {
@@ -981,13 +957,21 @@ namespace ColorVision.ImageEditor
             ImageViewModel.ClearImageEventHandler -= Clear;
             ImageViewModel.Dispose();
             PropertyGrid2.Dispose();
-            Zoombox1.LayoutUpdated -= Zoombox1_LayoutUpdated;
+
+            WindowsFormsHost1.Child = null;
+            WindowsFormsHost1.Dispose();
+            ImageGroupGrid.Children.Clear();
+
             ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
             ImageShow.VisualsRemove -= ImageShow_VisualsRemove;
+
+            ImageShow.Dispose();
             PreviewKeyDown -= ImageView_PreviewKeyDown;
             Drop -= ImageView_Drop;
 
-            GC.SuppressFinalize(this);
+            Zoombox1.Child = null;
+            ZoomGrid.Children.Clear();
+            GC.Collect();
         }
     }
 }

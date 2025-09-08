@@ -25,7 +25,7 @@ namespace ColorVision.ImageEditor.Draw
         }
     }
 
-    public class DrawCanvas : Image
+    public class DrawCanvas : Image,IDisposable
     {
         // 使用只读集合，防止外部直接修改
         private readonly List<Visual> visuals = new();
@@ -248,6 +248,12 @@ namespace ColorVision.ImageEditor.Draw
             return HitTestResultBehavior.Continue;
         }
 
+        public void Dispose()
+        {
+            Clear();
+            MouseLeftButtonDown -= OnMouseLeftButtonDown;
+            this.CommandBindings.Clear();
+        }
     }
 
 }

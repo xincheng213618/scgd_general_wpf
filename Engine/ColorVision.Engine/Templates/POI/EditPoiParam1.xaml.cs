@@ -183,28 +183,19 @@ namespace ColorVision.Engine.Templates.POI
             KBJson = TemplateJsonKBParam.KBJson;
             InitializeComponent();
             this.ApplyCaption();
-            Task.Run(() => DelayClose());
+            this.DelayClearImage((Action)(() => Application.Current.Dispatcher.Invoke((Action)(() =>
+            {
+                ImageViewModel?.ClearImage();
+                if (HImageCache != null)
+                {
+                    HImageCache?.Dispose();
+                    HImageCache = null;
+                }
+                ;
+                this.ViewBitmapSource = null;
+            }))));
             this.Title = poiParam.Name + "-" + this.Title;
         }
-
-        public async void DelayClose()
-        {
-            await Task.Delay(100);
-            Application.Current.Dispatcher.Invoke((Action)(() =>
-            {
-                this.DelayClearImage((Action)(() => Application.Current.Dispatcher.Invoke((Action)(() =>
-                {
-                    ImageViewModel?.ClearImage();
-                    if (HImageCache != null)
-                    {
-                        HImageCache?.Dispose();
-                        HImageCache = null;
-                    };
-                    this.ViewBitmapSource = null;
-                }))));
-            }));
-        }
-
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.DrawingVisualLists;
         public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
@@ -360,16 +351,7 @@ namespace ColorVision.Engine.Templates.POI
                 }
             };
 
-            double oldMax = Zoombox1.ContentMatrix.M11;
-            Zoombox1.LayoutUpdated += (s, e) =>
-            {
-                if (oldMax != Zoombox1.ContentMatrix.M11)
-                {
-                    oldMax = Zoombox1.ContentMatrix.M11;
-                    UpdateVisualLayout(PoiConfig.IsLayoutUpdated);
-                }
-            };
-
+         
             if (KBJson.Height != 0 && KBJson.Width != 0)
             {
                 if (File.Exists(PoiConfig.BackgroundFilePath))

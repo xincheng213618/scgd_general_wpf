@@ -49,28 +49,11 @@ namespace ColorVision.Solution.Editor
                         SolutionViewExtensions.OnContentIdSelected(filePath);
                     }
                 };
-                bool isclear = true;
-                layoutDocument.Closing += (s, e) =>
+                layoutDocument.Closing += async (s, e) =>
                 {
-                    if (isclear)
-                    {
-                        isclear = false;
-                        imageView.ImageViewModel.ClearImageCommand.Execute(null);
-                        e.Cancel = true; // Prevent the document from closing immediately
-                        _ = Task.Run(async () =>
-                        {
-                            await Task.Delay(300);
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                imageView.Dispose();
-                                layoutDocument?.Close();
-                            });
-                        });
-                    }
-                    else
-                    {
-                        e.Cancel = false; // Prevent the document from closing immediately
-                    }
+                    imageView.ImageViewModel.ClearImageCommand.Execute(null);
+                    await Task.Delay(10);
+                    imageView.Dispose();
                 };
             }
         }
