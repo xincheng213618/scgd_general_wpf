@@ -5,7 +5,7 @@
 		<UseWindowsForms>True</UseWindowsForms>
 		<LangVersion>11.0</LangVersion>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-		<TargetFrameworks>net8.0-windows</TargetFrameworks>
+		<TargetFrameworks>net8.0-windows;net472</TargetFrameworks>
 		<VersionPrefix>1.2.0.2410</VersionPrefix>
 	</PropertyGroup>
 	<PropertyGroup />
