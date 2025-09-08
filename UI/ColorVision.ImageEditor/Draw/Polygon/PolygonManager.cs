@@ -56,6 +56,7 @@ namespace ColorVision.ImageEditor.Draw
         }
         public void UnLoad()
         {
+            DrawCanvas.PreviewKeyDown -= DrawCanvas_PreviewKeyDown;
             DrawCanvas.MouseMove -= MouseMove;
             DrawCanvas.MouseEnter -= MouseEnter;
             DrawCanvas.MouseLeave -= MouseLeave;
@@ -94,10 +95,10 @@ namespace ColorVision.ImageEditor.Draw
 
         private void PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            DrawCanvas.Focus();
             DrawCanvas.CaptureMouse();
             MouseDownP = e.GetPosition(DrawCanvas);
             IsMouseDown = true;
+            DrawCanvas.Focus();
 
             if (DrawingVisualPolygonCache == null)
             {

@@ -51,6 +51,8 @@ namespace ColorVision.ImageEditor.Draw
         }
         public void UnLoad()
         {
+            DrawCanvas.PreviewKeyDown -= DrawCanvas_PreviewKeyDown;
+
             DrawCanvas.MouseMove -= MouseMove;
             DrawCanvas.MouseEnter -= MouseEnter;
             DrawCanvas.MouseLeave -= MouseLeave;
