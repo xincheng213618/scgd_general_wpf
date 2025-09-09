@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Pattern;
+﻿using Pattern;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Languages;

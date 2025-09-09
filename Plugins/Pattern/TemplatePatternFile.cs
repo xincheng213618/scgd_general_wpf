@@ -4,7 +4,7 @@ using System.IO;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Pattern
+namespace Pattern
 {
     public class TemplatePatternFile:ViewModelBase
     {

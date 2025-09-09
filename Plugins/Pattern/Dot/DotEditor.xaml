@@ -1,9 +1,9 @@
-﻿<UserControl x:Class="ColorVision.Engine.Pattern.Dot.DotEditor"
+﻿<UserControl x:Class="Pattern.Dot.DotEditor"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ColorVision.Engine.Pattern.Dot"
+             xmlns:local="clr-namespace:Pattern.Dot"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:PatternDotConfig}"
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">

@@ -11,7 +11,7 @@ using System.Linq;
 using System.Reflection;
 using System.Windows;
 
-namespace ColorVision.Engine.Pattern
+namespace Pattern
 {
 
     public class PatternManagerConfig:ViewModelBase,IConfig

@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Pattern.Ring
+namespace Pattern.Ring
 {
     /// <summary>
     /// RingEditor.xaml 的交互逻辑

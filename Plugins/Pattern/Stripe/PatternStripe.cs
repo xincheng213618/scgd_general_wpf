@@ -6,7 +6,7 @@ using System.ComponentModel;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Pattern.Stripe
+namespace Pattern.Stripe
 {
     public enum CheckerboardSizeMode
     {

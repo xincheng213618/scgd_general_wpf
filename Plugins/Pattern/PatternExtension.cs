@@ -1,7 +1,7 @@
 ﻿using OpenCvSharp;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Pattern
+namespace Pattern
 {
     public static class PatternExtension
     {

@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 
-namespace ColorVision.Engine.Pattern
+namespace Pattern
 {
     public class TemplatePattern:ViewModelBase
     {

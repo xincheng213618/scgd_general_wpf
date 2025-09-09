@@ -17,7 +17,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Pattern
+namespace Pattern
 {
     public class ExportTestPatternWpf : MenuItemBase
     {

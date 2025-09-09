@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Pattern.SFR
+namespace Pattern.SFR
 {
     /// <summary>
     /// SFREditor.xaml 的交互逻辑

@@ -1,9 +1,9 @@
-﻿<UserControl x:Class="ColorVision.Engine.Pattern.SFR.SFREditor"
+﻿<UserControl x:Class="Pattern.SFR.SFREditor"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ColorVision.Engine.Pattern.SFR"
+             xmlns:local="clr-namespace:Pattern.SFR"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:PatternSFRConfig}"
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">

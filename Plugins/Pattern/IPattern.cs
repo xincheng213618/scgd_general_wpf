@@ -2,7 +2,7 @@
 using Newtonsoft.Json;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Pattern
+namespace Pattern
 {
     public interface IPattern
     {

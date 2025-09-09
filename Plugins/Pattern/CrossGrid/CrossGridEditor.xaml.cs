@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Pattern.CrossGrid
+namespace Pattern.CrossGrid
 {
     /// <summary>
     /// CrossGridEditor.xaml 的交互逻辑

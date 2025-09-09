@@ -7,7 +7,7 @@ using System.ComponentModel;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Pattern.Ring
+namespace Pattern.Ring
 {
     public class PatternRingConfig:ViewModelBase,IConfig
     {

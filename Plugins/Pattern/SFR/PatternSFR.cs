@@ -7,7 +7,7 @@ using System.ComponentModel;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Pattern.SFR
+namespace Pattern.SFR
 {
     public class PatternSFRConfig:ViewModelBase,IConfig
     {

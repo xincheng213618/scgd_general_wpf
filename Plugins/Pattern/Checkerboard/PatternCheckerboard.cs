@@ -5,7 +5,7 @@ using System.ComponentModel;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Pattern.Checkerboard
+namespace Pattern.Checkerboard
 {
     public enum CheckerboardSizeMode
     {

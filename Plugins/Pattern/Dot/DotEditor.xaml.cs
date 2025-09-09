@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Pattern.Dot
+namespace Pattern.Dot
 {
     /// <summary>
     /// DotEditor.xaml 的交互逻辑
