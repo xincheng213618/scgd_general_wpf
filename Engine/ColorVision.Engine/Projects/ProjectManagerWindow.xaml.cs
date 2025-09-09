@@ -1,4 +1,7 @@
-﻿using ColorVision.Themes;
+﻿using ColorVision.Engine.Properties;
+using ColorVision.Themes;
+using ColorVision.UI.Authorizations;
+using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;

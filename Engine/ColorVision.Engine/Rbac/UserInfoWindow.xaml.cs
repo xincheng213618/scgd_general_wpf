@@ -35,7 +35,7 @@ namespace ColorVision.Engine.Rbac
         }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = UserManager.GetInstance();
+            this.DataContext = RbacManager.GetInstance();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

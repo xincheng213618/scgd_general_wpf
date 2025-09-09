@@ -1,4 +1,5 @@
 ﻿using ColorVision.Themes;
+using ColorVision.UI.Authorizations;
 using System;
 using System.Windows;
 
@@ -23,8 +24,18 @@ namespace ColorVision.Engine.Rbac
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            UserDao userDao = new UserDao();
-            MessageBox.Show(Application.Current.MainWindow, "用户名或者密码不正确", "ColorVision");
+
+            string username = Account1.Text.Trim();
+            string password = PasswordBox1.Password.Trim();
+            UserLoginResult userLoginResult = RbacManager.GetInstance().LoginAndGetDetail(username, password);
+            if (userLoginResult == null)
+            {
+                MessageBox.Show(Application.Current.MainWindow, "用户名或者密码不正确", "ColorVision");
+                return;
+            }
+            UserConfig.Instance.UserLoginResult = userLoginResult;
+            Authorization.Instance.PermissionMode = userLoginResult.UserDetail.PermissionMode;
+            this.Close();
         }
     }
 }

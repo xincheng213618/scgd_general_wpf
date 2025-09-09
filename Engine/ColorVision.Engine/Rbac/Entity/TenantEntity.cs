@@ -4,22 +4,8 @@ using System;
 
 namespace ColorVision.Engine.Rbac
 {
-    [SugarTable("t_scgd_sys_user2tenant")]
-    public class UserTenant : ViewEntity 
-    {
-        [SugarColumn(ColumnName ="name")]
-        public int UserId { get; set; }
-        [SugarColumn(ColumnName ="tenant_id")]
-        public int TenantId { get; set; }
-    }
-
-    public class UserTenantDao : BaseTableDao<Tenant>
-    {
-        public static UserTenantDao Instance { get; set; } = new UserTenantDao();
-    }
-
-    [SugarTable("t_scgd_sys_tenant")]
-    public class Tenant: ViewEntity 
+    [SugarTable("sys_tenant")]
+    public class TenantEntity: ViewEntity 
     {
         [SugarColumn(ColumnName ="name")]
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
@@ -40,12 +26,5 @@ namespace ColorVision.Engine.Rbac
         [SugarColumn(ColumnName ="remark")]
         public string Remark { get => _Remark; set { _Remark = value; OnPropertyChanged(); } }
         private string _Remark = string.Empty;
-    }
-
-
-    public class TenantDao: BaseTableDao<Tenant>
-    {
-        public static TenantDao Instance { get; set; } = new TenantDao();
-
     }
 }
