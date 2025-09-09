@@ -131,8 +131,11 @@ namespace ColorVision.Engine.Rbac
 
             // 获取用户详细信息
             var userDetail = db.Queryable<UserDetailEntity>().First(ud => ud.UserId == user.Id);
-            if (userDetail ==null) userDetail =new UserDetailEntity();
-
+            if (userDetail == null)
+            {
+                userDetail = new UserDetailEntity();
+                userDetail.Id = db.Insertable(userDetail).ExecuteReturnIdentity();
+            }
             // 获取用户角色列表
             var roleIds = db.Queryable<UserRoleEntity>().Where(ur => ur.UserId == user.Id).Select(ur => ur.RoleId).ToList();
             List<RoleEntity> roles = new List<RoleEntity>();

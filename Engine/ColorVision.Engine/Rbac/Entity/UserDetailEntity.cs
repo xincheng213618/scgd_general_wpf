@@ -19,35 +19,35 @@ namespace ColorVision.Engine.Rbac
         public PermissionMode PermissionMode { get => _PermissionMode; set { _PermissionMode = value; OnPropertyChanged(); } }
         private PermissionMode _PermissionMode = PermissionMode.SuperAdministrator;
 
-        [SugarColumn(ColumnName ="email")]
+        [SugarColumn(ColumnName ="email", IsNullable = true)]
         public string Email { get => _Email; set { _Email = value; OnPropertyChanged(); } }
-        private string _Email = string.Empty;
+        private string _Email;
 
-        [SugarColumn(ColumnName ="phone")]
+        [SugarColumn(ColumnName ="phone", IsNullable = true)]
         public string Phone { get => _Phone; set { _Phone = value; OnPropertyChanged(); } }
-        private string _Phone = string.Empty;
+        private string _Phone;
 
-        [SugarColumn(ColumnName ="address")]
+        [SugarColumn(ColumnName ="address", IsNullable = true)]
         public string Address { get => _Address; set { _Address = value; OnPropertyChanged(); } }
-        private string _Address = string.Empty;
+        private string _Address;
 
-        [SugarColumn(ColumnName ="company")]
+        [SugarColumn(ColumnName ="company", IsNullable = true)]
         public string Company { get => _Company; set { _Company = value; OnPropertyChanged(); } }
-        private string _Company = string.Empty;
+        private string _Company;
 
-        [SugarColumn(ColumnName ="department")]
+        [SugarColumn(ColumnName ="department", IsNullable = true)]
         public string Department { get => _Department; set { _Department = value; OnPropertyChanged(); } }
-        private string _Department = string.Empty;
+        private string _Department;
 
-        [SugarColumn(ColumnName ="position")]
+        [SugarColumn(ColumnName ="position", IsNullable = true)]
         public string Position { get => _Position; set { _Position = value; OnPropertyChanged(); } }
-        private string _Position = string.Empty;
+        private string _Position;
 
-        [SugarColumn(ColumnName ="remark")]
+        [SugarColumn(ColumnName ="remark", IsNullable = true)]
         public string Remark { get => _Remark; set { _Remark = value; OnPropertyChanged(); } }
-        private string _Remark = string.Empty;
+        private string _Remark;
 
-        [SugarColumn(ColumnName ="user_image")]
+        [SugarColumn(ColumnName ="user_image",IsNullable =true)]
         public string UserImage { get => _UserImage; set { _UserImage = value; OnPropertyChanged(); } }
         private string _UserImage;
 
