@@ -30,6 +30,8 @@ namespace ColorVision.Engine.Rbac
         public RelayCommand LoginCommand { get; set; }
         public RelayCommand EditCommand { get; set; }
 
+        public RelayCommand OpenUserManagerCommand { get; set; }
+
         public static UserConfig Config => UserConfig.Instance;
 
         public RbacManager()
@@ -53,8 +55,13 @@ namespace ColorVision.Engine.Rbac
             InitAdmin();
 
             EditCommand = new RelayCommand(a=> Edit());
-
+            OpenUserManagerCommand = new RelayCommand(a => OpenUserManager());
             Authorization.Instance.PermissionMode = Config.UserLoginResult.UserDetail.PermissionMode;
+        }
+
+        public void OpenUserManager()
+        {
+            new UserManagerWindow() { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
         }
 
         public void Edit()
@@ -65,6 +72,13 @@ namespace ColorVision.Engine.Rbac
             UserDetail.UpdatedAt = DateTime.Now;
             db.Updateable(UserDetail).ExecuteCommand();
             Authorization.Instance.PermissionMode = UserDetail.PermissionMode;
+        }
+
+
+        public List<UserEntity> GetUsers()
+        {
+            var users = db.Queryable<UserEntity>().Where(u => u.IsDelete == false || u.IsDelete == null).ToList();
+            return users;
         }
 
         private void InitAdmin()
@@ -134,6 +148,7 @@ namespace ColorVision.Engine.Rbac
             if (userDetail == null)
             {
                 userDetail = new UserDetailEntity();
+                userDetail.UserId = user.Id;
                 userDetail.Id = db.Insertable(userDetail).ExecuteReturnIdentity();
             }
             // 获取用户角色列表
@@ -150,6 +165,53 @@ namespace ColorVision.Engine.Rbac
                 UserDetail = userDetail,
                 Roles = roles
             };
+        }
+
+
+        public bool CreateUser(string username, string password, string remark = "", List<int> roleIds = null)
+        {
+            // 检查用户名是否已存在
+            bool exists = db.Queryable<UserEntity>().Any(u => u.Username == username);
+            if (exists)
+                return false; // 用户名已存在
+
+            var newUser = new UserEntity
+            {
+                Username = username,
+                Password = password, // 实际建议加密
+                IsEnable = true,
+                IsDelete = false,
+                Remark = remark,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
+            };
+            int userId = db.Insertable(newUser).ExecuteReturnIdentity();
+
+            // 创建对应的详细信息表
+            var userDetail = new UserDetailEntity
+            {
+                UserId = userId,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
+                // 其他字段可补充
+            };
+            db.Insertable(userDetail).ExecuteCommand();
+
+            // 分配角色（如果有）
+            if (roleIds != null)
+            {
+                foreach (var roleId in roleIds)
+                {
+                    var ur = new UserRoleEntity
+                    {
+                        UserId = userId,
+                        RoleId = roleId
+                    };
+                    db.Insertable(ur).ExecuteCommand();
+                }
+            }
+
+            return true;
         }
 
         public void Dispose()

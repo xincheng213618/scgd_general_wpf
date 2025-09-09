@@ -8,7 +8,7 @@
         xmlns:hc ="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:RbacManager}"
-        Title="用户" Height="350" Width="400" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="用户" Height="400" Width="600" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -17,7 +17,8 @@
         </Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
             <Button Content="登录" Command="{Binding LoginCommand}" Margin="0,0,10,0"/>
-            <Button Content="编辑" Command="{Binding EditCommand}" Width="75"/>
+            <Button Content="编辑信息" Command="{Binding EditCommand}" Width="75"/>
+            <Button Content="用户管理" Command="{Binding OpenUserManagerCommand}" Width="75"/>
         </StackPanel>
         <!-- User Information and Avatar -->
         <Grid Grid.Row="1">
