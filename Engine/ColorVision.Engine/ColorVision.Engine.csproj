@@ -21,6 +21,8 @@
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
 		<PackageReference Include="MQTTnet" Version="4.3.4.1084" />
+		<PackageReference Include="OpenCvSharp4" Version="4.11.0.20250507" />
+		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.11.0.20250507" />
 		<PackageReference Include="OpenCvSharp4.Extensions" Version="4.11.0.20250507" />
 		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.11.0.20250507" />
 		<PackageReference Include="QRCoder.Xaml" Version="1.6.0" />
@@ -90,33 +92,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="Pattern\CrossGrid\CrossGridEditor.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Pattern\NineDot\NineDotEditor.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Pattern\Cross\CrossEditor.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Pattern\Ring\RingEditor.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Pattern\SFR\SFREditor.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Pattern\Ring\RingEditor.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Pattern\Stripe\StripeEditor.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Pattern\Dot\DotEditor.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Pattern\Checkerboard\CheckerboardEditor.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
