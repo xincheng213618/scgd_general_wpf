@@ -7,8 +7,6 @@ using ColorVision.UI.Menus;
 using log4net;
 using Newtonsoft.Json;
 using OpenCvSharp.WpfExtensions;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.IO;
