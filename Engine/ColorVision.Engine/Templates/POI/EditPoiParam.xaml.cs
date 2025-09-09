@@ -1558,14 +1558,6 @@ namespace ColorVision.Engine.Templates.POI
                 double leftMargin = ParseDoubleOrDefault(TextBoxLeft1.Text);
                 double rightMargin = ParseDoubleOrDefault(TextBoxRight1.Text);
 
-                if (ComboBoxBorderType1.SelectedItem is KeyValuePair<GraphicBorderType, string> KeyValue && KeyValue.Key == GraphicBorderType.Relative)
-                {
-                    // 将百分比边距转换为像素值
-                    topMargin = bitmapImage.PixelHeight * topMargin / 100;
-                    bottomMargin = bitmapImage.PixelHeight * bottomMargin / 100;
-                    leftMargin = bitmapImage.PixelWidth * leftMargin / 100;
-                    rightMargin = bitmapImage.PixelWidth * rightMargin / 100;
-                }
                 // 将当前多边形顶点存入一个列表中以便处理
                 var polygonPoints = new List<Point>
         {
@@ -1574,6 +1566,23 @@ namespace ColorVision.Engine.Templates.POI
             new Point(PoiConfig.Polygon3X, PoiConfig.Polygon3Y),
             new Point(PoiConfig.Polygon4X, PoiConfig.Polygon4Y)
         };
+
+
+                if (ComboBoxBorderType1.SelectedItem is KeyValuePair<GraphicBorderType, string> KeyValue && KeyValue.Key == GraphicBorderType.Relative)
+                {
+                    polygonPoints = ImageEditorHelper.SortRectanglePoints(polygonPoints);
+
+                    double originalWidth = Math.Max(polygonPoints[1].X, polygonPoints[2].X) - Math.Min(polygonPoints[0].X, polygonPoints[3].X);
+                    double originalHeight = Math.Max(polygonPoints[2].Y, polygonPoints[3].Y) - Math.Min(polygonPoints[0].Y, polygonPoints[1].Y);
+
+
+                    // 将百分比边距转换为像素值
+                    topMargin = originalHeight * topMargin / 100;
+                    bottomMargin = originalHeight * bottomMargin / 100;
+                    leftMargin = originalWidth * leftMargin / 100;
+                    rightMargin = originalWidth * rightMargin / 100;
+                }
+
 
                 // 调用新的缩放方法
                 var scaledPolygon = ImageEditorHelper.ScalePolygon(polygonPoints, topMargin, bottomMargin, leftMargin, rightMargin);

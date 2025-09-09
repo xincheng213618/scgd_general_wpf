@@ -21,6 +21,22 @@ namespace ColorVision.ImageEditor
 
     public static class ImageEditorHelper
     {
+
+        public static List<Point> SortRectanglePoints(List<Point> points)
+        {
+            if (points.Count != 4) return points;
+
+            // 按Y升序
+            var sortedByY = points.OrderBy(p => p.Y).ToList();
+
+            // 上面两个点
+            var topPoints = sortedByY.Take(2).OrderBy(p => p.X).ToList();
+            // 下面两个点
+            var bottomPoints = sortedByY.Skip(2).OrderBy(p => p.X).ToList();
+
+            // 顺序：左上、右上、右下、左下
+            return new List<Point> { topPoints[0], topPoints[1], bottomPoints[1], bottomPoints[0] };
+        }
         /// <summary>
         /// 根据指定的边距缩放一个四边形
         /// </summary>
@@ -30,7 +46,7 @@ namespace ColorVision.ImageEditor
         /// <param name="left">左边距</param>
         /// <param name="right">右边距</param>
         /// <returns>缩放后的新顶点列表</returns>
-        public static List<Point> ScalePolygon(List<Point> points, double top, double bottom, double left, double right)
+        public static List<Point>  ScalePolygon(List<Point> points, double top, double bottom, double left, double right)
         {
             if (points.Count != 4)
             {
@@ -38,6 +54,7 @@ namespace ColorVision.ImageEditor
                 return points;
             }
 
+            points = SortRectanglePoints(points);
             // 1. 计算多边形的几何中心
             double centerX = (points[0].X + points[1].X + points[2].X + points[3].X) / 4;
             double centerY = (points[0].Y + points[1].Y + points[2].Y + points[3].Y) / 4;
@@ -177,8 +194,6 @@ namespace ColorVision.ImageEditor
 
     public enum GraphicBorderType
     {
-        [Description("无")]
-        None = -1,
         [Description("绝对值")]
         Absolute,
         [Description("相对值")]
@@ -344,7 +359,7 @@ namespace ColorVision.ImageEditor
             this.DataContext = Config;
             this.Closed += (s, e) => { ImageView = null; };
         }
-
+        DVDatumPolygon Polygon;
         private void FindLuminousAreaCorner_Click(object sender, RoutedEventArgs e)
         {
             if (ImageView.HImageCache != null)
@@ -398,7 +413,8 @@ namespace ColorVision.ImageEditor
                             pts_src.Add(Config.Polygon4);
 
                             List<Point> result1 = Helpers.SortPolyPoints(pts_src);
-                            DVDatumPolygon Polygon = new() { IsComple = true };
+                            ImageShow.RemoveVisualCommand(Polygon);
+                            Polygon = new DVDatumPolygon() { IsComple = true };
                             Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / ImageView.Zoombox1.ContentMatrix.M11);
                             Polygon.Attribute.Brush = Brushes.Transparent;
                             Polygon.Attribute.Points.Add(result1[0]);
@@ -421,13 +437,68 @@ namespace ColorVision.ImageEditor
         {
 
         }
+        private static double ParseDoubleOrDefault(string input, double defaultValue = 0) => double.TryParse(input, out double result) ? result : defaultValue;
 
         private void ButtonImportMarinSetting(object sender, RoutedEventArgs e)
         {
+            double topMargin = ParseDoubleOrDefault(TextBoxUp1.Text);
+            double bottomMargin = ParseDoubleOrDefault(TextBoxDown1.Text);
+            double leftMargin = ParseDoubleOrDefault(TextBoxLeft1.Text);
+            double rightMargin = ParseDoubleOrDefault(TextBoxRight1.Text);
+
+            // 将当前多边形顶点存入一个列表中以便处理
+            var polygonPoints = new List<Point>
+        {
+                Config.Polygon1,
+                Config.Polygon2,
+                Config.Polygon3,
+                Config.Polygon4
+        };
+
+
+            if (ComboBoxBorderType1.SelectedItem is KeyValuePair<GraphicBorderType, string> KeyValue && KeyValue.Key == GraphicBorderType.Relative)
+            {
+                polygonPoints = ImageEditorHelper.SortRectanglePoints(polygonPoints);
+
+                double originalWidth = Math.Max(polygonPoints[1].X, polygonPoints[2].X) - Math.Min(polygonPoints[0].X, polygonPoints[3].X);
+                double originalHeight = Math.Max(polygonPoints[2].Y, polygonPoints[3].Y) - Math.Min(polygonPoints[0].Y, polygonPoints[1].Y);
+
+
+                // 将百分比边距转换为像素值
+                topMargin = originalHeight * topMargin / 100;
+                bottomMargin = originalHeight * bottomMargin / 100;
+                leftMargin = originalWidth * leftMargin / 100;
+                rightMargin = originalWidth * rightMargin / 100;
+            }
+
+            // 调用新的缩放方法
+            var scaledPolygon = ImageEditorHelper.ScalePolygon(polygonPoints, topMargin, bottomMargin, leftMargin, rightMargin);
+
+            // 更新 PoiConfig 中的顶点坐标
+            Config.Polygon1X = (int)scaledPolygon[0].X;
+            Config.Polygon1Y = (int)scaledPolygon[0].Y;
+            Config.Polygon2X = (int)scaledPolygon[1].X;
+            Config.Polygon2Y = (int)scaledPolygon[1].Y;
+            Config.Polygon3X = (int)scaledPolygon[2].X;
+            Config.Polygon3Y = (int)scaledPolygon[2].Y;
+            Config.Polygon4X = (int)scaledPolygon[3].X;
+            Config.Polygon4Y = (int)scaledPolygon[3].Y;
+
+            List<Point> result1 = Helpers.SortPolyPoints(scaledPolygon);
+            ImageShow.RemoveVisualCommand(Polygon);
+            Polygon = new DVDatumPolygon() { IsComple = true };
+            Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / ImageView.Zoombox1.ContentMatrix.M11);
+            Polygon.Attribute.Brush = Brushes.Transparent;
+            Polygon.Attribute.Points.Add(result1[0]);
+            Polygon.Attribute.Points.Add(result1[1]);
+            Polygon.Attribute.Points.Add(result1[2]);
+            Polygon.Attribute.Points.Add(result1[3]);
+            Polygon.Render();
+            ImageShow.AddVisualCommand(Polygon);
 
         }
 
-        int start = 0;
+        int start;
         private void Button2_Click(object sender, RoutedEventArgs e)
         {
             if (ImageShow.Source is not BitmapSource bitmapImage) return;
