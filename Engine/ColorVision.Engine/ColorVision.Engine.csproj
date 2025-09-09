@@ -222,6 +222,7 @@
     <Folder Include="Rbac\Roles\" />
     <Folder Include="Rbac\Tenants\" />
     <Folder Include="Rbac\Account\" />
+    <Folder Include="Templates\POI\Image\" />
   </ItemGroup>
 
 </Project>
