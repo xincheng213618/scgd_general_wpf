@@ -52,9 +52,9 @@ namespace ColorVision.Engine.Rbac
         private string _UserImage;
 
         [SugarColumn(ColumnName = "created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
         [SugarColumn(ColumnName = "updated_at")]
-        public DateTime UpdatedAt { get; set; } = DateTime.Now;
+        public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     };
 

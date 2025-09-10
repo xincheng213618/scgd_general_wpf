@@ -218,7 +218,7 @@ namespace ColorVision.Engine.Templates
                 list.Add(new ModDetailModel() { SysPid = item.Id, Pid = -1, ValueA = item.DefaultValue });
             }
 
-            ModMasterModel modMaster = new ModMasterModel() { Pid = TemplateDicId, Name = "", TenantId = UserConfig.Instance.TenantId };
+            ModMasterModel modMaster = new ModMasterModel() { Pid = TemplateDicId, Name = "", TenantId = RbacManagerConfig.Instance.TenantId };
             CreateTemp = (T)Activator.CreateInstance(typeof(T), new object[] { modMaster, list });
 
             if (ImportTemp != null)
@@ -263,7 +263,7 @@ namespace ColorVision.Engine.Templates
 
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                List<ModMasterModel> smus = Db.Queryable<ModMasterModel>().Where(x => x.Pid == TemplateDicId).Where(x => x.TenantId == UserConfig.Instance.TenantId).Where(x => x.IsDelete == false).ToList();
+                List<ModMasterModel> smus = Db.Queryable<ModMasterModel>().Where(x => x.Pid == TemplateDicId).Where(x => x.TenantId == RbacManagerConfig.Instance.TenantId).Where(x => x.IsDelete == false).ToList();
                 foreach (var dbModel in smus)
                 {
                     
@@ -428,7 +428,7 @@ namespace ColorVision.Engine.Templates
 
         public T? AddParamMode(string Name, int resourceId = -1)
         {
-            ModMasterModel modMaster = new ModMasterModel() { Pid = TemplateDicId, Name = Name, TenantId = UserConfig.Instance.TenantId };
+            ModMasterModel modMaster = new ModMasterModel() { Pid = TemplateDicId, Name = Name, TenantId = RbacManagerConfig.Instance.TenantId };
             if (resourceId > 0)
                 modMaster.ResourceId = resourceId;
             int id = Db.Insertable(modMaster).ExecuteReturnIdentity();
@@ -457,7 +457,7 @@ namespace ColorVision.Engine.Templates
         {
             T? AddParamMode()
             {
-                ModMasterModel modMaster = new ModMasterModel() { Pid = TemplateDicId, Name = templateName, TenantId = UserConfig.Instance.TenantId };
+                ModMasterModel modMaster = new ModMasterModel() { Pid = TemplateDicId, Name = templateName, TenantId = RbacManagerConfig.Instance.TenantId };
                 int id = Db.Insertable(modMaster).ExecuteReturnIdentity();
                 modMaster.Id = id;
 

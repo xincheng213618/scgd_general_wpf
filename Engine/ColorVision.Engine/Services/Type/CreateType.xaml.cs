@@ -46,7 +46,7 @@ namespace ColorVision.Engine.Services.Types
             sysResource.Name = CreateName.Text;
             sysResource.Code = CreateCode.Text;
             sysResource.Type = TypeService.SysDictionaryModel.Value;
-            sysResource.TenantId = UserConfig.Instance.TenantId;
+            sysResource.TenantId = RbacManagerConfig.Instance.TenantId;
 
 
             TerminalServiceConfig terminalServiceConfig = new() { HeartbeatTime = 5000 };

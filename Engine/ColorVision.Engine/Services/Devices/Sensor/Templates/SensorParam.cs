@@ -68,7 +68,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         {
             SensorParam? AddParamMode()
             {
-                ModMasterModel modMaster = new ModMasterModel() { Pid = TemplateDicId, Name =templateName, TenantId = UserConfig.Instance.TenantId };
+                ModMasterModel modMaster = new ModMasterModel() { Pid = TemplateDicId, Name =templateName, TenantId = RbacManagerConfig.Instance.TenantId };
                 int id = Db.Insertable(modMaster).ExecuteReturnIdentity();
                 modMaster.Id = id;
 

@@ -5,14 +5,14 @@ using System;
 namespace ColorVision.Engine.Rbac
 {
     [SugarTable("sys_user")]
-    public class UserEntity  : ViewEntity 
+    public class UserEntity  : EntityBase
     {
         [SugarColumn(ColumnName = "username")]
-        public string Username { get => _Username; set { _Username = value; OnPropertyChanged(); } }
+        public string Username { get => _Username; set { _Username = value;  } }
         private string _Username = "admin";
 
         [SugarColumn(ColumnName = "password")]
-        public string Password { get => _Password; set { _Password = value; OnPropertyChanged(); } }
+        public string Password { get => _Password; set { _Password = value;  } }
         private string _Password = "admin";
 
         [SugarColumn(ColumnName ="is_enable")]
@@ -21,13 +21,13 @@ namespace ColorVision.Engine.Rbac
         public bool? IsDelete { get; set; } = false;
 
         [SugarColumn(ColumnName ="remark")]
-        public string Remark { get => _Remark; set { _Remark = value; OnPropertyChanged(); } }
+        public string Remark { get => _Remark; set { _Remark = value; } }
         private string _Remark = string.Empty;
 
         [SugarColumn(ColumnName = "created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.Now;
         [SugarColumn(ColumnName = "updated_at")]
-        public DateTime UpdatedAt { get; set; } = DateTime.Now;
+        public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.Now;
     }
 
 

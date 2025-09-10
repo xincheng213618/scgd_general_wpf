@@ -43,7 +43,7 @@ namespace ColorVision.Engine.Templates.Flow
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                List<ModMasterModel> flows = MySqlControl.GetInstance().DB.Queryable<ModMasterModel>().Where(x => x.Pid == 11).Where(x => x.TenantId == UserConfig.Instance.TenantId).Where(x => x.IsDelete == false).ToList();
+                List<ModMasterModel> flows = MySqlControl.GetInstance().DB.Queryable<ModMasterModel>().Where(x => x.Pid == 11).Where(x => x.TenantId == RbacManagerConfig.Instance.TenantId).Where(x => x.IsDelete == false).ToList();
                 foreach (var dbModel in flows)
                 {
                     var details = Db.Queryable<ModDetailModel>().Where(x=>x.Pid == dbModel.Id)
@@ -303,7 +303,7 @@ namespace ColorVision.Engine.Templates.Flow
         }
         public FlowParam? AddFlowParam(string templateName)
         {
-            var flowMaster = new ModMasterModel() { Pid = 11, Name = templateName, TenantId = UserConfig.Instance.TenantId };
+            var flowMaster = new ModMasterModel() { Pid = 11, Name = templateName, TenantId = RbacManagerConfig.Instance.TenantId };
             int id = Db.Insertable(flowMaster).ExecuteReturnIdentity(); // 自增id自动回写
             flowMaster.Id = id;
 

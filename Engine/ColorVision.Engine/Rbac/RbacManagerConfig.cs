@@ -1,15 +1,16 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Rbac.Dtos;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 
 namespace ColorVision.Engine.Rbac
 {
 
-    public class UserConfig : ViewModelBase, IConfig
+    public class RbacManagerConfig : ViewModelBase, IConfig
     {
-        public static UserConfig Instance => ConfigService.Instance.GetRequiredService<UserConfig>();
+        public static RbacManagerConfig Instance => ConfigService.Instance.GetRequiredService<RbacManagerConfig>();
 
-        public UserLoginResult UserLoginResult { get; set; } = new UserLoginResult();
+        public LoginResultDto LoginResult { get; set; } = new LoginResultDto();
         /// <summary>
         /// 租户ID
         /// </summary>

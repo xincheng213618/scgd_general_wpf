@@ -193,7 +193,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     Name = CreateConfig.CameraID,
                     Code = CreateConfig.Code,
                     Type = 101,
-                    TenantId = UserConfig.Instance.TenantId,
+                    TenantId = RbacManagerConfig.Instance.TenantId,
                 };
             }
 

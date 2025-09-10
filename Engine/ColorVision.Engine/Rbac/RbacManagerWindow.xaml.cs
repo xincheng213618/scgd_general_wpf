@@ -9,12 +9,12 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Rbac
 {
-    public class MenuUserInfo : IRightMenuItemProvider
+    public class MenuRbacManager : IRightMenuItemProvider
     {
         public IEnumerable<MenuItemMetadata> GetMenuItems()
         {
             MenuItemMetadata menuItemMetadata = new MenuItemMetadata();
-            menuItemMetadata.Command = new RelayCommand(a => new UserInfoWindow() {  Owner =Application.Current.GetActiveWindow(),WindowStartupLocation =WindowStartupLocation.CenterOwner}.ShowDialog() );
+            menuItemMetadata.Command = new RelayCommand(a => new RbacManagerWindow() {  Owner =Application.Current.GetActiveWindow(),WindowStartupLocation =WindowStartupLocation.CenterOwner}.ShowDialog() );
             menuItemMetadata.Icon = new Image()
             {
                 Source = (ImageSource)Application.Current.Resources["DrawingImageUser"],
@@ -24,11 +24,11 @@ namespace ColorVision.Engine.Rbac
     }
 
     /// <summary>
-    /// UserInfoWindow.xaml 的交互逻辑
+    /// RbacManagerWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class UserInfoWindow : Window
+    public partial class RbacManagerWindow : Window
     {
-        public UserInfoWindow()
+        public RbacManagerWindow()
         {
             InitializeComponent();
             this.ApplyCaption();

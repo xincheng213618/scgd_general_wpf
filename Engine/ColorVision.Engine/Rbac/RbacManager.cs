@@ -1,4 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Rbac.Dtos;
+using ColorVision.Engine.Rbac.Services;
+using ColorVision.Engine.Services.Auth;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using SqlSugar;
@@ -6,16 +9,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace ColorVision.Engine.Rbac
 {
-    public class UserLoginResult
-    {
-        public UserEntity User { get; set; } =new UserEntity();
-        public UserDetailEntity UserDetail { get; set; } = new UserDetailEntity();
-        public List<RoleEntity> Roles { get; set; }
-    }
     public class RbacManager:IDisposable
     {
         private static RbacManager _instance;
@@ -26,14 +22,16 @@ namespace ColorVision.Engine.Rbac
         public static string SqliteDbPath { get; set; } = DirectoryPath + "Rbac.db";
 
         private SqlSugarClient db;
-
         public RelayCommand LoginCommand { get; set; }
         public RelayCommand EditCommand { get; set; }
 
         public RelayCommand OpenUserManagerCommand { get; set; }
 
-        public static UserConfig Config => UserConfig.Instance;
+        public static RbacManagerConfig Config => RbacManagerConfig.Instance;
+        public AuthService AuthService { get; set; }
+        public UserService UserService { get; set; }
 
+        public EditUserDetailAction EditUserDetailAction { get; set; }
         public RbacManager()
         {  
             // 确保目录存在
@@ -54,9 +52,14 @@ namespace ColorVision.Engine.Rbac
             LoginCommand = new RelayCommand(a => new LoginWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             InitAdmin();
 
-            EditCommand = new RelayCommand(a=> Edit());
+            EditCommand = new RelayCommand(a=> EditUserDetailAction.EditAsync());
             OpenUserManagerCommand = new RelayCommand(a => OpenUserManager());
-            Authorization.Instance.PermissionMode = Config.UserLoginResult.UserDetail.PermissionMode;
+
+            AuthService = new AuthService(db);
+            UserService = new UserService(db);
+            EditUserDetailAction = new EditUserDetailAction(UserService);
+
+            Authorization.Instance.PermissionMode = Config.LoginResult.UserDetail.PermissionMode;
         }
 
         public void OpenUserManager()
@@ -64,15 +67,6 @@ namespace ColorVision.Engine.Rbac
             new UserManagerWindow() { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
         }
 
-        public void Edit()
-        {
-            UserDetailEntity UserDetail = Config.UserLoginResult.UserDetail;
-            new PropertyEditorWindow(UserDetail) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-
-            UserDetail.UpdatedAt = DateTime.Now;
-            db.Updateable(UserDetail).ExecuteCommand();
-            Authorization.Instance.PermissionMode = UserDetail.PermissionMode;
-        }
 
 
         public List<UserEntity> GetUsers()
@@ -127,44 +121,6 @@ namespace ColorVision.Engine.Rbac
                 };
                 db.Insertable(adminUserRole).ExecuteCommand();
             }
-        }
-
-
-        public UserLoginResult LoginAndGetDetail(string userName, string password)
-        {
-            var user = db.Queryable<UserEntity>()
-                .Where(u => (u.Username == userName)
-                            && u.Password == password
-                            && u.IsEnable
-                            && (u.IsDelete == false || u.IsDelete == null))
-                .First();
-
-
-            if (user == null)
-                return null;
-
-            // 获取用户详细信息
-            var userDetail = db.Queryable<UserDetailEntity>().First(ud => ud.UserId == user.Id);
-            if (userDetail == null)
-            {
-                userDetail = new UserDetailEntity();
-                userDetail.UserId = user.Id;
-                userDetail.Id = db.Insertable(userDetail).ExecuteReturnIdentity();
-            }
-            // 获取用户角色列表
-            var roleIds = db.Queryable<UserRoleEntity>().Where(ur => ur.UserId == user.Id).Select(ur => ur.RoleId).ToList();
-            List<RoleEntity> roles = new List<RoleEntity>();
-            if (roleIds.Count > 0)
-            {
-                roles = db.Queryable<RoleEntity>().Where(r => roleIds.Contains(r.Id)).ToList();
-            }
-
-            return new UserLoginResult
-            {
-                User = user,
-                UserDetail = userDetail,
-                Roles = roles
-            };
         }
 
 

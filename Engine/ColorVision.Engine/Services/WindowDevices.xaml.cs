@@ -39,7 +39,7 @@ namespace ColorVision.Engine.Services
         {
             MQTTDevices = ServiceManager.GetInstance().LastGenControl ?? ServiceManager.GetInstance().DeviceServices;
             TreeView1.ItemsSource = MQTTDevices;
-            Grid1.DataContext = UserConfig.Instance;
+            Grid1.DataContext = RbacManagerConfig.Instance;
             ButtonOK.Focus();
             ServicesHelper.SelectAndFocusFirstNode(TreeView1);
         }

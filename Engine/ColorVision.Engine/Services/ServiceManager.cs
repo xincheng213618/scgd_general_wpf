@@ -32,7 +32,7 @@ namespace ColorVision.Engine.Services
         private static ServiceManager _instance;
         private static readonly object _locker = new();
         public static ServiceManager GetInstance() { lock (_locker) { return _instance ??= new ServiceManager(); } }
-        public static UserConfig UserConfig => UserConfig.Instance;
+        public static RbacManagerConfig UserConfig => RbacManagerConfig.Instance;
 
         public static SqlSugarClient Db => MySqlControl.GetInstance().DB;
 
