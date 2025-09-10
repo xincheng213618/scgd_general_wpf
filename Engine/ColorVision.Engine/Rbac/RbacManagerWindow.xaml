@@ -28,8 +28,8 @@
             </Grid.ColumnDefinitions>
             
             <StackPanel  Grid.Column="1" Margin="30" Orientation="Horizontal">
-                <hc:Gravatar Grid.Column="0" Id="{Binding UserModel.UserName}"/>
-                <TextBlock Margin="5" Text="{Binding UserModel.UserName}"/>
+                <hc:Gravatar Grid.Column="0" Id="{Binding Config.LoginResult.User.Username}"/>
+                <TextBlock Margin="5" Text="{Binding Config.LoginResult.User.Username}"/>
             </StackPanel>
         </Grid>
     </Grid>

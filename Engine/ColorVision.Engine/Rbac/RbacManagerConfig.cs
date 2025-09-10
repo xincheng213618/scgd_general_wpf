@@ -10,7 +10,8 @@ namespace ColorVision.Engine.Rbac
     {
         public static RbacManagerConfig Instance => ConfigService.Instance.GetRequiredService<RbacManagerConfig>();
 
-        public LoginResultDto LoginResult { get; set; } = new LoginResultDto();
+        public LoginResultDto LoginResult { get => _LoginResult; set { _LoginResult = value; OnPropertyChanged(); } }
+        private LoginResultDto _LoginResult = new LoginResultDto();
     }
 
 
