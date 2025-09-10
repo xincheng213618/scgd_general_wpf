@@ -2,7 +2,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.Engine.Rbac;
 using ColorVision.Solution;
 using ColorVision.UI.Extension;
 using Newtonsoft.Json;

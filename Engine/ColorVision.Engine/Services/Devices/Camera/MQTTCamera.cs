@@ -11,7 +11,6 @@ using CVCommCore;
 using MQTTMessageLib;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Windows;

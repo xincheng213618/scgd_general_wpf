@@ -1,15 +1,11 @@
 ﻿#pragma warning disable CS8602,CS8604
-using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Draw;
 using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Media3D;
-using static ColorVision.ImageEditor.Draw.SelectEditorVisual;
 
 namespace ColorVision.Engine.Templates.POI
 {

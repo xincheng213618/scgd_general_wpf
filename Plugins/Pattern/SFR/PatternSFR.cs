@@ -1,8 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using OpenCvSharp;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows.Controls;
 using System.Windows.Media;

@@ -2,12 +2,9 @@
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using log4net;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Windows;
 

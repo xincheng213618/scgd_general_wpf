@@ -1,6 +1,5 @@
 ﻿using ColorVision.Database;
 using ColorVision.UI.Authorizations;
-using log4net;
 using SqlSugar;
 using System;
 

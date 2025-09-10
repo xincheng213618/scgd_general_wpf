@@ -1,5 +1,4 @@
-﻿using Pattern;
-using ColorVision.Themes;
+﻿using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Languages;
 using System.Windows;

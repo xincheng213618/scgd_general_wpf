@@ -2,7 +2,6 @@
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using System;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.Rbac

@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS0414,CS8625
-using Gu.Wpf.Geometry;
 using System;
 using System.Linq;
 using System.Windows;

@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.MTF;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 

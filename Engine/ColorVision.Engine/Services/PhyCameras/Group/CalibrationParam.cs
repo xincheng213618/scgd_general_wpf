@@ -3,7 +3,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Rbac;
 using cvColorVision;
 using System;
 using System.Collections.Generic;

@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Rbac.Dtos;
 using ColorVision.UI;
-using ColorVision.UI.Authorizations;
 
 namespace ColorVision.Engine.Rbac
 {

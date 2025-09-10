@@ -1,8 +1,6 @@
 ﻿#pragma warning disable CS0414,CS8625
-using Gu.Wpf.Geometry;
 using System;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
