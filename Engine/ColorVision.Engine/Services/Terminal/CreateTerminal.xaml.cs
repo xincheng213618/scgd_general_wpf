@@ -78,7 +78,6 @@ namespace ColorVision.Engine.Services.Terminal
             sysResource.Code = CreateCode.Text;
             sysResource.Type = TerminalService.SysResourceModel.Type;
             sysResource.Pid = TerminalService.SysResourceModel.Id;
-            sysResource.TenantId = RbacManagerConfig.Instance.TenantId;
 
 
             SysResourceModel sysDevModel = null;

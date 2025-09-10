@@ -58,7 +58,7 @@ namespace ColorVision.Engine.Templates
 
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                var models = SysDictionaryModMasterDao.Instance.GetAllByParam( new Dictionary<string, object>() { {"tenant_id", RbacManagerConfig.Instance.TenantId },{"mod_type",7 } });
+                var models = SysDictionaryModMasterDao.Instance.GetAllByParam( new Dictionary<string, object>() { {"tenant_id", 0 },{"mod_type",7 } });
                 foreach (var model in models)
                 {
                     var list = SysDictionaryModDetailDao.Instance.GetAllByPid(model.Id);

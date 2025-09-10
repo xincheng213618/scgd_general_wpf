@@ -11,11 +11,6 @@ namespace ColorVision.Engine.Rbac
         public static RbacManagerConfig Instance => ConfigService.Instance.GetRequiredService<RbacManagerConfig>();
 
         public LoginResultDto LoginResult { get; set; } = new LoginResultDto();
-        /// <summary>
-        /// 租户ID
-        /// </summary>
-        public int TenantId { get => _TenantId; set { _TenantId = value; OnPropertyChanged(); } }
-        private int _TenantId;
     }
 
 

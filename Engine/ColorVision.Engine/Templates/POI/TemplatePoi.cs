@@ -35,7 +35,7 @@ namespace ColorVision.Engine.Templates.POI
             var backup = Params.ToDictionary(tp => tp.Id, tp => tp);
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                List<PoiMasterModel> poiMasters = PoiMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", RbacManagerConfig.Instance.TenantId }, { "is_delete", 0 } });
+                List<PoiMasterModel> poiMasters = PoiMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", 0}, { "is_delete", 0 } });
                 foreach (var dbModel in poiMasters)
                 {
                     var poiparam = new PoiParam(dbModel);
@@ -118,7 +118,7 @@ namespace ColorVision.Engine.Templates.POI
                 }
                 else
                 {
-                    PoiMasterModel poiMasterModel = new PoiMasterModel() { Name =templateName, TenantId = RbacManagerConfig.Instance.TenantId };
+                    PoiMasterModel poiMasterModel = new PoiMasterModel() { Name =templateName, TenantId = 0};
                     PoiMasterDao.Instance.Save(poiMasterModel);
 
                     int pkId = poiMasterModel.Id;

@@ -59,6 +59,6 @@ namespace ColorVision.Engine
     public class SysDictionaryModMasterDao : BaseTableDao<SysDictionaryModModel>
     {
         public static SysDictionaryModMasterDao Instance { get; set; } = new SysDictionaryModMasterDao();
-        public SysDictionaryModModel? GetByCode(string code, int tenantId) => Db.Queryable<SysDictionaryModModel>().Where(x => x.Code == code && x.IsDelete == false && x.TenantId == tenantId).First();
+        public SysDictionaryModModel? GetByCode(string code) => Db.Queryable<SysDictionaryModModel>().Where(x => x.Code == code && x.IsDelete == false).First();
     }
 }

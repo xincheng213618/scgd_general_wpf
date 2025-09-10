@@ -35,7 +35,7 @@ namespace ColorVision.Engine
         public bool IsDelete { get; set; }
 
         [SugarColumn(ColumnName = "tenant_id")]
-        public int TenantId { get; set; }
+        public int TenantId { get; set; } = 0;
 
         [SugarColumn(ColumnName = "remark", ColumnDataType = "text", IsNullable = true)]
         public string? Remark { get; set; }

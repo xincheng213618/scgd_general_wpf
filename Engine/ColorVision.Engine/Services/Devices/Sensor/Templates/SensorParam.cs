@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             Code = code;
             try
             {
-                var model = SysDictionaryModMasterDao.Instance.GetByCode(code, 0);
+                var model = SysDictionaryModMasterDao.Instance.GetByCode(code);
                 if (model != null && model.Id>=0)
                 {
                     TemplateDicId = model.Id;
@@ -68,7 +68,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         {
             SensorParam? AddParamMode()
             {
-                ModMasterModel modMaster = new ModMasterModel() { Pid = TemplateDicId, Name =templateName, TenantId = RbacManagerConfig.Instance.TenantId };
+                ModMasterModel modMaster = new ModMasterModel() { Pid = TemplateDicId, Name =templateName, TenantId = 0};
                 int id = Db.Insertable(modMaster).ExecuteReturnIdentity();
                 modMaster.Id = id;
 

@@ -18,8 +18,8 @@ namespace ColorVision.Engine.Templates.Validate
         public DateTime? CreateDate { get; set; } = DateTime.Now;
         [SugarColumn(ColumnName ="remark")]
         public string Remark { get; set; }
-        [SugarColumn(ColumnName ="tenant_id")]
-        public int TenantId { get; set; }
+        [SugarColumn(ColumnName = "tenant_id")]
+        public int TenantId { get; set; } = 0;
     }
 
 
