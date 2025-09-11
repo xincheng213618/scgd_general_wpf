@@ -424,8 +424,8 @@ namespace ColorVision.ImageEditor
                                 if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                                 {
                                     var image = hImageProcessed.ToWriteableBitmap();
-                                    OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                    hImageProcessed.pData = IntPtr.Zero;
+                                    hImageProcessed.Dispose();
+
                                     FunctionImage = image;
                                 }
                                 if (Pseudo.IsChecked == true)
@@ -513,8 +513,7 @@ namespace ColorVision.ImageEditor
                         {
                             var image = hImageProcessed.ToWriteableBitmap();
 
-                            OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                            hImageProcessed.pData = IntPtr.Zero;
+                            hImageProcessed.Dispose();
                             FunctionImage = image;
                         }
                         ImageShow.Source = FunctionImage;
@@ -556,8 +555,7 @@ namespace ColorVision.ImageEditor
                     {
                         var image = hImageProcessed.ToWriteableBitmap();
 
-                        OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                        hImageProcessed.pData = IntPtr.Zero;
+                        hImageProcessed.Dispose();
                         FunctionImage = image;
                     }
                     ImageShow.Source = FunctionImage;
@@ -583,8 +581,8 @@ namespace ColorVision.ImageEditor
                             {
                                 var image = hImageProcessed.ToWriteableBitmap();
 
-                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                hImageProcessed.pData = IntPtr.Zero;
+                                hImageProcessed.Dispose();
+
                                 FunctionImage = image;
                             }
                             ImageShow.Source = FunctionImage;
@@ -601,9 +599,8 @@ namespace ColorVision.ImageEditor
                             if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                             {
                                 var image = hImageProcessed.ToWriteableBitmap();
+                                hImageProcessed.Dispose();
 
-                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                hImageProcessed.pData = IntPtr.Zero;
                                 FunctionImage = image;
                             }
                             ImageShow.Source = FunctionImage;
@@ -634,8 +631,8 @@ namespace ColorVision.ImageEditor
                     {
                         var image = hImageProcessed.ToWriteableBitmap();
 
-                        OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                        hImageProcessed.pData = IntPtr.Zero;
+                        hImageProcessed.Dispose();
+
                         FunctionImage = image;
                     }
                     ImageShow.Source = FunctionImage;
@@ -662,8 +659,8 @@ namespace ColorVision.ImageEditor
                 {
                     var image = hImageProcessed.ToWriteableBitmap();
 
-                    OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                    hImageProcessed.pData = IntPtr.Zero;
+                    hImageProcessed.Dispose();
+
                     FunctionImage = image;
                 }
                 ImageShow.Source = FunctionImage;
@@ -702,8 +699,8 @@ namespace ColorVision.ImageEditor
                     if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                     {
                         var image = hImageProcessed.ToWriteableBitmap();
-                        OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                        hImageProcessed.pData = IntPtr.Zero;
+                        hImageProcessed.Dispose();
+
                         FunctionImage = image;
                     }
                     ImageShow.Source = FunctionImage;
@@ -772,8 +769,8 @@ namespace ColorVision.ImageEditor
                     if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                     {
                         var image = hImageProcessed.ToWriteableBitmap();
-                        OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                        hImageProcessed.pData = IntPtr.Zero;
+                        hImageProcessed.Dispose();
+
                         FunctionImage = image;
                     }
                     ImageShow.Source = FunctionImage;
@@ -802,8 +799,8 @@ namespace ColorVision.ImageEditor
                             if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                             {
                                 var image = hImageProcessed.ToWriteableBitmap();
-                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                hImageProcessed.pData = IntPtr.Zero;
+                                hImageProcessed.Dispose();
+
                                 FunctionImage = image;
                             }
                             ImageShow.Source = FunctionImage;
@@ -844,8 +841,8 @@ namespace ColorVision.ImageEditor
                             if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                             {
                                 var image = hImageProcessed.ToWriteableBitmap();
-                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                hImageProcessed.pData = IntPtr.Zero;
+                                hImageProcessed.Dispose();
+
                                 FunctionImage = image;
                             }
                             ImageShow.Source = FunctionImage;
@@ -879,8 +876,8 @@ namespace ColorVision.ImageEditor
                             if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                             {
                                 var image = hImageProcessed.ToWriteableBitmap();
-                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                hImageProcessed.pData = IntPtr.Zero;
+                                hImageProcessed.Dispose();
+
                                 FunctionImage = image;
                             }
                             ImageShow.Source = FunctionImage;

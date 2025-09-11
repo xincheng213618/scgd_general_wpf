@@ -77,10 +77,6 @@ namespace ColorVision
 
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void M_FreeHImageData(IntPtr data);
-
-
-        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern void M_SetHImageData(IntPtr data);
         public enum EvaFunc
         {

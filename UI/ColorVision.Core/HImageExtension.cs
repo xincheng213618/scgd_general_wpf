@@ -86,9 +86,7 @@ namespace ColorVision
             {
                 writeableBitmap.Unlock();
             }
-
-            OpenCVMediaHelper.M_FreeHImageData(hImage.pData);
-            hImage.pData = IntPtr.Zero;
+            hImage.Dispose();
             return true;
         }
 

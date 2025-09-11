@@ -1478,8 +1478,7 @@ namespace ColorVision.Engine.Templates.POI
                                 if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
                                 {
                                     var image = hImageProcessed.ToWriteableBitmap();
-                                    OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                    hImageProcessed.pData = nint.Zero;
+                                    hImageProcessed.Dispose();
                                     PseudoImage = image;
                                 }
                                 if (Pseudo.IsChecked == true)

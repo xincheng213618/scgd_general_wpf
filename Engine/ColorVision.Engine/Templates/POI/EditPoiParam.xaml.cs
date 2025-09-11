@@ -923,8 +923,8 @@ namespace ColorVision.Engine.Templates.POI
                                         {
                                             var image = hImageProcessed.ToWriteableBitmap();
 
-                                            OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                            hImageProcessed.pData = IntPtr.Zero;
+                                            hImageProcessed.Dispose();
+
                                             ImageShow.Source = image;
                                         }
                                     });
@@ -939,8 +939,8 @@ namespace ColorVision.Engine.Templates.POI
                                         if (ret == 0)
                                         {
                                             var image = hImageProcessed.ToWriteableBitmap();
-                                            OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                            hImageProcessed.pData = IntPtr.Zero;
+                                            hImageProcessed.Dispose();
+
                                             ImageShow.Source = image;
                                             WaitControl.Visibility = Visibility.Collapsed;
                                         }
@@ -1075,8 +1075,8 @@ namespace ColorVision.Engine.Templates.POI
                                         {
                                             var image = hImageProcessed.ToWriteableBitmap();
 
-                                            OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                            hImageProcessed.pData = IntPtr.Zero;
+                                            hImageProcessed.Dispose();
+
                                             ImageShow.Source = image;
 
                                         }
@@ -1092,8 +1092,8 @@ namespace ColorVision.Engine.Templates.POI
                                         if (!HImageExtension.UpdateWriteableBitmap(ImageShow.Source, hImageProcessed))
                                         {
                                             var image = hImageProcessed.ToWriteableBitmap();
-                                            OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                            hImageProcessed.pData = IntPtr.Zero;
+                                            hImageProcessed.Dispose();
+
                                             ImageShow.Source = image;
                                         }
                                     });
@@ -1772,8 +1772,7 @@ namespace ColorVision.Engine.Templates.POI
                                 if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                                 {
                                     var image = hImageProcessed.ToWriteableBitmap();
-                                    OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                    hImageProcessed.pData = nint.Zero;
+                                    hImageProcessed.Dispose();
                                     FunctionImage = image;
                                 }
                                 if (Pseudo.IsChecked == true)

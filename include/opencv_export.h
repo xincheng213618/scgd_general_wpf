@@ -12,8 +12,6 @@
 #endif
 
 
-extern "C" COLORVISIONCORE_API void FreeHImageData(unsigned char* data);
-
 extern "C" COLORVISIONCORE_API int ReadGhostImage(const char* FilePath, int singleLedPixelNum, int* LED_pixel_X, int* LED_pixel_Y, int singleGhostPixelNum, int* Ghost_pixel_X, int* Ghost_pixel_Y, HImage * outImage);
 extern "C" COLORVISIONCORE_API int GhostImage(HImage img, HImage* outImage, int singleLedPixelNum, int* LED_pixel_X, int* LED_pixel_Y, int singleGhostPixelNum, int* Ghost_pixel_X, int* Ghost_pixel_Y);
 
@@ -28,10 +26,6 @@ extern "C" COLORVISIONCORE_API int CM_AutoLevelsAdjust(HImage img, HImage* outIm
 extern "C" COLORVISIONCORE_API int CM_AutomaticColorAdjustment(HImage img, HImage* outImage);
 
 extern "C" COLORVISIONCORE_API int CM_AutomaticToneAdjustment(HImage img, HImage* outImage);
-
-extern "C" COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* outImage);
-
-extern "C" COLORVISIONCORE_API int CM_ExtractChannel(HImage img, HImage* outImage ,int channel);
 
 
 

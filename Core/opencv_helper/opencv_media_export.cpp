@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "Windows.h"
 #include "opencv_media_export.h"
 #include "algorithm.h"
 #include <opencv2/opencv.hpp>
@@ -6,47 +7,16 @@
 #include <string>
 #include <locale>
 #include <codecvt>
+#include <combaseapi.h>
 
 using json = nlohmann::json;
 
-std::vector<std::pair<uintptr_t, cv::Mat>> MediaList;
 
-std::mutex mediaListMutex; // 定义一个互斥锁
-
-static void MatToHImage(cv::Mat& mat, HImage* outImage)
+COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data)
 {
-	std::lock_guard<std::mutex> lock(mediaListMutex); // 加锁
 
-
-	outImage->rows = mat.rows;
-	outImage->cols = mat.cols;
-	outImage->channels = mat.channels();
-	outImage->pData = mat.data;
-	int bitsPerElement = 0;
-
-	switch (mat.depth()) {
-	case CV_8U:
-	case CV_8S:
-		bitsPerElement = 8;
-		break;
-	case CV_16U:
-	case CV_16S:
-		bitsPerElement = 16;
-		break;
-	case CV_32S:
-	case CV_32F:
-		bitsPerElement = 32;
-		break;
-	case CV_64F:
-		bitsPerElement = 64;
-		break;
-	default:
-		break;
-	}
-	outImage->depth = bitsPerElement; // 设置每像素位数
-	outImage->stride = (int)mat.step; // 设置图像的步长
-	MediaList.push_back(std::make_pair(reinterpret_cast<uintptr_t>(outImage->pData), mat));
 }
+
 
 COLORVISIONCORE_API double M_CalArtculation(HImage img, EvaFunc type) {
 
@@ -81,23 +51,6 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, EvaFunc type) {
 	return value;
 }
 
-COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data)
-{
-	uintptr_t address = reinterpret_cast<uintptr_t>(data);
-	std::lock_guard<std::mutex> lock(mediaListMutex); // 加锁
-
-	std::vector<std::pair<uintptr_t, cv::Mat>>::iterator it = std::find_if(
-		MediaList.begin(), MediaList.end(),
-		[address](const std::pair<uintptr_t, cv::Mat>& pair) {
-			return pair.first == address;
-		});
-
-	if (it != MediaList.end()) {
-		it->second.release();
-		// 从缓存中移除
-		MediaList.erase(it);
-	}
-}
 
 
 COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types, int channel)
@@ -121,8 +74,7 @@ COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, ui
 	}
 	pseudoColor(out, min, max, types);
 	///这里不分配的话，局部内存会在运行结束之后清空
-	MatToHImage(out, outImage);
-	return 0;
+	return MatToHImage(out, outImage);
 }
 
 COLORVISIONCORE_API int M_AutoLevelsAdjust(HImage img, HImage* outImage)
@@ -575,5 +527,55 @@ COLORVISIONCORE_API int M_RemoveMoire(HImage img, HImage* outImage)
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 	cv::Mat dst = removeMoire(mat);
 	MatToHImage(dst, outImage);
+	return 0;
+}
+
+
+COLORVISIONCORE_API int M_Fusion(const char* fusionjson, HImage* outImage)
+{
+	std::chrono::steady_clock::time_point start, end;
+	std::chrono::microseconds duration;
+	start = std::chrono::high_resolution_clock::now();
+
+	std::string sss = fusionjson;;
+	// 从字符串解析 JSON 对象
+	json j = json::parse(sss);
+
+	// 检查 JSON 对象是否是数组
+	if (!j.is_array()) {
+		// 错误处理
+		return -1;
+	}
+
+	std::vector<std::string> files = j.get<std::vector<std::string>>();
+	if (files.empty()) {
+		std::cerr << "Error: No files provided in JSON array." << std::endl;
+		return -1;
+	}
+	std::vector<cv::Mat> imgs(files.size());
+	std::vector<std::thread> threads;
+	std::vector<bool> read_success(files.size(), false); // To track success of each thread
+
+	for (size_t i = 0; i < files.size(); ++i) {
+		threads.emplace_back([i, &files, &imgs, &read_success]() {
+			imgs[i] = cv::imread(files[i]);
+			if (!imgs[i].empty()) {
+				read_success[i] = true;
+			}
+			});
+	}
+
+	// Wait for all reading threads to complete
+	for (auto& t : threads) {
+		t.join();
+	}
+
+	cv::Mat out = fusion(imgs, 2);
+	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+	std::cout << "fusion执行时间: " << duration.count() / 1000.0 << " 毫秒" << std::endl;
+
+	MatToHImage(out, outImage);
+	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+	std::cout << "MatToHImage: " << duration.count() / 1000.0 << " 毫秒" << std::endl;
 	return 0;
 }
