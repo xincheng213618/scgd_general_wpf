@@ -58,16 +58,28 @@ COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* outImage)
 		// 错误处理
 		return -1;
 	}
-	std::vector<cv::Mat> imgs;
-	std::vector<std::string> files = j.get<std::vector<std::string>>();
 
-	for (const auto& file : files) {
-		cv::Mat img = cv::imread(file);
-		if (img.empty()) {
-			// 错误处理
-			return -1;
-		}
-		imgs.push_back(img);
+	std::vector<std::string> files = j.get<std::vector<std::string>>();
+	if (files.empty()) {
+		std::cerr << "Error: No files provided in JSON array." << std::endl;
+		return -1;
+	}
+	std::vector<cv::Mat> imgs(files.size());
+	std::vector<std::thread> threads;
+	std::vector<bool> read_success(files.size(), false); // To track success of each thread
+
+	for (size_t i = 0; i < files.size(); ++i) {
+		threads.emplace_back([i, &files, &imgs, &read_success]() {
+			imgs[i] = cv::imread(files[i]);
+			if (!imgs[i].empty()) {
+				read_success[i] = true;
+			}
+			});
+	}
+
+	// Wait for all reading threads to complete
+	for (auto& t : threads) {
+		t.join();
 	}
 
 	cv::Mat out = Fusion(imgs, 2);
