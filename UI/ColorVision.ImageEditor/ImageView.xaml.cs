@@ -641,34 +641,6 @@ namespace ColorVision.ImageEditor
             ;
         }
 
-        private void CM_AutomaticToneAdjustment(object sender, RoutedEventArgs e)
-        {
-            if (sender is not ToggleButton toggleButton) return;
-            if (toggleButton.IsChecked == false)
-            {
-                ImageShow.Source = ViewBitmapSource;
-                FunctionImage = null;
-                return;
-            }
-            if (HImageCache == null) return;
-
-            int ret = OpenCVHelper.CM_AutomaticToneAdjustment((HImage)HImageCache, out HImage hImageProcessed);
-            if (ret == 0)
-            {
-                if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
-                {
-                    var image = hImageProcessed.ToWriteableBitmap();
-
-                    hImageProcessed.Dispose();
-
-                    FunctionImage = image;
-                }
-                ImageShow.Source = FunctionImage;
-            }
-        }
-
-
-
         private void Button_3D_Click(object sender, RoutedEventArgs e)
         {
             if (ImageShow.Source is WriteableBitmap writeableBitmap)

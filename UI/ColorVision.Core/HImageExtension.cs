@@ -39,7 +39,6 @@ namespace ColorVision
         {
             if (imageSource is not WriteableBitmap writeableBitmap) return false;
 
-
             // Validate format, channel, and depth consistency
             var formatInfoMap = new Dictionary<PixelFormat, (int channels, int depth)>
             {
