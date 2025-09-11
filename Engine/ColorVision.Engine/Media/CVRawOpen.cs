@@ -105,6 +105,7 @@ namespace ColorVision.Engine.Media
 
             if (File.Exists(ViewAlgorithmConfig.Instance.ShowDateFilePath))
             {
+                Points.Clear();
                 log.Info("ShowDateFilePath:" + ViewAlgorithmConfig.Instance.ShowDateFilePath);
                 string[] lines = File.ReadAllLines(ViewAlgorithmConfig.Instance.ShowDateFilePath);
                 string[] dates = lines[0].Split(',');
