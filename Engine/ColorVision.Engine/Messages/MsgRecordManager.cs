@@ -3,13 +3,11 @@ using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.UI;
 using log4net;
-using NPOI.SS.Formula.Functions;
 using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Engine.Messages
 {

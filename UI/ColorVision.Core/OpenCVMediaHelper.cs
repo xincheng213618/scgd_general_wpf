@@ -77,10 +77,6 @@ namespace ColorVision
 
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void M_FreeHImageData(IntPtr data);
-
-
-        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern void M_SetHImageData(IntPtr data);
         public enum EvaFunc
         {
@@ -155,7 +151,10 @@ namespace ColorVision
 
         [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int M_StitchImages(string config, out HImage hImage);
-       
+
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        public static extern int M_Fusion(string fusionjson, out HImage hImage);
 
     }
 }

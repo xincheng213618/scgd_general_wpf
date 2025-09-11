@@ -91,6 +91,7 @@ namespace ProjectARVR
             InitializeComponent();
             this.ApplyCaption(false);
             Config.SetWindow(this);
+            this.Title += "-" + Assembly.GetAssembly(typeof(ARVRWindow))?.GetName().Version?.ToString() ?? "";
         }
 
         public ARVRTestType CurrentTestType = ARVRTestType.None;
@@ -144,10 +145,11 @@ namespace ProjectARVR
 
             try
             {
-                if (CurrentTestType == ARVRTestType.White2)
+                if (TestType == ARVRTestType.White2)
                 {
                     ProjectARVRConfig.Instance.StepIndex = 1;
                     FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("WhiteFOV")).Value;
+                    CurrentTestType = TestType;
                     RunTemplate();
                 }
                 if (TestType == ARVRTestType.White)
@@ -157,10 +159,11 @@ namespace ProjectARVR
                     CurrentTestType = TestType;
                     RunTemplate();
                 }
-                if (CurrentTestType == ARVRTestType.White1)
+                if (TestType == ARVRTestType.White1)
                 {
                     ProjectARVRConfig.Instance.StepIndex = 3;
                     FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White_calibrate")).Value;
+                    CurrentTestType = TestType;
                     RunTemplate();
                 }
                 if (TestType == ARVRTestType.Black)
@@ -234,6 +237,7 @@ namespace ProjectARVR
             STNodeEditorMain = new STNodeEditor();
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             flowEngine.AttachNodeEditor(STNodeEditorMain);
+            flowControl = new FlowControl(MQTTControl.GetInstance(), flowEngine);
 
             string Name = "Default";
             if (RecipeManager.RecipeConfigs.TryGetValue(Name, out ARVRRecipeConfig recipeConfig))
@@ -275,7 +279,6 @@ namespace ProjectARVR
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
-
         }
 
         public void Delete()
@@ -417,7 +420,6 @@ namespace ProjectARVR
             }
             CurrentFlowResult.FlowStatus = FlowStatus.Ready;
 
-            flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
             stopwatch.Reset();
             stopwatch.Start();

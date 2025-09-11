@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Archive.Dao
 {
 
     [DisplayName("归档配置"),SugarTable("t_scgd_sys_config_archived")]
-    public class ConfigArchivedModel : ViewModelBase, IPKModel, IInitTables
+    public class ConfigArchivedModel : ViewModelBase, IEntity, IInitTables
     {
         [SugarColumn(ColumnName ="id"), Browsable(false)]
         public int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }
@@ -65,7 +65,7 @@ namespace ColorVision.Engine.Archive.Dao
 
 
     [DisplayName("数据库配置"),SugarTable("t_scgd_sys_globle_cfg")]
-    public class GlobleCfgdModel : ViewModelBase, IPKModel
+    public class GlobleCfgdModel : ViewModelBase, IEntity
     {
         [SugarColumn(ColumnName ="id"), Browsable(false)]
         public int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }

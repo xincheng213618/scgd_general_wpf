@@ -1,5 +1,4 @@
 ﻿using ColorVision.Database;
-using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using System.Collections.Generic;
@@ -57,7 +56,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             CalibrationParamModes.Clear();
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                List<ModMasterModel> smus = MySqlControl.GetInstance().DB.Queryable<ModMasterModel>().Where(x => x.Pid == 7).Where(x => x.ResourceId == resourceId).Where(x => x.TenantId == UserConfig.Instance.TenantId).Where(x => x.IsDelete == false).ToList();
+                List<ModMasterModel> smus = MySqlControl.GetInstance().DB.Queryable<ModMasterModel>().Where(x => x.Pid == 7).Where(x => x.ResourceId == resourceId).Where(x => x.TenantId == 0).Where(x => x.IsDelete == false).ToList();
                 foreach (var dbModel in smus)
                 {
                     List<ModDetailModel> smuDetails = MySqlControl.GetInstance().DB.Queryable<ModDetailModel>().Where(it => it.Pid == dbModel.Id).ToList();

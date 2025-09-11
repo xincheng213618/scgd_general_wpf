@@ -39,7 +39,6 @@ namespace ColorVision
         {
             if (imageSource is not WriteableBitmap writeableBitmap) return false;
 
-
             // Validate format, channel, and depth consistency
             var formatInfoMap = new Dictionary<PixelFormat, (int channels, int depth)>
             {
@@ -86,9 +85,7 @@ namespace ColorVision
             {
                 writeableBitmap.Unlock();
             }
-
-            OpenCVMediaHelper.M_FreeHImageData(hImage.pData);
-            hImage.pData = IntPtr.Zero;
+            hImage.Dispose();
             return true;
         }
 

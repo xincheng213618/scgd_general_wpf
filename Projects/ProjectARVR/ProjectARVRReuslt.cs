@@ -68,8 +68,8 @@ namespace ProjectARVR
         /// <summary>
         /// 白画面
         /// </summary>
-        White,
         White2,
+        White,
         White1,
         /// <summary>
         /// 黑画面
@@ -114,7 +114,7 @@ namespace ProjectARVR
     }
 
     [SugarTable("ARVRReuslt")]
-    public class ProjectARVRReuslt : VPKModel
+    public class ProjectARVRReuslt : ViewEntity 
     {
         [SqlSugar.SugarColumn(IsIgnore = true)]
         public ContextMenu ContextMenu { get; set; }

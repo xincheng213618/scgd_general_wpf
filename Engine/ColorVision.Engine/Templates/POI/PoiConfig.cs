@@ -11,7 +11,6 @@ using ColorVision.UI;
 using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Windows;

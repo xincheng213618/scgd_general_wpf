@@ -54,103 +54,94 @@
                 <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="未授权或者许可证过期" Command="{Binding EditCommand}"/>
                 <TextBlock x:Name="TextBlockOffLine" Text="OffLine状态"  HorizontalAlignment="Center"/>
                 <StackPanel x:Name="StackPanelContent">
-                    <DockPanel Margin="0,3">
+                    <DockPanel Margin="0,0,0,3" >
                         <CheckBox IsChecked="{Binding Config.IsNet}" VerticalAlignment="Center" Content="网络" DockPanel.Dock="Right" IsEnabled="False"/>
                         <Button x:Name="ButtonSourceMeter1" Margin="10,0" DockPanel.Dock="Right" Content="打开"  Click="ButtonSourceMeter1_Click"/>
                         <TextBox x:Name="TextSourceMeterIP" Text="{Binding Config.Id}" BorderThickness="0,0,0,1" IsEnabled="False" />
                     </DockPanel>
 
-                    <GroupBox Header="源选择" Margin="0,3">
-                        <DockPanel Margin="2" >
-                            <RadioButton Content="电压" Width="100" IsChecked="{Binding Config.IsSourceV}" />
-                            <RadioButton Content="电流" IsChecked="{Binding Config.IsSourceV,Converter={StaticResource inverseBooleanConverter}}"/>
-                        </DockPanel>
-                    </GroupBox>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,3" >
+                        <RadioButton Content="电压" IsChecked="{Binding Config.IsSourceV}" />
+                        <RadioButton Content="电流" IsChecked="{Binding Config.IsSourceV,Converter={StaticResource inverseBooleanConverter}}"/>
+                    </StackPanel>
 
-                    <GroupBox Header="操作" Margin="0,3">
-                        <StackPanel>
-                            <UniformGrid Columns="2" Margin="2">
-                                <DockPanel Margin="2">
-                                    <TextBlock Text="源值" Margin="0,0,5,0" />
-                                    <TextBlock DockPanel.Dock="Right"  Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="V"/>
-                                    <TextBlock DockPanel.Dock="Right"  Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="mA"/>
-                                    <TextBox Text="{Binding Config.MeasureVal}" BorderThickness="0,0,0,1" />
-                                </DockPanel>
-                                <DockPanel Margin="10,2,2,2" >
-                                    <TextBlock Text="限值" Margin="0,0,5,0" />
-                                    <TextBlock DockPanel.Dock="Right"  Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="V"/>
-                                    <TextBlock DockPanel.Dock="Right"  Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="mA"/>
-                                    <TextBox Text="{Binding Config.LmtVal}" BorderThickness="0,0,0,1"/>
-                                </DockPanel>
-                            </UniformGrid>
-
-
-                            <UniformGrid  Columns="3" Margin="2">
-                                <Button Content="点亮" Click="MeasureData_Click" Margin="2"/>
-                                <Button Content="设置" Click="StepMeasureData_Click" Margin="2"/>
-                                <Button Content="熄灭" Click="MeasureDataClose_Click" Margin="2"/>
-                            </UniformGrid>
-                            <UniformGrid Columns="2" Margin="2">
-                                <DockPanel Margin="2">
-                                    <TextBlock  Text="电压" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                                    <TextBlock  DockPanel.Dock="Right" Text="V" Width="30" Block.TextAlignment="Center"/>
-                                    <TextBox x:Name="TextSourceMeterV" Text="{Binding Config.V, StringFormat={}{0:F4}}" BorderThickness="0,0,0,1" IsEnabled="False" />
-                                </DockPanel>
-                                <DockPanel Margin="2">
-                                    <TextBlock  Text="电流" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                                    <TextBlock  DockPanel.Dock="Right" Text="mA" Width="30" Block.TextAlignment="Center"/>
-                                    <TextBox x:Name="TextSourceMeterI" Text="{Binding Config.I, StringFormat={}{0:F4}}" BorderThickness="0,0,0,1" IsEnabled="False" />
-                                </DockPanel>
-                            </UniformGrid>
-                        </StackPanel>
-                    </GroupBox>
-
-
-                    <GroupBox Margin="0,3" Header="扫描" >
-                        <StackPanel  x:Name="StackPanelVITemplate">
-                            <UniformGrid Columns="2" Margin="2">
-                                <DockPanel Margin="2" >
-                                    <TextBlock Text="起始" />
-                                    <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"   Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="V"/>
-                                    <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"   Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="mA"/>
-                                    <TextBox Text="{Binding  Config.StartMeasureVal}"  BorderThickness="0,0,0,1"/>
-                                </DockPanel>
-                                <DockPanel Margin="2">
-                                    <TextBlock Text="结束" />
-                                    <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"  Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="V"/>
-                                    <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"  Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="mA"/>
-                                    <TextBox Text="{Binding  Config.StopMeasureVal}" BorderThickness="0,0,0,1"/>
-                                </DockPanel>
-                            </UniformGrid>
-                            <UniformGrid Columns="2" Margin="2">
-                                <DockPanel Margin="2">
-                                    <TextBlock Text="点数"/>
-                                    <TextBlock DockPanel.Dock="Right" Width="30"   Text=""/>
-                                    <TextBox Text="{Binding Config.Number}" BorderThickness="0,0,0,1"/>
-                                </DockPanel>
-                                <DockPanel Margin="2">
-                                    <TextBlock Text="限值"/>
-                                    <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"   Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="V"/>
-                                    <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"  Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="mA"/>
-                                    <TextBox Text="{Binding Config.LimitVal}" BorderThickness="0,0,0,1"/>
-                                </DockPanel>
-                            </UniformGrid>
-                            <UniformGrid Columns="1">
-                                <Button Content="扫描" Click="VIScan_Click" Margin="2" />
-                            </UniformGrid>
-
-                            <DockPanel Margin="2">
-                                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left" DockPanel.Dock="Right">
-                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="SMUParam" Click="MenuItem_Template"/>
-                                </Grid>
-                                <TextBlock Text="模板：" VerticalAlignment="Center" Width="53"/>
-                                <ComboBox  x:Name="ComboxVITemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  Margin="0,0,0,0"/>
-
+                    <StackPanel  Margin="0,0,0,3">
+                        <UniformGrid Columns="2"  Margin="0,0,0,3">
+                            <DockPanel >
+                                <TextBlock Text="源值" Margin="0,0,5,0" />
+                                <TextBlock DockPanel.Dock="Right"  Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="V"/>
+                                <TextBlock DockPanel.Dock="Right"  Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="mA"/>
+                                <TextBox Text="{Binding Config.MeasureVal}" BorderThickness="0,0,0,1" />
                             </DockPanel>
-                        </StackPanel>
+                            <DockPanel >
+                                <TextBlock Text="限值" Margin="0,0,5,0" />
+                                <TextBlock DockPanel.Dock="Right"  Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="V"/>
+                                <TextBlock DockPanel.Dock="Right"  Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="mA"/>
+                                <TextBox Text="{Binding Config.LmtVal}" BorderThickness="0,0,0,1"/>
+                            </DockPanel>
+                        </UniformGrid>
 
-                    </GroupBox>
+
+                        <UniformGrid  Columns="3"  Margin="0,0,0,3">
+                            <Button Content="点亮" Click="MeasureData_Click"/>
+                            <Button Content="设置" Click="StepMeasureData_Click"/>
+                            <Button Content="熄灭" Click="MeasureDataClose_Click" />
+                        </UniformGrid>
+                        <UniformGrid Columns="2"  Margin="0,0,0,3">
+                            <DockPanel >
+                                <TextBlock  Text="电压" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                <TextBlock  DockPanel.Dock="Right" Text="V" Width="30" Block.TextAlignment="Center"/>
+                                <TextBox x:Name="TextSourceMeterV" Text="{Binding Config.V, StringFormat={}{0:F4}}" BorderThickness="0,0,0,1" IsEnabled="False" />
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBlock  Text="电流" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                <TextBlock  DockPanel.Dock="Right" Text="mA" Width="30" Block.TextAlignment="Center"/>
+                                <TextBox x:Name="TextSourceMeterI" Text="{Binding Config.I, StringFormat={}{0:F4}}" BorderThickness="0,0,0,1" IsEnabled="False" />
+                            </DockPanel>
+                        </UniformGrid>
+                    </StackPanel>
+
+
+                    <StackPanel  x:Name="StackPanelVITemplate">
+                        <UniformGrid Columns="2"  Margin="0,0,0,3">
+                            <DockPanel  >
+                                <TextBlock Text="起始" />
+                                <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"   Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="V"/>
+                                <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"   Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="mA"/>
+                                <TextBox Text="{Binding  Config.StartMeasureVal}"  BorderThickness="0,0,0,1"/>
+                            </DockPanel>
+                            <DockPanel >
+                                <TextBlock Text="结束" />
+                                <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"  Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="V"/>
+                                <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"  Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="mA"/>
+                                <TextBox Text="{Binding  Config.StopMeasureVal}" BorderThickness="0,0,0,1"/>
+                            </DockPanel>
+                        </UniformGrid>
+                        <UniformGrid Columns="2" >
+                            <DockPanel>
+                                <TextBlock Text="点数"/>
+                                <TextBlock DockPanel.Dock="Right" Width="30"   Text=""/>
+                                <TextBox Text="{Binding Config.Number}" BorderThickness="0,0,0,1"/>
+                            </DockPanel>
+                            <DockPanel >
+                                <TextBlock Text="限值"/>
+                                <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"   Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="V"/>
+                                <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"  Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="mA"/>
+                                <TextBox Text="{Binding Config.LimitVal}" BorderThickness="0,0,0,1"/>
+                            </DockPanel>
+                        </UniformGrid>
+                        <Button Content="扫描" Click="VIScan_Click" Margin="2" />
+
+                        <DockPanel>
+                            <Grid Width="20" Margin="5,0" HorizontalAlignment="Left" DockPanel.Dock="Right">
+                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="SMUParam" Click="MenuItem_Template"/>
+                            </Grid>
+                            <TextBlock Text="模板：" VerticalAlignment="Center" Width="53"/>
+                            <ComboBox  x:Name="ComboxVITemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  Margin="0,0,0,0"/>
+                        </DockPanel>
+                    </StackPanel>
+
                 </StackPanel>
 
 

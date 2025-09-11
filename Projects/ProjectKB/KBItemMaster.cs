@@ -12,7 +12,7 @@ using System.Windows.Controls;
 namespace ProjectKB
 {
     [@SugarTable("KBItemMaster")]
-    public class KBItemMaster : ViewModelBase,IPKModel
+    public class KBItemMaster : ViewModelBase,IEntity
     {
         [SugarColumn(IsIgnore = true)]
         public ContextMenu ContextMenu { get; set; }

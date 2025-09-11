@@ -4,7 +4,7 @@ using SqlSugar;
 namespace ColorVision.Engine.Templates.ImageCropping
 {
     [SugarTable("t_scgd_algorithm_result_detail_image")]
-    public class ResultImageModel : VPKModel,IViewResult
+    public class ResultImageModel : ViewEntity ,IViewResult
     {
         [SugarColumn(ColumnName ="pid")]
         public int? Pid { get; set; }

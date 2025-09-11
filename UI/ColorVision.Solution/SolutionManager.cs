@@ -41,13 +41,14 @@ namespace ColorVision.Solution
         public SolutionExplorer CurrentSolutionExplorer { get => _CurrentSolutionExplorer; set { _CurrentSolutionExplorer = value; OnPropertyChanged(); } }
         private SolutionExplorer _CurrentSolutionExplorer;
 
-        public RelayCommand SettingCommand { get; set; }
+        public RelayCommand SettingCommand { get; set; } 
 
         public SolutionManager()
         {
             SolutionHistory.RecentFilesChanged +=(s,e) => MenuManager.GetInstance().RefreshMenuItemsByGuid(nameof(MenuRecentFile));
 
             SolutionExplorers = new ObservableCollection<SolutionExplorer>();
+
             bool su = false;
             var parser = ArgumentParser.GetInstance();
 

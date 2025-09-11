@@ -111,7 +111,7 @@ namespace ProjectKB.Modbus
                         Application.Current.Dispatcher.BeginInvoke(() =>
                         {
                             CurrentValue = currentValue;
-                            if (currentValue != previousValue)
+                            if (currentValue != previousValue)  
                             {
                                 previousValue = currentValue;
                             }

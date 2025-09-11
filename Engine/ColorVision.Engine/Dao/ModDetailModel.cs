@@ -4,7 +4,7 @@ using SqlSugar;
 namespace ColorVision.Engine
 {
     [SugarTable("t_scgd_mod_param_detail")]
-    public class ModDetailModel : PKModel
+    public class ModDetailModel : EntityBase
     {
 
         [SugarColumn(ColumnName = "cc_pid", Length = 11)]

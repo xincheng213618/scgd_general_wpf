@@ -204,11 +204,10 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
         List<PassSxSource> PassSxSources = new();
 
-        public void DrawPlot(bool isSourceV, double endVal,double[] VList, double[] IList)
+        public void AddViewResultSMU(ViewResultSMU viewResultSMU)
         {
-
-            ViewResultSMU viewResultSMU = new(isSourceV? MeasurementType.Voltage: MeasurementType.Current, (float)endVal, VList, IList);
             ViewResults.Add(viewResultSMU);
+
             ToggleButtonChoice.IsChecked = viewResultSMU.MeasurementType == MeasurementType.Voltage;
 
             if (viewResultSMU.MeasurementType == MeasurementType.Voltage)
@@ -233,8 +232,9 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 wpfplot1.Plot.PlottableList.Add(viewResultSMU.ScatterPlot);
                 wpfplot1.Refresh();
             }
-
-            ToggleButtonChoice.IsChecked = isSourceV;
+            ToggleButtonChoice.IsChecked = viewResultSMU.IsSourceV;
+            listView1.SelectedIndex = ViewResults.Count - 1;
+            listView1.ScrollIntoView(viewResultSMU);
         }
 
         private void Button1_Click(object sender, RoutedEventArgs e)
@@ -446,40 +446,26 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         {
 
         }
-
-
         private void Search_Click(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
+            foreach (var item in MySqlControl.GetInstance().DB.Queryable<SMUResultModel>().ToList())
+            {
+                ViewResultSMU viewResultSMU = new ViewResultSMU(item);
+                ViewResults.Add(viewResultSMU);
+            }
+
             foreach (var item in MRSmuScanDao.Instance.GetAll())
             {
-                ViewResultSMU viewResultSMU = new(item);
+                ViewResultSMU viewResultSMU = new ViewResultSMU(item);
                 ViewResults.Add(viewResultSMU);
-                ToggleButtonChoice.IsChecked = viewResultSMU.MeasurementType == MeasurementType.Voltage;
             }
         }
 
-        private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
-        {
-            ViewResults.Clear();
-            foreach (var item in MRSmuScanDao.Instance.GetAll())
-            {
-                ViewResultSMU viewResultSMU = new(item);
-                ViewResults.Add(viewResultSMU);
-            }
-            if (ViewResults.Count > 0)
-            {
-                listView1.Visibility = Visibility.Visible;
-                listView1.SelectedIndex = 0;
-            }
-            SerchPopup.IsOpen = false;
-        }
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
-            SerchPopup.IsOpen = true;
-            TextBoxId.Text = string.Empty;
-            TextBoxBatch.Text = string.Empty;
+
         }
         private bool IsExchange;
         private void Exchange_Click(object sender, RoutedEventArgs e)
@@ -542,5 +528,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 }
             }
         }
+
+
     }
 }

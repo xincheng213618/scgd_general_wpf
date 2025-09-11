@@ -30,11 +30,6 @@ enum class StitchingErrorCode {
     NO_VALID_IMAGES = -5 // 没有有效的图像
 };
 
-
-
-extern "C" COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data);
-
-
 extern "C" COLORVISIONCORE_API int M_ExtractChannel(HImage img, HImage* outImage, int channel);
 extern "C" COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types = cv::ColormapTypes::COLORMAP_JET, int channel = -1);
 
@@ -65,6 +60,8 @@ extern "C" COLORVISIONCORE_API int M_FindLuminousArea(HImage img,const char* con
 extern "C" COLORVISIONCORE_API int M_ConvertGray32Float(HImage img, HImage* outImage);
 
 extern "C" COLORVISIONCORE_API int M_StitchImages(const char* config, HImage* outImage);
+
+extern "C" COLORVISIONCORE_API int M_Fusion(const char* fusionjson, HImage* outImage);
 
 
 extern "C" COLORVISIONCORE_API int FreeResult(char* result) {

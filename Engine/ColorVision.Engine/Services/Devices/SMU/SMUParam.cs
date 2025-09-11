@@ -16,6 +16,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         {
             Title = "SMUParam设置";
             Code = "SMU";
+            TemplateDicId = 13;
             TemplateParams = Params;
         }
     }

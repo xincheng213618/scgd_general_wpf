@@ -59,9 +59,8 @@ namespace ColorVision.Engine.Templates.Ghost
                 Application.Current.Dispatcher.BeginInvoke(() =>
                 {
                     ImageView.SetImageSource(hImage.ToWriteableBitmap());
-                    OpenCVHelper.FreeHImageData(hImage.pData);
                     hImage1.Dispose();
-                    hImage.pData = IntPtr.Zero;
+                    hImage.Dispose();
                     ImageView.UpdateZoomAndScale();
                 });
             }
@@ -72,8 +71,7 @@ namespace ColorVision.Engine.Templates.Ghost
                 Application.Current.Dispatcher.BeginInvoke(() =>
                 {
                     ImageView.SetImageSource(hImage.ToWriteableBitmap());
-                    OpenCVHelper.FreeHImageData(hImage.pData);
-                    hImage.pData = IntPtr.Zero;
+                    hImage.Dispose();
                     ImageView.UpdateZoomAndScale();
                 });
             }

@@ -26,7 +26,23 @@ namespace ColorVision.Database
         private volatile MySqlConnection _conn; // 用于切换
         public MySqlConnection MySqlConnection => _conn;
 
-        public SqlSugarClient DB { get; set; }
+        public SqlSugarClient DB 
+        { 
+            get
+            {
+                if (_DB !=null && _DB.Ado.Connection.State == ConnectionState.Closed)
+                {
+                    log.Info("数据库连接已关闭，正在尝试重新打开连接...");
+                    _DB.Ado.Connection.Open();
+                }
+                return _DB;
+            }
+            set 
+            {
+                _DB = value;
+            } 
+        }
+        private SqlSugarClient _DB;
 
         public MySqlControl()
         {
@@ -65,11 +81,12 @@ namespace ColorVision.Database
                 ConnectionString = connStr;
                 log.Info($"数据库连接成功:{connStr}");
 
+                DB?.Dispose();
                 DB = new SqlSugarClient(new ConnectionConfig
                 {
                     ConnectionString = GetConnectionString(Config),
-                    DbType = SqlSugar.DbType.MySql,
-                    IsAutoCloseConnection = true
+                    DbType = Config.DbType,
+                    IsAutoCloseConnection = false
                 });
                 //修复管理员权限下bulk创建文件权限错误的问题
                 StaticConfig.BulkCopy_MySqlCsvPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ColorVision", "bulkcopyfiles");

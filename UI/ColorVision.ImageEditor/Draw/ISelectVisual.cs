@@ -6,8 +6,6 @@ namespace ColorVision.ImageEditor.Draw
     {
         public Rect GetRect();
         public void SetRect(Rect rect);
-
-
     }
 
 }

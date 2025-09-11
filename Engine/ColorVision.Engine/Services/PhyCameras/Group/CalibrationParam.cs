@@ -3,7 +3,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Rbac;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
@@ -240,7 +239,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 return;
             var existingParams = ResourceParams.ToDictionary(rp => rp.Id, rp => rp);
 
-            List<ModMasterModel> smus = MySqlControl.GetInstance().DB.Queryable<ModMasterModel>().Where(x=>x.Pid ==2).Where(x => x.ResourceId == resourceId).Where(x=>x.TenantId == UserConfig.Instance.TenantId).Where(x => x.IsDelete == false).ToList();
+            List<ModMasterModel> smus = MySqlControl.GetInstance().DB.Queryable<ModMasterModel>().Where(x=>x.Pid ==2).Where(x => x.ResourceId == resourceId).Where(x=>x.TenantId == 0).Where(x => x.IsDelete == false).ToList();
             foreach (var dbModel in smus)
             {
 

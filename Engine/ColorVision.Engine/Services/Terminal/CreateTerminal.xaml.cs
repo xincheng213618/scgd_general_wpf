@@ -1,5 +1,4 @@
 ﻿using ColorVision.Database;
-using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Calibration;
@@ -78,7 +77,6 @@ namespace ColorVision.Engine.Services.Terminal
             sysResource.Code = CreateCode.Text;
             sysResource.Type = TerminalService.SysResourceModel.Type;
             sysResource.Pid = TerminalService.SysResourceModel.Id;
-            sysResource.TenantId = UserConfig.Instance.TenantId;
 
 
             SysResourceModel sysDevModel = null;

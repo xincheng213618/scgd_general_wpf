@@ -52,7 +52,6 @@ namespace ColorVision.ImageEditor
             InitializeComponent();
             this.ApplyCaption();
             DrawHistograms(HistogramChart, channe1, GreenHistogram, BlueHistogram);
-
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

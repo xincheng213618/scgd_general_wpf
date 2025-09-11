@@ -1,5 +1,4 @@
 ﻿using ColorVision.Database;
-using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Themes;
@@ -46,7 +45,6 @@ namespace ColorVision.Engine.Services.Types
             sysResource.Name = CreateName.Text;
             sysResource.Code = CreateCode.Text;
             sysResource.Type = TypeService.SysDictionaryModel.Value;
-            sysResource.TenantId = UserConfig.Instance.TenantId;
 
 
             TerminalServiceConfig terminalServiceConfig = new() { HeartbeatTime = 5000 };

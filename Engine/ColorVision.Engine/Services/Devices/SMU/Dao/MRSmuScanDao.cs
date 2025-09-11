@@ -5,7 +5,7 @@ using System;
 namespace ColorVision.Engine.Services.Devices.SMU.Dao
 {
     [SugarTable("t_scgd_measure_result_smu_scan")]
-    public class SmuScanModel : PKModel, IInitTables
+    public class SmuScanModel : EntityBase, IInitTables
     {
         [SugarColumn(ColumnName ="device_code")]
         public string? DeviceCode { get; set; }

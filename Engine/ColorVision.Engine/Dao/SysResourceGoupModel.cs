@@ -4,7 +4,7 @@ using SqlSugar;
 namespace ColorVision.Engine
 {
     [SugarTable("t_scgd_sys_resource_group")]
-    public class SysResourceGoupModel : PKModel
+    public class SysResourceGoupModel : EntityBase
     {
 
         [SugarColumn(ColumnName = "resource_id")]

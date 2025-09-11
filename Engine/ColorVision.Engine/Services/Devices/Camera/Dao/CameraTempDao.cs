@@ -5,7 +5,7 @@ using System;
 namespace ColorVision.Engine.Services.Dao
 {
     [SugarTable("t_scgd_camera_temp")]
-    public class CameraTempModel : VPKModel, IInitTables
+    public class CameraTempModel : ViewEntity , IInitTables
     {
         [SugarColumn(ColumnName ="temp_value")]
         public float? TempValue { get; set; }

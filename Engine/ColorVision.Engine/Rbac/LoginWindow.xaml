@@ -7,7 +7,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:resx="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        Title="ColorVision" Height="300"  Width="400" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="ColorVision" Height="350"  Width="400" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid x:Name="MainGrid" Background="#11ECEFFF">
         <Grid.RowDefinitions>
             <RowDefinition Height="61*"/>

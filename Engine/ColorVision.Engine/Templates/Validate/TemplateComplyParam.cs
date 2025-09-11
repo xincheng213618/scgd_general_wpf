@@ -1,5 +1,4 @@
 ﻿using ColorVision.Database;
-using ColorVision.Engine.Rbac;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -69,13 +68,13 @@ namespace ColorVision.Engine.Templates.Validate
 
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
 
-            SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
+            SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(Code);
             if (mod == null)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), $"找不到字典{Code}", "Template");
                 return;
             }
-            var models = ValidateTemplateMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "dic_pid", mod.Id }, { "is_delete", 0 }, { "tenant_id", UserConfig.Instance.TenantId } });
+            var models = ValidateTemplateMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "dic_pid", mod.Id }, { "is_delete", 0 }, { "tenant_id", 0} });
             foreach (var dbModel in models)
             {
                 var details = ValidateTemplateDetailDao.Instance.GetAllByPid(dbModel.Id);
@@ -130,9 +129,9 @@ namespace ColorVision.Engine.Templates.Validate
 
         public override void Create(string templateName)
         {
-            ValidateTemplateMasterModel modMaster = new ValidateTemplateMasterModel() { Code = Code, Name = templateName, TenantId = UserConfig.Instance.TenantId };
+            ValidateTemplateMasterModel modMaster = new ValidateTemplateMasterModel() { Code = Code, Name = templateName};
 
-            SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
+            SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(Code);
             if (mod != null)
             {
                 modMaster.DId = mod.Id;

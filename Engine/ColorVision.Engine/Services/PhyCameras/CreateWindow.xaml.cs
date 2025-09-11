@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Themes;
@@ -193,7 +192,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     Name = CreateConfig.CameraID,
                     Code = CreateConfig.Code,
                     Type = 101,
-                    TenantId = UserConfig.Instance.TenantId,
+                    TenantId = 0,
                 };
             }
 

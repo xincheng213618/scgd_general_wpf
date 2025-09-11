@@ -1,6 +1,5 @@
 ﻿namespace ColorVision.Engine.Services.Devices.SMU.Configs
 {
-    public delegate void MQTTSMUScanResultHandler(SMUScanResultData data);
     public class SMUScanParam
     {
         public bool IsSourceV { set; get; }

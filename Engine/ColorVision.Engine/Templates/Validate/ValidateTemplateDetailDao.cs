@@ -5,7 +5,7 @@ using SqlSugar;
 namespace ColorVision.Engine.Templates.Validate
 {
     [SugarTable("t_scgd_rule_validate_template_detail")]
-    public class ValidateTemplateDetailModel : PKModel
+    public class ValidateTemplateDetailModel : EntityBase
     {
         [SugarColumn(ColumnName ="dic_pid")]
         public int DicPid { get; set; }

@@ -9,7 +9,7 @@ namespace ColorVision.Engine.Templates.Jsons
     }
 
     [SugarTable("t_scgd_algorithm_result_detail_common")]
-    public class DetailCommonModel : PKModel, IInitTables
+    public class DetailCommonModel : EntityBase, IInitTables
     {
         [SugarColumn(ColumnName ="pid")]
         public int PId { get; set; }

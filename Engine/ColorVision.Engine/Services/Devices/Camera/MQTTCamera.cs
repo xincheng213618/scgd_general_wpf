@@ -11,7 +11,6 @@ using CVCommCore;
 using MQTTMessageLib;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -400,6 +399,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             else
             {
                 Params.Add("IsAutoExpTime", true);
+                Params.Add("IsAutoExpWithND", Config.IsAutoExpWithND);
+
                 if (autoExpTimeParam.Id == -2)
                 {
                     Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = -1, Name = string.Empty });
@@ -449,7 +450,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             var Params = new Dictionary<string, object>() { };
             Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = autoExpTimeParam.Name });
-            Params.Add("IsWithND",  Config.IsWithND);
+            Params.Add("IsAutoExpWithND",  Config.IsAutoExpWithND);
 
             
             MsgSend msg = new()

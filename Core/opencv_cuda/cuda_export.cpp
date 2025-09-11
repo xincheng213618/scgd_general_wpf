@@ -1,3 +1,4 @@
+#include "Windows.h"
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
@@ -9,39 +10,6 @@
 
 using json = nlohmann::json;
 
-static void MatToHImage(cv::Mat& mat, HImage* outImage)
-{
-	///这里不分配的话，局部内存会在运行结束之后清空
-	outImage->pData = new unsigned char[mat.total() * mat.elemSize()];
-	memcpy(outImage->pData, mat.data, mat.total() * mat.elemSize());
-
-	outImage->rows = mat.rows;
-	outImage->cols = mat.cols;
-	outImage->channels = mat.channels();
-	int bitsPerElement = 0;
-
-	switch (mat.depth()) {
-	case CV_8U:
-	case CV_8S:
-		bitsPerElement = 8;
-		break;
-	case CV_16U:
-	case CV_16S:
-		bitsPerElement = 16;
-		break;
-	case CV_32S:
-	case CV_32F:
-		bitsPerElement = 32;
-		break;
-	case CV_64F:
-		bitsPerElement = 64;
-		break;
-	default:
-		break;
-	}
-	outImage->depth = bitsPerElement; // 设置每像素位数
-	outImage->stride = (int)mat.step; // 设置图像的步长
-}
 
 COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* outImage)
 {
@@ -58,16 +26,28 @@ COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* outImage)
 		// 错误处理
 		return -1;
 	}
-	std::vector<cv::Mat> imgs;
-	std::vector<std::string> files = j.get<std::vector<std::string>>();
 
-	for (const auto& file : files) {
-		cv::Mat img = cv::imread(file);
-		if (img.empty()) {
-			// 错误处理
-			return -1;
-		}
-		imgs.push_back(img);
+	std::vector<std::string> files = j.get<std::vector<std::string>>();
+	if (files.empty()) {
+		std::cerr << "Error: No files provided in JSON array." << std::endl;
+		return -1;
+	}
+	std::vector<cv::Mat> imgs(files.size());
+	std::vector<std::thread> threads;
+	std::vector<bool> read_success(files.size(), false); // To track success of each thread
+
+	for (size_t i = 0; i < files.size(); ++i) {
+		threads.emplace_back([i, &files, &imgs, &read_success]() {
+			imgs[i] = cv::imread(files[i]);
+			if (!imgs[i].empty()) {
+				read_success[i] = true;
+			}
+			});
+	}
+
+	// Wait for all reading threads to complete
+	for (auto& t : threads) {
+		t.join();
 	}
 
 	cv::Mat out = Fusion(imgs, 2);

@@ -15,14 +15,6 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid>
-            <StackPanel Orientation="Horizontal" Margin="5">
-                <Button Content="仓库" Command="{Binding OpenStoreCommand}" Margin="0,0,5,0"/>
-                <Button Content="安装包" Command="{Binding InstallPackageCommand}" Margin="0,0,5,0"/>
-                <hc:ComboBox x:Name="DefalutSearchComboBox" Width="200" HorizontalAlignment="Left"  IsEditable="True" Margin="0,0,5,0" Text="{Binding SearchName, UpdateSourceTrigger=PropertyChanged}" hc:InfoElement.ShowClearButton="True"/>
-                <Button Content="安装" Command="{Binding DownloadPackageCommand}" Margin="0,0,5,0"/>
-                <Button Content="打开缓存文件夹" Command="{Binding OpenDownloadCacheCommand}" Margin="0,0,5,0"/>
-            </StackPanel>
-
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,5,0">
                 <Button  Command="{Binding EditConfigCommand}" Padding="2" Height="27" Width="27" >
                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5"  FontSize="20" Foreground="{DynamicResource GlobalTextBrush}">

@@ -4,7 +4,7 @@ using SqlSugar;
 namespace ColorVision.Engine.Templates.Matching
 {
     [SugarTable("t_scgd_algorithm_result_detail_aoi")]
-    public class AlgResultAoiModel : VPKModel, IViewResult
+    public class AlgResultAoiModel : ViewEntity , IViewResult
     {
         [SugarColumn(ColumnName ="pid")]
         public int Pid { get; set; }

@@ -224,9 +224,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         try
                         {
                             var fileInfo = new FileInfo(data.FileUrl);
-                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
+                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                             {
-                                log.Info("文件可以读取，没有被占用。");
+                                log.Debug("文件可以读取，没有被占用。");
                             }
                             if (fileInfo.Length > 0)
                             {

@@ -5,13 +5,13 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
 { 
     public class GhostReslut
     {
-        [JsonProperty("Analysis")]
+        [JsonProperty(nameof(Analysis))]
         public Analysis Analysis { get; set; }
 
-        [JsonProperty("Bright")]
+        [JsonProperty(nameof(Bright))]
         public Bright Bright { get; set; }
 
-        [JsonProperty("Ghost")]
+        [JsonProperty(nameof(Ghost))]
         public Ghost Ghost { get; set; }
     }
 
@@ -86,7 +86,7 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
 
     public class Luminosity
     {
-        [JsonProperty("Lum")]
+        [JsonProperty(nameof(Lum))]
         public double Lum { get; set; }
 
         [JsonProperty("id")]

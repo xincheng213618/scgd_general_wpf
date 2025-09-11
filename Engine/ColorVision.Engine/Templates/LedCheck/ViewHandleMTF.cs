@@ -103,8 +103,8 @@ namespace ColorVision.Engine.Templates.LedCheck
                     {
                         var image = hImageProcessed.ToWriteableBitmap();
 
-                        OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                        hImageProcessed.pData = IntPtr.Zero;
+                        hImageProcessed.Dispose();
+
                         view.ImageView.FunctionImage = image;
                     }
                     view.ImageView.ImageShow.Source = view.ImageView.FunctionImage;

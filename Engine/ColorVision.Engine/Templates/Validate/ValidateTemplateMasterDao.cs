@@ -6,7 +6,7 @@ using System;
 namespace ColorVision.Engine.Templates.Validate
 {
     [SugarTable("t_scgd_rule_validate_template_master")]
-    public class ValidateTemplateMasterModel : PKModel
+    public class ValidateTemplateMasterModel : EntityBase
     {
         [SugarColumn(ColumnName ="dic_pid")]
         public int? DId { get; set; }
@@ -18,8 +18,8 @@ namespace ColorVision.Engine.Templates.Validate
         public DateTime? CreateDate { get; set; } = DateTime.Now;
         [SugarColumn(ColumnName ="remark")]
         public string Remark { get; set; }
-        [SugarColumn(ColumnName ="tenant_id")]
-        public int TenantId { get; set; }
+        [SugarColumn(ColumnName = "tenant_id")]
+        public int TenantId { get; set; } = 0;
     }
 
 

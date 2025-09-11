@@ -12,7 +12,7 @@ using System.Windows;
 namespace ColorVision.Engine.Sys.Dao
 {
     [SugarTable("t_scgd_sys_config_rc")]
-    public class SysConfigRcModel : VPKModel, IInitTables
+    public class SysConfigRcModel : ViewEntity , IInitTables
     {
         [DisplayName("Code")]
         public string Code { get; set; }

@@ -1,15 +1,15 @@
 ﻿#pragma warning disable CS8625,CS8602,CS8607,CS0103,CS0067
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
-using ColorVision.Util.Draw.Special;
 using Gu.Wpf.Geometry;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -19,10 +19,10 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision.ImageEditor.Draw
+namespace ColorVision.ImageEditor
 {
 
-    public interface IImageContentMenu
+    public interface IImageContentMenuProvider
     {
         public List<MenuItemMetadata> GetContextMenuItems(ImageViewConfig config);
     }
@@ -30,6 +30,8 @@ namespace ColorVision.ImageEditor.Draw
 
     public class ImageViewModel : ViewModelBase,IDisposable
     {
+        Guid Guid { get; set; } = Guid.NewGuid();
+
         public RelayCommand ZoomUniformToFill { get; set; }
         public RelayCommand ZoomUniformCommand { get; set; }
         public RelayCommand ZoomInCommand { get; set; }
@@ -75,6 +77,8 @@ namespace ColorVision.ImageEditor.Draw
 
         public MouseMagnifier MouseMagnifier { get; set; }
 
+        public LineManager LineManager { get; set; }
+
         public Crosshair Crosshair { get; set; }
         public Gridline Gridline { get; set; }
 
@@ -87,20 +91,11 @@ namespace ColorVision.ImageEditor.Draw
         public ToolReferenceLine ToolConcentricCircle { get; set; }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
-
-
         public SelectEditorVisual SelectEditorVisual { get; set; }
 
-
-        public static void DrawSelectRect(DrawingVisual drawingVisual, Rect rect)
-        {
-            using DrawingContext dc = drawingVisual.RenderOpen();
-            dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
-        }
         public ImageViewConfig Config { get; set; }
 
         public ContextMenu ContextMenu { get; set; }
-        public List<MenuItemMetadata> MenuItemMetadatas { get; set; }
         public IImageOpen? IImageOpen { get; set; }
 
         public ImageViewModel(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas,ImageViewConfig config = null )
@@ -137,6 +132,7 @@ namespace ColorVision.ImageEditor.Draw
 
             PolygonManager = new PolygonManager(this, zoombox, drawCanvas);
             BezierCurveManager = new BezierCurveManager(this, zoombox, drawCanvas);
+            LineManager = new LineManager(this, zoombox, drawCanvas);
 
             CircleManager = new CircleManager(this, zoombox, drawCanvas);
             RectangleManager = new RectangleManager(this, zoombox, drawCanvas);
@@ -163,38 +159,334 @@ namespace ColorVision.ImageEditor.Draw
             RotateRightCommand = new RelayCommand(a => RotateRight());
 
             ContextMenu = new ContextMenu();
-            MenuItemMetadatas = new List<MenuItemMetadata>();
-            ContextMenu.Initialized += (s, e) => Opened();
-            OpenedImage += (s, e) =>
+            Image.ContextMenuOpening += ContextMenu_ContextMenuOpening;
+            Image.ContextMenu = ContextMenu;
+            ZoomboxSub.ContextMenu = ContextMenu;
+
+            ZoomboxSub.LayoutUpdated += Zoombox1_LayoutUpdated;
+        }
+
+        double oldMax;
+        private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
+        {
+            if (oldMax != ZoomboxSub.ContentMatrix.M11)
             {
-                IsInitContextMenu = false;
-                Opened();
-            };
-            EditModeChanged += (s, e) =>
-            {
-                if (e)
+                oldMax = ZoomboxSub.ContentMatrix.M11;
+                if (Config.IsLayoutUpdated)
                 {
-                    ContextMenu.Items.Clear();
+                    double scale = 1 / ZoomboxSub.ContentMatrix.M11;
+                    DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + Guid.ToString(), 20, () => ImageLayoutUpdatedRender(scale, DrawingVisualLists));
+                }
+            }
+
+        }
+
+        public static void ImageLayoutUpdatedRender(double scale, ObservableCollection<IDrawingVisual> DrawingVisualLists)
+        {
+            if (DrawingVisualLists != null)
+            {
+                foreach (var item in DrawingVisualLists)
+                {
+                    item.Pen.Thickness = scale;
+                    item.Render();
+                }
+            }
+        }
+
+
+        private void ContextMenu_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            ContextMenu.Items.Clear();
+            if (_ImageEditMode)
+            {
+                Point MouseDownP = Mouse.GetPosition(Image);
+
+                var MouseVisual = Image.GetVisual<Visual>(MouseDownP);
+
+                if (MouseVisual is SelectEditorVisual selectEditorVisual && selectEditorVisual.GetVisual(MouseDownP) is ISelectVisual selectVisual)
+                {
+                    if (selectVisual is IDrawingVisual drawingVisual)
+                    {
+                        MenuItem menuItem = new() { Header = "隐藏(_H)" };
+                        menuItem.Click += (s, e) =>
+                        {
+                            drawingVisual.BaseAttribute.IsShow = false;
+                            selectEditorVisual.ClearRender();
+                        };
+                        ContextMenu.Items.Add(menuItem);
+                    }
+                    if (selectVisual is Visual visual)
+                    {
+                        MenuItem menuIte2 = new() { Header = "删除" };
+                        menuIte2.Click += (s, e) =>
+                        {
+                            Image.RemoveVisualCommand(visual);
+                            selectEditorVisual.ClearRender();
+                        };
+                        ContextMenu.Items.Add(menuIte2);
+
+                        MenuItem menuIte3 = new() { Header = "Top" };
+                        menuIte3.Click += (s, e) =>
+                        {
+                            Image.TopVisual(visual);
+                        };
+                        ContextMenu.Items.Add(menuIte3);
+                    }
+
+                    if (selectVisual is DVLine dVLine)
+                    {
+                        MenuItem menuItem = new() { Header = "切面图" };
+                        menuItem.Click += (s, e) =>
+                        {
+
+                            if (dVLine.Points == null || dVLine.Points.Count < 2)
+                            {
+                                MessageBox.Show("该线没有足够的点来生成切面图。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                                return;
+                            }
+
+                            // 2. 检查图像源是否为 WriteableBitmap
+                            if (Image.Source is WriteableBitmap writeableBitmap)
+                            {
+                                // 3. 提取截面数据
+                                List<double> profileData = ExtractProfileData(dVLine, writeableBitmap);
+
+                                if (profileData.Count == 0)
+                                {
+                                    MessageBox.Show("无法从图像中提取有效的截面数据。", "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+                                    return;
+                                }
+
+                                // 4. 创建并显示图表窗口
+                                string chartTitle = $"切面图 ({profileData.Count} 个采样点)";
+                                ProfileChartWindow profileChartWindow = new ProfileChartWindow(profileData, chartTitle)
+                                {
+                                    Owner = Application.Current.GetActiveWindow()
+                                };
+                                profileChartWindow.Show();
+                            }
+                            else
+                            {
+                                MessageBox.Show("图像源不是可读的 WriteableBitmap 格式。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                            }
+                        };
+                        ContextMenu.Items.Add(menuItem);
+                    }
+
+
+                }
+                else if (MouseVisual is IDrawingVisual drawingVisual)
+                {
+                    MenuItem menuItem = new() { Header = "隐藏(_H)" };
+                    menuItem.Click += (s, e) =>
+                    {
+                        drawingVisual.BaseAttribute.IsShow = false;
+                    };
+                    MenuItem menuIte2 = new() { Header = "删除" };
+                    menuIte2.Click += (s, e) =>
+                    {
+                        Image.RemoveVisualCommand(MouseVisual);
+                    };
+                    ContextMenu.Items.Add(menuItem);
+                    ContextMenu.Items.Add(menuIte2);
+
+                    MenuItem menuIte3 = new() { Header = "Top" };
+                    menuIte3.Click += (s, e) =>
+                    {
+                        Image.TopVisual(MouseVisual);
+                    };
+                    ContextMenu.Items.Add(menuIte3);
                 }
                 else
                 {
-                    IsInitContextMenu = false;
                     Opened();
                 }
-            };
+            }
+            else
+            {
+                Opened();
+            }
         }
 
-        private bool IsInitContextMenu;
+        /// <summary>
+        /// 从 WriteableBitmap 中沿着 DVLine 定义的路径提取截面数据。
+        /// </summary>
+        /// <param name="line">包含点路径的 DVLine 对象。</param>
+        /// <param name="bitmap">要从中提取数据的 WriteableBitmap。</param>
+        /// <param name="totalSteps">总采样点数，默认为500。</param>
+        /// <returns>代表路径上像素值的列表。</returns>
+        private List<double> ExtractProfileData(DVLine line, WriteableBitmap bitmap, int totalSteps = 500)
+        {
+            var profileData = new List<double>();
+            var points = line.Points;
+
+            // --- 1. 计算折线的总长度 ---
+            double totalLength = 0;
+            for (int i = 0; i < points.Count - 1; i++)
+            {
+                totalLength += (points[i + 1] - points[i]).Length;
+            }
+
+            if (totalLength <= 0) return profileData;
+
+            // --- 2. 沿路径进行等距采样 ---
+            // 这部分逻辑保持不变，它负责在几何上找到采样点
+            double stepDistance = totalLength / (totalSteps - 1);
+            double accumulatedLength = 0;
+
+            for (int i = 0; i < points.Count - 1; i++)
+            {
+                Point startPoint = points[i];
+                Point endPoint = points[i + 1];
+                Vector segment = endPoint - startPoint;
+                double segmentLength = segment.Length;
+
+                if (i == 0)
+                {
+                    AddPixelValueToList(startPoint, bitmap, profileData);
+                }
+
+                while (accumulatedLength + stepDistance < segmentLength)
+                {
+                    accumulatedLength += stepDistance;
+                    double t = accumulatedLength / segmentLength;
+                    Point samplePoint = startPoint + t * segment;
+
+                    AddPixelValueToList(samplePoint, bitmap, profileData);
+                }
+
+                accumulatedLength -= segmentLength;
+            }
+
+            AddPixelValueToList(points.Last(), bitmap, profileData);
+
+            return profileData;
+        }
+        /// <summary>
+        /// 辅助方法：根据位图格式，获取指定点的像素值并添加到数据列表。
+        /// </summary>
+        private void AddPixelValueToList(Point point, WriteableBitmap bitmap, List<double> dataList)
+        {
+            int x = (int)Math.Round(point.X);
+            int y = (int)Math.Round(point.Y);
+
+            // 检查坐标是否在图像范围内
+            if (x < 0 || x >= bitmap.PixelWidth || y < 0 || y >= bitmap.PixelHeight)
+            {
+                return;
+            }
+
+            // 锁定 WriteableBitmap 以安全地访问像素数据
+            bitmap.Lock();
+            try
+            {
+                unsafe
+                {
+                    // 计算像素的起始地址
+                    int bytesPerPixel = bitmap.Format.BitsPerPixel / 8;
+                    IntPtr pPixel = bitmap.BackBuffer + y * bitmap.BackBufferStride + x * bytesPerPixel;
+
+                    double value = 0;
+                    var format = bitmap.Format;
+
+                    // --- 根据不同的像素格式进行处理 ---
+
+                    // 8位单通道 (灰度图或索引图)
+                    if (format == PixelFormats.Gray8 || format == PixelFormats.Indexed8)
+                    {
+                        value = *((byte*)pPixel);
+                    }
+                    // 16位单通道 (灰度图)
+                    else if (format == PixelFormats.Gray16)
+                    {
+                        value = *((ushort*)pPixel);
+                    }
+                    // 32位浮点单通道 (灰度图)
+                    else if (format == PixelFormats.Gray32Float)
+                    {
+                        value = *((float*)pPixel);
+                    }
+                    // 24位彩色 (BGR 或 RGB)
+                    else if (format == PixelFormats.Bgr24)
+                    {
+                        byte* p = (byte*)pPixel;
+                        // 内存顺序: B, G, R
+                        value = 0.299 * p[2] + 0.587 * p[1] + 0.114 * p[0];
+                    }
+                    else if (format == PixelFormats.Rgb24)
+                    {
+                        byte* p = (byte*)pPixel;
+                        // 内存顺序: R, G, B
+                        value = 0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2];
+                    }
+                    // 32位彩色 (BGRA)
+                    else if (format == PixelFormats.Bgr32 || format == PixelFormats.Bgra32 || format == PixelFormats.Pbgra32)
+                    {
+                        byte* p = (byte*)pPixel;
+                        // 内存顺序: B, G, R, A
+                        value = 0.299 * p[2] + 0.587 * p[1] + 0.114 * p[0];
+                    }
+                    // 48位彩色 (RGB)
+                    else if (format == PixelFormats.Rgb48)
+                    {
+                        ushort* p = (ushort*)pPixel;
+                        // 内存顺序: R, G, B
+                        // 将16位的值归一化到0-1范围再计算亮度，以避免数值溢出
+                        const double maxVal = ushort.MaxValue;
+                        double r = p[0] / maxVal;
+                        double g = p[1] / maxVal;
+                        double b = p[2] / maxVal;
+                        // 结果可以再乘以一个系数（如255或65535）来放大，或直接使用0-1范围的值
+                        value = (0.299 * r + 0.587 * g + 0.114 * b) * maxVal;
+                    }
+                    else
+                    {
+                        // 如果遇到未处理的格式，可以选择跳过或记录日志
+                        // 这里我们选择跳过，不添加任何数据
+                        return;
+                    }
+
+                    dataList.Add(value);
+                }
+            }
+            finally
+            {
+                bitmap.Unlock();
+            }
+        }
 
         public void Opened()
         {
-            if (IsInitContextMenu) return;
-            IsInitContextMenu = true;
-            InitMenuItem(); 
-            InitContextMenu();
-        }
-        public virtual void InitContextMenu()
-        {
+            List<MenuItemMetadata> MenuItemMetadatas = new List<MenuItemMetadata>();
+            if (IImageOpen != null)
+                MenuItemMetadatas.AddRange(IImageOpen.GetContextMenuItems(Config));
+
+            foreach (var item in AssemblyService.Instance.LoadImplementations<IImageContentMenuProvider>())
+            {
+                MenuItemMetadatas.AddRange(item.GetContextMenuItems(Config));
+            }
+
+
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenImage", Order = 10, Header = ColorVision.ImageEditor.Properties.Resources.Open, Command = OpenImageCommand, Icon = MenuItemIcon.TryFindResource("DIOpen") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 11, Header = ColorVision.ImageEditor.Properties.Resources.Clear, Command = ClearImageCommand, Icon = MenuItemIcon.TryFindResource("DIDelete") });
+
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Zoom", Order = 100, Header = Properties.Resources.Zoom, Icon = MenuItemIcon.TryFindResource("DIZoom") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomIn", Order = 1, Header = Properties.Resources.ZoomIn, Command = ZoomInCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomOut", Order = 2, Header = Properties.Resources.ZoomOut, Command = ZoomOutCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomNone", Order = 3, Header = ColorVision.ImageEditor.Properties.Resources.ZoomNone, Command = ZoomNoneCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomUniform", Order = 4, Header = ColorVision.ImageEditor.Properties.Resources.ZoomUniform, Command = ZoomUniformCommand });
+
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Rotate", Order = 101, Header = ColorVision.ImageEditor.Properties.Resources.Rotate, Icon = MenuItemIcon.TryFindResource("DIRotate") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "RotateLeft", Order = 1, Header = ColorVision.ImageEditor.Properties.Resources.RotateLeft, Command = RotateLeftCommand, Icon = MenuItemIcon.TryFindResource("DIRotateLeft") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "RotateRight", Order = 2, Header = ColorVision.ImageEditor.Properties.Resources.RotateRight, Command = RotateRightCommand, Icon = MenuItemIcon.TryFindResource("DIRotateRight") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "FlipHorizontal", Order = 3, Header = ColorVision.ImageEditor.Properties.Resources.FlipHorizontal, Command = FlipHorizontalCommand, Icon = MenuItemIcon.TryFindResource("DIFlipHorizontal") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "FlipVertical", Order = 4, Header = ColorVision.ImageEditor.Properties.Resources.FlipVertical, Command = FlipVerticalCommand, Icon = MenuItemIcon.TryFindResource("DIFlipVertical") });
+
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Full", Order = 200, Header = ColorVision.ImageEditor.Properties.Resources.FullScreen, Command = FullCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "SaveAsImage", Order = 300, Header = ColorVision.ImageEditor.Properties.Resources.SaveAsImage, Command = SaveAsImageCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Print", Order = 300, Header = ColorVision.ImageEditor.Properties.Resources.Print, Command = PrintImageCommand, Icon = MenuItemIcon.TryFindResource("DIPrint"), InputGestureText = "Ctrl+P" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = PropertyCommand, Header = ColorVision.ImageEditor.Properties.Resources.Property, Icon = MenuItemIcon.TryFindResource("DIProperty"), InputGestureText = "Tab" });
+
             var iMenuItems = MenuItemMetadatas.OrderBy(item => item.Order).ToList();
 
             void CreateMenu(MenuItem parentMenuItem, string OwnerGuid)
@@ -271,39 +563,7 @@ namespace ColorVision.ImageEditor.Draw
             menuItemBitmapScalingMode.SubmenuOpened += (s, e) => UpdateBitmapScalingMode();
             UpdateBitmapScalingMode();
             ContextMenu.Items.Insert(4, menuItemBitmapScalingMode);
-        }
 
-        public virtual void InitMenuItem()
-        {
-            MenuItemMetadatas.Clear();
-            if (IImageOpen != null)
-                MenuItemMetadatas.AddRange(IImageOpen.GetContextMenuItems(Config));
-
-            foreach (var item in AssemblyService.Instance.LoadImplementations<IImageContentMenu>())
-            {
-                MenuItemMetadatas.AddRange(item.GetContextMenuItems(Config));
-            }
-
-
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenImage", Order = 10, Header = ColorVision.ImageEditor.Properties.Resources.Open, Command = OpenImageCommand , Icon = MenuItemIcon.TryFindResource("DIOpen") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 11, Header = ColorVision.ImageEditor.Properties.Resources.Clear, Command = ClearImageCommand, Icon = MenuItemIcon.TryFindResource("DIDelete") });
-           
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Zoom", Order = 100, Header = Properties.Resources.Zoom, Icon = MenuItemIcon.TryFindResource("DIZoom") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomIn", Order = 1, Header = Properties.Resources.ZoomIn, Command = ZoomInCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomOut", Order = 2, Header = Properties.Resources.ZoomOut, Command = ZoomOutCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomNone", Order = 3, Header = ColorVision.ImageEditor.Properties.Resources.ZoomNone, Command = ZoomNoneCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomUniform", Order = 4, Header = ColorVision.ImageEditor.Properties.Resources.ZoomUniform, Command = ZoomUniformCommand });
-
-            MenuItemMetadatas.Add(new MenuItemMetadata() {GuidId = "Rotate", Order = 101, Header = ColorVision.ImageEditor.Properties.Resources.Rotate,Icon =MenuItemIcon.TryFindResource("DIRotate") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "RotateLeft", Order = 1, Header = ColorVision.ImageEditor.Properties.Resources.RotateLeft, Command = RotateLeftCommand ,Icon = MenuItemIcon.TryFindResource("DIRotateLeft") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "RotateRight", Order = 2, Header = ColorVision.ImageEditor.Properties.Resources.RotateRight, Command = RotateRightCommand, Icon = MenuItemIcon.TryFindResource("DIRotateRight") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "FlipHorizontal", Order = 3, Header = ColorVision.ImageEditor.Properties.Resources.FlipHorizontal, Command = FlipHorizontalCommand, Icon = MenuItemIcon.TryFindResource("DIFlipHorizontal") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "FlipVertical", Order = 4, Header = ColorVision.ImageEditor.Properties.Resources.FlipVertical, Command = FlipVerticalCommand, Icon = MenuItemIcon.TryFindResource("DIFlipVertical") });
-
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Full", Order = 200, Header = ColorVision.ImageEditor.Properties.Resources.FullScreen, Command = FullCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "SaveAsImage", Order = 300, Header = ColorVision.ImageEditor.Properties.Resources.SaveAsImage, Command = SaveAsImageCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Print", Order = 300, Header = ColorVision.ImageEditor.Properties.Resources.Print, Command = PrintImageCommand, Icon = MenuItemIcon.TryFindResource("DIPrint") ,InputGestureText ="Ctrl+P" });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = PropertyCommand, Header = ColorVision.ImageEditor.Properties.Resources.Property, Icon = MenuItemIcon.TryFindResource("DIProperty"), InputGestureText = "Tab" });
         }
 
         public void OpenImage()
@@ -409,7 +669,7 @@ namespace ColorVision.ImageEditor.Draw
             }
         }
 
-        private ImageWindowStatus OldWindowStatus { get; set; }
+        private ImagePlacementContext OldWindowStatus { get; set; }
         public bool IsMax { get; set; }
         public void MaxImage()
         {
@@ -428,7 +688,7 @@ namespace ColorVision.ImageEditor.Draw
                 IsMax = true;
                 if (Parent.Parent is Panel p)
                 {
-                    OldWindowStatus = new ImageWindowStatus();
+                    OldWindowStatus = new ImagePlacementContext();
                     OldWindowStatus.Parent = p;
                     OldWindowStatus.WindowState = window.WindowState;
                     OldWindowStatus.WindowStyle = window.WindowStyle;
@@ -445,7 +705,7 @@ namespace ColorVision.ImageEditor.Draw
                 }
                 else if (Parent.Parent is ContentControl content)
                 {
-                    OldWindowStatus = new ImageWindowStatus();
+                    OldWindowStatus = new ImagePlacementContext();
                     OldWindowStatus.ContentParent = content;
                     OldWindowStatus.WindowState = window.WindowState;
                     OldWindowStatus.WindowStyle = window.WindowStyle;
@@ -615,24 +875,89 @@ namespace ColorVision.ImageEditor.Draw
                 }
                 else if (e.Key == Key.Up)
                 {
-                    TranslateTransform translateTransform = new();
-                    Vector vector = new(0, -10);
-                    translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
-                    translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
-                    ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
+                    // 调用辅助方法获取上一个文件
+                    string? previousFile = GetAdjacentImageFile(Config.FilePath, moveNext: false);
+                    if (!string.IsNullOrEmpty(previousFile))
+                    {
+                        // 更新 openFileDialog 的文件名，以便下次操作基于新文件
+                        OpeningImage?.Invoke(this, previousFile);
+                    }
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Down)
                 {
-                    TranslateTransform translateTransform = new();
-                    Vector vector = new(0, 10);
-                    translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
-                    translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
-                    ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
+                    // 调用辅助方法获取下一个文件
+                    string? nextFile = GetAdjacentImageFile(Config.FilePath, moveNext: true);
+                    if (!string.IsNullOrEmpty(nextFile))
+                    {
+                        // 更新 openFileDialog 的文件名
+                        OpeningImage?.Invoke(this, nextFile);
+                    }
                     e.Handled = true;
                 }
             }
         }
+
+        /// <summary>
+        /// 获取指定文件所在目录中的相邻文件。
+        /// </summary>
+        /// <param name="currentFilePath">当前文件的完整路径。</param>
+        /// <param name="moveNext">为 true 表示获取下一个文件，为 false 表示获取上一个文件。</param>
+        /// <returns>相邻文件的完整路径，如果找不到则返回 null。</returns>
+        private string? GetAdjacentImageFile(string currentFilePath, bool moveNext)
+        {
+            // 1. 定义支持的图片文件扩展名
+
+            var supportedExtensions = ComponentManager.GetInstance().IImageOpens.Keys.ToList();
+            try
+            {
+                // 2. 获取当前文件所在的目录
+                string? directory = Path.GetDirectoryName(currentFilePath);
+                if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
+                {
+                    return null;
+                }
+
+                // 3. 获取目录中所有支持的图片文件，并按名称排序
+                List<string> imageFiles = Directory.GetFiles(directory)
+                    .Where(f => supportedExtensions.Contains(Path.GetExtension(f)))
+                    .OrderBy(f => f) // 按文件名排序，确保顺序一致
+                    .ToList();
+
+                if (imageFiles.Count <= 1)
+                {
+                    return null; // 文件夹中没有其他图片
+                }
+
+                // 4. 在列表中找到当前文件的索引
+                int currentIndex = imageFiles.FindIndex(f => string.Equals(f, currentFilePath, StringComparison.OrdinalIgnoreCase));
+                if (currentIndex == -1)
+                {
+                    return null; // 当前文件不在列表中（可能已重命名或删除）
+                }
+
+                // 5. 计算上一个或下一个文件的索引
+                int newIndex;
+                if (moveNext) // 获取下一个
+                {
+                    newIndex = (currentIndex + 1) % imageFiles.Count;
+                }
+                else // 获取上一个
+                {
+                    newIndex = (currentIndex - 1 + imageFiles.Count) % imageFiles.Count;
+                }
+
+                // 6. 返回新的文件路径
+                return imageFiles[newIndex];
+            }
+            catch (Exception ex)
+            {
+                // 可以添加日志记录
+                Console.WriteLine($"Error finding adjacent image file: {ex.Message}");
+                return null;
+            }
+        }
+
 
         public bool ScaleRulerShow
         { 
@@ -801,6 +1126,24 @@ namespace ColorVision.ImageEditor.Draw
             }
         }
 
+        public bool DrawLine
+        {
+            get => LineManager.IsShow;
+            set
+            {
+                if (LineManager.IsShow == value) return;
+                LineManager.IsShow = value;
+                if (value)
+                {
+                    ImageEditMode = true;
+                    LastChoice = nameof(DrawLine);
+                }
+                OnPropertyChanged();
+            }
+        }
+
+
+
 
         public bool ConcentricCircle
         {
@@ -820,7 +1163,20 @@ namespace ColorVision.ImageEditor.Draw
 
 
 
-
+        public bool GetLastChoice()
+        {
+            if (!string.IsNullOrWhiteSpace(_LastChoice))
+            {
+                Type type = GetType();
+                PropertyInfo property = type.GetProperty(_LastChoice);
+                if (property?.GetValue(this) is bool b)
+                {
+                    return b;
+                }
+                return false;
+            }
+            return false;
+        }
 
         public string LastChoice { get => _LastChoice; set 
             {
@@ -835,7 +1191,6 @@ namespace ColorVision.ImageEditor.Draw
                 _LastChoice = value;
             }
         }
-
         private string _LastChoice { get; set; }
 
 
@@ -869,6 +1224,7 @@ namespace ColorVision.ImageEditor.Draw
 
         public void Dispose()
         {
+            LineManager.Dispose();
             SelectEditorVisual.Dispose();
             CircleManager.Dispose();
             EraseManager.Dispose();
@@ -877,6 +1233,9 @@ namespace ColorVision.ImageEditor.Draw
             BezierCurveManager.Dispose();
             DrawingVisualLists.Clear();
             DrawingVisualLists = null;
+
+
+            ZoomboxSub.LayoutUpdated -= Zoombox1_LayoutUpdated;
 
             Parent = null;
             ZoomboxSub = null;

@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
 
     [SugarTable("t_scgd_algorithm_result_detail_poi_cie_file")]
-    public class AlgResultPoiCieFileModel : PKModel, IContextMenu, IViewResult
+    public class AlgResultPoiCieFileModel : EntityBase, IContextMenu, IViewResult
     {
         public ContextMenu ContextMenu { get; set; }
 

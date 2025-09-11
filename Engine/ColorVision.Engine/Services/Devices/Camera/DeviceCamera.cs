@@ -161,6 +161,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Config.CameraModel = e.CameraModel;
             Config.TakeImageMode = e.TakeImageMode;
             Config.ImageBpp = e.ImageBpp;
+            Config.GainMin = e.CameraParameterLimit.GainMin;
+            Config.GainMax = e.CameraParameterLimit.GainMax;
+            Config.Gain = e.CameraParameterLimit.GainDefault;
+            Config.ExpTimeMax = e.CameraParameterLimit.ExpMax;
+            Config.ExpTimeMin = e.CameraParameterLimit.ExpMin;
+            Config.ExpTime = e.CameraParameterLimit.ExpDefalut;
+            Config.ExpTimeR = e.CameraParameterLimit.ExpDefalut;
+            Config.ExpTimeG = e.CameraParameterLimit.ExpDefalut;
+            Config.ExpTimeB = e.CameraParameterLimit.ExpDefalut;
             Save();
         }
 

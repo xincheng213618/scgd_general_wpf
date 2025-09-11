@@ -1,12 +1,11 @@
-﻿using System.Windows;
+﻿using ColorVision.Common.Utilities;
+using System.Windows;
+using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
-using System.Windows.Media;
-using System.Windows.Input;
-using ColorVision.Common.Utilities;
-using ColorVision.ImageEditor.Draw;
 
-namespace ColorVision.Util.Draw.Special
+namespace ColorVision.ImageEditor.Draw.Special
 {
     public class ImageInfo
     {
@@ -239,12 +238,12 @@ namespace ColorVision.Util.Draw.Special
             if (Control)
             {
                 if (!Image.ContainsVisual(DrawVisualImage))
-                    Image.AddVisual(DrawVisualImage);
+                    Image.AddVisualCommand(DrawVisualImage);
             }
             else
             {
                 if (Image.ContainsVisual(DrawVisualImage))
-                    Image.RemoveVisual(DrawVisualImage);
+                    Image.RemoveVisualCommand(DrawVisualImage);
             }
         }
     }

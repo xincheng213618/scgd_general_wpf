@@ -32,7 +32,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
         public double ParentWidth { get; set; }
         public double ParentHeight { get; set; }
 
-        public ScaleLocation ScaleLocation { get; set; } = ScaleLocation.upperleft;
+        public ScaleLocation ScaleLocation { get; set; } = ScaleLocation.lowerright;
 
         public double ActualLength { get => DefalutTextAttribute.Defalut.ActualLength; set { DefalutTextAttribute.Defalut.ActualLength = value;  NotifyPropertyChanged(); } }
         public string PhysicalUnit { get => DefalutTextAttribute.Defalut.PhysicalUnit; set { DefalutTextAttribute.Defalut.PhysicalUnit = value; NotifyPropertyChanged(); } }

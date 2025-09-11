@@ -1,5 +1,4 @@
 ﻿using ColorVision.Database;
-using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -32,8 +31,6 @@ namespace ColorVision.Engine.Services
         private static ServiceManager _instance;
         private static readonly object _locker = new();
         public static ServiceManager GetInstance() { lock (_locker) { return _instance ??= new ServiceManager(); } }
-        public static UserConfig UserConfig => UserConfig.Instance;
-
         public static SqlSugarClient Db => MySqlControl.GetInstance().DB;
 
         public ObservableCollection<TypeService> TypeServices { get; set; } = new ObservableCollection<TypeService>();
@@ -126,7 +123,7 @@ namespace ColorVision.Engine.Services
             foreach (var typeService1 in TypeServices)
             {
 #pragma warning disable CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
-                List<SysResourceModel> sysResourceModelServices = SysResourceDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "type",(int)typeService1.ServiceTypes }, { "pid",null} ,{ "tenant_id", UserConfig.TenantId }, { "is_delete", 0} });
+                List<SysResourceModel> sysResourceModelServices = SysResourceDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "type",(int)typeService1.ServiceTypes }, { "pid",null} ,{ "tenant_id", 0}, { "is_delete", 0} });
 #pragma warning restore CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
                 foreach (var sysResourceModel in sysResourceModelServices)
                 {
@@ -140,7 +137,7 @@ namespace ColorVision.Engine.Services
 
             foreach (var terminalService in TerminalServices)
             {
-                var sysResourceModels = Db.Queryable<SysResourceModel>().Where(it => it.Pid == terminalService.SysResourceModel.Id && it.TenantId == UserConfig.TenantId && it.IsEnable == true && it.IsDelete == false).ToList();
+                var sysResourceModels = Db.Queryable<SysResourceModel>().Where(it => it.Pid == terminalService.SysResourceModel.Id && it.TenantId == 0 && it.IsEnable == true && it.IsDelete == false).ToList();
                 foreach (var sysResourceModel in sysResourceModels)
                 {
                     DeviceService deviceService =null;

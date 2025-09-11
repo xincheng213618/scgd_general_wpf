@@ -52,10 +52,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         private float _Gain = 10;
 
         public float GainMin { get => _GainMin; set { _GainMin = value; OnPropertyChanged(); } }
-        private float _GainMin = 10;
+        private float _GainMin = 0;
 
         public float GainMax { get => _GainMax; set { _GainMax = value; OnPropertyChanged(); } }
-        private float _GainMax = 10;
+        private float _GainMax = 100;
 
 
         public double ScaleFactor { get => _ScaleFactor;set { _ScaleFactor = value; OnPropertyChanged(); } }
@@ -111,8 +111,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
 
         public int NDPort { get => _NDPort; set { _NDPort = value; OnPropertyChanged(); } }
         private int _NDPort;
-        public bool IsWithND { get => _IsWithND; set { _IsWithND = value; OnPropertyChanged(); } }
-        private bool _IsWithND;
+
+        /// <summary>
+        /// 自动曝光ND
+        /// </summary>
+        public bool IsAutoExpWithND { get => _IsAutoExpWithND; set { _IsAutoExpWithND = value; OnPropertyChanged(); } }
+        private bool _IsAutoExpWithND;
 
         public double Saturation { get => _Saturation; set { _Saturation = value; OnPropertyChanged(); } }
         private double _Saturation = -1;

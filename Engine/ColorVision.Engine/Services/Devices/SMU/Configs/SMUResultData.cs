@@ -1,6 +1,5 @@
 ﻿namespace ColorVision.Engine.Services.Devices.SMU.Configs
 {
-    public delegate void MQTTSMUResultHandler(SMUResultData data);
 
     public class SMUResultData
     {

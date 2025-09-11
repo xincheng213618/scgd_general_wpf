@@ -37,7 +37,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
     }
 
     [SugarTable("t_scgd_camera_license")]
-    public class LicenseModel : ViewModelBase,IPKModel, ISortID, IInitTables
+    public class LicenseModel : ViewModelBase,IEntity, ISortID, IInitTables
     {
         [SugarColumn(ColumnName ="id")]
         public int Id { get; set; }

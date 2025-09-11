@@ -4,7 +4,7 @@ using SqlSugar;
 namespace ColorVision.Engine
 {
     [SugarTable("t_scgd_sys_dictionary")]
-    public class SysDictionaryModel : VPKModel
+    public class SysDictionaryModel : ViewEntity 
     {
         [SugarColumn(ColumnName ="name")]
         public string? Name { get; set; }

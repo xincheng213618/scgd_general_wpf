@@ -5,6 +5,7 @@ using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -28,7 +29,6 @@ namespace ColorVision.ImageEditor.Tif
 
         public void Export(string filePath)
         {
-            throw new NotImplementedException();
         }
 
         public void Process(string filePath)
@@ -52,8 +52,39 @@ namespace ColorVision.ImageEditor.Tif
         }
     }
 
+    [FileExtension(".bmp|.jpg|.jpeg|.png|.webp|.ico|gif")]
+    public class OpenCommon: IImageOpen
+    {
 
-    [FileExtension(".tif", ".tiff")]
+        public async void OpenImage(ImageView imageView, string? filePath)
+        {
+            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return;
+
+            await Task.Run(() =>
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    byte[] imageData = File.ReadAllBytes(filePath);
+                    BitmapImage bitmapImage = ImageUtils.CreateBitmapImage(imageData);
+                    imageView.SetImageSource(bitmapImage.ToWriteableBitmap());
+
+                    imageView.ComboBoxLayers.SelectedIndex = 0;
+                    imageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src", "R", "G", "B" };
+                    imageView.AddSelectionChangedHandler(imageView.ComboBoxLayersSelectionChanged);
+
+                    imageView.UpdateZoomAndScale();
+                });
+            });
+
+        }
+        public List<MenuItemMetadata> GetContextMenuItems(ImageViewConfig imageView) 
+        {
+            return new List<MenuItemMetadata>();
+        }
+    }
+
+
+    [FileExtension(".tif|.tiff")]
     public class Opentif : IImageOpen
     {
 
@@ -134,51 +165,44 @@ namespace ColorVision.ImageEditor.Tif
 
         public async void OpenImage(ImageView imageView, string? filePath)
         {
-            if (string.IsNullOrEmpty(filePath)) return;
-            if (imageView.Config.IsShowLoadImage)
-            {
-                await Task.Run(() =>
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        var data = TiffReader.ReadTiff(filePath);
-                        int channel = GetChannelCount(data);
-                        if (channel == 1)
-                        {
-                            imageView.ComboBoxLayers.SelectedIndex = 0;
-                            imageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src" };
-                            imageView.AddSelectionChangedHandler(imageView.ComboBoxLayersSelectionChanged);
-                        }
-                        else
-                        {
-                            imageView.ComboBoxLayers.SelectedIndex = 0;
-                            imageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src", "R", "G", "B" };
-                            imageView.AddSelectionChangedHandler(imageView.ComboBoxLayersSelectionChanged);
-                        }
+            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return;
 
-                        if (data.Format == PixelFormats.Gray32Float)
-                        {
-                            WriteableBitmap writeableBitmap = new WriteableBitmap(data);
-                            HImage hImage = writeableBitmap.ToHImage();
-                            int i = OpenCVMediaHelper.M_ConvertGray32Float(hImage, out HImage hImage1);
-                            imageView.SetImageSource(hImage1.ToWriteableBitmap());
-                            OpenCVMediaHelper.M_FreeHImageData(hImage1.pData);
-                            hImage.Dispose();
-                        }
-                        else
-                        {
-                            imageView.SetImageSource(new WriteableBitmap(data));
-                        }
-                        imageView.UpdateZoomAndScale();
-                    });
-                });
-            }
-            else
+            await Task.Run(() =>
             {
-                var data = TiffReader.ReadTiff(filePath);
-                imageView.SetImageSource(new WriteableBitmap(data));
-                imageView.UpdateZoomAndScale();
-            };
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    var data = TiffReader.ReadTiff(filePath);
+                    int channel = GetChannelCount(data);
+                    if (channel == 1)
+                    {
+                        imageView.ComboBoxLayers.SelectedIndex = 0;
+                        imageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src" };
+                        imageView.AddSelectionChangedHandler(imageView.ComboBoxLayersSelectionChanged);
+                    }
+                    else
+                    {
+                        imageView.ComboBoxLayers.SelectedIndex = 0;
+                        imageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src", "R", "G", "B" };
+                        imageView.AddSelectionChangedHandler(imageView.ComboBoxLayersSelectionChanged);
+                    }
+
+                    if (data.Format == PixelFormats.Gray32Float)
+                    {
+                        WriteableBitmap writeableBitmap = new WriteableBitmap(data);
+                        HImage hImage = writeableBitmap.ToHImage();
+                        int i = OpenCVMediaHelper.M_ConvertGray32Float(hImage, out HImage hImageProcessed);
+                        imageView.SetImageSource(hImageProcessed.ToWriteableBitmap());
+                        hImageProcessed.Dispose();
+
+                        hImage.Dispose();
+                    }
+                    else
+                    {
+                        imageView.SetImageSource(new WriteableBitmap(data));
+                    }
+                    imageView.UpdateZoomAndScale();
+                });
+            });
 
         }
 

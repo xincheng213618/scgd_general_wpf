@@ -1,5 +1,4 @@
 ﻿using ColorVision.Database;
-using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Templates;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -35,7 +34,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates.Dic
 
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                var models = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", UserConfig.Instance.TenantId }, { "mod_type", 5 } });
+                var models = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", 0}, { "mod_type", 5 } });
                 foreach (var model in models)
                 {
                     var list = SysDictionaryModDetailDao.Instance.GetAllByPid(model.Id);

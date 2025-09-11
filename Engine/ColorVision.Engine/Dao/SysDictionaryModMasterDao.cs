@@ -5,7 +5,7 @@ using System;
 namespace ColorVision.Engine
 {
     [SugarTable("t_scgd_sys_dictionary_mod_master")]
-    public class SysDictionaryModModel : VPKModel, IInitTables
+    public class SysDictionaryModModel : ViewEntity , IInitTables
     {
         [SugarColumn(ColumnName = "code", Length = 32)]
         public string Code { get => _Code; set { _Code = value; OnPropertyChanged(); } }
@@ -59,6 +59,6 @@ namespace ColorVision.Engine
     public class SysDictionaryModMasterDao : BaseTableDao<SysDictionaryModModel>
     {
         public static SysDictionaryModMasterDao Instance { get; set; } = new SysDictionaryModMasterDao();
-        public SysDictionaryModModel? GetByCode(string code, int tenantId) => Db.Queryable<SysDictionaryModModel>().Where(x => x.Code == code && x.IsDelete == false && x.TenantId == tenantId).First();
+        public SysDictionaryModModel? GetByCode(string code) => Db.Queryable<SysDictionaryModModel>().Where(x => x.Code == code && x.IsDelete == false).First();
     }
 }

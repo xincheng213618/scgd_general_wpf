@@ -82,7 +82,7 @@ namespace ColorVision.Engine.Media
                     if (export.IsExportSrc)
                     {
                         cvcie.srcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.srcFileName);
-                        if (File.Exists(cvcie.srcFileName))
+                        if (File.Exists(cvcie.srcFileName) && CVFileUtil.IsCIEFile(cvcie.srcFileName))
                         {
                             if (CVFileUtil.Read(cvcie.srcFileName, out CVCIEFile cvraw))
                             {

@@ -1,10 +1,10 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.ImageEditor;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI.Menus;
-using ColorVision.Util.Draw.Special;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
@@ -105,6 +105,7 @@ namespace ColorVision.Engine.Media
 
             if (File.Exists(ViewAlgorithmConfig.Instance.ShowDateFilePath))
             {
+                Points.Clear();
                 log.Info("ShowDateFilePath:" + ViewAlgorithmConfig.Instance.ShowDateFilePath);
                 string[] lines = File.ReadAllLines(ViewAlgorithmConfig.Instance.ShowDateFilePath);
                 string[] dates = lines[0].Split(',');
@@ -127,7 +128,7 @@ namespace ColorVision.Engine.Media
             }
             void ShowCVCIE(object sender, ImageInfo imageInfo)
             {
-                if (imageView.Config.GetProperties<bool>("IsBufferSet"))
+                if (!imageView.Config.GetProperties<bool>("IsBufferSet"))
                 {
                     Action action = imageView.Config.GetProperties<Action>("LoadBuffer");
                     action?.Invoke();
@@ -351,23 +352,15 @@ namespace ColorVision.Engine.Media
 
             try
             {
-                if (imageView.Config.IsShowLoadImage)
-                {
-                    await Task.Run(() =>
-                    {
-                        CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filePath);
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            imageView.OpenImage(cVCIEFile.ToWriteableBitmap());
-                            imageView.UpdateZoomAndScale();
-                        });
-                    });
-                }
-                else
+                await Task.Run(() =>
                 {
                     CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filePath);
-                    imageView.OpenImage(cVCIEFile.ToWriteableBitmap());
-                };
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        imageView.OpenImage(cVCIEFile.ToWriteableBitmap());
+                        imageView.UpdateZoomAndScale();
+                    });
+                });
             }
             catch (Exception ex)
             {

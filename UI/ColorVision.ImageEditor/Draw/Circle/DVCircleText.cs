@@ -1,5 +1,4 @@
-﻿using System;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
@@ -13,26 +12,26 @@ namespace ColorVision.ImageEditor.Draw
         public TextAttribute TextAttribute { get; set; } = new TextAttribute();
 
         [Category("Attribute"), DisplayName("Text")]
-        public string Text { get => TextAttribute.Text; set { TextAttribute.Text = value;  NotifyPropertyChanged(); } }
+        public string Text { get => TextAttribute.Text; set { TextAttribute.Text = value;  OnPropertyChanged(); } }
 
         [Category("TextAttribute"), DisplayName("FontSize")]
-        public double FontSize { get => TextAttribute.FontSize; set { TextAttribute.FontSize = value; NotifyPropertyChanged(); } }
+        public double FontSize { get => TextAttribute.FontSize; set { TextAttribute.FontSize = value; OnPropertyChanged(); } }
 
         [Category("TextAttribute"), DisplayName("Brush")]
-        public Brush Foreground { get => TextAttribute.Brush; set { TextAttribute.Brush = value; NotifyPropertyChanged(); } }
+        public Brush Foreground { get => TextAttribute.Brush; set { TextAttribute.Brush = value; OnPropertyChanged(); } }
 
         [Category("TextAttribute"), DisplayName("FontFamily")]
-        public FontFamily FontFamily { get => TextAttribute.FontFamily; set { TextAttribute.FontFamily = value; NotifyPropertyChanged(); } }
+        public FontFamily FontFamily { get => TextAttribute.FontFamily; set { TextAttribute.FontFamily = value; OnPropertyChanged(); } }
 
         [Category("TextAttribute"), DisplayName("FontStyle")]
-        public FontStyle FontStyle { get => TextAttribute.FontStyle; set { TextAttribute.FontStyle = value; NotifyPropertyChanged(); } }
+        public FontStyle FontStyle { get => TextAttribute.FontStyle; set { TextAttribute.FontStyle = value; OnPropertyChanged(); } }
         [Category("TextAttribute"), DisplayName("FontWeight")]
-        public FontWeight FontWeight { get => TextAttribute.FontWeight; set { TextAttribute.FontWeight = value; NotifyPropertyChanged(); } }
+        public FontWeight FontWeight { get => TextAttribute.FontWeight; set { TextAttribute.FontWeight = value; OnPropertyChanged(); } }
         [Category("TextAttribute"), DisplayName("FontStretch")]
-        public FontStretch FontStretch { get => TextAttribute.FontStretch; set { TextAttribute.FontStretch = value; NotifyPropertyChanged(); } }
+        public FontStretch FontStretch { get => TextAttribute.FontStretch; set { TextAttribute.FontStretch = value; OnPropertyChanged(); } }
 
         [Category("TextAttribute"), DisplayName("FlowDirection")]
-        public FlowDirection FlowDirection { get => TextAttribute.FlowDirection; set { TextAttribute.FlowDirection = value; NotifyPropertyChanged(); } }
+        public FlowDirection FlowDirection { get => TextAttribute.FlowDirection; set { TextAttribute.FlowDirection = value; OnPropertyChanged(); } }
     }
 
 
@@ -72,7 +71,7 @@ namespace ColorVision.ImageEditor.Draw
                 size = formattedText.Width / 2;
                 dc.DrawText(formattedText, new Point(Attribute.Center.X - size, Attribute.Center.Y - formattedText.Height / 2));
             }
-            dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.Radius);
+            dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.RadiusY);
 
             if (!string.IsNullOrWhiteSpace(Attribute.Msg))
             {
@@ -84,12 +83,13 @@ namespace ColorVision.ImageEditor.Draw
         }
         public override Rect GetRect()
         {
-            return new Rect(Attribute.Center.X - Attribute.Radius, Attribute.Center.Y - Attribute.Radius, Attribute.Radius * 2, Attribute.Radius * 2);
+            return new Rect(Attribute.Center.X - Attribute.Radius, Attribute.Center.Y - Attribute.RadiusY, Attribute.Radius * 2, Attribute.RadiusY * 2);
         }
         public override void SetRect(Rect rect)
         {
             Attribute.Center = new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
-            Attribute.Radius = Math.Min(rect.Width, rect.Height) / 2;
+            Attribute.Radius = rect.Width / 2;
+            Attribute.RadiusY = rect.Height / 2;
             Render();
         }
     }

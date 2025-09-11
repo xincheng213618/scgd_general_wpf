@@ -1,8 +1,6 @@
 ﻿#pragma warning disable CS0414,CS8625
-using Gu.Wpf.Geometry;
 using System;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -97,7 +95,7 @@ namespace ColorVision.ImageEditor.Draw
             rectangleTextProperties.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
             rectangleTextProperties.Text = "Point_" + did;
             DrawingRectangleCache = new DVRectangleText(rectangleTextProperties);
-            DrawCanvas.AddVisual(DrawingRectangleCache);
+            DrawCanvas.AddVisualCommand(DrawingRectangleCache);
 
             e.Handled = true;
         }

@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
     public class ResultJson
     {
-        [JsonProperty("Nle")]
+        [JsonProperty(nameof(Nle))]
         public int Nle { get; set; }
         [JsonProperty("lv_avg")]
         public double LvAvg { get; set; }

@@ -5,7 +5,7 @@
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<VersionPrefix>1.3.5.2</VersionPrefix>
+		<VersionPrefix>1.3.6.1</VersionPrefix>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<PackageReadmeFile></PackageReadmeFile>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -35,6 +35,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\ColorVision.Database\ColorVision.Database.csproj" />
 		<ProjectReference Include="..\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
 		<ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
 	</ItemGroup>

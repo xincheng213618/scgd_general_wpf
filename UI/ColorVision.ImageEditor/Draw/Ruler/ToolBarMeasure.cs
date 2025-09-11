@@ -58,7 +58,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
             {
                 RulerCache = new DrawingVisualRuler();
                 RulerCache.Pen.Thickness = 1 / Zoombox1.ContentMatrix.M11;
-                drawCanvas.AddVisual(RulerCache);
+                drawCanvas.AddVisualCommand(RulerCache);
             }
         }
         private void MouseMove(object sender, MouseEventArgs e)
@@ -103,7 +103,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
             {
                 if (RulerCache != null)
                 {
-                    drawCanvas.RemoveVisual(RulerCache);
+                    drawCanvas.RemoveVisualCommand(RulerCache);
                     RulerCache = null;
                 }
             }

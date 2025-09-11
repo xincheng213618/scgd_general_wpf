@@ -6,14 +6,15 @@ namespace ColorVision.Engine.Services.Devices.SMU.Dao
 {
 
     [SugarTable("t_scgd_measure_result_smu")]
-    public class SMUResultModel : PKModel, IInitTables
+    public class SMUResultModel : EntityBase, IInitTables
     {
 
-        [SugarColumn(ColumnName ="pid")]
-        public int? Pid { get; set; }
+        [SugarColumn(ColumnName ="batch_id",IsNullable =true)]
+        public int? Batchid { get; set; }
 
-        [SugarColumn(ColumnName ="batch_id")]
-        public string? Bid { get; set; }
+
+        [SugarColumn(ColumnName = "device_code", IsNullable = true)]
+        public string? DeviceCode { get; set; }
 
         [SugarColumn(ColumnName ="is_source_v")]
         public bool IsSourceV { get; set; }

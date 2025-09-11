@@ -1,14 +1,13 @@
-﻿using System.Windows;
-using System.Windows.Media;
-using System.Windows.Input;
-using System.Globalization;
-using ColorVision.ImageEditor.Draw;
+﻿using ColorVision.Common.MVVM;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
-using ColorVision.Common.MVVM;
+using System.Windows;
+using System.Windows.Input;
+using System.Windows.Media;
 
-namespace ColorVision.Util.Draw.Special
+namespace ColorVision.ImageEditor.Draw.Special
 {
     public class ToolReferenceLine
     {
@@ -413,14 +412,16 @@ namespace ColorVision.Util.Draw.Special
             if (Control)
             {
                 if (!Image.ContainsVisual(DrawVisualImage))
-                    Image.AddVisual(DrawVisualImage);
+                    Image.AddVisualCommand(DrawVisualImage);
             }
             else
             {
                 if (Image.ContainsVisual(DrawVisualImage))
-                    Image.RemoveVisual(DrawVisualImage);
+                    Image.RemoveVisualCommand(DrawVisualImage);
             }
         }
+
+
 
     }
 }

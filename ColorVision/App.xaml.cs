@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.NativeMethods;
-using ColorVision.Engine.Services.RC;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Languages;

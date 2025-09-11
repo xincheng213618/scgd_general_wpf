@@ -1,0 +1,61 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+		<VersionPrefix>1.0.0.1</VersionPrefix>
+	</PropertyGroup>
+	
+	<ItemGroup>
+		<PackageReference Include="OpenCvSharp4" Version="4.11.0.20250507" />
+		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.11.0.20250507" />
+		<PackageReference Include="OpenCvSharp4.Extensions" Version="4.11.0.20250507" />
+		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.11.0.20250507" />
+	</ItemGroup>
+	
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Exec Command=":: 定义变量&#xD;&#xA;set DebugPluginsDir=$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows\Plugins\$(TargetName)&#xD;&#xA;set ReleasePluginsDir=$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows\Plugins\$(TargetName)&#xD;&#xA;&#xD;&#xA;:: 创建目录（如果不存在）&#xD;&#xA;if not exist &quot;%25DebugPluginsDir%25&quot; (mkdir &quot;%25DebugPluginsDir%25&quot;)&#xD;&#xA;if not exist &quot;%25ReleasePluginsDir%25&quot; (mkdir &quot;%25ReleasePluginsDir%25&quot;)&#xD;&#xA;&#xD;&#xA;:: 复制主DLL到目标目录&#xD;&#xA;copy &quot;$(OutDir)$(TargetName)$(TargetExt)&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;copy &quot;$(OutDir)$(TargetName)$(TargetExt)&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;&#xD;&#xA;:: 复制manifest.json&#xD;&#xA;if exist &quot;$(OutDir)manifest.json&quot; (&#xD;&#xA;    copy &quot;$(OutDir)manifest.json&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;    copy &quot;$(OutDir)manifest.json&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;)&#xD;&#xA;&#xD;&#xA;:: 复制ReadMe.md&#xD;&#xA;if exist &quot;$(OutDir)ReadMe.md&quot; (&#xD;&#xA;    copy &quot;$(OutDir)ReadMe.md&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;    copy &quot;$(OutDir)ReadMe.md&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;)&#xD;&#xA;&#xD;&#xA;:: 复制Changelog.md&#xD;&#xA;if exist &quot;$(OutDir)Changelog.md&quot; (&#xD;&#xA;    copy &quot;$(OutDir)Changelog.md&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;    copy &quot;$(OutDir)Changelog.md&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;)" />
+	</Target>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
+	  <ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Update="Checkerboard\CheckerboardEditor.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="CrossGrid\CrossGridEditor.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Cross\CrossEditor.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Dot\DotEditor.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="NineDot\NineDotEditor.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Ring\RingEditor.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="SFR\SFREditor.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Stripe\StripeEditor.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="manifest.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
+</Project>

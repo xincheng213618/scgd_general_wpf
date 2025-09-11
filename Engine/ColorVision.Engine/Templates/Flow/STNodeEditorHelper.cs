@@ -183,6 +183,12 @@ namespace ColorVision.Engine.Templates.Flow
             STNodePropertyGrid1.SetNode(STNodeEditor.ActiveNode);
             SignStackPanel.Children.Clear();
 
+            if (STNodeEditor.ActiveNode == null)
+            {
+                SignStackPanel.Visibility = Visibility.Collapsed;
+                return;
+            }
+
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.PG.PGNode pgnode)
             {
                 AddStackPanel(name => pgnode.DeviceCode = name, pgnode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().ToList());
@@ -235,7 +241,6 @@ namespace ColorVision.Engine.Templates.Flow
             if (STNodeEditor.ActiveNode is FlowEngineLib.SMUNode sMUNode)
             {
                 AddStackPanel(name => sMUNode.DeviceCode = name, sMUNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList());
-                AddStackPanel(name => sMUNode.NodeName = name, sMUNode.NodeName, "SMUParam设置", new TemplateSMUParam());
             }
 
 
@@ -306,9 +311,8 @@ namespace ColorVision.Engine.Templates.Flow
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Algorithm.CalibrationNode calibrationNode)
             {
-                AddImagePath(name => calibrationNode.ImgFileName = name, calibrationNode.ImgFileName);
-
                 AddStackPanel(name => calibrationNode.DeviceCode = name, calibrationNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCalibration>().ToList());
+                AddImagePath(name => calibrationNode.ImgFileName = name, calibrationNode.ImgFileName);
 
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCalibration>().ToList().Find(a => a.Code == calibrationNode.DeviceCode);
 

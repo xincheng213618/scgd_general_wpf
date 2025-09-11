@@ -51,7 +51,7 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
 
     public class AAFindPoint
     {
-        [JsonProperty("Points")]
+        [JsonProperty(nameof(Points))]
         public PointsData? Points { get; set; }
         [JsonProperty("corner")]
         public List<Corner> Corner { get; set; } = new List<Corner>();

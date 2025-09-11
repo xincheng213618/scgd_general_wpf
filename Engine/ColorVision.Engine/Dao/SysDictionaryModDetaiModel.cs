@@ -21,7 +21,7 @@ namespace ColorVision.Engine
     }
 
     [SugarTable("t_scgd_sys_dictionary_mod_item")]
-    public class SysDictionaryModDetaiModel : VPKModel
+    public class SysDictionaryModDetaiModel : ViewEntity 
     {
         [SugarColumn(ColumnName ="pid")]
         public int PId { get => _PId; set { _PId = value; OnPropertyChanged(); } }

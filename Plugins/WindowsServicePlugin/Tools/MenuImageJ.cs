@@ -2,7 +2,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Media;
 using ColorVision.ImageEditor;
-using ColorVision.ImageEditor.Draw;
 using ColorVision.FileIO;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -63,7 +62,7 @@ namespace WindowsServicePlugin.Tools
 
 
 
-    public class ImageViewExTension: IImageContentMenu
+    public class ImageViewExTension: IImageContentMenuProvider
     {
 
 

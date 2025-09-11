@@ -1,5 +1,4 @@
 ﻿using ColorVision.Database;
-using ColorVision.Engine.Rbac;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -35,7 +34,7 @@ namespace ColorVision.Engine.Templates.Validate
             {
                 void Add(int mod_type)
                 {
-                    var models = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", UserConfig.Instance.TenantId }, { "mod_type", mod_type }, { "is_delete", false } });
+                    var models = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", 0}, { "mod_type", mod_type }, { "is_delete", false } });
                     foreach (var model in models)
                     {
                         var list = SysDictionaryModItemValidateDao.Instance.GetAllByPid(model.Id);

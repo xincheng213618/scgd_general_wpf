@@ -13,7 +13,6 @@ using ColorVision.Themes;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
-using Panuon.WPF.UI;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -221,29 +220,24 @@ namespace ColorVision.Projects.ProjectShiYuan
             {
                 try
                 {
-                    if (handler != null)
+                    long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+                    TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
+
+                    string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
+                    string msg;
+
+                    if (ProjectShiYuanConfig.Instance.LastFlowTime == 0)
                     {
-                        long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
-                        TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
+                        msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
+                    }
+                    else
+                    {
+                        long remainingMilliseconds = ProjectShiYuanConfig.Instance.LastFlowTime - elapsedMilliseconds;
+                        TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
 
-                        string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
-                        string msg;
+                        string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                        if (ProjectShiYuanConfig.Instance.LastFlowTime == 0)
-                        {
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
-                        }
-                        else
-                        {
-                            long remainingMilliseconds = ProjectShiYuanConfig.Instance.LastFlowTime - elapsedMilliseconds;
-                            TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
-
-                            string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
-
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{ProjectShiYuanConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
-                        }
-
-                        handler.UpdateMessage(msg);
+                        msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{ProjectShiYuanConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
                     }
                 }
                 catch
@@ -262,25 +256,21 @@ namespace ColorVision.Projects.ProjectShiYuan
             {
                 try
                 {
-                    if (handler != null)
+                    long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+                    TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
+                    string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
+                    string msg;
+                    if (ProjectShiYuanConfig.Instance.LastFlowTime == 0 || ProjectShiYuanConfig.Instance.LastFlowTime - elapsedMilliseconds < 0)
                     {
-                        long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
-                        TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
-                        string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
-                        string msg;
-                        if (ProjectShiYuanConfig.Instance.LastFlowTime == 0 || ProjectShiYuanConfig.Instance.LastFlowTime - elapsedMilliseconds < 0)
-                        {
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
-                        }
-                        else
-                        {
-                            long remainingMilliseconds = ProjectShiYuanConfig.Instance.LastFlowTime - elapsedMilliseconds;
-                            TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
-                            string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
+                        msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
+                    }
+                    else
+                    {
+                        long remainingMilliseconds = ProjectShiYuanConfig.Instance.LastFlowTime - elapsedMilliseconds;
+                        TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
+                        string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{ProjectShiYuanConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
-                        }
-                        handler.UpdateMessage(msg);
+                        msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{ProjectShiYuanConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
                     }
                 }
                 catch
@@ -305,12 +295,9 @@ namespace ColorVision.Projects.ProjectShiYuan
 
         private FlowControl flowControl;
 
-        private IPendingHandler handler;
-
         private void FlowControl_FlowCompleted(object? sender, FlowControlData  flowControlData)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
-            handler?.Close();
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 100); // 停止定时器
 
@@ -515,7 +502,6 @@ namespace ColorVision.Projects.ProjectShiYuan
                 {
                     flowControl ??= new Engine.Templates.Flow.FlowControl(MQTTControl.GetInstance(), flowEngine);
 
-                    handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
                     flowControl.FlowCompleted += FlowControl_FlowCompleted;
                     string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
                     stopwatch.Reset();
