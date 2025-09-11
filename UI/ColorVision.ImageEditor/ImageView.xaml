@@ -84,7 +84,7 @@
             <Grid Background="{StaticResource SmallGridLinesDrawingBrush}"  Visibility="Collapsed"/>
 
             <Grid x:Name="ZoomGrid" Background="{StaticResource TransparentGridBrush}">
-                <draw:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding MaxZoom}"  MinZoom="{Binding MinZoom}" Grid.Row="1" Grid.RowSpan="2">
+                <draw:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}" Grid.Row="1" Grid.RowSpan="2">
                     <draw:DrawCanvas x:Name="ImageShow"  x:FieldModifier="public" FocusVisualStyle="{x:Null}"   RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto">
                     </draw:DrawCanvas>
                 </draw:ZoomboxSub>
@@ -285,11 +285,11 @@
                             </DockPanel>
                             <DockPanel Margin="0,5,0,5">
                                 <TextBlock Text="CVICE范围" Width="100"/>
-                                <TextBox  Text="{Binding ImageViewModel.MouseMagnifier.Radius}"/>
+                                <TextBox  Text="{Binding MouseMagnifier.Radius}"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
                                 <TextBlock Text="CVICE Type:" Width="100"/>
-                                <hc:ComboBox x:Name="ComboxeType"  SelectedValue="{Binding ImageViewModel.MouseMagnifier.MagnigifierType}"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  />
+                                <hc:ComboBox x:Name="ComboxeType"  SelectedValue="{Binding MouseMagnifier.MagnigifierType}"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  />
                             </DockPanel>
                             <TextBlock Text="设置为圆的时候，输入的值是半径" HorizontalAlignment="Right"/>
                         </StackPanel>
