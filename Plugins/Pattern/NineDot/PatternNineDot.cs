@@ -97,7 +97,7 @@ namespace Pattern.NineDot
                     double x = (1 - u) * (1 - v) * quad[0].X + (1 - u) * v * quad[1].X + u * v * quad[2].X + u * (1 - v) * quad[3].X;
                     double y = (1 - u) * (1 - v) * quad[0].Y + (1 - u) * v * quad[1].Y + u * v * quad[2].Y + u * (1 - v) * quad[3].Y;
 
-                    result.Add(new Point((int)x, (int)y));
+                    result.Add(new Point(Math.Round(x), Math.Round(y)));
                 }
             }
             return result;
@@ -110,8 +110,8 @@ namespace Pattern.NineDot
             int rectH = Config.RectHeight;
 
             // 支持比例和绝对值
-            double marginX = Config.MarginRatioX <= 1 ? width * Config.MarginRatioX : Config.MarginRatioX;
-            double marginY = Config.MarginRatioY <= 1 ? height * Config.MarginRatioY : Config.MarginRatioY;
+            double marginX = Config.MarginRatioX < 1 ? width * Config.MarginRatioX : Config.MarginRatioX;
+            double marginY = Config.MarginRatioY < 1 ? height * Config.MarginRatioY : Config.MarginRatioY;
 
             List<Point> quad;
             if (Config.DotFitType == DotFitType.Center)

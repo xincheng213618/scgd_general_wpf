@@ -27,16 +27,17 @@ namespace Pattern.Dot
         private int _StartY = -1;
 
         /// <summary>
-        /// 列数，-1表示自适应
-        /// </summary>
-        public int Col { get => _Col; set { _Col = value; OnPropertyChanged(); } }
-        private int _Col = -1;
-
-        /// <summary>
         /// 行数，-1表示自适应
         /// </summary>
-        public int Row { get => _Row; set { _Row = value; OnPropertyChanged(); } }
-        private int _Row = -1;
+        public int Rows { get => _Rows; set { _Rows = value; OnPropertyChanged(); } }
+        private int _Rows = -1;
+        /// <summary>
+        /// 列数，-1表示自适应
+        /// </summary>
+        public int Cols { get => _Cols; set { _Cols = value; OnPropertyChanged(); } }
+        private int _Cols = -1;
+
+
 
         /// <summary>
         /// 是否使用矩形（为 false 时使用圆形）
@@ -81,8 +82,8 @@ namespace Pattern.Dot
             int startY = Config.StartY > 0 ? Config.StartY : spacing / 2;
 
             // 自适应行列（优先使用配置值）
-            int nCol = Config.Col > 0 ? Config.Col : (int)Math.Ceiling((width - startX) / (double)spacing);
-            int nRow = Config.Row > 0 ? Config.Row : (int)Math.Ceiling((height - startY) / (double)spacing);
+            int nCol = Config.Cols > 0 ? Config.Cols : (int)Math.Ceiling((width - startX) / (double)spacing);
+            int nRow = Config.Rows > 0 ? Config.Rows : (int)Math.Ceiling((height - startY) / (double)spacing);
 
 
             Scalar color = Config.AltBrush.ToScalar();
