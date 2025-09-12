@@ -1,8 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using OpenCvSharp;
-using SkiaSharp;
 using System.ComponentModel;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -18,7 +16,7 @@ namespace Pattern.NineDot
         private SolidColorBrush _AltBrush = Brushes.White;
 
         public int Radius { get => _Radius; set { _Radius = value; OnPropertyChanged(); } }
-        private int _Radius = 50;
+        private int _Radius = 30;
 
         public int Cols { get => _Cols; set { _Cols = value; OnPropertyChanged(); } }
         private int _Cols =3;
@@ -44,6 +42,13 @@ namespace Pattern.NineDot
         /// </summary>
         public int RectHeight { get => _RectHeight; set { _RectHeight = value; OnPropertyChanged(); } }
         private int _RectHeight = 6;
+
+        public double MarginRatio
+        {
+            get => _MarginRatio;
+            set { _MarginRatio = value; OnPropertyChanged(); }
+        }
+        private double _MarginRatio ; // 默认不内缩
     }
 
     [DisplayName("九点")]
@@ -52,10 +57,10 @@ namespace Pattern.NineDot
         public override UserControl GetPatternEditor() => new NineDotEditor(Config);
         public override string GetTemplateName()
         {
-            string shape = Config.UseRectangle
+            string shape = !Config.UseRectangle
                 ? $"Circle_{Config.Radius}"
-                : $"Rect_{Config.RectWidth}*{Config.RectHeight}";
-            return $"Distortion_{Config.Rows}*{Config.Cols}_{shape}";
+                : $"Rect_{Config.RectWidth}x{Config.RectHeight}";
+            return $"Distortion_{Config.Rows}x{Config.Cols}_{shape}";
         }
 
         public override Mat Gen(int height, int width)
@@ -63,32 +68,35 @@ namespace Pattern.NineDot
             Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
 
             int radius = Config.Radius;
-            // 3x3点阵，间隔算法
             int rows = Config.Rows, cols = Config.Cols;
-            double gapX = (width - cols * radius) / (cols + 1.0);
-            double gapY = (height - rows * radius) / (rows + 1.0);
+            double marginRatio = Config.MarginRatio;
+            int marginX = (int)(width * marginRatio);
+            int marginY = (int)(height * marginRatio);
+
+            int usableWidth = width - 2 * marginX;
+            int usableHeight = height - 2 * marginY;
+
+            double gapX = (usableWidth - cols * radius) / (cols + 1.0);
+            double gapY = (usableHeight - rows * radius) / (rows + 1.0);
 
             Scalar color = Config.AltBrush.ToScalar();
             bool useRect = Config.UseRectangle;
             int rectW = Config.RectWidth > 0 ? Config.RectWidth : Math.Max(1, 2 * radius);
             int rectH = Config.RectHeight > 0 ? Config.RectHeight : Math.Max(1, 2 * radius);
 
-
             for (int i = 0; i < rows; i++)
             {
                 for (int j = 0; j < cols; j++)
                 {
-                    int x = (int)(gapX + radius / 2 + j * (radius + gapX));
-                    int y = (int)(gapY + radius / 2 + i * (radius + gapY));
+                    int x = (int)(marginX + gapX + radius / 2 + j * (radius + gapX));
+                    int y = (int)(marginY + gapY + radius / 2 + i * (radius + gapY));
 
                     if (!useRect)
                     {
-                        // 画实心圆
                         Cv2.Circle(mat, new OpenCvSharp.Point(x, y), radius, color, -1);
                     }
                     else
                     {
-                        // 以 (x,y) 为中心的实心矩形
                         int x0 = x - rectW / 2;
                         int y0 = y - rectH / 2;
 

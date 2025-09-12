@@ -65,8 +65,8 @@ namespace Pattern.Dot
 
         public override string GetTemplateName()
         {
-            var shape = Config.UseRectangle ? "Circle" : "Rect";
-            var size = Config.UseRectangle ? Config.Radius.ToString() : $"{Config.RectWidth}*{Config.RectHeight}";
+            var shape = !Config.UseRectangle ? "Circle" : "Rect";
+            var size = !Config.UseRectangle ? Config.Radius.ToString() : $"{Config.RectWidth}x{Config.RectHeight}";
             return $"DotMatrix_{shape}_{size}";
         }
         public override Mat Gen(int height, int width)

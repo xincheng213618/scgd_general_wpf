@@ -28,6 +28,10 @@
                 <Button Content="K" Margin="0,0,5,0" Click="BtnPickAltColorSet_Click"  Tag="K"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                <TextBlock Width="100" Text="MarginRatio" Margin="0,0,5,0"/>
+                <TextBox Width="70" Text="{Binding MarginRatio}" Margin="0,0,5,0"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                 <TextBlock Width="50" Text="Radius" Margin="0,0,5,0"/>
                 <TextBox Width="70" Text="{Binding Radius}" Margin="0,0,5,0"/>
             </StackPanel>
