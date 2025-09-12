@@ -55,12 +55,20 @@ namespace Pattern.NineDot
         public int RectHeight { get => _RectHeight; set { _RectHeight = value; OnPropertyChanged(); } }
         private int _RectHeight = 6;
 
-        public double MarginRatio
+
+        public double MarginRatioX
         {
-            get => _MarginRatio;
-            set { _MarginRatio = value; OnPropertyChanged(); }
+            get => _MarginRatioX;
+            set { _MarginRatioX = value; OnPropertyChanged(); }
         }
-        private double _MarginRatio = 0.1;
+        private double _MarginRatioX = 0.1;
+
+        public double MarginRatioY
+        {
+            get => _MarginRatioY;
+            set { _MarginRatioY = value; OnPropertyChanged(); }
+        }
+        private double _MarginRatioY = 0.1;
     }
 
     [DisplayName("九点")]
@@ -101,16 +109,46 @@ namespace Pattern.NineDot
             int rectW = Config.RectWidth;
             int rectH = Config.RectHeight;
 
-            double marginX = width * Config.MarginRatio;
-            double marginY = height * Config.MarginRatio;
+            // 支持比例和绝对值
+            double marginX = Config.MarginRatioX <= 1 ? width * Config.MarginRatioX : Config.MarginRatioX;
+            double marginY = Config.MarginRatioY <= 1 ? height * Config.MarginRatioY : Config.MarginRatioY;
 
-            var quad = new List<Point>
-{
-    new Point(marginX, marginY),                        // 左上
-    new Point(width - marginX, marginY),                // 右上
-    new Point(width - marginX, height - marginY),       // 右下
-    new Point(marginX, height - marginY)                // 左下
-};
+            List<Point> quad;
+            if (Config.DotFitType == DotFitType.Center)
+            {
+                quad = new List<Point>
+        {
+            new Point(marginX, marginY),
+            new Point(width - marginX, marginY),
+            new Point(width - marginX, height - marginY),
+            new Point(marginX, height - marginY)
+        };
+            }
+            else
+            {
+                double offsetX = Config.UseRectangle ? rectW / 2.0 : Config.Radius;
+                double offsetY = Config.UseRectangle ? rectH / 2.0 : Config.Radius;
+                if (Config.DotFitType == DotFitType.Inscribed)
+                {
+                    quad = new List<Point>
+            {
+                new Point(marginX + offsetX, marginY + offsetY),
+                new Point(width - marginX - offsetX, marginY + offsetY),
+                new Point(width - marginX - offsetX, height - marginY - offsetY),
+                new Point(marginX + offsetX, height - marginY - offsetY)
+            };
+                }
+                else // Circumscribed
+                {
+                    quad = new List<Point>
+            {
+                new Point(marginX - offsetX, marginY - offsetY),
+                new Point(width - marginX + offsetX, marginY - offsetY),
+                new Point(width - marginX + offsetX, height - marginY + offsetY),
+                new Point(marginX - offsetX, height - marginY + offsetY)
+            };
+                }
+            }
 
             var gridPoints = GetBilinearGridPoints(quad, Config.Rows, Config.Cols);
 
