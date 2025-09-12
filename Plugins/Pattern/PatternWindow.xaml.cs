@@ -291,9 +291,10 @@ namespace Pattern
             }
         }
 
-        private void Open_Click(object sender, RoutedEventArgs e)
-        {
 
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            PatternManager.GetInstance().TemplatePatternFiles.Clear();
         }
     }
 }

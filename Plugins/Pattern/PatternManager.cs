@@ -47,6 +47,7 @@ namespace Pattern
         public RelayCommand OpenPatternPathCommand { get; set; }
         public RelayCommand OpenSaveFilePathCommand { get; set; }
         public RelayCommand ClearSaveFilePathCommand { get; set; }
+        public RelayCommand ClearTemplatePatternFilesCommand { get; set; }
 
         private PatternManager()
         {
@@ -95,12 +96,20 @@ namespace Pattern
             OpenPatternPathCommand = new RelayCommand(a => OpenPatternPath());
             OpenSaveFilePathCommand = new RelayCommand(a => OpenSaveFilePath());
             ClearSaveFilePathCommand = new RelayCommand(a => ClearSaveFilePath());
-
+            ClearTemplatePatternFilesCommand = new RelayCommand(a => ClearTemplatePatternFiles());
         }
 
         public void OpenSaveFilePath()
         {
             PlatformHelper.OpenFolder(Config.SaveFilePath);
+        }
+
+        public void ClearTemplatePatternFiles()
+        {
+            TemplatePatternFiles.Clear();
+            Directory.Delete(PatternPath, true);
+            if (!Directory.Exists(PatternPath))
+                Directory.CreateDirectory(PatternPath);
         }
 
         public void ClearSaveFilePath()
