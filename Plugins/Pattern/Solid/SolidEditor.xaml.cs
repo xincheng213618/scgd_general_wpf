@@ -25,6 +25,7 @@ namespace Pattern.Solid
 
         private void BtnPickMainColor_Click(object sender, RoutedEventArgs e)
         {
+
             var ColorPicker1 = new HandyControl.Controls.ColorPicker();
             ColorPicker1.SelectedBrush = (SolidColorBrush)rectMainColor.Fill;
             ColorPicker1.SelectedColorChanged += (s, e) =>
@@ -34,6 +35,7 @@ namespace Pattern.Solid
             Window window = new Window() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Content = ColorPicker1, Width = 250, Height = 400 };
             ColorPicker1.Confirmed += (s, e) =>
             {
+                Config.Tag = ColorPicker1.SelectedBrush.ToString();
                 Config.MainBrush = ColorPicker1.SelectedBrush;
                 window.Close();
             };
@@ -49,6 +51,7 @@ namespace Pattern.Solid
             if (sender is Button button)
             {
                 string tag = button.Tag.ToString();
+                Config.Tag = tag;
                 if (tag == "R")
                 {
                     Config.MainBrush = Brushes.Red;

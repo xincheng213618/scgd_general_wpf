@@ -40,6 +40,14 @@ namespace Pattern
         private int _Height = 480;
     }
 
+    public enum PatternFormat
+    {
+        bmp,
+        tif,
+        png,
+        jpg
+    }
+
     /// <summary>
     /// PatternWindow.xaml 的交互逻辑
     /// </summary>
@@ -49,7 +57,6 @@ namespace Pattern
 
         private OpenCvSharp.Mat currentMat;
 
-        private readonly string[] imageFormats = {"bmp" ,"tif","png", "jpg"};
         private readonly (string, int, int)[] commonResolutions =
         {
             ("3840x2160",3840,2160), ("1920x1080",1920,1080), ("1280x720",1280,720), ("1024x768",1024,768),
@@ -106,7 +113,7 @@ namespace Pattern
 
             DisplayGrid.Children.Add(imgDisplay);
             this.Closed += (s, e) => Dispose();
-            cmbFormat.ItemsSource = imageFormats;
+            cmbFormat.ItemsSource = Enum.GetValues(typeof(PatternFormat));
             cmbFormat.SelectedIndex = 0;
             cmbResolution.ItemsSource = Array.ConvertAll(commonResolutions, t => t.Item1);
             cmbResolution.SelectedIndex = 4; // 默认640x480
@@ -170,7 +177,7 @@ namespace Pattern
                 System.Windows.MessageBox.Show("请先生成图案");
                 return;
             }
-            string ext = imageFormats[cmbFormat.SelectedIndex];
+            string ext = PatternManager.Config.PatternFormat.ToString();
             string pattern = Patterns[cmbPattern1.SelectedIndex].Name;
             string filename = $"{pattern}_{txtWidth.Text}x{txtHeight.Text}_{DateTime.Now:yyyyMMddHHmmss}.{ext}";
             var dlg = new Microsoft.Win32.SaveFileDialog
@@ -220,7 +227,17 @@ namespace Pattern
 
         private void TempSave_Click(object sender, RoutedEventArgs e)
         {
-            string json = Path.Combine(PatternManager.GetInstance().PatternPath, PatternMeta.Name + "_" +Config.Width + "x"+ Config.Height +"_" + DateTime.Now.ToString("HHmmss")) +".json";
+            string json = Path.Combine(PatternManager.GetInstance().PatternPath, Config.Width + "x" + Config.Height + "_" + PatternMeta.Pattern.GetTemplateName() + ".json");
+            if (File.Exists(json))
+            {
+               if (MessageBox.Show(Application.Current.GetActiveWindow(), "是否替换模板", "Pattern", MessageBoxButton.YesNo) == MessageBoxResult.No)
+                    return;
+                if (PatternManager.GetInstance().TemplatePatternFiles.FirstOrDefault(a => a.FilePath == json) is TemplatePatternFile templatePatternFile)
+                {
+                    PatternManager.GetInstance().TemplatePatternFiles.Remove(templatePatternFile);
+                }
+            }
+          
             TemplatePattern templatePattern = new TemplatePattern();
             templatePattern.PatternName = PatternMeta.Name;
             templatePattern.PatternWindowConfig = Config;
@@ -236,13 +253,15 @@ namespace Pattern
         {
             if (!Directory.Exists(PatternManager.Config.SaveFilePath))
                 Directory.CreateDirectory(PatternManager.Config.SaveFilePath);
+
             foreach (var item in TemplatePatternFiles)
             {
                 SetTemplatePattern(item.FilePath);
                 currentMat?.Dispose();
                 currentMat = Patterns[cmbPattern1.SelectedIndex].Pattern.Gen(Config.Height, Config.Width);
                 string name = Path.GetFileNameWithoutExtension(item.FilePath);
-                currentMat.SaveImage(Path.Combine(PatternManager.Config.SaveFilePath ,name +".bmp"));
+
+                currentMat.SaveImage(Path.Combine(PatternManager.Config.SaveFilePath ,name + $".{PatternManager.Config.PatternFormat}"));
             }
             PlatformHelper.OpenFolder(PatternManager.Config.SaveFilePath);
         }

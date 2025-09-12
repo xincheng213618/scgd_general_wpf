@@ -62,7 +62,10 @@ namespace Pattern.Dot
     public class PatternDot : IPatternBase<PatternDotConfig>
     {
         public override UserControl GetPatternEditor() => new DotEditor(Config);
-
+        public override string GetTemplateName()
+        {
+            return "Dot" + "_" + DateTime.Now.ToString("HHmmss");
+        }
         public override Mat Gen(int height, int width)
         {
             Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());

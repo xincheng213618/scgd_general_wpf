@@ -16,6 +16,10 @@ namespace Pattern
         [DisplayName("图卡生成路径"), PropertyEditorType(PropertyEditorType.TextSelectFolder)]
         public string SaveFilePath { get => _SaveFilePath; set { _SaveFilePath = value; OnPropertyChanged(); } }
         private string _SaveFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Pattern");
+
+        public PatternFormat PatternFormat { get => _PatternFormat; set { _PatternFormat = value; OnPropertyChanged(); } }
+        private PatternFormat _PatternFormat = PatternFormat.bmp;
+
     }
 
     public class PatternManager
@@ -35,7 +39,6 @@ namespace Pattern
         public RelayCommand EditCommand { get; set; }
         public RelayCommand OpenPatternPathCommand { get; set; }
         public RelayCommand OpenSaveFilePathCommand { get; set; }
-
 
         private PatternManager()
         {

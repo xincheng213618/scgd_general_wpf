@@ -37,7 +37,10 @@ namespace Pattern.Checkerboard
     public class PatternCheckerboard : IPatternBase<PatternCheckerboardConfig>
     {
         public override UserControl GetPatternEditor() => new CheckerboardEditor(Config);
-
+        public override string GetTemplateName()
+        {
+            return "Checkerboard" + "_" + DateTime.Now.ToString("HHmmss");
+        }
         public override Mat Gen(int height, int width)
         {
             var mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());

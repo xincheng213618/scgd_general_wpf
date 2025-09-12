@@ -36,7 +36,10 @@ namespace Pattern.SFR
     public class PatternSFR : IPatternBase<PatternSFRConfig>
     {
         public override UserControl GetPatternEditor() => new SFREditor(Config);
-
+        public override string GetTemplateName()
+        {
+            return "SFR" + "_" + DateTime.Now.ToString("HHmmss");
+        }
         public override Mat Gen(int height, int width)
         {
             int cols = Config.Cols;
