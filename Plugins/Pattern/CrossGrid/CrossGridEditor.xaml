@@ -52,9 +52,10 @@
                 <TextBlock Width="140" Text="VerticalLineWidth" Margin="0,0,5,0"/>
                 <TextBox Width="70" Text="{Binding VerticalLineWidth}" Margin="0,0,5,0"/>
             </StackPanel>
+
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                 <TextBlock Width="140" Text="AddEdgeLines" Margin="0,0,5,0"/>
-                <TextBox Width="70" Text="{Binding AddEdgeLines}" Margin="0,0,5,0"/>
+                <CheckBox Width="70" IsChecked="{Binding AddEdgeLines}" Margin="0,0,5,0"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                 <TextBlock Width="140" Text="EdgeOffsetPx" Margin="0,0,5,0"/>

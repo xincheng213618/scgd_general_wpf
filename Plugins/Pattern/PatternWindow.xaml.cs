@@ -179,7 +179,7 @@ namespace Pattern
                 return;
             }
             string ext = PatternManager.Config.PatternFormat.ToString();
-            string json = Path.Combine(PatternManager.GetInstance().PatternPath, Config.Width + "x" + Config.Height + "_" + PatternMeta.Pattern.GetTemplateName() + ".json");
+            string json = Path.Combine(PatternManager.GetInstance().PatternPath, Config.Width + "x" + Config.Height + "_" + PatternMeta.Pattern.GetTemplateName() + $".{PatternManager.Config.PatternFormat}");
             var dlg = new Microsoft.Win32.SaveFileDialog
             {
                 Filter = "PNG|*.png|JPEG|*.jpg|BMP|*.bmp",

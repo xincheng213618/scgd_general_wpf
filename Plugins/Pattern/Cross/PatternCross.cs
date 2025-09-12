@@ -22,6 +22,9 @@ namespace Pattern.Cross
 
         public int VerticalWidth { get => _VerticalWidth; set { _VerticalWidth = value; OnPropertyChanged(); } }
         private int _VerticalWidth = 3;
+
+        public string MainBrushTag { get; set; } = "K";
+        public string AltBrushTag { get; set; } = "W";
     }
 
     [DisplayName("十字")]
@@ -30,13 +33,29 @@ namespace Pattern.Cross
         public override UserControl GetPatternEditor() => new CrossEditor(Config);
         public override string GetTemplateName()
         {
-            return "Cross" + "_" + DateTime.Now.ToString("HHmmss");
+            return "Cross" + "_" + Config.MainBrushTag + Config.AltBrushTag + $"_{Config.HorizontalWidth}*{Config.VerticalWidth}";
         }
         public override Mat Gen(int height, int width)
         {
             Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
-            OpenCvSharp.Cv2.Line(mat, new OpenCvSharp.Point(0, height / 2), new OpenCvSharp.Point(width, height / 2), Config.AltBrush.ToScalar(), Config.HorizontalWidth);
-            OpenCvSharp.Cv2.Line(mat, new OpenCvSharp.Point(width / 2, 0), new OpenCvSharp.Point(width / 2, height), Config.AltBrush.ToScalar(), Config.VerticalWidth);
+
+            // 横线（中心线）
+            int hCenter = height / 2;
+            int hStart = Math.Max(0, hCenter - Config.HorizontalWidth / 2);
+            int hEnd = Math.Min(height, hCenter + (Config.HorizontalWidth + 1) / 2);
+            for (int y = hStart; y < hEnd; y++)
+            {
+                mat.Row(y).SetTo(Config.AltBrush.ToScalar());
+            }
+
+            // 竖线（中心线）
+            int vCenter = width / 2;
+            int vStart = Math.Max(0, vCenter - Config.VerticalWidth / 2);
+            int vEnd = Math.Min(width, vCenter + (Config.VerticalWidth + 1) / 2);
+            for (int x = vStart; x < vEnd; x++)
+            {
+                mat.Col(x).SetTo(Config.AltBrush.ToScalar());
+            }
             return mat;
         }
     }

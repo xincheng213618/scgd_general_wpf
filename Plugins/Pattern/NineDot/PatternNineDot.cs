@@ -1,5 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
+using ColorVision.Util.Draw.Rectangle;
 using OpenCvSharp;
 using System.ComponentModel;
 using System.Windows.Controls;
@@ -7,6 +10,14 @@ using System.Windows.Media;
 
 namespace Pattern.NineDot
 {
+    // 新增枚举
+    public enum DotFitType
+    {
+        Center,         // 居中原样
+        Inscribed,      // 内切
+        Circumscribed   // 外切
+    }
+
     public class PatternNineDotConfig:ViewModelBase,IConfig
     {
         public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; OnPropertyChanged(); } }
@@ -23,7 +34,8 @@ namespace Pattern.NineDot
 
         public int Rows { get => _Rows; set { _Rows = value; OnPropertyChanged(); } }
         private int _Rows = 3;
-
+        public DotFitType DotFitType { get => _DotFitType; set { _DotFitType = value; OnPropertyChanged(); } }
+        private DotFitType _DotFitType = DotFitType.Center;
 
         /// <summary>
         /// 是否使用矩形（为 false 时使用圆形）
@@ -48,7 +60,7 @@ namespace Pattern.NineDot
             get => _MarginRatio;
             set { _MarginRatio = value; OnPropertyChanged(); }
         }
-        private double _MarginRatio ; // 默认不内缩
+        private double _MarginRatio = 0.1;
     }
 
     [DisplayName("九点")]
@@ -62,57 +74,56 @@ namespace Pattern.NineDot
                 : $"Rect_{Config.RectWidth}x{Config.RectHeight}";
             return $"Distortion_{Config.Rows}x{Config.Cols}_{shape}";
         }
-
-        public override Mat Gen(int height, int width)
+        public static List<Point> GetBilinearGridPoints(List<Point> quad, int rows, int cols)
         {
-            Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
-
-            int radius = Config.Radius;
-            int rows = Config.Rows, cols = Config.Cols;
-            double marginRatio = Config.MarginRatio;
-            int marginX = (int)(width * marginRatio);
-            int marginY = (int)(height * marginRatio);
-
-            int usableWidth = width - 2 * marginX;
-            int usableHeight = height - 2 * marginY;
-
-            double gapX = (usableWidth - cols * radius) / (cols + 1.0);
-            double gapY = (usableHeight - rows * radius) / (rows + 1.0);
-
-            Scalar color = Config.AltBrush.ToScalar();
-            bool useRect = Config.UseRectangle;
-            int rectW = Config.RectWidth > 0 ? Config.RectWidth : Math.Max(1, 2 * radius);
-            int rectH = Config.RectHeight > 0 ? Config.RectHeight : Math.Max(1, 2 * radius);
-
+            var result = new List<Point>();
+            double rowStep = (rows > 1) ? 1.0 / (rows - 1) : 0;
+            double colStep = (cols > 1) ? 1.0 / (cols - 1) : 0;
             for (int i = 0; i < rows; i++)
             {
                 for (int j = 0; j < cols; j++)
                 {
-                    int x = (int)(marginX + gapX + radius / 2 + j * (radius + gapX));
-                    int y = (int)(marginY + gapY + radius / 2 + i * (radius + gapY));
+                    double u = i * rowStep;
+                    double v = j * colStep;
 
-                    if (!useRect)
-                    {
-                        Cv2.Circle(mat, new OpenCvSharp.Point(x, y), radius, color, -1);
-                    }
-                    else
-                    {
-                        int x0 = x - rectW / 2;
-                        int y0 = y - rectH / 2;
+                    double x = (1 - u) * (1 - v) * quad[0].X + (1 - u) * v * quad[1].X + u * v * quad[2].X + u * (1 - v) * quad[3].X;
+                    double y = (1 - u) * (1 - v) * quad[0].Y + (1 - u) * v * quad[1].Y + u * v * quad[2].Y + u * (1 - v) * quad[3].Y;
 
-                        int xClip = Math.Max(0, x0);
-                        int yClip = Math.Max(0, y0);
-                        int wClip = Math.Min(rectW, width - xClip);
-                        int hClip = Math.Min(rectH, height - yClip);
-
-                        if (wClip > 0 && hClip > 0)
-                        {
-                            Cv2.Rectangle(mat, new Rect(xClip, yClip, wClip, hClip), color, -1);
-                        }
-                    }
+                    result.Add(new Point((int)x, (int)y));
                 }
             }
-            return mat;
+            return result;
         }
+        public override Mat Gen(int height, int width)
+        {
+            Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
+            Scalar color = Config.AltBrush.ToScalar();
+            int rectW = Config.RectWidth;
+            int rectH = Config.RectHeight;
+
+            double marginX = width * Config.MarginRatio;
+            double marginY = height * Config.MarginRatio;
+
+            var quad = new List<Point>
+{
+    new Point(marginX, marginY),                        // 左上
+    new Point(width - marginX, marginY),                // 右上
+    new Point(width - marginX, height - marginY),       // 右下
+    new Point(marginX, height - marginY)                // 左下
+};
+
+            var gridPoints = GetBilinearGridPoints(quad, Config.Rows, Config.Cols);
+
+            foreach (var pt in gridPoints)
+            {
+                if (!Config.UseRectangle)
+                    Cv2.Circle(mat, pt, Config.Radius, color, -1);
+                else
+                    Cv2.Rectangle(mat, new Rect(pt.X - rectW / 2, pt.Y - rectH / 2, rectW, rectH), color, -1);
+            }
+            return mat;
+
+        }
+
     }
 }

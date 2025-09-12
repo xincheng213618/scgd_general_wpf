@@ -58,7 +58,7 @@ namespace Pattern.Checkerboard
         {
             var mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
 
-            int gridX, gridY, cellW, cellH;
+            double gridX, gridY, cellW, cellH;
 
             if (Config.SizeMode == CheckerboardSizeMode.ByGridCount)
             {
@@ -82,12 +82,12 @@ namespace Pattern.Checkerboard
             {
                 for (int x = 0; x < gridX; x++)
                 {
-                    int startX = x * cellW;
-                    int startY = y * cellH;
-                    int w = (x == gridX - 1) ? width - startX : cellW;
-                    int h = (y == gridY - 1) ? height - startY : cellH;
+                    double startX = x * cellW;
+                    double startY = y * cellH;
+                    double w = (x == gridX - 1) ? width - startX : cellW;
+                    double h = (y == gridY - 1) ? height - startY : cellH;
                     if ((x + y) % 2 == 1)
-                        Cv2.Rectangle(mat, new Rect(startX, startY, w, h), Config.AltBrush.ToScalar(), -1);
+                        Cv2.Rectangle(mat, new Rect((int)startX, (int)startY, (int)w, (int)h), Config.AltBrush.ToScalar(), -1);
                 }
             }
             return mat;

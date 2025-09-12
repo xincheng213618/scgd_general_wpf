@@ -31,6 +31,7 @@ namespace Pattern.Cross
             Window window = new Window() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Content = ColorPicker1, Width = 250, Height = 400 };
             ColorPicker1.Confirmed += (s, e) =>
             {
+                Config.MainBrushTag = ColorPicker1.SelectedBrush.ToString();
                 Config.MainBrush = ColorPicker1.SelectedBrush;
 
                 window.Close();
@@ -47,6 +48,7 @@ namespace Pattern.Cross
             if (sender is Button button)
             {
                 string tag = button.Tag.ToString();
+                Config.MainBrushTag = tag;
                 if (tag == "R")
                 {
                     Config.MainBrush = Brushes.Red;
@@ -82,6 +84,7 @@ namespace Pattern.Cross
             Window window = new Window() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Content = ColorPicker1, Width = 250, Height = 400 };
             ColorPicker1.Confirmed += (s, e) =>
             {
+                Config.AltBrushTag = ColorPicker1.SelectedBrush.ToString();
                 Config.AltBrush = ColorPicker1.SelectedBrush;
                 window.Close();
             };
@@ -97,6 +100,7 @@ namespace Pattern.Cross
             if (sender is Button button)
             {
                 string tag = button.Tag.ToString();
+                Config.AltBrushTag = tag;
                 if (tag == "R")
                 {
                     Config.AltBrush = Brushes.Red;

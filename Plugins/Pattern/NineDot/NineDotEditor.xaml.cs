@@ -20,6 +20,7 @@ namespace Pattern.NineDot
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
+            CbDotFitType.ItemsSource = Enum.GetValues(typeof(DotFitType)); 
         }
         private void BtnPickMainColor_Click(object sender, RoutedEventArgs e)
         {
