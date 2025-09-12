@@ -17,8 +17,15 @@ namespace Pattern
         public string SaveFilePath { get => _SaveFilePath; set { _SaveFilePath = value; OnPropertyChanged(); } }
         private string _SaveFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Pattern");
 
+        [DisplayName("切换模板后创建图像")]
+        public bool IsSwitchCreate { get => _IsSwitchCreate; set { _IsSwitchCreate = value; OnPropertyChanged(); } }
+        private bool _IsSwitchCreate = true;
+
+        [DisplayName("保存格式")]
         public PatternFormat PatternFormat { get => _PatternFormat; set { _PatternFormat = value; OnPropertyChanged(); } }
         private PatternFormat _PatternFormat = PatternFormat.bmp;
+
+
 
     }
 
@@ -39,6 +46,7 @@ namespace Pattern
         public RelayCommand EditCommand { get; set; }
         public RelayCommand OpenPatternPathCommand { get; set; }
         public RelayCommand OpenSaveFilePathCommand { get; set; }
+        public RelayCommand ClearSaveFilePathCommand { get; set; }
 
         private PatternManager()
         {
@@ -86,6 +94,7 @@ namespace Pattern
             EditCommand = new RelayCommand(a => Edit());
             OpenPatternPathCommand = new RelayCommand(a => OpenPatternPath());
             OpenSaveFilePathCommand = new RelayCommand(a => OpenSaveFilePath());
+            ClearSaveFilePathCommand = new RelayCommand(a => ClearSaveFilePath());
 
         }
 
@@ -93,6 +102,36 @@ namespace Pattern
         {
             PlatformHelper.OpenFolder(Config.SaveFilePath);
         }
+
+        public void ClearSaveFilePath()
+        {
+            // 2. 检查目录是否存在
+            if (Directory.Exists(Config.SaveFilePath))
+            {
+                var confirmResult = MessageBox.Show("确定要清空内容吗？", "清空确认", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (confirmResult != MessageBoxResult.Yes)
+                {
+                    return; // 用户取消
+                }
+                try
+                {
+                    Directory.Delete(Config.SaveFilePath, true);
+                    if (!Directory.Exists(Config.SaveFilePath))
+                        Directory.CreateDirectory(Config.SaveFilePath);
+                    // 3. 清空成功提示
+                    MessageBox.Show("清空成功！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"清空失败：{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            else
+            {
+                MessageBox.Show("目录不存在！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
         public void OpenPatternPath()
         {
             PlatformHelper.OpenFolder(PatternPath);

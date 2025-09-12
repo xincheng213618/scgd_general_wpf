@@ -30,15 +30,15 @@
             <ToggleButton  Style="{StaticResource ToggleButtonSwitch}" Content="IsHorizontal" Margin="0,0,2,0" IsChecked="{Binding IsHorizontal}" HorizontalAlignment="Left"/>
 
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5" Visibility="{Binding IsHorizontal ,Converter={StaticResource bool2VisibilityConverter}}">
-                <TextBlock Width="50" Text="Spacing" Margin="0,0,5,0"/>
+                <TextBlock Width="45" Text="Period" Margin="0,0,5,0"/>
                 <TextBox Width="70" Text="{Binding HorizontalSpacing}" Margin="0,0,5,0"/>
-                <TextBlock Width="50" Text="Width" Margin="0,0,5,0"/>
+                <TextBlock Width="80" Text="LineThickness" Margin="0,0,5,0"/>
                 <TextBox Width="70" Text="{Binding HorizontalWidth}" Margin="0,0,5,0"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5"  Visibility="{Binding IsHorizontal ,Converter={StaticResource bool2VisibilityConverter1}}">
-                <TextBlock Width="50" Text="Spacing" Margin="0,0,5,0"/>
+                <TextBlock Width="45" Text="Period" Margin="0,0,5,0"/>
                 <TextBox Width="70" Text="{Binding VerticalSpacing}" Margin="0,0,5,0"/>
-                <TextBlock Width="50" Text="Width" Margin="0,0,5,0"/>
+                <TextBlock Width="80" Text="LineThickness" Margin="0,0,5,0"/>
                 <TextBox Width="70" Text="{Binding VerticalWidth}" Margin="0,0,5,0"/>
             </StackPanel>
         </StackPanel>

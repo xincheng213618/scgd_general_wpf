@@ -15,15 +15,8 @@ namespace Pattern.NineDot
         public SolidColorBrush AltBrush { get => _AltBrush; set { _AltBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _AltBrush = Brushes.White;
 
-
         public int Radius { get => _Radius; set { _Radius = value; OnPropertyChanged(); } }
         private int _Radius = 50;
-
-        public int StartX { get => _StartX; set { _StartX = value; OnPropertyChanged(); } }
-        private int _StartX = -1;
-
-        public int StartY { get => _StartY; set { _StartY = value; OnPropertyChanged(); } }
-        private int _StartY = -1;
 
         public int Cols { get => _Cols; set { _Cols = value; OnPropertyChanged(); } }
         private int _Cols =3;
@@ -38,7 +31,7 @@ namespace Pattern.NineDot
         public override UserControl GetPatternEditor() => new NineDotEditor(Config);
         public override string GetTemplateName()
         {
-            return "NineDot" + "_" + DateTime.Now.ToString("HHmmss");
+            return "Distortion" + "_" + $"{Config.Rows}*{Config.Cols}_Circle_{Config.Radius}" ;
         }
         public override Mat Gen(int height, int width)
         {

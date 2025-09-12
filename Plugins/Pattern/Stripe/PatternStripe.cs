@@ -36,6 +36,12 @@ namespace Pattern.Stripe
 
         public int VerticalWidth { get => _VerticalWidth; set { _VerticalWidth = value; OnPropertyChanged(); } }
         private int _VerticalWidth = 1;
+
+
+        public string MainBrushTag { get; set; } = "K";
+        public string AltBrushTag { get; set; } = "W";
+
+
     }
 
     /// <summary>
@@ -49,7 +55,7 @@ namespace Pattern.Stripe
 
         public override string GetTemplateName()
         {
-            return "Stripe" + "_" + DateTime.Now.ToString("HHmmss");
+            return "Stripe" + "_" + Config.MainBrushTag + Config.AltBrushTag + "_" + (Config.IsHorizontal ? $"H_{Config.HorizontalSpacing}_{Config.HorizontalWidth}" : $"V_{Config.VerticalSpacing}_{Config.VerticalWidth}"); ;
         }
 
         public override Mat Gen(int height, int width)

@@ -2,6 +2,7 @@
 using ColorVision.UI;
 using OpenCvSharp;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Windows.Controls;
 using System.Windows.Media;
 
@@ -31,6 +32,9 @@ namespace Pattern.Checkerboard
 
         public CheckerboardSizeMode SizeMode { get => _SizeMode; set { _SizeMode = value; OnPropertyChanged(); } }
         private CheckerboardSizeMode _SizeMode = CheckerboardSizeMode.ByGridCount;
+
+        public string MainBrushTag { get; set; } = "W";
+        public string AltBrushTag { get; set; } = "K";
     }
 
     [DisplayName("棋盘格")]
@@ -39,7 +43,16 @@ namespace Pattern.Checkerboard
         public override UserControl GetPatternEditor() => new CheckerboardEditor(Config);
         public override string GetTemplateName()
         {
-            return "Checkerboard" + "_" + DateTime.Now.ToString("HHmmss");
+            string str = string.Empty;
+            if (Config.SizeMode == CheckerboardSizeMode.ByGridCount)
+            {
+                str = $"{Config.GridX}x{Config.GridY}";
+            }
+            else 
+            {
+                str = $"{Config.CellW}x{Config.CellH}";
+            }
+            return "Checkerboard" + "_" + Config.MainBrushTag + Config.AltBrushTag + "_" + str;
         }
         public override Mat Gen(int height, int width)
         {

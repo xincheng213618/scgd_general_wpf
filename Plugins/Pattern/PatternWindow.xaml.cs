@@ -129,6 +129,7 @@ namespace Pattern
                     {
                         PatternMeta = selectedPattern;
                         PatternEditorGrid.Children.Add(pattern.GetPatternEditor());
+
                     }
                 }
             };
@@ -178,13 +179,12 @@ namespace Pattern
                 return;
             }
             string ext = PatternManager.Config.PatternFormat.ToString();
-            string pattern = Patterns[cmbPattern1.SelectedIndex].Name;
-            string filename = $"{pattern}_{txtWidth.Text}x{txtHeight.Text}_{DateTime.Now:yyyyMMddHHmmss}.{ext}";
+            string json = Path.Combine(PatternManager.GetInstance().PatternPath, Config.Width + "x" + Config.Height + "_" + PatternMeta.Pattern.GetTemplateName() + ".json");
             var dlg = new Microsoft.Win32.SaveFileDialog
             {
                 Filter = "PNG|*.png|JPEG|*.jpg|BMP|*.bmp",
                 DefaultExt = ext,
-                FileName = filename
+                FileName = json
             };
             if (dlg.ShowDialog() == true)
             {
@@ -218,6 +218,15 @@ namespace Pattern
                 cmbPattern1.SelectedItem = PatternMeta;
 
 
+                if (PatternManager.Config.IsSwitchCreate)
+                {
+                    currentMat?.Dispose();
+
+                    currentMat = PatternMeta.Pattern.Gen(Config.Height, Config.Width);
+
+                    imgDisplay.ImageShow.Source = currentMat.ToBitmapSource();
+                    imgDisplay.Zoombox1.ZoomUniform();
+                }
             }
             catch (Exception ex)
             {
