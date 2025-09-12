@@ -42,7 +42,7 @@ namespace Pattern.Dot
         /// 是否使用矩形（为 false 时使用圆形）
         /// </summary>
         public bool UseRectangle { get => _UseRectangle; set { _UseRectangle = value; OnPropertyChanged(); } }
-        private bool _UseRectangle = false;
+        private bool _UseRectangle;
 
         /// <summary>
         /// 矩形宽度（像素）
@@ -62,9 +62,12 @@ namespace Pattern.Dot
     public class PatternDot : IPatternBase<PatternDotConfig>
     {
         public override UserControl GetPatternEditor() => new DotEditor(Config);
+
         public override string GetTemplateName()
         {
-            return "Dot" + "_" + DateTime.Now.ToString("HHmmss");
+            var shape = Config.UseRectangle ? "Circle" : "Rect";
+            var size = Config.UseRectangle ? Config.Radius.ToString() : $"{Config.RectWidth}*{Config.RectHeight}";
+            return $"DotMatrix_{shape}_{size}";
         }
         public override Mat Gen(int height, int width)
         {

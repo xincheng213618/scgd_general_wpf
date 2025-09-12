@@ -28,13 +28,13 @@
 
 
                 <Button Content="保存成模板" Click="TempSave_Click"/>
-                <StackPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                     <Button Content="生成所有模板图片" Click="GenAllTemplate_Click"/>
                     <Button Content="打开输出文件夹" Command="{Binding OpenSaveFilePathCommand}"/>
                     <Button Content="清空" Command="{Binding ClearSaveFilePathCommand}"/>
                 </StackPanel>
 
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" >
                     <Button Command="{Binding ClearTemplatePatternFilesCommand}" Padding="2" Height="25" Width="25" Margin="0,0,5,0" >
                         <Button.Triggers>
                             <EventTrigger RoutedEvent="Button.Click">

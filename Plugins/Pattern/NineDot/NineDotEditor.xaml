@@ -37,6 +37,16 @@
                 <TextBlock Width="50" Text="Rows" Margin="0,0,5,0"/>
                 <TextBox Width="70" Text="{Binding Rows}" Margin="0,0,5,0"/>
             </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                <TextBlock Width="100" Text="UseRectangle" Margin="0,0,5,0"/>
+                <CheckBox Width="70" IsChecked="{Binding UseRectangle}" Margin="0,0,5,0"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Visibility="{Binding UseRectangle,Converter={StaticResource bool2VisibilityConverter}}" Margin="0,0,0,5">
+                <TextBlock Width="50" Text="Height" Margin="0,0,5,0"/>
+                <TextBox Width="70" Text="{Binding RectHeight}" Margin="0,0,5,0"/>
+                <TextBlock Width="50" Text="Width" Margin="0,0,5,0"/>
+                <TextBox Width="70" Text="{Binding RectWidth}" Margin="0,0,5,0"/>
+            </StackPanel>
         </StackPanel>
 
     </Grid>

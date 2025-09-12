@@ -28,7 +28,7 @@
                 <Button Content="K" Margin="0,0,5,0" Click="BtnPickAltColorSet_Click"  Tag="K"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBlock Width="50" Text="Spacing" Margin="0,0,5,0"/>
+                <TextBlock Width="50" Text="Period" Margin="0,0,5,0"/>
                 <TextBox Width="70" Text="{Binding Spacing}" Margin="0,0,5,0"/>
             </StackPanel>
 
