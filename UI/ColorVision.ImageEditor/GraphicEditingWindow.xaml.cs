@@ -664,6 +664,14 @@ namespace ColorVision.ImageEditor
             double rowStep = (rows > 1) ? 1.0 / (rows - 1) : 0;
             double columnStep = (cols > 1) ? 1.0 / (cols - 1) : 0;
 
+            bool IsUseTextMax = rows * cols >= 10000;
+            if (IsUseTextMax)
+            {
+                ImageView.Config.IsLayoutUpdated = false;
+                ImageView.Config.IsShowText = false;
+            }
+
+            bool IsUseText = ImageView.Config.IsShowText;
             for (int i = 0; i < rows; i++)
             {
                 for (int j = 0; j < cols; j++)
@@ -691,6 +699,7 @@ namespace ColorVision.ImageEditor
                             circleTextProperties.Name = did.ToString();
                             circleTextProperties.Text = string.Format("{0}{1}", TagName, did.ToString());
                             DVCircleText Circle = new DVCircleText(circleTextProperties);
+                            Circle.IsShowText = IsUseText;
                             Circle.Render();
                             ImageShow.AddVisualCommand(Circle);
                             break;
@@ -703,6 +712,7 @@ namespace ColorVision.ImageEditor
                             rectangleTextProperties.Name = did.ToString();
                             rectangleTextProperties.Text = string.Format("{0}{1}", TagName, did.ToString());
                             DVRectangleText Rectangle = new DVRectangleText(rectangleTextProperties);
+                            Rectangle.IsShowText = IsUseText;
                             Rectangle.Render();
                             ImageShow.AddVisualCommand(Rectangle);
                             break;

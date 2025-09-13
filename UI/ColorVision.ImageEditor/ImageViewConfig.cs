@@ -82,6 +82,8 @@ namespace ColorVision.ImageEditor
 
         public bool IsLayoutUpdated{ get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; OnPropertyChanged(); } }
         private bool _IsLayoutUpdated = true;
+        public bool IsShowText { get => _IsShowText; set { _IsShowText = value; OnPropertyChanged(); } }
+        private bool _IsShowText = true;
 
 
         public event EventHandler BalanceChanged;

@@ -69,6 +69,9 @@ namespace Pattern.NineDot
             set { _MarginRatioY = value; OnPropertyChanged(); }
         }
         private double _MarginRatioY = 0.1;
+
+        public string MainBrushTag { get; set; } = "K";
+        public string AltBrushTag { get; set; } = "W";
     }
 
     [DisplayName("九点")]
@@ -80,7 +83,7 @@ namespace Pattern.NineDot
             string shape = !Config.UseRectangle
                 ? $"Circle_{Config.Radius}"
                 : $"Rect_{Config.RectWidth}x{Config.RectHeight}";
-            return $"Distortion_{Config.Rows}x{Config.Cols}_{shape}";
+            return $"Distortion_{Config.MainBrushTag}{Config.AltBrushTag}_{Config.Rows}x{Config.Cols}_{shape}";
         }
         public static List<Point> GetBilinearGridPoints(List<Point> quad, int rows, int cols)
         {
