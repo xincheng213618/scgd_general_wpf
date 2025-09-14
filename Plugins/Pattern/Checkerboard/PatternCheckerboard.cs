@@ -35,6 +35,12 @@ namespace Pattern.Checkerboard
 
         public string MainBrushTag { get; set; } = "W";
         public string AltBrushTag { get; set; } = "K";
+
+        /// <summary>
+        /// 视场，中心区域占整个画布的比例（0~1），默认1
+        /// </summary>
+        public double FieldOfView { get => _FieldOfView; set { _FieldOfView = value; OnPropertyChanged(); } }
+        private double _FieldOfView = 1.0;
     }
 
     [DisplayName("棋盘格")]
@@ -56,40 +62,54 @@ namespace Pattern.Checkerboard
         }
         public override Mat Gen(int height, int width)
         {
+            // 1. 创建底图
             var mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
 
-            double gridX, gridY, cellW, cellH;
+            // 2. 计算视场中心区域
+            double fov = Math.Max(0, Math.Min(Config.FieldOfView, 1.0));
+            int fovWidth = (int)(width * fov);
+            int fovHeight = (int)(height * fov);
+            int startX = (width - fovWidth) / 2;
+            int startY = (height - fovHeight) / 2;
 
+            // 3. 生成中心棋盘格小图
+            Mat checker = new Mat(fovHeight, fovWidth, MatType.CV_8UC3, Config.MainBrush.ToScalar());
+
+            double gridX, gridY, cellW, cellH;
             if (Config.SizeMode == CheckerboardSizeMode.ByGridCount)
             {
                 gridX = Config.GridX;
                 gridY = Config.GridY;
-                cellW = width / gridX;
-                cellH = height / gridY;
+                cellW = (double)fovWidth / gridX;
+                cellH = (double)fovHeight / gridY;
             }
             else // ByCellSize
             {
                 cellW = Config.CellW;
                 cellH = Config.CellH;
-                gridX = width / cellW;
-                gridY = height / cellH;
+                gridX = fovWidth / cellW;
+                gridY = fovHeight / cellH;
                 // 保证至少有一格
                 if (gridX < 1) gridX = 1;
                 if (gridY < 1) gridY = 1;
             }
-            // 自动补全到边界
+
             for (int y = 0; y < gridY; y++)
             {
                 for (int x = 0; x < gridX; x++)
                 {
-                    double startX = x * cellW;
-                    double startY = y * cellH;
-                    double w = (x == gridX - 1) ? width - startX : cellW;
-                    double h = (y == gridY - 1) ? height - startY : cellH;
+                    double cellStartX = x * cellW;
+                    double cellStartY = y * cellH;
+                    double w = (x == gridX - 1) ? fovWidth - cellStartX : cellW;
+                    double h = (y == gridY - 1) ? fovHeight - cellStartY : cellH;
                     if ((x + y) % 2 == 1)
-                        Cv2.Rectangle(mat, new Rect((int)startX, (int)startY, (int)w, (int)h), Config.AltBrush.ToScalar(), -1);
+                        Cv2.Rectangle(checker, new Rect((int)cellStartX, (int)cellStartY, (int)w, (int)h), Config.AltBrush.ToScalar(), -1);
                 }
             }
+
+            // 4. 贴到底图中心
+            checker.CopyTo(mat[new Rect(startX, startY, fovWidth, fovHeight)]);
+            checker.Dispose();
             return mat;
         }
     }

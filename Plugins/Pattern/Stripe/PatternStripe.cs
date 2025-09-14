@@ -41,6 +41,11 @@ namespace Pattern.Stripe
         public string MainBrushTag { get; set; } = "K";
         public string AltBrushTag { get; set; } = "W";
 
+        /// <summary>
+        /// 视场，中心区域占整个画布的比例（0~1），默认1
+        /// </summary>
+        public double FieldOfView { get => _FieldOfView; set { _FieldOfView = value; OnPropertyChanged(); } }
+        private double _FieldOfView = 1.0;
 
     }
 
@@ -55,42 +60,56 @@ namespace Pattern.Stripe
 
         public override string GetTemplateName()
         {
-            return "Stripe" + "_" + Config.MainBrushTag + Config.AltBrushTag + "_" + (Config.IsHorizontal ? $"H_{Config.HorizontalSpacing}_{Config.HorizontalWidth}" : $"V_{Config.VerticalSpacing}_{Config.VerticalWidth}"); ;
+            return "Stripe" + "_" + Config.MainBrushTag + Config.AltBrushTag + "_" + (Config.IsHorizontal ? $"H_{Config.HorizontalSpacing}_{Config.HorizontalWidth}" : $"V_{Config.VerticalSpacing}_{Config.VerticalWidth}") + $"_FOV_{Config.FieldOfView}";
         }
 
         public override Mat Gen(int height, int width)
         {
+            // 1. 创建底图
             Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
+
+            // 2. 计算中心区域大小
+            double fov = Math.Max(0, Math.Min(Config.FieldOfView, 1.0));
+            int fovWidth = (int)(width * fov);
+            int fovHeight = (int)(height * fov);
+            int startX = (width - fovWidth) / 2;
+            int startY = (height - fovHeight) / 2;
+
+            // 3. 生成条纹小图
+            Mat stripe = new Mat(fovHeight, fovWidth, MatType.CV_8UC3, Config.MainBrush.ToScalar());
+
             if (Config.IsHorizontal)
             {
-                // 横线
                 int hSpacing = Math.Max(1, Config.HorizontalSpacing);
                 int hWidth = Math.Max(1, Config.HorizontalWidth);
 
-                for (int y = 0; y < height; y += hSpacing)
+                for (int y = 0; y < fovHeight; y += hSpacing)
                 {
                     for (int dy = 0; dy < hWidth; dy++)
                     {
-                        if (y + dy < height)
-                            mat.Row(y + dy).SetTo(Config.AltBrush.ToScalar());
+                        if (y + dy < fovHeight)
+                            stripe.Row(y + dy).SetTo(Config.AltBrush.ToScalar());
                     }
                 }
             }
             else
             {
-                // 竖线
                 int vSpacing = Math.Max(1, Config.VerticalSpacing);
                 int vWidth = Math.Max(1, Config.VerticalWidth);
 
-                for (int x = 0; x < width; x += vSpacing)
+                for (int x = 0; x < fovWidth; x += vSpacing)
                 {
                     for (int dx = 0; dx < vWidth; dx++)
                     {
-                        if (x + dx < width)
-                            mat.Col(x + dx).SetTo(Config.AltBrush.ToScalar());
+                        if (x + dx < fovWidth)
+                            stripe.Col(x + dx).SetTo(Config.AltBrush.ToScalar());
                     }
                 }
             }
+
+            // 4. 贴到底图中心
+            stripe.CopyTo(mat[new Rect(startX, startY, fovWidth, fovHeight)]);
+            stripe.Dispose();
             return mat;
         }
     }

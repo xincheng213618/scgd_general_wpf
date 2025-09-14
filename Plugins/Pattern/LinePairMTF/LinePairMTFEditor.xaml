@@ -9,17 +9,8 @@
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <Grid>
         <StackPanel VerticalAlignment="Top">
-            <StackPanel Orientation="Horizontal"  Margin="0,0,0,5">
-                <Button Content="主色" Width="55" Margin="0,0,5,0" Click="BtnPickMainColor_Click"/>
-                <Rectangle x:Name="rectMainColor" Width="25" Height="25" Stroke="Black" Fill="{Binding LineBrush}" Margin="0,0,5,0"/>
-                <Button Content="R" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="R" />
-                <Button Content="G" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="G"/>
-                <Button Content="B" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="B"/>
-                <Button Content="W" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="W"/>
-                <Button Content="K" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="K"/>
-            </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <Button Content="副色" Width="55" Margin="0,0,5,0" Click="BtnPickAltColor_Click"/>
+                <Button Content="背景色" Width="55" Margin="0,0,5,0" Click="BtnPickAltColor_Click"/>
                 <Rectangle x:Name="rectAltColor" Width="25" Height="25" Stroke="Black" Fill="{Binding BackgroundBrush}" Margin="0,0,5,0"/>
                 <Button Content="R" Margin="0,0,5,0" Click="BtnPickAltColorSet_Click"  Tag="R"/>
                 <Button Content="G" Margin="0,0,5,0" Click="BtnPickAltColorSet_Click"  Tag="G"/>
@@ -27,21 +18,31 @@
                 <Button Content="W" Margin="0,0,5,0" Click="BtnPickAltColorSet_Click"  Tag="W"/>
                 <Button Content="K" Margin="0,0,5,0" Click="BtnPickAltColorSet_Click"  Tag="K"/>
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBlock Width="80" Text="LineThickness" Margin="0,0,5,0"/>
-                <TextBox Width="70" Text="{Binding LineThickness}" Margin="0,0,5,0"/>
+            <StackPanel Orientation="Horizontal"  Margin="0,0,0,5">
+                <Button Content="前景色" Width="55" Margin="0,0,5,0" Click="BtnPickMainColor_Click"/>
+                <Rectangle x:Name="rectMainColor" Width="25" Height="25" Stroke="Black" Fill="{Binding LineBrush}" Margin="0,0,5,0"/>
+                <Button Content="R" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="R" />
+                <Button Content="G" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="G"/>
+                <Button Content="B" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="B"/>
+                <Button Content="W" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="W"/>
+                <Button Content="K" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="K"/>
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                 <TextBlock Width="80" Text="LineLength" Margin="0,0,5,0"/>
                 <TextBox Width="70" Text="{Binding LineLength}" Margin="0,0,5,0"/>
             </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                <TextBlock Width="80" Text="LineThickness" Margin="0,0,5,0"/>
+                <TextBox Width="70" Text="{Binding LineThickness}" Margin="0,0,5,0"/>
+            </StackPanel>
+
             <DockPanel Margin="0,0,0,5">
-                <TextBlock Text="FieldXJson" Margin="0,0,5,0"/>
+                <TextBlock Text="XField" Margin="0,0,5,0"/>
                 <TextBox Text="{Binding FieldXJson}" Margin="0,0,5,0"/>
             </DockPanel>
             <DockPanel  Margin="0,0,0,5" >
-                <TextBlock Text="FieldYJson" Margin="0,0,5,0"/>
+                <TextBlock Text="YField" Margin="0,0,5,0"/>
                 <TextBox Text="{Binding FieldYJson}" Margin="0,0,5,0"/>
             </DockPanel>
 

@@ -144,12 +144,22 @@ namespace Pattern
 
         private void PatternGen_Click(object sender, RoutedEventArgs e)
         {
-            currentMat?.Dispose();
+            try
+            {
+                currentMat?.Dispose();
+                currentMat = Patterns[cmbPattern1.SelectedIndex].Pattern.Gen(Config.Height, Config.Width);
 
-            currentMat = Patterns[cmbPattern1.SelectedIndex].Pattern.Gen(Config.Height,Config.Width);
+                imgDisplay.OpenImage(currentMat.ToWriteableBitmap());
+                imgDisplay.Zoombox1.ZoomUniform();
 
-            imgDisplay.ImageShow.Source = currentMat.ToBitmapSource();
-            imgDisplay.Zoombox1.ZoomUniform();
+            }
+            catch(Exception ex)
+            {
+                log.Error(ex);
+                MessageBox.Show(ex.Message);
+            }
+
+
         }
 
         private void CmbResolution_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -224,7 +234,7 @@ namespace Pattern
 
                     currentMat = PatternMeta.Pattern.Gen(Config.Height, Config.Width);
 
-                    imgDisplay.ImageShow.Source = currentMat.ToBitmapSource();
+                    imgDisplay.SetImageSource(currentMat.ToWriteableBitmap());
                     imgDisplay.Zoombox1.ZoomUniform();
                 }
             }
@@ -265,12 +275,20 @@ namespace Pattern
 
             foreach (var item in TemplatePatternFiles)
             {
-                SetTemplatePattern(item.FilePath);
-                currentMat?.Dispose();
-                currentMat = Patterns[cmbPattern1.SelectedIndex].Pattern.Gen(Config.Height, Config.Width);
-                string name = Path.GetFileNameWithoutExtension(item.FilePath);
+                try
+                {
+                    SetTemplatePattern(item.FilePath);
+                    currentMat?.Dispose();
+                    currentMat = Patterns[cmbPattern1.SelectedIndex].Pattern.Gen(Config.Height, Config.Width);
+                    string name = Path.GetFileNameWithoutExtension(item.FilePath);
 
-                currentMat.SaveImage(Path.Combine(PatternManager.Config.SaveFilePath ,name + $".{PatternManager.Config.PatternFormat}"));
+                    currentMat.SaveImage(Path.Combine(PatternManager.Config.SaveFilePath, name + $".{PatternManager.Config.PatternFormat}"));
+                }
+                catch(Exception ex)
+                {
+                    log.Error(ex);
+                }
+
             }
             PlatformHelper.OpenFolder(PatternManager.Config.SaveFilePath);
         }

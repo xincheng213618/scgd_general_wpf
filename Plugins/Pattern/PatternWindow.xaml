@@ -109,6 +109,7 @@
             <StackPanel Margin="5">
                 <ComboBox x:Name="cmbResolution"  Margin="0,0,0,5"/>
                 <StackPanel x:Name="ResolutionStackPanel"  Orientation="Horizontal" Margin="0,0,0,5">
+                    <TextBlock Text="分辨率" Margin="0,0,5,0"/>
                     <TextBox x:Name="txtWidth" Width="100" Text="{Binding Width}" Margin="0,0,5,0"/>
                     <TextBox x:Name="txtHeight" Width="100" Text="{Binding Height}" Margin="0,0,5,0"/>
                 </StackPanel>

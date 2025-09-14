@@ -57,15 +57,13 @@ namespace Pattern.LinePairMTF
                 OnPropertyChanged(nameof(FieldY));
             }
         }
-
         [JsonIgnore]
-        public List<double> FieldX { get; set; } = new List<double> { 0.3, 0.5, 0.7, 0.9 };
+        public List<double> FieldX { get; set; } = new List<double> { 0,  0.5, 0.8};
         [JsonIgnore]
-        public List<double> FieldY { get; set; } = new List<double> { 0.3, 0.5, 0.7, 0.9 };
+        public List<double> FieldY { get; set; } = new List<double> { 0,0.5, 0.8 };
 
         public string LineBrushTag { get; set; } = "K";
         public string BackgroundBrushTag { get; set; } = "W";
-
     }
 
     [DisplayName("MTF")]

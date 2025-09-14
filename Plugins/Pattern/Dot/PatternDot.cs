@@ -20,11 +20,6 @@ namespace Pattern.Dot
         public int Radius { get => _Radius; set { _Radius = value; OnPropertyChanged(); } }
         private int _Radius = 3;
 
-        public int StartX { get => _StartX; set { _StartX = value; OnPropertyChanged(); } }
-        private int _StartX = -1;
-
-        public int StartY { get => _StartY; set { _StartY = value; OnPropertyChanged(); } }
-        private int _StartY = -1;
 
         /// <summary>
         /// 行数，-1表示自适应
@@ -57,6 +52,12 @@ namespace Pattern.Dot
         public int RectHeight { get => _RectHeight; set { _RectHeight = value; OnPropertyChanged(); } }
         private int _RectHeight = 6;
 
+        /// <summary>
+        /// 视场，中心区域占整个画布的比例（0~1），默认1
+        /// </summary>
+        public double FieldOfView { get => _FieldOfView; set { _FieldOfView = value; OnPropertyChanged(); } }
+        private double _FieldOfView = 1.0;
+
     }
 
     [DisplayName("点阵")]
@@ -72,19 +73,24 @@ namespace Pattern.Dot
         }
         public override Mat Gen(int height, int width)
         {
+            // 创建底图
             Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
+
+            double fov = Math.Max(0, Math.Min(Config.FieldOfView, 1.0));
+            int fovWidth = (int)(width * fov);
+            int fovHeight = (int)(height * fov);
+            int startX = (width - fovWidth) / 2;
+            int startY = (height - fovHeight) / 2;
+
+            // 点阵区域小图
+            Mat dots = new Mat(fovHeight, fovWidth, MatType.CV_8UC3, Config.MainBrush.ToScalar());
 
             int spacing = Math.Max(1, Config.Spacing);
             int radius = Math.Max(1, Config.Radius);
 
-            // 起点默认到单元中心
-            int startX = Config.StartX > 0 ? Config.StartX : spacing / 2;
-            int startY = Config.StartY > 0 ? Config.StartY : spacing / 2;
-
-            // 自适应行列（优先使用配置值）
-            int nCol = Config.Cols > 0 ? Config.Cols : (int)Math.Ceiling((width - startX) / (double)spacing);
-            int nRow = Config.Rows > 0 ? Config.Rows : (int)Math.Ceiling((height - startY) / (double)spacing);
-
+            // 行列自适应
+            int nCol = Config.Cols > 0 ? Config.Cols : (int)Math.Ceiling((double)fovWidth / spacing);
+            int nRow = Config.Rows > 0 ? Config.Rows : (int)Math.Ceiling((double)fovHeight / spacing);
 
             Scalar color = Config.AltBrush.ToScalar();
             bool useRect = Config.UseRectangle;
@@ -93,17 +99,17 @@ namespace Pattern.Dot
 
             for (int i = 0; i < nRow; i++)
             {
-                int y = startY + i * spacing;
-                if (y >= height) break;
+                int y = spacing / 2 + i * spacing;
+                if (y >= fovHeight) break;
                 for (int j = 0; j < nCol; j++)
                 {
-                    int x = startX + j * spacing;
-                    if (x >= width) break;
+                    int x = spacing / 2 + j * spacing;
+                    if (x >= fovWidth) break;
 
                     if (!useRect)
                     {
                         // 画实心圆
-                        Cv2.Circle(mat, new OpenCvSharp.Point(x, y), radius, color, -1);
+                        Cv2.Circle(dots, new OpenCvSharp.Point(x, y), radius, color, -1);
                     }
                     else
                     {
@@ -113,16 +119,20 @@ namespace Pattern.Dot
 
                         int xClip = Math.Max(0, x0);
                         int yClip = Math.Max(0, y0);
-                        int wClip = Math.Min(rectW, width - xClip);
-                        int hClip = Math.Min(rectH, height - yClip);
+                        int wClip = Math.Min(rectW, fovWidth - xClip);
+                        int hClip = Math.Min(rectH, fovHeight - yClip);
 
                         if (wClip > 0 && hClip > 0)
                         {
-                            Cv2.Rectangle(mat, new Rect(xClip, yClip, wClip, hClip), color, -1);
+                            Cv2.Rectangle(dots, new Rect(xClip, yClip, wClip, hClip), color, -1);
                         }
                     }
                 }
             }
+
+            // 合成到主图中心
+            dots.CopyTo(mat[new Rect(startX, startY, fovWidth, fovHeight)]);
+            dots.Dispose();
             return mat;
         }
     }
