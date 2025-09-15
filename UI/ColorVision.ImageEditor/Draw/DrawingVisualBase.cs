@@ -1,7 +1,10 @@
 ﻿#pragma warning disable CA1711,CA2211
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
@@ -37,5 +40,33 @@ namespace ColorVision.ImageEditor.Draw
         public object ToolTip { get; set; }
 
         public T Attribute { get; set; }
+    }
+
+    public class DrawingVisualBaseDVContextMenu : IDVContextMenu
+    {
+        public Type ContextType => typeof(DrawingVisualBase);
+
+        public IEnumerable<MenuItem> GetContextMenuItems(ImageViewModel imageViewModel, object obj)
+        {
+            List<MenuItem> MenuItems = new List<MenuItem>();
+            if (obj is DrawingVisualBase visual)
+            {
+                MenuItem menuIte2 = new() { Header = "删除" };
+                menuIte2.Click += (s, e) =>
+                {
+                    imageViewModel.Image.RemoveVisualCommand(visual);
+                    imageViewModel.SelectEditorVisual.ClearRender();
+                };
+                MenuItems.Add(menuIte2);
+
+                MenuItem menuIte3 = new() { Header = "Top" };
+                menuIte3.Click += (s, e) =>
+                {
+                    imageViewModel.Image.TopVisual(visual);
+                };
+                MenuItems.Add(menuIte3);
+            }
+            return MenuItems;
+        }
     }
 }

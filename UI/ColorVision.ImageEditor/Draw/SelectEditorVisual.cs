@@ -243,21 +243,33 @@ namespace ColorVision.ImageEditor.Draw
 
         private List<ISelctRect> ISelctRects = new List<ISelctRect>();
 
-
+        SolidColorBrush SolidColorBrush = new SolidColorBrush(Color.FromArgb(1, 255, 255, 255));
         public void Render()
         {
 
             using DrawingContext dc = this.RenderOpen();
             if (SelectVisuals.Count == 0)
                 return;
+            Rect unionRect = SelectVisuals.Select(v => v.GetRect()).Aggregate((a, b) => Rect.Union(a, b));
+            dc.DrawRectangle(SolidColorBrush, new Pen(Brushes.Transparent, 0), unionRect);
+
             ISelctRects.Clear();
-            foreach (var item in SelectVisuals)
+
+            //全局选中性能太差
+            if (SelectVisuals.Count < 1000)
             {
-                RederRecct(item);
+                foreach (var item in SelectVisuals)
+                {
+                    RederRecct(item.GetRect(), item);
+                }
             }
-            void RederRecct(ISelectVisual selectVisual)
+            else
             {
-                Rect rect = selectVisual.GetRect();
+                RederRecct(unionRect);
+            }
+
+            void RederRecct(Rect rect, ISelectVisual selectVisual =null)
+            {
                 double thickness = 1 / ZoomboxSub.ContentMatrix.M11;
                 double thickness1 = thickness * 1.5;
                 dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), rect);
@@ -294,8 +306,6 @@ namespace ColorVision.ImageEditor.Draw
 
                 // 绘制小矩形
 
-
-
                 dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), topLeft);
                 dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), topRight);
                 dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), bottomLeft);
@@ -315,9 +325,6 @@ namespace ColorVision.ImageEditor.Draw
                 dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), middleBottom);
                 dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), middleLeft);
                 dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), middleRight);
-
-
-
 
 
 
@@ -510,6 +517,7 @@ namespace ColorVision.ImageEditor.Draw
                             Render();
 
                         }
+                        if (ISelectVisual == null) return;
                         if (ZoomboxSub.Cursor == Cursors.SizeNWSE || ZoomboxSub.Cursor == Cursors.SizeNESW)
                         {
                             var oldRect = ISelectVisual.GetRect();
