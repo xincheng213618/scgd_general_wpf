@@ -1,14 +1,40 @@
 ﻿#pragma warning disable CS8625,CS8602,CS8607,CS0103,CS0067
 using ColorVision.Common.Utilities;
+using ColorVision.ImageEditor.Draw.Rasterized;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Draw
 {
+    public class SelectEditorVisualVContextMenu : IDVContextMenu
+    {
+        public Type ContextType => typeof(SelectEditorVisual);
+
+        public IEnumerable<MenuItem> GetContextMenuItems(ImageViewModel imageViewModel, object obj)
+        {
+            List<MenuItem> MenuItems = new List<MenuItem>();
+            if (obj is SelectEditorVisual selectEditorVisual)
+            {
+                MenuItem menuIte2 = new() { Header = "栅格化" };
+                menuIte2.Click += (s, e) =>
+                {
+                    selectEditorVisual.RasterizeSelectionAndReplace();
+                };
+                MenuItems.Add(menuIte2);
+            }
+            return MenuItems;
+        }
+    }
+
+
+
+
     public class SelectEditorVisual : DrawingVisual,IDisposable
     {
         public DrawCanvas DrawCanvas { get; set; }
@@ -343,7 +369,59 @@ namespace ColorVision.ImageEditor.Draw
                 dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.White, thickness), end, iconSize / 2, iconSize / 2);
             }
         }
+        /// <summary>
+        /// 将所有选中区域合成为一个图片，并替换当前选中对象。
+        /// </summary>
+        public void RasterizeSelectionAndReplace()
+        {
+            if (SelectVisuals == null || SelectVisuals.Count == 0) return;
 
+            // 1. 计算所有选中区域的外接矩形
+            Rect unionRect = SelectVisuals.Select(v => v.GetRect()).Aggregate((a, b) => Rect.Union(a, b));
+            // 2. 获取全局画布尺寸（假设 DrawCanvas.ActualWidth/ActualHeight）
+            int canvasWidth = (int)Math.Ceiling(DrawCanvas.ActualWidth);
+            int canvasHeight = (int)Math.Ceiling(DrawCanvas.ActualHeight);
+            if (canvasWidth == 0 || canvasHeight == 0) return;
+
+            // 3. 新建全局大图
+            var rtb = new RenderTargetBitmap(canvasWidth, canvasHeight, 96, 96, PixelFormats.Pbgra32);
+
+            // 4. 渲染所有选中的Visual到全局
+            var dv = new DrawingVisual();
+            using (var dc = dv.RenderOpen())
+            {
+                foreach (var visual in SelectVisuals)
+                {
+                    if (visual is DrawingVisual drawVisual)
+                    {
+                        // 直接绘制，不偏移
+                        dc.DrawDrawing(drawVisual.Drawing);
+                    }
+                }
+            }
+            rtb.Render(dv);
+
+            // 5. 用 CroppedBitmap 截取 unionRect 区域
+            var cropRect = new Int32Rect(
+                (int)Math.Floor(unionRect.X),
+                (int)Math.Floor(unionRect.Y),
+                (int)Math.Ceiling(unionRect.Width),
+                (int)Math.Ceiling(unionRect.Height)
+            );
+            var cropped = new CroppedBitmap(rtb, cropRect);
+
+            // 4. 清空原选中，添加新的栅格化对象
+            foreach (var visual in SelectVisuals.OfType<DrawingVisual>())
+            {
+                DrawCanvas.RemoveVisual(visual);
+            }
+            SelectVisuals.Clear();
+            var rasterVisual = new RasterizedSelectVisual(cropped, unionRect);
+            DrawCanvas.AddVisualCommand(rasterVisual);
+            SelectVisuals.Add(rasterVisual);
+            // 5. 触发重绘
+            Render();
+        }
         private void PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (SelectVisuals.Count == 0 || !ImageViewModel.ImageEditMode )

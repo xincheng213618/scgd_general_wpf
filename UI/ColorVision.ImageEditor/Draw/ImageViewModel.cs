@@ -27,7 +27,6 @@ namespace ColorVision.ImageEditor
         public List<MenuItemMetadata> GetContextMenuItems(ImageViewConfig config);
     }
 
-
     public interface IDVContextMenu
     {
         Type ContextType { get; }
@@ -59,7 +58,6 @@ namespace ColorVision.ImageEditor
 
         public event EventHandler<string> OpenedImage;
         public event EventHandler<string> OpeningImage;
-
 
         public RelayCommand PrintImageCommand { get; set; }
 
@@ -124,12 +122,12 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        public ImageViewModel(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas,ImageViewConfig config = null )
+        public ImageViewModel(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas)
         {
             RegisterContextMenuProviders();
             ZoomboxSub = zoombox;
             Image = drawCanvas;
-            Config = config ?? new ImageViewConfig();
+            Config = new ImageViewConfig();
             SelectEditorVisual = new SelectEditorVisual(this, drawCanvas, zoombox);
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.Print, (s, e) => Print(), (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
@@ -181,6 +179,9 @@ namespace ColorVision.ImageEditor
             PrintImageCommand = new RelayCommand(a => Print(), a => Image != null && Image.Source != null);
 
             ClearImageCommand = new RelayCommand(a => ClearImage(),a => Image != null && Image.Source != null);
+
+            PropertyCommand = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(Parent), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
+
             FullCommand = new RelayCommand(a => MaxImage());
 
             RotateLeftCommand = new RelayCommand(a => RotateLeft());
@@ -228,6 +229,7 @@ namespace ColorVision.ImageEditor
         private void ContextMenu_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
             ContextMenu.Items.Clear();
+
             if (_ImageEditMode)
             {
                 Point MouseDownP = Mouse.GetPosition(Image);
@@ -291,7 +293,6 @@ namespace ColorVision.ImageEditor
             {
                 MenuItemMetadatas.AddRange(item.GetContextMenuItems(Config));
             }
-
 
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenImage", Order = 10, Header = ColorVision.ImageEditor.Properties.Resources.Open, Command = OpenImageCommand, Icon = MenuItemIcon.TryFindResource("DIOpen") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 11, Header = ColorVision.ImageEditor.Properties.Resources.Clear, Command = ClearImageCommand, Icon = MenuItemIcon.TryFindResource("DIDelete") });

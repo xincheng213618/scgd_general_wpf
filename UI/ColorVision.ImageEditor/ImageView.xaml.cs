@@ -28,10 +28,9 @@ namespace ColorVision.ImageEditor
     public partial class ImageView : UserControl, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
-        Guid Guid { get; set; } = Guid.NewGuid();
-
-        public ImageViewConfig Config { get; set; } = new ImageViewConfig();
         public ImageViewModel ImageViewModel { get; set; }
+        public ImageViewConfig Config => ImageViewModel.Config;
+
         public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.DrawingVisualLists;
 
         public ImageView()
@@ -59,7 +58,7 @@ namespace ColorVision.ImageEditor
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow,Config);
+            ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow);
 
             ImageViewModel.SelectEditorVisual.SelectVisualChanged += (s, e) => 
             {
@@ -72,9 +71,6 @@ namespace ColorVision.ImageEditor
                     drawingVisual.BaseAttribute.PropertyChanged += BaseAttribute_PropertyChanged;
                 }
             };
-            ImageViewModel.PropertyCommand = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(Parent), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
-
-
             DataContext = ImageViewModel;
             Config.ColormapTypesChanged -= Config_ColormapTypesChanged;
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
@@ -108,7 +104,6 @@ namespace ColorVision.ImageEditor
         {
             Clear();
         }
-
 
         private void ImageShow_VisualsAdd(object? sender, VisualChangedEventArgs e)
         {

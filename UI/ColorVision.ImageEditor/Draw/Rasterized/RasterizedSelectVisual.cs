@@ -15,13 +15,16 @@ namespace ColorVision.ImageEditor.Draw.Rasterized
 
     }
 
-    public class RasterizedSelectVisual : DrawingVisualBase<RasterizedPropertie>, ISelectVisual
+    public class RasterizedSelectVisual : DrawingVisualBase<RasterizedPropertie>, IDrawingVisual,ISelectVisual
     {
-        public BitmapSource Image { get; }
-        public Rect Rect { get; }
+        public Pen Pen { get; set; } = new Pen();
+
+        public BitmapSource Image { get; set; }
+        public Rect Rect { get; set; }
 
         public RasterizedSelectVisual(BitmapSource image, Rect rect)
         {
+            Attribute = new RasterizedPropertie();
             Image = image;
             Rect = rect;
             RenderImage();
@@ -32,17 +35,16 @@ namespace ColorVision.ImageEditor.Draw.Rasterized
             using (var dc = this.RenderOpen())
             {
                 dc.DrawImage(Image, Rect);
-                // 你可以在此绘制边框等辅助元素
             }
         }
 
-        public Rect GetRect() => Rect;
+        public override Rect GetRect() => Rect;
 
-        public void SetRect(Rect rect)
+        public override void SetRect(Rect rect)
         {
             // 可选：支持拖动等操作
-            // Rect = rect;
-            // RenderImage();
+            Rect = rect;
+            RenderImage();
         }
     }
 }
