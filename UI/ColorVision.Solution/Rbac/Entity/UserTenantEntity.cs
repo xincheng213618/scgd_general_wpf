@@ -1,7 +1,7 @@
 ﻿using ColorVision.Database;
 using SqlSugar;
 
-namespace ColorVision.Engine.Rbac
+namespace ColorVision.Rbac
 {
     [SugarTable("sys_user2tenant")]
     public class UserTenantEntity  : ViewEntity 

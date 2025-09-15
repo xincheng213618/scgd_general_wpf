@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Windows;
+﻿using System.Windows;
 
-namespace ColorVision.Engine.Rbac
+namespace ColorVision.Rbac
 {
     /// <summary>
     /// UserManagerWindow.xaml 的交互逻辑

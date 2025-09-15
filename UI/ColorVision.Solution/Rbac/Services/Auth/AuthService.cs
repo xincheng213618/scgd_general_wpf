@@ -1,12 +1,12 @@
-﻿using ColorVision.Engine.Rbac;
-using ColorVision.Engine.Rbac.Dtos;
-using ColorVision.Engine.Rbac.Security;
+﻿using ColorVision.Rbac;
+using ColorVision.Rbac.Dtos;
+using ColorVision.Rbac.Security;
 using SqlSugar;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ColorVision.Engine.Services.Auth
+namespace ColorVision.Rbac.Services.Auth
 {
     public class AuthService : IAuthService
     {

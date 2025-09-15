@@ -3,7 +3,7 @@ using ColorVision.UI.Authorizations;
 using System;
 using System.Collections.Generic;
 
-namespace ColorVision.Engine.Rbac.Dtos
+namespace ColorVision.Rbac.Dtos
 {
     public class LoginResultDto:ViewModelBase
     {

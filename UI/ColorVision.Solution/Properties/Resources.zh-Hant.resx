@@ -237,4 +237,28 @@
   <data name="MenuAdd" xml:space="preserve">
     <value>添加(_D)</value>
   </data>
+  <data name="Password" xml:space="preserve">
+    <value>密碼</value>
+  </data>
+  <data name="FillPassword" xml:space="preserve">
+    <value>請輸入密碼</value>
+  </data>
+  <data name="FillAccount" xml:space="preserve">
+    <value>請輸入帳號</value>
+  </data>
+  <data name="AccountLogin" xml:space="preserve">
+    <value>賬號登入</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>賬號</value>
+  </data>
+  <data name="Sign_out" xml:space="preserve">
+    <value>退出</value>
+  </data>
+  <data name="Sign_in" xml:space="preserve">
+    <value>登入</value>
+  </data>
+  <data name="Create_an_account" xml:space="preserve">
+    <value>創建一個帳號</value>
+  </data>
 </root>

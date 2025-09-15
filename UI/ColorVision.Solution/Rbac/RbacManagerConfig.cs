@@ -1,8 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Rbac.Dtos;
+using ColorVision.Rbac.Dtos;
 using ColorVision.UI;
 
-namespace ColorVision.Engine.Rbac
+namespace ColorVision.Rbac
 {
 
     public class RbacManagerConfig : ViewModelBase, IConfig

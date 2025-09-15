@@ -1,10 +1,10 @@
-﻿using ColorVision.Engine.Rbac.Dtos;
+﻿using ColorVision.Rbac.Dtos;
 using SqlSugar;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ColorVision.Engine.Rbac.Services
+namespace ColorVision.Rbac.Services
 {
     public interface IUserService
     {

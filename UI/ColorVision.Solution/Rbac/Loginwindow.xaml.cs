@@ -1,10 +1,10 @@
-﻿using ColorVision.Engine.Rbac.Dtos;
+﻿using ColorVision.Rbac.Dtos;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using System;
 using System.Windows;
 
-namespace ColorVision.Engine.Rbac
+namespace ColorVision.Rbac
 {
 
     /// <summary>

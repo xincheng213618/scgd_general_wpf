@@ -1,8 +1,8 @@
-﻿using ColorVision.Engine.Rbac.Dtos;
+﻿using ColorVision.Rbac.Dtos;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ColorVision.Engine.Services.Auth
+namespace ColorVision.Rbac.Services.Auth
 {
     public interface IAuthService
     {

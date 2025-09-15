@@ -1,13 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
 using ColorVision.UI.Menus;
-using System;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Rbac
+namespace ColorVision.Rbac
 {
     public class MenuRbacManager : IRightMenuItemProvider
     {

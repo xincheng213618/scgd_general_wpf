@@ -2,7 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace ColorVision.Engine.Rbac.Security
+namespace ColorVision.Rbac.Security
 {
     // 存储格式：PBKDF2$HMACSHA256$<iterations>$<saltBase64>$<hashBase64>
     public static class PasswordHasher

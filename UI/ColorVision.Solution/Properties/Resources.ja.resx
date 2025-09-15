@@ -237,4 +237,28 @@
   <data name="MenuAdd" xml:space="preserve">
     <value>追加</value>
   </data>
+  <data name="Password" xml:space="preserve">
+    <value>パスワード</value>
+  </data>
+  <data name="FillPassword" xml:space="preserve">
+    <value>パスワードを入力してください</value>
+  </data>
+  <data name="FillAccount" xml:space="preserve">
+    <value>アカウントを入力してください</value>
+  </data>
+  <data name="AccountLogin" xml:space="preserve">
+    <value>アカウントログイン</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>アカウン</value>
+  </data>
+  <data name="Sign_out" xml:space="preserve">
+    <value>サインアウト</value>
+  </data>
+  <data name="Sign_in" xml:space="preserve">
+    <value>ログイン</value>
+  </data>
+  <data name="Create_an_account" xml:space="preserve">
+    <value>アカウントを作成する</value>
+  </data>
 </root>

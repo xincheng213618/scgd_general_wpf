@@ -11,25 +11,6 @@
     <PackageReadmeFile></PackageReadmeFile>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="Rbac\Account\**" />
-    <Compile Remove="Rbac\Roles\**" />
-    <Compile Remove="Rbac\Tenants\**" />
-    <Compile Remove="Rbac\Users\**" />
-    <EmbeddedResource Remove="Rbac\Account\**" />
-    <EmbeddedResource Remove="Rbac\Roles\**" />
-    <EmbeddedResource Remove="Rbac\Tenants\**" />
-    <EmbeddedResource Remove="Rbac\Users\**" />
-    <None Remove="Rbac\Account\**" />
-    <None Remove="Rbac\Roles\**" />
-    <None Remove="Rbac\Tenants\**" />
-    <None Remove="Rbac\Users\**" />
-    <Page Remove="Rbac\Account\**" />
-    <Page Remove="Rbac\Roles\**" />
-    <Page Remove="Rbac\Tenants\**" />
-    <Page Remove="Rbac\Users\**" />
-  </ItemGroup>
-
 	<ItemGroup>
 		<PackageReference Include="Dapper" Version="2.1.66" />
 		<PackageReference Include="CsvHelper" Version="33.1.0" />

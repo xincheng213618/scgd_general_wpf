@@ -1,11 +1,11 @@
-﻿using ColorVision.Engine.Rbac.Dtos;
+﻿using ColorVision.Rbac.Dtos;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.Engine.Rbac.Services
+namespace ColorVision.Rbac.Services
 {
     public class EditUserDetailAction
     {

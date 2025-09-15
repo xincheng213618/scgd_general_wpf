@@ -1,14 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Rbac.Services;
-using ColorVision.Engine.Services.Auth;
+using ColorVision.Rbac.Services;
+using ColorVision.Rbac.Services.Auth;
 using ColorVision.UI.Authorizations;
 using SqlSugar;
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 
-namespace ColorVision.Engine.Rbac
+namespace ColorVision.Rbac
 {
     public class RbacManager:IDisposable
     {

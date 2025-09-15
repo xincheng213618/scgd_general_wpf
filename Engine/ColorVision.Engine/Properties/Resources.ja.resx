@@ -219,12 +219,6 @@
   <data name="SimulateReceive" xml:space="preserve">
     <value>模擬合格</value>
   </data>
-  <data name="Sign_out" xml:space="preserve">
-    <value>サインアウト</value>
-  </data>
-  <data name="Sign_in" xml:space="preserve">
-    <value>ログイン</value>
-  </data>
   <data name="Shape" xml:space="preserve">
     <value>形</value>
   </data>
@@ -534,12 +528,6 @@
   <data name="Filter" xml:space="preserve">
     <value>フィルター</value>
   </data>
-  <data name="FillPassword" xml:space="preserve">
-    <value>パスワードを入力してください</value>
-  </data>
-  <data name="FillAccount" xml:space="preserve">
-    <value>アカウントを入力してください</value>
-  </data>
   <data name="File" xml:space="preserve">
     <value>書類</value>
   </data>
@@ -623,9 +611,6 @@
   </data>
   <data name="CreateDevice" xml:space="preserve">
     <value>デバイスの作成</value>
-  </data>
-  <data name="Create_an_account" xml:space="preserve">
-    <value>アカウントを作成する</value>
   </data>
   <data name="Create" xml:space="preserve">
     <value>作成する</value>
@@ -713,12 +698,6 @@
   </data>
   <data name="Acquire" xml:space="preserve">
     <value>コレクション</value>
-  </data>
-  <data name="AccountLogin" xml:space="preserve">
-    <value>アカウントログイン</value>
-  </data>
-  <data name="Account" xml:space="preserve">
-    <value>アカウン</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>について</value>

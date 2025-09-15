@@ -2,7 +2,7 @@
 using SqlSugar;
 using System;
 
-namespace ColorVision.Engine.Rbac
+namespace ColorVision.Rbac
 {
     [SugarTable("sys_user")]
     public class UserEntity  : EntityBase

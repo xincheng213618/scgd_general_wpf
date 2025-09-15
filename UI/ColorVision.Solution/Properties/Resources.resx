@@ -217,4 +217,28 @@
   <data name="MenuAdd" xml:space="preserve">
     <value>添加(_D)</value>
   </data>
+  <data name="Password" xml:space="preserve">
+    <value>密码</value>
+  </data>
+  <data name="FillPassword" xml:space="preserve">
+    <value>请输入密码</value>
+  </data>
+  <data name="FillAccount" xml:space="preserve">
+    <value>请输入账号</value>
+  </data>
+  <data name="AccountLogin" xml:space="preserve">
+    <value>账号登录</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>账号</value>
+  </data>
+  <data name="Sign_out" xml:space="preserve">
+    <value>退出</value>
+  </data>
+  <data name="Sign_in" xml:space="preserve">
+    <value>登录</value>
+  </data>
+  <data name="Create_an_account" xml:space="preserve">
+    <value>注册一个</value>
+  </data>
 </root>
