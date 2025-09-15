@@ -326,7 +326,7 @@
                                                         </TextBlock.RenderTransform>
                                                     </TextBlock>
                                                 </Button>
-
+                                                <Button Content="设置到全局缓存" Click="Button_Click_41"/>
                                             </DockPanel>
                                             <DockPanel Margin="2" HorizontalAlignment="Left">
                                                 <TextBlock Text="左上"   MinWidth="20"/>

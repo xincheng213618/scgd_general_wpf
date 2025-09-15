@@ -5,7 +5,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Windows;
 
-namespace ColorVision.UI
+namespace ColorVision
 {
     public class FlowSocketMsgHandle : ISocketJsonHandler
     {

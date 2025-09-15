@@ -2002,6 +2002,19 @@ namespace ColorVision.Engine.Templates.POI
                 ;
             }));
         }
+
+        private void Button_Click_41(object sender, RoutedEventArgs e)
+        {
+ 
+            PoiEditRectCache.Instance.RightTopX = PoiParam.PoiConfig.Polygon1X;
+            PoiEditRectCache.Instance.RightTopY = PoiParam.PoiConfig.Polygon1Y;
+            PoiEditRectCache.Instance.LeftTopX = PoiParam.PoiConfig.Polygon2X;
+            PoiEditRectCache.Instance.LeftTopY = PoiParam.PoiConfig.Polygon2Y;
+            PoiEditRectCache.Instance.LeftBottomX = PoiParam.PoiConfig.Polygon3X;
+            PoiEditRectCache.Instance.LeftBottomY = PoiParam.PoiConfig.Polygon3Y;
+            PoiEditRectCache.Instance.RightBottomX = PoiParam.PoiConfig.Polygon4X;
+            PoiEditRectCache.Instance.RightBottomY = PoiParam.PoiConfig.Polygon4Y;
+        }
     }
 
 }

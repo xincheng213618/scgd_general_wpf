@@ -17,7 +17,6 @@ using System.Windows.Media;
 
 namespace ColorVision.UI
 {
-
     public class TextAppender : AppenderSkeleton
     {
         private LogStatusBarProvider LogStatusBarProvider;
@@ -30,14 +29,14 @@ namespace ColorVision.UI
             var renderedMessage = RenderLoggingEvent(loggingEvent);
             string messageToShow = renderedMessage.Length > 10 ? string.Concat(renderedMessage.AsSpan(0, 10), "...") : renderedMessage;
 
-            Application.Current.Dispatcher.BeginInvoke(() =>
+            Application.Current?.Dispatcher.BeginInvoke(() =>
             {
                 LogStatusBarProvider.Log = messageToShow;
             });
         }
     }
 
-    public class LogStatusBarProvider : ViewModelBase, IConfig, IStatusBarProvider
+    public class LogStatusBarProvider : ViewModelBase, IConfig
     {
         public static LogStatusBarProvider Instance => ConfigService.Instance.GetRequiredService<LogStatusBarProvider>();
         private TextAppender _textAppender;
@@ -93,24 +92,6 @@ namespace ColorVision.UI
             }
         }
         private bool _IsShowLog;
-
-
-        public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
-        {
-            return new List<StatusBarMeta>
-            {
-                new StatusBarMeta()
-                {
-                    Name = "Log",
-                    Description = "Log",
-                    Order = 11,
-                    Type = StatusBarType.Text,
-                    BindingName = nameof(Log),
-                    VisibilityBindingName = nameof(IsShowLog),
-                    Source = Instance
-                }
-            };
-        }
     }
 
 
