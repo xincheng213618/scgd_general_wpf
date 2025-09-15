@@ -627,10 +627,11 @@ namespace ColorVision.ImageEditor
                 {
                     case GraphicDrawTypes.Circle:
                         offsetx = Config.DefaultCircleRadius;
+                        offsety = Config.DefaultCircleRadius;
                         break;
                     case GraphicDrawTypes.Rect:
-                        offsetx = Math.Min(Config.DefaultRectWidth, Config.DefaultRectHeight) / 2.0;
-                        offsety = Math.Max(Config.DefaultRectWidth, Config.DefaultRectHeight) / 2.0;
+                        offsetx = Config.DefaultRectWidth / 2.0;
+                        offsety = Config.DefaultRectHeight/ 2.0;
                         break;
                 }
 
