@@ -21,7 +21,7 @@
 
         </StackPanel>
         
-        <lvc:CartesianChart Grid.Row="1" Name="HistogramChart" Foreground="{StaticResource GlobalTextBrush}" ZoomMode ="Y"  ZoomingSpeed="0.5"/>
+        <lvc:CartesianChart Grid.Row="1" Name="HistogramChart" Foreground="{StaticResource GlobalTextBrush}"  ZoomingSpeed="0.5"/>
 
     </Grid>
 </Window>
