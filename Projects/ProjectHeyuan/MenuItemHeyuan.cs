@@ -9,7 +9,7 @@ namespace ColorVision.Projects.ProjectHeyuan
         public static ProjectHeyuanWindow WindowInstance { get; set; }
     }
 
-    public class PluginHeyuan : IProjectBase
+    public class PluginHeyuan : IFeatureLauncherBase
     {
         public override string? Header => "河源精电";
         public override string? UpdateUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/ProjectHeyuan";

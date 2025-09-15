@@ -10,7 +10,7 @@ namespace ColorVision.Projects.ProjectShiYuan
         public static ShiyuanProjectWindow WindowInstance { get; set; }
     }
 
-    public class ShiyuanProjectPlugin : IProjectBase
+    public class ShiyuanProjectPlugin : IFeatureLauncherBase
     {
         public override string? Header => "ProjectShiyuan";
         public override string? UpdateUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/ProjectShiyuan";

@@ -4,7 +4,7 @@ using System.Windows;
 namespace ProjectLUX.PluginConfig
 {
 
-    public class ProjectLUXPlugin : IProjectBase
+    public class ProjectLUXPlugin : IFeatureLauncherBase
     {
         public override string? Header => "LUX";
         public override void Execute()

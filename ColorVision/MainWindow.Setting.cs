@@ -54,18 +54,18 @@ namespace ColorVision
                             }
                             string project = parser.GetValue("project");
 
-                            List<IProject> IProjects = new List<IProject>();
+                            List<IFeatureLauncher> IProjects = new List<IFeatureLauncher>();
                             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
                             {
-                                foreach (Type type in assembly.GetTypes().Where(t => typeof(IProject).IsAssignableFrom(t) && !t.IsAbstract))
+                                foreach (Type type in assembly.GetTypes().Where(t => typeof(IFeatureLauncher).IsAssignableFrom(t) && !t.IsAbstract))
                                 {
-                                    if (Activator.CreateInstance(type) is IProject projects)
+                                    if (Activator.CreateInstance(type) is IFeatureLauncher projects)
                                     {
                                         IProjects.Add(projects);
                                     }
                                 }
                             }
-                            if (IProjects.Find(a => a.Header == project) is IProject project1)
+                            if (IProjects.Find(a => a.Header == project) is IFeatureLauncher project1)
                             {
                                 project1.Execute();
                             }
