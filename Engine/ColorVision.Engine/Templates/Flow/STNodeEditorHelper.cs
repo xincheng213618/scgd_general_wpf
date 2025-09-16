@@ -35,6 +35,7 @@ using ColorVision.Engine.Templates.Jsons.Ghost2;
 using ColorVision.Engine.Templates.Jsons.HDR;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.Jsons.LedCheck2;
+using ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2;
 using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
 using ColorVision.Engine.Templates.Jsons.SFRFindROI;
@@ -454,6 +455,7 @@ namespace ColorVision.Engine.Templates.Flow
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯珠检测", new TemplateLedCheck());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.灯带检测:
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯带检测V2", new TemplateLEDStripDetectionV2()); ;
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯带检测", new TemplateLEDStripDetection()); ;
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.发光区检测:
