@@ -11,6 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Media3D;
 
 namespace ColorVision.ImageEditor.Draw.Special
 {
@@ -30,14 +31,6 @@ namespace ColorVision.ImageEditor.Draw.Special
                     referenceLine.Render();
                 };
                 MenuItems.Add(menuItem);
-
-                MenuItem menuItem2 = new() { Header = "编辑" };
-                menuItem2.Click += (s, e) =>
-                {
-                    new PropertyEditorWindow(referenceLine.Attribute).ShowDialog();
-                    referenceLine.Render();
-                };
-                MenuItems.Add(menuItem2);
             }
             return MenuItems;
         }

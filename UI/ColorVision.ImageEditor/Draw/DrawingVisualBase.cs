@@ -1,4 +1,6 @@
 ﻿#pragma warning disable CA1711,CA2211
+using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -13,7 +15,7 @@ namespace ColorVision.ImageEditor.Draw
     {
         public event PropertyChangedEventHandler? PropertyChanged;
         public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
+        public virtual BaseProperties BaseAttribute { get; }
         public virtual int ID { get; set; }
         public virtual void Render() { }
 
@@ -28,7 +30,7 @@ namespace ColorVision.ImageEditor.Draw
 
     public class DrawingVisualBase<T>: DrawingVisualBase where T : BaseProperties, new()
     {
-        public BaseProperties BaseAttribute => Attribute;
+        public override BaseProperties BaseAttribute => Attribute;
 
         public override int ID { get => Attribute.Id; set => Attribute.Id = value; }
 
@@ -65,6 +67,13 @@ namespace ColorVision.ImageEditor.Draw
                     imageViewModel.Image.TopVisual(visual);
                 };
                 MenuItems.Add(menuIte3);
+
+                MenuItem menuItem4 = new() { Header = "编辑" };
+                menuItem4.Click += (s, e) =>
+                {
+                    new PropertyEditorWindow(visual.BaseAttribute) { Owner =Application.Current.GetActiveWindow(),WindowStartupLocation =WindowStartupLocation.CenterOwner}.ShowDialog();
+                };
+                MenuItems.Add(menuItem4);
             }
             return MenuItems;
         }
