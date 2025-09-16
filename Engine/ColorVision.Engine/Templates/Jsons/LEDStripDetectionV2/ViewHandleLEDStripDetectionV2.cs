@@ -169,6 +169,7 @@ namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
                             LineProperties lineProperties = new LineProperties();
                             lineProperties.Points.Add(new Point(ep1.X, ep1.Y));
                             lineProperties.Points.Add(new Point(ep2.X, ep2.Y));
+                            lineProperties.Pen = new Pen(Brushes.Red, 1 / view.ImageView.Zoombox1.ContentMatrix.M11);
 
                             var line = new DVLine(lineProperties);
                             line.Render();
