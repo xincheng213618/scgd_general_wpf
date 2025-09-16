@@ -4,6 +4,7 @@ using ColorVision.UI;
 using ColorVision.UI.Languages;
 using ColorVision.UI.Shell;
 using ColorVision.Wizards;
+using log4net.Config;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
