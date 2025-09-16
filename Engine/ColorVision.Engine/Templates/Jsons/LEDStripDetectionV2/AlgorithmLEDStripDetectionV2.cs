@@ -13,7 +13,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
 {
 
-    [DisplayAlgorithm(50, "LEDStripDetectionV2", "Json")]
+    [DisplayAlgorithm(50, "灯条Poi中心计算", "Json")]
     public class AlgorithmLEDStripDetectionV2 : DisplayAlgorithmBase
     {
 
@@ -26,6 +26,7 @@ namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
         {
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
+            OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
         }
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
@@ -35,6 +36,15 @@ namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
             new TemplateEditorWindow(new TemplateLEDStripDetectionV2(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
+        public RelayCommand OpenTemplatePoiCommand { get; set; }
+        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; OnPropertyChanged(); } }
+        private int _TemplatePoiSelectedIndex;
+
+        public void OpenTemplatePoi()
+        {
+            new TemplateEditorWindow(new TemplatePoi(), _TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        }
+
         public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayLEDStripDetectionV2(this);
@@ -42,9 +52,6 @@ namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
         }
         public UserControl UserControl { get; set; }
 
-
-        public bool IsInversion { get => _IsInversion; set { _IsInversion = value; OnPropertyChanged(); } }
-        private bool _IsInversion;
 
         public MsgRecord SendCommand(ParamBase param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
         {
@@ -56,7 +63,13 @@ namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
 
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
-            Params.Add("IsInversion", IsInversion);
+
+            if (TemplatePoiSelectedIndex > -1)
+            {
+                var poi_pm = TemplatePoi.Params[TemplatePoiSelectedIndex].Value;
+                Params.Add("POITemplateParam", new CVTemplateParam() { ID = poi_pm.Id, Name = poi_pm.Name });
+            }
+
             Params.Add("Version", "2.0");
             MsgSend msg = new()
             {

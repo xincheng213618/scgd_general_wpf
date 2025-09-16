@@ -29,6 +29,9 @@ namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
             ComboxTemplate.ItemsSource = TemplateLEDStripDetectionV2.Params;
             ComboxTemplate.SelectedIndex = 0;
 
+            ComboxPoiTemplate.ItemsSource = TemplatePoi.Params;
+            ComboxPoiTemplate.SelectedIndex = 0;
+
             void UpdateCB_SourceImageFiles()
             {
                 CB_SourceImageFiles.ItemsSource = ServiceManager.GetInstance().GetImageSourceServices();
