@@ -146,46 +146,10 @@ namespace ColorVision.Engine.Templates.POI
             }
             ImageShow.VisualsAdd += (s, e) =>
             {
-                if (!PoiConfig.IsShowText)
+                if (e.Visual is IDrawingVisual visual)
                 {
-                    if (e.Visual is IDrawingVisual visual)
-                    {
-                        DrawingVisualLists.Add(visual);
-                    }
+                    DrawingVisualLists.Add(visual);
                 }
-                else
-                {
-                    if (e.Visual is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && s is Visual visual1)
-                    {
-
-                        DrawingVisualLists.Add(visual);
-                        visual.BaseAttribute.PropertyChanged += (s1, e1) =>
-                        {
-                            if (e1.PropertyName == "IsShow")
-                            {
-                                ListView1.ScrollIntoView(visual);
-                                ListView1.SelectedIndex = DrawingVisualLists.IndexOf(visual);
-                                if (visual.BaseAttribute.IsShow == true)
-                                {
-                                    if (!ImageShow.ContainsVisual(visual1))
-                                    {
-                                        ImageShow.AddVisualCommand(visual1);
-                                    }
-                                }
-                                else
-                                {
-                                    if (ImageShow.ContainsVisual(visual1))
-                                    {
-                                        ImageShow.RemoveVisualCommand(visual1);
-                                    }
-                                }
-                            }
-                        };
-
-                    }
-
-                }
-
 
             };
 
@@ -194,8 +158,7 @@ namespace ColorVision.Engine.Templates.POI
             {
                 if (e.Visual is IDrawingVisual visual)
                 {
-                    if (visual.BaseAttribute.IsShow)
-                        DrawingVisualLists.Remove(visual);
+                    DrawingVisualLists.Remove(visual);
                 }
             };
 

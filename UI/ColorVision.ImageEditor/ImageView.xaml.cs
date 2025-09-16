@@ -60,17 +60,6 @@ namespace ColorVision.ImageEditor
         {
             ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow);
 
-            ImageViewModel.SelectEditorVisual.SelectVisualChanged += (s, e) => 
-            {
-                if (PropertyGrid2.SelectedObject is IDrawingVisual drawingVisualold)
-                    drawingVisualold.BaseAttribute.PropertyChanged -= BaseAttribute_PropertyChanged;
-
-                if (e is IDrawingVisual drawingVisual)
-                {
-                    PropertyGrid2.SelectedObject = drawingVisual.BaseAttribute;
-                    drawingVisual.BaseAttribute.PropertyChanged += BaseAttribute_PropertyChanged;
-                }
-            };
             DataContext = ImageViewModel;
             Config.ColormapTypesChanged -= Config_ColormapTypesChanged;
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
@@ -95,11 +84,6 @@ namespace ColorVision.ImageEditor
         }
 
 
-        private void BaseAttribute_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-        {
-            PropertyGrid2.Refresh();
-        }
-
         public void Clear(object? sender, EventArgs e)
         {
             Clear();
@@ -110,26 +94,6 @@ namespace ColorVision.ImageEditor
             if (e.Visual is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && sender is Visual visual1)
             {
                 DrawingVisualLists.Add(visual);
-                visual.BaseAttribute.PropertyChanged += (s1, e1) =>
-                {
-                    if (e1.PropertyName == "IsShow")
-                    {
-                        if (visual.BaseAttribute.IsShow == true)
-                        {
-                            if (!ImageShow.ContainsVisual(visual1))
-                            {
-                                ImageShow.AddVisualCommand(visual1);
-                            }
-                        }
-                        else
-                        {
-                            if (ImageShow.ContainsVisual(visual1))
-                            {
-                                ImageShow.RemoveVisualCommand(visual1);
-                            }
-                        }
-                    }
-                };
             }
 
         }
@@ -137,8 +101,7 @@ namespace ColorVision.ImageEditor
         private void ImageShow_VisualsRemove(object? sender, VisualChangedEventArgs e)
         {
             if (e.Visual is IDrawingVisual visual)
-                if (visual.BaseAttribute.IsShow)
-                    DrawingVisualLists.Remove(visual);
+                DrawingVisualLists.Remove(visual);
         }
 
 
@@ -904,11 +867,6 @@ namespace ColorVision.ImageEditor
             Clear();
             ImageViewModel.ClearImageEventHandler -= Clear;
             ImageViewModel.Dispose();
-            PropertyGrid2.Dispose();
-
-            WindowsFormsHost1.Child = null;
-            WindowsFormsHost1.Dispose();
-            ImageGroupGrid.Children.Clear();
 
             ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
             ImageShow.VisualsRemove -= ImageShow_VisualsRemove;

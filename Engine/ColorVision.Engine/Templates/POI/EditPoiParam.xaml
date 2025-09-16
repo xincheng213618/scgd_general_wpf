@@ -655,13 +655,6 @@
                                         <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                     </Style>
                                 </GridView.ColumnHeaderContainerStyle>
-                                <GridViewColumn Header="显示">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type draw:IDrawingVisualDatum}">
-                                            <CheckBox IsChecked="{Binding BaseAttribute.IsShow}" Tag="{Binding .}"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
                                 <GridViewColumn  Header="序号">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type draw:IDrawingVisual}">
