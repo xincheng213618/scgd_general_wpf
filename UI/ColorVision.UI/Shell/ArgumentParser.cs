@@ -92,6 +92,11 @@
         public bool GetFlag(string name) => _parsedArguments.TryGetValue(name, out var value) && value.Equals("true", StringComparison.OrdinalIgnoreCase);
 
         public string? GetValue(string name) => _parsedArguments.TryGetValue(name, out var value) ? value : null;
+        public void SetValue(string name,string value)
+        {
+            _parsedArguments[name] = value;
+        }
+
 
         private Dictionary<string, string> BuildAliasMap()
         {
