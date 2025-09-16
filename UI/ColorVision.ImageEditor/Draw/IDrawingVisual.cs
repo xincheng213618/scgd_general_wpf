@@ -23,12 +23,7 @@ namespace ColorVision.ImageEditor.Draw
             List<MenuItem> MenuItems = new List<MenuItem>();
             if (obj is IDrawingVisual drawingVisual)
             {
-                MenuItem menuIte2 = new() { Header = "隐藏" };
-                menuIte2.Click += (s, e) =>
-                {
-                    drawingVisual.BaseAttribute.IsShow = false;
-                };
-                MenuItems.Add(menuIte2);
+
             }
             return MenuItems;
         }
