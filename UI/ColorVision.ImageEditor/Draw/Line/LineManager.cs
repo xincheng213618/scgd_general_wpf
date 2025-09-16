@@ -64,8 +64,6 @@ namespace ColorVision.ImageEditor.Draw
 
         }
 
-
-
         Point MouseDownP { get; set; }
         Point MouseUpP { get; set; }
 
