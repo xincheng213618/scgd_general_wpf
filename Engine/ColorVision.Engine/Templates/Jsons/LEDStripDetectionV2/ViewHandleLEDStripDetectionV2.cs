@@ -145,7 +145,7 @@ namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
                 result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmLEDStripDetectionV2), ImageFilePath = result.FilePath })) });
             }
         }
-
+         
         public override void Handle(IViewImageA view, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
