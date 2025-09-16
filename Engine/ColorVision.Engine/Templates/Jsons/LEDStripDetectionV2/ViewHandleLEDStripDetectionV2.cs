@@ -21,55 +21,55 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
 {
-    public class MTFItem
+    /// <summary>
+    /// 单个端点坐标
+    /// </summary>
+    public class EndPoint
     {
-        public string name { get; set; }
-        public double? mtfValue { get; set; }
-        public int x { get; set; }
-        public int y { get; set; }
-        public int w { get; set; }
-        public int h { get; set; }
-        public int id { get; set; } // 新增 id 字段
+        [JsonProperty("x")]
+        public int X { get; set; }
+
+        [JsonProperty("y")]
+        public int Y { get; set; }
     }
 
-    // 对应 resultChild.childRects
-    public class ChildRect
+    /// <summary>
+    /// 单个检测结果条目
+    /// </summary>
+    public class LEDStripPointResult
     {
-        public int h { get; set; }
-        public int id { get; set; }
-        public double? mtfValue { get; set; }
-        public int w { get; set; }
-        public int x { get; set; }
-        public int y { get; set; }
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonProperty("physicalLength")]
+        public double PhysicalLength { get; set; }
+
+        [JsonProperty("pixLength")]
+        public double PixLength { get; set; }
+
+        [JsonProperty("endPoint")]
+        public List<EndPoint> EndPoints { get; set; }
     }
 
-    // 对应 resultChild 每一项
-    public class ResultChildItem
+    /// <summary>
+    /// LED灯条检测V2的结果集
+    /// </summary>
+    public class LEDStripDetectionV2Result
     {
-        public string name { get; set; }
-        public double Average { get; set; }
-        public double horizontalAverage { get; set; }
-        public double verticalAverage { get; set; }
-        public List<ChildRect> childRects { get; set; }
+        [JsonProperty("result")]
+        public List<LEDStripPointResult> Result { get; set; }
     }
 
-    public class MTFResult
-    {
-        public List<MTFItem> result { get; set; }
-        public List<ResultChildItem> resultChild { get; set; }
-    }
-
-
-    public class MTFDetailViewReslut : IViewResult
+    public class LEDStripDetailViewResult : IViewResult
     {
         public DetailCommonModel DetailCommonModel { get; set; }
 
-        public MTFDetailViewReslut()
-        {
+        public LEDStripDetectionV2Result LEDStripResult { get; set; }
+        public string ResultFileName { get; set; }
 
-        }
+        public LEDStripDetailViewResult() { }
 
-        public MTFDetailViewReslut(DetailCommonModel detailCommonModel)
+        public LEDStripDetailViewResult(DetailCommonModel detailCommonModel)
         {
             DetailCommonModel = detailCommonModel;
 
@@ -78,12 +78,9 @@ namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
 
             if (File.Exists(ResultFileName))
             {
-                MTFResult = JsonConvert.DeserializeObject<MTFResult>(File.ReadAllText(ResultFileName));
+                LEDStripResult = JsonConvert.DeserializeObject<LEDStripDetectionV2Result>(File.ReadAllText(ResultFileName));
             }
-
         }
-        public string? ResultFileName { get; set; }
-        public MTFResult? MTFResult { get; set; }
     }
 
 
@@ -100,46 +97,21 @@ namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
 
         public override void SideSave(ViewResultAlg result, string selectedPath)
         {
-            string filePath = selectedPath + "//" + result.Batch + result.ResultType + ".csv";
+            string filePath = Path.Combine(selectedPath, $"{result.Batch}{result.ResultType}_LEDStripV2.csv");
 
-            var MTFDetailViewResluts = result.ViewResults.ToSpecificViewResults<MTFDetailViewReslut>();
+            var viewResults = result.ViewResults.ToSpecificViewResults<LEDStripDetailViewResult>();
             var csvBuilder = new StringBuilder();
-            csvBuilder.AppendLine($"name,x,y,w,h,mtfValue");
-            if (MTFDetailViewResluts.Count == 1)
+            csvBuilder.AppendLine("name,physicalLength,pixLength,x1,y1,x2,y2");
+            if (viewResults.Count == 1)
             {
-                var resultChilds = MTFDetailViewResluts[0].MTFResult.resultChild;
-                if (resultChilds != null)
+                var items = viewResults[0].LEDStripResult?.Result;
+                if (items != null)
                 {
-
-                    foreach (var child in resultChilds)
+                    foreach (var item in items)
                     {
-                        // child.name 这一组的 name
-                        if (child.childRects != null && child.childRects.Count > 0)
-                        {
-                            foreach (var rect in child.childRects)
-                            {
-                                csvBuilder.AppendLine($"{child.name},{rect.x},{rect.y},{rect.w},{rect.h},{rect.mtfValue},{rect.id}");
-                            }
-                        }
-                        // 如果你还需要写入平均值，可以单独加一行（如不需要可移除）
-                        csvBuilder.AppendLine($"{child.name},,,,HorizontalAverage,{child.horizontalAverage}");
-                        csvBuilder.AppendLine($"{child.name},,,,verticalAverage,{child.verticalAverage}");
-                        csvBuilder.AppendLine($"{child.name},,,,Average,{child.Average}");
-
+                        csvBuilder.AppendLine($"{item.Name},{item.PhysicalLength},{item.PixLength},{item.EndPoints[0].X},{item.EndPoints[0].Y},{item.EndPoints[1].X},{item.EndPoints[1].Y}");
                     }
                 }
-                else
-                {
-                    var mtfs = MTFDetailViewResluts[0].MTFResult?.result;
-                    if (mtfs != null)
-                    {
-                        foreach (var item in mtfs)
-                        {
-                            csvBuilder.AppendLine($"{item.name},{item.x},{item.y},{item.w},{item.h},{item.mtfValue}");
-                        }
-                    }
-                }
-
                 File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
             }
         }
@@ -153,62 +125,23 @@ namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
                 List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(result.Id);
                 if (detailCommonModels.Count == 1)
                 {
-                    MTFDetailViewReslut mtfresult = new MTFDetailViewReslut(detailCommonModels[0]);
-                    result.ViewResults.Add(mtfresult);
+                    var ledResult = new LEDStripDetailViewResult(detailCommonModels[0]);
+                    result.ViewResults.Add(ledResult);
 
                     RelayCommand SelectrelayCommand = new RelayCommand(a =>
                     {
-                        PlatformHelper.OpenFolderAndSelectFile(mtfresult.ResultFileName);
-
-                    }, a => File.Exists(mtfresult.ResultFileName));
+                        PlatformHelper.OpenFolderAndSelectFile(ledResult.ResultFileName);
+                    }, a => File.Exists(ledResult.ResultFileName));
 
                     RelayCommand OpenrelayCommand = new RelayCommand(a =>
                     {
-                        AvalonEditWindow avalonEditWindow = new AvalonEditWindow(mtfresult.ResultFileName) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                        AvalonEditWindow avalonEditWindow = new AvalonEditWindow(ledResult.ResultFileName) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                         avalonEditWindow.ShowDialog();
-                    }, a => File.Exists(mtfresult.ResultFileName));
-
+                    }, a => File.Exists(ledResult.ResultFileName));
 
                     result.ContextMenu.Items.Add(new MenuItem() { Header = "选中2.0结果集", Command = SelectrelayCommand });
                     result.ContextMenu.Items.Add(new MenuItem() { Header = "打开2.0结果集", Command = OpenrelayCommand });
-
-
-
-                    void ExportToPoi()
-                    {
-                        int old1 = TemplatePoi.Params.Count;
-                        TemplatePoi templatePoi1 = new TemplatePoi();
-                        templatePoi1.ImportTemp = new PoiParam() { Name = templatePoi1.NewCreateFileName("poi") };
-                        templatePoi1.ImportTemp.Height = 400;
-                        templatePoi1.ImportTemp.Width = 300;
-                        templatePoi1.ImportTemp.PoiConfig.BackgroundFilePath = result.FilePath;
-                        foreach (var item in mtfresult.MTFResult.result)
-                        {
-                            PoiPoint poiPoint = new PoiPoint()
-                            {
-                                Name = item.name,
-                                PixX = item.x,
-                                PixY = item.y,
-                                PixHeight =item.w,
-                                PixWidth = item.h,
-                                PointType = GraphicTypes.Rect,
-                                Id = item.id
-                            };
-                            templatePoi1.ImportTemp.PoiPoints.Add(poiPoint);
-                        }
-
-
-                        templatePoi1.OpenCreate();
-                        int next1 = TemplatePoi.Params.Count;
-                        if (next1 == old1 + 1)
-                        {
-                            new EditPoiParam(TemplatePoi.Params[next1 - 1].Value).ShowDialog();
-                        }
-                    }
-                    RelayCommand ExportToPoiCommand = new RelayCommand(a => ExportToPoi());
-                    result.ContextMenu.Items.Add(new MenuItem() { Header = "创建到POI", Command = ExportToPoiCommand });
                 }
-
                 result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmLEDStripDetectionV2), ImageFilePath = result.FilePath })) });
             }
         }
@@ -218,44 +151,57 @@ namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
 
+
             if (result.ViewResults.Count == 1)
             {
-                if (result.ViewResults[0] is MTFDetailViewReslut mTFDetailViewReslut)
+                if (result.ViewResults[0] is LEDStripDetailViewResult ledResult)
                 {
                     int id = 0;
-                    if (mTFDetailViewReslut.MTFResult.result.Count != 0)
+                    if (ledResult.LEDStripResult?.Result?.Count > 0)
                     {
-                        foreach (var item in mTFDetailViewReslut.MTFResult.result)
+                        foreach (var item in ledResult.LEDStripResult.Result)
                         {
                             id++;
-                            DVRectangleText Rectangle = new();
-                            Rectangle.Attribute.Rect = new Rect(item.x,item.y,item.w,item.h);
-                            Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                            Rectangle.Attribute.Id = id;
-                            Rectangle.Attribute.Text = item.name;
-                            Rectangle.Attribute.Msg = item.mtfValue.ToString();
-                            Rectangle.Render();
-                            view.ImageView.AddVisual(Rectangle);
+                            // 绘制两个端点之间的直线
+                            var ep1 = item.EndPoints[0];
+                            var ep2 = item.EndPoints[1];
+
+                            LineProperties lineProperties = new LineProperties();
+                            lineProperties.Points.Add(new Point(ep1.X, ep1.Y));
+                            lineProperties.Points.Add(new Point(ep2.X, ep2.Y));
+
+                            var line = new DVLine(lineProperties);
+                            line.Render();
+                            view.ImageView.AddVisual(line);
                         }
                     }
 
-                    List<string> header = new() { "name", "x","y","w","h","mtfvalue" };
-                    List<string> bdHeader = new() { "name", "x", "y", "w", "h", "mtfValue" };
-
+                    List<string> header = new() { "name", "physicalLength", "pixLength", "x1", "y1", "x2", "y2" };
                     if (view.ListView.View is GridView gridView)
                     {
                         view.LeftGridViewColumnVisibilitys.Clear();
                         gridView.Columns.Clear();
-                        for (int i = 0; i < header.Count; i++)
-                            gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                        view.ListView.ItemsSource = mTFDetailViewReslut?.MTFResult?.result;
+                        foreach (var h in header)
+                            gridView.Columns.Add(new GridViewColumn() { Header = h, DisplayMemberBinding = new Binding(h) });
+
+                        // 适配显示用的行对象
+                        var displayList = new List<dynamic>();
+                        foreach (var item in ledResult.LEDStripResult.Result)
+                        {
+                            displayList.Add(new
+                            {
+                                name = item.Name,
+                                physicalLength = item.PhysicalLength,
+                                pixLength = item.PixLength,
+                                x1 = item.EndPoints[0].X,
+                                y1 = item.EndPoints[0].Y,
+                                x2 = item.EndPoints[1].X,
+                                y2 = item.EndPoints[1].Y
+                            });
+                        }
+                        view.ListView.ItemsSource = displayList;
                     }
                 }
-            }
-            else
-            {
-
             }
 
 

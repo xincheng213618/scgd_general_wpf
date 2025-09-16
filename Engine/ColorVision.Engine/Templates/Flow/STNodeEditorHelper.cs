@@ -455,6 +455,7 @@ namespace ColorVision.Engine.Templates.Flow
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯珠检测", new TemplateLedCheck());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.灯带检测:
+                            AddStackPanel(name => algorithmNode.POITempName = name, algorithmNode.POITempName, "POI", new TemplatePoi());
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯带检测V2", new TemplateLEDStripDetectionV2()); ;
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯带检测", new TemplateLEDStripDetection()); ;
                             break;

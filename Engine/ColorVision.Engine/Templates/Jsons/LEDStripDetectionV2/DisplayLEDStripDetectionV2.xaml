@@ -11,7 +11,7 @@
     <Grid>
         <StackPanel>
             <DockPanel Margin="0,2">
-                <TextBlock Text="ROI" Width="60"/>
+                <TextBlock Text="POI" Width="60"/>
                 <ComboBox  x:Name="ComboxPoiTemplate"  Width="130" HorizontalAlignment="Left" SelectedIndex="{Binding TemplatePoiSelectedIndex}" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                 <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
