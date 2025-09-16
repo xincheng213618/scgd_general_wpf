@@ -106,7 +106,7 @@ namespace ColorVision.ImageEditor
         public List<IDVContextMenu> ContextMenuProviders { get; set; } = new List<IDVContextMenu>();
         public void RegisterContextMenuProviders()
         {
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (var type in assembly.GetTypes())
                 {
