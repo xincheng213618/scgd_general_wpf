@@ -54,7 +54,6 @@ namespace ColorVision.Engine
         {
             Config = ConfigService.Instance.GetRequiredService<MeasureBatchManagerPageConfig>();
             GenericQueryCommand = new RelayCommand(a => GenericQuery());
-
             Load();
         }
 
@@ -85,9 +84,9 @@ namespace ColorVision.Engine
     {
         public string PageTitle => nameof(MeasureBatchManagerPage);
 
-        public static MeasureBatchManager MeasureBatchManager => MeasureBatchManager.GetInstance();
+        public MeasureBatchManager MeasureBatchManager { get; set; } = MeasureBatchManager.GetInstance();
 
-        public static ObservableCollection<ViewBatchResult> ViewResults => MeasureBatchManager.ViewResults;
+        public ObservableCollection<ViewBatchResult> ViewResults => MeasureBatchManager.ViewResults;
 
         public Frame Frame { get; set; }
 
@@ -99,7 +98,8 @@ namespace ColorVision.Engine
         }
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
-            this.DataContext = MeasureBatchManager.GetInstance();
+            MeasureBatchManager.Load();
+            this.DataContext = MeasureBatchManager;
 
         }
         private void UserControl_Initialized(object sender, EventArgs e)

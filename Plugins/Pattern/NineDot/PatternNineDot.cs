@@ -72,6 +72,12 @@ namespace Pattern.NineDot
 
         public string MainBrushTag { get; set; } = "K";
         public string AltBrushTag { get; set; } = "W";
+
+
+        public double FieldOfViewX { get => _FieldOfViewX; set { _FieldOfViewX = value; OnPropertyChanged(); } }
+        private double _FieldOfViewX = 1.0;
+        public double FieldOfViewY { get => _FieldOfViewY; set { _FieldOfViewY = value; OnPropertyChanged(); } }
+        private double _FieldOfViewY = 1.0;
     }
 
     [DisplayName("九点")]
@@ -107,14 +113,27 @@ namespace Pattern.NineDot
         }
         public override Mat Gen(int height, int width)
         {
+            // 创建底图
             Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
+
+            // 2. 计算视场中心区域
+            double fovx = Math.Max(0, Math.Min(Config.FieldOfViewX, 1.0));
+            double fovy = Math.Max(0, Math.Min(Config.FieldOfViewY, 1.0));
+
+            int fovWidth = (int)(width * fovx);
+            int fovHeight = (int)(height * fovy);
+            int startX = (width - fovWidth) / 2;
+            int startY = (height - fovHeight) / 2;
+
+
+            Mat ninedot = new Mat(fovHeight, fovWidth, MatType.CV_8UC3, Config.MainBrush.ToScalar());
             Scalar color = Config.AltBrush.ToScalar();
             int rectW = Config.RectWidth;
             int rectH = Config.RectHeight;
 
             // 支持比例和绝对值
-            double marginX = Config.MarginRatioX < 1 ? width * Config.MarginRatioX : Config.MarginRatioX;
-            double marginY = Config.MarginRatioY < 1 ? height * Config.MarginRatioY : Config.MarginRatioY;
+            double marginX = Config.MarginRatioX < 1 ? fovWidth * Config.MarginRatioX : Config.MarginRatioX;
+            double marginY = Config.MarginRatioY < 1 ? fovHeight * Config.MarginRatioY : Config.MarginRatioY;
 
             List<Point> quad;
             if (Config.DotFitType == DotFitType.Center)
@@ -122,9 +141,9 @@ namespace Pattern.NineDot
                 quad = new List<Point>
         {
             new Point(marginX, marginY),
-            new Point(width - marginX, marginY),
-            new Point(width - marginX, height - marginY),
-            new Point(marginX, height - marginY)
+            new Point(fovWidth - marginX, marginY),
+            new Point(fovWidth - marginX, fovHeight - marginY),
+            new Point(marginX, fovHeight - marginY)
         };
             }
             else
@@ -136,9 +155,9 @@ namespace Pattern.NineDot
                     quad = new List<Point>
             {
                 new Point(marginX + offsetX, marginY + offsetY),
-                new Point(width - marginX - offsetX, marginY + offsetY),
-                new Point(width - marginX - offsetX, height - marginY - offsetY),
-                new Point(marginX + offsetX, height - marginY - offsetY)
+                new Point(fovWidth - marginX - offsetX, marginY + offsetY),
+                new Point(fovWidth - marginX - offsetX, fovHeight - marginY - offsetY),
+                new Point(marginX + offsetX, fovHeight - marginY - offsetY)
             };
                 }
                 else // Circumscribed
@@ -146,9 +165,9 @@ namespace Pattern.NineDot
                     quad = new List<Point>
             {
                 new Point(marginX - offsetX, marginY - offsetY),
-                new Point(width - marginX + offsetX, marginY - offsetY),
-                new Point(width - marginX + offsetX, height - marginY + offsetY),
-                new Point(marginX - offsetX, height - marginY + offsetY)
+                new Point(fovWidth - marginX + offsetX, marginY - offsetY),
+                new Point(fovWidth - marginX + offsetX, fovHeight - marginY + offsetY),
+                new Point(marginX - offsetX, fovHeight - marginY + offsetY)
             };
                 }
             }
@@ -158,10 +177,15 @@ namespace Pattern.NineDot
             foreach (var pt in gridPoints)
             {
                 if (!Config.UseRectangle)
-                    Cv2.Circle(mat, pt, Config.Radius, color, -1);
+                    Cv2.Circle(ninedot, pt, Config.Radius, color, -1);
                 else
-                    Cv2.Rectangle(mat, new Rect(pt.X - rectW / 2, pt.Y - rectH / 2, rectW, rectH), color, -1);
+                    Cv2.Rectangle(ninedot, new Rect(pt.X - rectW / 2, pt.Y - rectH / 2, rectW, rectH), color, -1);
             }
+
+            // 合成到主图中心
+            ninedot.CopyTo(mat[new Rect(startX, startY, fovWidth, fovHeight)]);
+            ninedot.Dispose();
+
             return mat;
 
         }

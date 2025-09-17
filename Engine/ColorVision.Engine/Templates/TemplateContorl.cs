@@ -1,6 +1,8 @@
 ﻿#pragma warning disable CS1998
 using ColorVision.Database;
+using ColorVision.Solution;
 using ColorVision.UI;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -47,6 +49,8 @@ namespace ColorVision.Engine.Templates
 
     public class TemplateControl
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(TemplateControl));
+
         private static TemplateControl _instance;
         private static readonly object _locker = new();
         public static TemplateControl GetInstance() { lock (_locker) { return _instance ??= new TemplateControl(); } }
@@ -60,15 +64,25 @@ namespace ColorVision.Engine.Templates
         private static async void Init()
         {
             if (!MySqlControl.GetInstance().IsConnect) return;
-            await Task.Delay(0);
-            foreach (var type in Assembly.GetExecutingAssembly().GetTypes().Where(t => typeof(IITemplateLoad).IsAssignableFrom(t) && !t.IsAbstract))
+            foreach (var assembly in Application.Current.GetAssemblies())
             {
-                if (Activator.CreateInstance(type) is IITemplateLoad iITemplateLoad)
+                foreach (var type in assembly.GetTypes().Where(t => typeof(IITemplateLoad).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    iITemplateLoad.Load();
+                    try
+                    {
+                        if (Activator.CreateInstance(type) is IITemplateLoad iITemplateLoad)
+                        {
+                            iITemplateLoad.Load();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error(ex);
+                    }
                 }
             }
         }
+
         public static Dictionary<string, ITemplate> ITemplateNames { get; set; } = new Dictionary<string, ITemplate>();
 
         public static void AddITemplateInstance(string code, ITemplate templateName)
