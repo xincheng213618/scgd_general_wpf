@@ -40,6 +40,9 @@ namespace ColorVision.Engine.Templates.Flow
 
         public int LastSelectFlow { get => _LastSelectFlow; set { _LastSelectFlow = value; OnPropertyChanged(); } }
         private int _LastSelectFlow;
+        [DisplayName("UseNewUI")]
+        public bool UseNewUI { get => _UseNewUI; set { _UseNewUI = value; OnPropertyChanged(); } }
+        private bool _UseNewUI = true;
 
         public Dictionary<string, long> FlowRunTime { get; set; } = new Dictionary<string, long>();
 

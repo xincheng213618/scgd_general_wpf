@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
 using FlowEngineLib;
@@ -9,6 +10,7 @@ using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -79,8 +81,34 @@ namespace ColorVision.Engine.Services.Flow
                 if (DisplayFlow.flowControl != null)
                     e.CanExecute = DisplayFlow.flowControl.IsFlowRun;
             }));
+
+            if (FlowConfig.UseNewUI)
+            {
+                ThemeManager.Current.CurrentUIThemeChanged += ThemeChanged;
+                ThemeChanged(ThemeManager.Current.CurrentUITheme);
+            }
         }
 
+        void ThemeChanged(Theme theme)
+        {
+            if (theme == Theme.Dark)
+            {
+                STNodeEditorMain.BackColor = Color.FromArgb(255, 34, 34, 34);
+                STNodeEditorMain.GridColor = Color.FromArgb(255, 0, 0, 0);
+                STNodeEditorMain.ForeColor = Color.FromArgb(255, 255, 255, 255);
+                STNodeEditorMain.LocationBackColor = Color.FromArgb(255, 50, 50, 50);
+
+
+
+            }
+            else
+            {
+                STNodeEditorMain.BackColor = Color.FromArgb(255, 150, 150, 150);
+                STNodeEditorMain.GridColor = Color.FromArgb(255, 0, 0, 0);
+                STNodeEditorMain.ForeColor = Color.FromArgb(255, 0, 0, 0);
+                STNodeEditorMain.LocationBackColor = Color.FromArgb(255, 200, 200, 200);
+            }
+        }
         #region ActionCommand
 
         public ObservableCollection<ActionCommand> UndoStack { get; set; } = new ObservableCollection<ActionCommand>();
@@ -398,6 +426,8 @@ namespace ColorVision.Engine.Services.Flow
 
         public void Dispose()
         {
+            ThemeManager.Current.CurrentUIThemeChanged -= ThemeChanged;
+
             STNodeEditorMain?.Dispose();
             STNodeTreeView1?.Dispose();
             winf1?.Dispose();
