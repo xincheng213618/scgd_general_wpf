@@ -120,6 +120,9 @@ namespace ColorVision.Engine.Templates.POI.POIOutput
         public string? WaveFileName { get => GetValue(_WaveFileName); set { SetProperty(ref _WaveFileName, value); OnPropertyChanged(); } }
         private string? _WaveFileName;
 
+        public string? MaskFileName { get => GetValue(_MaskFileName); set { SetProperty(ref _MaskFileName, value); OnPropertyChanged(); } }
+        private string? _MaskFileName;
+
         public int Width { get => GetValue(_Width); set { SetProperty(ref _Width, value); OnPropertyChanged(); } }
         private int _Width;
         public int Height { get => GetValue(_Height); set { SetProperty(ref _Height, value); OnPropertyChanged(); } }

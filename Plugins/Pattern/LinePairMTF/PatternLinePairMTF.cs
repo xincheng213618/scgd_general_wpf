@@ -64,6 +64,11 @@ namespace Pattern.LinePairMTF
 
         public string LineBrushTag { get; set; } = "K";
         public string BackgroundBrushTag { get; set; } = "W";
+
+        public double FieldOfViewX { get => _FieldOfViewX; set { _FieldOfViewX = value; OnPropertyChanged(); } }
+        private double _FieldOfViewX = 1.0;
+        public double FieldOfViewY { get => _FieldOfViewY; set { _FieldOfViewY = value; OnPropertyChanged(); } }
+        private double _FieldOfViewY = 1.0;
     }
 
     [DisplayName("MTF")]
@@ -79,10 +84,22 @@ namespace Pattern.LinePairMTF
 
         public override Mat Gen(int height, int width)
         {
-            // 背景色
-            Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.BackgroundBrush.ToScalar());
-            int cent_x = width / 2;
-            int cent_y = height / 2;
+            // 1. 创建底图
+            var mat = new Mat(height, width, MatType.CV_8UC3, Config.BackgroundBrush.ToScalar());
+
+            // 2. 计算视场中心区域
+            double fovx = Math.Max(0, Math.Min(Config.FieldOfViewX, 1.0));
+            double fovy = Math.Max(0, Math.Min(Config.FieldOfViewY, 1.0));
+
+            int fovWidth = (int)(width * fovx);
+            int fovHeight = (int)(height * fovy);
+            int startX = (width - fovWidth) / 2;
+            int startY = (height - fovHeight) / 2;
+
+            // 3. 生成中心棋盘格小图
+            Mat checker = new Mat(fovHeight, fovWidth, MatType.CV_8UC3, Config.BackgroundBrush.ToScalar());
+            int cent_x = fovWidth / 2;
+            int cent_y = fovHeight / 2;
 
             int count = Math.Min(Config.FieldX.Count, Config.FieldY.Count);
 
@@ -93,20 +110,24 @@ namespace Pattern.LinePairMTF
 
                 int x1 = (int)(cent_x - cent_x * fx);
                 int y1 = (int)(cent_y - cent_y * fy);
-                DrawFourLinePair(mat, width, height, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x1, y1);
+                DrawFourLinePair(checker, fovWidth, fovHeight, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x1, y1);
 
                 int x2 = (int)(cent_x + cent_x * fx);
                 int y2 = (int)(cent_y - cent_y * fy);
-                DrawFourLinePair(mat, width, height, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x2, y2);
+                DrawFourLinePair(checker, fovWidth, fovHeight, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x2, y2);
 
                 int x3 = (int)(cent_x - cent_x * fx);
                 int y3 = (int)(cent_y + cent_y * fy);
-                DrawFourLinePair(mat, width, height, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x3, y3);
+                DrawFourLinePair(checker, fovWidth, fovHeight, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x3, y3);
 
                 int x4 = (int)(cent_x + cent_x * fx);
                 int y4 = (int)(cent_y + cent_y * fy);
-                DrawFourLinePair(mat, width, height, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x4, y4);
+                DrawFourLinePair(checker, fovWidth, fovHeight, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x4, y4);
             }
+            // 4. 贴到底图中心
+            checker.CopyTo(mat[new Rect(startX, startY, fovWidth, fovHeight)]);
+            checker.Dispose();
+
             return mat;
         }
 

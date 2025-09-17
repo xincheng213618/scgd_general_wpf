@@ -36,11 +36,10 @@ namespace Pattern.Checkerboard
         public string MainBrushTag { get; set; } = "W";
         public string AltBrushTag { get; set; } = "K";
 
-        /// <summary>
-        /// 视场，中心区域占整个画布的比例（0~1），默认1
-        /// </summary>
-        public double FieldOfView { get => _FieldOfView; set { _FieldOfView = value; OnPropertyChanged(); } }
-        private double _FieldOfView = 1.0;
+        public double FieldOfViewX { get => _FieldOfViewX; set { _FieldOfViewX = value; OnPropertyChanged(); } }
+        private double _FieldOfViewX = 1.0;
+        public double FieldOfViewY { get => _FieldOfViewY; set { _FieldOfViewY = value; OnPropertyChanged(); } }
+        private double _FieldOfViewY = 1.0;
     }
 
     [DisplayName("棋盘格")]
@@ -66,9 +65,12 @@ namespace Pattern.Checkerboard
             var mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
 
             // 2. 计算视场中心区域
-            double fov = Math.Max(0, Math.Min(Config.FieldOfView, 1.0));
-            int fovWidth = (int)(width * fov);
-            int fovHeight = (int)(height * fov);
+            double fovx = Math.Max(0, Math.Min(Config.FieldOfViewX, 1.0));
+            double fovy = Math.Max(0, Math.Min(Config.FieldOfViewY, 1.0));
+
+            int fovWidth = (int)(width * fovx);
+            int fovHeight = (int)(height * fovy);
+
             int startX = (width - fovWidth) / 2;
             int startY = (height - fovHeight) / 2;
 

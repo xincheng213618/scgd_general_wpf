@@ -2,9 +2,11 @@
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using log4net;
+using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.IO.Compression;
 using System.Reflection;
 using System.Windows;
 
@@ -48,6 +50,8 @@ namespace Pattern
         public RelayCommand OpenSaveFilePathCommand { get; set; }
         public RelayCommand ClearSaveFilePathCommand { get; set; }
         public RelayCommand ClearTemplatePatternFilesCommand { get; set; }
+        public RelayCommand ExportZipCommand { get; set; }
+        public RelayCommand ImportZipCommand { get; set; }
 
         private PatternManager()
         {
@@ -97,6 +101,78 @@ namespace Pattern
             OpenSaveFilePathCommand = new RelayCommand(a => OpenSaveFilePath());
             ClearSaveFilePathCommand = new RelayCommand(a => ClearSaveFilePath());
             ClearTemplatePatternFilesCommand = new RelayCommand(a => ClearTemplatePatternFiles());
+            ExportZipCommand = new RelayCommand(a => ExportPatternZip());
+            ImportZipCommand = new RelayCommand(a => ImportPatternZip());
+        }
+        /// <summary>
+        /// 打包PatternPath目录为zip，并让用户选择导出位置
+        /// </summary>
+        public void ExportPatternZip()
+        {
+            try
+            {
+                // 1. 获取要保存的位置
+                SaveFileDialog saveFileDialog = new SaveFileDialog
+                {
+                    Filter = "Zip 文件 (*.zip)|*.zip",
+                    FileName = "Pattern.zip"
+                };
+                if (saveFileDialog.ShowDialog() != true) return;
+
+                string zipPath = saveFileDialog.FileName;
+
+                if (File.Exists(zipPath))
+                    File.Delete(zipPath);
+
+                ZipFile.CreateFromDirectory(PatternPath, zipPath, CompressionLevel.Optimal, false);
+
+                MessageBox.Show("导出成功！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 选择zip文件并解压到PatternPath
+        /// </summary>
+        public void ImportPatternZip()
+        {
+            try
+            {
+                OpenFileDialog openFileDialog = new OpenFileDialog
+                {
+                    Filter = "Zip 文件 (*.zip)|*.zip"
+                };
+                if (openFileDialog.ShowDialog() != true) return;
+
+                string zipPath = openFileDialog.FileName;
+
+                // 1. 清空PatternPath（可选，视需求决定是否保留原内容）
+                if (Directory.Exists(PatternPath))
+                    Directory.Delete(PatternPath, true);
+                Directory.CreateDirectory(PatternPath);
+
+                // 2. 解压到PatternPath
+                ZipFile.ExtractToDirectory(zipPath, PatternPath);
+
+                MessageBox.Show("导入成功！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // 3. 重新加载模板文件
+                TemplatePatternFiles.Clear();
+                foreach (var item in Directory.GetFiles(PatternPath))
+                {
+                    if (item.EndsWith(".json", StringComparison.CurrentCulture))
+                    {
+                        TemplatePatternFiles.Add(new TemplatePatternFile(item));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"导入失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         public void OpenSaveFilePath()

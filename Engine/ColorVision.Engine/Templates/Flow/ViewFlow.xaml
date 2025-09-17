@@ -31,86 +31,80 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <Border Grid.Row="0"  Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,0,5" CornerRadius="5">
+            <Border Grid.Row="0"    Margin="0,5,0,5" >
                 <StackPanel Margin="0">
-                    <Grid Margin="0,0,0,10">
-                        <Viewbox>
-                            <StackPanel Orientation="Horizontal">
-                                <ToggleButton IsChecked="{Binding IsEditMode}" Margin="0,0,5,0" Padding="2" Height="21" Width="21" >
-                                    <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
-                                </ToggleButton>
+                    <UniformGrid  Columns="8" Margin="0,0,0,5">
+                        <ToggleButton IsChecked="{Binding IsEditMode}" Margin="0,0,5,0" Padding="2" Height="25" Width="25" >
+                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
+                        </ToggleButton>
 
-                                <Button Command="{Binding SaveCommand}" Margin="0,0,5,0" Padding="2">
-                                    <Image Source="{DynamicResource DrawingImageSave}" Height="15" />
-                                </Button>
-                                <Button Command="{Binding RefreshCommand}" Padding="2" Height="21" Width="21"  Margin="0,0,5,0" >
-                                    <Button.Triggers>
-                                        <EventTrigger RoutedEvent="Button.Click">
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <DoubleAnimation Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </EventTrigger>
-                                    </Button.Triggers>
-                                    <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"  Foreground="{DynamicResource GlobalTextBrush}" FontSize="12"  ToolTip="刷新">
-                                        <TextBlock.RenderTransform>
-                                            <RotateTransform x:Name="rotateTransform1" CenterX="6" CenterY="6"/>
-                                        </TextBlock.RenderTransform>
-                                    </TextBlock>
-                                </Button>
-                                <Button Command="{Binding AutoSizeCommand}"  Margin="0,0,5,0"  Padding="2" Height="21" Width="21" >
-                                    <Image  Source="{DynamicResource DrawingImageexpend}"/>
-                                </Button>
-                                <Button Command="{Binding AutoAlignmentCommand}"  Margin="0,0,5,0"  Padding="2" Height="21" Width="21" >
-                                    <Button.Triggers>
-                                        <EventTrigger RoutedEvent="Button.Click">
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <DoubleAnimation Storyboard.TargetName="rotateTransform3" Storyboard.TargetProperty="Angle" From="0" To="720" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </EventTrigger>
-                                    </Button.Triggers>
-                                    <Image  Source="{DynamicResource DrawingImageFlow}">
-                                        <Image.RenderTransform>
-                                            <RotateTransform x:Name="rotateTransform3" CenterX="8" CenterY="8"/>
-                                        </Image.RenderTransform>
-                                    </Image>
-                                </Button>
-                                <Button Command="{Binding ClearCommand}"  Margin="0,0,5,0"  Padding="2" Height="21" Width="21" >
-                                    <Image  Source="{DynamicResource DrawingImageClear}"/>
-                                </Button>
-                                <Button Command="{Binding OpenFlowTemplateCommand}"  Margin="0,0,5,0"  Padding="2" Height="21" Width="21" >
-                                    <Image  Source="{DynamicResource DIExpand}"/>
-                                </Button>
-                                <Button Command="{Binding FlowConfig.EditCommand}"  Padding="2" Height="21" Width="21" >
-                                    <Button.Triggers>
-                                        <EventTrigger RoutedEvent="Button.Click">
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </EventTrigger>
-                                    </Button.Triggers>
-                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
-                                        <TextBlock.RenderTransform>
-                                            <RotateTransform x:Name="rotateTransform2" CenterX="6" CenterY="6"/>
-                                        </TextBlock.RenderTransform>
-                                    </TextBlock>
-                                </Button>
+                        <Button Command="{Binding SaveCommand}" Margin="0,0,5,0" Padding="2">
+                            <Image Source="{DynamicResource DrawingImageSave}" Height="15" />
+                        </Button>
+                        <Button Command="{Binding RefreshCommand}" Padding="2" Height="25" Width="25"   Margin="0,0,5,0" >
+                            <Button.Triggers>
+                                <EventTrigger RoutedEvent="Button.Click">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Button.Triggers>
+                            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"  Foreground="{DynamicResource GlobalTextBrush}" FontSize="12"  ToolTip="刷新">
+                                <TextBlock.RenderTransform>
+                                    <RotateTransform x:Name="rotateTransform1" CenterX="6" CenterY="6"/>
+                                </TextBlock.RenderTransform>
+                            </TextBlock>
+                        </Button>
+                        <Button Command="{Binding AutoSizeCommand}"  Margin="0,0,5,0"  Padding="2" Height="25" Width="25"  >
+                            <Image  Source="{DynamicResource DrawingImageexpend}"/>
+                        </Button>
+                        <Button Command="{Binding AutoAlignmentCommand}"  Margin="0,0,5,0"  Padding="2" Height="25" Width="25"  >
+                            <Button.Triggers>
+                                <EventTrigger RoutedEvent="Button.Click">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="rotateTransform3" Storyboard.TargetProperty="Angle" From="0" To="720" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Button.Triggers>
+                            <Image  Source="{DynamicResource DrawingImageFlow}">
+                                <Image.RenderTransform>
+                                    <RotateTransform x:Name="rotateTransform3" CenterX="8" CenterY="8"/>
+                                </Image.RenderTransform>
+                            </Image>
+                        </Button>
+                        <Button Command="{Binding ClearCommand}"  Margin="0,0,5,0"  Padding="2" Height="25" Width="25"  >
+                            <Image  Source="{DynamicResource DrawingImageClear}"/>
+                        </Button>
+                        <Button Command="{Binding OpenFlowTemplateCommand}"  Margin="0,0,5,0"  Padding="2" Height="25" Width="25"  >
+                            <Image  Source="{DynamicResource DIExpand}"/>
+                        </Button>
+                        <Button Command="{Binding FlowConfig.EditCommand}"  Padding="2" Height="25" Width="25"  >
+                            <Button.Triggers>
+                                <EventTrigger RoutedEvent="Button.Click">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Button.Triggers>
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                                <TextBlock.RenderTransform>
+                                    <RotateTransform x:Name="rotateTransform2" CenterX="8" CenterY="8"/>
+                                </TextBlock.RenderTransform>
+                            </TextBlock>
+                        </Button>
+                    </UniformGrid>
+                    <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
+                        <Button Content="查询结果" Click="Button_Click" Margin="0,0,5,0"/>
+                        <Button Content="流程结果管理"  Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"/>
+                    </StackPanel>
 
-                            </StackPanel>
-                        </Viewbox>
-
-
-                    </Grid>
-
-                    <Slider x:Name="ZoomSlider" Value="{Binding CanvasScale}" Maximum="5" Minimum="0.2" Margin="0,0,0,5" />
-                    <TextBox x:FieldModifier="public"  x:Name="logTextBox" TextWrapping="WrapWithOverflow" Height="105" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" Margin="0,0,0,5" />
-                    <Button Content="查询结果" Click="Button_Click"/>
-                    <Button Content="流程结果管理"  Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"/>
+                    <TextBox x:FieldModifier="public"  x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Height="105" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" Margin="0,0,0,5" />
                 </StackPanel>
             </Border>
 

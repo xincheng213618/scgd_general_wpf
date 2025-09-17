@@ -124,7 +124,7 @@
                             <GridViewColumn  Header="测量时间" Width="150">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewBatchResult}"  >
-                                        <TextBlock Text="{Binding MeasureBatchModel.CreateDate, StringFormat=yyyy/dd/MM hh:mm:ss}"/>
+                                        <TextBlock Text="{Binding MeasureBatchModel.CreateDate, StringFormat=yyyy/MM/dd hh:mm:ss}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

@@ -45,7 +45,11 @@
                 <TextBlock Text="YField" Margin="0,0,5,0"/>
                 <TextBox Text="{Binding FieldYJson}" Margin="0,0,5,0"/>
             </DockPanel>
-
+            <StackPanel  Orientation="Horizontal" Margin="0,0,0,5">
+                <TextBlock Text="FieldOfView" Margin="0,0,5,0"/>
+                <TextBox  Width="100" Text="{Binding FieldOfViewX}" Margin="0,0,5,0"/>
+                <TextBox  Width="100" Text="{Binding FieldOfViewY}" Margin="0,0,5,0"/>
+            </StackPanel>
         </StackPanel>
 
     </Grid>
