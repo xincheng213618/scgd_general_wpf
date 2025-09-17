@@ -12,6 +12,7 @@ namespace ColorVision.ImageEditor.Draw.Rasterized
 
     public class RasterizedPropertie:BaseProperties
     {
+        public object Tag { get; set; }
 
     }
 
@@ -29,6 +30,7 @@ namespace ColorVision.ImageEditor.Draw.Rasterized
             Rect = rect;
             RenderImage();
         }
+
 
         private void RenderImage()
         {

@@ -1,19 +1,21 @@
 ﻿#pragma warning disable CS8602,CS8604
 
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Media;
 using ColorVision.Database;
-using ColorVision.FileIO;
-using ColorVision.ImageEditor;
+using ColorVision.Engine.Services;
+using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.Draw.Rasterized;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using ColorVision.Engine.Services;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Templates.Ghost
 {
@@ -46,38 +48,6 @@ namespace ColorVision.Engine.Templates.Ghost
             File.AppendAllText(selectedPath, csvBuilder.ToString(), Encoding.UTF8);
         }
 
-        public static void OpenGhostImage(ImageView ImageView,string? filePath, int[] LEDpixelX, int[] LEDPixelY, int[] GhostPixelX, int[] GhostPixelY)
-        {
-            if (filePath == null)
-                return;
-            if (CVFileUtil.IsCIEFile(filePath))
-            {
-                HImage hImage1 = new NetFileUtil().OpenLocalCVFile(filePath).ToWriteableBitmap().ToHImage();
-
-                int i = OpenCVHelper.GhostImage(hImage1, out HImage hImage, LEDpixelX.Length, LEDpixelX, LEDPixelY, GhostPixelX.Length, GhostPixelX, GhostPixelY);
-                if (i != 0) return;
-                Application.Current.Dispatcher.BeginInvoke(() =>
-                {
-                    ImageView.SetImageSource(hImage.ToWriteableBitmap());
-                    hImage1.Dispose();
-                    hImage.Dispose();
-                    ImageView.UpdateZoomAndScale();
-                });
-            }
-            else
-            {
-                int i = OpenCVHelper.ReadGhostImage(filePath, LEDpixelX.Length, LEDpixelX, LEDPixelY, GhostPixelX.Length, GhostPixelX, GhostPixelY, out HImage hImage);
-                if (i != 0) return;
-                Application.Current.Dispatcher.BeginInvoke(() =>
-                {
-                    ImageView.SetImageSource(hImage.ToWriteableBitmap());
-                    hImage.Dispose();
-                    ImageView.UpdateZoomAndScale();
-                });
-            }
-        }
-
-
         private static string EscapeCsvField(string field)
         {
             if (field.Contains(',' ) || field.Contains('"') || field.Contains('\n'))
@@ -103,66 +73,82 @@ namespace ColorVision.Engine.Templates.Ghost
 
         public override void Handle(IViewImageA view, ViewResultAlg result)
         {
+            if (File.Exists(result.FilePath))
+                view.ImageView.OpenImage(result.FilePath);
+
+
+
             if (result.ViewResults.Count != 0 && result.ViewResults[0] is AlgResultGhostModel viewResultGhost)
             {
                 try
                 {
-                    int[] Ghost_pixel_X;
-                    int[] Ghost_pixel_Y;
-                    List<Point1> Points = new();
+                    List<Point1> generatedPointsGhostPixel = new List<Point1>();
                     if (viewResultGhost.GhostPixel !=null)
                         foreach (var item in viewResultGhost.GhostPixel)
                             foreach (var item1 in item)
-                                Points.Add(item1);
-
-                    if (Points != null)
-                    {
-                        Ghost_pixel_X = new int[Points.Count];
-                        Ghost_pixel_Y = new int[Points.Count];
-                        for (int i = 0; i < Points.Count; i++)
-                        {
-                            Ghost_pixel_X[i] = (int)Points[i].X;
-                            Ghost_pixel_Y[i] = (int)Points[i].Y;
-                        }
-                    }
-                    else
-                    {
-                        Ghost_pixel_X = new int[1] { 1 };
-                        Ghost_pixel_Y = new int[1] { 1 };
-                    }
-
-                    int[] LED_pixel_X;
-                    int[] LED_pixel_Y;
-
-                    Points.Clear();
+                                generatedPointsGhostPixel.Add(item1);
+                    Draw(generatedPointsGhostPixel);
+                    List<Point1> generatedPointsLedPixel = new List<Point1>();
                     if (viewResultGhost.LedPixel !=null)
                         foreach (var item in viewResultGhost.LedPixel)
                             foreach (var item1 in item)
-                                Points.Add(item1);
+                                generatedPointsLedPixel.Add(item1);
+                    Draw(generatedPointsLedPixel);
+                    void Draw(List<Point1> generatedPoints)
+                    {
+                        // 2. 获取全局画布尺寸（假设 DrawCanvas.ActualWidth/ActualHeight）
+                        int canvasWidth = (int)Math.Ceiling(view.ImageView.ActualWidth);
+                        int canvasHeight = (int)Math.Ceiling(view.ImageView.ActualHeight);
+                        if (canvasWidth == 0 || canvasHeight == 0) return;
 
-                    if (Points != null)
-                    {
-                        LED_pixel_X = new int[Points.Count];
-                        LED_pixel_Y = new int[Points.Count];
-                        for (int i = 0; i < Points.Count; i++)
+                        double minX = generatedPoints.Min(p => p.X);
+                        double minY = generatedPoints.Min(p => p.Y);
+                        double maxX = generatedPoints.Max(p => p.X);
+                        double maxY = generatedPoints.Max(p => p.Y);
+                        Rect unionRect = new Rect(new Point(minX, minY), new Point(maxX, maxY));
+                        // 3. 新建全局大图
+                        var rtb = new RenderTargetBitmap(canvasWidth, canvasHeight, 144, 144, PixelFormats.Pbgra32);
+
+                        // 4. 渲染所有选中的Visual到全局
+                        var dv = new DrawingVisual();
+                        using (var dc = dv.RenderOpen())
                         {
-                            LED_pixel_X[i] = (int)Points[i].X;
-                            LED_pixel_Y[i] = (int)Points[i].Y;
+                            for (int i = 0; i < generatedPoints.Count; i++)
+                            {
+                                var point = generatedPoints[i];
+                                RectangleProperties rectangleTextProperties = new RectangleProperties();
+                                rectangleTextProperties.Rect = new Rect(point.X, point.Y, 1, 1);
+                                rectangleTextProperties.Brush = Brushes.Transparent;
+                                rectangleTextProperties.Pen = new Pen(Brushes.Red, 1);
+                                rectangleTextProperties.Id = i;
+                                rectangleTextProperties.Name = i.ToString();
+                                DVRectangle Rectangle = new DVRectangle(rectangleTextProperties);
+                                Rectangle.IsShowText = false;
+                                Rectangle.Render();
+                                dc.DrawDrawing(Rectangle.Drawing);
+                            }
                         }
+
+                        rtb.Render(dv);
+                        // 5. 用 CroppedBitmap 截取 unionRect 区域
+                        var cropRect = new Int32Rect(
+                            (int)Math.Floor(unionRect.X),
+                            (int)Math.Floor(unionRect.Y),
+                            (int)Math.Ceiling(unionRect.Width),
+                            (int)Math.Ceiling(unionRect.Height)
+                        );
+                        var cropped = new CroppedBitmap(rtb, cropRect);
+                        var rasterVisual = new RasterizedSelectVisual(cropped, unionRect);
+                        rasterVisual.Attribute.Tag = generatedPoints;
+                        view.ImageView.ImageShow.AddVisualCommand(rasterVisual);
                     }
-                    else
-                    {
-                        LED_pixel_X = new int[1] { 1 };
-                        LED_pixel_Y = new int[1] { 1 };
-                    }
-                    OpenGhostImage(view.ImageView,result.FilePath, LED_pixel_X, LED_pixel_Y, Ghost_pixel_X, Ghost_pixel_Y);
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show(ex.Message);
                 }
-
             }
+
             List<string> header = new() { "质心坐标", "光斑灰度", "鬼影灰度" };
             List<string> bdHeader = new() { "LEDCenters", "LEDBlobGray", "GhostAverageGray" };
 

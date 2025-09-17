@@ -132,7 +132,7 @@
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewBatchResult}">
                                         <Grid>
-                                            <TextBlock Text="{Binding MeasureBatchModel.ArchiveStatus}" Visibility="{Binding IshowArch,Converter={StaticResource bool2VisibilityConverter1}}"/>
+                                            <TextBlock Text="{Binding MeasureBatchModel.ArchiveStatus}"/>
                                             <Button Content="归档" Click="Arch_Click"  Tag="{Binding .}"/>
                                         </Grid>
                                     </DataTemplate>

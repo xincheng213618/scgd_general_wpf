@@ -20,15 +20,15 @@ namespace ColorVision.ImageEditor.Draw
         private string _Name;
 
         [Browsable(false)]
-        public int? Tag { get => _Tag; set { _Tag = value; OnPropertyChanged(); } }
-        private int? _Tag;
-
-        [Browsable(false)]
         public string? Msg { get => _Msg; set { _Msg = value; OnPropertyChanged(); } }
         private string? _Msg;
 
         [Browsable(false)]
-        public object? Param { get => _Param; set { _Param = value; OnPropertyChanged(); } }
+        public int? Tag { get => _Tag; set { _Tag = value; } }
+        private int? _Tag;
+
+        [Browsable(false)]
+        public object? Param { get => _Param; set { _Param = value; } }
         private object? _Param;
 
     }

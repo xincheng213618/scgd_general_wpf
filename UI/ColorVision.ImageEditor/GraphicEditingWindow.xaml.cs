@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.Draw.Rasterized;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.Util.Draw.Rectangle;
@@ -10,8 +11,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -497,11 +500,12 @@ namespace ColorVision.ImageEditor
             ImageShow.AddVisualCommand(Polygon);
 
         }
-
-        int start;
+        bool IsRun;
         private void Button2_Click(object sender, RoutedEventArgs e)
         {
+            if (IsRun) return;
             if (ImageShow.Source is not BitmapSource bitmapImage) return;
+            IsRun = true;
             DrawingGraphicPosition pOIPosition = DrawingGraphicPosition.Internal;
             List<Point> pts_src = new List<Point>();
 
@@ -527,7 +531,7 @@ namespace ColorVision.ImageEditor
                         double x1 = Config.CenterX + Config.AreaCircleRadius * Math.Cos(i * 2 * Math.PI / Config.AreaCircleNum + Math.PI / 180 * Config.AreaCircleAngle);
                         double y1 = Config.CenterY + Config.AreaCircleRadius * Math.Sin(i * 2 * Math.PI / Config.AreaCircleNum + Math.PI / 180 * Config.AreaCircleAngle);
 
-                        int did = start + i + 1; ;
+                        int did =  i + 1; ;
                         switch (Config.DefaultPointType)
                         {
                             case GraphicDrawTypes.Circle:
@@ -612,6 +616,8 @@ namespace ColorVision.ImageEditor
                 default:
                     break;
             }
+
+            IsRun = false;
         }
 
         private void GenerateGridInQuadrilateral(List<Point> initialPoints)
@@ -673,6 +679,11 @@ namespace ColorVision.ImageEditor
             }
 
             bool IsUseText = ImageView.Config.IsShowText;
+
+            bool useGlobalBitmap = rows * cols >= 50000;
+
+
+            List<Point> generatedPoints = new List<Point>();
             for (int i = 0; i < rows; i++)
             {
                 for (int j = 0; j < cols; j++)
@@ -685,9 +696,85 @@ namespace ColorVision.ImageEditor
                     double x = (1 - u) * (1 - v) * points[0].X + (1 - u) * v * points[1].X + u * v * points[2].X + u * (1 - v) * points[3].X;
                     double y = (1 - u) * (1 - v) * points[0].Y + (1 - u) * v * points[1].Y + u * v * points[2].Y + u * (1 - v) * points[3].Y;
 
-                    Point point = new(x, y);
+                    Point point = new Point(x, y);
+                    generatedPoints.Add(point);
+                }
+            }
+            
+            if (useGlobalBitmap)
+            {
+                // 2. 获取全局画布尺寸（假设 DrawCanvas.ActualWidth/ActualHeight）
+                int canvasWidth = (int)Math.Ceiling(ImageShow.ActualWidth);
+                int canvasHeight = (int)Math.Ceiling(ImageShow.ActualHeight);
+                if (canvasWidth == 0 || canvasHeight == 0) return;
 
-                    int did = start + i * cols + j + 1;
+                double minX = generatedPoints.Min(p => p.X);
+                double minY = generatedPoints.Min(p => p.Y);
+                double maxX = generatedPoints.Max(p => p.X);
+                double maxY = generatedPoints.Max(p => p.Y);
+                Rect unionRect = new Rect(new Point(minX, minY), new Point(maxX, maxY));
+                // 3. 新建全局大图
+                var rtb = new RenderTargetBitmap(canvasWidth, canvasHeight, 144, 144, PixelFormats.Pbgra32);
+
+                // 4. 渲染所有选中的Visual到全局
+                var dv = new DrawingVisual();
+                using (var dc = dv.RenderOpen())
+                {
+                    for (int i = 0; i < generatedPoints.Count; i++)
+                    {
+                        var point = generatedPoints[i];
+                        switch (Config.DefaultPointType)
+                        {
+                            case GraphicDrawTypes.Circle:
+                                CircleProperties circleTextProperties = new CircleProperties();
+                                circleTextProperties.Center = point;
+                                circleTextProperties.Radius = Config.DefaultCircleRadius;
+                                circleTextProperties.Brush = Brushes.Transparent;
+                                circleTextProperties.Pen = new Pen(Brushes.Red, 1);
+                                circleTextProperties.Id = i;
+                                circleTextProperties.Name = i.ToString();
+                                DVCircle Circle = new DVCircle(circleTextProperties);
+                                Circle.IsShowText = IsUseText;
+                                Circle.Render();
+                                dc.DrawDrawing(Circle.Drawing);
+                                break;
+                            case GraphicDrawTypes.Rect:
+                                RectangleProperties rectangleTextProperties = new RectangleProperties();
+                                rectangleTextProperties.Rect = new Rect(point.X - Config.DefaultRectWidth / 2, point.Y - Config.DefaultRectHeight / 2, Config.DefaultRectWidth, Config.DefaultRectHeight);
+                                rectangleTextProperties.Brush = Brushes.Transparent;
+                                rectangleTextProperties.Pen = new Pen(Brushes.Red, 1);
+                                rectangleTextProperties.Id = i;
+                                rectangleTextProperties.Name = i.ToString();
+                                DVRectangle Rectangle = new DVRectangle(rectangleTextProperties);
+                                Rectangle.IsShowText = IsUseText;
+                                Rectangle.Render();
+                                dc.DrawDrawing(Rectangle.Drawing);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+
+                rtb.Render(dv);
+                // 5. 用 CroppedBitmap 截取 unionRect 区域
+                var cropRect = new Int32Rect(
+                    (int)Math.Floor(unionRect.X),
+                    (int)Math.Floor(unionRect.Y),
+                    (int)Math.Ceiling(unionRect.Width),
+                    (int)Math.Ceiling(unionRect.Height)
+                );
+                var cropped = new CroppedBitmap(rtb, cropRect);
+                var rasterVisual = new RasterizedSelectVisual(cropped, unionRect);
+                rasterVisual.Attribute.Tag = generatedPoints;
+                ImageShow.AddVisualCommand(rasterVisual);
+            }
+            else
+            {
+                for (int i = 0; i < generatedPoints.Count; i++)
+                {
+                    var point = generatedPoints[i];
+
                     switch (Config.DefaultPointType)
                     {
                         case GraphicDrawTypes.Circle:
@@ -696,9 +783,9 @@ namespace ColorVision.ImageEditor
                             circleTextProperties.Radius = Config.DefaultCircleRadius;
                             circleTextProperties.Brush = Brushes.Transparent;
                             circleTextProperties.Pen = new Pen(Brushes.Red, (double)Config.DefaultCircleRadius / 30);
-                            circleTextProperties.Id = did;
-                            circleTextProperties.Name = did.ToString();
-                            circleTextProperties.Text = string.Format("{0}{1}", TagName, did.ToString());
+                            circleTextProperties.Id = i;
+                            circleTextProperties.Name = i.ToString();
+                            circleTextProperties.Text = string.Format("{0}{1}", TagName, i.ToString());
                             DVCircleText Circle = new DVCircleText(circleTextProperties);
                             Circle.IsShowText = IsUseText;
                             Circle.Render();
@@ -709,9 +796,9 @@ namespace ColorVision.ImageEditor
                             rectangleTextProperties.Rect = new System.Windows.Rect(point.X - Config.DefaultRectWidth / 2, point.Y - Config.DefaultRectHeight / 2, Config.DefaultRectWidth, Config.DefaultRectHeight);
                             rectangleTextProperties.Brush = Brushes.Transparent;
                             rectangleTextProperties.Pen = new Pen(Brushes.Red, (double)Config.DefaultRectWidth / 30);
-                            rectangleTextProperties.Id = did;
-                            rectangleTextProperties.Name = did.ToString();
-                            rectangleTextProperties.Text = string.Format("{0}{1}", TagName, did.ToString());
+                            rectangleTextProperties.Id = i;
+                            rectangleTextProperties.Name = i.ToString();
+                            rectangleTextProperties.Text = string.Format("{0}{1}", TagName, i.ToString());
                             DVRectangleText Rectangle = new DVRectangleText(rectangleTextProperties);
                             Rectangle.IsShowText = IsUseText;
                             Rectangle.Render();
@@ -721,7 +808,9 @@ namespace ColorVision.ImageEditor
                             break;
                     }
                 }
+
             }
+
         }
 
 

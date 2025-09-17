@@ -417,6 +417,7 @@ namespace ColorVision.ImageEditor.Draw
             }
             SelectVisuals.Clear();
             var rasterVisual = new RasterizedSelectVisual(cropped, unionRect);
+
             DrawCanvas.AddVisualCommand(rasterVisual);
             SelectVisuals.Add(rasterVisual);
             // 5. 触发重绘
