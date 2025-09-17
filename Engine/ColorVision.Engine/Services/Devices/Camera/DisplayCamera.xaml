@@ -140,6 +140,22 @@
                             <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime, StringFormat=F2}" MinWidth="50"/>
                             <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeLog}" Minimum="{Binding Config.ExpTimeMinLog}" Maximum="{Binding Config.ExpTimeMaxLog}"/>
                         </DockPanel>
+                        <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding CameraVideoControl.EditConfigCommand}" Padding="2" Height="25" Width="25" >
+                            <Button.Triggers>
+                                <EventTrigger RoutedEvent="Button.Click">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="rotateTransform255" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Button.Triggers>
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                                <TextBlock.RenderTransform>
+                                    <RotateTransform x:Name="rotateTransform255"/>
+                                </TextBlock.RenderTransform>
+                            </TextBlock>
+                        </Button>
                     </StackPanel>
 
                     <StackPanel x:Name="StackPanelImage"  Visibility="{Binding DService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter1}}">

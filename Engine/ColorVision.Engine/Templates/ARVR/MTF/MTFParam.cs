@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CA1707,IDE1006
 
-using cvColorVision;
 using System.Collections.Generic;
 using System.ComponentModel;
 
@@ -19,8 +18,8 @@ namespace ColorVision.Engine.Templates.MTF
 
 
         [Category("MTF"), Description("EvaFunc")]
-        public EvaFunc eEvaFunc { get => GetValue(_eEvaFunc); set { SetProperty(ref _eEvaFunc, value); } }
-        private EvaFunc _eEvaFunc = EvaFunc.CalResol;
+        public cvColorVision.EvaFunc eEvaFunc { get => GetValue(_eEvaFunc); set { SetProperty(ref _eEvaFunc, value); } }
+        private cvColorVision.EvaFunc _eEvaFunc = cvColorVision.EvaFunc.CalResol;
 
 
         [Category("MTF"), Description("dx")]
