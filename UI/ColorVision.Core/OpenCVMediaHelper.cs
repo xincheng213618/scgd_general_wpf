@@ -12,6 +12,17 @@ namespace ColorVision
         public int Height { get; set; }
     }
 
+    public enum FocusAlgorithm 
+    {
+        Variance = 0,
+        StandardDeviation = 1,
+        Tenengrad = 2,
+        Laplacian = 3,
+        VarianceOfLaplacian = 4,
+        EnergyOfGradient = 5,
+        SpatialFrequency = 6
+        // CalResol 比较复杂，通常需要特定图卡，这里不作为通用对焦算法
+    };
 
     public static class OpenCVMediaHelper
     {
@@ -78,16 +89,10 @@ namespace ColorVision
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern void M_SetHImageData(IntPtr data);
-        public enum EvaFunc
-        {
-            Variance = 0,
-            Tenengrad = 1,
-            Laplace,
-            CalResol,
-        };
+
 
         [DllImport(LibPath, EntryPoint = "M_CalArtculation", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern double M_CalArtculation(HImage image, EvaFunc evaFunc);
+        public unsafe static extern double M_CalArtculation(HImage image, FocusAlgorithm  evaFunc,int roi_x, int roi_y, int roi_width, int roi_height);
 
 
         [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]

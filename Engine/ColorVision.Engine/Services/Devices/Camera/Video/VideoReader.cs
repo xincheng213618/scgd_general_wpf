@@ -1,10 +1,15 @@
-﻿using ColorVision.ImageEditor;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.Draw.Text;
+using ColorVision.UI;
 using log4net;
 using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -12,7 +17,14 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
+    public class VideoReaderConfig:ViewModelBase,IConfig
+    {
+        public bool IsOpen1 { get => _IsOpen; set { _IsOpen = value; OnPropertyChanged(); } }
+        private bool _IsOpen = true;
 
+        public FocusAlgorithm  EvaFunc { get => _EvaFunc; set { _EvaFunc = value; OnPropertyChanged(); } }
+        private FocusAlgorithm  _EvaFunc = FocusAlgorithm .Laplacian;
+    }
 
     /// <summary>
     /// 写标志位的方案有问题，会少刷新
@@ -28,6 +40,18 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         private byte[]? lastFrameData; // 上一帧池化数据
         private int lastFrameLen;      // 上一帧有效长度
+
+        public VideoReaderConfig VideoReaderConfig { get; set; } = ConfigService.Instance.GetRequiredService<VideoReaderConfig>();
+
+        public RelayCommand EditConfigCommand { get; set; }
+        public void EditConfig()
+        {
+            new PropertyEditorWindow(VideoReaderConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+        public VideoReader()
+        {
+            EditConfigCommand = new RelayCommand(a => EditConfig());
+        }
 
         public int Startup(string mapNamePrefix, ImageView image)
         {
@@ -45,9 +69,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 return -1;
             }
             openVideo = true;
+            Image?.ImageShow.AddVisualCommand(DVRectangleText);
             Task.Run(StartupAsync);
             return 0;
         }
+        HImage? _calculationHImage;
+        DVRectangleText DVRectangleText = new DVRectangleText();
 
         public void Close()
         {
@@ -59,16 +86,23 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 lastFrameData = null;
                 lastFrameLen = 0;
             }
+
+            Image?.ImageShow.RemoveVisualCommand(DVRectangleText);
             Image = null;
             binaryReader?.Dispose();
             memoryMappedViewStream?.Dispose();
             memoryMappedFile?.Dispose();
+
+            _calculationHImage?.Dispose();
+            _calculationHImage = null;
         }
 
         private int frameCount;
         private readonly Stopwatch fpsTimer = new Stopwatch();
         private double lastFps;
         private bool first = true;
+
+        
 
         private async Task StartupAsync()
         {
@@ -110,6 +144,48 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                         ArrayPool<byte>.Shared.Return(buffer);
                         await Task.Delay(1);
                         continue;
+                    }
+                    if (VideoReaderConfig.IsOpen1)
+                    {
+                        // 直接从帧数据构造 HImage，无需内存拷贝
+                        if (_calculationHImage == null || _calculationHImage.Value.cols != width || _calculationHImage.Value.rows != height || _calculationHImage.Value.channels != channels || _calculationHImage.Value.depth != bpp / 8)
+                        {
+                            _calculationHImage?.Dispose(); // 释放旧的
+                            _calculationHImage = new HImage
+                            {
+                                rows = height,
+                                cols = width,
+                                channels = channels,
+                                depth = bpp / 8,
+                                pData = Marshal.AllocHGlobal(buffer.Length) // 分配新的非托管内存
+                            };
+                            log.Info("Allocated new HImage for calculation.");
+                            Application.Current?.Dispatcher.Invoke(() =>
+                            {
+                                DVRectangleText.Rect = new Rect(0, 0, width, height);
+                            });
+
+                        }
+                        if (_calculationHImage != null)
+                        {
+                            Marshal.Copy(buffer, 0, _calculationHImage.Value.pData, buffer.Length);
+                            if (_calculationHImage is HImage hImage)
+                            {
+                                Rect rect = DVRectangleText.Rect;
+                                Thread task = new Thread(() =>
+                                {
+                                    // 在后台线程执行计算
+                                    double articulation = OpenCVMediaHelper.M_CalArtculation(hImage, FocusAlgorithm.Laplacian, (int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height);
+                                    Application.Current?.Dispatcher.Invoke(() =>
+                                    {
+                                        DVRectangleText.Attribute.Text = $"Articulation: {articulation:F5}";
+                                    });
+                                    log.Info($"Image Articulation: {articulation}");
+                                });
+                                task.Start();
+                            }
+                        }
+
                     }
 
                     // 渲染逻辑调度到UI线程
@@ -169,6 +245,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                         lastFrameData = buffer;
                     }));
                     lastFrameLen = len;
+
+
                     await Task.Delay(20);
                 }
                 catch (Exception ex)
