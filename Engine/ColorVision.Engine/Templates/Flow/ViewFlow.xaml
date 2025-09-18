@@ -23,7 +23,7 @@
                 <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
             </WindowsFormsHost>
         </Grid>
-        <Grid Grid.Column="1"  x:Name="Grid2"  Width="300" >
+        <Grid Grid.Column="1"  x:Name="Grid2"  Width="250" >
             <Grid.RowDefinitions >
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -34,11 +34,8 @@
             <Border Grid.Row="0"    Margin="0,5,0,5" >
                 <StackPanel Margin="0">
                     <UniformGrid  Columns="8" Margin="0,0,0,5">
-                        <ToggleButton IsChecked="{Binding IsEditMode}" Margin="0,0,5,0" Padding="2" Height="25" Width="25" >
-                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
-                        </ToggleButton>
 
-                        <Button Command="{Binding SaveCommand}" Margin="0,0,5,0" Padding="2">
+                        <Button Command="{Binding SaveCommand}" Height="25" Width="25"  Margin="0,0,5,0" Padding="2">
                             <Image Source="{DynamicResource DrawingImageSave}" Height="15" />
                         </Button>
                         <Button Command="{Binding RefreshCommand}" Padding="2" Height="25" Width="25"   Margin="0,0,5,0" >
