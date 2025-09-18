@@ -60,7 +60,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         public void Initializedsss(CalibrationParam calibrationParam)
         {
-
             ComboBoxList.SelectionChanged -= ComboBox_SelectionChanged;
 
             CalibrationParam = calibrationParam;
@@ -91,11 +90,29 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             {
                 ComboBoxList.SelectedIndex = 0;
             }
+
+            if (ComboBoxList.SelectedValue is GroupResource groupResource)
+            {
+                CalibrationParam.Normal.DarkNoise.IsExitFile = groupResource.DarkNoise?.IsValid ?? false;
+                CalibrationParam.Normal.DefectPoint.IsExitFile = groupResource.DefectPoint?.IsValid ?? false;
+                CalibrationParam.Normal.DSNU.IsExitFile = groupResource.DSNU?.IsValid ?? false;
+                CalibrationParam.Normal.Distortion.IsExitFile = groupResource.Distortion?.IsValid ?? false;
+                CalibrationParam.Normal.ColorShift.IsExitFile = groupResource.ColorShift?.IsValid ?? false;
+                CalibrationParam.Normal.Uniformity.IsExitFile = groupResource.Uniformity?.IsValid ?? false;
+                CalibrationParam.Normal.LineArity.IsExitFile = groupResource.LineArity?.IsValid ?? false;
+                CalibrationParam.Normal.ColorDiff.IsExitFile = groupResource.ColorDiff?.IsValid ?? false;
+
+                CalibrationParam.Color.Luminance.IsExitFile = groupResource.Luminance?.IsValid ?? false;
+                CalibrationParam.Color.LumFourColor.IsExitFile = groupResource.LumFourColor?.IsValid ?? false;
+                CalibrationParam.Color.LumMultiColor.IsExitFile = groupResource.LumMultiColor?.IsValid ?? false;
+                CalibrationParam.Color.LumOneColor.IsExitFile = groupResource.LumOneColor?.IsValid ?? false;
+            }
         }
 
 
         private void UserControl_Initialized(object sender, System.EventArgs e)
         {
+            uploadbutton.DataContext = PhyCamera;
             uploadbutton.DataContext = PhyCamera;
 
             void UpdateDefaultStyle()   
@@ -173,8 +190,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                         CalibrationParam.Normal.Uniformity.IsSelected = false;
                         CalibrationParam.Normal.ColorShift.IsSelected = false;
                         CalibrationParam.Normal.LineArity.IsSelected = false;
-
-
                         CalibrationParam.Color.Luminance.IsSelected = false;
                         CalibrationParam.Color.LumFourColor.IsSelected = false;
                         CalibrationParam.Color.LumMultiColor.IsSelected = false;
@@ -231,8 +246,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         {
             CalibrationEdit CalibrationEdit = new CalibrationEdit(PhyCamera, ComboBoxList.SelectedIndex);
             CalibrationEdit.Show();
-
-
         }
 
 
