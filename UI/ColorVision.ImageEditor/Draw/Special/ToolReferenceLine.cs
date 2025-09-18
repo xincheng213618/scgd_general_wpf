@@ -45,6 +45,7 @@ namespace ColorVision.ImageEditor.Draw.Special
         {
             Attribute = new ReferenceLineParam();
             Attribute.Pen  = new Pen(Attribute.Brush, 1);
+            Attribute.PropertyChanged += (s, e) => Render();
         }
         public double Ratio { get; set; }
         public double ActualWidth { get; set; }
@@ -73,8 +74,6 @@ namespace ColorVision.ImageEditor.Draw.Special
             dc.DrawRectangle(SolidColorBrush, new Pen(Brushes.Transparent, 0), new Rect(0,0,ActualWidth,ActualHeight));
 
             Pen pen = Attribute.Pen;
-
- 
 
             double angle = Attribute.Angle;
             Point CenterPoint = RMouseDownP;
