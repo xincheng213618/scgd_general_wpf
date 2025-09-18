@@ -1542,7 +1542,6 @@ namespace ProjectARVR
 
                             result.ViewReslutDistortionGhost.Distortion2View = blackMuraView;
 
-
                             ObjectiveTestResult.HorizontalTVDistortion = new ObjectiveTestItem()
                             {
                                 Name = "HorizontalTVDistortion",
@@ -1828,26 +1827,29 @@ namespace ProjectARVR
                     DVPolygon polygon = new DVPolygon();
                     List<System.Windows.Point> point1s = new List<System.Windows.Point>();
 
-                    if(result.ViewResultWhite == null || result.ViewResultWhite.PoiResultCIExyuvDatas ==null || result.ViewResultWhite.AlgResultLightAreaModels ==null)
+                    if(result.ViewResultWhite == null || result.ViewResultWhite.PoiResultCIExyuvDatas ==null)
                     {
                         log.Info("找不到白画面的结果");
                         return;
                     }
+                    if(result.ViewResultWhite.AlgResultLightAreaModels != null)
+                    {
+                        foreach (var item in result.ViewResultWhite.AlgResultLightAreaModels)
+                        {
+                            point1s.Add(new System.Windows.Point((int)item.PosX, (int)item.PosY));
+                        }
+                        foreach (var item in GrahamScan.ComputeConvexHull(point1s))
+                        {
+                            polygon.Attribute.Points.Add(new Point(item.X, item.Y));
+                        }
+                        polygon.Attribute.Brush = Brushes.Transparent;
+                        polygon.Attribute.Pen = new Pen(Brushes.Blue, 1);
+                        polygon.Attribute.Id = -1;
+                        polygon.IsComple = true;
+                        polygon.Render();
+                        ImageView.AddVisual(polygon);
+                    }
 
-                    foreach (var item in result.ViewResultWhite.AlgResultLightAreaModels)
-                    {
-                        point1s.Add(new System.Windows.Point((int)item.PosX, (int)item.PosY));
-                    }
-                    foreach (var item in GrahamScan.ComputeConvexHull(point1s))
-                    {
-                        polygon.Attribute.Points.Add(new Point(item.X, item.Y));
-                    }
-                    polygon.Attribute.Brush = Brushes.Transparent;
-                    polygon.Attribute.Pen = new Pen(Brushes.Blue, 1);
-                    polygon.Attribute.Id = -1;
-                    polygon.IsComple = true;
-                    polygon.Render();
-                    ImageView.AddVisual(polygon);
 
                     foreach (var poiResultCIExyuvData in result.ViewResultWhite.PoiResultCIExyuvDatas)
                     {
@@ -2084,7 +2086,6 @@ namespace ProjectARVR
             {
                 case ARVRTestType.White:
                     outtext += $"白画面 测试项：自动AA区域定位算法+关注点算法+FOV算法+亮度均匀性+颜色均匀性算法+" + Environment.NewLine;
-
                     if (result.ViewResultWhite.AlgResultLightAreaModels != null)
                     {
                         foreach (var item in result.ViewResultWhite.AlgResultLightAreaModels)
@@ -2100,6 +2101,7 @@ namespace ProjectARVR
                             outtext += $"X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
                         }
                     }
+
                     outtext += $"CenterCorrelatedColorTemperature:{result.ViewResultWhite.CenterCorrelatedColorTemperature.TestValue}  LowLimit:{result.ViewResultWhite.CenterCorrelatedColorTemperature.LowLimit} UpLimit:{result.ViewResultWhite.CenterCorrelatedColorTemperature.UpLimit},Rsult{(result.ViewResultWhite.CenterCorrelatedColorTemperature.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     outtext += $"Luminance_uniformity:{result.ViewResultWhite.LuminanceUniformity.TestValue} LowLimit:{result.ViewResultWhite.LuminanceUniformity.LowLimit}  UpLimit:{result.ViewResultWhite.LuminanceUniformity.UpLimit},Rsult{(result.ViewResultWhite.LuminanceUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     outtext += $"Color_uniformity:{result.ViewResultWhite.ColorUniformity.TestValue} LowLimit:{result.ViewResultWhite.ColorUniformity.LowLimit} UpLimit:{result.ViewResultWhite.ColorUniformity.UpLimit},Rsult{(result.ViewResultWhite.ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
