@@ -181,10 +181,23 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                         CalibrationParam.Color.LumOneColor.IsSelected = false;
                     }
 
+                    CalibrationParam.Normal.DarkNoise.IsExitFile = groupResource.DarkNoise?.IsValid ?? false;
+                    CalibrationParam.Normal.DefectPoint.IsExitFile = groupResource.DefectPoint?.IsValid ?? false;
+                    CalibrationParam.Normal.DSNU.IsExitFile = groupResource.DSNU?.IsValid ?? false;
+                    CalibrationParam.Normal.Distortion.IsExitFile = groupResource.Distortion?.IsValid ?? false;
+                    CalibrationParam.Normal.ColorShift.IsExitFile = groupResource.ColorShift?.IsValid ?? false;
+                    CalibrationParam.Normal.Uniformity.IsExitFile = groupResource.Uniformity?.IsValid ?? false;
+                    CalibrationParam.Normal.LineArity.IsExitFile = groupResource.LineArity?.IsValid ?? false;
+                    CalibrationParam.Normal.ColorDiff.IsExitFile = groupResource.ColorDiff?.IsValid ?? false;
 
+                    CalibrationParam.Color.Luminance.IsExitFile = groupResource.Luminance?.IsValid ?? false;
+                    CalibrationParam.Color.LumFourColor.IsExitFile = groupResource.LumFourColor?.IsValid ?? false;
+                    CalibrationParam.Color.LumMultiColor.IsExitFile = groupResource.LumMultiColor?.IsValid ?? false;
+                    CalibrationParam.Color.LumOneColor.IsExitFile = groupResource.LumOneColor?.IsValid ?? false;
 
                     CalibrationParam.Normal.DarkNoise.FilePath = groupResource.DarkNoise?.Name ?? string.Empty;
                     CalibrationParam.Normal.DarkNoise.Id = groupResource.DarkNoise?.Id ??0;
+
                     CalibrationParam.Normal.DefectPoint.FilePath = groupResource.DefectPoint?.Name ?? string.Empty;
                     CalibrationParam.Normal.DefectPoint.Id = groupResource.DefectPoint?.Id ?? 0;
                     CalibrationParam.Normal.DSNU.FilePath = groupResource.DSNU?.Name ?? string.Empty;
@@ -217,15 +230,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         private void Button_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             CalibrationEdit CalibrationEdit = new CalibrationEdit(PhyCamera, ComboBoxList.SelectedIndex);
-            CalibrationEdit.Closed += (s, e) =>
-            {
-                groupResources.Clear();
-                foreach (var item in PhyCamera.VisualChildren)
-                {
-                    if (item is GroupResource groupResource)
-                        groupResources.Add(groupResource);
-                }
-            };
             CalibrationEdit.Show();
 
 

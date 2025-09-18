@@ -47,7 +47,7 @@ namespace ColorVision
         private static Stopwatch _stopwatch;
 
         public static void Start()
-        {
+       {
             _stopwatch = Stopwatch.StartNew();
         }
 

@@ -43,6 +43,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         public override int Id { get { if (string.IsNullOrWhiteSpace(propertyName + "Id")) return GetValue(_Id); else return GetValue(_Id, propertyName + "Id"); } set { if (string.IsNullOrWhiteSpace(propertyName + "Id")) SetProperty(ref _Id, value); else SetProperty(ref _Id, value, propertyName + "Id"); OnPropertyChanged(); } }
         private int _Id;
+
+        public bool IsExitFile { get => _IsExitFile; set { _IsExitFile = value; OnPropertyChanged(); } }
+        private bool _IsExitFile;
     }
 
 
