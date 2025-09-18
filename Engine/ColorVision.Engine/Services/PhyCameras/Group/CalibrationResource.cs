@@ -51,12 +51,30 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public RelayCommand EditCommand { get; set; }
 
         public CalibrationFileConfig Config { get; set; }
+
+        public bool IsValid
+        {
+            get
+            {
+                if (this.GetAncestor<PhyCamera>() is PhyCamera phyCamera)
+                {
+                    if (Directory.Exists(phyCamera.Config.FileServerCfg.FileBasePath))
+                    {
+                        string path = SysResourceModel.Value ?? string.Empty;
+                        string filepath = Path.Combine(phyCamera.Config.FileServerCfg.FileBasePath, phyCamera.Code, "cfg", path);
+                        return File.Exists(filepath);
+                    }
+                }
+                return false;
+            }
+        }
+
         public CalibrationResource(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             CalibrationResources.Add(this);
             OpenCommand = new RelayCommand(a=> Open(),a => AccessControl.Check(PermissionMode.Administrator));
             EditCommand = new RelayCommand(a => Edit(), a => AccessControl.Check(PermissionMode.Administrator));
-            Config = JsonConvert.DeserializeObject<CalibrationFileConfig>(sysResourceModel.Remark) ?? new CalibrationFileConfig();
+            Config = JsonConvert.DeserializeObject<CalibrationFileConfig>(sysResourceModel.Remark ?? string.Empty) ?? new CalibrationFileConfig();
         }
 
         public void Edit()

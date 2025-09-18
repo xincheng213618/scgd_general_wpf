@@ -37,16 +37,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
     }
 
     [SugarTable("t_scgd_camera_license")]
-    public class LicenseModel : ViewModelBase,IEntity, ISortID, IInitTables
+    public class LicenseModel : ViewEntity, ISortID, IInitTables
     {
-        [SugarColumn(ColumnName ="id")]
-        public int Id { get; set; }
-        public LicenseModel()
-        {
-            CreateDate = DateTime.Now;
-            ExpiryDate = DateTime.Now;
-        }
-
         [SugarColumn(ColumnName ="res_dev_cam_pid")]
         public int? DevCameraId { get; set; }
         [SugarColumn(ColumnName ="res_dev_cali_pid")]
@@ -67,19 +59,19 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
         [SugarColumn(ColumnName ="mac_sn")]
         public string? MacAddress { get; set; }
         [SugarColumn(ColumnName ="expired")]
-        public DateTime? ExpiryDate { get; set; }
+        public DateTime? ExpiryDate { get; set; } = DateTime.Now;
         [SugarColumn(ColumnName ="customer_name")]
         public string? CusTomerName { get; set; }
         [SugarColumn(ColumnName ="create_date")]
-        public DateTime? CreateDate { get; set; }
+        public DateTime? CreateDate { get; set; } = DateTime.Now;
     }
 
     public class CameraLicenseDao : BaseTableDao<LicenseModel>
     {
         public static CameraLicenseDao Instance { get; set; } = new CameraLicenseDao();
 
-        public LicenseModel? GetByMAC(string Code) => this.GetByParam(new Dictionary<string, object>() { { "mac_sn", Code } });
-    
+        public LicenseModel? GetByMAC(string Code) => Db.Queryable<LicenseModel>().Where(x => x.MacAddress == Code).First();
+
     }
 
 
