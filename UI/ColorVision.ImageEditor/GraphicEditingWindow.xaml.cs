@@ -709,9 +709,13 @@ namespace ColorVision.ImageEditor
                 if (canvasWidth == 0 || canvasHeight == 0) return;
 
                 double minX = generatedPoints.Min(p => p.X);
+                minX = minX> 0 ? minX : 0;
                 double minY = generatedPoints.Min(p => p.Y);
+                minY = minY > 0 ? minY : 0;
                 double maxX = generatedPoints.Max(p => p.X);
+                maxX = maxX < canvasWidth ? maxX : canvasWidth;
                 double maxY = generatedPoints.Max(p => p.Y);
+                maxY = maxY < canvasHeight ? maxY : canvasHeight;
                 Rect unionRect = new Rect(new Point(minX, minY), new Point(maxX, maxY));
                 // 3. 新建全局大图
                 var rtb = new RenderTargetBitmap(canvasWidth, canvasHeight, 144, 144, PixelFormats.Pbgra32);
