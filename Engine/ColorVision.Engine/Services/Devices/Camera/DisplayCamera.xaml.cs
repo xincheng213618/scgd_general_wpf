@@ -255,17 +255,149 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return;
 
-            TakePhotoButton.Visibility = Visibility.Hidden;
 
             if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
             {
                 if (param.Id != -1)
                 {
-                    if (Device.PhyCamera != null && Device.PhyCamera.CameraLicenseModel?.DevCaliId == null)
+                    if (Device.PhyCamera == null)
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), "物理相机未配置", "ColorVision");
+                        return;
+                    }
+
+                    if (Device.PhyCamera.CameraLicenseModel?.DevCaliId == null)
                     {
                         MessageBox1.Show(Application.Current.GetActiveWindow(), "使用校正模板需要先配置校正服务", "ColorVision");
                         return;
                     }
+
+                    var groupResource = Device.PhyCamera.VisualChildren.OfType<GroupResource>().FirstOrDefault(a => a.Name == param.CalibrationMode);
+
+                    if (groupResource == null)
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), "校正组不存在", "ColorVision");
+                        return;
+                    }
+
+                    bool isSelected =
+                        (param.Normal?.DarkNoise?.IsSelected ?? false) ||
+                        (param.Normal?.DefectPoint?.IsSelected ?? false) ||
+                        (param.Normal?.Distortion?.IsSelected ?? false) ||
+                        (param.Normal?.DSNU?.IsSelected ?? false) ||
+                        (param.Normal?.ColorShift?.IsSelected ?? false) ||
+                        (param.Normal?.Uniformity?.IsSelected ?? false) ||
+                        (param.Normal?.LineArity?.IsSelected ?? false) ||
+                        (param.Normal?.ColorDiff?.IsSelected ?? false) ||
+                        (param.Color?.Luminance?.IsSelected ?? false) ||
+                        (param.Color?.LumOneColor?.IsSelected ?? false) ||
+                        (param.Color?.LumFourColor?.IsSelected ?? false) ||
+                        (param.Color?.LumMultiColor?.IsSelected ?? false);
+
+                    if (!isSelected)
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板,需要确认校正文件已经配置", "ColorVision");
+                        return;
+                    }
+
+                    // 文件有效性验证
+                    if (param.Normal?.DarkNoise?.IsSelected ?? false)
+                    {
+                        if (!(groupResource.DarkNoise?.IsValid ?? false))
+                        {
+                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.DarkNoise?.FilePath ?? "DarkNoise文件路径"} 不存在", "ColorVision");
+                            return;
+                        }
+                    }
+                    if (param.Normal?.DefectPoint?.IsSelected ?? false)
+                    {
+                        if (!(groupResource.DefectPoint?.IsValid ?? false))
+                        {
+                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.DefectPoint?.FilePath ?? "DefectPoint文件路径"} 不存在", "ColorVision");
+                            return;
+                        }
+                    }
+                    if (param.Normal?.Distortion?.IsSelected ?? false)
+                    {
+                        if (!(groupResource.Distortion?.IsValid ?? false))
+                        {
+                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.Distortion?.FilePath ?? "Distortion文件路径"} 不存在", "ColorVision");
+                            return;
+                        }
+                    }
+                    if (param.Normal?.DSNU?.IsSelected ?? false)
+                    {
+                        if (!(groupResource.DSNU?.IsValid ?? false))
+                        {
+                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.DSNU?.FilePath ?? "DSNU文件路径"} 不存在", "ColorVision");
+                            return;
+                        }
+                    }
+                    if (param.Normal?.ColorShift?.IsSelected ?? false)
+                    {
+                        if (!(groupResource.ColorShift?.IsValid ?? false))
+                        {
+                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.ColorShift?.FilePath ?? "ColorShift文件路径"} 不存在", "ColorVision");
+                            return;
+                        }
+                    }
+                    if (param.Normal?.Uniformity?.IsSelected ?? false)
+                    {
+                        if (!(groupResource.Uniformity?.IsValid ?? false))
+                        {
+                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.Uniformity?.FilePath ?? "Uniformity文件路径"} 不存在", "ColorVision");
+                            return;
+                        }
+                    }
+                    if (param.Normal?.LineArity?.IsSelected ?? false)
+                    {
+                        if (!(groupResource.LineArity?.IsValid ?? false))
+                        {
+                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.LineArity?.FilePath ?? "LineArity文件路径"} 不存在", "ColorVision");
+                            return;
+                        }
+                    }
+                    if (param.Normal?.ColorDiff?.IsSelected ?? false)
+                    {
+                        if (!(groupResource.ColorDiff?.IsValid ?? false))
+                        {
+                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.ColorDiff?.FilePath ?? "ColorDiff文件路径"} 不存在", "ColorVision");
+                            return;
+                        }
+                    }
+                    if (param.Color?.Luminance?.IsSelected ?? false)
+                    {
+                        if (!(groupResource.Luminance?.IsValid ?? false))
+                        {
+                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.Luminance?.FilePath ?? "Luminance文件路径"} 不存在", "ColorVision");
+                            return;
+                        }
+                    }
+                    if (param.Color?.LumOneColor?.IsSelected ?? false)
+                    {
+                        if (!(groupResource.LumOneColor?.IsValid ?? false))
+                        {
+                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.LumOneColor?.FilePath ?? "LumOneColor文件路径"} 不存在", "ColorVision");
+                            return;
+                        }
+                    }
+                    if (param.Color?.LumFourColor?.IsSelected ?? false)
+                    {
+                        if (!(groupResource.LumFourColor?.IsValid ?? false))
+                        {
+                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.LumFourColor?.FilePath ?? "LumFourColor文件路径"} 不存在", "ColorVision");
+                            return;
+                        }
+                    }
+                    if (param.Color?.LumMultiColor?.IsSelected ?? false)
+                    {
+                        if (!(groupResource.LumMultiColor?.IsValid ?? false))
+                        {
+                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"使用{param.Name}模板, {groupResource.LumMultiColor?.FilePath ?? "LumMultiColor文件路径"} 不存在", "ColorVision");
+                            return;
+                        }
+                    }
+
                 }
             }
             else
@@ -277,13 +409,22 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
             else expTime = new double[] { Device.Config.ExpTime };
 
+
+
+
+
+
             if (ComboBoxHDRTemplate.SelectedValue is not ParamBase HDRparamBase) return;
+            TakePhotoButton.Visibility = Visibility.Hidden;
 
             MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam, HDRparamBase);
 
             ButtonProgressBarGetData.Start();
             ButtonProgressBarGetData.TargetTime = Device.Config.ExpTime + DisplayCameraConfig.TakePictureDelay;
             logger.Info($"正在取图：ExpTime{Device.Config.ExpTime} othertime{DisplayCameraConfig.TakePictureDelay}");
+
+
+
 
             ServicesHelper.SendCommand(TakePhotoButton, msgRecord);
             msgRecord.MsgRecordStateChanged += (s) =>
@@ -448,6 +589,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             var ITemplate = new TemplateCalibrationParam(Device.PhyCamera);
             var windowTemplate = new TemplateEditorWindow(ITemplate, ComboxCalibrationTemplate.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
+
+            ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
         }
 
         private void EditAutoExpTime(object sender, RoutedEventArgs e)

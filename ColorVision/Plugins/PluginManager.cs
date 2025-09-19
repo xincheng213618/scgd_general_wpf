@@ -36,7 +36,7 @@ namespace ColorVision.Plugins
         }
     }
 
-
+  
     public class PluginWindowConfig : WindowConfig
     {
         public static PluginWindowConfig Instance => ConfigService.Instance.GetRequiredService<PluginWindowConfig>();

@@ -108,7 +108,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
                 {   
                     case ViewResultAlgType.POI_XYZ:
                         var PoiResultCIExyuvDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>();
-                        PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, dialog.FileName);
+                        PoiResultCIExyuvDatas.SaveCsv(dialog.FileName);
                         ImageUtils.SaveImageSourceToFile(ImageView.ImageShow.Source, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
                         return;
                     default:
