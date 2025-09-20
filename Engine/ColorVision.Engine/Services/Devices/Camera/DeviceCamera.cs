@@ -223,7 +223,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         [CommandDisplay("刷新设备列表")]
         public RelayCommand RefreshDeviceIdCommand { get; set; }
-        private bool _isRefreshing = false;
+        private bool _isRefreshing;
 
         public void RefreshDeviceId()
         {
@@ -231,15 +231,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 if (_isRefreshing)
                 {
-                    MessageBox.Show("正在执行GetAllCameraID","ColorVision");
+                    MessageBox.Show("正在遍历支持的相机模式","ColorVision");
                     return; // 防止重复点击
                 }
                 _isRefreshing = true;
                 //string strPathSysCfg = "cfg\\sys.cfg";
                 //IntPtr m_hCamHandle = cvCameraCSLib.CM_CreatCameraManagerV1(CameraModel.QHY_USB, CameraMode.BV_MODE, strPathSysCfg);
-
-                int bufferLength = 1024;
-                StringBuilder snBuilder = new StringBuilder(bufferLength);
 
                 //// 获取所有相机ID
                 //int ret = cvCameraCSLib.GetAllCameraID(snBuilder, bufferLength);
@@ -257,6 +254,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 // 异步执行，避免阻塞UI线程
                 Task.Run(() =>
                 {
+                    int bufferLength = 1024;
+                    StringBuilder snBuilder = new StringBuilder(bufferLength);
+
                     int ret = cvCameraCSLib.GetAllCameraIDMD5(snBuilder, bufferLength);
                     _isRefreshing = false;
                     // 回到UI线程

@@ -5,7 +5,7 @@
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<SignAssembly>True</SignAssembly>
 		<AssemblyOriginatorKeyFile>$(SolutionDir)ColorVision.snk</AssemblyOriginatorKeyFile>
-		<VersionPrefix>1.3.11.1</VersionPrefix>
+		<VersionPrefix>1.3.11.2</VersionPrefix>
 		<TargetFrameworks>net8.0-windows;net6.0-windows;net48</TargetFrameworks>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<IncludeSymbols>True</IncludeSymbols>
@@ -99,6 +99,11 @@
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\IKapC.dll" Link="IKapC.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\libusb0.dll" Link="libusb0.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
@@ -142,16 +147,5 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\ColorVision.FileIO\ColorVision.FileIO.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <None Update="opencv_world401.dll">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		  <Pack>true</Pack>
-	  </None>
-	  <None Update="pthreadVC2.dll">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		  <Pack>true</Pack>
-	  </None>
 	</ItemGroup>
 </Project>
