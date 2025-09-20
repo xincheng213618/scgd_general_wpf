@@ -11,32 +11,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
     /// </summary>
     public class ConfigPhyCamera : ViewModelBase
     {
-
-        public static CameraType GetCameraType(CameraMode camMode, CameraModel camModel)
-        {
-            if (camMode == CameraMode.CV_MODE && camModel == CameraModel.QHY_USB)
-                return CameraType.CV_Q;
-            if (camMode == CameraMode.LV_MODE && camModel == CameraModel.QHY_USB)
-                return CameraType.LV_Q;
-            if (camMode == CameraMode.BV_MODE && camModel == CameraModel.QHY_USB)
-                return CameraType.BV_Q;
-            if (camMode == CameraMode.LV_MODE && camModel == CameraModel.MIL_CL_CARD)
-                return CameraType.MIL_CL;
-            if (camMode == CameraMode.LV_MODE && camModel == CameraModel.MIL_CXP_CARD)
-                return CameraType.MIL_CXP;
-            if (camMode == CameraMode.BV_MODE && camModel == CameraModel.HK_USB)
-                return CameraType.BV_H;
-            if (camMode == CameraMode.LV_MODE && camModel == CameraModel.HK_USB)
-                return CameraType.LV_H;
-            if (camMode == CameraMode.LV_MODE && camModel == CameraModel.HK_CARD)
-                return CameraType.HK_CXP;
-            if (camMode == CameraMode.LV_MODE && camModel == CameraModel.MIL_CL_CARD)
-                return CameraType.LV_MIL_CL;
-            if (camMode == CameraMode.CV_MODE && camModel == CameraModel.MIL_CL_CARD)
-                return CameraType.CV_MIL_CL;
-            return CameraType.CameraType_Total; // Default case if no match found
-        }
-
         public bool UpdateCameraModeAndIBM(CameraType eCamType)
         {
             switch (eCamType)
@@ -115,13 +89,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public string Code { get => _Code; set { _Code = value; OnPropertyChanged(); } }
         private string _Code;
 
-        public CameraType CameraType { get => _CameraType; set { if (_CameraType == value) return; _CameraType = value; OnPropertyChanged(); UpdateCameraModeAndIBM(value); } }
-        private CameraType _CameraType;
+        public CameraType CameraType { get => _CameraType; set { if (_CameraType == value) return; _CameraType = value; OnPropertyChanged(); } }
+        private CameraType _CameraType = CameraType.BV_Q;
 
-        public CameraMode CameraMode { get => _CameraMode; set { if (_CameraMode == value) return; _CameraMode = value; OnPropertyChanged(); CameraType = GetCameraType(_CameraMode, _CameraModel); } }
+        public CameraMode CameraMode { get => _CameraMode; set { if (_CameraMode == value) return; _CameraMode = value; OnPropertyChanged(); } }
         private CameraMode _CameraMode;
 
-        public CameraModel CameraModel { get => _CameraModel; set { if (_CameraModel == value) return; _CameraModel = value; OnPropertyChanged(); CameraType = GetCameraType(_CameraMode, _CameraModel); } }
+        public CameraModel CameraModel { get => _CameraModel; set { if (_CameraModel == value) return; _CameraModel = value; OnPropertyChanged();  } }
         private CameraModel _CameraModel;
 
         public TakeImageMode TakeImageMode { get => _TakeImageMode; set { _TakeImageMode = value; OnPropertyChanged(); } }

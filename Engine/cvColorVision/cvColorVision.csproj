@@ -38,27 +38,6 @@
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\qhyccd.dll" Link="qhyccd.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\SCBase.dll" Link="SCBase.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\SCGDCamLayer.dll" Link="SCGDCamLayer.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\SCGDDataProcess.dll" Link="SCGDDataProcess.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\SCGDMilCam.dll" Link="SCGDMilCam.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\CommLibrary.dll" Link="runtimes\win-x64\native\CommLibrary.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
@@ -94,15 +73,38 @@
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\toupcam.dll" Link="toupcam.dll">
+		<None Include="..\..\DLL\scgd_internal_dll\qhyccd.dll" Link="qhyccd.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\SCBase.dll" Link="SCBase.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\SCGDCamLayer.dll" Link="SCGDCamLayer.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\SCGDDataProcess.dll" Link="SCGDDataProcess.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\SCGDMilCam.dll" Link="SCGDMilCam.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\toupcam.dll" Link="toupcam.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\nncam.dll" Link="nncam.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\IKapC.dll" Link="IKapC.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\libusb0.dll" Link="libusb0.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

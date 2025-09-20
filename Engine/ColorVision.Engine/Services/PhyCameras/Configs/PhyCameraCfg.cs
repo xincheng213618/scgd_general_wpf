@@ -4,14 +4,6 @@ using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.PhyCameras.Configs
 {
-    public enum CameraConfigType
-    {
-        Camera = 0,
-        ExpTime = 1,
-        Calibration = 2,
-        Channels = 3,
-        SYSTEM = 4,
-    };
 
     [DisplayName("相机参数")]
     public class PhyCameraCfg : ViewModelBase
