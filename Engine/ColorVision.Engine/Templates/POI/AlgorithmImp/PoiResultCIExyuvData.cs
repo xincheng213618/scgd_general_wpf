@@ -94,10 +94,10 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             // ---------------------------
             AppendMeasurementSection(csv, items);
 
-            // ---------------------------
-            //  追加旧版统计信息表格
-            // ---------------------------
-            AppendLegacyStats(csv, items);
+            //// ---------------------------
+            ////  追加旧版统计信息表格
+            //// ---------------------------
+            //AppendLegacyStats(csv, items);
 
             File.WriteAllText(fileName, csv.ToString(), Encoding.UTF8);
         }
@@ -115,11 +115,13 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
             var culture = CultureInfo.InvariantCulture;
             var luminances = items.Select(o => o.Y).ToList();
+
             double avgL = luminances.Average();
             double maxL = luminances.Max();
             double minL = luminances.Min();
-            double stdL = Math.Sqrt(luminances.Sum(v => Math.Pow(v - avgL, 2)) / luminances.Count); // 总体标准差
 
+            // 使用样本标准差；当数量<=1时返回 NaN
+            double stdL = SampleStandardDeviation(luminances);
             var center = FindCenterPoint(items);
 
             double maxX = items.Max(o => o.x);
@@ -138,12 +140,20 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             double uniformityMinDivMax = maxL != 0 ? minL / maxL * 100.0 : 0;
             double uniformityMaxMinDivAvg = avgL != 0 ? (maxL - minL) / avgL * 100.0 : 0;
             double uniformityMaxMinDivMax = maxL != 0 ? (maxL - minL) / maxL * 100.0 : 0;
-            double stdPercent = avgL != 0 ? stdL / avgL * 100.0 : 0;
+
+            double stdPercent = (avgL != 0 && !double.IsNaN(stdL)) ? stdL / avgL * 100.0 : double.NaN;
 
             void Row(string item, object? value, string unit = "")
             {
+                string valueStr = value switch
+                {
+                    null => "",
+                    double d when double.IsNaN(d) || double.IsInfinity(d) => "",
+                    _ => Convert.ToString(value, culture) ?? ""
+                };
+
                 sb.AppendLine(string.Join(",", EscapeCsv(item),
-                    value == null ? "" : Convert.ToString(value, culture),
+                    valueStr,
                     unit,
                     "", "", "", "", "", "", "", "", "", ""));
             }
@@ -154,33 +164,66 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             Row("Min Luninance", FormatDouble(minL), "cd/m^2");
             Row("Luminance uniformity(Min/Max*100%)", FormatDouble(uniformityMinDivMax), "%");
             Row("Luminance uniformity((Max-Min)/Avg*100%)", FormatDouble(uniformityMaxMinDivAvg), "%");
-            Row("Luminance uniformity(((Max-Min)/Max*100%)", FormatDouble(uniformityMaxMinDivMax), "%");
-            Row("Standard Deviation Lv", FormatDouble(stdL), "STDEV(lv)");
-            Row("Standard Deviation Lv (%)", FormatDouble(stdPercent), "% (Stdev/Avg*100%)");
-            Row("Color Uniformity(Δuv)", FormatDouble(deltaUv), "Δuv=max sqrt((ui-uj)^2+(vi-vj)^2)");
-            Row("Color Uniformity(Δx)", FormatDouble(deltaX), "x_max-x_min");
-            Row("Color Uniformity(Δy)", FormatDouble(deltaY), "y_max-y_min");
+            Row("Luminance uniformity((Max-Min)/Max*100%)", FormatDouble(uniformityMaxMinDivMax), "%");
+            Row("Standard Deviation Lv", FormatDouble(stdL), "");
+            Row("Standard Deviation Lv (%)", FormatDouble(stdPercent), "%");
+            Row("Color Uniformity(Δuv)", FormatDouble(deltaUv),"");
+            Row("Color Uniformity(Δx)", FormatDouble(deltaX), "");
+            Row("Color Uniformity(Δy)", FormatDouble(deltaY), "");
 
             if (center != null)
             {
-                Row("Center CIE1931 Chromatic Coordinates x", FormatDouble(center.x));
-                Row("Center CIE1931 Chromatic Coordinates y", FormatDouble(center.y));
-                Row("Center CIE1976 Chromatic Coordinates u'", FormatDouble(center.u));
-                Row("Center CIE1976 Chromatic Coordinates v'", FormatDouble(center.v));
+                Row("Center CIE1931 Chromatic Coordinates x", FormatDouble(center.x), "");
+                Row("Center CIE1931 Chromatic Coordinates y", FormatDouble(center.y), "");
+                Row("Center CIE1976 Chromatic Coordinates u'", FormatDouble(center.u), "");
+                Row("Center CIE1976 Chromatic Coordinates v'", FormatDouble(center.v), "");
                 Row("Center Correlated Color Temperature(CCT)", FormatDouble(center.CCT), "K");
-                Row("Center DominantWave(D)", FormatDouble(center.Wave), "nm");
+                Row("Center DominantWave(λ)", FormatDouble(center.Wave), "nm");
             }
             else
             {
-                Row("Center CIE1931 Chromatic Coordinates x", "");
-                Row("Center CIE1931 Chromatic Coordinates y", "");
-                Row("Center CIE1976 Chromatic Coordinates u'", "");
-                Row("Center CIE1976 Chromatic Coordinates v'", "");
+                Row("Center CIE1931 Chromatic Coordinates x", "", "");
+                Row("Center CIE1931 Chromatic Coordinates y", "", "");
+                Row("Center CIE1976 Chromatic Coordinates u'", "", "");
+                Row("Center CIE1976 Chromatic Coordinates v'", "", "");
                 Row("Center Correlated Color Temperature(CCT)", "", "K");
-                Row("Center DominantWave(D)", "", "nm");
+                Row("Center DominantWave(λ)", "", "nm");
             }
 
-            Row("Delta DominantWave(ΔD)", FormatDouble(deltaWave), "nm (max-min)");
+            Row("Delta DominantWave(Δλ)", FormatDouble(deltaWave), "nm");
+        }
+
+        // 样本标准差（双遍历版本）
+        private static double SampleStandardDeviation(IList<double> data)
+        {
+            int n = data.Count;
+            if (n <= 1) return double.NaN;
+            double mean = data.Average();
+            double sumSq = 0.0;
+            for (int i = 0; i < n; i++)
+            {
+                double d = data[i] - mean;
+                sumSq += d * d;
+            }
+            return Math.Sqrt(sumSq / (n - 1));
+        }
+
+        // 或者：更稳定的一遍算法（Welford）
+        private static double SampleStandardDeviationOnePass(IEnumerable<double> data)
+        {
+            double mean = 0.0;
+            double m2 = 0.0;
+            int n = 0;
+            foreach (var x in data)
+            {
+                n++;
+                double delta = x - mean;
+                mean += delta / n;
+                double delta2 = x - mean;
+                m2 += delta * delta2;
+            }
+            if (n <= 1) return double.NaN;
+            return Math.Sqrt(m2 / (n - 1));
         }
 
         /// <summary>

@@ -82,17 +82,6 @@ namespace ColorVision.Engine.Templates.POI
             DataContext = PoiParam;
 
             ImageViewModel = new ImageViewModel(ImageContentGrid, Zoombox1, ImageShow);
-            ImageViewModel.SelectEditorVisual.SelectVisualChanged += (s, e) =>
-            {
-                if (PropertyGrid2.SelectedObject is IDrawingVisual drawingVisualold)
-                    drawingVisualold.BaseAttribute.PropertyChanged -= BaseAttribute_PropertyChanged;
-
-                if (e is IDrawingVisual drawingVisual)
-                {
-                    PropertyGrid2.SelectedObject = drawingVisual.BaseAttribute;
-                    drawingVisual.BaseAttribute.PropertyChanged += BaseAttribute_PropertyChanged;
-                }
-            };
 
             ImageViewModel.ToolBarScaleRuler.IsShow = false;
             ImageViewModel.CircleManager.IsEnabled = false;
@@ -128,22 +117,6 @@ namespace ColorVision.Engine.Templates.POI
             };
 
 
-            if (PoiConfig.IsShowText)
-            {
-                DrawingVisualLists.CollectionChanged += (s, e) =>
-                {
-                    if (DrawingVisualLists.Count == 0)
-                    {
-                        FocusPointGrid.Visibility = Visibility.Collapsed;
-                        PropertyGrid21.Visibility = Visibility.Collapsed;
-                    }
-                    else
-                    {
-                        FocusPointGrid.Visibility = Visibility.Visible;
-                        PropertyGrid21.Visibility = Visibility.Visible;
-                    }
-                };
-            }
             ImageShow.VisualsAdd += (s, e) =>
             {
                 if (e.Visual is IDrawingVisual visual)
@@ -226,11 +199,6 @@ namespace ColorVision.Engine.Templates.POI
                 EditPoiParamConfig.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
-        }
-
-        private void BaseAttribute_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-        {
-            PropertyGrid2.Refresh();
         }
 
         private ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
@@ -464,7 +432,6 @@ namespace ColorVision.Engine.Templates.POI
                     {
                         ImageShow.Clear();
                         DrawingVisualLists.Clear();
-                        PropertyGrid2.SelectedObject = null;
                     }
                     if (Init)
                     {
@@ -1183,7 +1150,6 @@ namespace ColorVision.Engine.Templates.POI
             foreach (var item in DrawingVisualLists.ToList())
                 if (item is Visual visual)
                     ImageShow.RemoveVisualCommand(visual);
-            PropertyGrid2.SelectedObject = null;
         }
 
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
@@ -1195,7 +1161,6 @@ namespace ColorVision.Engine.Templates.POI
         {
             if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualLists[listView.SelectedIndex] is IDrawingVisual drawingVisual && drawingVisual is Visual visual)
             {
-                PropertyGrid2.SelectedObject = drawingVisual.BaseAttribute;
                 ImageShow.TopVisual(visual);
             }
         }
@@ -1204,7 +1169,6 @@ namespace ColorVision.Engine.Templates.POI
         {
             if (sender is MenuItem menuItem && menuItem.Tag is Visual visual &&visual is IDrawingVisual drawing)
             {
-                PropertyGrid2.SelectedObject = null;
                 ImageShow.RemoveVisualCommand(visual);
                 DrawingVisualLists.Remove(drawing);
             }
@@ -1226,13 +1190,10 @@ namespace ColorVision.Engine.Templates.POI
                             visualsToRemove.Add(visual);
                         }
                     }
-
                     foreach (var visual in visualsToRemove)
                     {
                         ImageShow.RemoveVisualCommand(visual);
                     }
-
-                    PropertyGrid2.SelectedObject = null;
                 }
             }
         }
@@ -1676,7 +1637,6 @@ namespace ColorVision.Engine.Templates.POI
         private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
             FocusPointGrid.Height = FocusPointRowDefinition.ActualHeight;
-            PropertyGrid21.Height = FocusPointRowDefinition.ActualHeight;
         }
 
         private void reference_Click(object sender, RoutedEventArgs e)
