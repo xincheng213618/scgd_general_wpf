@@ -85,14 +85,8 @@ namespace ColorVision.Engine.Templates.POI
 
             if (PoiParam.Height != 0 && PoiParam.Width != 0)
             {
-                WaitControl.Visibility = Visibility.Visible;
-                WaitControlProgressBar.Visibility = Visibility.Visible;
-                WaitControlProgressBar.Value = 0;
                 if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
                     PoiParam.LoadPoiDetailFromDB(PoiParam);
-
-
-                WaitControlProgressBar.Value = 10;
 
                 if (PoiParam.PoiPoints.Count > 500)
                     PoiConfig.IsLayoutUpdated = false;
@@ -105,11 +99,8 @@ namespace ColorVision.Engine.Templates.POI
                 else
                     CreateImage(PoiParam.Width, PoiParam.Height, Colors.White, false);
 
-                WaitControlProgressBar.Value = 20;
                 RenderPoiConfig();
                 PoiParamToDrawingVisual(PoiParam);
-                WaitControl.Visibility = Visibility.Collapsed;
-                WaitControlProgressBar.Visibility = Visibility.Collapsed;
                 log.Debug("Render Poi end");
             }
             else
@@ -274,12 +265,6 @@ namespace ColorVision.Engine.Templates.POI
                         ImageShow.Clear();
                         DrawingVisualLists.Clear();
                     }
-                    if (Init)
-                    {
-                        WaitControl.Visibility = Visibility.Collapsed;
-                        WaitControlProgressBar.Visibility = Visibility.Collapsed;
-                    }
-                    Init = true;
                     ImageShow.RaiseImageInitialized();
 
                 }));
@@ -308,16 +293,10 @@ namespace ColorVision.Engine.Templates.POI
                     Init = true;
                     return;
                 }
-                int WaitNum = 50;
 
                 foreach (var item in poiParam.PoiPoints)
                 {
                     No++;
-                    if (No % WaitNum == 0)
-                    {
-                        WaitControlProgressBar.Value = 20 + No * 79 / poiParam.PoiPoints.Count;
-                        await Task.Delay(10);
-                    }
                     switch (item.PointType)
                     {
                         case GraphicTypes.Circle:
@@ -374,15 +353,6 @@ namespace ColorVision.Engine.Templates.POI
                             break;
                     }
                 }
-                WaitControlProgressBar.Value = 99;
-
-
-                if (Init)
-                {
-                    WaitControl.Visibility = Visibility.Collapsed;
-                    WaitControlProgressBar.Visibility = Visibility.Collapsed;
-                }
-
                 ImageShow.ClearActionCommand();
                 Init = true;
             }
@@ -410,23 +380,12 @@ namespace ColorVision.Engine.Templates.POI
                         return;
                     }
 
-                    if (PoiConfig.AreaCircleNum > 1000)
-                    {
-                        WaitControl.Visibility = Visibility.Visible;
-                        WaitControlProgressBar.Visibility = Visibility.Visible;
-                        WaitControlProgressBar.Value = 0;
-                        PoiConfig.IsLayoutUpdated = false;
-                    }
+
 
 
                     for (int i = 0; i < PoiConfig.AreaCircleNum; i++)
                     {
                         Num++;
-                        if (Num % 100 == 0 && WaitControl.Visibility == Visibility.Visible)
-                        {
-                            WaitControlProgressBar.Value = Num * 1000 / PoiConfig.AreaCircleNum;
-                            await Task.Delay(1);
-                        }
 
                         double x1 = PoiConfig.CenterX + PoiConfig.AreaCircleRadius * Math.Cos(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
                         double y1 = PoiConfig.CenterY + PoiConfig.AreaCircleRadius * Math.Sin(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
@@ -586,32 +545,19 @@ namespace ColorVision.Engine.Templates.POI
 
 
                     int all = rows * cols;
-                    if (all > 1000)
-                    {
-                        WaitControl.Visibility = Visibility.Visible;
-                        WaitControlProgressBar.Visibility = Visibility.Visible;
-                        WaitControlProgressBar.Value = 0;
-                        PoiConfig.IsLayoutUpdated = false;
-                    }
+
 
                     if (PoiConfig.IsPoiCIEFile)
                     {
-                        WaitControl.Visibility = Visibility.Visible;
                         PoiParam.PoiPoints.Clear();
                     }
-
-
 
                     for (int i = 0; i < rows; i++)
                     {
                         for (int j = 0; j < cols; j++)
                         {
                             Num++;
-                            if (Num % 10000 == 0 && WaitControl.Visibility == Visibility.Visible)
-                            {
-                                WaitControlProgressBar.Value = Num * 10000 / all;
-                                await Task.Delay(1);
-                            }
+
 
                             double x1 = startL + StepCol * j;
                             double y1 = startU + StepRow * i;
@@ -666,12 +612,10 @@ namespace ColorVision.Engine.Templates.POI
                     {
                         Thread thread = new(() =>
                         {
-                            WaitControlText.Text = "关注点强制启用文件保存";
                             SaveAsFile();
 
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                WaitControlText.Text = "正在绘制关注点";
                                 int[] ints = new int[PoiParam.PoiPoints.Count * 2];
                                 for (int i = 0; i < PoiParam.PoiPoints.Count; i++)
                                 {
@@ -708,14 +652,10 @@ namespace ColorVision.Engine.Templates.POI
                                             hImageProcessed.Dispose();
 
                                             ImageShow.Source = image;
-                                            WaitControl.Visibility = Visibility.Collapsed;
                                         }
                                     });
                                 }
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    WaitControl.Visibility = Visibility.Collapsed;
-                                });
+  
                             });
 
 
@@ -1162,17 +1102,11 @@ namespace ColorVision.Engine.Templates.POI
                 PoiParam.PoiPoints.Add(PointInt4);
             }
 
-
-
-            WaitControl.Visibility = Visibility.Visible;
-            WaitControlProgressBar.Visibility = Visibility.Collapsed;
-            WaitControlText.Text = "数据正在保存";
             Thread thread = new(() =>
             {
                 int ret = PoiParam.Save2DB();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    WaitControl.Visibility = Visibility.Collapsed;
                     string Msg = ret ==-1 ?"保存失败,具体报错信息请查看日志": "保存成功";
                     MessageBox.Show(WindowHelpers.GetActiveWindow(), Msg, "ColorVision");
                 });

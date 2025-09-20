@@ -100,6 +100,8 @@ namespace ColorVision.ImageEditor.Draw
                 DVLineCache.Points.RemoveAt(DVLineCache.Points.Count - 1);
                 DVLineCache.Points.Add(MouseUpP);
                 DVLineCache.Render();
+                ImageViewModel.SelectEditorVisual.SetRender(DVLineCache);
+                IsShow = false;
                 DVLineCache = null;
             }
             e.Handled = true;
