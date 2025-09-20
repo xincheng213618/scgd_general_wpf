@@ -309,8 +309,7 @@ namespace ColorVision.Engine.Templates.POI
                     return;
                 }
                 int WaitNum = 50;
-                if (!PoiConfig.IsShowText)
-                    WaitNum = 1000;
+
                 foreach (var item in poiParam.PoiPoints)
                 {
                     No++;
@@ -323,7 +322,6 @@ namespace ColorVision.Engine.Templates.POI
                     {
                         case GraphicTypes.Circle:
                             DVCircleText Circle = new();
-                            Circle.IsShowText = PoiConfig.IsShowText;
                             Circle.Attribute.Center = new Point(item.PixX, item.PixY);
                             Circle.Attribute.Radius = item.PixWidth/2;
                             Circle.Attribute.Brush = Brushes.Transparent;
@@ -339,7 +337,6 @@ namespace ColorVision.Engine.Templates.POI
                             break;
                         case GraphicTypes.Rect:
                             DVRectangleText Rectangle = new();
-                            Rectangle.IsShowText = PoiConfig.IsShowText;
                             Rectangle.Attribute.Rect = new System.Windows.Rect(item.PixX - item.PixWidth /2, item.PixY - item.PixHeight /2, item.PixWidth, item.PixHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
@@ -629,7 +626,6 @@ namespace ColorVision.Engine.Templates.POI
                                     else
                                     {
                                         DVCircleText Circle = new();
-                                        Circle.IsShowText = PoiConfig.IsShowText;
                                         Circle.Attribute.Center = new Point(x1, y1);
                                         Circle.Attribute.Radius = PoiConfig.DefaultCircleRadius;
                                         Circle.Attribute.Brush = Brushes.Transparent;
@@ -649,7 +645,6 @@ namespace ColorVision.Engine.Templates.POI
                                     else
                                     {
                                         DVRectangleText Rectangle = new();
-                                        Rectangle.IsShowText = PoiConfig.IsShowText;
                                         Rectangle.Attribute.Rect = new System.Windows.Rect(x1 - (double)PoiConfig.DefaultRectWidth / 2, y1 - PoiConfig.DefaultRectHeight / 2, PoiConfig.DefaultRectWidth, PoiConfig.DefaultRectHeight);
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
                                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultRectWidth / 30);
@@ -961,18 +956,6 @@ namespace ColorVision.Engine.Templates.POI
                     break;
                 default:
                     break;
-            }
-            if (PoiConfig.IsShowText)
-            {
-                UpdateVisualLayout(true);
-                ScrollViewer1.ScrollToEnd();
-            }
-            //这里我不推荐添加
-            if (WaitControl.Visibility == Visibility.Visible)
-            {
-                WaitControl.Visibility = Visibility.Collapsed;
-                WaitControlProgressBar.Visibility = Visibility.Collapsed;
-                WaitControlProgressBar.Value = 0;
             }
         }
 

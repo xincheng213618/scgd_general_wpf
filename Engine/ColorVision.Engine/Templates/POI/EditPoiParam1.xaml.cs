@@ -242,38 +242,25 @@ namespace ColorVision.Engine.Templates.POI
 
             ImageShow.VisualsAdd += (s, e) =>
             {
-                if (!PoiConfig.IsShowText)
+                if (e.Visual is IDrawingVisual visual)
                 {
-                    if (e.Visual is IDrawingVisual visual)
+                    if (visual.BaseAttribute.Param == null)
                     {
-                        DrawingVisualLists.Add(visual);
-                    }
-                }
-                else
-                {
-                    if (e.Visual is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && s is Visual visual1)
-                    {
-                        if (visual.BaseAttribute.Param ==null)
+                        if (visual.BaseAttribute is RectangleTextProperties rectangle)
                         {
-                            if (visual.BaseAttribute is RectangleTextProperties rectangle)
+                            KBPoiVMParam poiPointParam = new KBPoiVMParam();
+                            visual.BaseAttribute.Param = poiPointParam;
+                            poiPointParam.PropertyChanged += (s, e) =>
                             {
-                                KBPoiVMParam poiPointParam = new KBPoiVMParam();
-                                visual.BaseAttribute.Param = poiPointParam;
-                                poiPointParam.PropertyChanged += (s, e) =>
+                                if (e.PropertyName == "Area")
                                 {
-                                    if (e.PropertyName == "Area")
-                                    {
-                                        CalPoiPointParamB(rectangle);
-                                    }
-                                };
-
-                            }
+                                    CalPoiPointParamB(rectangle);
+                                }
+                            };
 
                         }
 
-                        DrawingVisualLists.Add(visual);
                     }
-
                 }
 
 
@@ -488,13 +475,10 @@ namespace ColorVision.Engine.Templates.POI
             try
             {
                 int WaitNum = 50;
-                if (!PoiConfig.IsShowText)
-                    WaitNum = 1000;
                 foreach (var item in poiParam.KBKeyRects)
                 {
                     No++;
                     DVRectangleText Rectangle = new();
-                    Rectangle.IsShowText = PoiConfig.IsShowText;
                     Rectangle.Attribute.Rect = new System.Windows.Rect(item.X , item.Y, item.Width, item.Height);
                     Rectangle.Attribute.Brush = Brushes.Transparent;
                     Rectangle.Attribute.Pen = new Pen(Brushes.Red,  (double)item.Width / 30);
@@ -746,7 +730,6 @@ namespace ColorVision.Engine.Templates.POI
                             {
                                 case GraphicTypes.Circle:
                                     DVCircleText Circle = new();
-                                    Circle.IsShowText = PoiConfig.IsShowText;
                                     Circle.Attribute.Center = new Point(x1, y1);
                                     Circle.Attribute.Radius = PoiConfig.DefaultCircleRadius;
                                     Circle.Attribute.Brush = Brushes.Transparent;
@@ -759,7 +742,6 @@ namespace ColorVision.Engine.Templates.POI
                                     break;
                                 case GraphicTypes.Rect:
                                     DVRectangleText Rectangle = new();
-                                    Rectangle.IsShowText = PoiConfig.IsShowText;
                                     Rectangle.Attribute.Rect = new System.Windows.Rect(x1 - (double)PoiConfig.DefaultRectWidth / 2, y1 - PoiConfig.DefaultRectHeight / 2, PoiConfig.DefaultRectWidth, PoiConfig.DefaultRectHeight);
                                     Rectangle.Attribute.Brush = Brushes.Transparent;
                                     Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiConfig.DefaultRectWidth / 30);
@@ -848,11 +830,6 @@ namespace ColorVision.Engine.Templates.POI
                     break;
                 default:
                     break;
-            }
-            if (PoiConfig.IsShowText)
-            {
-                UpdateVisualLayout(true);
-                ScrollViewer1.ScrollToEnd();
             }
         }
 

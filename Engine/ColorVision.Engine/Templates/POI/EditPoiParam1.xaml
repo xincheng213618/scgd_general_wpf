@@ -132,23 +132,6 @@
                 </StackPanel>
             </Border>
             
-            <Border Grid.Row="1"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="5,5,5,0">
-                <StackPanel Margin="5">
-                    <CheckBox Content="{x:Static properties:Resources.Lock}" IsChecked="{Binding PoiConfig.LockDeafult}"/>
-                    <StackPanel Margin="2"  Orientation="Horizontal" >
-                        <TextBlock Text="默认半径:" Width="55"/>
-                        <TextBox Text="{Binding PoiConfig.DefalutRadius}"  Width="55"  />
-                    </StackPanel>
-                    <StackPanel Margin="2"  Orientation="Horizontal" >
-                        <TextBlock Text="默认宽度:" Width="55"/>
-                        <TextBox Text="{Binding PoiConfig.DefalutWidth}"  Width="55"  />
-                        <TextBlock Text="默认高度:" Width="55" Margin="5,0,0,0"/>
-                        <TextBox Text="{Binding PoiConfig.DefalutHeight}"  Width="55"  />
-                    </StackPanel>
-                </StackPanel>
-            </Border>
-
-
             <ScrollViewer x:Name="ScrollViewer1" Grid.Row="4" Margin="5,5,5,0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                 <StackPanel x:Name="FunctionStackpanel" Margin="0" Grid.Row="0">
 
