@@ -145,6 +145,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Update="opencv_world401.dll">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		  <Pack>true</Pack>
+	  </None>
 	  <None Update="pthreadVC2.dll">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		  <Pack>true</Pack>

@@ -503,7 +503,7 @@
                 </ToolBar>
             </ToolBarTray>
             <GridSplitter Grid.Row="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
-            <ToolBar x:Name="ToolBar1" Grid.Row="0"  d:DataContext="{d:DesignInstance draw:ImageViewModel}" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <ToolBar x:Name="ToolBar1" Grid.Row="0"  Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center" VerticalAlignment="Top">
                 <ToolBar.Resources>
                     <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Icons.xaml"/>
                 </ToolBar.Resources>
