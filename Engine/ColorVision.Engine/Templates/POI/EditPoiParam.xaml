@@ -5,10 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Templates.POI"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
-        xmlns:converter="clr-namespace:ColorVision.ImageEditor.Draw.Converter;assembly=ColorVision.ImageEditor"
         xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
-        xmlns:draw ="clr-namespace:ColorVision.ImageEditor.Draw;assembly=ColorVision.ImageEditor"
-        xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+        xmlns:im ="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
+        xmlns:dr ="clr-namespace:ColorVision.ImageEditor.Draw;assembly=ColorVision.ImageEditor"
+        xmlns:converter ="clr-namespace:ColorVision.ImageEditor.Draw.Converter;assembly=ColorVision.ImageEditor"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" 
         xmlns:hc="https://handyorg.github.io/handycontrol"
@@ -489,134 +489,32 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition x:Name="FocusPointRowDefinition" Height="auto"/>
             </Grid.RowDefinitions>
-            <draw:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10"  MinZoom="0.01">
-                <draw:DrawCanvas x:Name="ImageShow" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown ="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
-            </draw:ZoomboxSub>
-            <ToolBarTray x:Name="ToolBarRight"  HorizontalAlignment="Left" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="2,50,0,0" Grid.Row="0" Grid.RowSpan="2"  VerticalAlignment="Top">
-                <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
-                    <Button Command="{Binding SaveAsImageCommand}" Margin="0,0,0,2">
-                        <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageSave}"  Margin="-5"/>
-                    </Button>
-                    <Button Command="{Binding ClearImageCommand}" Margin="0,0,0,2">
-                        <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageClear}"  Margin="-5"/>
-                    </Button>
-                </ToolBar>
-            </ToolBarTray>
+            <im:ImageView x:Name="ImageView"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"   Margin="5"  Background="{DynamicResource RegionBrush}"  BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" />
             <GridSplitter Grid.Row="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
-            <ToolBar x:Name="ToolBar1" Grid.Row="0"  Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center" VerticalAlignment="Top">
-                <ToolBar.Resources>
-                    <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Icons.xaml"/>
-                </ToolBar.Resources>
-                <ToggleButton x:Name="ToggleButtonMouse"  IsChecked="{Binding ShowImageInfo}" >
-                    <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMouse}"  Margin="-5"/>
-                </ToggleButton>
-                <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding ImageEditMode}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
-                    <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagedrag}"/>
-                </ToggleButton>
-                <Button Command="{Binding ZoomUniformCommand}"  Margin="1,0">
-                    <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImage1_1}"/>
-                </Button>
-                <Button Command="{Binding ZoomInCommand}"  Margin="1,0">
-                    <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagezoom_in}" />
-                </Button>
-                <Button  Command="{Binding ZoomOutCommand}"  Margin="1,0">
-                    <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagezoom_out}"/>
-                </Button>
-                <Button Command="{Binding ZoomNoneCommand}"  Margin="1,0">
-                    <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageexpend}"/>
-                </Button>
-                <ToggleButton Command="{Binding FullCommand}" Margin="1,0" >
-                    <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMax}"/>
-                </ToggleButton>
-                <TextBox   BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}" />
-                <ToggleButton IsChecked="{Binding Gridline.IsShow}" >
-                    <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIGridlines}"  Margin="-5"/>
-                </ToggleButton>
-                
-                <ToggleButton  IsChecked="{Binding EraseVisual}" Margin="1,0" >
-                    <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageeraser}"/>
-                </ToggleButton>
-                <ToggleButton IsChecked="{Binding DrawCircle}" Margin="1,0">
-                    <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageCircle}"/>
-                </ToggleButton>
-                <ToggleButton IsChecked="{Binding DrawRect}" Margin="1,0">
-                    <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageRect}"/>
-                </ToggleButton>
-                <ToggleButton IsChecked="{Binding DrawPolygon}" Margin="1,0">
-                    <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagePolygon}"/>
-                </ToggleButton>
-                <Button x:Name="reference"  Click="reference_Click" Margin="1,0">
-                    <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource ConcentricCirclesDrawImg}"  Margin="-5"/>
-                </Button>
-                <Popup x:Name="menuPop1" StaysOpen="False" Margin="0" PlacementTarget="{Binding ElementName=reference}"  AllowsTransparency="True">
-                    <StackPanel Margin="0">
-                        <Button Content="无" Command="{Binding ToolConcentricCircle.SelectNoneCommand}" Click="reference1_Click" Width="80" Tag="-1"/>
-                        <Button Content="十字准线" Command="{Binding ToolConcentricCircle.Select2Command}" Click="reference1_Click" Width="80" Tag="2"/>
-                        <Button Content="同心圆" Command="{Binding ToolConcentricCircle.Select0Command}" Click="reference1_Click" Width="80" Tag="0"/>
-                        <Button Content="单十字准线" Command="{Binding ToolConcentricCircle.Select1Command}" Click="reference1_Click" Width="80"  Tag="1"/>
-                    </StackPanel>
-                </Popup>
-                <ToggleButton  IsChecked="{Binding Measure}" Padding="5" Margin="0,0,2,0" >
-                    <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageruler}" />
-                </ToggleButton>
-            </ToolBar>
-
-            <ToolBarTray x:Name="ToolBarLeft"   d:DataContext="{Binding Config}" Orientation="Vertical" Margin="2,50,2,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top">
-                <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
-                    <StackPanel >
-                        <ToggleButton x:Name="Pseudo"  Click="ToggleButton_Click"  Margin="0,0,0,2" >
-                            <Image  Style="{StaticResource ToolBarImage}"   Source="/ColorVision.ImageEditor;component/Assets/png/PowerToy.png" Margin="-5"/>
-                        </ToggleButton>
-                        <Grid  Height="200"  Visibility="{Binding ElementName=Pseudo,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <TextBox Grid.Row="0" Width="28" Text="{Binding ValueEnd, ElementName=PseudoSlider, StringFormat=#0}" Style="{StaticResource BaseStyle}"  Background="Transparent"  BorderThickness="0"  HorizontalContentAlignment="Center" />
-                            <TextBox Grid.Row="2" Width="28" Text="{Binding ValueStart, ElementName=PseudoSlider, StringFormat=#0}" Style="{StaticResource BaseStyle}" Background="Transparent"  BorderThickness="0" HorizontalContentAlignment="Center"/>
-                            <Grid Grid.Row="1"   Width="18">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="0"  x:Name="RowDefinitionStart"/>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="0"  x:Name="RowDefinitionEnd"/>
-                                </Grid.RowDefinitions>
-                                <Border Grid.Row="0" Background="White" CornerRadius="10,10,0,0"/>
-                                <Border Grid.Row="1"  Background="Transparent">
-                                    <Image x:Name="ColormapTypesImage" Source="/ColorVision.Engine;component/Assets/Image/pictureBox1.Image.png" Stretch="Fill" VerticalAlignment="Top"/>
-                                </Border>
-                                <Border Grid.Row="2" Background="Black" CornerRadius="0,0,10,10 "/>
-                            </Grid>
-                            <hc:RangeSlider Grid.Row="1"  x:Name="PseudoSlider" FocusVisualStyle="{x:Null}" ValueChanged="PseudoSlider_ValueChanged"  Style="{StaticResource RangeSliderBaseStyle}" Background="Transparent" hc:TipElement.Visibility="Visible" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0" Orientation="Vertical" HorizontalAlignment="Center" />
-                        </Grid>
-                    </StackPanel>
-                </ToolBar>
-            </ToolBarTray>
-
             <Grid x:Name="FocusPointGrid" Visibility="Visible" Grid.Row="1" Height="300" >
                 <ListView  x:Name="ListView1"  Style="{StaticResource ListView.Small}" ScrollViewer.HorizontalScrollBarVisibility="Visible" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
                     <ListView.Resources>
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
 
-                        <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type draw:DVCircle}" >
+                        <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type dr:DVCircle}" >
                             <StackPanel  Orientation="Horizontal">
                                 <TextBox Text="{Binding Attribute.Center,StringFormat={}{0:F0}}" Margin="5,0"/>
                                 <TextBox Text="{Binding Attribute.Radius,StringFormat={}{0:F1}}" Margin="5,0"/>
                             </StackPanel>
                         </DataTemplate>
-                        <DataTemplate x:Key="DrawingVisualCircleWordTemplate" DataType="{x:Type draw:DVCircleText}" >
+                        <DataTemplate x:Key="DrawingVisualCircleWordTemplate" DataType="{x:Type dr:DVCircleText}" >
                             <StackPanel  Orientation="Horizontal">
                                 <TextBox Text="{Binding Attribute.Text}"  HorizontalContentAlignment="Center" Width="100"  Margin="5,0"/>
                                 <TextBox Text="{Binding Attribute.Center,StringFormat={}{0:F0}}" Width="100"  Margin="5,0"/>
                                 <TextBox Text="{Binding Attribute.Radius,StringFormat={}{0:F1},Converter={StaticResource RoundToNearestHalfConverter}}" Width="60"  Margin="5,0"/>
                             </StackPanel>
                         </DataTemplate>
-                        <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type draw:DVRectangle}">
+                        <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type dr:DVRectangle}">
                             <StackPanel  Orientation="Horizontal">
                                 <TextBox Text="{Binding Attribute.Rect,StringFormat={}{0:F0}}" Width="170"  Margin="5,0"/>
                             </StackPanel>
                         </DataTemplate>
-                        <DataTemplate x:Key="DrawingVisualRectangleWordTemplate"  DataType="{x:Type draw:DVRectangleText}">
+                        <DataTemplate x:Key="DrawingVisualRectangleWordTemplate"  DataType="{x:Type dr:DVRectangleText}">
                             <StackPanel  Orientation="Horizontal">
                                 <StackPanel.ContextMenu>
                                     <ContextMenu>
@@ -645,7 +543,7 @@
                             </GridView.ColumnHeaderContainerStyle>
                             <GridViewColumn  Header="序号">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type draw:IDrawingVisual}">
+                                    <DataTemplate DataType="{x:Type dr:IDrawingVisual}">
                                         <TextBlock Text="{Binding BaseAttribute.Id}" HorizontalAlignment="Center"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
