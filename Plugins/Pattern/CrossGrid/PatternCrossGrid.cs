@@ -57,7 +57,10 @@ namespace Pattern.CrossGrid
     public class PatternCrossGrid : IPatternBase<PatternCrossGridConfig>
     {
         public override UserControl GetPatternEditor() => new CrossGridEditor(Config); // 可自定义编辑器
-
+        public override string GetTemplateName()
+        {
+            return "CrossGrid" + "_" + DateTime.Now.ToString("HHmmss");
+        }
         public override Mat Gen(int height, int width)
         {
             Scalar bg = Config.BackgroundBrush.ToScalar();

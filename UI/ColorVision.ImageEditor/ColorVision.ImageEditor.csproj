@@ -5,7 +5,7 @@
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>disable</ImplicitUsings>
-		<VersionPrefix>1.3.6.7</VersionPrefix>
+		<VersionPrefix>1.3.6.11</VersionPrefix>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 		<IncludeSymbols>True</IncludeSymbols>
@@ -80,9 +80,9 @@
 	<ItemGroup>
 		<PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
 		<PackageReference Include="log4net" Version="3.2.0" />
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="HelixToolkit.Core.Wpf" Version="2.27.3" />
-		<PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc2" />
+		<PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc3.3" />
 	</ItemGroup>
 
 	<ItemGroup>

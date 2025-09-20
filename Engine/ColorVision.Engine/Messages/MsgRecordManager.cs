@@ -47,17 +47,19 @@ namespace ColorVision.Engine.Messages
         public MsgRecordManager()
         {
             Config = ConfigService.Instance.GetRequiredService<MsgRecordManagerConfig>();
-            EditConfigCommand = new RelayCommand(a => EditConfig());
-            MsgRecordsClearCommand = new RelayCommand(a => MsgRecordsClear());
-            GenericQueryCommand = new RelayCommand(a => GenericQuery());
-            QueryCommand = new RelayCommand(a => LoadAll(Config.Count));
-            SelectDbFileCommand = new RelayCommand(a => PlatformHelper.OpenFolderAndSelectFile(SqliteDbPath));
+            EditConfigCommand = new RelayCommand(_ => EditConfig());
+            MsgRecordsClearCommand = new RelayCommand(_ => MsgRecords.Clear());
+            GenericQueryCommand = new RelayCommand(_ => GenericQuery());
+            QueryCommand = new RelayCommand(_ => LoadAll(Config.Count));
+            SelectDbFileCommand = new RelayCommand(_ => PlatformHelper.OpenFolderAndSelectFile(SqliteDbPath));
+
             _db = new SqlSugarClient(new ConnectionConfig
             {
                 ConnectionString = $"Data Source={SqliteDbPath}",
                 DbType = DbType.Sqlite,
                 IsAutoCloseConnection = true
             });
+
             // 确保表存在
             _db.CodeFirst.InitTables<MsgRecord>();
         }
@@ -111,7 +113,6 @@ namespace ColorVision.Engine.Messages
 
                 item.MsgRecordStateChanged += (e) =>
                 {
-                    item.UpdateTime = DateTime.Now;
                     _db.Updateable(item).ExecuteCommand();
                 };
             }

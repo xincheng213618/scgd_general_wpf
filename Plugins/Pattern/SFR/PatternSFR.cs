@@ -30,13 +30,21 @@ namespace Pattern.SFR
         public double BorderRatio { get => _BorderRatio; set { _BorderRatio = value; OnPropertyChanged(); } }
         private double _BorderRatio = 0.1;
 
+        public double FieldOfViewX { get => _FieldOfViewX; set { _FieldOfViewX = value; OnPropertyChanged(); } }
+        private double _FieldOfViewX = 1.0;
+        public double FieldOfViewY { get => _FieldOfViewY; set { _FieldOfViewY = value; OnPropertyChanged(); } }
+        private double _FieldOfViewY = 1.0;
+
     }
 
     [DisplayName("SFR")]
     public class PatternSFR : IPatternBase<PatternSFRConfig>
     {
         public override UserControl GetPatternEditor() => new SFREditor(Config);
-
+        public override string GetTemplateName()
+        {
+            return "SFR" + "_" + DateTime.Now.ToString("HHmmss");
+        }
         public override Mat Gen(int height, int width)
         {
             int cols = Config.Cols;
@@ -44,14 +52,27 @@ namespace Pattern.SFR
             int squareSize = Config.SquareSize;
             double angleDeg = Config.AngleDeg;
             double borderRatio = Config.BorderRatio;
+            // 创建底图
+            Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
 
+            // 2. 计算视场中心区域
+            double fovx = Math.Max(0, Math.Min(Config.FieldOfViewX, 1.0));
+            double fovy = Math.Max(0, Math.Min(Config.FieldOfViewY, 1.0));
 
-            var img = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
+            int fovWidth = (int)(width * fovx);
+            int fovHeight = (int)(height * fovy);
+
+            int startX = (width - fovWidth) / 2;
+            int startY = (height - fovHeight) / 2;
+
+            // 点阵区域小图
+            Mat sfr = new Mat(fovHeight, fovWidth, MatType.CV_8UC3, Config.MainBrush.ToScalar());
+
             
-            double leftRightMargin = width * borderRatio;
-            double topBottomMargin = height * borderRatio;
-            double usableWidth = width - 2 * leftRightMargin;
-            double usableHeight = height - 2 * topBottomMargin;
+            double leftRightMargin = fovWidth * borderRatio;
+            double topBottomMargin = fovHeight * borderRatio;
+            double usableWidth = fovWidth - 2 * leftRightMargin;
+            double usableHeight = fovHeight - 2 * topBottomMargin;
             double xSpacing = (cols == 1) ? 0 : usableWidth / (cols - 1);
             double ySpacing = (rows == 1) ? 0 : usableHeight / (rows - 1);
 
@@ -91,9 +112,13 @@ namespace Pattern.SFR
                     float ry = (float)(x * sin + y * cos) + center.Y;
                     pts[i] = new Point((int)Math.Round(rx), (int)Math.Round(ry));
                 }
-                Cv2.FillPoly(img, new[] { pts }, Config.AltBrush.ToScalar());
+                Cv2.FillPoly(sfr, new[] { pts }, Config.AltBrush.ToScalar());
             }
-            return img;
+
+            // 合成到主图中心
+            sfr.CopyTo(mat[new Rect(startX, startY, fovWidth, fovHeight)]);
+            sfr.Dispose();
+            return mat;
         }
     }
 }

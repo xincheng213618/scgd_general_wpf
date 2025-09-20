@@ -107,7 +107,7 @@ namespace ColorVision.Engine.Media
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
             if (IsPoiResultCIExyuvDatas)
             {
-                PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, dialog.FileName);
+                PoiResultCIExyuvDatas.SaveCsv(dialog.FileName);
             }
             else
             {

@@ -1,5 +1,6 @@
 ﻿using ColorVision.UI;
 using ColorVision.UI.Shell;
+using System.IO;
 using System.Windows;
 
 namespace ColorVision.Solution
@@ -21,9 +22,19 @@ namespace ColorVision.Solution
         {
             await Task.Delay(0);
             var parser = ArgumentParser.GetInstance();
+
+            var input = parser.GetValue("input");
+
             parser.AddArgument("solutionpath", false, "s");
             parser.Parse();
+            if (File.Exists(input) && Path.GetExtension(input) == ".cvsln")
+            {
+                parser.SetValue("solutionpath",input);
+            }
+
+
             var solutionpath = parser.GetValue("solutionpath");
+
             _= Application.Current.Dispatcher.BeginInvoke(() =>
             {
                 SolutionManager.GetInstance();

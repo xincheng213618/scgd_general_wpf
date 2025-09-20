@@ -5,7 +5,7 @@
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<SignAssembly>True</SignAssembly>
 		<AssemblyOriginatorKeyFile>$(SolutionDir)ColorVision.snk</AssemblyOriginatorKeyFile>
-		<VersionPrefix>1.3.5.1</VersionPrefix>
+		<VersionPrefix>1.3.11.2</VersionPrefix>
 		<TargetFrameworks>net8.0-windows;net6.0-windows;net48</TargetFrameworks>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<IncludeSymbols>True</IncludeSymbols>
@@ -17,7 +17,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="OpenCvSharp4" Version="4.11.0.20250507" />
 		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.11.0.20250507" />
 	</ItemGroup>
@@ -38,29 +38,6 @@
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\qhyccd.dll" Link="runtimes\win-x64\native\qhyccd.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\SCBase.dll" Link="runtimes\win-x64\native\SCBase.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\SCGDCamLayer.dll" Link="runtimes\win-x64\native\SCGDCamLayer.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\SCGDDataProcess.dll" Link="runtimes\win-x64\native\SCGDDataProcess.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\SCGDMilCam.dll" Link="runtimes\win-x64\native\SCGDMilCam.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\CommLibrary.dll" Link="runtimes\win-x64\native\CommLibrary.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
@@ -69,7 +46,8 @@
 		<None Include="..\..\DLL\scgd_internal_dll\opencv_world401.dll" Link="runtimes\win-x64\native\opencv_world401.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>		</None>
+			<PackagePath>runtimes/win-x64/native</PackagePath>	
+		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\pthreadVC2.dll" Link="runtimes\win-x64\native\pthreadVC2.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
@@ -95,20 +73,68 @@
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\toupcam.dll" Link="runtimes\win-x64\native\toupcam.dll">
+		<None Include="..\..\DLL\scgd_internal_dll\qhyccd.dll" Link="qhyccd.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="libusb0.dll">
+		<None Include="..\..\DLL\scgd_internal_dll\SCBase.dll" Link="SCBase.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 		</None>
-		<None Include="SpectraArsenal.dll">
+		<None Include="..\..\DLL\scgd_internal_dll\SCGDCamLayer.dll" Link="SCGDCamLayer.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 		</None>
-		<None Include="USB_Driver.dll">
+		<None Include="..\..\DLL\scgd_internal_dll\SCGDDataProcess.dll" Link="SCGDDataProcess.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\SCGDMilCam.dll" Link="SCGDMilCam.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\toupcam.dll" Link="toupcam.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\nncam.dll" Link="nncam.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\IKapC.dll" Link="IKapC.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\libusb0.dll" Link="libusb0.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\SpectraArsenal.dll" Link="SpectraArsenal.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\USB_Driver.dll" Link="USB_Driver.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\cfg\sys.cfg" Link="cfg\sys.cfg">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\cfg_files\IKap\510.vlcf" Link="cfg_files\IKap\510.vlcf">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\cfg_files\mil-dcf\ConfigDCF.ini" Link="cfg_files\mil-dcf\ConfigDCF.ini">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\cfg_files\mil-dcf\VP101_85Mhz_10tap8bit-trigger-good.dcf" Link="cfg_files\mil-dcf\VP101_85Mhz_10tap8bit-trigger-good.dcf">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\cfg_files\mil-dcf\VP101_85Mhz_4tap12bit-trigger-good.dcf" Link="cfg_files\mil-dcf\VP101_85Mhz_4tap12bit-trigger-good.dcf">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 		</None>
@@ -124,5 +150,4 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\ColorVision.FileIO\ColorVision.FileIO.csproj" />
 	</ItemGroup>
-
 </Project>

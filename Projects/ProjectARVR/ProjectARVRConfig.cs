@@ -192,6 +192,9 @@ namespace ProjectARVR
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; OnPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;
 
+        [DisplayName("测试结束类型")]
+        public ARVRTestType TestTypeCompleted { get => _TestTypeCompleted; set { _TestTypeCompleted = value; OnPropertyChanged(); } }
+        private ARVRTestType _TestTypeCompleted = ARVRTestType.Ghost;
 
         public static ARVRWindowConfig ProjectKBWindowConfig => ARVRWindowConfig.Instance;
 

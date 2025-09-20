@@ -40,6 +40,14 @@ namespace Pattern
         private int _Height = 480;
     }
 
+    public enum PatternFormat
+    {
+        bmp,
+        tif,
+        png,
+        jpg
+    }
+
     /// <summary>
     /// PatternWindow.xaml 的交互逻辑
     /// </summary>
@@ -49,7 +57,6 @@ namespace Pattern
 
         private OpenCvSharp.Mat currentMat;
 
-        private readonly string[] imageFormats = {"bmp" ,"tif","png", "jpg"};
         private readonly (string, int, int)[] commonResolutions =
         {
             ("3840x2160",3840,2160), ("1920x1080",1920,1080), ("1280x720",1280,720), ("1024x768",1024,768),
@@ -106,7 +113,7 @@ namespace Pattern
 
             DisplayGrid.Children.Add(imgDisplay);
             this.Closed += (s, e) => Dispose();
-            cmbFormat.ItemsSource = imageFormats;
+            cmbFormat.ItemsSource = Enum.GetValues(typeof(PatternFormat));
             cmbFormat.SelectedIndex = 0;
             cmbResolution.ItemsSource = Array.ConvertAll(commonResolutions, t => t.Item1);
             cmbResolution.SelectedIndex = 4; // 默认640x480
@@ -122,6 +129,7 @@ namespace Pattern
                     {
                         PatternMeta = selectedPattern;
                         PatternEditorGrid.Children.Add(pattern.GetPatternEditor());
+
                     }
                 }
             };
@@ -136,12 +144,22 @@ namespace Pattern
 
         private void PatternGen_Click(object sender, RoutedEventArgs e)
         {
-            currentMat?.Dispose();
+            try
+            {
+                currentMat?.Dispose();
+                currentMat = Patterns[cmbPattern1.SelectedIndex].Pattern.Gen(Config.Height, Config.Width);
 
-            currentMat = Patterns[cmbPattern1.SelectedIndex].Pattern.Gen(Config.Height,Config.Width);
+                imgDisplay.OpenImage(currentMat.ToWriteableBitmap());
+                imgDisplay.Zoombox1.ZoomUniform();
 
-            imgDisplay.ImageShow.Source = currentMat.ToBitmapSource();
-            imgDisplay.Zoombox1.ZoomUniform();
+            }
+            catch(Exception ex)
+            {
+                log.Error(ex);
+                MessageBox.Show(ex.Message);
+            }
+
+
         }
 
         private void CmbResolution_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -170,14 +188,13 @@ namespace Pattern
                 System.Windows.MessageBox.Show("请先生成图案");
                 return;
             }
-            string ext = imageFormats[cmbFormat.SelectedIndex];
-            string pattern = Patterns[cmbPattern1.SelectedIndex].Name;
-            string filename = $"{pattern}_{txtWidth.Text}x{txtHeight.Text}_{DateTime.Now:yyyyMMddHHmmss}.{ext}";
+            string ext = PatternManager.Config.PatternFormat.ToString();
+            string json = Path.Combine(PatternManager.GetInstance().PatternPath, Config.Width + "x" + Config.Height + "_" + PatternMeta.Pattern.GetTemplateName() + $".{PatternManager.Config.PatternFormat}");
             var dlg = new Microsoft.Win32.SaveFileDialog
             {
                 Filter = "PNG|*.png|JPEG|*.jpg|BMP|*.bmp",
                 DefaultExt = ext,
-                FileName = filename
+                FileName = json
             };
             if (dlg.ShowDialog() == true)
             {
@@ -211,6 +228,15 @@ namespace Pattern
                 cmbPattern1.SelectedItem = PatternMeta;
 
 
+                if (PatternManager.Config.IsSwitchCreate)
+                {
+                    currentMat?.Dispose();
+
+                    currentMat = PatternMeta.Pattern.Gen(Config.Height, Config.Width);
+
+                    imgDisplay.SetImageSource(currentMat.ToWriteableBitmap());
+                    imgDisplay.Zoombox1.ZoomUniform();
+                }
             }
             catch (Exception ex)
             {
@@ -220,7 +246,17 @@ namespace Pattern
 
         private void TempSave_Click(object sender, RoutedEventArgs e)
         {
-            string json = Path.Combine(PatternManager.GetInstance().PatternPath, PatternMeta.Name + "_" +Config.Width + "x"+ Config.Height +"_" + DateTime.Now.ToString("HHmmss")) +".json";
+            string json = Path.Combine(PatternManager.GetInstance().PatternPath, Config.Width + "x" + Config.Height + "_" + PatternMeta.Pattern.GetTemplateName() + ".json");
+            if (File.Exists(json))
+            {
+               if (MessageBox.Show(Application.Current.GetActiveWindow(), "是否替换模板", "Pattern", MessageBoxButton.YesNo) == MessageBoxResult.No)
+                    return;
+                if (PatternManager.GetInstance().TemplatePatternFiles.FirstOrDefault(a => a.FilePath == json) is TemplatePatternFile templatePatternFile)
+                {
+                    PatternManager.GetInstance().TemplatePatternFiles.Remove(templatePatternFile);
+                }
+            }
+          
             TemplatePattern templatePattern = new TemplatePattern();
             templatePattern.PatternName = PatternMeta.Name;
             templatePattern.PatternWindowConfig = Config;
@@ -236,13 +272,23 @@ namespace Pattern
         {
             if (!Directory.Exists(PatternManager.Config.SaveFilePath))
                 Directory.CreateDirectory(PatternManager.Config.SaveFilePath);
+
             foreach (var item in TemplatePatternFiles)
             {
-                SetTemplatePattern(item.FilePath);
-                currentMat?.Dispose();
-                currentMat = Patterns[cmbPattern1.SelectedIndex].Pattern.Gen(Config.Height, Config.Width);
-                string name = Path.GetFileNameWithoutExtension(item.FilePath);
-                currentMat.SaveImage(Path.Combine(PatternManager.Config.SaveFilePath ,name +".bmp"));
+                try
+                {
+                    SetTemplatePattern(item.FilePath);
+                    currentMat?.Dispose();
+                    currentMat = Patterns[cmbPattern1.SelectedIndex].Pattern.Gen(Config.Height, Config.Width);
+                    string name = Path.GetFileNameWithoutExtension(item.FilePath);
+
+                    currentMat.SaveImage(Path.Combine(PatternManager.Config.SaveFilePath, name + $".{PatternManager.Config.PatternFormat}"));
+                }
+                catch(Exception ex)
+                {
+                    log.Error(ex);
+                }
+
             }
             PlatformHelper.OpenFolder(PatternManager.Config.SaveFilePath);
         }
@@ -263,9 +309,10 @@ namespace Pattern
             }
         }
 
-        private void Open_Click(object sender, RoutedEventArgs e)
-        {
 
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            PatternManager.GetInstance().TemplatePatternFiles.Clear();
         }
     }
 }

@@ -11,6 +11,7 @@ namespace Pattern
 
         UserControl GetPatternEditor();
         OpenCvSharp.Mat Gen(int height, int width);
+        string GetTemplateName();
     }
 
     public abstract class IPatternBase : ViewModelBase, IPattern
@@ -20,6 +21,9 @@ namespace Pattern
 
         public abstract UserControl GetPatternEditor();
         public abstract OpenCvSharp.Mat Gen(int height, int width);
+
+        public abstract string GetTemplateName();
+
     }
 
     public abstract class IPatternBase<T> : IPatternBase where T:ViewModelBase,new()
@@ -29,6 +33,11 @@ namespace Pattern
         public override void SetConfig(string config)
         {
             Config = JsonConvert.DeserializeObject<T>(config) ?? new T();
+        }
+
+        public override string GetTemplateName()
+        {
+            return GetType().ToString() + "_" +DateTime.Now.ToString("HHmmss");
         }
 
     }

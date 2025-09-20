@@ -5,6 +5,30 @@ using System.ComponentModel;
 
 namespace cvColorVision
 {
+    /// <summary>
+    /// 相机模式
+    /// </summary>
+    public enum CameraMode : int
+    {
+        CV_MODE,
+        BV_MODE,
+        LV_MODE,
+        LVTOBV_MODE,
+    };
+
+    public enum CameraModel : int
+    {
+        QHY_USB,
+        HK_USB,
+        HK_CARD,
+        MIL_CL_CARD,
+        MIL_CXP_CARD,
+        NN_USB,
+        TOUP_USB,
+        HK_FG_CARD,
+        IKAP_CARD
+    }; 
+
     public enum CameraType
     {
         [Description("CV_Q")]

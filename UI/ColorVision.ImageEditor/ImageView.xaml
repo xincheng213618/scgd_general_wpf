@@ -69,18 +69,6 @@
         </Grid.ColumnDefinitions>
         <Grid x:Name="ImageContentGrid" Grid.Row="1" >
             <Grid Background="{StaticResource LargeGridLinesDrawingBrush}" Visibility="Collapsed"/>
-
-            <Grid x:Name="ImageGroupGrid" HorizontalAlignment="Right" Width="400"  Visibility="{Binding Config.IsShowPropertyEdit,Converter={StaticResource bool2VisibilityConverter}}">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="300"/>
-                </Grid.RowDefinitions>
-                <WindowsFormsHost x:Name="WindowsFormsHost1"  Grid.Row="1" Height="300">
-                    <winf:PropertyGrid x:Name="PropertyGrid2"    >
-                    </winf:PropertyGrid>
-                </WindowsFormsHost>
-            </Grid>
-
             <Grid Background="{StaticResource SmallGridLinesDrawingBrush}"  Visibility="Collapsed"/>
 
             <Grid x:Name="ZoomGrid" Background="{StaticResource TransparentGridBrush}">
@@ -263,10 +251,6 @@
                 <StackPanel x:Name="AdvancedStackPanel">
                     <Border Grid.Column="1" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"  Margin="0,5" CornerRadius="5">
                         <StackPanel Margin="5">
-                            <DockPanel Margin="0,0,0,5">
-                                <ui:ToggleSwitch  DockPanel.Dock="Right" IsChecked="{Binding Config.IsShowPropertyEdit}"/>
-                                <TextBlock Text="显示编辑属性" Width="100" HorizontalAlignment="Left"/>
-                            </DockPanel>
                             <DockPanel Margin="0,0,0,5">
                                 <ui:ToggleSwitch IsChecked="{Binding Config.IsLayoutUpdated}" DockPanel.Dock="Right" />
                                 <TextBlock Text="自动刷新绘图" Width="100" HorizontalAlignment="Left"/>

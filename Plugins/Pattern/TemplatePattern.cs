@@ -8,5 +8,6 @@ namespace Pattern
 
         public string PatternName { get; set; }
         public string Config { get; set; }
+
     }
 }

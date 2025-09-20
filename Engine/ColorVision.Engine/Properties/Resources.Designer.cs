@@ -70,24 +70,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 账号 的本地化字符串。
-        /// </summary>
-        public static string Account {
-            get {
-                return ResourceManager.GetString("Account", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 账号登录 的本地化字符串。
-        /// </summary>
-        public static string AccountLogin {
-            get {
-                return ResourceManager.GetString("AccountLogin", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 采集 的本地化字符串。
         /// </summary>
         public static string Acquire {
@@ -457,15 +439,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 注册一个 的本地化字符串。
-        /// </summary>
-        public static string Create_an_account {
-            get {
-                return ResourceManager.GetString("Create_an_account", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 创建时间 的本地化字符串。
         /// </summary>
         public static string CreateDate {
@@ -786,24 +759,6 @@ namespace ColorVision.Engine.Properties {
         public static string File {
             get {
                 return ResourceManager.GetString("File", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 请输入账号 的本地化字符串。
-        /// </summary>
-        public static string FillAccount {
-            get {
-                return ResourceManager.GetString("FillAccount", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 请输入密码 的本地化字符串。
-        /// </summary>
-        public static string FillPassword {
-            get {
-                return ResourceManager.GetString("FillPassword", resourceCulture);
             }
         }
         
@@ -1956,24 +1911,6 @@ namespace ColorVision.Engine.Properties {
         public static string Shape {
             get {
                 return ResourceManager.GetString("Shape", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 登录 的本地化字符串。
-        /// </summary>
-        public static string Sign_in {
-            get {
-                return ResourceManager.GetString("Sign_in", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 退出 的本地化字符串。
-        /// </summary>
-        public static string Sign_out {
-            get {
-                return ResourceManager.GetString("Sign_out", resourceCulture);
             }
         }
         

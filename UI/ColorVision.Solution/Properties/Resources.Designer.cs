@@ -61,6 +61,24 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 账号 的本地化字符串。
+        /// </summary>
+        public static string Account {
+            get {
+                return ResourceManager.GetString("Account", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 账号登录 的本地化字符串。
+        /// </summary>
+        public static string AccountLogin {
+            get {
+                return ResourceManager.GetString("AccountLogin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 应用 的本地化字符串。
         /// </summary>
         public static string Apply {
@@ -102,6 +120,15 @@ namespace ColorVision.Solution.Properties {
         public static string Create {
             get {
                 return ResourceManager.GetString("Create", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 注册一个 的本地化字符串。
+        /// </summary>
+        public static string Create_an_account {
+            get {
+                return ResourceManager.GetString("Create_an_account", resourceCulture);
             }
         }
         
@@ -156,6 +183,24 @@ namespace ColorVision.Solution.Properties {
         public static string Export {
             get {
                 return ResourceManager.GetString("Export", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请输入账号 的本地化字符串。
+        /// </summary>
+        public static string FillAccount {
+            get {
+                return ResourceManager.GetString("FillAccount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请输入密码 的本地化字符串。
+        /// </summary>
+        public static string FillPassword {
+            get {
+                return ResourceManager.GetString("FillPassword", resourceCulture);
             }
         }
         
@@ -304,6 +349,15 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 密码 的本地化字符串。
+        /// </summary>
+        public static string Password {
+            get {
+                return ResourceManager.GetString("Password", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 工程 的本地化字符串。
         /// </summary>
         public static string Project {
@@ -417,6 +471,24 @@ namespace ColorVision.Solution.Properties {
         public static string SelectProjectSaveLocation {
             get {
                 return ResourceManager.GetString("SelectProjectSaveLocation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 登录 的本地化字符串。
+        /// </summary>
+        public static string Sign_in {
+            get {
+                return ResourceManager.GetString("Sign_in", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 退出 的本地化字符串。
+        /// </summary>
+        public static string Sign_out {
+            get {
+                return ResourceManager.GetString("Sign_out", resourceCulture);
             }
         }
     }

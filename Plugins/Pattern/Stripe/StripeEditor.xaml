@@ -10,7 +10,7 @@
     <Grid>
         <StackPanel VerticalAlignment="Top">
             <StackPanel Orientation="Horizontal"  Margin="0,0,0,5">
-                <Button Content="主色" Width="55" Margin="0,0,5,0" Click="BtnPickMainColor_Click"/>
+                <Button Content="背景色" Width="55" Margin="0,0,5,0" Click="BtnPickMainColor_Click"/>
                 <Rectangle x:Name="rectMainColor" Width="25" Height="25" Stroke="Black" Fill="{Binding MainBrush}" Margin="0,0,5,0"/>
                 <Button Content="R" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="R" />
                 <Button Content="G" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="G"/>
@@ -19,7 +19,7 @@
                 <Button Content="K" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="K"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <Button Content="副色" Width="55" Margin="0,0,5,0" Click="BtnPickAltColor_Click"/>
+                <Button Content="前景色" Width="55" Margin="0,0,5,0" Click="BtnPickAltColor_Click"/>
                 <Rectangle x:Name="rectAltColor" Width="25" Height="25" Stroke="Black" Fill="{Binding AltBrush}" Margin="0,0,5,0"/>
                 <Button Content="R" Margin="0,0,5,0" Click="BtnPickAltColorSet_Click"  Tag="R"/>
                 <Button Content="G" Margin="0,0,5,0" Click="BtnPickAltColorSet_Click"  Tag="G"/>
@@ -27,19 +27,24 @@
                 <Button Content="W" Margin="0,0,5,0" Click="BtnPickAltColorSet_Click"  Tag="W"/>
                 <Button Content="K" Margin="0,0,5,0" Click="BtnPickAltColorSet_Click"  Tag="K"/>
             </StackPanel>
+            
             <ToggleButton  Style="{StaticResource ToggleButtonSwitch}" Content="IsHorizontal" Margin="0,0,2,0" IsChecked="{Binding IsHorizontal}" HorizontalAlignment="Left"/>
-
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5" Visibility="{Binding IsHorizontal ,Converter={StaticResource bool2VisibilityConverter}}">
-                <TextBlock Width="50" Text="Spacing" Margin="0,0,5,0"/>
+                <TextBlock Width="45" Text="Period" Margin="0,0,5,0"/>
                 <TextBox Width="70" Text="{Binding HorizontalSpacing}" Margin="0,0,5,0"/>
-                <TextBlock Width="50" Text="Width" Margin="0,0,5,0"/>
+                <TextBlock Width="80" Text="LineThickness" Margin="0,0,5,0"/>
                 <TextBox Width="70" Text="{Binding HorizontalWidth}" Margin="0,0,5,0"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5"  Visibility="{Binding IsHorizontal ,Converter={StaticResource bool2VisibilityConverter1}}">
-                <TextBlock Width="50" Text="Spacing" Margin="0,0,5,0"/>
+                <TextBlock Width="45" Text="Period" Margin="0,0,5,0"/>
                 <TextBox Width="70" Text="{Binding VerticalSpacing}" Margin="0,0,5,0"/>
-                <TextBlock Width="50" Text="Width" Margin="0,0,5,0"/>
+                <TextBlock Width="80" Text="LineThickness" Margin="0,0,5,0"/>
                 <TextBox Width="70" Text="{Binding VerticalWidth}" Margin="0,0,5,0"/>
+            </StackPanel>
+            <StackPanel  Orientation="Horizontal" Margin="0,0,0,5">
+                <TextBlock Text="FieldOfView" Margin="0,0,5,0"/>
+                <TextBox  Width="100" Text="{Binding FieldOfViewX}" Margin="0,0,5,0"/>
+                <TextBox  Width="100" Text="{Binding FieldOfViewY}" Margin="0,0,5,0"/>
             </StackPanel>
         </StackPanel>
 

@@ -3,7 +3,7 @@ using System.Windows;
 
 namespace ProjectBlackMura.PluginConfig
 {
-    public class BlackMuraProject : IProjectBase
+    public class BlackMuraProject : IFeatureLauncherBase
     {
         public override string? Header => "BlackMura检测";
 

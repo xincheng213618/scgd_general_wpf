@@ -138,7 +138,7 @@ namespace ColorVision.ImageEditor
                 }
             };
 
-            HistogramChart.ZoomMode = ZoomAndPanMode.ZoomY | ZoomAndPanMode.PanY | ZoomAndPanMode.PanX; ;
+            HistogramChart.ZoomMode = ZoomAndPanMode.Both | ZoomAndPanMode.Y | ZoomAndPanMode.X;
 
         }
         private void DrawHistograms(CartesianChart chart, int[] grayHistogram)

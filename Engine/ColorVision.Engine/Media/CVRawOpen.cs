@@ -48,6 +48,7 @@ namespace ColorVision.Engine.Media
             return field;
         }
     }
+
     [FileExtension(".cvraw|.cvcie")]
     public class CVRawOpen : IImageOpen
     {

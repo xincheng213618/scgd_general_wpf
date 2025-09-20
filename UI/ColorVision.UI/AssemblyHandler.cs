@@ -2,9 +2,19 @@
 using System.Collections.Concurrent;
 using System.IO;
 using System.Reflection;
+using System.Windows;
 
 namespace ColorVision.UI
 {
+    public static class AssemblyHandlerExtensions
+    {
+        public static Assembly[] GetAssemblies(this Application application)
+        {
+            return AssemblyHandler.GetInstance().RefreshAssemblies();
+        }
+    }
+
+
     public class AssemblyHandler: IAssemblyService
     {
         private static ILog log = LogManager.GetLogger(typeof(AssemblyHandler));
@@ -120,7 +130,7 @@ namespace ColorVision.UI
             if (Assemblies == null)
             {
                 List<Assembly> assemblies = new List<Assembly>();
-                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                foreach (var assembly in Application.Current.GetAssemblies())
                 {
                     try
                     {

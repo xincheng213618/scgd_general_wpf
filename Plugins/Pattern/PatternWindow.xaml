@@ -6,14 +6,14 @@
         xmlns:local="clr-namespace:Pattern"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PatternManager}"
-        Title="图卡生成工具" Height="600" Width="1280" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner"  Initialized="Window_Initialized">
+        Title="图卡生成工具" Height="600" Width="1300" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner"  Initialized="Window_Initialized">
     <Window.Resources>
-        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}"/>
+        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBoxBaseStyle}"/>
         <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBaseStyle}"/>
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="300"/>
             <ColumnDefinition Width="300"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
@@ -23,32 +23,61 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <StackPanel>
-                <Button Content="打开文件夹" Command="{Binding OpenPatternPathCommand}"/>
-                <Button Content="输出文件夹" Command="{Binding OpenSaveFilePathCommand}"/>
+                <Button Content="打开模板文件夹" Command="{Binding OpenPatternPathCommand}" Margin="0,0,0,5"/>
+                <StackPanel Orientation="Horizontal"  Margin="0,0,0,5">
+                    <Button Content="导出模板组" Command="{Binding ExportZipCommand}" Margin="0,0,5,0"/>
+                    <Button Content="导入模板组" Command="{Binding ImportZipCommand}" Margin="0,0,5,0"/>
+                </StackPanel>
+                
+                <Button Content="保存成模板" Click="TempSave_Click" Margin="0,0,0,5"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                    <Button Content="生成所有模板图片" Click="GenAllTemplate_Click"/>
+                    <Button Content="打开输出文件夹" Command="{Binding OpenSaveFilePathCommand}"/>
+                    <Button Content="清空" Command="{Binding ClearSaveFilePathCommand}"/>
+                </StackPanel>
 
-                <Button Content="保存成模板" Click="TempSave_Click"/>
-                <Button Content="生成所有模板图片" Click="GenAllTemplate_Click"/>
-                <Button Grid.Column="1" Margin="0,1,5,0" HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="25" Width="25" >
-                    <Button.Triggers>
-                        <EventTrigger RoutedEvent="Button.Click">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation Storyboard.TargetName="rotateTransform99" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                    </Button.Triggers>
-                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
-                        <TextBlock.RenderTransform>
-                            <RotateTransform x:Name="rotateTransform99" CenterX="8" CenterY="8"/>
-                        </TextBlock.RenderTransform>
-                    </TextBlock>
-                </Button>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" >
+                    <Button Command="{Binding ClearTemplatePatternFilesCommand}" Padding="2" Height="25" Width="25" Margin="0,0,5,0" >
+                        <Button.Triggers>
+                            <EventTrigger RoutedEvent="Button.Click">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation  Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX" To="0.7" Duration="0:0:0.1" AutoReverse="True" />
+                                        <DoubleAnimation  Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY" To="0.7" Duration="0:0:0.1" AutoReverse="True" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Button.Triggers>
+                        <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" RenderTransformOrigin="0.5,0.5">
+                            <Image.RenderTransform>
+                                <ScaleTransform x:Name="ScaleTransform" ScaleX="1" ScaleY="1" />
+                            </Image.RenderTransform>
+                        </Image>
+                    </Button>
+                    <Button Grid.Column="1" Margin="0,0,5,0" HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="25" Width="25" >
+                        <Button.Triggers>
+                            <EventTrigger RoutedEvent="Button.Click">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="rotateTransform99" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Button.Triggers>
+                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                            <TextBlock.RenderTransform>
+                                <RotateTransform x:Name="rotateTransform99" CenterX="8" CenterY="8"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                    </Button>
+                </StackPanel>
+
             </StackPanel>
             <ListView Grid.Row="1" x:Name="ListViewPattern" Background="Transparent" Margin="0" Padding="0" BorderThickness="0" SelectionChanged="ListViewPattern_SelectionChanged">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
                         <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                        <Setter Property="Padding" Value="0"/>
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.View>
@@ -82,6 +111,7 @@
             <StackPanel Margin="5">
                 <ComboBox x:Name="cmbResolution"  Margin="0,0,0,5"/>
                 <StackPanel x:Name="ResolutionStackPanel"  Orientation="Horizontal" Margin="0,0,0,5">
+                    <TextBlock Text="分辨率" Margin="0,0,5,0"/>
                     <TextBox x:Name="txtWidth" Width="100" Text="{Binding Width}" Margin="0,0,5,0"/>
                     <TextBox x:Name="txtHeight" Width="100" Text="{Binding Height}" Margin="0,0,5,0"/>
                 </StackPanel>
@@ -109,10 +139,10 @@
                 <Grid x:Name="PatternEditorGrid">
 
                 </Grid>
-                <Button Content="生成" Click="PatternGen_Click" Margin="0,0,0,10"/>
+                <Button Content="生成图卡" Click="PatternGen_Click" Margin="0,0,0,10"/>
 
-                <ComboBox x:Name="cmbFormat"  Margin="0,0,0,5"/>
-                <Button Content="保存" Click="BtnSave_Click"/>
+                <ComboBox x:Name="cmbFormat"  SelectedValue="{Binding Config.PatternFormat}" Margin="0,0,0,5"/>
+                <Button Content="保存图卡" Click="BtnSave_Click"/>
             </StackPanel>
         </ScrollViewer>
 

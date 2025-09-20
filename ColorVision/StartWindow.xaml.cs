@@ -1,6 +1,7 @@
 ﻿using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Shell;
+using Dm.util;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -189,26 +190,30 @@ namespace ColorVision
                 try
                 {
                     var parser = ArgumentParser.GetInstance();
-                    parser.AddArgument("project", false, "e");
+                    parser.AddArgument("feature", false, "e");
                     parser.Parse();
 
-                    string project = parser.GetValue("project");
-                    if (project != null)
+                    string feature = parser.GetValue("feature");
+                    if (feature != null)
                     {
-                        List<IProject> IProjects = new List<IProject>();
+                        List<IFeatureLauncher> IFeatureLaunchers = new List<IFeatureLauncher>();
                         foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
                         {
-                            foreach (Type type in assembly.GetTypes().Where(t => typeof(IProject).IsAssignableFrom(t) && !t.IsAbstract))
+                            foreach (Type type in assembly.GetTypes().Where(t => typeof(IFeatureLauncher).IsAssignableFrom(t) && !t.IsAbstract))
                             {
-                                if (Activator.CreateInstance(type) is IProject projects)
+                                if (Activator.CreateInstance(type) is IFeatureLauncher projects)
                                 {
-                                    IProjects.Add(projects);
+                                    IFeatureLaunchers.Add(projects);
                                 }
                             }
                         }
-                        if (IProjects.Find(a => a.Header == project) is IProject project1)
+                        if (IFeatureLaunchers.Find(a => a.Header == feature) is IFeatureLauncher project1)
                         {
                             project1.Execute();
+                        }
+                        else if (IFeatureLaunchers.Find(a => a.GetType().ToString().contains(feature)) is IFeatureLauncher project2)
+                        {
+                            project2.Execute();
                         }
                     }
                     else

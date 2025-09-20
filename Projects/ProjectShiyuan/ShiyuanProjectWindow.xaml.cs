@@ -436,9 +436,7 @@ namespace ColorVision.Projects.ProjectShiYuan
                                 {
                                     var image = hImageProcessed.ToWriteableBitmap();
                                     image.SaveImageSourceToFile(ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_h_gap" + ".tif");
-                                    OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                    hImageProcessed.pData = IntPtr.Zero;
-
+                                    hImageProcessed.Dispose();
                                 }
                             });
                         }
@@ -457,8 +455,7 @@ namespace ColorVision.Projects.ProjectShiYuan
                                 {
                                     var image = hImageProcessed.ToWriteableBitmap();
                                     image.SaveImageSourceToFile(ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_v_gap" + ".tif");
-                                    OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                    hImageProcessed.pData = IntPtr.Zero;
+                                    hImageProcessed.Dispose();
 
                                 }
                             });

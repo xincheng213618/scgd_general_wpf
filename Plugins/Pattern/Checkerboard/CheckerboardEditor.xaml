@@ -36,6 +36,12 @@
                 <TextBox Width="100" Text="{Binding GridX}" Margin="0,0,5,0"/>
                 <TextBox  Width="100" Text="{Binding GridY}" Margin="0,0,5,0"/>
             </StackPanel>
+            <StackPanel  Orientation="Horizontal" Margin="0,0,0,5">
+                <TextBlock Text="FieldOfView" Margin="0,0,5,0"/>
+                <TextBox  Width="100" Text="{Binding FieldOfViewX}" Margin="0,0,5,0"/>
+                <TextBox  Width="100" Text="{Binding FieldOfViewY}" Margin="0,0,5,0"/>
+            </StackPanel>
+            
         </StackPanel>
 
     </Grid>

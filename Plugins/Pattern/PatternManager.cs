@@ -2,9 +2,11 @@
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using log4net;
+using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.IO.Compression;
 using System.Reflection;
 using System.Windows;
 
@@ -16,6 +18,17 @@ namespace Pattern
         [DisplayName("图卡生成路径"), PropertyEditorType(PropertyEditorType.TextSelectFolder)]
         public string SaveFilePath { get => _SaveFilePath; set { _SaveFilePath = value; OnPropertyChanged(); } }
         private string _SaveFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Pattern");
+
+        [DisplayName("切换模板后创建图像")]
+        public bool IsSwitchCreate { get => _IsSwitchCreate; set { _IsSwitchCreate = value; OnPropertyChanged(); } }
+        private bool _IsSwitchCreate = true;
+
+        [DisplayName("保存格式")]
+        public PatternFormat PatternFormat { get => _PatternFormat; set { _PatternFormat = value; OnPropertyChanged(); } }
+        private PatternFormat _PatternFormat = PatternFormat.bmp;
+
+
+
     }
 
     public class PatternManager
@@ -35,7 +48,10 @@ namespace Pattern
         public RelayCommand EditCommand { get; set; }
         public RelayCommand OpenPatternPathCommand { get; set; }
         public RelayCommand OpenSaveFilePathCommand { get; set; }
-
+        public RelayCommand ClearSaveFilePathCommand { get; set; }
+        public RelayCommand ClearTemplatePatternFilesCommand { get; set; }
+        public RelayCommand ExportZipCommand { get; set; }
+        public RelayCommand ImportZipCommand { get; set; }
 
         private PatternManager()
         {
@@ -83,13 +99,124 @@ namespace Pattern
             EditCommand = new RelayCommand(a => Edit());
             OpenPatternPathCommand = new RelayCommand(a => OpenPatternPath());
             OpenSaveFilePathCommand = new RelayCommand(a => OpenSaveFilePath());
+            ClearSaveFilePathCommand = new RelayCommand(a => ClearSaveFilePath());
+            ClearTemplatePatternFilesCommand = new RelayCommand(a => ClearTemplatePatternFiles());
+            ExportZipCommand = new RelayCommand(a => ExportPatternZip());
+            ImportZipCommand = new RelayCommand(a => ImportPatternZip());
+        }
+        /// <summary>
+        /// 打包PatternPath目录为zip，并让用户选择导出位置
+        /// </summary>
+        public void ExportPatternZip()
+        {
+            try
+            {
+                // 1. 获取要保存的位置
+                SaveFileDialog saveFileDialog = new SaveFileDialog
+                {
+                    Filter = "Zip 文件 (*.zip)|*.zip",
+                    FileName = "Pattern.zip"
+                };
+                if (saveFileDialog.ShowDialog() != true) return;
 
+                string zipPath = saveFileDialog.FileName;
+
+                if (File.Exists(zipPath))
+                    File.Delete(zipPath);
+
+                ZipFile.CreateFromDirectory(PatternPath, zipPath, CompressionLevel.Optimal, false);
+
+                MessageBox.Show("导出成功！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 选择zip文件并解压到PatternPath
+        /// </summary>
+        public void ImportPatternZip()
+        {
+            try
+            {
+                OpenFileDialog openFileDialog = new OpenFileDialog
+                {
+                    Filter = "Zip 文件 (*.zip)|*.zip"
+                };
+                if (openFileDialog.ShowDialog() != true) return;
+
+                string zipPath = openFileDialog.FileName;
+
+                // 1. 清空PatternPath（可选，视需求决定是否保留原内容）
+                if (Directory.Exists(PatternPath))
+                    Directory.Delete(PatternPath, true);
+                Directory.CreateDirectory(PatternPath);
+
+                // 2. 解压到PatternPath
+                ZipFile.ExtractToDirectory(zipPath, PatternPath);
+
+                MessageBox.Show("导入成功！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // 3. 重新加载模板文件
+                TemplatePatternFiles.Clear();
+                foreach (var item in Directory.GetFiles(PatternPath))
+                {
+                    if (item.EndsWith(".json", StringComparison.CurrentCulture))
+                    {
+                        TemplatePatternFiles.Add(new TemplatePatternFile(item));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"导入失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         public void OpenSaveFilePath()
         {
             PlatformHelper.OpenFolder(Config.SaveFilePath);
         }
+
+        public void ClearTemplatePatternFiles()
+        {
+            TemplatePatternFiles.Clear();
+            Directory.Delete(PatternPath, true);
+            if (!Directory.Exists(PatternPath))
+                Directory.CreateDirectory(PatternPath);
+        }
+
+        public void ClearSaveFilePath()
+        {
+            // 2. 检查目录是否存在
+            if (Directory.Exists(Config.SaveFilePath))
+            {
+                var confirmResult = MessageBox.Show("确定要清空内容吗？", "清空确认", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (confirmResult != MessageBoxResult.Yes)
+                {
+                    return; // 用户取消
+                }
+                try
+                {
+                    Directory.Delete(Config.SaveFilePath, true);
+                    if (!Directory.Exists(Config.SaveFilePath))
+                        Directory.CreateDirectory(Config.SaveFilePath);
+                    // 3. 清空成功提示
+                    MessageBox.Show("清空成功！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"清空失败：{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            else
+            {
+                MessageBox.Show("目录不存在！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
         public void OpenPatternPath()
         {
             PlatformHelper.OpenFolder(PatternPath);

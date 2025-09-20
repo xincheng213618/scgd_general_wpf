@@ -12,12 +12,15 @@
 #define COLORVISIONCORE_API __declspec(dllimport)
 #endif
 
-enum EvaFunc
-{
+enum FocusAlgorithm {
     Variance = 0,
-    Tenengrad = 1,
-    Laplace,
-    CalResol,
+    StandardDeviation = 1,
+    Tenengrad = 2,
+    Laplacian = 3,
+    VarianceOfLaplacian = 4,
+    EnergyOfGradient = 5,
+    SpatialFrequency = 6
+    // CalResol 比较复杂，通常需要特定图卡，这里不作为通用对焦算法
 };
 
 // 定义错误代码枚举
@@ -43,7 +46,7 @@ extern "C" COLORVISIONCORE_API int M_DrawPoiImage(HImage img, HImage* outImage, 
 
 extern "C" COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* length, int* scaleFactor, int targetPixelsX = 512, int targetPixelsY = 512);
 
-extern "C" COLORVISIONCORE_API double M_CalArtculation(HImage img, EvaFunc type);
+extern "C" COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, int roi_x, int roi_y, int roi_width, int roi_height);
 
 extern "C" COLORVISIONCORE_API int M_GetWhiteBalance(HImage img, HImage* outImage, double redBalance, double greenBalance, double blueBalance);
 

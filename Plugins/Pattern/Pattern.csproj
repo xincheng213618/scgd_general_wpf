@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.0.0.1</VersionPrefix>
+		<VersionPrefix>1.0.0.33</VersionPrefix>
 	</PropertyGroup>
 	
 	<ItemGroup>
@@ -38,6 +38,9 @@
 		<Compile Update="Dot\DotEditor.xaml.cs">
 			<SubType>Code</SubType>
 		</Compile>
+		<Compile Update="LinePairMTF\LinePairMTFEditor.xaml.cs">
+		  <SubType>Code</SubType>
+		</Compile>
 		<Compile Update="NineDot\NineDotEditor.xaml.cs">
 			<SubType>Code</SubType>
 		</Compile>
@@ -54,6 +57,9 @@
 
 	<ItemGroup>
 	  <None Update="manifest.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Update="README.md">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
 	</ItemGroup>

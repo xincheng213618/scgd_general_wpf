@@ -4,7 +4,7 @@ using System.Windows;
 namespace ProjectARVR.PluginConfig
 {
 
-    public class ProjectARVRPlugin : IProjectBase
+    public class ProjectARVRPlugin : IFeatureLauncherBase
     {
         public override string? Header => "ARVR检测";
         public override string? UpdateUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/ProjectKB";

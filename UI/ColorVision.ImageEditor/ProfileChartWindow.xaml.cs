@@ -58,7 +58,7 @@ namespace ColorVision.ImageEditor
                 }
             };
 
-            ProfileChart.ZoomMode = ZoomAndPanMode.ZoomY | ZoomAndPanMode.PanY | ZoomAndPanMode.PanX; ;
+            ProfileChart.ZoomMode = ZoomAndPanMode.Both | ZoomAndPanMode.Y | ZoomAndPanMode.X;
 
 
 

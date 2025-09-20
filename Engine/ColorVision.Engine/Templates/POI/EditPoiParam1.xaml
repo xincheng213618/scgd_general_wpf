@@ -559,13 +559,6 @@
                                         <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                     </Style>
                                 </GridView.ColumnHeaderContainerStyle>
-                                <GridViewColumn Header="显示">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type draw:IDrawingVisualDatum}">
-                                            <CheckBox IsChecked="{Binding BaseAttribute.IsShow}" Tag="{Binding .}"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
                                 <GridViewColumn  Header="   点的描述                         坐标"  Width="400">
                                     <GridViewColumn.CellTemplateSelector>
                                         <converter:DrawCanvasTemplateSelector  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}" DrawingVisualCircleWordTemplate="{StaticResource DrawingVisualCircleWordTemplate}"  DrawingVisualRectangleWordTemplate="{StaticResource DrawingVisualRectangleWordTemplate}" DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />

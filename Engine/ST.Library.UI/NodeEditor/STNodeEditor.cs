@@ -2128,31 +2128,36 @@ public class STNodeEditor : Control
 		OnCanvasMoved(EventArgs.Empty);
 	}
 
-	public void ScaleCanvas(float f, float x, float y)
-	{
-		if (_Nodes.Count == 0)
-		{
-			_CanvasScale = 1f;
-		}
-		else if (_CanvasScale != f)
-		{
-			if ((double)f < 0.2)
-			{
-				f = 0.2f;
-			}
-			else if (f > 5f)
-			{
-				f = 5f;
-			}
-			float number = ControlToCanvas(x, isX: true);
-			float number2 = ControlToCanvas(y, isX: false);
-			_CanvasScale = f;
-			_CanvasOffsetX = (m_real_canvas_x -= CanvasToControl(number, isX: true) - x);
-			_CanvasOffsetY = (m_real_canvas_y -= CanvasToControl(number2, isX: false) - y);
-			OnCanvasScaled(EventArgs.Empty);
-			Invalidate();
-		}
-	}
+	public void ScaleCanvas(float newScale, float mouseX, float mouseY)
+    {
+        if (_Nodes.Count == 0)
+        {
+            _CanvasScale = 1f;
+            _CanvasOffsetX = 0;
+            _CanvasOffsetY = 0;
+            Invalidate();
+            return;
+        }
+
+        // Clamp scale
+        newScale = Math.Max(0.2f, Math.Min(5f, newScale));
+        if (Math.Abs(_CanvasScale - newScale) < 0.0001f) return;
+
+        // 1. 鼠标在画布坐标系中的点
+        float canvasX = (mouseX - _CanvasOffsetX) / _CanvasScale;
+        float canvasY = (mouseY - _CanvasOffsetY) / _CanvasScale;
+
+        // 2. 更新缩放
+        _CanvasScale = newScale;
+
+        // 3. 计算新的offset，使缩放后该canvas点仍在鼠标下
+        _CanvasOffsetX = mouseX - canvasX * _CanvasScale;
+        _CanvasOffsetY = mouseY - canvasY * _CanvasScale;
+		m_real_canvas_x = _CanvasOffsetX;
+		m_real_canvas_y = _CanvasOffsetY;
+        OnCanvasScaled(EventArgs.Empty);
+        Invalidate();
+    }
 
 	public ConnectionInfo[] GetConnectionInfo()
 	{

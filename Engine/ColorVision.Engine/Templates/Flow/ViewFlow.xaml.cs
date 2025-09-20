@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
 using FlowEngineLib;
@@ -9,6 +10,7 @@ using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,12 +21,8 @@ namespace ColorVision.Engine.Services.Flow
     /// <summary>
     /// CVFlowView.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewFlow : UserControl,IView, INotifyPropertyChanged,IDisposable
+    public partial class ViewFlow : UserControl,IView,IDisposable
     {
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        public void OnPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
         public  FlowEngineControl FlowEngineControl { get; set; }
 
         public static FlowEngineManager FlowEngineManager => FlowEngineManager.GetInstance();
@@ -43,10 +41,8 @@ namespace ColorVision.Engine.Services.Flow
 
         public RelayCommand OpenFlowTemplateCommand { get; set; }
 
-        public static FlowEngineConfig FlowConfig => FlowEngineConfig.Instance;
+        public static FlowEngineConfig Config => FlowEngineConfig.Instance;
 
-        public bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; OnPropertyChanged(); } }
-        private bool _IsEditMode = true;
 
         public DisplayFlow DisplayFlow { get; set; }
 
@@ -79,8 +75,34 @@ namespace ColorVision.Engine.Services.Flow
                 if (DisplayFlow.flowControl != null)
                     e.CanExecute = DisplayFlow.flowControl.IsFlowRun;
             }));
+
+            if (Config.UseNewUI)
+            {
+                ThemeManager.Current.CurrentUIThemeChanged += ThemeChanged;
+                ThemeChanged(ThemeManager.Current.CurrentUITheme);
+            }
         }
 
+        void ThemeChanged(Theme theme)
+        {
+            if (theme == Theme.Dark)
+            {
+                STNodeEditorMain.BackColor = Color.FromArgb(255, 34, 34, 34);
+                STNodeEditorMain.GridColor = Color.FromArgb(255, 0, 0, 0);
+                STNodeEditorMain.ForeColor = Color.FromArgb(255, 255, 255, 255);
+                STNodeEditorMain.LocationBackColor = Color.FromArgb(255, 50, 50, 50);
+
+
+
+            }
+            else
+            {
+                STNodeEditorMain.BackColor = Color.FromArgb(255, 150, 150, 150);
+                STNodeEditorMain.GridColor = Color.FromArgb(255, 0, 0, 0);
+                STNodeEditorMain.ForeColor = Color.FromArgb(255, 0, 0, 0);
+                STNodeEditorMain.LocationBackColor = Color.FromArgb(255, 200, 200, 200);
+            }
+        }
         #region ActionCommand
 
         public ObservableCollection<ActionCommand> UndoStack { get; set; } = new ObservableCollection<ActionCommand>();
@@ -155,7 +177,8 @@ namespace ColorVision.Engine.Services.Flow
 
         public FlowParam FlowParam { get; set; }
 
-        public float CanvasScale { get => STNodeEditorHelper.CanvasScale; set { STNodeEditorMain.ScaleCanvas(value, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2); OnPropertyChanged(); } }
+        public float CanvasScale { get => STNodeEditorHelper.CanvasScale; set { STNodeEditorMain.ScaleCanvas(value, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2); } }
+
 
         STNodeTreeView STNodeTreeView1 = new STNodeTreeView();
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -232,36 +255,14 @@ namespace ColorVision.Engine.Services.Flow
         {
             if (STNodeEditorMain.ActiveNode == null && STNodeEditorMain.GetSelectedNode().Length == 0)
             {
-                if (e.Key == Key.Left)
-                {
-                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX + 100 * CanvasScale, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
-                    e.Handled = true;
-                }
-                else if (e.Key == Key.Right)
-                {
-                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX - 100 * CanvasScale, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
-                    e.Handled = true;
-                }
-                else if (e.Key == Key.Up)
-                {
-                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY + 100 * CanvasScale, bAnimation: true, CanvasMoveArgs.Top);
-                    e.Handled = true;
-                }
-                else if (e.Key == Key.Down)
-                {
-                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY - 100 * CanvasScale, bAnimation: true, CanvasMoveArgs.Top);
-                    e.Handled = true;
-                }
-                else if (e.Key == Key.Add)
+                if (e.Key == Key.Add)
                 {
                     STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.1f, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
-                    OnPropertyChanged(nameof(CanvasScale));
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Subtract)
                 {
                     STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.1f, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
-                    OnPropertyChanged(nameof(CanvasScale));
                     e.Handled = true;
                 }
             }
@@ -351,7 +352,7 @@ namespace ColorVision.Engine.Services.Flow
 
         private void STNodeEditorMain_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
         {
-            if ((!IsEditMode|| Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) && IsMouseDown)
+            if ( Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && IsMouseDown)
             {        // 计算鼠标移动的距离
                 int deltaX = e.X - lastMousePosition.X;
                 int deltaY = e.Y - lastMousePosition.Y;
@@ -372,17 +373,9 @@ namespace ColorVision.Engine.Services.Flow
 
         private void STNodeEditorMain_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs e)
         {
-            var mousePosition = STNodeEditorMain.PointToClient(e.Location);
-
-            if (e.Delta < 0)
-            {
-                STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.05f, mousePosition.X, mousePosition.Y);
-
-            }
-            else
-            {
-                STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.05f, mousePosition.X, mousePosition.Y);
-            }
+            var mousePosition = e.Location; // e.Location 已是控件坐标
+            float delta = e.Delta > 0 ? 0.05f : -0.05f;
+            STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + delta, mousePosition.X, mousePosition.Y);
         }
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
@@ -398,6 +391,8 @@ namespace ColorVision.Engine.Services.Flow
 
         public void Dispose()
         {
+            ThemeManager.Current.CurrentUIThemeChanged -= ThemeChanged;
+
             STNodeEditorMain?.Dispose();
             STNodeTreeView1?.Dispose();
             winf1?.Dispose();

@@ -16,7 +16,7 @@
                 hc:InfoElement.Necessary="True" hc:InfoElement.ShowClearButton="True"  hc:InfoElement.Symbol="*" ItemsSource="{Binding RecentNewCreateNameCacheList}"  />
                 <DockPanel >
                     <Button Content=".." DockPanel.Dock="Right" VerticalAlignment="Bottom" Height="30" Width="30" Click="Button_Click"/>
-                    <hc:ComboBox  Margin="0,0,0,0"  Width="400"  HorizontalAlignment="Left"  IsEditable="True" SelectedIndex="0" SelectionChanged="ComboBox_SelectionChanged" Text="{Binding DirectoryPath}"  hc:InfoElement.Title="{x:Static properties:Resources.SelectProjectSaveLocation}"
+                    <hc:ComboBox  Margin="0,0,0,0"  Width="400"  HorizontalAlignment="Left"  hc:InfoElement.ShowClearButton="True"  IsEditable="True" SelectedIndex="0" SelectionChanged="ComboBox_SelectionChanged" Text="{Binding DirectoryPath}"  hc:InfoElement.Title="{x:Static properties:Resources.SelectProjectSaveLocation}"
                               hc:InfoElement.Necessary="True"  hc:InfoElement.Symbol="*" 
                               ItemsSource="{Binding RecentNewCreateCacheList}"/>
                 </DockPanel>

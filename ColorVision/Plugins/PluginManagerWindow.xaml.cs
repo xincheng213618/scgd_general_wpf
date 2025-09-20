@@ -3,6 +3,7 @@ using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
+using LiveChartsCore.VisualElements;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -124,8 +125,40 @@ namespace ColorVision.Plugins
                     stackPanel.Children.Add(uniformGrid);
                 }
 
+                void GenIFeatureLauncher(StackPanel stackPanel, Assembly assembly)
+                {
+                    UniformGrid uniformGrid = new UniformGrid() { Margin = new Thickness(5) };
+                    uniformGrid.SizeChanged += (_, __) => uniformGrid.AutoUpdateLayout();
+                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IFeatureLauncher).IsAssignableFrom(t) && !t.IsAbstract))
+                    {
+                        if (Activator.CreateInstance(type) is IFeatureLauncher menuItems)
+                        {
+                            RelayCommand relayCommand = new RelayCommand(a =>
+                            {
+                                string GetExecutablePath = Environments.GetExecutablePath();
+                                string shortcutName = menuItems.Header;
+                                string shortcutPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+                                string arguments = $"-feature {shortcutName}";
+                                if (shortcutName != null)
+                                    Common.NativeMethods.ShortcutCreator.CreateShortcut(shortcutName, shortcutPath, GetExecutablePath, arguments);
+                            });
+
+                            var button = new Button
+                            {
+                                Style = PropertyEditorHelper.ButtonCommandStyle,
+                                Content = "创建快捷方式",
+                                Command = relayCommand
+                            };
+                            uniformGrid.Children.Add(button);
+                        }
+                    }
+                    stackPanel.Children.Add(uniformGrid);
+                }
+
 
                 GenIMenuItem(DetailInfo, pluginInfoVM.PluginInfo.Assembly);
+                GenIFeatureLauncher(DetailInfo, pluginInfoVM.PluginInfo.Assembly);
                 GenIConfig(DetailInfo, pluginInfoVM.PluginInfo.Assembly);
 
             }

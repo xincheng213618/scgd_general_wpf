@@ -219,12 +219,6 @@
   <data name="SimulateReceive" xml:space="preserve">
     <value>모의 수용</value>
   </data>
-  <data name="Sign_out" xml:space="preserve">
-    <value>로그아웃</value>
-  </data>
-  <data name="Sign_in" xml:space="preserve">
-    <value>로그인</value>
-  </data>
   <data name="Shape" xml:space="preserve">
     <value>모양</value>
   </data>
@@ -534,12 +528,6 @@
   <data name="Filter" xml:space="preserve">
     <value>필터</value>
   </data>
-  <data name="FillPassword" xml:space="preserve">
-    <value>비밀번호를 입력해주세요</value>
-  </data>
-  <data name="FillAccount" xml:space="preserve">
-    <value>계정을 입력해주세요</value>
-  </data>
   <data name="File" xml:space="preserve">
     <value>문서</value>
   </data>
@@ -636,9 +624,6 @@
   <data name="CreateDevice" xml:space="preserve">
     <value>장치 만들기</value>
   </data>
-  <data name="Create_an_account" xml:space="preserve">
-    <value>계정을 만들기</value>
-  </data>
   <data name="Create" xml:space="preserve">
     <value>만들다</value>
   </data>
@@ -725,12 +710,6 @@
   </data>
   <data name="Acquire" xml:space="preserve">
     <value>수집</value>
-  </data>
-  <data name="AccountLogin" xml:space="preserve">
-    <value>계정 로그인</value>
-  </data>
-  <data name="Account" xml:space="preserve">
-    <value>계정</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>소개</value>

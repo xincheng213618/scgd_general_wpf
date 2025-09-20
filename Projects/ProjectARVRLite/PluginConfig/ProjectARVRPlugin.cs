@@ -4,7 +4,7 @@ using System.Windows;
 namespace ProjectARVRLite.PluginConfig
 {
 
-    public class ProjectARVRLitePlugin : IProjectBase
+    public class ProjectARVRLitePlugin : IFeatureLauncherBase
     {
         public override string? Header => "ARVRLite检测";
 

@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision.ImageEditor" xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+        xmlns:local="clr-namespace:ColorVision.ImageEditor" 
+        xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
         mc:Ignorable="d"
         Title="Profile Line Chart" Height="450" Width="800"
         WindowStartupLocation="CenterScreen" Initialized="Window_Initialized">
@@ -25,7 +26,7 @@
         -->
         <Border x:Name="ChartContainer" Grid.Row="1" BorderBrush="Gray" BorderThickness="1">
             <!-- 为了演示，这里只放一个文本。你应该在这里放置真实的图表控件 -->
-            <lvc:CartesianChart Grid.Row="1" Name="ProfileChart" Foreground="{StaticResource GlobalTextBrush}" ZoomMode ="Y"  ZoomingSpeed="0.5"/>
+            <lvc:CartesianChart Grid.Row="1" Name="ProfileChart" Foreground="{StaticResource GlobalTextBrush}" ZoomingSpeed="0.5"/>
         </Border>
 
     </Grid>

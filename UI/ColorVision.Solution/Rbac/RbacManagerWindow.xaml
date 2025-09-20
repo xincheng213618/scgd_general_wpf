@@ -1,0 +1,36 @@
+﻿<Window x:Class="ColorVision.Rbac.RbacManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Rbac"
+        xmlns:properties ="clr-namespace:ColorVision.Solution.Properties"
+        xmlns:hc ="https://handyorg.github.io/handycontrol"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:RbacManager}"
+        Title="用户" Height="400" Width="600" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+    <Grid Margin="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
+            <Button Content="登录" Command="{Binding LoginCommand}" Margin="0,0,10,0"/>
+            <Button Content="编辑信息" Command="{Binding EditCommand}" Width="75"/>
+            <Button Content="用户管理" Command="{Binding OpenUserManagerCommand}" Width="75"/>
+        </StackPanel>
+        <!-- User Information and Avatar -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
+            <StackPanel  Grid.Column="1" Margin="30" Orientation="Horizontal">
+                <hc:Gravatar Grid.Column="0" Id="{Binding Config.LoginResult.User.Username}"/>
+                <TextBlock Margin="5" Text="{Binding Config.LoginResult.User.Username}"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

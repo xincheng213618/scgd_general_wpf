@@ -30,7 +30,10 @@ namespace Pattern.Ring
     public class PatternRing : IPatternBase<PatternRingConfig>
     {
         public override UserControl GetPatternEditor() => new RingEditor(Config);
-
+        public override string GetTemplateName()
+        {
+            return "Ring" + "_" + DateTime.Now.ToString("HHmmss");
+        }
         public override Mat Gen(int height, int width)
         {
             int ringWidth = Config.RingWidth;

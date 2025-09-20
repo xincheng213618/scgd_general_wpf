@@ -237,4 +237,28 @@
   <data name="MenuAdd" xml:space="preserve">
     <value>ajouter</value>
   </data>
+  <data name="Password" xml:space="preserve">
+    <value>mot de passe</value>
+  </data>
+  <data name="FillPassword" xml:space="preserve">
+    <value>Veuillez entrer le mot de passe</value>
+  </data>
+  <data name="FillAccount" xml:space="preserve">
+    <value>Veuillez saisir votre nom d'utilisateur</value>
+  </data>
+  <data name="AccountLogin" xml:space="preserve">
+    <value>Connexion au compte</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>compte</value>
+  </data>
+  <data name="Sign_out" xml:space="preserve">
+    <value>quitter</value>
+  </data>
+  <data name="Sign_in" xml:space="preserve">
+    <value>Se connecter</value>
+  </data>
+  <data name="Create_an_account" xml:space="preserve">
+    <value>Enregistrez un</value>
+  </data>
 </root>

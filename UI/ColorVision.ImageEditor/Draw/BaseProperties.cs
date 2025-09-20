@@ -19,20 +19,16 @@ namespace ColorVision.ImageEditor.Draw
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name;
 
-        [Category("Attribute"), DisplayName("是否显示")]
-        public bool IsShow { get => _IsShow; set { _IsShow = value; OnPropertyChanged(); } }
-        private bool _IsShow = true;
-
-        [Browsable(false)]
-        public int? Tag { get => _Tag; set { _Tag = value; OnPropertyChanged(); } }
-        private int? _Tag;
-
         [Browsable(false)]
         public string? Msg { get => _Msg; set { _Msg = value; OnPropertyChanged(); } }
         private string? _Msg;
 
         [Browsable(false)]
-        public object? Param { get => _Param; set { _Param = value; OnPropertyChanged(); } }
+        public int? Tag { get => _Tag; set { _Tag = value; } }
+        private int? _Tag;
+
+        [Browsable(false)]
+        public object? Param { get => _Param; set { _Param = value; } }
         private object? _Param;
 
     }

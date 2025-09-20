@@ -26,7 +26,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         {
             string fileName = Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
             var PoiResultCIExyuvDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>();
-            PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, fileName);
+            PoiResultCIExyuvDatas.SaveCsv(fileName);
         }
         public override void Load(IViewImageA view, ViewResultAlg result)
         {

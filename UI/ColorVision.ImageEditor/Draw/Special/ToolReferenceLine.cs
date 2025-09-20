@@ -1,174 +1,201 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
+using HandyControl.Controls;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Media3D;
 
 namespace ColorVision.ImageEditor.Draw.Special
 {
-    public class ToolReferenceLine
+    public class DVLineDVContextMenu : IDVContextMenu
     {
-        private ZoomboxSub ZoomboxSub { get; set; }
-        private DrawCanvas Image { get; set; }
+        public Type ContextType => typeof(ReferenceLine);
 
-        public DrawingVisual DrawVisualImage { get; set; }
-
-        public int Mode { get => _Mode; set { _Mode = value; Render(); } } 
-        private int _Mode = 2;
-
-        public RelayCommand SelectNoneCommand { get; set; }
-        public RelayCommand Select0Command { get; set; }
-        public RelayCommand Select1Command { get; set; }
-        public RelayCommand Select2Command { get; set; }
-        public RelayCommand LockCommand { get; set; }
-
-        public ImageViewModel Paraent { get; set; }
-
-        public ToolReferenceLine(ImageViewModel imageEditViewMode, ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public IEnumerable<MenuItem> GetContextMenuItems(ImageViewModel imageViewModel, object obj)
         {
-            ZoomboxSub = zombox;
-            Image = drawCanvas;
-            Paraent = imageEditViewMode;
-            DrawVisualImage = new DrawingVisual();
-
-            SelectNoneCommand = new RelayCommand(a => SetMode(-1));
-            Select0Command = new RelayCommand(a => SetMode(0));
-            Select1Command = new RelayCommand(a => SetMode(1));
-            Select2Command = new RelayCommand(a => SetMode(2));
-            LockCommand = new RelayCommand(a => { IsLocked = !IsLocked; Render(); });
-        }
-
-
-        private void SetMode(int i)
-        {
-            if (i == -1)
+            List<MenuItem> MenuItems = new List<MenuItem>();
+            if (obj is ReferenceLine referenceLine)
             {
-                Paraent.ConcentricCircle = false;
-            }
-            else
-            {
-                Paraent.ConcentricCircle = true;
-                Mode = i;
-            }
-        }
-
-        private double ActualWidth;
-        private double ActualHeight;
-
-        public bool IsShow
-        {
-            get => _IsShow; set
-            {
-                if (_IsShow == value) return;
-                _IsShow = value;
-                DrawVisualImageControl(_IsShow);
-                Image.ContextMenu = null;
-                if (value)
+                MenuItem menuItem = new() { Header = "锁定",IsChecked = referenceLine.IsLocked };
+                menuItem.Click += (s, e) =>
                 {
-                    ActualWidth = Image.ActualWidth;
-                    ActualHeight = Image.ActualHeight;
-                    RMouseDownP = new Point(Image.ActualWidth / 2, Image.ActualHeight / 2);
-                    PointLen = new Vector();
-                    Image.MouseMove += MouseMove;
-                    Image.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
-                    Image.PreviewMouseRightButtonDown += Image_PreviewMouseRightButtonDown;
-                    Image.PreviewMouseUp += PreviewMouseUp;
-                    Image.MouseDoubleClick += Image_MouseDoubleClick;
-                    ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
+                    referenceLine.IsLocked = !referenceLine.IsLocked;
+                    referenceLine.Render();
+                };
+                MenuItems.Add(menuItem);
+            }
+            return MenuItems;
+        }
+    }
+    
+    
+    public class ReferenceLine: DrawingVisualBase<ReferenceLineParam>
+    {
+        public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
 
-                }
-                else
-                {
-                    Image.MouseMove -= MouseMove;
-                    Image.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
-                    Image.PreviewMouseRightButtonDown -= Image_PreviewMouseRightButtonDown;
-                    Image.PreviewMouseUp -= PreviewMouseUp;
-                    ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
-                }
+        public ReferenceLine()
+        {
+            Attribute = new ReferenceLineParam();
+            Attribute.Pen  = new Pen(Attribute.Brush, 1);
+            Attribute.PropertyChanged += (s, e) => Render();
+        }
+        public double Ratio { get; set; }
+        public double ActualWidth { get; set; }
+        public double ActualHeight { get; set; }
+
+        public bool IsRMouseDown { get; set; }
+        public bool IsLMouseDown { get; set; }
+
+        public Point RMouseDownP { get => new Point(Attribute.PointX, Attribute.PointY); set
+            {
+                Attribute.PointX = value.X;
+                Attribute.PointY = value.Y;
             }
         }
-        private void Image_MouseDoubleClick(object sender, RoutedEventArgs e)
+        public Point LMouseDownP { get; set; }
+        public Vector PointLen { get; set; }
+
+        public bool IsLocked { get; set; } = true;
+        public int Mode { get => Attribute.Mode; set { Attribute.Mode = value; } }
+
+        SolidColorBrush SolidColorBrush = new SolidColorBrush(Color.FromArgb(1, 255, 255, 255));
+
+        public override void Render()
         {
-            if (sender is DrawCanvas canvas)
+            using DrawingContext dc = RenderOpen();
+            dc.DrawRectangle(SolidColorBrush, new Pen(Brushes.Transparent, 0), new Rect(0,0,ActualWidth,ActualHeight));
+
+            Pen pen = Attribute.Pen;
+
+            double angle = Attribute.Angle;
+            Point CenterPoint = RMouseDownP;
+
+            if (Mode == 0)
             {
-                var position = Mouse.GetPosition(canvas);
-                IsLocked = !IsLocked;
-                Render();
-            }
-        }
+                // 旋转变换
+                List<Point> intersectionPoints = ReferenceLine.CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint, angle);
 
-        private void ZoomboxSub_LayoutUpdated(object? sender, EventArgs e)
-        {
-            if (Radio != ZoomboxSub.ContentMatrix.M11)
-            {
-                Radio = ZoomboxSub.ContentMatrix.M11;
-                Render();
-            }
-        }
-        double Radio;
-
-        private bool IsRMouseDown;
-        private bool IsLMouseDown;
-
-        private Point RMouseDownP;
-        private Point LMouseDownP;
-        private Vector PointLen;
-
-
-        private void PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            if (IsLocked) return;
-
-            RMouseDownP = Mouse.GetPosition(Image);
-            IsRMouseDown = true;
-            Render();
-        }
-
-
-        private void Image_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            if (IsLocked) return;
-
-
-            LMouseDownP = Mouse.GetPosition(Image);
-            IsLMouseDown = true;
-            PointLen = LMouseDownP - RMouseDownP;
-            Render();
-        }
-
-        private void PreviewMouseUp(object sender, MouseButtonEventArgs e)
-        {
-            if (IsLocked) return;
-
-
-            IsRMouseDown = false;
-            IsLMouseDown = false;
-            Render();
-        }
-
-
-
-        // 1. 添加锁定字段
-        private bool IsLocked = true;
-
-        // 2. 修改 MouseMove 方法
-        private void MouseMove(object sender, MouseEventArgs e)
-        {
-            if (IsShow && !IsLocked && (IsRMouseDown || IsLMouseDown))
-            {
-                if (IsRMouseDown)
+                if (intersectionPoints.Count == 4)
                 {
-                    RMouseDownP = e.GetPosition(Image);
+                    dc.DrawLine(pen, intersectionPoints[0], intersectionPoints[1]); // 水平线
+                    dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]); // 垂直线
                 }
-                if (IsLMouseDown)
+
+                TextAttribute textAttribute = new();
+                textAttribute.FontSize = 15 / Ratio;
+
+                double a = 20 / Ratio;
+                if (IsRMouseDown || IsLMouseDown)
                 {
-                    LMouseDownP = e.GetPosition(Image);
-                    PointLen = LMouseDownP - RMouseDownP;
+                    FormattedText formattedRText = new($"({(int)RMouseDownP.X},{(int)RMouseDownP.Y})", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                    dc.DrawText(formattedRText, RMouseDownP + new Vector(a, 2 * a));
                 }
-                Render();
+
+                FormattedText formattedText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                dc.DrawText(formattedText, RMouseDownP + new Vector(a, a));
+
+
+
+                int lenc = (int)Math.Sqrt(PointLen.X * PointLen.X + PointLen.Y * PointLen.Y);
+
+                dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc, lenc);
+                dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc + 10, lenc + 10);
+                dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc + 30, lenc + 30);
+                dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc + 50, lenc + 50);
+                dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc + 100, lenc + 100);
+                dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc + 200, lenc + 200);
+
+
+                //dc.PushTransform(new RotateTransform(angle, RMouseDownP.X, RMouseDownP.Y));
+                FormattedText formattedText1 = new(lenc.ToString("F0"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                dc.DrawText(formattedText1, RMouseDownP + PointLen);
+
+                FormattedText formattedText2 = new((lenc + 10).ToString("F0"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                dc.DrawText(formattedText2, RMouseDownP + PointLen);
+
+                FormattedText formattedText3 = new((lenc + 1).ToString("F0"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                dc.DrawText(formattedText3, RMouseDownP - PointLen);
+            }
+            else if (Mode == 1)
+            {
+
+                // 旋转变换
+                List<Point> intersectionPoints = ReferenceLine.CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint, angle);
+
+                if (intersectionPoints.Count == 4)
+                {
+                    dc.DrawLine(pen, intersectionPoints[0], intersectionPoints[1]); // 水平线
+                    dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]); // 垂直线
+                }
+
+
+                TextAttribute textAttribute = new();
+                textAttribute.FontSize = 15 / Ratio;
+                double a = 15 / Ratio;
+                if (IsRMouseDown || IsLMouseDown)
+                {
+                    FormattedText formattedRText = new($"({(int)RMouseDownP.X},{(int)RMouseDownP.Y})", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                    dc.DrawText(formattedRText, RMouseDownP + new Vector(a, 2 * a));
+                }
+
+                FormattedText formattedText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                dc.DrawText(formattedText, RMouseDownP + new Vector(a, a));
+            }
+            else if (Mode == 2)
+            {
+                double angle1 = (angle + 45) * Math.PI / 180.0;
+                // 旋转变换
+                List<Point> intersectionPoints = ReferenceLine.CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint + new Vector(5 / Ratio * Math.Cos(angle1), 5 / Ratio * Math.Sin(angle1)), angle);
+
+                if (intersectionPoints.Count == 4)
+                {
+                    dc.DrawLine(pen, intersectionPoints[0], intersectionPoints[1]); // 水平线,
+                    dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]); // 垂直线
+                }
+                intersectionPoints = ReferenceLine.CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint - new Vector(5 / Ratio * Math.Cos(angle1), 5/ Ratio * Math.Sin(angle1)), angle);
+                if (intersectionPoints.Count == 4)
+                {
+                    dc.DrawLine(pen, intersectionPoints[0], intersectionPoints[1]); // 水平线,
+                    dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]); // 垂直线
+                }
+
+
+                TextAttribute textAttribute = new();
+                textAttribute.FontSize = 15 / Ratio;
+                double a = 15 / Ratio;
+                if (IsRMouseDown || IsLMouseDown)
+                {
+                    FormattedText formattedRText = new($"({(int)RMouseDownP.X},{(int)RMouseDownP.Y})", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                    dc.DrawText(formattedRText, RMouseDownP + new Vector(a, 2 * a));
+                }
+
+
+                FormattedText formattedText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                dc.DrawText(formattedText, RMouseDownP + new Vector(a, a));
+            }
+
+            if (IsLocked)
+            {
+                // 画一个小锁图标或者文字
+                FormattedText lockText = new(
+                    "锁定",
+                    CultureInfo.CurrentCulture,
+                    FlowDirection.LeftToRight,
+                    new Typeface("Segoe UI"),
+                    18 / Ratio,
+                    Brushes.Red,
+                    VisualTreeHelper.GetDpi(this).PixelsPerDip
+                );
+                dc.DrawText(lockText, new Point(10, 10));
+
             }
         }
 
@@ -268,142 +295,189 @@ namespace ColorVision.ImageEditor.Draw.Special
             return points;
         }
 
-        public void Render()
+    }
+
+    public class ReferenceLineParam:BaseProperties
+    {
+        [Browsable(false)]
+        public Pen Pen { get => _Pen; set { _Pen = value; OnPropertyChanged(); } }
+        private Pen _Pen;
+
+
+        [Category("RectangleAttribute"), DisplayName("颜色")]
+        public Brush Brush { get => _Brush; set { _Brush = value; OnPropertyChanged(); } }
+        private Brush _Brush = Brushes.Red;
+
+
+        public double PointX { get => _PointX; set { _PointX = value; OnPropertyChanged(); } }
+        private double _PointX;
+
+        public double PointY { get => _PointY; set { _PointY = value; OnPropertyChanged(); } }
+        private double _PointY;
+        public int Mode { get => _Mode; set { _Mode = value; OnPropertyChanged(); } }
+        private int _Mode = 2;
+
+        public double Angle { get => _Angle; set { _Angle = value; OnPropertyChanged(); } }
+        private double _Angle ;
+    }
+
+
+    public class ToolReferenceLine
+    {
+        private ZoomboxSub ZoomboxSub { get; set; }
+        private DrawCanvas Image { get; set; }
+
+        public ReferenceLine ReferenceLine { get; set; }
+        public RelayCommand SelectNoneCommand { get; set; }
+        public RelayCommand Select0Command { get; set; }
+        public RelayCommand Select1Command { get; set; }
+        public RelayCommand Select2Command { get; set; }
+        public RelayCommand LockCommand { get; set; }
+
+        public ImageViewModel Paraent { get; set; }
+
+        public ToolReferenceLine(ImageViewModel imageEditViewMode, ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
-            using DrawingContext dc = DrawVisualImage.RenderOpen();
-            Brush brush = Brushes.Red;
-            double ratio = 1 / ZoomboxSub.ContentMatrix.M11;
-            Pen pen = new(brush, ratio);
+            ZoomboxSub = zombox;
+            Image = drawCanvas;
+            Paraent = imageEditViewMode;
+            ReferenceLine = new ReferenceLine();
+
+            SelectNoneCommand = new RelayCommand(a => SetMode(-1));
+            Select0Command = new RelayCommand(a => SetMode(0));
+            Select1Command = new RelayCommand(a => SetMode(1));
+            Select2Command = new RelayCommand(a => SetMode(2));
+            LockCommand = new RelayCommand(a => { ReferenceLine.IsLocked = !ReferenceLine.IsLocked; ReferenceLine.Render(); });
+        }
 
 
-            Point ActL = RMouseDownP + PointLen;
-
-
-            double angle = CalculateAngle(RMouseDownP, ActL);
-            Point CenterPoint = RMouseDownP;
-            double ActualWidth = Image.ActualWidth;
-            double ActualHeight = Image.ActualHeight;
-
-            if (Mode == 0)
+        private void SetMode(int i)
+        {
+            if (i == -1)
             {
-                // 旋转变换
-                List<Point> intersectionPoints = CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint, angle);
-
-                if (intersectionPoints.Count == 4)
-                {
-                    dc.DrawLine(pen, intersectionPoints[0], intersectionPoints[1]); // 水平线
-                    dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]); // 垂直线
-                }
-
-                TextAttribute textAttribute = new();
-                textAttribute.FontSize = 15 / ZoomboxSub.ContentMatrix.M11;
-
-                double a = 20 / ZoomboxSub.ContentMatrix.M11;
-                if (IsRMouseDown || IsLMouseDown)
-                {
-                    FormattedText formattedRText = new($"({(int)RMouseDownP.X},{(int)RMouseDownP.Y})", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                    dc.DrawText(formattedRText, RMouseDownP + new Vector(a, 2 * a));
-                }
-
-                FormattedText formattedText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedText, RMouseDownP + new Vector(a, a));
-
-
-
-                int lenc = (int)Math.Sqrt(PointLen.X * PointLen.X + PointLen.Y * PointLen.Y);
-
-                dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc, lenc);
-                dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc + 10, lenc + 10);
-                dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc + 30, lenc + 30);
-                dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc + 50, lenc + 50);
-                dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc + 100, lenc + 100);
-                dc.DrawEllipse(Brushes.Transparent, pen, RMouseDownP, lenc + 200, lenc + 200);
-
-
-                //dc.PushTransform(new RotateTransform(angle, RMouseDownP.X, RMouseDownP.Y));
-                FormattedText formattedText1 = new(lenc.ToString("F0"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedText1, RMouseDownP + PointLen);
-
-                FormattedText formattedText2 = new((lenc + 10).ToString("F0"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedText2, RMouseDownP + PointLen);
-
-                FormattedText formattedText3 = new((lenc + 1).ToString("F0"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedText3, RMouseDownP - PointLen);
+                Paraent.ConcentricCircle = false;
             }
-            else if (Mode == 1)
+            else
             {
-
-                // 旋转变换
-                List<Point> intersectionPoints = CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint, angle);
-
-                if (intersectionPoints.Count == 4)
-                {
-                    dc.DrawLine(pen, intersectionPoints[0], intersectionPoints[1]); // 水平线
-                    dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]); // 垂直线
-                }
-
-
-                TextAttribute textAttribute = new();
-                textAttribute.FontSize = 15 / ZoomboxSub.ContentMatrix.M11;
-                double a = 15 / ZoomboxSub.ContentMatrix.M11;
-                if (IsRMouseDown || IsLMouseDown)
-                {
-                    FormattedText formattedRText = new($"({(int)RMouseDownP.X},{(int)RMouseDownP.Y})", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                    dc.DrawText(formattedRText, RMouseDownP + new Vector(a, 2 * a));
-                }
-
-                FormattedText formattedText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedText, RMouseDownP + new Vector(a, a));
-            }
-            else if (Mode == 2)
-            {
-                double angle1 = (angle + 45) * Math.PI / 180.0;
-                // 旋转变换
-                List<Point> intersectionPoints = CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint + new Vector(5 * ratio * Math.Cos(angle1), 5 * ratio * Math.Sin(angle1)), angle);
-
-                if (intersectionPoints.Count == 4)
-                {
-                    dc.DrawLine(pen, intersectionPoints[0], intersectionPoints[1]); // 水平线,
-                    dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]); // 垂直线
-                }
-                intersectionPoints = CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint - new Vector(5 * ratio * Math.Cos(angle1), 5 * ratio * Math.Sin(angle1)), angle);
-                if (intersectionPoints.Count == 4)
-                {
-                    dc.DrawLine(pen, intersectionPoints[0], intersectionPoints[1]); // 水平线,
-                    dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]); // 垂直线
-                }
-
-
-                TextAttribute textAttribute = new();
-                textAttribute.FontSize = 15 / ZoomboxSub.ContentMatrix.M11;
-                double a = 15 / ZoomboxSub.ContentMatrix.M11;
-                if (IsRMouseDown || IsLMouseDown)
-                {
-                    FormattedText formattedRText = new($"({(int)RMouseDownP.X},{(int)RMouseDownP.Y})", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                    dc.DrawText(formattedRText, RMouseDownP + new Vector(a, 2 * a));
-                }
-
-
-                FormattedText formattedText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedText, RMouseDownP + new Vector(a, a));
-            }
-
-            if (IsLocked)
-            {
-                // 画一个小锁图标或者文字
-                FormattedText lockText = new(
-                    "锁定",
-                    CultureInfo.CurrentCulture,
-                    FlowDirection.LeftToRight,
-                    new Typeface("Segoe UI"),
-                    18 / ZoomboxSub.ContentMatrix.M11,
-                    Brushes.Red,
-                    VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip
-                );
-                dc.DrawText(lockText, new Point(10, 10));
-
+                Paraent.ConcentricCircle = true;
+                ReferenceLine.Mode = i;
+                ReferenceLine.Render();
             }
         }
+
+
+
+        public bool IsShow
+        {
+            get => _IsShow; set
+            {
+                if (_IsShow == value) return;
+                _IsShow = value;
+                DrawVisualImageControl(_IsShow);
+                if (value)
+                {
+                    ReferenceLine.Ratio = ZoomboxSub.ContentMatrix.M11;
+                    ReferenceLine.ActualWidth = Image.ActualWidth;
+                    ReferenceLine.ActualHeight = Image.ActualHeight;
+                    ReferenceLine.RMouseDownP = new Point(Image.ActualWidth / 2, Image.ActualHeight / 2);
+                    ReferenceLine.PointLen = new Vector();
+
+                    ReferenceLine.Attribute.Angle = 0;
+                    ReferenceLine.Attribute.Pen = new Pen(ReferenceLine.Attribute.Brush, 1 / ReferenceLine.Ratio);
+                    Image.MouseMove += MouseMove;
+                    Image.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
+                    Image.PreviewMouseRightButtonDown += Image_PreviewMouseRightButtonDown;
+                    Image.PreviewMouseUp += PreviewMouseUp;
+                    Image.MouseDoubleClick += Image_MouseDoubleClick;
+                    ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
+
+                }
+                else
+                {
+                    Image.MouseMove -= MouseMove;
+                    Image.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
+                    Image.PreviewMouseRightButtonDown -= Image_PreviewMouseRightButtonDown;
+                    Image.PreviewMouseUp -= PreviewMouseUp;
+                    ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
+                }
+            }
+        }
+        private void Image_MouseDoubleClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is DrawCanvas canvas)
+            {
+                var position = Mouse.GetPosition(canvas);
+                ReferenceLine.IsLocked = !ReferenceLine.IsLocked;
+                ReferenceLine.Render();
+            }
+        }
+
+        private void ZoomboxSub_LayoutUpdated(object? sender, EventArgs e)
+        {
+            if (ReferenceLine.Ratio != ZoomboxSub.ContentMatrix.M11)
+            {
+                ReferenceLine.Ratio = ZoomboxSub.ContentMatrix.M11;
+                ReferenceLine.Attribute.Pen = new Pen(ReferenceLine.Attribute.Brush, 1 / ReferenceLine.Ratio);
+                ReferenceLine.Render();
+            }
+        }
+
+
+        private void PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (ReferenceLine.IsLocked) return;
+
+            ReferenceLine.RMouseDownP = Mouse.GetPosition(Image);
+            ReferenceLine.IsRMouseDown = true;
+            ReferenceLine.Render();
+        }
+
+
+        private void Image_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (ReferenceLine.IsLocked) return;
+
+
+            ReferenceLine.LMouseDownP = Mouse.GetPosition(Image);
+            ReferenceLine.IsLMouseDown = true;
+            ReferenceLine.PointLen = ReferenceLine.LMouseDownP - ReferenceLine.RMouseDownP;
+            ReferenceLine.Attribute.Angle = ReferenceLine.CalculateAngle(ReferenceLine.RMouseDownP, ReferenceLine.RMouseDownP + ReferenceLine.PointLen);
+            ReferenceLine.Render();
+            e.Handled = true;
+        }
+
+        private void PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (ReferenceLine.IsLocked) return;
+
+            ReferenceLine.IsRMouseDown = false;
+            ReferenceLine.IsLMouseDown = false;
+            ReferenceLine.Render();
+        }
+
+
+
+
+
+        // 2. 修改 MouseMove 方法
+        private void MouseMove(object sender, MouseEventArgs e)
+        {
+            if (IsShow && !ReferenceLine.IsLocked && (ReferenceLine.IsRMouseDown || ReferenceLine.IsLMouseDown))
+            {
+                if (ReferenceLine.IsRMouseDown)
+                {
+                    ReferenceLine.RMouseDownP = e.GetPosition(Image);
+                }
+                if (ReferenceLine.IsLMouseDown)
+                {
+                    ReferenceLine.LMouseDownP = e.GetPosition(Image);
+                    ReferenceLine.PointLen = ReferenceLine.LMouseDownP - ReferenceLine.RMouseDownP;
+                    ReferenceLine.Attribute.Angle = ReferenceLine.CalculateAngle(ReferenceLine.RMouseDownP, ReferenceLine.RMouseDownP + ReferenceLine.PointLen);
+                }
+                ReferenceLine.Render();
+            }
+        }
+
 
         private bool _IsShow;
 
@@ -411,13 +485,13 @@ namespace ColorVision.ImageEditor.Draw.Special
         {
             if (Control)
             {
-                if (!Image.ContainsVisual(DrawVisualImage))
-                    Image.AddVisualCommand(DrawVisualImage);
+                if (!Image.ContainsVisual(ReferenceLine))
+                    Image.AddVisualCommand(ReferenceLine);
             }
             else
             {
-                if (Image.ContainsVisual(DrawVisualImage))
-                    Image.RemoveVisualCommand(DrawVisualImage);
+                if (Image.ContainsVisual(ReferenceLine))
+                    Image.RemoveVisualCommand(ReferenceLine);
             }
         }
 

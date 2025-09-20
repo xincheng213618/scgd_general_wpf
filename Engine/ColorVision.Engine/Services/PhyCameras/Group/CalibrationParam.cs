@@ -16,21 +16,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 {
     public class CalibrationBase : ModelBase
     {
-        public RelayCommand SelectFileCommand { get; set; }
 
         public CalibrationBase(List<ModDetailModel> detail, string propertyName = "") : base(detail)
         {
-            SelectFileCommand = new RelayCommand((s) =>
-            {
-                using var dialog = new System.Windows.Forms.OpenFileDialog();
-                dialog.Filter = "DAT|*.dat||";
-                dialog.RestoreDirectory = true;
-                dialog.FilterIndex = 1;
-                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                {
-                    FilePath = dialog.FileName;
-                }
-            });
             this.propertyName = propertyName;
         }
         private string propertyName = string.Empty;
@@ -43,6 +31,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         public override int Id { get { if (string.IsNullOrWhiteSpace(propertyName + "Id")) return GetValue(_Id); else return GetValue(_Id, propertyName + "Id"); } set { if (string.IsNullOrWhiteSpace(propertyName + "Id")) SetProperty(ref _Id, value); else SetProperty(ref _Id, value, propertyName + "Id"); OnPropertyChanged(); } }
         private int _Id;
+
+        public bool IsExitFile { get => _IsExitFile; set { _IsExitFile = value; OnPropertyChanged(); } }
+        private bool _IsExitFile;
     }
 
 
