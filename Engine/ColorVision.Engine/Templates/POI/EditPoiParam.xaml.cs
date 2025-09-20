@@ -63,12 +63,11 @@ namespace ColorVision.Engine.Templates.POI
 
         public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
 
-        public ImageViewConfig Config => ImageView.Config;
-
         public ZoomboxSub Zoombox1 => ImageView.Zoombox1;
 
         public DrawCanvas ImageShow => ImageView.ImageShow;
         public ImageViewModel ImageViewModel => ImageView.ImageViewModel;
+
         private void Window_Initialized(object sender, EventArgs e)
         {
             DataContext = PoiParam;
@@ -120,23 +119,6 @@ namespace ColorVision.Engine.Templates.POI
             }
             PreviewKeyDown += (s, e) =>
             {
-                if (e.Key == Key.Escape)
-                {
-                    if (DrawingPolygonCache != null)
-                    {
-                        ImageView.ImageShow.RemoveVisualCommand(DrawingPolygonCache);
-                        DrawingPolygonCache.Render();
-                        DrawingPolygonCache = null;
-                    }
-                }
-                if (e.Key == Key.Back)
-                {
-                    if (DrawingPolygonCache != null && DrawingPolygonCache.Attribute.Points.Count > 0)
-                    {
-                        DrawingPolygonCache.Attribute.Points.Remove(DrawingPolygonCache.Attribute.Points.Last());
-                        DrawingPolygonCache.Render();
-                    }
-                }
                 if (e.KeyboardDevice.Modifiers == ModifierKeys.Control && e.Key ==Key.S)
                 {
                     SavePoiParam();
