@@ -7,45 +7,6 @@ using System.ComponentModel;
 namespace ColorVision.Engine.Services.PhyCameras.Configs
 {
     /// <summary>
-    /// 相机模式
-    /// </summary>
-    public enum CameraMode
-    {
-        [Description("CV_MODE")]
-        CV_MODE,
-        [Description("BV_MODE")]
-        BV_MODE,
-        [Description("LV_MODE")]
-        LV_MODE,
-        [Description("LVTOBV_MODE")]
-        LVTOBV_MODE,
-    };
-    /// <summary>
-    /// 相机型号
-    /// </summary>
-    public enum CameraModel
-    {
-        [Description("QHY_USB")]
-        QHY_USB,
-        [Description("HK_USB")]
-        HK_USB,
-        [Description("HK_CARD")]
-        HK_CARD,
-        [Description("MIL_CL_CARD")]
-        MIL_CL_CARD,
-        [Description("MIL_CXP_CARD")]
-        MIL_CXP_CARD,
-        [Description("NN_USB")]
-        NN_USB,
-        [Description("TOUP_USB")]
-        TOUP_USB,
-        [Description("HK_FG_CARD")]
-        HK_FG_CARD,
-        [Description("CameraModel_Total")]
-        CameraModel_Total,
-    };
-
-    /// <summary>
     /// 相机配置
     /// </summary>
     public class ConfigPhyCamera : ViewModelBase

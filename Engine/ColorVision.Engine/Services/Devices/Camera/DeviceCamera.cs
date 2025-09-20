@@ -15,11 +15,13 @@ using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
-using CVCommCore;
+using cvColorVision;
 using log4net;
 using SqlSugar;
 using System;
 using System.ComponentModel;
+using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -133,7 +135,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 msgrecode.MsgSucessed += (e) =>
                 {
                     DService.IsVideoOpen = false;
-                    DService.DeviceStatus = DeviceStatusType.Closed;
+                    DService.DeviceStatus = CVCommCore.DeviceStatusType.Closed;
                     base.RestartRCService();
                 };
                 return;
@@ -221,9 +223,59 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         [CommandDisplay("刷新设备列表")]
         public RelayCommand RefreshDeviceIdCommand { get; set; }
+        private bool _isRefreshing = false;
 
         public void RefreshDeviceId()
         {
+            if (EngineCongig.Instance.SuperMode)
+            {
+                if (_isRefreshing)
+                {
+                    MessageBox.Show("正在执行GetAllCameraID","ColorVision");
+                    return; // 防止重复点击
+                }
+                _isRefreshing = true;
+                //string strPathSysCfg = "cfg\\sys.cfg";
+                //IntPtr m_hCamHandle = cvCameraCSLib.CM_CreatCameraManagerV1(CameraModel.QHY_USB, CameraMode.BV_MODE, strPathSysCfg);
+
+                int bufferLength = 1024;
+                StringBuilder snBuilder = new StringBuilder(bufferLength);
+
+                //// 获取所有相机ID
+                //int ret = cvCameraCSLib.GetAllCameraID(snBuilder, bufferLength);
+                //log.Info($"GetAllCameraID 返回值: {ret}");
+                //if (ret != 1)
+                //{
+                //    MessageBox.Show("获取相机ID失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                //    return;
+                //}
+
+                //string cameraIds = snBuilder.ToString();
+                //// 获取所有相机ID的MD5
+                //snBuilder.Clear();
+
+                // 异步执行，避免阻塞UI线程
+                Task.Run(() =>
+                {
+                    int ret = cvCameraCSLib.GetAllCameraIDMD5(snBuilder, bufferLength);
+                    _isRefreshing = false;
+                    // 回到UI线程
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        log.Info($"GetAllCameraIDMD5 返回值: {ret}");
+                        if (ret == 1)
+                        {
+                            string cameraIdsMd5 = snBuilder.ToString();
+                            MessageBox.Show(cameraIdsMd5, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                        }
+                        else
+                        {
+                            MessageBox.Show("获取相机ID MD5失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        }
+                    });
+                });
+                return;
+            }
             if (PhyCamera !=null && PhyCamera.LicenseState != LicenseState.Licensed)
             {
                 if ( MessageBox.Show(Application.Current.GetActiveWindow(), "当前逻辑相机许可证过期，无法刷新设备列表，是否清空当前相机服务绑定的物理相机，然后在重试", "ColorVision",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
@@ -238,7 +290,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
             }
 
-            if (DService.DeviceStatus == DeviceStatusType.OffLine)
+            if (DService.DeviceStatus == CVCommCore.DeviceStatusType.OffLine)
             {
                 if (MessageBox.Show(Application.Current.GetActiveWindow(), "当前逻辑相机离线，无法刷新设备列表，是否清空当前相机服务绑定的物理相机，然后在重试", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
