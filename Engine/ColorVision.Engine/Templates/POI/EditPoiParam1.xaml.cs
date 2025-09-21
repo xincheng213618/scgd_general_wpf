@@ -2,6 +2,7 @@
 using ColorVision.Common.Adorners.ListViewAdorners;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;

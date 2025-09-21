@@ -13,8 +13,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus
         }
 
         [DisplayName("评价函数类型")]
-        public FocusAlgorithm  EvaFunc { get => GetValue(_EvaFunc); set { SetProperty(ref _EvaFunc, value); } }
-        private FocusAlgorithm  _EvaFunc = FocusAlgorithm .Variance;
+        public EvaFunc EvaFunc { get => GetValue(_EvaFunc); set { SetProperty(ref _EvaFunc, value); } }
+        private EvaFunc _EvaFunc = EvaFunc.Variance;
+
 
         [DisplayName("步径摆动范围"),Description("第二次的步径 实际第二次步径为 forwardparam * ")]
         public double Forwardparam { get => GetValue(_Forwardparam); set { SetProperty(ref _Forwardparam, value); } }

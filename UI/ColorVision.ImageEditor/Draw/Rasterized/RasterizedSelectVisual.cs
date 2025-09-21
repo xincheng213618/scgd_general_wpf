@@ -12,7 +12,6 @@ namespace ColorVision.ImageEditor.Draw.Rasterized
 
     public class RasterizedPropertie:BaseProperties
     {
-        public object Tag { get; set; }
 
     }
 

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Core;
 using ColorVision.UI;
 using HelixToolkit.Wpf;
 using System;

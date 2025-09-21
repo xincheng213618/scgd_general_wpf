@@ -2,7 +2,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace ColorVision
+namespace ColorVision.Core
 {
     public struct HImage : IDisposable
     {

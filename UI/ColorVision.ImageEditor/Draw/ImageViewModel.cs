@@ -218,6 +218,10 @@ namespace ColorVision.ImageEditor
             {
                 foreach (var item in DrawingVisualLists)
                 {
+                    if (item.BaseAttribute is ITextProperties textProperties)
+                    {
+                        textProperties.TextAttribute.FontSize = 10 * scale;
+                    }
                     item.Pen.Thickness = scale;
                     item.Render();
                 }

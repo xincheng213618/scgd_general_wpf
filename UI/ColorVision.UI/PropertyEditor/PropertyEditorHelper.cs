@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.UI.Extension;
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Resources;
@@ -11,6 +12,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 
@@ -390,41 +392,39 @@ namespace ColorVision.UI
             };
 
             // Only attach color picker for SolidColorBrush (can be extended)
-            if (property.PropertyType == typeof(SolidColorBrush))
+
+            button.Click += (_, __) =>
             {
-                button.Click += (_, __) =>
+                var colorPicker = new HandyControl.Controls.ColorPicker();
+                if (property.GetValue(obj) is SolidColorBrush scb)
                 {
-                    var colorPicker = new HandyControl.Controls.ColorPicker();
-                    if (property.GetValue(obj) is SolidColorBrush scb)
-                    {
-                        colorPicker.SelectedBrush = scb;
-                    }
+                    colorPicker.SelectedBrush = scb;
+                }
 
-                    colorPicker.SelectedColorChanged += (_, __) =>
-                    {
-                        property.SetValue(obj, colorPicker.SelectedBrush);
-                        button.Background = colorPicker.SelectedBrush;
-                    };
-
-                    var window = new Window
-                    {
-                        Owner = Application.Current.GetActiveWindow(),
-                        WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                        Content = colorPicker,
-                        Width = 250,
-                        Height = 400
-                    };
-
-                    colorPicker.Confirmed += (_, __) =>
-                    {
-                        property.SetValue(obj, colorPicker.SelectedBrush);
-                        button.Background = colorPicker.SelectedBrush;
-                        window.Close();
-                    };
-                    window.Closed += (_, __) => colorPicker.Dispose();
-                    window.Show();
+                colorPicker.SelectedColorChanged += (_, __) =>
+                {
+                    property.SetValue(obj, colorPicker.SelectedBrush);
+                    button.Background = colorPicker.SelectedBrush;
                 };
-            }
+
+                var window = new Window
+                {
+                    Owner = Application.Current.GetActiveWindow(),
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    Content = colorPicker,
+                    Width = 250,
+                    Height = 400
+                };
+
+                colorPicker.Confirmed += (_, __) =>
+                {
+                    property.SetValue(obj, colorPicker.SelectedBrush);
+                    button.Background = colorPicker.SelectedBrush;
+                    window.Close();
+                };
+                window.Closed += (_, __) => colorPicker.Dispose();
+                window.Show();
+            };
 
             var binding = CreateTwoWayBinding(obj, property.Name);
             button.SetBinding(Control.BackgroundProperty, binding);
@@ -532,6 +532,16 @@ namespace ColorVision.UI
                     {
                         dockPanel = GenBrushProperties(property, obj);
                     }
+                    else if (property.PropertyType == typeof(FontFamily))
+                        dockPanel = PropertyEditorHelper.GenFontFamilyProperties(property, obj);
+                    else if (property.PropertyType == typeof(FontWeight))
+                        dockPanel = PropertyEditorHelper.GenFontWeightProperties(property, obj);
+                    else if (property.PropertyType == typeof(FontStyle))
+                        dockPanel = PropertyEditorHelper.GenFontStyleProperties(property, obj);
+                    else if (property.PropertyType == typeof(FontStretch))
+                        dockPanel = PropertyEditorHelper.GenFontStretchProperties(property, obj);
+                    else if (property.PropertyType == typeof(FlowDirection))
+                        dockPanel = PropertyEditorHelper.GenFlowDirectionProperties(property, obj);
                     else if (typeof(ICommand).IsAssignableFrom(property.PropertyType))
                     {
                         dockPanel = GenCommandProperties(property, obj);
@@ -570,6 +580,145 @@ namespace ColorVision.UI
 
             return propertyPanel;
         }
+
+
+        public static DockPanel GenFontFamilyProperties(PropertyInfo property, object obj)
+        {
+            var rm = GetResourceManager(obj);
+            var dockPanel = new DockPanel();
+
+            var textBlock = CreateLabel(property, rm);
+            var comboBox = new ComboBox
+            {
+                Margin = new Thickness(5, 0, 0, 0),
+                MinWidth = ControlMinWidth,
+                Style = ComboBoxSmallStyle,
+                DisplayMemberPath = "Value",
+                SelectedValuePath = "Key",
+                ItemsSource = Fonts.SystemFontFamilies
+                    .Select(f => new KeyValuePair<FontFamily, string>(
+                        f,
+                        f.FamilyNames.TryGetValue(XmlLanguage.GetLanguage(CultureInfo.CurrentCulture.Name), out string fontName) ? fontName : f.Source
+                    )).ToList()
+            };
+
+            var binding = CreateTwoWayBinding(obj, property.Name);
+            comboBox.SetBinding(ComboBox.SelectedValueProperty, binding);
+            DockPanel.SetDock(comboBox, Dock.Right);
+
+            dockPanel.Children.Add(comboBox);
+            dockPanel.Children.Add(textBlock);
+            return dockPanel;
+        }
+
+        public static DockPanel GenFontWeightProperties(PropertyInfo property, object obj)
+        {
+            var rm = GetResourceManager(obj);
+            var dockPanel = new DockPanel();
+
+            var textBlock = CreateLabel(property, rm);
+            var comboBox = new ComboBox
+            {
+                Margin = new Thickness(5, 0, 0, 0),
+                MinWidth = ControlMinWidth,
+                Style = ComboBoxSmallStyle,
+                DisplayMemberPath = "Value",
+                SelectedValuePath = "Key",
+                ItemsSource = typeof(FontWeights).GetProperties()
+                    .Select(p => new KeyValuePair<FontWeight, string>((FontWeight)p.GetValue(null), p.Name)).ToList()
+            };
+
+            var binding = CreateTwoWayBinding(obj, property.Name);
+            comboBox.SetBinding(ComboBox.SelectedValueProperty, binding);
+            DockPanel.SetDock(comboBox, Dock.Right);
+
+            dockPanel.Children.Add(comboBox);
+            dockPanel.Children.Add(textBlock);
+            return dockPanel;
+        }
+
+        // FontStyle
+        public static DockPanel GenFontStyleProperties(PropertyInfo property, object obj)
+        {
+            var rm = GetResourceManager(obj);
+            var dockPanel = new DockPanel();
+
+            var textBlock = CreateLabel(property, rm);
+            var comboBox = new ComboBox
+            {
+                Margin = new Thickness(5, 0, 0, 0),
+                MinWidth = ControlMinWidth,
+                Style = ComboBoxSmallStyle,
+                DisplayMemberPath = "Value",
+                SelectedValuePath = "Key",
+                ItemsSource = typeof(FontStyles).GetProperties()
+                    .Select(p => new KeyValuePair<FontStyle, string>((FontStyle)p.GetValue(null), p.Name)).ToList()
+            };
+
+            var binding = CreateTwoWayBinding(obj, property.Name);
+            comboBox.SetBinding(ComboBox.SelectedValueProperty, binding);
+            DockPanel.SetDock(comboBox, Dock.Right);
+
+            dockPanel.Children.Add(comboBox);
+            dockPanel.Children.Add(textBlock);
+            return dockPanel;
+        }
+
+        // FontStretch
+        public static DockPanel GenFontStretchProperties(PropertyInfo property, object obj)
+        {
+            var rm = GetResourceManager(obj);
+            var dockPanel = new DockPanel();
+
+            var textBlock = CreateLabel(property, rm);
+            var comboBox = new ComboBox
+            {
+                Margin = new Thickness(5, 0, 0, 0),
+                MinWidth = ControlMinWidth,
+                Style = ComboBoxSmallStyle,
+                DisplayMemberPath = "Value",
+                SelectedValuePath = "Key",
+                ItemsSource = typeof(FontStretches).GetProperties()
+                    .Select(p => new KeyValuePair<FontStretch, string>((FontStretch)p.GetValue(null), p.Name)).ToList()
+            };
+
+            var binding = CreateTwoWayBinding(obj, property.Name);
+            comboBox.SetBinding(ComboBox.SelectedValueProperty, binding);
+            DockPanel.SetDock(comboBox, Dock.Right);
+
+            dockPanel.Children.Add(comboBox);
+            dockPanel.Children.Add(textBlock);
+            return dockPanel;
+        }
+
+        // FlowDirection
+        public static DockPanel GenFlowDirectionProperties(PropertyInfo property, object obj)
+        {
+            var rm = GetResourceManager(obj);
+            var dockPanel = new DockPanel();
+
+            var textBlock = CreateLabel(property, rm);
+            var comboBox = new ComboBox
+            {
+                Margin = new Thickness(5, 0, 0, 0),
+                MinWidth = ControlMinWidth,
+                Style = ComboBoxSmallStyle,
+                DisplayMemberPath = "Value",
+                SelectedValuePath = "Key",
+                ItemsSource = Enum.GetValues(typeof(FlowDirection))
+                    .Cast<FlowDirection>()
+                    .Select(f => new KeyValuePair<FlowDirection, string>(f, f.ToString())).ToList()
+            };
+
+            var binding = CreateTwoWayBinding(obj, property.Name);
+            comboBox.SetBinding(ComboBox.SelectedValueProperty, binding);
+            DockPanel.SetDock(comboBox, Dock.Right);
+
+            dockPanel.Children.Add(comboBox);
+            dockPanel.Children.Add(textBlock);
+            return dockPanel;
+        }
+
 
         // Helpers
 

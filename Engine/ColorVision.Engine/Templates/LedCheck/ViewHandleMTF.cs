@@ -12,6 +12,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
 using ColorVision.Engine.Services;
+using ColorVision.Core;
 
 namespace ColorVision.Engine.Templates.LedCheck
 {

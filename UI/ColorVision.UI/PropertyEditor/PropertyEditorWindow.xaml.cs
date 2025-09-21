@@ -182,6 +182,10 @@ namespace ColorVision.UI
                         {
                             dockPanel = PropertyEditorHelper.GenTextboxProperties(property, obj);
                         }
+                        else if (property.PropertyType == typeof(System.Windows.Rect))
+                        {
+                            dockPanel = PropertyEditorHelper.GenTextboxProperties(property, obj);
+                        }
                         else if (typeof(Brush).IsAssignableFrom(property.PropertyType))
                         {
                             dockPanel = PropertyEditorHelper.GenBrushProperties(property, obj);
@@ -190,6 +194,16 @@ namespace ColorVision.UI
                         {
                             dockPanel = PropertyEditorHelper.GenCommandProperties(property, obj);
                         }
+                        else if (property.PropertyType == typeof(FontFamily))
+                            dockPanel = PropertyEditorHelper.GenFontFamilyProperties(property, obj);
+                        else if (property.PropertyType == typeof(FontWeight))
+                            dockPanel = PropertyEditorHelper.GenFontWeightProperties(property, obj);
+                        else if (property.PropertyType == typeof(FontStyle))
+                            dockPanel = PropertyEditorHelper.GenFontStyleProperties(property, obj);
+                        else if (property.PropertyType == typeof(FontStretch))
+                            dockPanel = PropertyEditorHelper.GenFontStretchProperties(property, obj);
+                        else if (property.PropertyType == typeof(FlowDirection))
+                            dockPanel = PropertyEditorHelper.GenFlowDirectionProperties(property, obj);
                         else if (typeof(ViewModelBase).IsAssignableFrom(property.PropertyType))
                         {
                             // 如果属性是ViewModelBase的子类，递归解析
@@ -226,47 +240,6 @@ namespace ColorVision.UI
             }
         }
 
-        public DockPanel GenBoolProperties(PropertyInfo property, object obj)
-        {
-            var displayNameAttr = property.GetCustomAttribute<DisplayNameAttribute>();
-            var descriptionAttr = property.GetCustomAttribute<DescriptionAttribute>();
-
-            string displayName = displayNameAttr?.DisplayName ?? property.Name;
-            displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
-
-            var dockPanel = new DockPanel();
-            var textBlock = new TextBlock
-            {
-                Text = displayName,
-                MinWidth = 120,
-                Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
-            };
-
-            var toggleSwitch = new Wpf.Ui.Controls.ToggleSwitch
-            {
-                Margin = new Thickness(5, 0, 0, 0),
-            };
-            var binding = new Binding(property.Name)
-            {
-                Source = obj,
-                Mode = BindingMode.TwoWay
-            };
-            toggleSwitch.SetBinding(ToggleButton.IsCheckedProperty, binding);
-            DockPanel.SetDock(toggleSwitch, Dock.Right);
-
-            dockPanel.Children.Add(toggleSwitch);
-            dockPanel.Children.Add(textBlock);
-            return dockPanel;
-        }
-
-        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter)
-            {
-                Common.NativeMethods.Keyboard.PressKey(0x09);
-                e.Handled = true;
-            }
-        }
 
         private void TreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
