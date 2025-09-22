@@ -41,6 +41,7 @@ namespace ColorVision.Plugins
 
         public PluginInfo PluginInfo { get; set; }
 
+
         public Version LastVersion { get => _LastVersion; set { _LastVersion = value; OnPropertyChanged(); } }
         private Version _LastVersion;
 

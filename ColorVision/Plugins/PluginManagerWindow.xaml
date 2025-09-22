@@ -7,6 +7,7 @@
         xmlns:properties="clr-namespace:ColorVision.Properties"
         xmlns:hc ="https://handyorg.github.io/handycontrol"
         d:DataContext="{d:DesignInstance local:PluginManager}"
+        xmlns:pl="clr-namespace:ColorVision.UI;assembly=ColorVision.UI"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         Title="{x:Static properties:Resources.PluginManagerWindow}" Background="{DynamicResource GlobalBackground}" Height="720" Width="1000" Initialized="Window_Initialized">
@@ -151,7 +152,9 @@
                         </DockPanel>
                         <StackPanel  HorizontalAlignment="Right" VerticalAlignment="Top">
                             <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding PluginInfo.Manifest.DllName}" HorizontalAlignment="Right" Padding="3"/>
-                            <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding PluginInfo.Manifest.Requires}"  HorizontalAlignment="Right" Padding="3"/>
+                            <StackPanel Orientation="Horizontal"  HorizontalAlignment="Right">
+                                <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding PluginInfo.Manifest.Requires, StringFormat=Build By {0}}"/>
+                            </StackPanel>
                             <Button Content="OpenLocalPath" Background="Transparent" BorderThickness="0" Command="{Binding OpenLocalPathCommand}"  HorizontalAlignment="Right"/>
 
                         </StackPanel>
@@ -169,6 +172,33 @@
                         <ScrollViewer>
                             <StackPanel  x:Name="DetailInfo">
                                 
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+                    <TabItem Header="依赖项">
+                        <ScrollViewer>
+                            <StackPanel  x:Name="Dependents">
+                                <ListView  x:Name="DependentsListView">
+                                    <ListView.View>
+                                        <GridView >
+                                            <GridViewColumn Header="Package">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate >
+                                                        <TextBlock  Text="{Binding Key}"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="Version">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate >
+                                                        <TextBlock  Text="{Binding Value}"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>

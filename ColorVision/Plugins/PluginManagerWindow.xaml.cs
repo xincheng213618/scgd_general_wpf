@@ -70,6 +70,20 @@ namespace ColorVision.Plugins
                     {
                         InitDetailInfo(pluginInfoVM);
                     }
+                    if (TabControl1.SelectedIndex == 3)
+                    {
+
+                        if (pluginInfoVM.PluginInfo?.DepsJson != null)
+                        {
+                            var target = pluginInfoVM.PluginInfo.DepsJson.Targets.Values.First();
+                            if (target != null)
+                            {
+                                var mainPackage = target.Values.FirstOrDefault();
+                                var dependencies = mainPackage?.Dependencies;
+                                DependentsListView.ItemsSource = dependencies;
+                            }
+                        }
+                    }
                 });
             }
         }
@@ -190,6 +204,19 @@ namespace ColorVision.Plugins
                     if (TabControl1.SelectedIndex == 2)
                     {
                         InitDetailInfo(pluginInfoVM);
+                    }
+                    if (TabControl1.SelectedIndex == 3)
+                    {
+                        if (pluginInfoVM.PluginInfo?.DepsJson != null)
+                        {
+                            var target = pluginInfoVM.PluginInfo.DepsJson.Targets.Values.First();
+                            if (target != null)
+                            {
+                                var mainPackage = target.Values.FirstOrDefault();
+                                var dependencies = mainPackage?.Dependencies;
+                                DependentsListView.ItemsSource = dependencies;
+                            }
+                        }
                     }
                 });
             }

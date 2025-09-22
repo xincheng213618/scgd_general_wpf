@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using log4net;
+using log4net.Util;
 using Newtonsoft.Json;
 using System.IO;
 using System.Reflection;
@@ -41,16 +42,17 @@ namespace ColorVision.UI
         [JsonProperty("entry_point")]
         public string EntryPoint { get; set; }
 
-        [JsonProperty("dependencies")]
-        public string[] Dependencies { get; set; }
-
         [JsonProperty("icon")]
         public string Icon { get; set; }
     }
 
+
+
     public class PluginInfo : ViewModelBase
     {
         public PluginManifest Manifest { get; set; }
+
+        public DepsJson DepsJson { get; set; }
         public bool Enabled { get; set; } = true;
         public string? Name { get; set; }
 
@@ -73,6 +75,28 @@ namespace ColorVision.UI
         public Assembly Assembly { get; set; }
     }
 
+    public class DepsJson
+    {
+        [JsonProperty("runtimeTarget")]
+        public RuntimeTarget RuntimeTarget { get; set; }
+
+        [JsonProperty("targets")]
+        public Dictionary<string, Dictionary<string, DepsTargetEntry>> Targets { get; set; }
+    }
+
+    public class RuntimeTarget
+    {
+        [JsonProperty("name")]
+        public string Name { get; set; }
+    }
+
+    public class DepsTargetEntry
+    {
+        [JsonProperty("dependencies")]
+        public Dictionary<string, string> Dependencies { get; set; }
+    }
+
+
     public class PluginManagerConfig : IConfig
     {
         public static PluginManagerConfig Instance =>  ConfigService.Instance.GetRequiredService<PluginManagerConfig>();
@@ -93,18 +117,51 @@ namespace ColorVision.UI
             if (!Directory.Exists(path))
                 return;
 
-            var hostVersion = Assembly.GetEntryAssembly().GetName().Version;
             var plugins = PluginManagerConfig.Instance.Plugins;
-            var discoveredIds = new HashSet<string>();
-
-
             path = Path.GetFullPath(path); // 保证path是绝对路径
+                                           // 先收集当前所有的插件目录名（通常以插件Id为key）
+            var validIds = new HashSet<string>();
+            foreach (var directory in Directory.GetDirectories(path))
+            {
+                string manifestPath = Path.Combine(directory, "manifest.json");
+                if (File.Exists(manifestPath))
+                {
+                    try
+                    {
+                        string manifestContent = File.ReadAllText(manifestPath);
+                        var manifest = JsonConvert.DeserializeObject<PluginManifest>(manifestContent);
+                        if (!string.IsNullOrWhiteSpace(manifest?.Id))
+                        {
+                            validIds.Add(manifest.Id);
+                        }
+                    }
+                    catch { /* ignore invalid manifest */ }
+                }
+            }
+
+            // 删除那些在记录中存在但物理上已不存在的插件
+            var toRemove = plugins.Keys.Where(id => !validIds.Contains(id)).ToList();
+            foreach (var id in toRemove)
+            {
+                plugins.Remove(id);
+            }
+
+
             foreach (var directory in Directory.GetDirectories(path))
             {
                 string manifestPath = Path.Combine(directory, "manifest.json");
                 PluginManifest manifest = null;
                 string dllPath = null;
 
+                DepsJson depsObj = null;
+                string[] depsFiles = Directory.GetFiles(directory, "*.deps.json");
+                if (depsFiles.Length == 1)
+                {
+                    string depsPath = depsFiles[0];
+                    string json = File.ReadAllText(depsPath);
+
+                    depsObj = JsonConvert.DeserializeObject<DepsJson>(json);
+                }
                 try
                 {
                     if (File.Exists(manifestPath))
@@ -116,17 +173,10 @@ namespace ColorVision.UI
                             log.Warn($"插件 {directory} 缺少唯一Id，已跳过");
                             continue;
                         }
-                        discoveredIds.Add(manifest.Id);
 
                         dllPath = !string.IsNullOrEmpty(manifest.DllName)
                             ? Path.Combine(directory, manifest.DllName)
                             : Path.Combine(directory, Path.GetFileName(directory) + ".dll");
-
-                        if (hostVersion < manifest.Requires)
-                        {
-                            MessageBox.Show($"插件 {manifest.Name} {manifest.Version} 支持的最小版本为 {manifest.Requires}，请更新软件以启用插件");
-                            continue;
-                        }
 
                         // 加载插件
                         if (!plugins.TryGetValue(manifest.Id, out var pluginInfo))
@@ -138,6 +188,65 @@ namespace ColorVision.UI
                         {
                             pluginInfo.Manifest = manifest; // 更新manifest
                         }
+
+                        pluginInfo.DepsJson = depsObj;
+                        bool depsOk = false;
+
+                        if (depsObj != null)
+                        {
+                            var mainTargetDict = depsObj.Targets?.Values.FirstOrDefault();
+                            if (mainTargetDict != null)
+                            {
+                                var mainPackage = mainTargetDict.Values.FirstOrDefault();
+                                var dependencies = mainPackage?.Dependencies;
+                                if (dependencies != null && dependencies.Count > 0)
+                                {
+                                    depsOk = true;
+                                    foreach (var dep in dependencies)
+                                    {
+                                        if (dep.Key.StartsWith("ColorVision"))
+                                        {
+                                            // 依赖的dll名规则 ColorVision.XXX.dll
+                                            string expectedDll = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, dep.Key + ".dll");
+                                            if (!File.Exists(expectedDll))
+                                            {
+                                                log.Warn($"依赖 {dep.Key} 未找到对应的dll: {expectedDll}");
+                                                continue;
+                                            }
+
+                                            // 获取dll实际版本
+                                            try
+                                            {
+                                                var assemblyName = AssemblyName.GetAssemblyName(expectedDll);
+                                                var actualVersion = assemblyName.Version;
+                                                var requiredVersion = new Version(dep.Value);
+
+                                                if (actualVersion == null || actualVersion < requiredVersion)
+                                                {
+                                                    depsOk = false;
+                                                    log.ErrorExt($"依赖 {dep.Key} 版本不足，要求: {requiredVersion}，实际: {actualVersion}");
+                                                    MessageBox.Show($"依赖 {dep.Key} 版本不足，要求: {requiredVersion}，实际: {actualVersion}");
+                                                    break;
+                                                }
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                depsOk = false;
+                                                log.Warn($"检查依赖 {dep.Key} 版本时发生异常: {ex.Message}");
+                                                MessageBox.Show(($"检查依赖 {dep.Key} 版本时发生异常: {ex.Message}"));
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+
+                            }
+                            if (!depsOk)
+                            {
+                                continue;
+                            }
+                        }
+
                         string readmePath = Path.Combine(directory, "readme.md");
                         if (File.Exists(readmePath))
                             pluginInfo.README = File.ReadAllText(readmePath); ;
@@ -193,14 +302,6 @@ namespace ColorVision.UI
                     MessageBox.Show($"加载插件或manifest错误：{ex.Message}", "ColorVision");
                     log.Error(ex);
                 }
-            }
-
-            // 移除磁盘上已不存在的插件
-            var removedIds = plugins.Keys.Except(discoveredIds).ToList();
-            foreach (var removedId in removedIds)
-            {
-                plugins.Remove(removedId);
-                log.Info($"移除已不存在的插件: {removedId}");
             }
         }
     }
