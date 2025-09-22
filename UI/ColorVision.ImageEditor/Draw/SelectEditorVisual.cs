@@ -33,8 +33,6 @@ namespace ColorVision.ImageEditor.Draw
     }
 
 
-
-
     public class SelectEditorVisual : DrawingVisual,IDisposable
     {
         public DrawCanvas DrawCanvas { get; set; }

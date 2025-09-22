@@ -61,6 +61,8 @@ namespace ColorVision.ImageEditor
         {
             ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow);
 
+            AdvancedStackPanel.Children.Insert(0, ImageViewModel.SlectStackPanel);
+
             DataContext = ImageViewModel;
             Config.ColormapTypesChanged -= Config_ColormapTypesChanged;
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
@@ -82,6 +84,8 @@ namespace ColorVision.ImageEditor
 
             ComboxeType.ItemsSource = from e1 in Enum.GetValues(typeof(MagnigifierType)).Cast<MagnigifierType>()
                                       select new KeyValuePair<MagnigifierType, string>(e1, e1.ToString());
+
+            
         }
 
 

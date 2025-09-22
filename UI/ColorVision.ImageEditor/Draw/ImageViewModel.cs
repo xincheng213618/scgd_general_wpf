@@ -33,7 +33,6 @@ namespace ColorVision.ImageEditor
         IEnumerable<MenuItem> GetContextMenuItems(ImageViewModel imageViewModel, object obj);
     }
 
-
     public class ImageViewModel : ViewModelBase,IDisposable
     {
         Guid Guid { get; set; } = Guid.NewGuid();
@@ -56,7 +55,6 @@ namespace ColorVision.ImageEditor
 
         public event EventHandler ClearImageEventHandler;
 
-        public event EventHandler<string> OpenedImage;
         public event EventHandler<string> OpeningImage;
 
         public RelayCommand PrintImageCommand { get; set; }
@@ -191,9 +189,11 @@ namespace ColorVision.ImageEditor
             Image.ContextMenuOpening += ContextMenu_ContextMenuOpening;
             Image.ContextMenu = ContextMenu;
             ZoomboxSub.ContextMenu = ContextMenu;
-
             ZoomboxSub.LayoutUpdated += Zoombox1_LayoutUpdated;
+           
         }
+
+        public StackPanel SlectStackPanel { get; set; } = new StackPanel();
 
         double oldMax;
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
@@ -228,7 +228,6 @@ namespace ColorVision.ImageEditor
             }
             IsUpdatedRender = false;
         }
-
 
         private void ContextMenu_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
@@ -881,6 +880,7 @@ namespace ColorVision.ImageEditor
                 {
                     ImageEditMode = true;
                     LastChoice = nameof(DrawCircle);
+                    SlectStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CircleManager.Config));
                 }
                 OnPropertyChanged();
             }
@@ -900,11 +900,11 @@ namespace ColorVision.ImageEditor
                 {
                     ImageEditMode = true;
                     LastChoice = nameof(DrawRect);
+                    SlectStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(RectangleManager.Config));
                 }
                 OnPropertyChanged();
             }
         }
-
 
         public bool Measure {
             get => _Measure;
@@ -1011,6 +1011,7 @@ namespace ColorVision.ImageEditor
 
         public string LastChoice { get => _LastChoice; set 
             {
+                SlectStackPanel.Children.Clear();
                 if (value == _LastChoice)
                     return;
                 if (!string.IsNullOrWhiteSpace(_LastChoice))

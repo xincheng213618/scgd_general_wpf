@@ -108,7 +108,6 @@ namespace WindowsServicePlugin.CVWinSMS
                         {
                             if (!File.Exists(DownloadPath))
                             {
-                                await DownloadFile.GetIsPassWorld();
                                 CancellationTokenSource _cancellationTokenSource = new();
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {

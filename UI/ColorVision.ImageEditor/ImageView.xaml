@@ -77,7 +77,6 @@
                     </draw:DrawCanvas>
                 </draw:ZoomboxSub>
                 <ComboBox x:Name="ComboBoxLayers" HorizontalAlignment="Right" VerticalAlignment="Top"  Style="{StaticResource ComboBox.Small}" x:FieldModifier="public"  SelectedIndex="0" Margin="5"/>
-
                 <ToolBarTray  x:Name="ToolBarAl"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Left" Visibility="Collapsed">
                     <ToolBar Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" >
                         <StackPanel Orientation="Horizontal" >
@@ -249,6 +248,7 @@
             </Grid.RowDefinitions>
             <ScrollViewer Margin="5,0">
                 <StackPanel x:Name="AdvancedStackPanel">
+
                     <Border Grid.Column="1" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"  Margin="0,5" CornerRadius="5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,0,0,5">

@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS0414,CS8625
+using ColorVision.Common.MVVM;
 using System;
 using System.Linq;
 using System.Windows;
@@ -7,8 +8,18 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
+    public class CircleManagerConfig : ViewModelBase
+    {
+        public bool IsLocked { get => _IsLocked; set { _IsLocked = value; OnPropertyChanged(); } }
+        private bool _IsLocked;
+
+        public double DefalutRadius { get => _DefalutRadius; set { _DefalutRadius = value; OnPropertyChanged(); } }
+        private double _DefalutRadius = 30;
+    }
+
     public class CircleManager:IDisposable
     {
+        public CircleManagerConfig Config { get; set; } = new CircleManagerConfig();
         private ZoomboxSub Zoombox1 { get; set; }
         private DrawCanvas DrawCanvas { get; set; }
         public ImageViewModel ImageViewModel { get; set; }
@@ -79,7 +90,6 @@ namespace ColorVision.ImageEditor.Draw
         Point MouseUpP { get; set; }
 
         bool IsMouseDown;
-        private double DefalutRadius { get; set; } = 30;
 
         private void PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -103,7 +113,7 @@ namespace ColorVision.ImageEditor.Draw
             circleTextProperties.Id = did;
             circleTextProperties.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
             circleTextProperties.Center = MouseDownP;
-            circleTextProperties.Radius = DefalutRadius;
+            circleTextProperties.Radius = Config.DefalutRadius;
             circleTextProperties.Text = "Point_" + did;
             DVCircleText dVCircle = new DVCircleText(circleTextProperties);
 
@@ -124,13 +134,15 @@ namespace ColorVision.ImageEditor.Draw
             {
                 MouseUpP = e.GetPosition(DrawCanvas);
 
-                if (DrawCircleCache.Attribute.Radius == DefalutRadius)
+                if (DrawCircleCache.Attribute.Radius == Config.DefalutRadius)
                     DrawCircleCache.Render();
 
                 ImageViewModel.SelectEditorVisual.SetRender(DrawCircleCache); 
 
-                DefalutRadius = DrawCircleCache.Radius;
-
+                if (!Config.IsLocked)
+                {
+                    Config.DefalutRadius = DrawCircleCache.Radius;
+                }
                 DrawCircleCache = null;
             }
             e.Handled = true;
