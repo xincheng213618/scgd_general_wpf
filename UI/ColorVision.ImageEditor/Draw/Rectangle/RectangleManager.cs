@@ -13,6 +13,9 @@ namespace ColorVision.ImageEditor.Draw
         public bool IsLocked { get => _IsLocked; set { _IsLocked = value; OnPropertyChanged(); } }
         private bool _IsLocked;
 
+        public bool UseCenter { get => _UseCenter; set { _UseCenter = value; OnPropertyChanged(); } }
+        private bool _UseCenter;
+
         public double DefalutWidth { get => _DefalutWidth; set { _DefalutWidth = value; OnPropertyChanged(); } }
         private double _DefalutWidth = 30;
 
@@ -104,7 +107,14 @@ namespace ColorVision.ImageEditor.Draw
 
             RectangleTextProperties rectangleTextProperties = new RectangleTextProperties();
             rectangleTextProperties.Id = did;
-            rectangleTextProperties.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + Config.DefalutWidth, MouseDownP.Y + Config.DefalutHeight));
+            if (Config.UseCenter)
+            {
+                rectangleTextProperties.Rect = new System.Windows.Rect(new Point(MouseDownP.X + Config.DefalutWidth / 2, MouseDownP.Y + Config.DefalutHeight / 2), new Point(MouseDownP.X - Config.DefalutWidth / 2, MouseDownP.Y - Config.DefalutHeight / 2));
+            }
+            else
+            {
+                rectangleTextProperties.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + Config.DefalutWidth, MouseDownP.Y + Config.DefalutHeight));
+            }
             rectangleTextProperties.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
             rectangleTextProperties.Text = "Point_" + did;
             DrawingRectangleCache = new DVRectangleText(rectangleTextProperties);
