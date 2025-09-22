@@ -256,6 +256,10 @@
                                 <TextBlock Text="自动刷新绘图" Width="100" HorizontalAlignment="Left"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
+                                <ui:ToggleSwitch IsChecked="{Binding Config.IsShowText}" DockPanel.Dock="Right" />
+                                <TextBlock Text="显示文字" Width="100" HorizontalAlignment="Left"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
                                 <TextBlock Text="MaxZoom" Width="100"/>
                                 <TextBox  Text="{Binding Config.MaxZoom}"/>
                             </DockPanel>

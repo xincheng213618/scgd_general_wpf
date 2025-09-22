@@ -882,6 +882,10 @@ namespace ColorVision.ImageEditor
                     LastChoice = nameof(DrawCircle);
                     SlectStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CircleManager.Config));
                 }
+                else
+                {
+                    SlectStackPanel.Children.Clear();
+                }
                 OnPropertyChanged();
             }
         }
@@ -901,6 +905,10 @@ namespace ColorVision.ImageEditor
                     ImageEditMode = true;
                     LastChoice = nameof(DrawRect);
                     SlectStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(RectangleManager.Config));
+                }
+                else
+                {
+                    SlectStackPanel.Children.Clear();
                 }
                 OnPropertyChanged();
             }

@@ -129,6 +129,36 @@ namespace ColorVision.Engine.Templates.POI
                 EditPoiParamConfig.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
+
+            ImageView.ImageShow.VisualsAdd += (s, e) =>
+            {
+                if (PoiConfig.IsUserDraw)
+                {
+                    PoiConfig.IsUserDraw = false;
+                    if (e.Visual is DVCircleText dVCircleText)
+                    {
+
+                        dVCircleText.Attribute.PropertyChanged += (s, e) =>
+                        {
+                            PoiConfig.CenterX = (int)dVCircleText.Attribute.Center.X;
+                            PoiConfig.CenterY = (int)dVCircleText.Attribute.Center.Y;
+                            PoiConfig.AreaCircleRadius = (int)dVCircleText.Attribute.Radius;
+                            RenderPoiConfig();
+                        };
+                    }
+                    if (e.Visual is DVRectangleText dVRectangleText)
+                    {
+                        dVRectangleText.Attribute.PropertyChanged += (s, e) =>
+                        {
+                            PoiConfig.CenterX = (int)(dVRectangleText.Attribute.Rect.Width / 2 + dVRectangleText.Attribute.Rect.X);
+                            PoiConfig.CenterY = (int)(dVRectangleText.Attribute.Rect.Height / 2 + dVRectangleText.Attribute.Rect.Y);
+                            PoiConfig.AreaRectWidth = (int)dVRectangleText.Attribute.Rect.Width;
+                            PoiConfig.AreaRectHeight = (int)dVRectangleText.Attribute.Rect.Height;
+                            RenderPoiConfig();
+                        };
+                    }
+                }
+            };
         }
 
         private ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
@@ -162,9 +192,9 @@ namespace ColorVision.Engine.Templates.POI
 
         private void Button_UpdateVisualLayout_Click(object sender, RoutedEventArgs e)
         {
-            UpdateVisualLayout(true);
+            UpdateVisualLayout();
         }
-        private void UpdateVisualLayout(bool IsLayoutUpdated)
+        private void UpdateVisualLayout()
         {
             foreach (var item in DefaultPoint)
             {
@@ -178,15 +208,6 @@ namespace ColorVision.Engine.Templates.POI
             {
                 Datum.Pen.Thickness = 1 / Zoombox1.ContentMatrix.M11;
                 Datum.Render();
-            }
-
-            if (IsLayoutUpdated)
-            {
-                foreach (var item in DrawingVisualLists)
-                {
-                    item.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                    item.Render();
-                }
             }
         }
 

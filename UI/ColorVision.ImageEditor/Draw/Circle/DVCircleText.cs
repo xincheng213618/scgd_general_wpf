@@ -10,6 +10,7 @@ namespace ColorVision.ImageEditor.Draw
     {
         [Browsable(false)]
         public TextAttribute TextAttribute { get; set; } = new TextAttribute();
+
         public bool IsShowText { get; set; } = true;
 
         [Category("Attribute"), DisplayName("Text")]

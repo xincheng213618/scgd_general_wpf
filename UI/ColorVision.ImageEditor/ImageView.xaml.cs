@@ -79,6 +79,17 @@ namespace ColorVision.ImageEditor
             ImageShow.VisualsRemove += ImageShow_VisualsRemove;
             PreviewKeyDown += ImageView_PreviewKeyDown;
             Drop += ImageView_Drop;
+            Config.ShowTextChanged += (s, e) =>
+            {
+                foreach (var drawingVisual in DrawingVisualLists)
+                {
+                    if (drawingVisual.BaseAttribute is ITextProperties textProperties)
+                    {
+                        textProperties.IsShowText = Config.IsShowText;
+                        drawingVisual.Render();
+                    }
+                }
+            };
 
             ComColormapTypes.ItemsSource = ColormapConstats.GetColormapHDictionary();
 
