@@ -66,6 +66,9 @@ namespace ColorVision.Plugins
         public RelayCommand RestartCommand { get; set; }
 
         private DownloadFile DownloadFile { get; set; }
+        // 在 PluginManager 类中添加
+        public RelayCommand UpdateAllCommand { get; set; }
+
         public PluginManager()
         {
             log.Info("正在检索是否存在附加项目");
@@ -86,7 +89,20 @@ namespace ColorVision.Plugins
             EditConfigCommand = new RelayCommand(a => new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             OpenViewDllViersionCommand = new RelayCommand(a => OpenViewDllViersion());
             RestartCommand = new RelayCommand(a => Restart());
+            UpdateAllCommand = new RelayCommand(a => UpdateAll());
+        }
+        public void UpdateAll()
+        {
+            foreach (var plugin in Plugins)
+            {
+                // 可根据实际需求判断是否已启用
+                if (plugin.PluginInfo.Enabled)
+                {
 
+                    // 建议异步调用，避免阻塞UI
+                    Application.Current.Dispatcher.InvokeAsync(() => plugin.Update());
+                }
+            }
         }
 
         public void Restart()

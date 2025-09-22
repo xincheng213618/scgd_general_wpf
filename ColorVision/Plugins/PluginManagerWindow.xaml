@@ -27,9 +27,11 @@
                 <StackPanel Margin="5,5,0,0">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5" Height="20">
                         <Button Content="访问仓库" Command="{Binding OpenStoreCommand}" Margin="0,0,5,0"/>
-                        <Button Content="安装下载好包" Command="{Binding InstallPackageCommand}" Margin="0,0,5,0"/>
-                        <Button Content="DLL版本查看" Command="{Binding OpenViewDllViersionCommand}" Margin="0,0,5,0"/>
-                        <Button Content="重启软件" Command="{Binding RestartCommand}" Margin="0,0,5,0"/>
+                        <Button Content="安装包" Command="{Binding InstallPackageCommand}" Margin="0,0,5,0"/>
+                        <Button Content="DLL版本" Command="{Binding OpenViewDllViersionCommand}" Margin="0,0,5,0"/>
+                        <Button Content="重启" Command="{Binding RestartCommand}" Margin="0,0,5,0"/>
+                        <Button Content="一键更新" Command="{Binding RestartCommand}" Margin="0,0,5,0"/>
+                       
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                         <Grid>
