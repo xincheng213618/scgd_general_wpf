@@ -74,9 +74,7 @@ namespace ColorVision.ImageEditor
         public RelayCommand RotateRightCommand { get; set; }
         public RelayCommand FlipHorizontalCommand { get; set; }
         public RelayCommand FlipVerticalCommand { get; set; }
-
         public RelayCommand SaveAsImageCommand { get; set; }
-
         public RelayCommand ClearImageCommand { get; set; }
 
         public event EventHandler ClearImageEventHandler;
@@ -217,7 +215,6 @@ namespace ColorVision.ImageEditor
             ZoomboxSub.LayoutUpdated += Zoombox1_LayoutUpdated;
            
         }
-
         public StackPanel SlectStackPanel { get; set; } = new StackPanel();
 
         double oldMax;
