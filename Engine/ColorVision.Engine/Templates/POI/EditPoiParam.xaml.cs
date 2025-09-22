@@ -73,6 +73,12 @@ namespace ColorVision.Engine.Templates.POI
         {
             DataContext = PoiParam;
             ListView1.ItemsSource = DrawingVisualLists;
+            ImageView.ImageViewModel.ImageEditMode = true;
+            ImageView.ImageViewModel.SelectEditorVisual.SelectVisualChanged += (s, e) =>
+            {
+                ListView1.SelectedItem = e;
+                ListView1.ScrollIntoView(e);
+            };
 
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(GraphicBorderType)).Cast<GraphicBorderType>()  select new KeyValuePair<GraphicBorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;
@@ -950,9 +956,9 @@ namespace ColorVision.Engine.Templates.POI
 
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualLists[listView.SelectedIndex] is IDrawingVisual drawingVisual && drawingVisual is Visual visual)
+            if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualLists[listView.SelectedIndex] is ISelectVisual drawingVisua)
             {
-                ImageShow.TopVisual(visual);
+                ImageView.ImageViewModel.SelectEditorVisual.SetRender(drawingVisua);
             }
         }
 

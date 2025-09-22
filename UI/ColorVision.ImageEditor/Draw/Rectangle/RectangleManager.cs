@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS0414,CS8625
 using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using System;
 using System.Linq;
 using System.Windows;
@@ -23,7 +24,7 @@ namespace ColorVision.ImageEditor.Draw
         private double _DefalutHeight = 30;
     }
 
-    public class RectangleManager : IDisposable
+    public class RectangleManager :ViewModelBase, IDisposable, IDrawEditor
     {
         public RectangleManagerConfig Config { get; set; } = new RectangleManagerConfig();
         private ZoomboxSub Zoombox1 { get; set; }
@@ -38,26 +39,27 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas = drawCanvas;
             ImageViewModel = imageEditViewMode;
         }
-        public bool IsEnabled { get; set; } = true;
 
+        private bool _IsShow;
         public bool IsShow
         {
             get => _IsShow; set
             {
                 if (_IsShow == value) return;
                 _IsShow = value;
-                if (IsEnabled)
+                if (value)
                 {
-                    if (value)
-                    {
-                        Load();
-                    }
-                    else
-                    {
-                        UnLoad();
-                    }
+                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
+                    ImageViewModel.SlectStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(Config));
+                    Load();
                 }
-
+                else
+                {
+                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(null);
+                    ImageViewModel.SlectStackPanel.Children.Clear();
+                    UnLoad();
+                }
+                OnPropertyChanged();
             }
         }
 
@@ -78,6 +80,8 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp -= Image_PreviewMouseUp;
             DrawingRectangleCache = null;
+
+            ImageViewModel.SelectEditorVisual.ClearRender();
         }
 
 
@@ -188,7 +192,6 @@ namespace ColorVision.ImageEditor.Draw
 
 
 
-        private bool _IsShow;
 
 
 

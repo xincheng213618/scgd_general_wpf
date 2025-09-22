@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS0414,CS8625
+using ColorVision.Common.MVVM;
 using System;
 using System.Windows;
 using System.Windows.Input;
@@ -6,7 +7,7 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class LineManager : IDisposable
+    public class LineManager : ViewModelBase, IDisposable,IDrawEditor
     {
         private ZoomboxSub ZoomboxSub { get; set; }
         private DrawCanvas DrawCanvas { get; set; }
@@ -21,7 +22,6 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas = drawCanvas;
             ImageViewModel = imageViewModel;
         }
-        public bool IsEnabled { get; set; } = true;
 
         private bool _IsShow;
         public bool IsShow
@@ -30,18 +30,17 @@ namespace ColorVision.ImageEditor.Draw
             {
                 if (_IsShow == value) return;
                 _IsShow = value;
-                if (IsEnabled)
+                if (value)
                 {
-                    if (value)
-                    {
-                        Load();
-                    }
-                    else
-                    {
-                        UnLoad();
-                    }
+                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
+                    Load();
                 }
-
+                else
+                {
+                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(null);
+                    UnLoad();
+                }
+                OnPropertyChanged();
             }
         }
 

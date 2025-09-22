@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS0414,CS8625
 using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using System;
 using System.Linq;
 using System.Windows;
@@ -17,7 +18,7 @@ namespace ColorVision.ImageEditor.Draw
         private double _DefalutRadius = 30;
     }
 
-    public class CircleManager:IDisposable
+    public class CircleManager: ViewModelBase, IDisposable, IDrawEditor
     {
         public CircleManagerConfig Config { get; set; } = new CircleManagerConfig();
         private ZoomboxSub Zoombox1 { get; set; }
@@ -33,25 +34,25 @@ namespace ColorVision.ImageEditor.Draw
             ImageViewModel = imageEditViewMode;
         }
 
-        public bool IsEnabled { get; set; } = true;
-
         public bool IsShow
         {
             get => _IsShow; set
             {
                 if (_IsShow == value) return;
                 _IsShow = value;
-                if (IsEnabled)
+                if (value)
                 {
-                    if (value)
-                    {
-                        Load();
-                    }
-                    else
-                    {
-                        UnLoad();
-                    }
+                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
+                    ImageViewModel.SlectStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(Config));
+                    Load();
                 }
+                else
+                {
+                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(null);
+                    ImageViewModel.SlectStackPanel.Children.Clear();
+                    UnLoad();
+                }
+                OnPropertyChanged();
             }
         }
 
@@ -84,6 +85,8 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp -= Image_PreviewMouseUp;
             DrawCircleCache = null;
+
+            ImageViewModel.SelectEditorVisual.ClearRender();
         }
 
         Point MouseDownP { get; set; }

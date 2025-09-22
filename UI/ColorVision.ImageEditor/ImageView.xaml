@@ -77,7 +77,7 @@
                     </draw:DrawCanvas>
                 </draw:ZoomboxSub>
                 <ComboBox x:Name="ComboBoxLayers" HorizontalAlignment="Right" VerticalAlignment="Top"  Style="{StaticResource ComboBox.Small}" x:FieldModifier="public"  SelectedIndex="0" Margin="5"/>
-                <ToolBarTray  x:Name="ToolBarAl"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Left" Visibility="Collapsed">
+                <ToolBarTray  x:Name="ToolBarAl"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Left" Visibility="Visible">
                     <ToolBar Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" >
                         <StackPanel Orientation="Horizontal" >
                             <ComboBox x:Name="ComboxPOITemplate"  x:FieldModifier="public" Width="100" Style="{StaticResource ComboBox.Small}" HorizontalAlignment="Left" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
@@ -89,24 +89,24 @@
                 <Border x:Name="ToolBarBottom"  Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}" Padding="2" CornerRadius="5" Background="{DynamicResource SecondaryRegionBrush}"  HorizontalAlignment="Center" VerticalAlignment="Bottom"  Margin="0,0,0,10">
                     <Grid>
                         <StackPanel Orientation="Horizontal" >
-                            <ToggleButton  IsChecked="{Binding Measure}" Padding="5" Margin="0,0,2,0" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
-                                <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageruler}" />
+                            <ToggleButton  IsChecked="{Binding MeasureManager.IsShow}" Padding="5" Margin="0,0,2,0" >
+                                <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageruler}"/>
                             </ToggleButton>
-                            <ToggleButton  IsChecked="{Binding EraseVisual}" Padding="5" Margin="0,0,2,0"  Click="Button7_Click" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
+                            <ToggleButton  IsChecked="{Binding EraseManager.IsShow}" Padding="5" Margin="0,0,2,0"  Click="Button7_Click">
                                 <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageeraser}"/>
                             </ToggleButton>
-                            <ToggleButton IsChecked="{Binding DrawCircle}" Padding="5" Margin="0,0,2,0" >
+                            <ToggleButton IsChecked="{Binding CircleManager.IsShow}" Padding="5" Margin="0,0,2,0" >
                                 <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageCircle}"  />
                             </ToggleButton>
-                            <ToggleButton IsChecked="{Binding DrawRect}" Padding="5" Margin="0,0,2,0" >
+                            <ToggleButton IsChecked="{Binding RectangleManager.IsShow}" Padding="5" Margin="0,0,2,0" >
                                 <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageRect}"/>
                             </ToggleButton>
-                            <ToggleButton IsChecked="{Binding DrawPolygon}"  Padding="5" Margin="0,0,2,0"  >
+                            <ToggleButton IsChecked="{Binding PolygonManager.IsShow}"  Padding="5" Margin="0,0,2,0"  >
                                 <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}" />
                             </ToggleButton>
-                            <ToggleButton IsChecked="{Binding DrawLine}" Content="直线"  Padding="5" Margin="0,0,2,0"  >
+                            <ToggleButton IsChecked="{Binding LineManager.IsShow}" Content="直线"  Padding="5" Margin="0,0,2,0"  >
                             </ToggleButton>
-                            <ToggleButton IsChecked="{Binding DrawBezierCurve}" Padding="5" Margin="0,0,2,0">
+                            <ToggleButton IsChecked="{Binding BezierCurveManager.IsShow}" Padding="5" Margin="0,0,2,0">
                                 <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}" />
                             </ToggleButton>
 

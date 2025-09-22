@@ -322,7 +322,7 @@ namespace ColorVision.ImageEditor.Draw.Special
     }
 
 
-    public class ToolReferenceLine
+    public class ToolReferenceLine: ViewModelBase, IDrawEditor
     {
         private ZoomboxSub ZoomboxSub { get; set; }
         private DrawCanvas Image { get; set; }
@@ -334,13 +334,13 @@ namespace ColorVision.ImageEditor.Draw.Special
         public RelayCommand Select2Command { get; set; }
         public RelayCommand LockCommand { get; set; }
 
-        public ImageViewModel Paraent { get; set; }
+        public ImageViewModel ImageViewModel { get; set; }
 
         public ToolReferenceLine(ImageViewModel imageEditViewMode, ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
             Image = drawCanvas;
-            Paraent = imageEditViewMode;
+            ImageViewModel = imageEditViewMode;
             ReferenceLine = new ReferenceLine();
 
             SelectNoneCommand = new RelayCommand(a => SetMode(-1));
@@ -355,16 +355,15 @@ namespace ColorVision.ImageEditor.Draw.Special
         {
             if (i == -1)
             {
-                Paraent.ConcentricCircle = false;
+                IsShow = false;
             }
             else
             {
-                Paraent.ConcentricCircle = true;
+                IsShow = true;
                 ReferenceLine.Mode = i;
                 ReferenceLine.Render();
             }
         }
-
 
 
         public bool IsShow
@@ -376,6 +375,10 @@ namespace ColorVision.ImageEditor.Draw.Special
                 DrawVisualImageControl(_IsShow);
                 if (value)
                 {
+                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
+
+     
+
                     ReferenceLine.Ratio = ZoomboxSub.ContentMatrix.M11;
                     ReferenceLine.ActualWidth = Image.ActualWidth;
                     ReferenceLine.ActualHeight = Image.ActualHeight;
@@ -394,12 +397,16 @@ namespace ColorVision.ImageEditor.Draw.Special
                 }
                 else
                 {
+                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(null);
+
+
                     Image.MouseMove -= MouseMove;
                     Image.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
                     Image.PreviewMouseRightButtonDown -= Image_PreviewMouseRightButtonDown;
                     Image.PreviewMouseUp -= PreviewMouseUp;
                     ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
                 }
+                OnPropertyChanged();
             }
         }
         private void Image_MouseDoubleClick(object sender, RoutedEventArgs e)

@@ -9,10 +9,6 @@ using System.Linq;
 
 namespace ColorVision.ImageEditor
 {
-    public interface IImageEditorContextMenuItemProvider
-    {
-        IEnumerable<MenuItemMetadata> GetMenuItems();
-    }
 
     public class ComponentManager
     {
@@ -33,7 +29,7 @@ namespace ColorVision.ImageEditor
                 IImageComponents.Add(item);
             }
 
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyService.Instance.GetAssemblies())
             {
                 foreach (var type in assembly.GetTypes())
                 {
@@ -50,9 +46,7 @@ namespace ColorVision.ImageEditor
                                 if (Activator.CreateInstance(type) is IImageOpen instance)
                                 {
                                     IImageOpens.Add(extLower, instance);
-
                                 }
-
                             }
                         }
                     }

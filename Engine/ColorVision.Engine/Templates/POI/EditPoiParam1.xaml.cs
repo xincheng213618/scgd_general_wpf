@@ -198,6 +198,12 @@ namespace ColorVision.Engine.Templates.POI
         private void Window_Initialized(object sender, EventArgs e)
         {
             DataContext = KBJson;
+            ImageView.ImageViewModel.ImageEditMode = true;
+            ImageView.ImageViewModel.SelectEditorVisual.SelectVisualChanged += (s, e) =>
+            {
+                ListView1.SelectedItem = e;
+                ListView1.ScrollIntoView(e);
+            };
 
             if (AlgorithmKBConfig.Instance.KBCanDrag)
             {
@@ -856,9 +862,9 @@ namespace ColorVision.Engine.Templates.POI
 
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualLists[listView.SelectedIndex] is IDrawingVisual drawingVisual && drawingVisual is Visual visual)
+            if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualLists[listView.SelectedIndex] is ISelectVisual drawingVisua)
             {
-                ImageShow.TopVisual(visual);
+                ImageView.ImageViewModel.SelectEditorVisual.SetRender(drawingVisua);
             }
         }
 

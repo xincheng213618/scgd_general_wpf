@@ -33,8 +33,34 @@ namespace ColorVision.ImageEditor
         IEnumerable<MenuItem> GetContextMenuItems(ImageViewModel imageViewModel, object obj);
     }
 
+    public interface IDrawEditor
+    {
+        public bool IsShow { get; set; }
+    }
+
+    public class DrawEditorManager
+    {
+        public IDrawEditor? Current { get; set; }
+
+        public void SetCurrentDrawEditor(IDrawEditor? drawEditor)
+        {
+            if(Current != null)
+            {
+                Current.IsShow = false;
+            }
+            Current = drawEditor;
+            if (Current != null)
+            {
+                Current.IsShow = true;
+            }
+        }
+    }
+
+
     public class ImageViewModel : ViewModelBase,IDisposable
     {
+        public DrawEditorManager DrawEditorManager { get; set; } = new DrawEditorManager();
+
         Guid Guid { get; set; } = Guid.NewGuid();
 
         public RelayCommand ZoomUniformToFill { get; set; }
@@ -79,13 +105,13 @@ namespace ColorVision.ImageEditor
 
 
         public MouseMagnifier MouseMagnifier { get; set; }
+        public MeasureManager MeasureManager { get; set; }
 
         public LineManager LineManager { get; set; }
 
         public Crosshair Crosshair { get; set; }
         public Gridline Gridline { get; set; }
 
-        private ToolBarMeasure ToolBarMeasure { get; set; }
 
         private FrameworkElement Parent { get; set; }
 
@@ -150,14 +176,13 @@ namespace ColorVision.ImageEditor
             MouseMagnifier = new MouseMagnifier(zoombox, drawCanvas);
             Crosshair = new Crosshair(zoombox, drawCanvas);
             Gridline = new Gridline(zoombox, drawCanvas);
-            ToolBarMeasure = new ToolBarMeasure(Parent, zoombox, drawCanvas);
             ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zoombox, drawCanvas);
             ToolConcentricCircle = new ToolReferenceLine(this,zoombox, drawCanvas);
 
+            MeasureManager = new MeasureManager(this, zoombox, drawCanvas);
             PolygonManager = new PolygonManager(this, zoombox, drawCanvas);
             BezierCurveManager = new BezierCurveManager(this, zoombox, drawCanvas);
             LineManager = new LineManager(this, zoombox, drawCanvas);
-
             CircleManager = new CircleManager(this, zoombox, drawCanvas);
             RectangleManager = new RectangleManager(this, zoombox, drawCanvas);
             EraseManager = new EraseManager(this, zoombox, drawCanvas);
@@ -860,206 +885,11 @@ namespace ColorVision.ImageEditor
                 {
                     ZoomboxSub.ActivateOn = ModifierKeys.None;
                     ZoomboxSub.Cursor = Cursors.Arrow;
-
-                    LastChoice = string.Empty;
                 }
+                DrawEditorManager.SetCurrentDrawEditor(null); 
                 OnPropertyChanged();
             }
         }
-
-        /// <summary>
-        /// 是否画圆形
-        /// </summary>
-        public bool DrawCircle {
-            get => CircleManager.IsShow;
-            set
-            {
-                if (CircleManager.IsShow == value) return;
-                CircleManager.IsShow = value;
-                if (value)
-                {
-                    ImageEditMode = true;
-                    LastChoice = nameof(DrawCircle);
-                    SlectStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CircleManager.Config));
-                }
-                else
-                {
-                    SlectStackPanel.Children.Clear();
-                }
-                OnPropertyChanged();
-            }
-        }
-
-        /// <summary>
-        /// 是否画圆形
-        /// </summary>
-        public bool DrawRect
-        {
-            get => RectangleManager.IsShow;
-            set
-            {
-                if (RectangleManager.IsShow == value) return;
-                RectangleManager.IsShow = value;
-                if (value)
-                {
-                    ImageEditMode = true;
-                    LastChoice = nameof(DrawRect);
-                    SlectStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(RectangleManager.Config));
-                }
-                else
-                {
-                    SlectStackPanel.Children.Clear();
-                }
-                OnPropertyChanged();
-            }
-        }
-
-        public bool Measure {
-            get => _Measure;
-            set 
-                {
-                if (_Measure == value) return;
-                _Measure = value;
-                if (value)
-                {
-                    ImageEditMode = true;
-                    LastChoice = nameof(Measure);
-                }
-                ToolBarMeasure.Measure = value;
-                OnPropertyChanged();
-            }
-        }
-        private bool _Measure;
-
-
-        public bool DrawPolygon
-        {
-            get => PolygonManager.IsShow;
-            set
-            {
-                if (PolygonManager.IsShow == value) return;
-                PolygonManager.IsShow = value;
-                if (value)
-                {
-                    ImageEditMode = true;
-                    LastChoice = nameof(DrawPolygon);
-                }
-
-                OnPropertyChanged();
-            }
-        }
-
-        public bool DrawBezierCurve
-        {
-            get => BezierCurveManager.IsShow;
-            set
-            {
-                if (BezierCurveManager.IsShow == value) return;
-                BezierCurveManager.IsShow = value;
-                if (value)
-                {
-                    ImageEditMode = true;
-                    LastChoice = nameof(DrawBezierCurve);
-                }
-                OnPropertyChanged();
-            }
-        }
-
-        public bool DrawLine
-        {
-            get => LineManager.IsShow;
-            set
-            {
-                if (LineManager.IsShow == value) return;
-                LineManager.IsShow = value;
-                if (value)
-                {
-                    ImageEditMode = true;
-                    LastChoice = nameof(DrawLine);
-                }
-                OnPropertyChanged();
-            }
-        }
-
-
-
-
-        public bool ConcentricCircle
-        {
-            get => ToolConcentricCircle.IsShow;
-            set
-            {
-                if (ToolConcentricCircle.IsShow == value) return;
-                if (value)
-                {
-                    ImageEditMode = true;
-                    LastChoice = nameof(ConcentricCircle);
-                }
-                ToolConcentricCircle.IsShow = value;
-                OnPropertyChanged();
-            }
-        }
-
-
-
-        public bool GetLastChoice()
-        {
-            if (!string.IsNullOrWhiteSpace(_LastChoice))
-            {
-                Type type = GetType();
-                PropertyInfo property = type.GetProperty(_LastChoice);
-                if (property?.GetValue(this) is bool b)
-                {
-                    return b;
-                }
-                return false;
-            }
-            return false;
-        }
-
-        public string LastChoice { get => _LastChoice; set 
-            {
-                SlectStackPanel.Children.Clear();
-                if (value == _LastChoice)
-                    return;
-                if (!string.IsNullOrWhiteSpace(_LastChoice))
-                {
-                    Type type = GetType();
-                    PropertyInfo property = type.GetProperty(_LastChoice);
-                    property?.SetValue(this, false);
-                }
-                _LastChoice = value;
-            }
-        }
-        private string _LastChoice { get; set; }
-
-
-        public bool EraseVisual {  get => EraseManager.IsShow;
-            set
-            {
-                if (EraseManager.IsShow == value) return;
-                EraseManager.IsShow = value;
-
-                if (value)
-                {
-                    ImageEditMode = true;
-                    LastChoice = nameof(EraseVisual);
-                }
-
-
-                if (value)
-                {
-                    ZoomboxSub.Cursor = Input.Cursors.Eraser;
-                }
-                else
-                {
-                    ZoomboxSub.Cursor = Cursors.Cross;
-                }
-
-                OnPropertyChanged();
-            }
-        }
-
 
 
         public void Dispose()

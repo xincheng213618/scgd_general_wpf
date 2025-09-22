@@ -54,6 +54,8 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.PreviewMouseUp += DrawCanvas_PreviewMouseUp;
         }
 
+
+
         private void ZoomboxSub_LayoutUpdated(object? sender, System.EventArgs e)
         {
             DebounceTimer.AddOrResetTimerDispatcher("SelectEditorVisualRender" + Guid.ToString(), 20, () => Render());
@@ -524,7 +526,7 @@ namespace ColorVision.ImageEditor.Draw
             MouseDownP = e.GetPosition(DrawCanvas);
             IsMouseDown = true;
 
-            if (!ImageViewModel.ImageEditMode || ImageViewModel.GetLastChoice())
+            if (!ImageViewModel.ImageEditMode || ImageViewModel.DrawEditorManager.Current !=null)
                 return;
 
             var MouseVisual = DrawCanvas.GetVisual<Visual>(MouseDownP);
@@ -566,7 +568,6 @@ namespace ColorVision.ImageEditor.Draw
             if (sender is DrawCanvas drawCanvas && (ZoomboxSub.ActivateOn == ModifierKeys.None || !Keyboard.Modifiers.HasFlag(ZoomboxSub.ActivateOn)))
             {
                 var point = e.GetPosition(drawCanvas);
-
                 if (IsMouseDown)
                 {
                     using DrawingContext dc = SelectRect.RenderOpen();

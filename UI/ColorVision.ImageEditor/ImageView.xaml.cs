@@ -152,7 +152,7 @@ namespace ColorVision.ImageEditor
         {
             if (sender is ToggleButton toggleButton)
             {
-                if (ImageViewModel.EraseVisual)
+                if (ImageViewModel.EraseManager.IsShow)
                 {
                     ToggleButtonDrag.IsChecked = true;
                     Zoombox1.ActivateOn = toggleButton.IsChecked == true ? ModifierKeys.Control : ModifierKeys.None;
@@ -428,6 +428,10 @@ namespace ColorVision.ImageEditor
             if (sender is Button button && button.Tag is string tag)
             {
                 menuPop1.IsOpen = false;
+
+
+
+
             }
         }
 
