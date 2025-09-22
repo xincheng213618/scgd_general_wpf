@@ -83,6 +83,11 @@ namespace ColorVision.Engine.Templates.POI
             ComboBoxBorderType2.ItemsSource = from e1 in Enum.GetValues(typeof(DrawingGraphicPosition)).Cast<DrawingGraphicPosition>() select new KeyValuePair<DrawingGraphicPosition, string>(e1, e1.ToDescription());
             ComboBoxBorderType2.SelectedIndex = 0;
 
+            ImageView.ImageShow.ImageInitialized += (s, e) =>
+            {
+                PoiParam.Width = (int)ImageView.ImageShow.Source.Width;
+                PoiParam.Height = (int)ImageView.ImageShow.Source.Height;
+            };
 
             if (PoiParam.Height != 0 && PoiParam.Width != 0)
             {
