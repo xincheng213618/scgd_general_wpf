@@ -4,49 +4,11 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.ImageEditor"
-        xmlns:draw ="clr-namespace:ColorVision.ImageEditor.Draw"
-        d:DataContext="{d:DesignInstance Type=draw:ImageViewModel}"
         mc:Ignorable="d"
         Title="WindowCIE" Height="450" Width="400" Icon="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy.ico" Initialized="Window_Initialized">
     <Grid>
-        <Grid x:Name="ZoomGrid"  Grid.Column="0" Background="#c3c3c3">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            <Grid Grid.Row="0" Height="0.5" Background="#BCBCBC"/>
-            <draw:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10"  MinZoom="0.01" Grid.Row="1" Grid.RowSpan="2">
-                <draw:DrawCanvas x:Name="ImageShow" Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy.png" Stretch="UniformToFill"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
-            </draw:ZoomboxSub>
-            <ToolBarTray DockPanel.Dock="Top" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Center">
-                <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"  Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" >
-                    <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding ImageEditMode}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
-                        <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
-                    </ToggleButton>
-                    <ToggleButton x:Name="ToggleButtonMouse"  IsChecked="{Binding ShowImageInfo}" >
-                        <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMouse}"  Margin="-5"/>
-                    </ToggleButton>
-                    <Button Command="{Binding ZoomUniformCommand}"  Margin="1,0">
-                        <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImage1_1}"  Margin="-5"/>
-                    </Button>
-                    <Button Command="{Binding ZoomInCommand}"  Margin="1,0">
-                        <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagezoom_in}"   Margin="-5"/>
-                    </Button>
-                    <Button  Command="{Binding ZoomOutCommand}"  Margin="1,0">
-                        <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagezoom_out}"  Margin="-5"/>
-                    </Button>
-                    <Button Command="{Binding ZoomNoneCommand}"  Margin="1,0">
-                        <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageexpend}"  Margin="-5"/>
-                    </Button>
-                    <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}" />
-                    <ToggleButton  IsChecked="{Binding Measure}" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
-                        <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageruler}"  Margin="-5"/>
-                    </ToggleButton>
-                    <Button Content="1976" Click="Button_Click" Margin="1,0">
-                    </Button>
-                </ToolBar>
-            </ToolBarTray>
+        <Grid x:Name="ZoomGrid">
+            <local:ImageView x:Name="ImageView"/>
         </Grid>
-
     </Grid>
 </Window>

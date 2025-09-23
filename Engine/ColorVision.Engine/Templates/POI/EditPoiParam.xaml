@@ -522,7 +522,7 @@
                             </GridView.ColumnHeaderContainerStyle>
                             <GridViewColumn  Header="序号">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type dr:IDrawingVisual}">
+                                    <DataTemplate DataType="{x:Type im:IDrawingVisual}">
                                         <TextBlock Text="{Binding BaseAttribute.Id}" HorizontalAlignment="Center"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>

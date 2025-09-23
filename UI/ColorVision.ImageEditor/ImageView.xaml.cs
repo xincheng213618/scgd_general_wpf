@@ -73,7 +73,6 @@ namespace ColorVision.ImageEditor
 
 
             ImageViewModel.ClearImageEventHandler += Clear;
-            ImageViewModel.OpeningImage += (s, e) => OpenImage(e);
 
             ImageShow.VisualsAdd += ImageShow_VisualsAdd;
             ImageShow.VisualsRemove += ImageShow_VisualsRemove;

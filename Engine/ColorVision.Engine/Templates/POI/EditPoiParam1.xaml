@@ -441,7 +441,7 @@
                             </GridViewColumn>
                             <GridViewColumn  Header="HaloOutMOVE  HaloThreadV HaloScale KeyOutMOVE KeyThreadV KeyScale  面积(mm^2)  辉度" Width="650">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type dr:IDrawingVisual}">
+                                    <DataTemplate DataType="{x:Type im:IDrawingVisual}">
                                         <ContentPresenter Content="{Binding BaseAttribute.Param}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>

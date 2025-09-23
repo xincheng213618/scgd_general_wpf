@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8601,CS8622,CA1822,CS8602
 using ColorVision.Common.Collections;
+using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using System;
 using System.Collections.ObjectModel;
