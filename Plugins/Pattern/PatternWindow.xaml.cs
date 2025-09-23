@@ -9,12 +9,15 @@ using Newtonsoft.Json;
 using OpenCvSharp.WpfExtensions;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Data;
 
 namespace Pattern
 {
@@ -72,10 +75,19 @@ namespace Pattern
         public PatternMeta PatternMeta { get; set; }
         ImageView imgDisplay { get; set; }
 
+        private ListCollectionView? _templateFilesView;
+
         public PatternWindow()
         {
             InitializeComponent();
             this.Title += "-" + Assembly.GetAssembly(typeof(PatternWindow))?.GetName().Version?.ToString() ?? "";
+
+            // 初始化CollectionView用于筛选
+            _templateFilesView = new ListCollectionView(PatternManager.TemplatePatternFiles);
+            ListViewPattern.ItemsSource = _templateFilesView;
+
+            // 搜索框事件绑定
+            PatternSearchBox.TextChanged += PatternSearchBox_TextChanged;
 
             ListViewPattern.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) =>
             {
@@ -94,7 +106,25 @@ namespace Pattern
             }, (s, e) => { e.CanExecute = ListViewPattern.SelectedIndex > -1; }));
 
             ListViewPattern.CommandBindings.Add(new CommandBinding(Commands.ReName, (s, e) => ReName(), (s, e) => e.CanExecute = ListViewPattern.SelectedIndex > -1));
+        }
 
+        private void PatternSearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_templateFilesView == null) return;
+            string keyword = PatternSearchBox.Text.Trim();
+            if (string.IsNullOrEmpty(keyword))
+            {
+                _templateFilesView.Filter = null;
+            }
+            else
+            {
+                _templateFilesView.Filter = obj =>
+                {
+                    if (obj is TemplatePatternFile file)
+                        return file.Name != null && file.Name.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0;
+                    return false;
+                };
+            }
         }
 
         public void ReName()
@@ -108,13 +138,14 @@ namespace Pattern
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = PatternManager;
-            ListViewPattern.ItemsSource = PatternManager.GetInstance().TemplatePatternFiles;
+            //ListViewPattern.ItemsSource = PatternManager.GetInstance().TemplatePatternFiles;
             ResolutionStackPanel.DataContext = PatternWindowConfig.Instance;
             imgDisplay = new ImageView();
             //这里最好实现成不模糊的样子
             RenderOptions.SetBitmapScalingMode(imgDisplay.ImageShow, BitmapScalingMode.NearestNeighbor);
 
-            DisplayGrid.Children.Add(imgDisplay);
+            //DisplayGrid.Children.Add(imgDisplay);
+            DisplayGrid.Child = imgDisplay;
             this.Closed += (s, e) => Dispose();
             cmbFormat.ItemsSource = Enum.GetValues(typeof(PatternFormat));
             cmbFormat.SelectedIndex = 0;
@@ -127,18 +158,18 @@ namespace Pattern
             {
                 if (cmbPattern1.SelectedItem is PatternMeta selectedPattern)
                 {
-                    PatternEditorGrid.Children.Clear();
+                    //PatternEditorGrid.Children.Clear();
+                    PatternEditorGrid.Child = null;
                     if (selectedPattern.Pattern is IPattern pattern)
                     {
                         PatternMeta = selectedPattern;
-                        PatternEditorGrid.Children.Add(pattern.GetPatternEditor());
-
+                        //PatternEditorGrid.Children.Add(pattern.GetPatternEditor());
+                        PatternEditorGrid.Child = pattern.GetPatternEditor();
                     }
                 }
             };
             cmbPattern1.ItemsSource = Patterns;
             cmbPattern1.SelectedIndex = 0;
-
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -220,13 +251,20 @@ namespace Pattern
                 string pattern = File.ReadAllText(templatePath);
                 TemplatePattern templatePattern = JsonConvert.DeserializeObject<TemplatePattern>(pattern);
                 PatternMeta = Patterns.Find(p => p.Name == templatePattern.PatternName);
+                if (PatternMeta == null)
+                {
+                    System.Windows.MessageBox.Show("未找到对应的图案类型: " + templatePattern.PatternName);
+                    return;
+                }
                 Config.Width = templatePattern.PatternWindowConfig.Width;
                 Config.Height = templatePattern.PatternWindowConfig.Height;
 
                 PatternMeta.Pattern.SetConfig(templatePattern.Config);
 
-                PatternEditorGrid.Children.Clear();
-                PatternEditorGrid.Children.Add(PatternMeta.Pattern.GetPatternEditor());
+                //PatternEditorGrid.Children.Clear();
+                PatternEditorGrid.Child = null;
+                //PatternEditorGrid.Children.Add(PatternMeta.Pattern.GetPatternEditor());
+                PatternEditorGrid.Child = PatternMeta.Pattern.GetPatternEditor();
 
                 cmbPattern1.SelectedItem = PatternMeta;
 
@@ -298,9 +336,9 @@ namespace Pattern
 
         private void ListViewPattern_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            if (sender is ListView listView && listView.SelectedIndex > -1)
+            if (sender is ListView listView && listView.SelectedItem is TemplatePatternFile selectedFile)
             {
-                SetTemplatePattern(TemplatePatternFiles[listView.SelectedIndex].FilePath);
+                SetTemplatePattern(selectedFile.FilePath);
             }
         }
 
