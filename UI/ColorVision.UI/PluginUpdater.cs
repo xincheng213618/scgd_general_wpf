@@ -105,8 +105,8 @@ del ""%~f0"" & exit
                 // 4. 解压
                 ZipFile.ExtractToDirectory(downloadPath, stagingRoot);
 
-                // 5. 归并多语言目录到 stagingRoot
-                NormalizeLanguageDirectories(stagingRoot, staging1Root);
+                //// 5. 归并多语言目录到 stagingRoot
+                //NormalizeLanguageDirectories(stagingRoot, staging1Root);
 
                 // （可选）如果你只打算更新单个插件，可以在这里仅处理 Plugins\\{packageName}，
                 // 但当前逻辑是整体 ColorVision 目录结构覆盖更新。
