@@ -9,7 +9,10 @@
         Title="图卡生成工具" Height="600" Width="1300" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner"  Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBoxBaseStyle}"/>
-        <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBaseStyle}"/>
+        <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBaseStyle}">
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+        </Style>
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -29,7 +32,6 @@
                     <Button Content="导入模板组" Command="{Binding ImportZipCommand}" Margin="0,0,5,0"/>
                 </StackPanel>
                 
-                <Button Content="保存成模板" Click="TempSave_Click" Margin="0,0,0,5"/>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                     <Button Content="生成所有模板图片" Click="GenAllTemplate_Click"/>
                     <Button Content="打开输出文件夹" Command="{Binding OpenSaveFilePathCommand}"/>
@@ -106,45 +108,62 @@
             </ListView>
 
         </Grid>
- 
-        <ScrollViewer Grid.Column="1">
-            <StackPanel Margin="5">
-                <ComboBox x:Name="cmbResolution"  Margin="0,0,0,5"/>
-                <StackPanel x:Name="ResolutionStackPanel"  Orientation="Horizontal" Margin="0,0,0,5">
-                    <TextBlock Text="分辨率" Margin="0,0,5,0"/>
-                    <TextBox x:Name="txtWidth" Width="100" Text="{Binding Width}" Margin="0,0,5,0"/>
-                    <TextBox x:Name="txtHeight" Width="100" Text="{Binding Height}" Margin="0,0,5,0"/>
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+
+            <ScrollViewer Grid.Row="0">
+                <StackPanel Margin="5">
+                    <ComboBox x:Name="cmbResolution"  Margin="0,0,0,5"/>
+                    <StackPanel x:Name="ResolutionStackPanel"  Orientation="Horizontal" Margin="0,0,0,5">
+                        <TextBlock Text="分辨率" Margin="0,0,5,0"/>
+                        <TextBox x:Name="txtWidth" Width="100" Text="{Binding Width}" Margin="0,0,5,0"/>
+                        <TextBox x:Name="txtHeight" Width="100" Text="{Binding Height}" Margin="0,0,5,0"/>
+                    </StackPanel>
+                    <DockPanel  Margin="0,0,0,5">
+                        <Button DockPanel.Dock="Right" Grid.Column="1" Margin="5,0,5,0" HorizontalAlignment="Left" Padding="2" Height="25" Width="25"  Click="Button_Click">
+                            <Button.Triggers>
+                                <EventTrigger RoutedEvent="Button.Click">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Button.Triggers>
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                                <TextBlock.RenderTransform>
+                                    <RotateTransform x:Name="rotateTransform2"/>
+                                </TextBlock.RenderTransform>
+                            </TextBlock>
+                        </Button>
+
+                        <ComboBox x:Name="cmbPattern1" DisplayMemberPath="Name"/>
+
+                    </DockPanel>
+                    <Grid x:Name="PatternEditorGrid">
+
+                    </Grid>
+
                 </StackPanel>
-                <DockPanel  Margin="0,0,0,5">
-                    <Button DockPanel.Dock="Right" Grid.Column="1" Margin="5,0,5,0" HorizontalAlignment="Left" Padding="2" Height="25" Width="25"  Click="Button_Click">
-                        <Button.Triggers>
-                            <EventTrigger RoutedEvent="Button.Click">
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                        </Button.Triggers>
-                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
-                            <TextBlock.RenderTransform>
-                                <RotateTransform x:Name="rotateTransform2"/>
-                            </TextBlock.RenderTransform>
-                        </TextBlock>
-                    </Button>
+            </ScrollViewer>
+            <Grid Grid.Row="1" Margin="0,0,0,5">
+                <StackPanel>
+                    <UniformGrid Columns="2" Margin="0,0,0,5">
+                        <Button Content="保存到模板" Click="TempSave_Click" Height="40" Margin="0,0,5,0"/>
+                        <Button Content="生成图卡" Click="PatternGen_Click" Height="40" Margin="0,0,5,0"/>
+                    </UniformGrid>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="另存为" Click="BtnSave_Click"/>
+                        <ComboBox x:Name="cmbFormat"  SelectedValue="{Binding Config.PatternFormat}" />
+                    </DockPanel>
 
-                    <ComboBox x:Name="cmbPattern1" DisplayMemberPath="Name"/>
+                </StackPanel>
 
-                </DockPanel>
-                <Grid x:Name="PatternEditorGrid">
-
-                </Grid>
-                <Button Content="生成图卡" Click="PatternGen_Click" Margin="0,0,0,10"/>
-
-                <ComboBox x:Name="cmbFormat"  SelectedValue="{Binding Config.PatternFormat}" Margin="0,0,0,5"/>
-                <Button Content="保存图卡" Click="BtnSave_Click"/>
-            </StackPanel>
-        </ScrollViewer>
+            </Grid>
+        </Grid>
 
         <Grid x:Name="DisplayGrid" Grid.Column="2">
             

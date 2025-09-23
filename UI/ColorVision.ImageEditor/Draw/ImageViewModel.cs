@@ -343,7 +343,7 @@ namespace ColorVision.ImageEditor
 
             if (ZoomboxSub != null)
             {
-                ZoomboxSub.LayoutUpdated += Zoombox1_LayoutUpdated;
+                ZoomboxSub.LayoutUpdated -= Zoombox1_LayoutUpdated;
                 ZoomboxSub = null;
             }
 

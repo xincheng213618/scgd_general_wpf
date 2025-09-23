@@ -5,9 +5,16 @@ using OpenCvSharp;
 using System.ComponentModel;
 using System.Windows.Controls;
 using System.Windows.Media;
+using static System.Windows.Forms.AxHost;
 
 namespace Pattern.LinePairMTF
 {
+    public enum ChartType
+    {
+        FourLinePair,
+        Checkerboard, // 斜方块
+        BMW           // 宝马图
+    }
     public class PatternLinePairMTFConfig:ViewModelBase,IConfig
     {
         public SolidColorBrush LineBrush { get => _LineBrush; set { _LineBrush = value; OnPropertyChanged(); } }
@@ -16,6 +23,9 @@ namespace Pattern.LinePairMTF
         public SolidColorBrush BackgroundBrush { get =>_BackgroundBrush; set {_BackgroundBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _BackgroundBrush = Brushes.Green;
 
+        [DisplayName("图像类型")]
+        public ChartType ChartType { get => _ChartType; set { _ChartType = value; OnPropertyChanged(); } }
+        private ChartType _ChartType = ChartType.FourLinePair;
 
         public int LineThickness { get => _LineThickness; set { _LineThickness = value; OnPropertyChanged(); } }
         private int _LineThickness = 2;
@@ -62,13 +72,17 @@ namespace Pattern.LinePairMTF
         [JsonIgnore]
         public List<double> FieldY { get; set; } = new List<double> { 0,0.5, 0.8 };
 
-        public string LineBrushTag { get; set; } = "K";
-        public string BackgroundBrushTag { get; set; } = "W";
+        public string LineBrushTag { get => _LineBrushTag; set { _LineBrushTag = value; OnPropertyChanged(); } }
+        private string _LineBrushTag = "K";
+        public string BackgroundBrushTag { get => _BackgroundBrushTag; set { _BackgroundBrushTag = value; OnPropertyChanged(); } }
+        private string _BackgroundBrushTag = "W";
 
         public double FieldOfViewX { get => _FieldOfViewX; set { _FieldOfViewX = value; OnPropertyChanged(); } }
         private double _FieldOfViewX = 1.0;
         public double FieldOfViewY { get => _FieldOfViewY; set { _FieldOfViewY = value; OnPropertyChanged(); } }
         private double _FieldOfViewY = 1.0;
+
+
     }
 
     [DisplayName("MTF")]
@@ -78,16 +92,14 @@ namespace Pattern.LinePairMTF
 
         public override string GetTemplateName()
         {
-            return "FourLinePairMTF" + "_" + Config.LineBrushTag + Config.BackgroundBrushTag +
+            return Config.ChartType.ToString() + "_" + Config.LineBrushTag + Config.BackgroundBrushTag +
                 $"_{Config.LineThickness}_{Config.LineLength}";
         }
 
         public override Mat Gen(int height, int width)
         {
-            // 1. 创建底图
             var mat = new Mat(height, width, MatType.CV_8UC3, Config.BackgroundBrush.ToScalar());
 
-            // 2. 计算视场中心区域
             double fovx = Math.Max(0, Math.Min(Config.FieldOfViewX, 1.0));
             double fovy = Math.Max(0, Math.Min(Config.FieldOfViewY, 1.0));
 
@@ -96,39 +108,74 @@ namespace Pattern.LinePairMTF
             int startX = (width - fovWidth) / 2;
             int startY = (height - fovHeight) / 2;
 
-            // 3. 生成中心棋盘格小图
-            Mat checker = new Mat(fovHeight, fovWidth, MatType.CV_8UC3, Config.BackgroundBrush.ToScalar());
-            int cent_x = fovWidth / 2;
-            int cent_y = fovHeight / 2;
+            int cent_x = width / 2;
+            int cent_y = height / 2;
 
-            int count = Math.Min(Config.FieldX.Count, Config.FieldY.Count);
+            Mat checker = new Mat(fovHeight, fovWidth, MatType.CV_8UC3, Config.BackgroundBrush.ToScalar());
+            var fieldX = Config.FieldX;
+            var fieldY = Config.FieldY;
+            int count = Math.Min(fieldX.Count, fieldY.Count);
 
             for (int i = 0; i < count; i++)
             {
-                double fx = Config.FieldX[i];
-                double fy = Config.FieldY[i];
+                double fx = fieldX[i];
+                double fy = fieldY[i];
 
                 int x1 = (int)(cent_x - cent_x * fx);
                 int y1 = (int)(cent_y - cent_y * fy);
-                DrawFourLinePair(checker, fovWidth, fovHeight, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x1, y1);
-
                 int x2 = (int)(cent_x + cent_x * fx);
                 int y2 = (int)(cent_y - cent_y * fy);
-                DrawFourLinePair(checker, fovWidth, fovHeight, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x2, y2);
-
                 int x3 = (int)(cent_x - cent_x * fx);
                 int y3 = (int)(cent_y + cent_y * fy);
-                DrawFourLinePair(checker, fovWidth, fovHeight, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x3, y3);
-
                 int x4 = (int)(cent_x + cent_x * fx);
                 int y4 = (int)(cent_y + cent_y * fy);
-                DrawFourLinePair(checker, fovWidth, fovHeight, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x4, y4);
+                if (Config.ChartType == ChartType.FourLinePair)
+                {
+                    DrawFourLinePair(checker, fovWidth, fovHeight, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x1, y1);
+
+                    DrawFourLinePair(checker, fovWidth, fovHeight, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x2, y2);
+
+                    DrawFourLinePair(checker, fovWidth, fovHeight, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x3, y3);
+
+                    DrawFourLinePair(checker, fovWidth, fovHeight, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x4, y4);
+
+                }
+                else if (Config.ChartType == ChartType.Checkerboard)
+                {
+                    DrawRotatedRect(checker, x1, y1, Config.LineLength, Config.LineThickness, 45, Config.LineBrush.ToScalar());
+                    DrawRotatedRect(checker, x2, y2, Config.LineLength, Config.LineThickness, 45, Config.LineBrush.ToScalar());
+                    DrawRotatedRect(checker, x3, y3, Config.LineLength, Config.LineThickness, 45, Config.LineBrush.ToScalar());
+                    DrawRotatedRect(checker, x4, y4, Config.LineLength, Config.LineThickness, 45, Config.LineBrush.ToScalar());
+                }
+                else if (Config.ChartType == ChartType.BMW)
+                {
+                    DrawBMW(checker, x1, y1, Config.LineLength, 45, Config.LineBrush.ToScalar());
+                    DrawBMW(checker, x2, y2, Config.LineLength, 45, Config.LineBrush.ToScalar());
+                    DrawBMW(checker, x3, y3, Config.LineLength, 45, Config.LineBrush.ToScalar());
+                    DrawBMW(checker, x4, y4, Config.LineLength, 45, Config.LineBrush.ToScalar());
+                }
             }
             // 4. 贴到底图中心
             checker.CopyTo(mat[new Rect(startX, startY, fovWidth, fovHeight)]);
             checker.Dispose();
-
             return mat;
+        }
+
+        // 斜方块
+        private static void DrawRotatedRect(Mat mat, int cx, int cy, int size, int thickness, double angle, Scalar color)
+        {
+            var rect = new RotatedRect(new Point2f(cx, cy), new Size2f(size, size), (float)angle);
+            Point2f[] vertices = rect.Points();
+            Point[] pts = Array.ConvertAll(vertices, v => new Point((int)v.X, (int)v.Y));
+            Cv2.FillConvexPoly(mat, pts, color);
+        }
+
+        // 宝马图
+        private static void DrawBMW(Mat mat, int cx, int cy, int size, double angle, Scalar color)
+        {
+            // 画两个对称的扇形
+            Cv2.Ellipse(mat, new Point(cx, cy), new Size(size, size), angle, 0, 90, color, -1, LineTypes.AntiAlias);
+            Cv2.Ellipse(mat, new Point(cx, cy), new Size(size, size), angle, 180, 270, color, -1, LineTypes.AntiAlias);
         }
 
         // 绘制指定位置的四线对
@@ -161,4 +208,5 @@ namespace Pattern.LinePairMTF
                 mat.Set<Vec3b>(y, x, new Vec3b((byte)color.Val0, (byte)color.Val1, (byte)color.Val2));
         }
     }
+
 }

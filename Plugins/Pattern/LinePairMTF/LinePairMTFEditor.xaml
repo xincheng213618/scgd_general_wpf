@@ -8,7 +8,7 @@
              d:DataContext="{d:DesignInstance local:PatternLinePairMTFConfig}"
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <Grid>
-        <StackPanel VerticalAlignment="Top">
+        <StackPanel x:Name="StackPanelInfo" VerticalAlignment="Top">
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                 <Button Content="背景色" Width="55" Margin="0,0,5,0" Click="BtnPickAltColor_Click"/>
                 <Rectangle x:Name="rectAltColor" Width="25" Height="25" Stroke="Black" Fill="{Binding BackgroundBrush}" Margin="0,0,5,0"/>
@@ -26,29 +26,6 @@
                 <Button Content="B" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="B"/>
                 <Button Content="W" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="W"/>
                 <Button Content="K" Margin="0,0,5,0" Click="BtnPickMainColorSet_Click"  Tag="K"/>
-            </StackPanel>
-
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBlock Width="80" Text="LineLength" Margin="0,0,5,0"/>
-                <TextBox Width="70" Text="{Binding LineLength}" Margin="0,0,5,0"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBlock Width="80" Text="LineThickness" Margin="0,0,5,0"/>
-                <TextBox Width="70" Text="{Binding LineThickness}" Margin="0,0,5,0"/>
-            </StackPanel>
-
-            <DockPanel Margin="0,0,0,5">
-                <TextBlock Text="XField" Margin="0,0,5,0"/>
-                <TextBox Text="{Binding FieldXJson}" Margin="0,0,5,0"/>
-            </DockPanel>
-            <DockPanel  Margin="0,0,0,5" >
-                <TextBlock Text="YField" Margin="0,0,5,0"/>
-                <TextBox Text="{Binding FieldYJson}" Margin="0,0,5,0"/>
-            </DockPanel>
-            <StackPanel  Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBlock Text="FieldOfView" Margin="0,0,5,0"/>
-                <TextBox  Width="100" Text="{Binding FieldOfViewX}" Margin="0,0,5,0"/>
-                <TextBox  Width="100" Text="{Binding FieldOfViewY}" Margin="0,0,5,0"/>
             </StackPanel>
         </StackPanel>
 
