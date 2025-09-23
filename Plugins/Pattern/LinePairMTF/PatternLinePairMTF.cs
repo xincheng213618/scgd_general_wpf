@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using OpenCvSharp;
 using System.ComponentModel;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Media;
 using static System.Windows.Forms.AxHost;
 
@@ -12,15 +13,15 @@ namespace Pattern.LinePairMTF
     public enum ChartType
     {
         FourLinePair,
-        Checkerboard, // 斜方块
+        RotatedRect, // 斜方块
         BMW           // 宝马图
     }
-    public class PatternLinePairMTFConfig:ViewModelBase,IConfig
+    public class PatternLinePairMTFConfig : ViewModelBase, IConfig
     {
         public SolidColorBrush LineBrush { get => _LineBrush; set { _LineBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _LineBrush = Brushes.Black;
 
-        public SolidColorBrush BackgroundBrush { get =>_BackgroundBrush; set {_BackgroundBrush = value; OnPropertyChanged(); } }
+        public SolidColorBrush BackgroundBrush { get => _BackgroundBrush; set { _BackgroundBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _BackgroundBrush = Brushes.Green;
 
         [DisplayName("图像类型")]
@@ -32,7 +33,10 @@ namespace Pattern.LinePairMTF
 
         public int LineLength { get => _LineLength; set { _LineLength = value; OnPropertyChanged(); } }
         private int _LineLength = 40;
+        public double Angle { get => _Angle; set { _Angle = value; OnPropertyChanged(); } }
+        private double _Angle = 45.0; // 默认45度
 
+        [PropertyEditorType(UpdateSourceTrigger = UpdateSourceTrigger.LostFocus)]
         public string FieldXJson
         {
             get => JsonConvert.SerializeObject(FieldX);
@@ -40,16 +44,17 @@ namespace Pattern.LinePairMTF
             {
                 try
                 {
-                    FieldX = JsonConvert.DeserializeObject<List<double>>(value) ?? new List<double>();
+                    FieldX = JsonConvert.DeserializeObject<List<double>>(value) ?? FieldX;
                 }
                 catch
                 {
-                    FieldX = new List<double>();
+
                 }
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(FieldX));
             }
         }
+        [PropertyEditorType(UpdateSourceTrigger = UpdateSourceTrigger.LostFocus)]
         public string FieldYJson
         {
             get => JsonConvert.SerializeObject(FieldY);
@@ -57,16 +62,16 @@ namespace Pattern.LinePairMTF
             {
                 try
                 {
-                    FieldY = JsonConvert.DeserializeObject<List<double>>(value) ?? new List<double>();
+                    FieldY = JsonConvert.DeserializeObject<List<double>>(value) ?? FieldY;
                 }
                 catch
                 {
-                    FieldY = new List<double>();
                 }
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(FieldY));
             }
         }
+
         [JsonIgnore]
         public List<double> FieldX { get; set; } = new List<double> { 0,  0.5, 0.8};
         [JsonIgnore]
@@ -81,6 +86,8 @@ namespace Pattern.LinePairMTF
         private double _FieldOfViewX = 1.0;
         public double FieldOfViewY { get => _FieldOfViewY; set { _FieldOfViewY = value; OnPropertyChanged(); } }
         private double _FieldOfViewY = 1.0;
+
+
 
 
     }
@@ -108,10 +115,13 @@ namespace Pattern.LinePairMTF
             int startX = (width - fovWidth) / 2;
             int startY = (height - fovHeight) / 2;
 
-            int cent_x = width / 2;
-            int cent_y = height / 2;
+
 
             Mat checker = new Mat(fovHeight, fovWidth, MatType.CV_8UC3, Config.BackgroundBrush.ToScalar());
+
+            int cent_x = fovWidth / 2;
+            int cent_y = fovHeight / 2;
+
             var fieldX = Config.FieldX;
             var fieldY = Config.FieldY;
             int count = Math.Min(fieldX.Count, fieldY.Count);
@@ -140,19 +150,20 @@ namespace Pattern.LinePairMTF
                     DrawFourLinePair(checker, fovWidth, fovHeight, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x4, y4);
 
                 }
-                else if (Config.ChartType == ChartType.Checkerboard)
+                else if (Config.ChartType == ChartType.RotatedRect)
                 {
-                    DrawRotatedRect(checker, x1, y1, Config.LineLength, Config.LineThickness, 45, Config.LineBrush.ToScalar());
-                    DrawRotatedRect(checker, x2, y2, Config.LineLength, Config.LineThickness, 45, Config.LineBrush.ToScalar());
-                    DrawRotatedRect(checker, x3, y3, Config.LineLength, Config.LineThickness, 45, Config.LineBrush.ToScalar());
-                    DrawRotatedRect(checker, x4, y4, Config.LineLength, Config.LineThickness, 45, Config.LineBrush.ToScalar());
+                    // 以RotatedRect为例
+                    DrawRotatedRect(checker, x1, y1, Config.LineLength, Config.LineThickness, Config.Angle, Config.LineBrush.ToScalar());
+                    DrawRotatedRect(checker, x2, y2, Config.LineLength, Config.LineThickness, Config.Angle, Config.LineBrush.ToScalar());
+                    DrawRotatedRect(checker, x3, y3, Config.LineLength, Config.LineThickness, Config.Angle, Config.LineBrush.ToScalar());
+                    DrawRotatedRect(checker, x4, y4, Config.LineLength, Config.LineThickness, Config.Angle, Config.LineBrush.ToScalar());
                 }
                 else if (Config.ChartType == ChartType.BMW)
                 {
-                    DrawBMW(checker, x1, y1, Config.LineLength, 45, Config.LineBrush.ToScalar());
-                    DrawBMW(checker, x2, y2, Config.LineLength, 45, Config.LineBrush.ToScalar());
-                    DrawBMW(checker, x3, y3, Config.LineLength, 45, Config.LineBrush.ToScalar());
-                    DrawBMW(checker, x4, y4, Config.LineLength, 45, Config.LineBrush.ToScalar());
+                    DrawBMW(checker, x1, y1, Config.LineLength, Config.Angle, Config.LineBrush.ToScalar());
+                    DrawBMW(checker, x2, y2, Config.LineLength, Config.Angle, Config.LineBrush.ToScalar());
+                    DrawBMW(checker, x3, y3, Config.LineLength, Config.Angle, Config.LineBrush.ToScalar());
+                    DrawBMW(checker, x4, y4, Config.LineLength, Config.Angle, Config.LineBrush.ToScalar());
                 }
             }
             // 4. 贴到底图中心

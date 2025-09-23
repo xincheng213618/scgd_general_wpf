@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Windows.Data;
 
 ///这里划到xi
 namespace System.ComponentModel
@@ -69,6 +70,8 @@ namespace System.ComponentModel
         public virtual PropertyEditorType PropertyEditorType => PropertyEditorTypeValue;
 
         protected PropertyEditorType PropertyEditorTypeValue { get; set; }
+
+        public UpdateSourceTrigger UpdateSourceTrigger { get; set; } = UpdateSourceTrigger.PropertyChanged;
 
         public PropertyEditorTypeAttribute(PropertyEditorType propertyEditorType)
         {

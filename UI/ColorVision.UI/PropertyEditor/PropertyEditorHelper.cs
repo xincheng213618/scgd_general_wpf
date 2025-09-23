@@ -367,7 +367,19 @@ namespace ColorVision.UI
 
                 default:
                     {
-                        var textbox = CreateSmallTextBox(CreateTwoWayBinding(obj, property.Name));
+                        Binding binding = CreateTwoWayBinding(obj, property.Name);
+                        binding.UpdateSourceTrigger = editorAttr?.UpdateSourceTrigger??UpdateSourceTrigger.Default;
+
+                        var t = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+                        if (t == typeof(float) || property.PropertyType == typeof(double))
+                        {
+                            binding.StringFormat = "0.0################";
+                        }
+
+                        var textbox = CreateSmallTextBox(binding);
+
+
+
                         textbox.PreviewKeyDown += TextBox_PreviewKeyDown;
                         dockPanel.Children.Add(textbox);
                     }
