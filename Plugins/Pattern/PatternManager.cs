@@ -9,10 +9,11 @@ using System.IO;
 using System.IO.Compression;
 using System.Reflection;
 using System.Windows;
+using System.Threading.Tasks;
+using System.Windows.Threading;
 
 namespace Pattern
 {
-
     public class PatternManagerConfig:ViewModelBase,IConfig
     {
         [DisplayName("图卡生成路径"), PropertyEditorType(PropertyEditorType.TextSelectFolder)]
@@ -26,9 +27,6 @@ namespace Pattern
         [DisplayName("保存格式")]
         public PatternFormat PatternFormat { get => _PatternFormat; set { _PatternFormat = value; OnPropertyChanged(); } }
         private PatternFormat _PatternFormat = PatternFormat.bmp;
-
-
-
     }
 
     public class PatternManager
@@ -55,6 +53,21 @@ namespace Pattern
 
         private PatternManager()
         {
+            // 异步加载插件和模板文件
+            Task.Run(() => LoadPatternsAndFilesAsync());
+
+            EditCommand = new RelayCommand(a => Edit());
+            OpenPatternPathCommand = new RelayCommand(a => OpenPatternPath());
+            OpenSaveFilePathCommand = new RelayCommand(a => OpenSaveFilePath());
+            ClearSaveFilePathCommand = new RelayCommand(a => ClearSaveFilePath());
+            ClearTemplatePatternFilesCommand = new RelayCommand(a => ClearTemplatePatternFiles());
+            ExportZipCommand = new RelayCommand(async a => await ExportPatternZipAsync());
+            ImportZipCommand = new RelayCommand(async a => await ImportPatternZipAsync());
+        }
+
+        private void LoadPatternsAndFilesAsync()
+        {
+            // 1. 加载插件
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IPattern).IsAssignableFrom(t) && !t.IsAbstract))
@@ -75,7 +88,10 @@ namespace Pattern
                                 Category = category,
                                 Pattern = pattern
                             };
-                            Patterns.Add(patternMeta);
+                            lock (Patterns)
+                            {
+                                Patterns.Add(patternMeta);
+                            }
                             log.Info($"已加载图案生成器: {type.FullName}");
                         }
                     }
@@ -83,35 +99,33 @@ namespace Pattern
                     {
                         log.Error($"加载图案生成器失败: {type.FullName}", ex);
                     }
-
                 }
             }
 
+            // 2. 加载模板文件
             if (!Directory.Exists(PatternPath))
                 Directory.CreateDirectory(PatternPath);
-            foreach (var item in Directory.GetFiles(PatternPath))
+            var files = Directory.GetFiles(PatternPath);
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                if (item.EndsWith(".json", StringComparison.CurrentCulture))
+                TemplatePatternFiles.Clear();
+                foreach (var item in files)
                 {
-                    TemplatePatternFiles.Add(new TemplatePatternFile(item));
+                    if (item.EndsWith(".json", StringComparison.CurrentCulture))
+                    {
+                        TemplatePatternFiles.Add(new TemplatePatternFile(item));
+                    }
                 }
-            }
-            EditCommand = new RelayCommand(a => Edit());
-            OpenPatternPathCommand = new RelayCommand(a => OpenPatternPath());
-            OpenSaveFilePathCommand = new RelayCommand(a => OpenSaveFilePath());
-            ClearSaveFilePathCommand = new RelayCommand(a => ClearSaveFilePath());
-            ClearTemplatePatternFilesCommand = new RelayCommand(a => ClearTemplatePatternFiles());
-            ExportZipCommand = new RelayCommand(a => ExportPatternZip());
-            ImportZipCommand = new RelayCommand(a => ImportPatternZip());
+            });
         }
+
         /// <summary>
-        /// 打包PatternPath目录为zip，并让用户选择导出位置
+        /// 异步打包PatternPath目录为zip，并让用户选择导出位置
         /// </summary>
-        public void ExportPatternZip()
+        public async Task ExportPatternZipAsync()
         {
             try
             {
-                // 1. 获取要保存的位置
                 SaveFileDialog saveFileDialog = new SaveFileDialog
                 {
                     Filter = "Zip 文件 (*.zip)|*.zip",
@@ -121,23 +135,31 @@ namespace Pattern
 
                 string zipPath = saveFileDialog.FileName;
 
-                if (File.Exists(zipPath))
-                    File.Delete(zipPath);
+                await Task.Run(() =>
+                {
+                    if (File.Exists(zipPath))
+                        File.Delete(zipPath);
+                    ZipFile.CreateFromDirectory(PatternPath, zipPath, CompressionLevel.Optimal, false);
+                });
 
-                ZipFile.CreateFromDirectory(PatternPath, zipPath, CompressionLevel.Optimal, false);
-
-                MessageBox.Show("导出成功！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show("导出成功！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                });
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show($"导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                });
             }
         }
 
         /// <summary>
-        /// 选择zip文件并解压到PatternPath
+        /// 异步选择zip文件并解压到PatternPath
         /// </summary>
-        public void ImportPatternZip()
+        public async Task ImportPatternZipAsync()
         {
             try
             {
@@ -149,29 +171,34 @@ namespace Pattern
 
                 string zipPath = openFileDialog.FileName;
 
-                // 1. 清空PatternPath（可选，视需求决定是否保留原内容）
-                if (Directory.Exists(PatternPath))
-                    Directory.Delete(PatternPath, true);
-                Directory.CreateDirectory(PatternPath);
-
-                // 2. 解压到PatternPath
-                ZipFile.ExtractToDirectory(zipPath, PatternPath);
-
-                MessageBox.Show("导入成功！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                // 3. 重新加载模板文件
-                TemplatePatternFiles.Clear();
-                foreach (var item in Directory.GetFiles(PatternPath))
+                await Task.Run(() =>
                 {
-                    if (item.EndsWith(".json", StringComparison.CurrentCulture))
+                    if (Directory.Exists(PatternPath))
+                        Directory.Delete(PatternPath, true);
+                    Directory.CreateDirectory(PatternPath);
+                    ZipFile.ExtractToDirectory(zipPath, PatternPath);
+                });
+
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show("导入成功！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                    // 重新加载模板文件
+                    TemplatePatternFiles.Clear();
+                    foreach (var item in Directory.GetFiles(PatternPath))
                     {
-                        TemplatePatternFiles.Add(new TemplatePatternFile(item));
+                        if (item.EndsWith(".json", StringComparison.CurrentCulture))
+                        {
+                            TemplatePatternFiles.Add(new TemplatePatternFile(item));
+                        }
                     }
-                }
+                });
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"导入失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show($"导入失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                });
             }
         }
 
@@ -190,20 +217,18 @@ namespace Pattern
 
         public void ClearSaveFilePath()
         {
-            // 2. 检查目录是否存在
             if (Directory.Exists(Config.SaveFilePath))
             {
                 var confirmResult = MessageBox.Show("确定要清空内容吗？", "清空确认", MessageBoxButton.YesNo, MessageBoxImage.Warning);
                 if (confirmResult != MessageBoxResult.Yes)
                 {
-                    return; // 用户取消
+                    return;
                 }
                 try
                 {
                     Directory.Delete(Config.SaveFilePath, true);
                     if (!Directory.Exists(Config.SaveFilePath))
                         Directory.CreateDirectory(Config.SaveFilePath);
-                    // 3. 清空成功提示
                     MessageBox.Show("清空成功！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
