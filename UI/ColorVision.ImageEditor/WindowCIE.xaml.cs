@@ -74,7 +74,7 @@ namespace ColorVision.ImageEditor
         public ImageViewModel ImageViewModel => ImageView.ImageViewModel;
         private void Window_Initialized(object sender, System.EventArgs e)
         {
-            ImageView.ToolBar1.Visibility = Visibility.Collapsed;
+            ImageView.ToolBarTop.Visibility = Visibility.Collapsed;
             ImageView.ToolBarRight.Visibility = Visibility.Collapsed;
             ImageView.ToolBarLeft.Visibility = Visibility.Collapsed;
             ImageView.ToolBarAl.Visibility = Visibility.Collapsed;

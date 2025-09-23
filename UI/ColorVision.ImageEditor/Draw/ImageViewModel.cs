@@ -131,9 +131,9 @@ namespace ColorVision.ImageEditor
         {
             if (oldMax != ZoomboxSub.ContentMatrix.M11)
             {
-                oldMax = ZoomboxSub.ContentMatrix.M11;
                 if (Config.IsLayoutUpdated)
                 {
+                    oldMax = ZoomboxSub.ContentMatrix.M11;
                     double scale = 1 / ZoomboxSub.ContentMatrix.M11;
                     DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + _guid.ToString(), 20, () => ImageLayoutUpdatedRender(scale, DrawingVisualLists));
                 }
@@ -284,18 +284,7 @@ namespace ColorVision.ImageEditor
         #endregion
 
         #region Properties with change notification
-        
-        public bool ScaleRulerShow
-        { 
-            get => ToolBarScaleRuler.IsShow;
-            set
-            {
-                if (ToolBarScaleRuler.IsShow == value) return;
-                ToolBarScaleRuler.IsShow = value;
-                OnPropertyChanged();
-            }
-        }
-
+      
         /// <summary>
         /// 当前的缩放分辨率
         /// </summary>
@@ -306,21 +295,6 @@ namespace ColorVision.ImageEditor
         }
 
 
-        private bool _ShowImageInfo;
-        public bool ShowImageInfo
-        {
-            get => _ShowImageInfo; 
-            set
-            {
-                if (_ShowImageInfo == value) return;
-                if (value) ImageEditMode = false;
-                _ShowImageInfo = value;
-
-                MouseMagnifier.IsShow = value;
-                OnPropertyChanged();
-            }
-        }
-
         public EventHandler<bool> EditModeChanged { get; set; }
 
         private bool _ImageEditMode;
@@ -330,7 +304,6 @@ namespace ColorVision.ImageEditor
             set
             {
                 if (_ImageEditMode == value) return;
-                if (value) ShowImageInfo = false;
                 _ImageEditMode = value;
 
                 EditModeChanged?.Invoke(this, _ImageEditMode);

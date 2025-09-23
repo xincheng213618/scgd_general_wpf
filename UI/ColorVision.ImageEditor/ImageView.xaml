@@ -131,12 +131,12 @@
                 </Border>
 
 
-                <ToolBarTray x:Name="ToolBar1"  VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                <ToolBarTray x:Name="ToolBarTop"  VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
                     <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True">
-                        <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding ImageEditMode}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
+                        <ToggleButton IsChecked="{Binding ImageEditMode}"  Margin="1,0">
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
                         </ToggleButton>
-                        <ToggleButton x:Name="ToggleButtonMouse"  IsChecked="{Binding ShowImageInfo}" >
+                        <ToggleButton  IsChecked="{Binding MouseMagnifier.IsShow}" Margin="1,0" >
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMouse}"  Margin="-5"/>
                         </ToggleButton>
                         <Button Command="{Binding ZoomUniformCommand}"  Margin="1,0">
@@ -253,11 +253,15 @@
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,0,0,5">
                                 <ui:ToggleSwitch IsChecked="{Binding Config.IsLayoutUpdated}" DockPanel.Dock="Right" />
-                                <TextBlock Text="自动刷新绘图" Width="100" HorizontalAlignment="Left"/>
+                                <TextBlock Text="自动刷新" Width="100" HorizontalAlignment="Left"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
                                 <ui:ToggleSwitch IsChecked="{Binding Config.IsShowText}" DockPanel.Dock="Right" />
                                 <TextBlock Text="显示文字" Width="100" HorizontalAlignment="Left"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <ui:ToggleSwitch IsChecked="{Binding Config.IsShowMsg}" DockPanel.Dock="Right" />
+                                <TextBlock Text="显示消息" Width="100" HorizontalAlignment="Left"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
                                 <TextBlock Text="MaxZoom" Width="100"/>
@@ -271,6 +275,10 @@
                                 <TextBlock Text="伪彩色" Width="100"/>
                                 <ComboBox x:Name="ComColormapTypes" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" Text="{Binding  Config.ColormapTypes}" DisplayMemberPath="Key"/>
                             </DockPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"  Margin="0,5" CornerRadius="5">
+                        <StackPanel Margin="5">
                             <DockPanel Margin="0,5,0,5">
                                 <TextBlock Text="CVICE范围" Width="100"/>
                                 <TextBox  Text="{Binding MouseMagnifier.Radius}"/>

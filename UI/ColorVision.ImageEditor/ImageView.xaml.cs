@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS8625
-using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
@@ -89,6 +88,25 @@ namespace ColorVision.ImageEditor
                     }
                 }
             };
+            Config.LayoutUpdatedChanged += (s, e) =>
+            {
+                if (e)
+                {
+                    Zoombox1.UpdateLayout();
+                }
+            };
+            
+            Config.ShowMsgChanged += (s, e) =>
+            {
+                if (!e)
+                {
+                    foreach (var drawingVisual in DrawingVisualLists)
+                    {
+                        drawingVisual.BaseAttribute.Msg = string.Empty;
+                    }
+                }
+            };
+
 
             ComColormapTypes.ItemsSource = ColormapConstats.GetColormapHDictionary();
 
@@ -153,7 +171,6 @@ namespace ColorVision.ImageEditor
             {
                 if (ImageViewModel.EraseManager.IsShow)
                 {
-                    ToggleButtonDrag.IsChecked = true;
                     Zoombox1.ActivateOn = toggleButton.IsChecked == true ? ModifierKeys.Control : ModifierKeys.None;
                 }
             }

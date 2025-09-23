@@ -338,7 +338,7 @@ namespace ColorVision.Engine.Templates.POI.Image
 
             void ButtonCIE1931_Click(object sender, RoutedEventArgs e)
             {
-                imageView.ImageViewModel.ShowImageInfo = true;
+                imageView.ImageViewModel.ImageEditMode = true;
 
                 if (windowCIE == null)
                 {
@@ -367,7 +367,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                     windowCIE.Closed += (s, e) =>
                     {
                         imageView.ImageViewModel.MouseMagnifier.MouseMoveColorHandler -= mouseMoveColorHandler;
-                        imageView.ImageViewModel.ShowImageInfo = false;
+                        imageView.ImageViewModel.MouseMagnifier.IsShow = false;
                         windowCIE = null;
                     };
                 }
