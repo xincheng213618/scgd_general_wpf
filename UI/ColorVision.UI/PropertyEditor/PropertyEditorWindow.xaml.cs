@@ -160,9 +160,6 @@ namespace ColorVision.UI
                 };
                 var stackPanel = new StackPanel { Margin = new Thickness(10,5,10,0) };
                 border.Child = stackPanel;
-                PropertyPanel.Children.Add(border);
-                TreeViewItem treeViewItem = new TreeViewItem() { Header = categoryGroup.Key, Tag = border };
-                treeView.Items.Add(treeViewItem);
                 foreach (var property in categoryGroup.Value)
                 {
                     var browsableAttr = property.GetCustomAttribute<BrowsableAttribute>();
@@ -204,15 +201,23 @@ namespace ColorVision.UI
                             dockPanel = PropertyEditorHelper.GenFontStretchProperties(property, obj);
                         else if (property.PropertyType == typeof(FlowDirection))
                             dockPanel = PropertyEditorHelper.GenFlowDirectionProperties(property, obj);
-                        else if (typeof(ViewModelBase).IsAssignableFrom(property.PropertyType))
+
+                        else if (typeof(INotifyPropertyChanged).IsAssignableFrom(property.PropertyType))
                         {
                             // 如果属性是ViewModelBase的子类，递归解析
-                            var nestedObj = (ViewModelBase)property.GetValue(obj);
+                            var nestedObj = (INotifyPropertyChanged)property.GetValue(obj);
                             if (nestedObj != null)
                             {
+                                stackPanel.Margin = new Thickness(0);
                                 stackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(nestedObj));
                                 continue;
                             }
+                        }
+                        else if (property.PropertyType ==typeof(object) && property.GetValue(obj) is INotifyPropertyChanged nestedObj)
+                        {
+                            stackPanel.Margin = new Thickness(0);
+                            stackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(nestedObj));
+                            continue;
                         }
                         else
                         {
@@ -236,6 +241,13 @@ namespace ColorVision.UI
                         stackPanel.Children.Add(dockPanel);
                     }
 
+                }
+                if (stackPanel.Children.Count > 0)
+                {
+                    TreeViewItem treeViewItem = new TreeViewItem() { Header = categoryGroup.Key, Tag = border };
+                    treeView.Items.Add(treeViewItem);
+
+                    PropertyPanel.Children.Add(border);
                 }
             }
         }

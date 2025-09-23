@@ -18,15 +18,15 @@ namespace ColorVision.ImageEditor
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name;
 
-        [Browsable(false), Category("Tag")]
+        [Category("Tag")]
         public object? Tag { get => _Tag; set { _Tag = value; } }
         private object? _Tag;
 
-        [Browsable(false), Category("Msg")]
+        [Category("Msg")]
         public string? Msg { get => _Msg; set { _Msg = value; OnPropertyChanged(); } }
         private string? _Msg;
 
-        [Browsable(true),Category("Param")]
+        [Category("Param")]
         public object? Param { get => _Param; set { _Param = value; } }
         private object? _Param;
 
