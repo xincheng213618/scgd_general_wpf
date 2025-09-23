@@ -16,17 +16,17 @@
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="320"/>
-            <ColumnDefinition Width="340"/>
+            <ColumnDefinition Width="290"/>
+            <ColumnDefinition Width="300"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <!-- 左侧操作区 -->
-        <Grid Grid.Column="0" Margin="8,8,4,8">
+        <Grid Grid.Column="0" Margin="5,5,5,5">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <StackPanel>
+            <StackPanel Margin="0,0,0,5">
                 <!-- 操作按钮组1 -->
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                     <Button Content="打开模板文件夹" Command="{Binding OpenPatternPathCommand}" ToolTip="打开模板存储目录" Margin="0,0,8,0">
@@ -48,28 +48,28 @@
                     <Button Content="打开输出文件夹" Command="{Binding OpenSaveFilePathCommand}" ToolTip="打开图片输出目录" Margin="0,0,8,0"/>
                     <Button Content="清空" Command="{Binding ClearSaveFilePathCommand}" ToolTip="清空输出目录"/>
                 </StackPanel>
-                <!-- 操作按钮组3 -->
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,8">
-                    <Button Command="{Binding ClearTemplatePatternFilesCommand}" Padding="2" Height="25" Width="25" Margin="0,0,8,0" ToolTip="清空模板列表">
-                        <Image Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" RenderTransformOrigin="0.5,0.5">
-                            <Image.RenderTransform>
-                                <ScaleTransform x:Name="ScaleTransform" ScaleX="1" ScaleY="1" />
-                            </Image.RenderTransform>
-                        </Image>
-                    </Button>
-                    <Button Margin="0,0,8,0" HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="25" Width="25" ToolTip="编辑配置">
-                        <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
-                            <TextBlock.RenderTransform>
-                                <RotateTransform x:Name="rotateTransform99" CenterX="8" CenterY="8"/>
-                            </TextBlock.RenderTransform>
-                        </TextBlock>
-                    </Button>
-                </StackPanel>
-                <!-- 搜索框 -->
-                <TextBox x:Name="PatternSearchBox" Margin="0,0,0,8" Height="28" VerticalContentAlignment="Center"/>
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right"  Margin="5,0,0,0">
+                        <Button Command="{Binding ClearTemplatePatternFilesCommand}" Padding="2" Height="25" Width="25" Margin="0,0,5,0" ToolTip="清空模板列表">
+                            <Image Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" RenderTransformOrigin="0.5,0.5">
+                                <Image.RenderTransform>
+                                    <ScaleTransform x:Name="ScaleTransform" ScaleX="1" ScaleY="1" />
+                                </Image.RenderTransform>
+                            </Image>
+                        </Button>
+                        <Button HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="25" Width="25" ToolTip="编辑配置">
+                            <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                                <TextBlock.RenderTransform>
+                                    <RotateTransform x:Name="rotateTransform99" CenterX="8" CenterY="8"/>
+                                </TextBlock.RenderTransform>
+                            </TextBlock>
+                        </Button>
+                    </StackPanel>
+                    <TextBox x:Name="PatternSearchBox"   VerticalContentAlignment="Center"/>
+                </DockPanel>
             </StackPanel>
             <!-- 模板列表 -->
-            <ListView Grid.Row="1" x:Name="ListViewPattern" Background="Transparent" Margin="0" Padding="0" BorderThickness="0" SelectionChanged="ListViewPattern_SelectionChanged">
+            <ListView Grid.Row="1" x:Name="ListViewPattern" Background="Transparent" Padding="0" BorderThickness="0" SelectionChanged="ListViewPattern_SelectionChanged">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
                         <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
@@ -102,20 +102,23 @@
             </ListView>
         </Grid>
         <!-- 中间编辑区 -->
-        <Grid Grid.Column="1" Margin="4,8,4,8">
+        <Grid Grid.Column="1" Margin="5">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="auto"/>
             </Grid.RowDefinitions>
             <ScrollViewer Grid.Row="0">
-                <StackPanel Margin="5">
+                <StackPanel>
                     <!-- 分辨率选择 -->
-                    <ComboBox x:Name="cmbResolution" Margin="0,0,0,8" Height="28"/>
-                    <StackPanel x:Name="ResolutionStackPanel" Orientation="Horizontal" Margin="0,0,0,8">
-                        <TextBlock Text="分辨率" Margin="0,0,8,0"/>
-                        <TextBox x:Name="txtWidth" Width="100" Text="{Binding Width}" Margin="0,0,8,0"/>
-                        <TextBox x:Name="txtHeight" Width="100" Text="{Binding Height}" Margin="0,0,8,0"/>
-                    </StackPanel>
+                    <DockPanel Margin="0,0,0,8">
+                        <ComboBox x:Name="cmbResolution"  DockPanel.Dock="Right" Width="120"/>
+
+                        <StackPanel x:Name="ResolutionStackPanel" Orientation="Horizontal" >
+                            <TextBox x:Name="txtWidth" Width="70" Text="{Binding Width}" Margin="0,0,5,0" />
+                            <TextBox x:Name="txtHeight" Width="70" Text="{Binding Height}"  Margin="0,0,5,0" />
+                        </StackPanel>
+                    </DockPanel>
+
                     <!-- 模板选择 -->
                     <DockPanel Margin="0,0,0,8">
                         <Button DockPanel.Dock="Right" Grid.Column="1" Margin="8,0,8,0" HorizontalAlignment="Left" Padding="2" Height="25" Width="25" Click="Button_Click" ToolTip="编辑模板参数">
@@ -128,7 +131,7 @@
                         <ComboBox x:Name="cmbPattern1" DisplayMemberPath="Name" Height="28"/>
                     </DockPanel>
                     <!-- 模板参数编辑区 -->
-                    <Border x:Name="PatternEditorGrid" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="4" Padding="8"/>
+                    <Border x:Name="PatternEditorGrid" />
                 </StackPanel>
             </ScrollViewer>
             <!-- 操作按钮区 -->
@@ -146,6 +149,6 @@
             </Grid>
         </Grid>
         <!-- 右侧图片显示区 -->
-        <Border x:Name="DisplayGrid" Grid.Column="2" Margin="4,8,8,8" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="8"/>
+        <Border x:Name="DisplayGrid" Grid.Column="2" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="8"/>
     </Grid>
 </Window>

@@ -64,7 +64,7 @@ namespace Pattern
         private readonly (string, int, int)[] commonResolutions =
         {
             ("3840x2160",3840,2160), ("1920x1080",1920,1080), ("1280x720",1280,720), ("1024x768",1024,768),
-            ("800x600",800,600), ("640x480",640,480), ("自定义",0,0)
+            ("800x600",800,600), ("640x480",640,480)
         };
         static PatternWindowConfig Config => PatternWindowConfig.Instance;
 
@@ -203,13 +203,6 @@ namespace Pattern
             {
                 Config.Width = commonResolutions[idx].Item2;
                 Config.Height = commonResolutions[idx].Item3;
-                txtWidth.IsEnabled = false;
-                txtHeight.IsEnabled = false;
-            }
-            else // 自定义
-            {
-                txtWidth.IsEnabled = true;
-                txtHeight.IsEnabled = true;
             }
         }
 
