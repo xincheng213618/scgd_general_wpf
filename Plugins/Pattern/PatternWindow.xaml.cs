@@ -199,7 +199,7 @@ namespace Pattern
         private void CmbResolution_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             int idx = cmbResolution.SelectedIndex;
-            if (idx >= 0 && idx < commonResolutions.Length - 1)
+            if (idx >= 0 && idx < commonResolutions.Length)
             {
                 Config.Width = commonResolutions[idx].Item2;
                 Config.Height = commonResolutions[idx].Item3;

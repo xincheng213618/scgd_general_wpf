@@ -4,9 +4,11 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Pattern"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:properties ="clr-namespace:Pattern.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PatternManager}"
-        Title="图卡生成工具" Height="600" Width="1300" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
+        Title="图卡生成工具" Height="600" Width="1400" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBoxBaseStyle}"/>
         <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBaseStyle}">
@@ -65,7 +67,33 @@
                             </TextBlock>
                         </Button>
                     </StackPanel>
-                    <TextBox x:Name="PatternSearchBox"   VerticalContentAlignment="Center"/>
+                    <Grid x:Name="SearchGrid"  VerticalAlignment="Center" >
+                        <hc:TextBox x:Name="PatternSearchBox"  Style="{DynamicResource TextBoxPlus.Small}" Padding="20,1,2,1"  BorderThickness="1" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" MaxLength="15"  VerticalContentAlignment="Center"  />
+                        <Viewbox Width="12 " Height="12" HorizontalAlignment="Left" Margin="4,0,0,0">
+                            <Rectangle Width="16 " Height="16" >
+                                <Rectangle.Resources>
+                                    <SolidColorBrush x:Key="canvas" Opacity="0" />
+                                    <SolidColorBrush x:Key="light-defaultgrey-10" Color="{DynamicResource defaultgreyColor}" Opacity=" 0.1" />
+                                    <SolidColorBrush x:Key="light-defaultgrey" Color="{DynamicResource defaultgreyColor}" Opacity="1" />
+                                </Rectangle.Resources>
+                                <Rectangle.Fill>
+                                    <DrawingBrush Stretch="None">
+                                        <DrawingBrush.Drawing>
+                                            <DrawingGroup>
+                                                <DrawingGroup x:Name="canvas">
+                                                    <GeometryDrawing Brush="{DynamicResource canvas}" Geometry="F1M0,0H16V16H0Z" />
+                                                </DrawingGroup>
+                                                <DrawingGroup x:Name="level_1">
+                                                    <GeometryDrawing Brush="{DynamicResource light-defaultgrey-10}" Geometry="F1M11.5,6.5a5,5,0,1,1-5-5A5,5,0,0,1,11.5,6.5Z" />
+                                                    <GeometryDrawing Brush="{DynamicResource light-defaultgrey}" Geometry="F1M1,6.5a5.5,5.5,0,0,0,9.017,4.224l5.129,5.13.708-.708-5.13-5.129A5.5,5.5,0,1,0,1,6.5Zm1,0A4.5,4.5,0,1,1,6.5,11,4.505,4.505,0,0,1,2,6.5Z" />
+                                                </DrawingGroup>
+                                            </DrawingGroup>
+                                        </DrawingBrush.Drawing>
+                                    </DrawingBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+                        </Viewbox>
+                    </Grid>
                 </DockPanel>
             </StackPanel>
             <!-- 模板列表 -->
@@ -95,7 +123,7 @@
                                         </Grid>
                                     </DockPanel>
                                 </DataTemplate>
-                            </GridViewColumn.CellTemplate>
+                            </GridViewColumn.CellTemplate> 
                         </GridViewColumn>
                     </GridView>
                 </ListView.View>
@@ -138,11 +166,11 @@
             <Grid Grid.Row="1" Margin="0,0,0,8">
                 <StackPanel>
                     <UniformGrid Columns="2" Margin="0,0,0,8">
-                        <Button Content="保存到模板" Click="TempSave_Click" Height="40" Margin="0,0,8,0" ToolTip="保存当前参数到模板"/>
-                        <Button Content="生成图卡" Click="PatternGen_Click" Height="40" Margin="0,0,8,0" ToolTip="生成当前图卡"/>
+                        <Button Content="保存到模板" Click="TempSave_Click" Height="40" Margin="0,0,4,0" ToolTip="保存当前参数到模板"/>
+                        <Button Content="生成图卡" Click="PatternGen_Click" Height="40" Margin="4,0,0,0" ToolTip="生成当前图卡"/>
                     </UniformGrid>
                     <DockPanel>
-                        <Button DockPanel.Dock="Right" Content="另存为" Click="BtnSave_Click" ToolTip="另存为图片文件"/>
+                        <Button DockPanel.Dock="Right" Content="另存为" Click="BtnSave_Click" ToolTip="另存为图片文件" Margin="5,0,0,0"/>
                         <ComboBox x:Name="cmbFormat" SelectedValue="{Binding Config.PatternFormat}" Height="28"/>
                     </DockPanel>
                 </StackPanel>
