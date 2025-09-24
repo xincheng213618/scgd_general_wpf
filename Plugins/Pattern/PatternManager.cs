@@ -39,7 +39,7 @@ namespace Pattern
         public PatternManagerConfig Config { get; set; } = ConfigService.Instance.GetRequiredService<PatternManagerConfig>();    
 
         public ObservableCollection<TemplatePatternFile> TemplatePatternFiles { get; set; } = new ObservableCollection<TemplatePatternFile>();
-        public List<PatternMeta> Patterns { get; set; } = new List<PatternMeta>();
+        public ObservableCollection<PatternMeta> Patterns { get; set; } = new ObservableCollection<PatternMeta>();
 
         public string PatternPath { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision", "Pattern");
        

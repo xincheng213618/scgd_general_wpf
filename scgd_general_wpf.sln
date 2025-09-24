@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 18
-VisualStudioVersion = 18.0.11012.119 d18.0
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.35906.104 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision", "ColorVision\ColorVision.csproj", "{AD038578-6456-48BF-9379-151DCBE9DBF5}"
 EndProject
@@ -31,6 +31,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Plugins", "Plugins", "{3978403E-55E4-4AAC-8978-1D39651BEA7C}"
 	ProjectSection(SolutionItems) = preProject
 		Plugins\Directory.Build.props = Plugins\Directory.Build.props
+		Plugins\Pattern.bat = Plugins\Pattern.bat
+		Plugins\WindowsServicePlugin.bat = Plugins\WindowsServicePlugin.bat
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventVWR", "Plugins\EventVWR\EventVWR.csproj", "{BE96962C-AB64-4FCB-9A2B-41FAD26BCF61}"
@@ -636,7 +638,7 @@ Global
 		{C56ADCEB-6F3D-43D2-8398-182F545B82B9} = {3978403E-55E4-4AAC-8978-1D39651BEA7C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
 		RESX_AutoCreateNewLanguageFiles = True
+		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
 	EndGlobalSection
 EndGlobal

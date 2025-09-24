@@ -69,10 +69,10 @@ namespace Pattern
         static PatternWindowConfig Config => PatternWindowConfig.Instance;
 
         static PatternManager PatternManager => PatternManager.GetInstance();
-        public static List<PatternMeta> Patterns => PatternManager.Patterns;
+        public static ObservableCollection<PatternMeta> Patterns => PatternManager.Patterns;
 
         public static ObservableCollection<TemplatePatternFile> TemplatePatternFiles => PatternManager.TemplatePatternFiles;
-        public PatternMeta PatternMeta { get; set; }
+        public PatternMeta? PatternMeta { get; set; }
         ImageView imgDisplay { get; set; }
 
         private ListCollectionView? _templateFilesView;
@@ -243,7 +243,7 @@ namespace Pattern
             {
                 string pattern = File.ReadAllText(templatePath);
                 TemplatePattern templatePattern = JsonConvert.DeserializeObject<TemplatePattern>(pattern);
-                PatternMeta = Patterns.Find(p => p.Name == templatePattern.PatternName);
+                PatternMeta = Patterns.FirstOrDefault(p => p.Name == templatePattern.PatternName);
                 if (PatternMeta == null)
                 {
                     System.Windows.MessageBox.Show("未找到对应的图案类型: " + templatePattern.PatternName);
@@ -253,10 +253,7 @@ namespace Pattern
                 Config.Height = templatePattern.PatternWindowConfig.Height;
 
                 PatternMeta.Pattern.SetConfig(templatePattern.Config);
-
-                //PatternEditorGrid.Children.Clear();
                 PatternEditorGrid.Child = null;
-                //PatternEditorGrid.Children.Add(PatternMeta.Pattern.GetPatternEditor());
                 PatternEditorGrid.Child = PatternMeta.Pattern.GetPatternEditor();
 
                 cmbPattern1.SelectedItem = PatternMeta;
