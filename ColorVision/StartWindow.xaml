@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
         mc:Ignorable="d"
-        Title="StartWindow"  Height="270" Width="600" BorderThickness="0" AllowsTransparency="True" Background="Transparent"  WindowStyle="None" Initialized="Window_Initialized">
+        Title="StartWindow"  Height="270" Width="700" BorderThickness="0" AllowsTransparency="True" Background="Transparent"  WindowStyle="None" Initialized="Window_Initialized">
     <Border CornerRadius="20" Background="#FF2D333A" BorderThickness="2" BorderBrush="#413B39">
         <Grid>
             <Grid.ColumnDefinitions>
@@ -43,7 +43,7 @@
                     <Border Background="#484d4f"  Margin="0,20,20,20" CornerRadius="15" Opacity="0.8">
                     </Border>
 
-                    <TextBox x:Name="TextBoxMsg" Grid.Row="0" Text="" Margin="10,30,30,30" Padding="0" VerticalContentAlignment="Top" IsReadOnly="True"  Foreground="White"  Background="Transparent" BorderThickness="0"  TextChanged="TextBoxMsg_TextChanged"/>
+                    <TextBox x:Name="TextBoxMsg" Grid.Row="0" Text="" Margin="10,30,30,20" Padding="0" VerticalContentAlignment="Top" IsReadOnly="True"  Foreground="White"  Background="Transparent" BorderThickness="0"  TextChanged="TextBoxMsg_TextChanged"/>
                 </Grid>
             </Border>
         </Grid>

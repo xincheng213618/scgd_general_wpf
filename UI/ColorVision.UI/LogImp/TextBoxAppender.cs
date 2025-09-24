@@ -9,6 +9,8 @@ using System.Windows.Threading;
 
 namespace ColorVision.UI
 {
+
+
     public class TextBoxAppender : AppenderSkeleton
     {
         private readonly TextBox _textBox;

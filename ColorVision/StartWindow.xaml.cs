@@ -3,6 +3,8 @@ using ColorVision.UI;
 using ColorVision.UI.Shell;
 using Dm.util;
 using log4net;
+using log4net.Layout;
+using log4net.Repository.Hierarchy;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -32,25 +34,35 @@ namespace ColorVision
             Left = SystemParameters.WorkArea.Right - Width;
             Top = SystemParameters.WorkArea.Bottom - Height;
         }
+        TextBoxAppender TextBoxAppender { get; set; }
+        Hierarchy Hierarchy { get; set; }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
             labelVersion.Text = Assembly.GetExecutingAssembly().GetName().Version?.ToString();
 
-            #if (DEBUG == true)
+
+#if (DEBUG == true)
             string info= $"{(DebugBuild(Assembly.GetExecutingAssembly()) ? "(Debug) " : "(Release)")}{(Debugger.IsAttached ? ColorVision.Properties.Resources.Debugging : "")} ({(IntPtr.Size == 4 ? "32" : "64")} {ColorVision.Properties.Resources.Bit} - {Assembly.GetExecutingAssembly().GetName().Version} - .NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy.MM.dd}";
             #else
             string info= $"{(DebugBuild(Assembly.GetExecutingAssembly()) ? "(Debug)" : "")}{(Debugger.IsAttached ? ColorVision.Properties.Resources.Debugging : "")}{(IntPtr.Size == 4 ? "32" : "64")} {ColorVision.Properties.Resources.Bit} -  {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} - .NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy/MM/dd}";
             #endif
 
             TextBoxMsg.Text = info;
+
+            Hierarchy = (Hierarchy)LogManager.GetRepository();
+            TextBoxAppender = new TextBoxAppender(TextBoxMsg, new TextBox(), 100);
+            TextBoxAppender.Layout = new PatternLayout("%date{HH:mm:ss} %-5level %message%newline");
+            Hierarchy.Root.AddAppender(TextBoxAppender);
+            log4net.Config.BasicConfigurator.Configure(Hierarchy);
+
             ThemeManager.Current.SystemThemeChanged += (e) => {
                 Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Assets/Image/{(e == Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
             };
             if (ThemeManager.Current.SystemTheme == Theme.Dark)
                 Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Assets/Image/ColorVision1.ico"));
 
-            _IComponentInitializers = new List<UI.IInitializer>();
+            _IComponentInitializers = new List<IInitializer>();
             var parser = ArgumentParser.GetInstance();
             parser.AddArgument("skip", false, "skip");
             parser.Parse();
@@ -136,10 +148,6 @@ namespace ColorVision
 
         public void Update(string message)
         {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                TextBoxMsg.Text += $"{Environment.NewLine}{message}";
-            });
             log.Info(message);
         }
         public static string? GetTargetFrameworkVersion()
@@ -167,10 +175,12 @@ namespace ColorVision
             foreach (var initializer in _IComponentInitializers)
             {
                 stopwatch.Start();
+
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    TextBoxMsg.Text += Environment.NewLine + $"{Properties.Resources.Initializer} {initializer.GetType().Name}";
+                    TextBoxMsg.Text += $"";
                 });
+                log.Info($"{Properties.Resources.Initializer} {initializer.GetType().Name}");
                 try
                 {
                     await initializer.InitializeAsync();
@@ -181,12 +191,10 @@ namespace ColorVision
                 }
                 stopwatch.Stop();
                 log.Info($"Initializer {initializer.GetType().Name} took {stopwatch.ElapsedMilliseconds} ms.");
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    TextBoxMsg.Text += $"  took {stopwatch.ElapsedMilliseconds} ms.";
-                });
                 stopwatch.Reset();
             }
+            Hierarchy.Root.RemoveAppender(TextBoxAppender);
+            log4net.Config.BasicConfigurator.Configure(Hierarchy);
             Application.Current.Dispatcher.Invoke(() =>
             {
                 try
@@ -217,6 +225,7 @@ namespace ColorVision
                         {
                             project2.Execute();
                         }
+
                     }
                     else
                     {
@@ -237,5 +246,6 @@ namespace ColorVision
         {
             TextBoxMsg.ScrollToEnd();
         }
+
     }
 }
