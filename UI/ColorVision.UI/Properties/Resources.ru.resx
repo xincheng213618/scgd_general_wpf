@@ -309,4 +309,13 @@
   <data name="Version" xml:space="preserve">
     <value>Версия</value>
   </data>
+  <data name="Line" xml:space="preserve">
+    <value>ХОРОШО</value>
+  </data>
+  <data name="Column" xml:space="preserve">
+    <value>Список</value>
+  </data>
+  <data name="Options" xml:space="preserve">
+    <value>Параметры</value>
+  </data>
 </root>

@@ -315,4 +315,7 @@
   <data name="Version" xml:space="preserve">
     <value>Version</value>
   </data>
+  <data name="Options" xml:space="preserve">
+    <value>Options</value>
+  </data>
 </root>

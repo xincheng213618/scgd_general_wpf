@@ -309,4 +309,13 @@
   <data name="Version" xml:space="preserve">
     <value>버전</value>
   </data>
+  <data name="Line" xml:space="preserve">
+    <value>좋아요</value>
+  </data>
+  <data name="Column" xml:space="preserve">
+    <value>목록</value>
+  </data>
+  <data name="Options" xml:space="preserve">
+    <value>옵션</value>
+  </data>
 </root>

@@ -295,4 +295,7 @@
   <data name="Version" xml:space="preserve">
     <value>版本</value>
   </data>
+  <data name="Options" xml:space="preserve">
+    <value>选项</value>
+  </data>
 </root>
