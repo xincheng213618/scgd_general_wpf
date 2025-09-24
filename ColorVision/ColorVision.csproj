@@ -50,10 +50,12 @@
     <None Remove="Assets\Image\ColorVision.ico" />
     <None Remove="Assets\Image\ColorVision.png" />
     <None Remove="Assets\Image\ColorVision1.ico" />
+    <None Remove="Assets\Image\ComfyUI_00080_.png" />
     <None Remove="Assets\Image\connect.png" />
     <None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
     <None Remove="Assets\png\background0.png" />
     <None Remove="Assets\png\PowerToy.png" />
+    <None Remove="ComfyUI_00062_.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -125,12 +127,16 @@
   <ItemGroup>
     <Resource Include="Assets\Image\ColorVision.png" />
     <Resource Include="Assets\Image\ColorVision1.ico" />
+    <Resource Include="Assets\Image\ComfyUI_00080_.png" />
     <Resource Include="Assets\Image\connect.png" />
     <Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
     <Resource Include="Assets\png\background0.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Assets\png\PowerToy.png" />
+    <Resource Include="ComfyUI_00062_.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
   </ItemGroup>
 
   <ItemGroup>
