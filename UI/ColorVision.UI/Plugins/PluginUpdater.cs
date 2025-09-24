@@ -1,7 +1,9 @@
 ﻿#pragma warning disable CS8604
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Text;
 using System.Windows;
 
@@ -9,8 +11,14 @@ namespace ColorVision.UI.Plugins
 {
     public static class PluginUpdater
     {
-        public static void DeletePlugin(string PackageName)
+        /// <summary>
+        /// Deletes one or more plugins.
+        /// </summary>
+        /// <param name="packageNames">The package names of the plugins to delete.</param>
+        public static void DeletePlugin(params string[] packageNames)
         {
+            if (packageNames == null || packageNames.Length == 0) return;
+
             ConfigService.Instance.SaveConfigs();
 
             string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionPluginsUpdate");
@@ -22,36 +30,44 @@ namespace ColorVision.UI.Plugins
             Directory.CreateDirectory(tempDirectory);
             // 创建批处理文件内容
             string batchFilePath = Path.Combine(tempDirectory, "update.bat");
-            string programPluginsDirectory = AppDomain.CurrentDomain.BaseDirectory + "Plugins";
-
-            string targetPluginDirectory = Path.Combine(programPluginsDirectory, PackageName);
+            string programPluginsDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins");
 
             string? executableName = Path.GetFileName(Environment.ProcessPath);
 
-            string batchContent = $@"
+            var batchContentBuilder = new StringBuilder();
+            batchContentBuilder.AppendLine($@"
 @echo off
 taskkill /f /im ""{executableName}""
 timeout /t 0
 setlocal
+");
 
-rem 设置要删除的目录路径
+            foreach (var packageName in packageNames)
+            {
+                if (string.IsNullOrWhiteSpace(packageName)) continue;
+                string targetPluginDirectory = Path.Combine(programPluginsDirectory, packageName);
+                batchContentBuilder.AppendLine($@"
+rem Set directory path to delete
 set targetDirectory=""{targetPluginDirectory}""
 
-rem 检查目录是否存在
+rem Check if directory exists
 if exist %targetDirectory% (
-    echo 正在删除目录: %targetDirectory%
+    echo Deleting directory: %targetDirectory%
     rd /s /q %targetDirectory%
-    echo 删除完成。
+    echo Deletion complete.
 ) else (
-    echo 目录不存在: %targetDirectory%
+    echo Directory not found: %targetDirectory%
 )
+");
+            }
 
+            batchContentBuilder.AppendLine($@"
 endlocal
 start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c MenuPluginManager
 rd /s /q ""{tempDirectory}""
 del ""%~f0"" & exit
-";
-            File.WriteAllText(batchFilePath, batchContent);
+");
+            File.WriteAllText(batchFilePath, batchContentBuilder.ToString());
 
             // 设置批处理文件的启动信息
             ProcessStartInfo startInfo = new()
@@ -71,15 +87,15 @@ del ""%~f0"" & exit
         }
 
         /// <summary>
-        /// 更新插件：
-        /// 1. 解压 ZIP 到 %TEMP%\\ColorVisionPluginsUpdate\\ColorVision\\
-        /// 2. 规范化多语言目录（en, fr, ja, ko, ru, zh-Hant）到 ColorVision 根目录
-        /// 3. 生成批处理，用管理员权限结束进程并整体复制 ColorVision 目录覆盖现有
+        /// Updates one or more plugins from their downloaded ZIP archives.
+        /// 1. Extracts all ZIPs to a temporary staging directory %TEMP%\\ColorVisionPluginsUpdate\\ColorVision\\Plugins\\.
+        /// 2. Generates a batch script to kill the main process, replace the old plugin files with the new ones, and restart the application.
         /// </summary>
-        /// <param name="packageName">插件包名称（可用于定制逻辑）</param>
-        /// <param name="downloadPath">下载的 ZIP 文件完整路径</param>
-        public static void UpdatePlugin(string downloadPath)
+        /// <param name="downloadPaths">Full paths to the downloaded plugin ZIP files.</param>
+        public static void UpdatePlugin(params string[] downloadPaths)
         {
+            if (downloadPaths == null || downloadPaths.Length == 0) return;
+
             try
             {
                 // 1. 保存配置（原逻辑）
@@ -87,30 +103,26 @@ del ""%~f0"" & exit
 
                 // 2. 定义临时与目标路径
                 string tempRoot = Path.Combine(Path.GetTempPath(), "ColorVisionPluginsUpdate");
-                string staging1Root = Path.Combine(tempRoot, "ColorVision"); // 期望的新的解压根
-                string stagingRoot = Path.Combine(tempRoot, "ColorVision","Plugins"); // 期望的新的解压根
-                string baseDir = AppDomain.CurrentDomain.BaseDirectory;     // 程序当前目录（包含 ColorVision 子目录假设）
+                string stagingRoot = Path.Combine(tempRoot, "ColorVision", "Plugins"); // Staging for all plugins
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;     // 程序当前目录
                 string exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? "";
                 string exeName = Path.GetFileName(exePath);
 
                 if (string.IsNullOrEmpty(exeName))
-                    throw new InvalidOperationException("无法确定当前执行文件名。");
+                    throw new InvalidOperationException("Cannot determine the current executable file name.");
 
                 // 3. 清理旧临时目录
                 SafeDeleteDirectory(tempRoot);
-
                 Directory.CreateDirectory(stagingRoot);
 
-                // 4. 解压
-                ZipFile.ExtractToDirectory(downloadPath, stagingRoot);
+                // 4. 解压所有插件包到同一个临时目录
+                foreach (var downloadPath in downloadPaths)
+                {
+                    if (string.IsNullOrWhiteSpace(downloadPath) || !File.Exists(downloadPath)) continue;
+                    ZipFile.ExtractToDirectory(downloadPath, stagingRoot);
+                }
 
-                //// 5. 归并多语言目录到 stagingRoot
-                //NormalizeLanguageDirectories(stagingRoot, staging1Root);
-
-                // （可选）如果你只打算更新单个插件，可以在这里仅处理 Plugins\\{packageName}，
-                // 但当前逻辑是整体 ColorVision 目录结构覆盖更新。
-
-                // 6. 生成批处理
+                // 5. 生成批处理
                 string batchFilePath = Path.Combine(tempRoot, "update.bat");
                 GenerateBatchFile(
                     batchFilePath: batchFilePath,
@@ -119,7 +131,7 @@ del ""%~f0"" & exit
                     exeName: exeName
                 );
 
-                // 7. 启动批处理（管理员权限：如果安装在 Program Files 下）
+                // 6. 启动批处理（管理员权限：如果安装在 Program Files 下）
                 var psi = new ProcessStartInfo
                 {
                     FileName = batchFilePath,
@@ -137,12 +149,12 @@ del ""%~f0"" & exit
 
                 Process.Start(psi);
 
-                // 8. 退出当前进程，等待批处理替换
+                // 7. 退出当前进程，等待批处理替换
                 Environment.Exit(0);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"更新失败: {ex.Message}");
+                MessageBox.Show($"Update failed: {ex.Message}");
             }
         }
 
@@ -150,7 +162,7 @@ del ""%~f0"" & exit
         /// 规范化多语言目录：
         /// 在任意子层级找到名为 en, fr, ja, ko, ru, zh-Hant 的文件夹，将其内容合并提升到 stagingRoot\\{lang}\\
         /// </summary>
-        private static void NormalizeLanguageDirectories(string stagingRoot,string stagingRoot1)
+        private static void NormalizeLanguageDirectories(string stagingRoot, string stagingRoot1)
         {
             string[] langFolders = { "en", "fr", "ja", "ko", "ru", "zh-Hant" };
 

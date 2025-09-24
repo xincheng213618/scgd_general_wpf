@@ -15,7 +15,7 @@ namespace ColorVision.UI
         private readonly StringBuilder _buffer = new StringBuilder();
         private readonly object _lock = new object();
         private readonly DispatcherTimer _flushTimer;
-        private const int FlushIntervalMs = 100; // 刷新频率，100ms合并一次刷新
+        public int FlushIntervalMs { get; set; } = 100; // 刷新频率，100ms合并一次刷新
         private bool _reverseLastState = false;
 
 
@@ -26,8 +26,9 @@ namespace ColorVision.UI
 
         private readonly TextBox _logTextBoxSearch;
 
-        public TextBoxAppender(TextBox textBox,TextBox logTextBoxSerch)
+        public TextBoxAppender(TextBox textBox,TextBox logTextBoxSerch, int flushIntervalMs =100)
         {
+            FlushIntervalMs = flushIntervalMs;
             _textBox = textBox ?? throw new ArgumentNullException(nameof(textBox));
             _logTextBoxSearch = logTextBoxSerch ?? throw new ArgumentNullException(nameof(logTextBoxSerch));
             _flushTimer = new DispatcherTimer
@@ -87,8 +88,6 @@ namespace ColorVision.UI
 
         private void UpdateTextBox(string logs, bool reverse)
         {
-
-
             if (reverse)
             {
                 if (LogConfig.Instance.MaxChars > 1000 && _textBox.Text.Length > LogConfig.Instance.MaxChars)

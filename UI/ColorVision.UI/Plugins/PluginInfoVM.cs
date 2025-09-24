@@ -87,22 +87,21 @@ namespace ColorVision.UI.Plugins
 
         public async void CheckVersion()
         {
-            string LatestReleaseUrl = UpdateUrl + "/" + PackageName + "/LATEST_RELEASE";
+            string LatestReleaseUrl = PluginLoaderrConfig.Instance.PluginPath  + PackageName + "/LATEST_RELEASE";
             LastVersion = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
         }
 
 
-        string UpdateUrl = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Plugins";
         public async void Update()
         {
-            string LatestReleaseUrl = UpdateUrl + "/" + PackageName + "/LATEST_RELEASE";
+            string LatestReleaseUrl = PluginLoaderrConfig.Instance.PluginPath + PackageName + "/LATEST_RELEASE";
             Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
             Application.Current.Dispatcher.Invoke(() =>
             {
                 if (MessageBox.Show(Application.Current.GetActiveWindow(), "是否更新", Name, MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{PackageName}-{version}.zip";
-                    string url = $"{UpdateUrl}/{PackageName}/{PackageName}-{version}.zip";
+                    string url = $"{PluginLoaderrConfig.Instance.PluginPath}{PackageName}/{PackageName}-{version}.zip";
                     WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                     if (File.Exists(downloadPath))
                     {
