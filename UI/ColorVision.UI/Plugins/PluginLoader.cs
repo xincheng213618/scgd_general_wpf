@@ -15,8 +15,10 @@ namespace ColorVision.UI.Plugins
 
         public static void LoadPlugins(string path)
         {
-            if (!Directory.Exists(path))
-                return;
+            if (!Directory.Exists(path ))
+            {
+                Directory.CreateDirectory(path);
+            }
 
             var plugins = PluginManagerConfig.Instance.Plugins;
             path = Path.GetFullPath(path); // 保证path是绝对路径

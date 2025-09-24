@@ -21,6 +21,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<COMReference Include="IWshRuntimeLibrary">
+			<WrapperTool>tlbimp</WrapperTool>
+			<VersionMinor>0</VersionMinor>
+			<VersionMajor>1</VersionMajor>
+			<Guid>f935dc20-1cf0-11d0-adb9-00c04fd58a0b</Guid>
+			<Lcid>0</Lcid>
+			<Isolated>false</Isolated>
+			<EmbedInteropTypes>true</EmbedInteropTypes>
+		</COMReference>
 		<PackageReference Include="AvalonEdit" Version="6.3.1.120" />
 		<PackageReference Include="log4net" Version="3.2.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
@@ -60,11 +69,4 @@
 		 <Pack>true</Pack>
 	  </None>
 	</ItemGroup>
-
-	<ItemGroup>
-	  <Reference Include="Interop.IWshRuntimeLibrary">
-	    <HintPath>..\ColorVision.Solution\obj\x64\Debug\net8.0-windows\Interop.IWshRuntimeLibrary.dll</HintPath>
-	  </Reference>
-	</ItemGroup>
-
 </Project>

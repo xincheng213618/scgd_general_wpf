@@ -136,8 +136,6 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
 
                 if (File.Exists(result.FilePath))
                 {
-                    HImage hImage;
-
                     // 2. 获取全局画布尺寸（假设 DrawCanvas.ActualWidth/ActualHeight）
                     int canvasWidth = (int)Math.Ceiling(view.ImageView.ActualWidth);
                     int canvasHeight = (int)Math.Ceiling(view.ImageView.ActualHeight);

@@ -48,11 +48,13 @@ namespace ColorVision.UI
 
         public DateTime InitDateTime { get; set; }
 
+        public string ConfigDIFileName { get; set; }
+
         public ConfigHandler()
         {
             InitDateTime = DateTime.Now;
             string AssemblyCompany = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "ColorVision";
-            string ConfigDIFileName = $"{AssemblyCompany}Config.json";
+            ConfigDIFileName =  $"{AssemblyCompany}Config.json";
             string backupDirName = "Backup";
             if (Directory.Exists("Config"))
             {
