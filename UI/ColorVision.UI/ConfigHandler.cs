@@ -20,7 +20,7 @@ namespace ColorVision.UI
 
         [DisplayName("最大备份数量"),Description("超过则自动清理旧备份")]
         public int MaxBackupFiles { get => _MaxBackupFiles; set { _MaxBackupFiles = value; OnPropertyChanged(); } }
-        private int _MaxBackupFiles;
+        private int _MaxBackupFiles = 10;
     }
     /// <summary>
     /// 加载插件
