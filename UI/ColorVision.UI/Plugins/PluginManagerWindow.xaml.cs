@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision.UI.Plugins
 {
@@ -123,12 +124,18 @@ namespace ColorVision.UI.Plugins
                             new PropertyEditorWindow(config).Show();
                         });
 
-
+                        var textBox = new TextBlock
+                        {
+                            Text = string.Join("\u200B", type.Name.ToCharArray()) ,
+                            TextWrapping = TextWrapping.WrapWithOverflow,
+                            TextTrimming = TextTrimming.CharacterEllipsis
+                        };
                         var button = new Button
                         {
                             Style = PropertyEditorHelper.ButtonCommandStyle,
-                            Content = type.Name,
-                            Command = relayCommand
+                            Content = textBox,
+                            Command = relayCommand,
+                            ToolTip = $"点击打开 {type.Name} 配置界面"
                         };
                         uniformGrid.Children.Add(button);
                     }

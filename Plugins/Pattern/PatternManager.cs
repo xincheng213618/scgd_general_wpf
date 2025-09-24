@@ -65,8 +65,9 @@ namespace Pattern
             ImportZipCommand = new RelayCommand(async a => await ImportPatternZipAsync());
         }
 
-        private void LoadPatternsAndFilesAsync()
+        private async Task LoadPatternsAndFilesAsync()
         {
+            await Task.Delay(30);
             // 1. 加载插件
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
@@ -90,7 +91,7 @@ namespace Pattern
                             };
                             lock (Patterns)
                             {
-                                Patterns.Add(patternMeta);
+                                Application.Current.Dispatcher.Invoke(() => Patterns.Add(patternMeta), DispatcherPriority.Background);
                             }
                             log.Info($"已加载图案生成器: {type.FullName}");
                         }

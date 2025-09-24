@@ -82,11 +82,25 @@ namespace ColorVision.UI
                 if (item.Prop.GetValue(obj) is not ICommand command) continue;
 
                 string displayName = GetDisplayName(rm, item.Prop, item.Attr!.DisplayName);
+                var textBox = new TextBox
+                {
+                    Text = displayName,
+                    IsReadOnly = true,
+                    TextWrapping = TextWrapping.Wrap,
+                    BorderThickness = new Thickness(0),
+                    Background = Brushes.Transparent,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    Padding = new Thickness(0),
+                    MinWidth = 60,
+                    MaxWidth = 200 // 可根据需要调整
+                };
                 var button = new Button
                 {
                     Style = ButtonCommandStyle,
-                    Content = displayName,
-                    Command = command
+                    Content = textBox,
+                    Command = command,
+                    ToolTip = displayName
                 };
                 if (item.Attr!.CommandType == CommandType.Highlighted)
                 {
