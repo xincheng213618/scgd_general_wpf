@@ -1,4 +1,5 @@
 ﻿using ColorVision.UI;
+using ColorVision.UI.Plugins;
 using log4net;
 using System;
 using System.Threading.Tasks;
@@ -16,9 +17,9 @@ namespace ColorVision.Plugins
             log.Info("PluginsInitializedCheck");
             try
             {
-                PluginManager.GetInstance();
+                PluginManagerV.GetInstance();
                 await Task.Delay(6000);
-                foreach (var item in PluginManager.GetInstance().Plugins)
+                foreach (var item in PluginManagerV.GetInstance().Plugins)
                 {
                     if (item.LastVersion > item.AssemblyVersion)
                     {

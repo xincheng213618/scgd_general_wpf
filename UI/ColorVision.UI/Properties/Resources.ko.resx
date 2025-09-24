@@ -291,4 +291,22 @@
   <data name="General" xml:space="preserve">
     <value>만능인</value>
   </data>
+  <data name="PluginManagerWindow" xml:space="preserve">
+    <value>플러그인 관리자 창</value>
+  </data>
+  <data name="PluginName" xml:space="preserve">
+    <value>플러그인 이름</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>찾다</value>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>고쳐 쓰다</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>삭제</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>버전</value>
+  </data>
 </root>

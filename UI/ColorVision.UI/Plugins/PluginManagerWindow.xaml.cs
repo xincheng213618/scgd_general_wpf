@@ -3,17 +3,13 @@ using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
-using LiveChartsCore.VisualElements;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 
-namespace ColorVision.Plugins
+namespace ColorVision.UI.Plugins
 {
 
     /// <summary>
@@ -31,10 +27,10 @@ namespace ColorVision.Plugins
 
         private void Window_Initialized(object sender, System.EventArgs e)
         {
-            this.DataContext = PluginManager.GetInstance(); ;
+            this.DataContext = PluginManagerV.GetInstance(); ;
             DefalutSearchComboBox.ItemsSource = new List<string>() { "Pattern", "EventVWR", "ScreenRecorder", "SystemMonitor", "WindowsServicePlugin"};
             ListViewPlugins.SelectedIndex = 0;
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => PluginManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex].Delete(), (s, e) => e.CanExecute = ListViewPlugins.SelectedIndex > -1));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => PluginManagerV.GetInstance().Plugins[ListViewPlugins.SelectedIndex].Delete(), (s, e) => e.CanExecute = ListViewPlugins.SelectedIndex > -1));
         }
 
         private bool IsRefreshChangedX;
@@ -47,7 +43,7 @@ namespace ColorVision.Plugins
             {
                 IsRefreshChangedX = false;
                 IsRefreshChangedY = false;
-                PluginInfoVM pluginInfoVM = PluginManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex];
+                PluginInfoVM pluginInfoVM = PluginManagerV.GetInstance().Plugins[ListViewPlugins.SelectedIndex];
                 BorderContent.DataContext = pluginInfoVM;
                 Application.Current.Dispatcher.Invoke(async () =>
                 {
@@ -182,7 +178,7 @@ namespace ColorVision.Plugins
         {
             if (ListViewPlugins.SelectedIndex > -1)
             {
-                PluginInfoVM pluginInfoVM = PluginManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex];
+                PluginInfoVM pluginInfoVM = PluginManagerV.GetInstance().Plugins[ListViewPlugins.SelectedIndex];
                 BorderContent.DataContext = pluginInfoVM;
                 Application.Current.Dispatcher.Invoke(async () =>
                 {

@@ -2,20 +2,14 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
-using ColorVision.UI;
-using ColorVision.UI.Plugins;
 using log4net;
 using Microsoft.Win32;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.Plugins
+namespace ColorVision.UI.Plugins
 {
     public class PluginWindowConfigProvider : IConfigSettingProvider
     {
@@ -49,12 +43,12 @@ namespace ColorVision.Plugins
     }
 
 
-    public class PluginManager:ViewModelBase
+    public class PluginManagerV:ViewModelBase
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(PluginManager));
-        private static PluginManager _instance;
+        private static readonly ILog log = LogManager.GetLogger(typeof(PluginManagerV));
+        private static PluginManagerV _instance;
         private static readonly object _locker = new();
-        public static PluginManager GetInstance() { lock (_locker) { _instance ??= new PluginManager(); return _instance; } }
+        public static PluginManagerV GetInstance() { lock (_locker) { _instance ??= new PluginManagerV(); return _instance; } }
         public ObservableCollection<PluginInfoVM> Plugins { get; private set; } = new ObservableCollection<PluginInfoVM>();
         public static PluginWindowConfig Config => PluginWindowConfig.Instance;
         public RelayCommand EditConfigCommand { get; set; }
@@ -68,7 +62,7 @@ namespace ColorVision.Plugins
         // 在 PluginManager 类中添加
         public RelayCommand UpdateAllCommand { get; set; }
 
-        public PluginManager()
+        public PluginManagerV()
         {
             log.Info("正在检索是否存在附加项目");
 
@@ -133,7 +127,7 @@ namespace ColorVision.Plugins
             
             Application.Current.Dispatcher.Invoke(() =>
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), $"找到项目{SearchName}，{ColorVision.Properties.Resources.Version}{version}，是否下载", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), $"找到项目{SearchName}，{ColorVision.UI.Properties.Resources.Version}{version}，是否下载", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{SearchName}-{version}.zip";
                     string url = $"{PluginManagerConfig.Instance.PluginUpdatePath}{SearchName}/{SearchName}-{version}.zip";

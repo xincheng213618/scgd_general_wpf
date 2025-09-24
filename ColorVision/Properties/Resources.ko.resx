@@ -222,14 +222,8 @@
   <data name="UploadFile" xml:space="preserve">
     <value>파일 업로드</value>
   </data>
-  <data name="PluginManagerWindow" xml:space="preserve">
-    <value>플러그인 관리자 창</value>
-  </data>
   <data name="Version" xml:space="preserve">
     <value>버전</value>
-  </data>
-  <data name="PluginName" xml:space="preserve">
-    <value>플러그인 이름</value>
   </data>
   <data name="BuildDate" xml:space="preserve">
     <value>빌드 날짜</value>

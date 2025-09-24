@@ -61,4 +61,10 @@
 	  </None>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Reference Include="Interop.IWshRuntimeLibrary">
+	    <HintPath>..\ColorVision.Solution\obj\x64\Debug\net8.0-windows\Interop.IWshRuntimeLibrary.dll</HintPath>
+	  </Reference>
+	</ItemGroup>
+
 </Project>

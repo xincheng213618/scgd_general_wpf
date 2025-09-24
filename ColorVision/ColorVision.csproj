@@ -133,4 +133,8 @@
     <Resource Include="Assets\png\PowerToy.png" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Plugins\" />
+  </ItemGroup>
+
 </Project>

@@ -1,23 +1,18 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Properties;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
-using ColorVision.UI;
-using ColorVision.UI.Plugins;
+using ColorVision.UI.Properties;
 using log4net;
-using System;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision.Plugins
+namespace ColorVision.UI.Plugins
 {
     public class PluginInfoVM:ViewModelBase
     {

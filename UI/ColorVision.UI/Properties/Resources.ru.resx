@@ -291,4 +291,22 @@
   <data name="General" xml:space="preserve">
     <value>Универсальный</value>
   </data>
+  <data name="PluginManagerWindow" xml:space="preserve">
+    <value>ОкноМенеджераПлагинов</value>
+  </data>
+  <data name="PluginName" xml:space="preserve">
+    <value>название плагина</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>поиск</value>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>возобновлять</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>удалить</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Версия</value>
+  </data>
 </root>
