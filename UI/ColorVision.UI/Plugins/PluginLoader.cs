@@ -17,13 +17,12 @@ namespace ColorVision.UI.Plugins
         public static void LoadPlugins()
         {
             LoadPlugins("Plugins");
-            LoadPlugins(Config.PluginPath);
             AssemblyHandler.GetInstance().RefreshAssemblies();
         }
 
         public static void LoadPlugins(string path)
         {
-            if (!Directory.Exists(path ))
+            if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
             }
