@@ -3,6 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using ColorVision.UI.Plugins;
 using log4net;
 using Microsoft.Win32;
 using System;
@@ -57,7 +58,6 @@ namespace ColorVision.Plugins
         public ObservableCollection<PluginInfoVM> Plugins { get; private set; } = new ObservableCollection<PluginInfoVM>();
         public static PluginWindowConfig Config => PluginWindowConfig.Instance;
         public RelayCommand EditConfigCommand { get; set; }
-
         public RelayCommand OpenStoreCommand { get;  set; }
         public RelayCommand InstallPackageCommand { get; set; }
         public RelayCommand DownloadPackageCommand { get; set; }
@@ -72,7 +72,7 @@ namespace ColorVision.Plugins
         {
             log.Info("正在检索是否存在附加项目");
 
-            foreach (var item in UI.PluginManager.Config.Plugins)
+            foreach (var item in UI.Plugins.PluginManager.Config.Plugins)
             {
                 if (item.Value.Manifest != null)
                 {
@@ -122,7 +122,7 @@ namespace ColorVision.Plugins
         private string _SearchName;
         public async void DownloadPackage()
         {
-            string LatestReleaseUrl = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Plugins/" + SearchName + "/LATEST_RELEASE";
+            string LatestReleaseUrl = PluginManagerConfig.Instance.PluginUpdatePath + SearchName + "/LATEST_RELEASE";
             DownloadFile.DownloadTile = "下载" + SearchName;
             Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
             if (version == new Version())
@@ -136,7 +136,7 @@ namespace ColorVision.Plugins
                 if (MessageBox.Show(Application.Current.GetActiveWindow(), $"找到项目{SearchName}，{ColorVision.Properties.Resources.Version}{version}，是否下载", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{SearchName}-{version}.zip";
-                    string url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Plugins/{SearchName}/{SearchName}-{version}.zip";
+                    string url = $"{PluginManagerConfig.Instance.PluginUpdatePath}{SearchName}/{SearchName}-{version}.zip";
                     WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation =WindowStartupLocation.CenterOwner };
                     if (File.Exists(downloadPath))
                     {
@@ -195,7 +195,7 @@ namespace ColorVision.Plugins
         }
         public static void OpenStore()
         {
-            PlatformHelper.Open("http://xc213618.ddns.me:9998/upload/ColorVision/Plugins/");
+            PlatformHelper.Open(PluginManagerConfig.Instance.PluginUpdatePath);
         }
     }
 }

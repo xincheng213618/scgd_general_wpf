@@ -1,112 +1,13 @@
-﻿using ColorVision.Common.MVVM;
-using log4net;
+﻿using log4net;
 using log4net.Util;
 using Newtonsoft.Json;
 using System.IO;
 using System.Reflection;
 using System.Windows;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision.UI
+namespace ColorVision.UI.Plugins
 {
-    public class PluginManifest : ViewModelBase
-    {
-        [JsonProperty("id")]
-        public string Id { get; set; } // 新增，插件唯一ID
-
-        [JsonProperty("manifest_version")]
-        public int ManifestVersion { get; set; }
-
-        [JsonProperty("name")]
-        public string Name { get; set; }
-
-        [JsonProperty("version")]
-        public string Version { get; set; }
-
-        [JsonProperty("description")]
-        public string Description { get; set; }
-
-        [JsonProperty("dllpath")]
-        public string DllName { get; set; }
-
-        [JsonProperty("requires")]
-        public Version Requires { get; set; }
-
-        [JsonProperty("author")]
-        public string Author { get; set; }
-
-        [JsonProperty("url")]
-        public string Url { get; set; }
-
-        [JsonProperty("entry_point")]
-        public string EntryPoint { get; set; }
-
-        [JsonProperty("icon")]
-        public string Icon { get; set; }
-    }
-
-
-
-    public class PluginInfo : ViewModelBase
-    {
-        public PluginManifest Manifest { get; set; }
-
-        public DepsJson DepsJson { get; set; }
-        public bool Enabled { get; set; } = true;
-        public string? Name { get; set; }
-
-        public string Description { get; set; }
-
-        public Version? AssemblyVersion { get; set; }
-        public DateTime? AssemblyBuildDate { get; set; }
-        public string? AssemblyName { get; set; }
-        public string? AssemblyPath { get; set; }
-        public string? AssemblyCulture { get; set; }
-        public string? AssemblyPublicKeyToken { get; set; }
-
-        public string README { get; set; } = string.Empty;
-
-        public string ChangeLog { get; set; } = string.Empty;
-
-        [JsonIgnore]
-        public ImageSource? Icon { get; set; }
-        [JsonIgnore]
-        public Assembly Assembly { get; set; }
-    }
-
-    public class DepsJson
-    {
-        [JsonProperty("runtimeTarget")]
-        public RuntimeTarget RuntimeTarget { get; set; }
-
-        [JsonProperty("targets")]
-        public Dictionary<string, Dictionary<string, DepsTargetEntry>> Targets { get; set; }
-    }
-
-    public class RuntimeTarget
-    {
-        [JsonProperty("name")]
-        public string Name { get; set; }
-    }
-
-    public class DepsTargetEntry
-    {
-        [JsonProperty("dependencies")]
-        public Dictionary<string, string> Dependencies { get; set; }
-    }
-
-
-    public class PluginManagerConfig : IConfig
-    {
-        public static PluginManagerConfig Instance =>  ConfigService.Instance.GetRequiredService<PluginManagerConfig>();
-
-        public string PluginPath { get; set; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins");
-
-        // 用插件Id作为Key，保证唯一性
-        public Dictionary<string, PluginInfo> Plugins { get; set; } = new Dictionary<string, PluginInfo>();
-    }
-
     public static class PluginManager
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PluginManager));
@@ -233,7 +134,7 @@ namespace ColorVision.UI
                                             {
                                                 depsOk = false;
                                                 log.Warn($"检查依赖 {dep.Key} 版本时发生异常: {ex.Message}");
-                                                MessageBox.Show(($"检查依赖 {dep.Key} 版本时发生异常: {ex.Message}"));
+                                                MessageBox.Show($"检查依赖 {dep.Key} 版本时发生异常: {ex.Message}");
                                                 break;
                                             }
                                         }

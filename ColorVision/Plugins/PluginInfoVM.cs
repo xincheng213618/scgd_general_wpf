@@ -5,6 +5,7 @@ using ColorVision.Properties;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using ColorVision.UI.Plugins;
 using log4net;
 using System;
 using System.IO;
@@ -18,7 +19,6 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Plugins
 {
-
     public class PluginInfoVM:ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PluginInfoVM));

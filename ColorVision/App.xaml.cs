@@ -2,6 +2,7 @@
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Languages;
+using ColorVision.UI.Plugins;
 using ColorVision.UI.Shell;
 using ColorVision.Wizards;
 using log4net.Config;

@@ -5,7 +5,7 @@ using System.IO.Compression;
 using System.Text;
 using System.Windows;
 
-namespace ColorVision.UI
+namespace ColorVision.UI.Plugins
 {
     public static class PluginUpdater
     {
