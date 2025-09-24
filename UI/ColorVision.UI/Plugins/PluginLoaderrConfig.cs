@@ -3,9 +3,9 @@ using System.IO;
 
 namespace ColorVision.UI.Plugins
 {
-    public class PluginManagerConfig : ViewModelBase, IConfig
+    public class PluginLoaderrConfig : ViewModelBase, IConfig
     {
-        public static PluginManagerConfig Instance =>  ConfigService.Instance.GetRequiredService<PluginManagerConfig>();
+        public static PluginLoaderrConfig Instance =>  ConfigService.Instance.GetRequiredService<PluginLoaderrConfig>();
 
         public string PluginUpdatePath { get => _PluginUpdatePath; set { _PluginUpdatePath = value; OnPropertyChanged(); } }
         private string _PluginUpdatePath = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Plugins/";

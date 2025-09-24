@@ -70,7 +70,6 @@ del ""%~f0"" & exit
 
         }
 
-
         /// <summary>
         /// 更新插件：
         /// 1. 解压 ZIP 到 %TEMP%\\ColorVisionPluginsUpdate\\ColorVision\\

@@ -158,24 +158,24 @@ namespace ColorVision
                 log.Info("检测不到许可证，正在创建许可证");
                 UI.ACE.License.Create();
             }
-            bool result = StartupRegistryChecker.CheckAndSet();
+            bool shouldLoadPlugins = false;
 
-            if (!result)
+            if (StartupRegistryChecker.CheckAndSet())
             {
-                if (MessageBox.Show("检测到软件上次没有成功打开，是否禁用插件", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                {
-
-                }
-                else
-                {
-                    PluginManager.LoadPlugins("Plugins");
-                    AssemblyHandler.GetInstance().RefreshAssemblies();
-                }
+                shouldLoadPlugins = true;
             }
             else
             {
-                PluginManager.LoadPlugins("Plugins");
-                AssemblyHandler.GetInstance().RefreshAssemblies();
+                var result = MessageBox.Show("检测到软件上次没有成功打开，是否禁用插件", "ColorVision", MessageBoxButton.YesNo);
+                if (result == MessageBoxResult.No)
+                {
+                    shouldLoadPlugins = true;
+                }
+            }
+
+            if (shouldLoadPlugins)
+            {
+                PluginLoader.LoadPlugins();
             }
 
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化

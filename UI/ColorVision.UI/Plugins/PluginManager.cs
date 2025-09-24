@@ -43,12 +43,12 @@ namespace ColorVision.UI.Plugins
     }
 
 
-    public class PluginManagerV:ViewModelBase
+    public class PluginManager:ViewModelBase
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(PluginManagerV));
-        private static PluginManagerV _instance;
+        private static readonly ILog log = LogManager.GetLogger(typeof(PluginManager));
+        private static PluginManager _instance;
         private static readonly object _locker = new();
-        public static PluginManagerV GetInstance() { lock (_locker) { _instance ??= new PluginManagerV(); return _instance; } }
+        public static PluginManager GetInstance() { lock (_locker) { _instance ??= new PluginManager(); return _instance; } }
         public ObservableCollection<PluginInfoVM> Plugins { get; private set; } = new ObservableCollection<PluginInfoVM>();
         public static PluginWindowConfig Config => PluginWindowConfig.Instance;
         public RelayCommand EditConfigCommand { get; set; }
@@ -59,14 +59,14 @@ namespace ColorVision.UI.Plugins
         public RelayCommand RestartCommand { get; set; }
 
         private DownloadFile DownloadFile { get; set; }
-        // 在 PluginManager 类中添加
+        // 在 PluginLoader 类中添加
         public RelayCommand UpdateAllCommand { get; set; }
 
-        public PluginManagerV()
+        public PluginManager()
         {
             log.Info("正在检索是否存在附加项目");
 
-            foreach (var item in UI.Plugins.PluginManager.Config.Plugins)
+            foreach (var item in UI.Plugins.PluginLoader.Config.Plugins)
             {
                 if (item.Value.Manifest != null)
                 {
@@ -94,6 +94,9 @@ namespace ColorVision.UI.Plugins
 
                     // 建议异步调用，避免阻塞UI
                     Application.Current.Dispatcher.InvokeAsync(() => plugin.Update());
+
+
+
                 }
             }
         }
@@ -116,7 +119,7 @@ namespace ColorVision.UI.Plugins
         private string _SearchName;
         public async void DownloadPackage()
         {
-            string LatestReleaseUrl = PluginManagerConfig.Instance.PluginUpdatePath + SearchName + "/LATEST_RELEASE";
+            string LatestReleaseUrl = PluginLoaderrConfig.Instance.PluginUpdatePath + SearchName + "/LATEST_RELEASE";
             DownloadFile.DownloadTile = "下载" + SearchName;
             Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
             if (version == new Version())
@@ -130,7 +133,7 @@ namespace ColorVision.UI.Plugins
                 if (MessageBox.Show(Application.Current.GetActiveWindow(), $"找到项目{SearchName}，{ColorVision.UI.Properties.Resources.Version}{version}，是否下载", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{SearchName}-{version}.zip";
-                    string url = $"{PluginManagerConfig.Instance.PluginUpdatePath}{SearchName}/{SearchName}-{version}.zip";
+                    string url = $"{PluginLoaderrConfig.Instance.PluginUpdatePath}{SearchName}/{SearchName}-{version}.zip";
                     WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation =WindowStartupLocation.CenterOwner };
                     if (File.Exists(downloadPath))
                     {
@@ -189,7 +192,7 @@ namespace ColorVision.UI.Plugins
         }
         public static void OpenStore()
         {
-            PlatformHelper.Open(PluginManagerConfig.Instance.PluginUpdatePath);
+            PlatformHelper.Open(PluginLoaderrConfig.Instance.PluginUpdatePath);
         }
     }
 }

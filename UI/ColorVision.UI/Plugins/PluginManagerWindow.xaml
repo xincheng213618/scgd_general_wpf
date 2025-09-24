@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.UI.Plugins"
         xmlns:properties="clr-namespace:ColorVision.UI.Properties"
         xmlns:hc ="https://handyorg.github.io/handycontrol"
-        d:DataContext="{d:DesignInstance local:PluginManagerV}"
+        d:DataContext="{d:DesignInstance local:PluginManager}"
         xmlns:pl="clr-namespace:ColorVision.UI;assembly=ColorVision.UI"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"

@@ -24,7 +24,7 @@ namespace ColorVision.Engine
 
             this.ApplyTheme(ThemeManager.Current.AppsTheme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
-            PluginManager.LoadPlugins("Plugins");
+            PluginLoader.LoadPlugins("Plugins");
 
             MySqlControl.GetInstance().Connect();
             MQTTControl.GetInstance().MQTTConnectChanged += async (s, e) =>

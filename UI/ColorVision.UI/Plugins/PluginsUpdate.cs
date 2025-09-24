@@ -17,9 +17,9 @@ namespace ColorVision.Plugins
             log.Info("PluginsInitializedCheck");
             try
             {
-                PluginManagerV.GetInstance();
+                PluginManager.GetInstance();
                 await Task.Delay(6000);
-                foreach (var item in PluginManagerV.GetInstance().Plugins)
+                foreach (var item in PluginManager.GetInstance().Plugins)
                 {
                     if (item.LastVersion > item.AssemblyVersion)
                     {

@@ -6,12 +6,20 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Media.Imaging;
 
+
 namespace ColorVision.UI.Plugins
 {
-    public static class PluginManager
+    public static class PluginLoader
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(PluginManager));
-        public static PluginManagerConfig Config => PluginManagerConfig.Instance;
+        private static readonly ILog log = LogManager.GetLogger(typeof(PluginLoader));
+        public static PluginLoaderrConfig Config => PluginLoaderrConfig.Instance;
+
+        public static void LoadPlugins()
+        {
+            LoadPlugins("Plugins");
+            LoadPlugins(Config.PluginPath);
+            AssemblyHandler.GetInstance().RefreshAssemblies();
+        }
 
         public static void LoadPlugins(string path)
         {
@@ -19,8 +27,7 @@ namespace ColorVision.UI.Plugins
             {
                 Directory.CreateDirectory(path);
             }
-
-            var plugins = PluginManagerConfig.Instance.Plugins;
+            var plugins = PluginLoaderrConfig.Instance.Plugins;
             path = Path.GetFullPath(path); // 保证path是绝对路径
                                            // 先收集当前所有的插件目录名（通常以插件Id为key）
             var validIds = new HashSet<string>();
@@ -206,6 +213,7 @@ namespace ColorVision.UI.Plugins
                     log.Error(ex);
                 }
             }
+
         }
     }
 }

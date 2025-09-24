@@ -27,10 +27,10 @@ namespace ColorVision.UI.Plugins
 
         private void Window_Initialized(object sender, System.EventArgs e)
         {
-            this.DataContext = PluginManagerV.GetInstance(); ;
+            this.DataContext = PluginManager.GetInstance(); ;
             DefalutSearchComboBox.ItemsSource = new List<string>() { "Pattern", "EventVWR", "ScreenRecorder", "SystemMonitor", "WindowsServicePlugin"};
             ListViewPlugins.SelectedIndex = 0;
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => PluginManagerV.GetInstance().Plugins[ListViewPlugins.SelectedIndex].Delete(), (s, e) => e.CanExecute = ListViewPlugins.SelectedIndex > -1));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => PluginManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex].Delete(), (s, e) => e.CanExecute = ListViewPlugins.SelectedIndex > -1));
         }
 
         private bool IsRefreshChangedX;
@@ -43,7 +43,7 @@ namespace ColorVision.UI.Plugins
             {
                 IsRefreshChangedX = false;
                 IsRefreshChangedY = false;
-                PluginInfoVM pluginInfoVM = PluginManagerV.GetInstance().Plugins[ListViewPlugins.SelectedIndex];
+                PluginInfoVM pluginInfoVM = PluginManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex];
                 BorderContent.DataContext = pluginInfoVM;
                 Application.Current.Dispatcher.Invoke(async () =>
                 {
@@ -178,7 +178,7 @@ namespace ColorVision.UI.Plugins
         {
             if (ListViewPlugins.SelectedIndex > -1)
             {
-                PluginInfoVM pluginInfoVM = PluginManagerV.GetInstance().Plugins[ListViewPlugins.SelectedIndex];
+                PluginInfoVM pluginInfoVM = PluginManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex];
                 BorderContent.DataContext = pluginInfoVM;
                 Application.Current.Dispatcher.Invoke(async () =>
                 {
