@@ -11,7 +11,6 @@ namespace ColorVision.Update
         public override string Header => Resources.ChangeLog;
         public override int Order => 1;
 
-        [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
         {
             new ChangelogWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();

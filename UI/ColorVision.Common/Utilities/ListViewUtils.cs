@@ -26,7 +26,7 @@ namespace ColorVision.Common.Utilities
                         // 可根据需求过滤属性
                         var value = prop.GetValue(item);
                         sb.Append(value?.ToString());
-                        sb.Append("\t"); // 用Tab分隔
+                        sb.Append('\t'); // 用Tab分隔
                     }
                     NativeMethods.Clipboard.SetText(sb.ToString().TrimEnd('\t'));
                 }

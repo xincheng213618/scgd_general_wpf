@@ -51,9 +51,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         }
                         else if (msg.EventName == "GetData")
                         {
-                            if (msg !=null && msg.Data != null && msg.Data.MasterId != null && msg.Data.MasterId > 0)
+                            if (msg !=null && msg.Data != null && msg?.Data?.MasterId != null && msg?.Data?.MasterId > 0)
                             {
-                                int masterId = msg.Data.MasterId;
+                                int masterId = msg.Data?.MasterId;
                                 SpectumResultModel model = MySqlControl.GetInstance().DB.Queryable<SpectumResultModel>().Where(x => x.Id == masterId).First();
                                 if (model != null)
                                 {

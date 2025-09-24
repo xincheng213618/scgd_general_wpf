@@ -6,8 +6,7 @@
         xmlns:local="clr-namespace:ColorVision"
         mc:Ignorable="d"
         Title="StartWindow"  Height="270" Width="600" BorderThickness="0" AllowsTransparency="True" Background="Transparent"  WindowStyle="None" Initialized="Window_Initialized">
-    <Border CornerRadius="20" Background="#2D333A">
-        
+    <Border CornerRadius="20" Background="#FF2D333A" BorderThickness="2" BorderBrush="#413B39">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>

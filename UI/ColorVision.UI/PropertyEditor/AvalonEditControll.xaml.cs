@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1847
+﻿#pragma warning disable
 using ICSharpCode.AvalonEdit.CodeCompletion;
 using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
@@ -180,7 +180,7 @@ namespace ColorVision.UI.PropertyEditor
 
         #region Folding
         FoldingManager? foldingManager;
-        object foldingStrategy;
+        object? foldingStrategy;
 
         void HighlightingComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {

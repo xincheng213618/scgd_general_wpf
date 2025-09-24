@@ -5,14 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Media"
         mc:Ignorable="d"
-        Title="WindowCVCIE" Height="450" Width="800" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="WindowCVCIE" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <ToolBar>
-            <Button Click="Button_Click" Margin="2,0,0,0" >
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
+            <Button Click="Button_Click" Margin="2,0,0,0" Height="25" >
                 <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
             </Button>
             <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="25" Width="25" >
@@ -31,9 +31,8 @@
                     </TextBlock.RenderTransform>
                 </TextBlock>
             </Button>
-        </ToolBar>
-       
-        
+        </StackPanel>
+      
         <ListView x:Name="listViewSide" BorderThickness="0" Padding="0" Grid.Row="1">
             <ListView.Resources >
                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" />

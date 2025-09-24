@@ -477,11 +477,10 @@ namespace ColorVision.Engine.Templates.POI
 
         private int No;
 
-        private async void PoiParamToDrawingVisual(KBJson poiParam)
+        private void PoiParamToDrawingVisual(KBJson poiParam)
         {
             try
             {
-                int WaitNum = 50;
                 foreach (var item in poiParam.KBKeyRects)
                 {
                     No++;
@@ -533,7 +532,7 @@ namespace ColorVision.Engine.Templates.POI
             }
         }
 
-        private async void Button2_Click(object sender, RoutedEventArgs e)
+        private void Button2_Click(object sender, RoutedEventArgs e)
         {
             if (ImageShow.Source is not BitmapSource bitmapImage) return;
 

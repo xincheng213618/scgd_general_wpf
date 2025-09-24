@@ -81,13 +81,14 @@ namespace ColorVision.Common.MVVM
 
         public static T DeepCopy<T>(this T source) where T : new()
         {
-            #pragma warning disable SYSLIB0011
+            if (source == null) return default;
+#pragma warning disable SYSLIB0011
             using var ms = new System.IO.MemoryStream();
             var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
             formatter.Serialize(ms, source);
             ms.Position = 0;
             return (T)formatter.Deserialize(ms);
-            #pragma warning restore SYSLIB0011
+#pragma warning restore SYSLIB0011
         }
 
         public static void CopyToSimple<T>(this T source, T target)

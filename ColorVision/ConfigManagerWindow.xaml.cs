@@ -40,7 +40,7 @@ namespace ColorVision
             Templates  = ConfigHandler.GetInstance().Configs.ToList();
 
             // 统计模板总数
-            int totalTemplateCount = Templates.Count();
+            int totalTemplateCount = Templates.Count;
 
             // 绑定到 ListView
             ListView2.ItemsSource = Templates;
