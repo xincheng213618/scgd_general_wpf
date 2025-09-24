@@ -218,16 +218,51 @@ namespace ColorVision.UI
             {
                 try
                 {
-                    if (configPair.Value is IConfigSecure configSecure)
+                    if (Application.Current == null)
                     {
-                        configSecure.Encryption();
-                        jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
-                        configSecure.Decrypt();
+                        if (configPair.Value is IConfigSecure configSecure)
+                        {
+                            configSecure.Encryption();
+                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                            configSecure.Decrypt();
+                        }
+                        else
+                        {
+                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                        }
+                    }
+                    else if (Application.Current.Dispatcher.CheckAccess())
+                    {
+                        if (configPair.Value is IConfigSecure configSecure)
+                        {
+                            configSecure.Encryption();
+                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                            configSecure.Decrypt();
+                        }
+                        else
+                        {
+                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                        }
                     }
                     else
                     {
-                        jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            if (configPair.Value is IConfigSecure configSecure)
+                            {
+                                configSecure.Encryption();
+                                jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                                configSecure.Decrypt();
+                            }
+                            else
+                            {
+                                jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                            }
+
+                        });
                     }
+
+
 
                 }
                 catch(Exception ex)
@@ -244,7 +279,6 @@ namespace ColorVision.UI
                     jObject.WriteTo(writer);
                 }
             }
-
         }
 
         public void LoadDefaultConfigs()

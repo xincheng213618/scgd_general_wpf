@@ -21,6 +21,16 @@ using System.Windows.Data;
 
 namespace Pattern
 {
+    public class PatternFeatureLauncher : IFeatureLauncherBase
+    {
+        public override string? Header { get; set; } = "图卡生成工具";
+
+        public override void Execute()
+        {
+            new PatternWindow() { WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+        }
+    }
+
     public class ExportTestPatternWpf : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
@@ -29,7 +39,7 @@ namespace Pattern
 
         public override void Execute()
         {
-            new PatternWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new PatternWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
     }
 
