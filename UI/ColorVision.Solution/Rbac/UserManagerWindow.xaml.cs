@@ -123,5 +123,73 @@ namespace ColorVision.Rbac
             }
         }
 
+        // 新增：编辑用户角色
+        private void BtnEditRoles_Click(object sender, RoutedEventArgs e)
+        {
+            if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
+            {
+                MessageBox.Show("权限不足：只有管理员可以修改角色", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (sender is FrameworkElement fe && fe.Tag is UserViewModel vm)
+            {
+                var allRoles = RbacManager.GetRoles();
+                var currentRoleIds = vm.Roles.Select(r => r.Id).ToHashSet();
+
+                var win = new Window
+                {
+                    Title = $"编辑用户角色 - {vm.Username}",
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    Width = 400,
+                    Height = 500
+                };
+                var grid = new System.Windows.Controls.Grid();
+                grid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+                grid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = GridLength.Auto });
+                var sv = new System.Windows.Controls.ScrollViewer();
+                var panel = new System.Windows.Controls.StackPanel { Margin = new Thickness(10) };
+                foreach (var role in allRoles)
+                {
+                    var cb = new System.Windows.Controls.CheckBox
+                    {
+                        Content = role.Name,
+                        Tag = role.Id,
+                        IsChecked = currentRoleIds.Contains(role.Id),
+                        Margin = new Thickness(2)
+                    };
+                    panel.Children.Add(cb);
+                }
+                sv.Content = panel;
+                System.Windows.Controls.Grid.SetRow(sv, 0);
+                grid.Children.Add(sv);
+
+                var btnPanel = new System.Windows.Controls.StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(10) };
+                var btnOk = new System.Windows.Controls.Button { Content = "确定", Width = 70, Margin = new Thickness(5) };
+                var btnCancel = new System.Windows.Controls.Button { Content = "取消", Width = 70, Margin = new Thickness(5) };
+                btnPanel.Children.Add(btnOk);
+                btnPanel.Children.Add(btnCancel);
+                System.Windows.Controls.Grid.SetRow(btnPanel, 1);
+                grid.Children.Add(btnPanel);
+                win.Content = grid;
+
+                btnOk.Click += (s, args) =>
+                {
+                    var selectedIds = panel.Children.OfType<System.Windows.Controls.CheckBox>()
+                        .Where(c => c.IsChecked == true)
+                        .Select(c => (int)c.Tag)
+                        .ToList();
+                    if (RbacManager.UpdateUserRoles(vm.Id, selectedIds))
+                    {
+                        MessageBox.Show("更新成功", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                        LoadUsers();
+                        win.DialogResult = true;
+                    }
+                };
+                btnCancel.Click += (s, args) => win.DialogResult = false;
+                win.ShowDialog();
+            }
+        }
+
     }
 }

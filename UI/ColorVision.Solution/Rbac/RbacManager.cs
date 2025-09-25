@@ -232,6 +232,33 @@ namespace ColorVision.Rbac
             return result;
         }
 
+        // 新增：更新用户角色
+        public bool UpdateUserRoles(int userId, IEnumerable<int> roleIds)
+        {
+            if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
+            {
+                MessageBox.Show("当前用户无权修改用户角色。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+            try
+            {
+                db.Deleteable<UserRoleEntity>().Where(ur => ur.UserId == userId).ExecuteCommand();
+                if (roleIds != null)
+                {
+                    var list = roleIds.Distinct().Select(rid => new UserRoleEntity { UserId = userId, RoleId = rid }).ToList();
+                    if (list.Count > 0)
+                        db.Insertable(list).ExecuteCommand();
+                }
+                try { AuditLogService.AddAsync(Config.LoginResult?.UserDetail?.UserId, Config.LoginResult?.User?.Username, "user.role.update", $"设置用户{userId}角色:{string.Join(',', roleIds ?? Array.Empty<int>())}"); } catch { }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"更新用户角色失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+        }
+
         public void Dispose()
         {
             db.Dispose();

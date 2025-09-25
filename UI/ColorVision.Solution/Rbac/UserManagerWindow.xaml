@@ -33,8 +33,6 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                
-                <!-- Create Role Section -->
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                     <Label Content="角色名称:" VerticalAlignment="Center"/>
                     <TextBox x:Name="TxtRoleName" Width="120" Margin="5,0" ToolTip="输入角色显示名称"/>
@@ -45,8 +43,6 @@
                     <Button Content="创建角色" Width="90" Margin="10,0" Click="BtnCreateRole_Click"
                             ToolTip="创建新的用户角色"/>
                 </StackPanel>
-                
-                <!-- Role List -->
                 <ListView x:Name="RolesListView" Grid.Row="1" Height="120" Margin="0,5,0,0">
                     <ListView.View>
                         <GridView>
@@ -76,6 +72,13 @@
                         <GridViewColumn Header="启用" Width="60" DisplayMemberBinding="{Binding IsEnable}" />
                         <GridViewColumn Header="删除" Width="60" DisplayMemberBinding="{Binding IsDelete}" />
                         <GridViewColumn Header="创建时间" Width="140" DisplayMemberBinding="{Binding CreatedAt}" />
+                        <GridViewColumn Header="操作" Width="100">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="编辑角色" Padding="4,2" Tag="{Binding}" Click="BtnEditRoles_Click"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
                     </GridView>
                 </ListView.View>
             </ListView>
