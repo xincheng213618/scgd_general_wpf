@@ -17,13 +17,24 @@ namespace ColorVision.Rbac
         private void Window_Initialized(object sender, EventArgs e)
         {
             RbacManager = RbacManager.GetInstance();
-            var users = RbacManager.GetUsers();
-            UsersListView.ItemsSource = users;
+            LoadUsers();
+            LoadRoles();
         }
 
+        private void LoadUsers()
+        {
+            UsersListView.ItemsSource = RbacManager.GetUsers();
+        }
 
+        private void LoadRoles()
+        {
+            var roles = RbacManager.GetRoles();
+            RolesComboBox.ItemsSource = roles;
+            RolesComboBox.DisplayMemberPath = "Name";
+            RolesComboBox.SelectedValuePath = "Id";
+        }
 
-        private void BtnCreateUser_Click(object sender, RoutedEventArgs e)
+        private async void BtnCreateUser_Click(object sender, RoutedEventArgs e)
         {
             string username = TxtUsername.Text.Trim();
             string password = TxtPassword.Password.Trim();
@@ -38,14 +49,19 @@ namespace ColorVision.Rbac
 
             var roleIds = roleId.HasValue ? new List<int> { roleId.Value } : null;
 
-            bool result = RbacManager.CreateUser(username, password, remark, roleIds);
+            bool result = await RbacManager.UserService.CreateUserAsync(username, password, remark, roleIds);
             if (result)
             {
                 MessageBox.Show("用户创建成功！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                TxtUsername.Text = string.Empty;
+                TxtPassword.Password = string.Empty;
+                TxtRemark.Text = string.Empty;
+                RolesComboBox.SelectedIndex = -1;
+                LoadUsers();
             }
             else
             {
-                MessageBox.Show("用户名已存在！", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("用户名已存在或创建失败！", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

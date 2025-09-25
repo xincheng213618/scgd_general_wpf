@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Rbac.Services;
 using ColorVision.Rbac.Services.Auth;
+using ColorVision.Rbac.Security;
 using ColorVision.UI.Authorizations;
 using SqlSugar;
 using System.IO;
@@ -30,7 +31,6 @@ namespace ColorVision.Rbac
         public EditUserDetailAction EditUserDetailAction { get; set; }
         public RbacManager()
         {  
-            // 确保目录存在
             if (!Directory.Exists(DirectoryPath))
                 Directory.CreateDirectory(DirectoryPath);
 
@@ -41,21 +41,23 @@ namespace ColorVision.Rbac
                 IsAutoCloseConnection = true,
             });
 
-            // 初始化表
             db.CodeFirst.InitTables<UserEntity, UserDetailEntity>();
             db.CodeFirst.InitTables<TenantEntity, UserTenantEntity>();
             db.CodeFirst.InitTables<RoleEntity, UserRoleEntity>();
-            LoginCommand = new RelayCommand(a => new LoginWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
-            InitAdmin();
-
-            EditCommand = new RelayCommand(a=> EditUserDetailAction.EditAsync());
-            OpenUserManagerCommand = new RelayCommand(a => OpenUserManager());
 
             AuthService = new AuthService(db);
             UserService = new UserService(db);
             EditUserDetailAction = new EditUserDetailAction(UserService);
 
-            Authorization.Instance.PermissionMode = Config.LoginResult.UserDetail.PermissionMode;
+            InitAdmin();
+
+            LoginCommand = new RelayCommand(a => new LoginWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            EditCommand = new RelayCommand(a=> EditUserDetailAction.EditAsync());
+            OpenUserManagerCommand = new RelayCommand(a => OpenUserManager());
+
+            // 若已有登录缓存则同步权限
+            if (Config.LoginResult?.UserDetail != null)
+                Authorization.Instance.PermissionMode = Config.LoginResult.UserDetail.PermissionMode;
         }
 
         public void OpenUserManager()
@@ -63,32 +65,20 @@ namespace ColorVision.Rbac
             new UserManagerWindow() { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
         }
 
-
-
         public List<UserEntity> GetUsers()
         {
             var users = db.Queryable<UserEntity>().Where(u => u.IsDelete == false || u.IsDelete == null).ToList();
             return users;
         }
 
+        public List<RoleEntity> GetRoles()
+        {
+            return db.Queryable<RoleEntity>().Where(r => r.IsDelete != true && r.IsEnable).ToList();
+        }
+
         private void InitAdmin()
         {
-            // 检查是否已有用户
-            if (!db.Queryable<UserEntity>().Any())
-            {
-                // 添加admin用户
-                var adminUser = new UserEntity
-                {
-                    Username = "admin",
-                    Password = "admin", // 推荐加密
-                    IsEnable = true,
-                    IsDelete = false,
-                    Remark = "系统管理员"
-                };
-                db.Insertable(adminUser).ExecuteCommand();
-            }
-
-            // 检查是否已有admin角色
+            // 创建管理员角色
             var adminRole = db.Queryable<RoleEntity>().First(r => r.Code == "admin");
             if (adminRole == null)
             {
@@ -98,72 +88,55 @@ namespace ColorVision.Rbac
                     Code = "admin",
                     Remark = "系统管理员角色",
                     IsEnable = true,
-                    IsDelete = false
+                    IsDelete = false,
+                    CreatedAt = DateTimeOffset.Now,
+                    UpdatedAt = DateTimeOffset.Now
                 };
                 db.Insertable(adminRole).ExecuteCommand();
             }
 
-            // 建立admin用户和admin角色关联
-            var adminUserId = db.Queryable<UserEntity>().Where(u => u.Username == "admin").Select(u => u.Id).First();
-            var adminRoleId = db.Queryable<RoleEntity>().Where(r => r.Name == "admin").Select(r => r.Id).First();
-            // 检查是否已有关联
-            var exists = db.Queryable<UserRoleEntity>().Any(ur => ur.UserId == adminUserId && ur.RoleId == adminRoleId);
-            if (!exists)
+            // 创建管理员用户
+            var adminUser = db.Queryable<UserEntity>().First(r => r.Username == "admin");
+            if (adminUser == null)
             {
-                var adminUserRole = new UserRoleEntity
+                adminUser = new UserEntity
                 {
-                    UserId = adminUserId,
-                    RoleId = adminRoleId
+                    Username = "admin",
+                    Password = PasswordHasher.Hash("admin"),
+                    IsEnable = true,
+                    IsDelete = false,
+                    Remark = "系统管理员",
+                    CreatedAt = DateTimeOffset.Now,
+                    UpdatedAt = DateTimeOffset.Now
                 };
-                db.Insertable(adminUserRole).ExecuteCommand();
+                var adminId = db.Insertable(adminUser).ExecuteReturnIdentity();
+                // 详情
+                db.Storageable(new UserDetailEntity
+                {
+                    UserId = adminId,
+                    CreatedAt = DateTimeOffset.Now,
+                    UpdatedAt = DateTimeOffset.Now,
+                    PermissionMode = ColorVision.UI.Authorizations.PermissionMode.SuperAdministrator
+                }).WhereColumns(it => new { it.UserId }).ToStorage().AsInsertable.ExecuteCommand();
+            }
+
+            // 关联
+            adminUser = db.Queryable<UserEntity>().First(r => r.Username == "admin");
+            adminRole = db.Queryable<RoleEntity>().First(r => r.Code == "admin");
+            if (adminUser != null && adminRole != null)
+            {
+                bool exists = db.Queryable<UserRoleEntity>().Any(ur => ur.UserId == adminUser.Id && ur.RoleId == adminRole.Id);
+                if (!exists)
+                {
+                    db.Insertable(new UserRoleEntity { UserId = adminUser.Id, RoleId = adminRole.Id }).ExecuteCommand();
+                }
             }
         }
 
-
         public bool CreateUser(string username, string password, string remark = "", List<int> roleIds = null)
         {
-            // 检查用户名是否已存在
-            bool exists = db.Queryable<UserEntity>().Any(u => u.Username == username);
-            if (exists)
-                return false; // 用户名已存在
-
-            var newUser = new UserEntity
-            {
-                Username = username,
-                Password = password, // 实际建议加密
-                IsEnable = true,
-                IsDelete = false,
-                Remark = remark,
-                CreatedAt = DateTime.Now,
-                UpdatedAt = DateTime.Now
-            };
-            int userId = db.Insertable(newUser).ExecuteReturnIdentity();
-
-            // 创建对应的详细信息表
-            var userDetail = new UserDetailEntity
-            {
-                UserId = userId,
-                CreatedAt = DateTime.Now,
-                UpdatedAt = DateTime.Now
-                // 其他字段可补充
-            };
-            db.Insertable(userDetail).ExecuteCommand();
-
-            // 分配角色（如果有）
-            if (roleIds != null)
-            {
-                foreach (var roleId in roleIds)
-                {
-                    var ur = new UserRoleEntity
-                    {
-                        UserId = userId,
-                        RoleId = roleId
-                    };
-                    db.Insertable(ur).ExecuteCommand();
-                }
-            }
-
-            return true;
+            // 兼容旧同步接口 => 调用异步实现
+            return UserService.CreateUserAsync(username, password, remark, roleIds).GetAwaiter().GetResult();
         }
 
         public void Dispose()
