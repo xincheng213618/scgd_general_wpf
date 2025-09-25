@@ -36,6 +36,13 @@ namespace ColorVision.Rbac
 
         private async void BtnCreateUser_Click(object sender, RoutedEventArgs e)
         {
+            // UI 层二次校验，防止普通用户通过窗口创建
+            if (UI.Authorizations.Authorization.Instance.PermissionMode > UI.Authorizations.PermissionMode.Administrator)
+            {
+                MessageBox.Show("权限不足：只有管理员可以创建用户", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             string username = TxtUsername.Text.Trim();
             string password = TxtPassword.Password.Trim();
             string remark = TxtRemark.Text.Trim();
@@ -52,6 +59,7 @@ namespace ColorVision.Rbac
             bool result = await RbacManager.UserService.CreateUserAsync(username, password, remark, roleIds);
             if (result)
             {
+                try { RbacManager.AuditLogService.AddAsync(RbacManager.Config.LoginResult?.UserDetail?.UserId, RbacManager.Config.LoginResult?.User?.Username, "user.create", $"UI创建用户:{username}"); } catch { }
                 MessageBox.Show("用户创建成功！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
                 TxtUsername.Text = string.Empty;
                 TxtPassword.Password = string.Empty;

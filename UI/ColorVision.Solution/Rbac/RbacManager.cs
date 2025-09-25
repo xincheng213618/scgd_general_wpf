@@ -27,6 +27,8 @@ namespace ColorVision.Rbac
         public static RbacManagerConfig Config => RbacManagerConfig.Instance;
         public AuthService AuthService { get; set; }
         public UserService UserService { get; set; }
+        public PermissionService PermissionService { get; set; }
+        public AuditLogService AuditLogService { get; set; }
 
         public EditUserDetailAction EditUserDetailAction { get; set; }
         public RbacManager()
@@ -44,12 +46,19 @@ namespace ColorVision.Rbac
             db.CodeFirst.InitTables<UserEntity, UserDetailEntity>();
             db.CodeFirst.InitTables<TenantEntity, UserTenantEntity>();
             db.CodeFirst.InitTables<RoleEntity, UserRoleEntity>();
+            db.CodeFirst.InitTables<PermissionEntity, RolePermissionEntity>();
+            db.CodeFirst.InitTables<AuditLogEntity>();
 
             AuthService = new AuthService(db);
             UserService = new UserService(db);
+            PermissionService = new PermissionService(db);
+            AuditLogService = new AuditLogService(db);
             EditUserDetailAction = new EditUserDetailAction(UserService);
 
             InitAdmin();
+            // 种子权限
+            PermissionService.EnsureSeedAsync().GetAwaiter().GetResult();
+            SeedRolePermissions();
 
             LoginCommand = new RelayCommand(a => new LoginWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             EditCommand = new RelayCommand(a=> EditUserDetailAction.EditAsync());
@@ -58,6 +67,21 @@ namespace ColorVision.Rbac
             // 若已有登录缓存则同步权限
             if (Config.LoginResult?.UserDetail != null)
                 Authorization.Instance.PermissionMode = Config.LoginResult.UserDetail.PermissionMode;
+        }
+
+        private void SeedRolePermissions()
+        {
+            // 为 admin 角色赋予全部权限
+            var adminRole = db.Queryable<RoleEntity>().First(r => r.Code == "admin");
+            if (adminRole == null) return;
+            var allPermissions = db.Queryable<PermissionEntity>().Where(p=>p.IsDelete!=true && p.IsEnable).Select(p=>p.Id).ToList();
+            var existing = db.Queryable<RolePermissionEntity>().Where(rp=>rp.RoleId == adminRole.Id).Select(rp=>rp.PermissionId).ToList();
+            var toInsertIds = allPermissions.Where(id=>!existing.Contains(id)).ToList();
+            if (toInsertIds.Count>0)
+            {
+                var list = toInsertIds.Select(pid=> new RolePermissionEntity{ RoleId = adminRole.Id, PermissionId = pid}).ToList();
+                db.Insertable(list).ExecuteCommand();
+            }
         }
 
         public void OpenUserManager()
@@ -135,8 +159,18 @@ namespace ColorVision.Rbac
 
         public bool CreateUser(string username, string password, string remark = "", List<int> roleIds = null)
         {
-            // 兼容旧同步接口 => 调用异步实现
-            return UserService.CreateUserAsync(username, password, remark, roleIds).GetAwaiter().GetResult();
+            // 权限检查：仅管理员及以上（SuperAdministrator）可创建用户
+            if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
+            {
+                MessageBox.Show("当前用户无权创建新用户。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+            var result = UserService.CreateUserAsync(username, password, remark, roleIds).GetAwaiter().GetResult();
+            if (result)
+            {
+                try { AuditLogService.AddAsync(Config.LoginResult?.UserDetail?.UserId, Config.LoginResult?.User?.Username, "user.create", $"创建用户:{username}"); } catch { }
+            }
+            return result;
         }
 
         public void Dispose()
