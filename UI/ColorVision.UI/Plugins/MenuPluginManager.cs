@@ -1,9 +1,9 @@
-﻿using ColorVision.Properties;
+﻿using ColorVision.UI.Properties;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System.Windows;
 
-namespace ColorVision.Plugins
+namespace ColorVision.UI.Plugins
 {
     public class MenuPluginManager : MenuItemBase
     {

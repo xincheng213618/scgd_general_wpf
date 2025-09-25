@@ -1,5 +1,6 @@
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
+using log4net;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.OLED;
@@ -7,6 +8,8 @@ namespace FlowEngineLib.Node.OLED;
 [STNode("/03_2 Algorithm")]
 public class Algorithm2InNode : CVBaseServerNodeIn2Hub
 {
+	private static readonly ILog logger = LogManager.GetLogger(typeof(Algorithm2InNode));
+
 	private int _OrderIndex;
 
 	private string _TempName;
@@ -140,6 +143,9 @@ public class Algorithm2InNode : CVBaseServerNodeIn2Hub
 		case Algorithm2Type.MTF:
 			operatorCode = "MTF";
 			break;
+		case Algorithm2Type.灯带检测:
+			operatorCode = "LEDStripDetection";
+			break;
 		case Algorithm2Type.JND:
 			operatorCode = "OLED.JND.CalVas";
 			break;
@@ -169,6 +175,7 @@ public class Algorithm2InNode : CVBaseServerNodeIn2Hub
 		getPreStepParam(0, algorithm2InParam);
 		getPreStepParam(1, algorithmPreStepParam);
 		algorithm2InParam.POI_MasterId = algorithmPreStepParam.MasterId;
+		algorithm2InParam.SMUData = GetSMUResult(start);
 		return algorithm2InParam;
 	}
 }

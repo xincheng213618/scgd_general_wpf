@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Core;
 using ColorVision.Engine.Media;
 using ColorVision.FileIO;
 using ColorVision.UI;

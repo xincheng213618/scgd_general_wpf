@@ -213,6 +213,7 @@ public class AlgorithmARVRNode : CVBaseServerNode
 			Name = _TempName
 		};
 		getPreStepParam(start, algorithmParam_ROI);
+		algorithmParam_ROI.SMUData = GetSMUResult(start);
 		return algorithmParam_ROI;
 	}
 }

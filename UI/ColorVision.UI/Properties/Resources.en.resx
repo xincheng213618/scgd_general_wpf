@@ -297,4 +297,25 @@
   <data name="Line" xml:space="preserve">
     <value>Line</value>
   </data>
+  <data name="PluginManagerWindow" xml:space="preserve">
+    <value>PluginManagerWindow</value>
+  </data>
+  <data name="PluginName" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>Update</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="Options" xml:space="preserve">
+    <value>Options</value>
+  </data>
 </root>

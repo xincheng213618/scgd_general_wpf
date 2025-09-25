@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS0414,CS8625
+using ColorVision.Common.MVVM;
 using System;
 using System.Linq;
 using System.Windows;
@@ -7,7 +8,7 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class EraseManager : IDisposable
+    public class EraseManager : ViewModelBase, IDisposable, IDrawEditor
     {
         private ZoomboxSub Zoombox1 { get; set; }
         private DrawCanvas DrawCanvas { get; set; }
@@ -22,25 +23,25 @@ namespace ColorVision.ImageEditor.Draw
             ImageViewModel = imageEditViewMode;
         }
 
-        public bool IsEnabled { get; set; } = true;
-
         public bool IsShow
         {
             get => _IsShow; set
             {
                 if (_IsShow == value) return;
                 _IsShow = value;
-                if (IsEnabled)
+                if (value)
                 {
-                    if (value)
-                    {
-                        Load();
-                    }
-                    else
-                    {
-                        UnLoad();
-                    }
+                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
+                    Zoombox1.Cursor = Input.Cursors.Eraser;
+                    Load();
                 }
+                else
+                {
+                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(null);
+                    Zoombox1.Cursor = Cursors.Cross;
+                    UnLoad();
+                }
+                OnPropertyChanged();
             }
         }
 
@@ -80,7 +81,6 @@ namespace ColorVision.ImageEditor.Draw
         Point MouseUpP { get; set; }
 
         bool IsMouseDown;
-        private double DefalutRadius { get; set; } = 30;
         public void DrawSelectRect(Rect rect)
         {
             using DrawingContext dc = EraseVisual.RenderOpen();
@@ -91,7 +91,6 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.CaptureMouse();
             MouseDownP = e.GetPosition(DrawCanvas);
             IsMouseDown = true;
-
 
 
             using DrawingContext dc = EraseVisual.RenderOpen();
@@ -151,8 +150,6 @@ namespace ColorVision.ImageEditor.Draw
 
 
         private bool _IsShow;
-
-
 
 
         public void Dispose()

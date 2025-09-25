@@ -15,3 +15,14 @@ ColorVision.UI
     Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
 
 设置窗口的实现移动到框架中来实现
+
+    //设置窗口可拖动
+    this.MouseLeftButtonDown += (s, e) =>
+    {
+        if (e.ButtonState == MouseButtonState.Pressed)
+            this.DragMove();
+    };
+
+   属性编辑窗口 PropertyGrid
+   提供对于对象属性的编辑功能，支持属性分类，属性排序，属性过滤，属性编辑器自定义等功能。
+    

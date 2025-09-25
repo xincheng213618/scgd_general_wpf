@@ -65,7 +65,7 @@ public abstract class STNode
 
 	private Guid _Guid;
 
-	private bool _LetGetOptions = false;
+	private bool _LetGetOptions;
 
 	private static Point m_static_pt_init = new Point(10, 10);
 
@@ -583,13 +583,13 @@ public abstract class STNode
 		dictionary.Add("Top", BitConverter.GetBytes(_Top));
 		dictionary.Add("Width", BitConverter.GetBytes(_Width));
 		dictionary.Add("Height", BitConverter.GetBytes(_Height));
-		dictionary.Add("AutoSize", new byte[1] { (byte)(_AutoSize ? 1u : 0u) });
+		dictionary.Add("AutoSize", new byte[1] { _AutoSize ? ((byte)1) : ((byte)0) });
 		if (_Mark != null)
 		{
 			dictionary.Add("Mark", Encoding.UTF8.GetBytes(_Mark));
 		}
-		dictionary.Add("LockOption", new byte[1] { (byte)(_LockLocation ? 1u : 0u) });
-		dictionary.Add("LockLocation", new byte[1] { (byte)(_LockLocation ? 1u : 0u) });
+		dictionary.Add("LockOption", new byte[1] { _LockLocation ? ((byte)1) : ((byte)0) });
+		dictionary.Add("LockLocation", new byte[1] { _LockLocation ? ((byte)1) : ((byte)0) });
 		Type type = GetType();
 		PropertyInfo[] properties = type.GetProperties();
 		foreach (PropertyInfo propertyInfo in properties)

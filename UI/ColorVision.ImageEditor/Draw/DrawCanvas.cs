@@ -9,7 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ColorVision.ImageEditor.Draw
+namespace ColorVision.ImageEditor
 {   
     
     public enum VisualChangeType { Add, Remove, Top, Clear }

@@ -1,12 +1,13 @@
-﻿<Window x:Class="ColorVision.Plugins.PluginManagerWindow"
+﻿<Window x:Class="ColorVision.UI.Plugins.PluginManagerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision.Plugins"
-        xmlns:properties="clr-namespace:ColorVision.Properties"
+        xmlns:local="clr-namespace:ColorVision.UI.Plugins"
+        xmlns:properties="clr-namespace:ColorVision.UI.Properties"
         xmlns:hc ="https://handyorg.github.io/handycontrol"
         d:DataContext="{d:DesignInstance local:PluginManager}"
+        xmlns:pl="clr-namespace:ColorVision.UI;assembly=ColorVision.UI"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         Title="{x:Static properties:Resources.PluginManagerWindow}" Background="{DynamicResource GlobalBackground}" Height="720" Width="1000" Initialized="Window_Initialized">
@@ -26,9 +27,11 @@
                 <StackPanel Margin="5,5,0,0">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5" Height="20">
                         <Button Content="访问仓库" Command="{Binding OpenStoreCommand}" Margin="0,0,5,0"/>
-                        <Button Content="安装下载好包" Command="{Binding InstallPackageCommand}" Margin="0,0,5,0"/>
-                        <Button Content="DLL版本查看" Command="{Binding OpenViewDllViersionCommand}" Margin="0,0,5,0"/>
-                        <Button Content="重启软件" Command="{Binding RestartCommand}" Margin="0,0,5,0"/>
+                        <Button Content="安装包" Command="{Binding InstallPackageCommand}" Margin="0,0,5,0"/>
+                        <Button Content="DLL版本" Command="{Binding OpenViewDllViersionCommand}" Margin="0,0,5,0"/>
+                        <Button Content="重启" Command="{Binding RestartCommand}" Margin="0,0,5,0"/>
+                        <Button Content="一键更新" Command="{Binding RestartCommand}" Margin="0,0,5,0"/>
+                       
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                         <Grid>
@@ -151,7 +154,9 @@
                         </DockPanel>
                         <StackPanel  HorizontalAlignment="Right" VerticalAlignment="Top">
                             <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding PluginInfo.Manifest.DllName}" HorizontalAlignment="Right" Padding="3"/>
-                            <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding PluginInfo.Manifest.Requires}"  HorizontalAlignment="Right" Padding="3"/>
+                            <StackPanel Orientation="Horizontal"  HorizontalAlignment="Right">
+                                <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding PluginInfo.Manifest.Requires, StringFormat=Build By {0}}"/>
+                            </StackPanel>
                             <Button Content="OpenLocalPath" Background="Transparent" BorderThickness="0" Command="{Binding OpenLocalPathCommand}"  HorizontalAlignment="Right"/>
 
                         </StackPanel>
@@ -169,6 +174,33 @@
                         <ScrollViewer>
                             <StackPanel  x:Name="DetailInfo">
                                 
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+                    <TabItem Header="依赖项">
+                        <ScrollViewer>
+                            <StackPanel  x:Name="Dependents">
+                                <ListView  x:Name="DependentsListView">
+                                    <ListView.View>
+                                        <GridView >
+                                            <GridViewColumn Header="Package">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate >
+                                                        <TextBlock  Text="{Binding Key}"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="Version">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate >
+                                                        <TextBlock  Text="{Binding Value}"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>

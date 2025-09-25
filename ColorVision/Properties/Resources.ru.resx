@@ -222,14 +222,8 @@
   <data name="UploadFile" xml:space="preserve">
     <value>Загрузить файлы</value>
   </data>
-  <data name="PluginManagerWindow" xml:space="preserve">
-    <value>ОкноМенеджераПлагинов</value>
-  </data>
   <data name="Version" xml:space="preserve">
     <value>Версия</value>
-  </data>
-  <data name="PluginName" xml:space="preserve">
-    <value>название плагина</value>
   </data>
   <data name="BuildDate" xml:space="preserve">
     <value>ДатаСборки</value>

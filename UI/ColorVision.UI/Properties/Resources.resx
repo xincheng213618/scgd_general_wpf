@@ -277,4 +277,25 @@
   <data name="Column" xml:space="preserve">
     <value>列</value>
   </data>
+  <data name="PluginManagerWindow" xml:space="preserve">
+    <value>插件管理器窗口</value>
+  </data>
+  <data name="PluginName" xml:space="preserve">
+    <value>插件名称</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>搜索</value>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>更新</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>版本</value>
+  </data>
+  <data name="Options" xml:space="preserve">
+    <value>选项</value>
+  </data>
 </root>

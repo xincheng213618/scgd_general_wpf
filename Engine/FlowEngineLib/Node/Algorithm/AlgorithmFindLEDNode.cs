@@ -180,6 +180,7 @@ public class AlgorithmFindLEDNode : CVBaseServerNode
 		};
 		getPreStepParam(start, algorithmOLEDParam);
 		algorithmOLEDParam.FDAType = _FDAType;
+		algorithmOLEDParam.SMUData = GetSMUResult(start);
 		return algorithmOLEDParam;
 	}
 }

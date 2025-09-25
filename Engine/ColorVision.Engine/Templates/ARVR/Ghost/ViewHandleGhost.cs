@@ -100,12 +100,7 @@ namespace ColorVision.Engine.Templates.Ghost
                         int canvasWidth = (int)Math.Ceiling(view.ImageView.ActualWidth);
                         int canvasHeight = (int)Math.Ceiling(view.ImageView.ActualHeight);
                         if (canvasWidth == 0 || canvasHeight == 0) return;
-
-                        double minX = generatedPoints.Min(p => p.X);
-                        double minY = generatedPoints.Min(p => p.Y);
-                        double maxX = generatedPoints.Max(p => p.X);
-                        double maxY = generatedPoints.Max(p => p.Y);
-                        Rect unionRect = new Rect(new Point(minX, minY), new Point(maxX, maxY));
+                        var fullRect = new Rect(0, 0, canvasWidth, canvasHeight);
                         // 3. 新建全局大图
                         var rtb = new RenderTargetBitmap(canvasWidth, canvasHeight, 144, 144, PixelFormats.Pbgra32);
 
@@ -123,22 +118,13 @@ namespace ColorVision.Engine.Templates.Ghost
                                 rectangleTextProperties.Id = i;
                                 rectangleTextProperties.Name = i.ToString();
                                 DVRectangle Rectangle = new DVRectangle(rectangleTextProperties);
-                                Rectangle.IsShowText = false;
                                 Rectangle.Render();
                                 dc.DrawDrawing(Rectangle.Drawing);
                             }
                         }
 
                         rtb.Render(dv);
-                        // 5. 用 CroppedBitmap 截取 unionRect 区域
-                        var cropRect = new Int32Rect(
-                            (int)Math.Floor(unionRect.X),
-                            (int)Math.Floor(unionRect.Y),
-                            (int)Math.Ceiling(unionRect.Width),
-                            (int)Math.Ceiling(unionRect.Height)
-                        );
-                        var cropped = new CroppedBitmap(rtb, cropRect);
-                        var rasterVisual = new RasterizedSelectVisual(cropped, unionRect);
+                        var rasterVisual = new RasterizedSelectVisual(rtb, fullRect);
                         rasterVisual.Attribute.Tag = generatedPoints;
                         view.ImageView.ImageShow.AddVisualCommand(rasterVisual);
                     }

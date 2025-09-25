@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS0414,CS8625
+using ColorVision.Common.MVVM;
 using System;
 using System.Windows;
 using System.Windows.Input;
@@ -6,7 +7,7 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class PolygonManager : IDisposable
+    public class PolygonManager : ViewModelBase, IDisposable, IDrawEditor
     {
         private ZoomboxSub ZoomboxSub { get; set; }
         private DrawCanvas DrawCanvas { get; set; }
@@ -21,8 +22,6 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas = drawCanvas;
             ImageViewModel = imageViewModel;
         }
-        public bool IsEnabled { get; set; } = true;
-
         private bool _IsShow;
         public bool IsShow
         {
@@ -30,18 +29,18 @@ namespace ColorVision.ImageEditor.Draw
             {
                 if (_IsShow == value) return;
                 _IsShow = value;
-                if (IsEnabled)
+                if (value)
                 {
-                    if (value)
-                    {
-                        Load();
-                    }
-                    else
-                    {
-                        UnLoad();
-                    }
+                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
+                    Load();
                 }
-
+                else
+                {
+                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(null);
+                    UnLoad();
+                }
+                OnPropertyChanged();
+                
             }
         }
 
@@ -73,14 +72,23 @@ namespace ColorVision.ImageEditor.Draw
             {
                 realKey = e.ImeProcessedKey;
             }
-
-            if (realKey == Key.End || realKey == Key.Escape || realKey == Key.Enter || realKey == Key.Tab | realKey == Key.Space)
+            if (realKey == Key.Escape)
+            {
+                if (DrawingVisualPolygonCache != null)
+                {
+                    DrawCanvas.RemoveVisualCommand(DrawingVisualPolygonCache);
+                    DrawingVisualPolygonCache = null;
+                    IsShow = false;
+                }
+            }
+            else if (realKey == Key.End || realKey == Key.Space || realKey == Key.Enter || realKey == Key.Tab)
             {
                 if (DrawingVisualPolygonCache != null)
                 {
                     DrawingVisualPolygonCache.Points.RemoveAt(DrawingVisualPolygonCache.Points.Count - 1);
                     DrawingVisualPolygonCache.Render();
                     DrawingVisualPolygonCache = null;
+                    IsShow = false;
                 }
                 e.Handled = true;
             }

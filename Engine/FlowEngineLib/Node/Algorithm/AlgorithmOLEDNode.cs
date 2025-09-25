@@ -1,12 +1,15 @@
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using FlowEngineLib.Node.OLED;
+using log4net;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
 
 public class AlgorithmOLEDNode : CVBaseServerNode
 {
+	private static readonly ILog logger = LogManager.GetLogger(typeof(AlgorithmOLEDNode));
+
 	private AlgorithmOLEDType _Algorithm;
 
 	private CVOLED_COLOR _Color;

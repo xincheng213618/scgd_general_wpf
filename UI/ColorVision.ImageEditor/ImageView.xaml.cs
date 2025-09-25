@@ -1,6 +1,6 @@
 ﻿#pragma warning disable CS8625
-using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
 using log4net;
@@ -60,6 +60,8 @@ namespace ColorVision.ImageEditor
         {
             ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow);
 
+            AdvancedStackPanel.Children.Insert(0, ImageViewModel.SlectStackPanel);
+
             DataContext = ImageViewModel;
             Config.ColormapTypesChanged -= Config_ColormapTypesChanged;
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
@@ -70,17 +72,48 @@ namespace ColorVision.ImageEditor
 
 
             ImageViewModel.ClearImageEventHandler += Clear;
-            ImageViewModel.OpeningImage += (s, e) => OpenImage(e);
 
             ImageShow.VisualsAdd += ImageShow_VisualsAdd;
             ImageShow.VisualsRemove += ImageShow_VisualsRemove;
             PreviewKeyDown += ImageView_PreviewKeyDown;
             Drop += ImageView_Drop;
+            Config.ShowTextChanged += (s, e) =>
+            {
+                foreach (var drawingVisual in DrawingVisualLists)
+                {
+                    if (drawingVisual.BaseAttribute is ITextProperties textProperties)
+                    {
+                        textProperties.IsShowText = Config.IsShowText;
+                        drawingVisual.Render();
+                    }
+                }
+            };
+            Config.LayoutUpdatedChanged += (s, e) =>
+            {
+                if (e)
+                {
+                    Zoombox1.UpdateLayout();
+                }
+            };
+            
+            Config.ShowMsgChanged += (s, e) =>
+            {
+                if (!e)
+                {
+                    foreach (var drawingVisual in DrawingVisualLists)
+                    {
+                        drawingVisual.BaseAttribute.Msg = string.Empty;
+                    }
+                }
+            };
+
 
             ComColormapTypes.ItemsSource = ColormapConstats.GetColormapHDictionary();
 
             ComboxeType.ItemsSource = from e1 in Enum.GetValues(typeof(MagnigifierType)).Cast<MagnigifierType>()
                                       select new KeyValuePair<MagnigifierType, string>(e1, e1.ToString());
+
+            
         }
 
 
@@ -136,9 +169,8 @@ namespace ColorVision.ImageEditor
         {
             if (sender is ToggleButton toggleButton)
             {
-                if (ImageViewModel.EraseVisual)
+                if (ImageViewModel.EraseManager.IsShow)
                 {
-                    ToggleButtonDrag.IsChecked = true;
                     Zoombox1.ActivateOn = toggleButton.IsChecked == true ? ModifierKeys.Control : ModifierKeys.None;
                 }
             }
@@ -256,8 +288,6 @@ namespace ColorVision.ImageEditor
             ComboBoxLayers.Visibility = Visibility.Visible;
             if (imageSource is WriteableBitmap writeableBitmap)
             {
-
-
                 int cols = writeableBitmap.PixelWidth;
                 int rows = writeableBitmap.PixelHeight;
                 int channels, depth;
@@ -412,6 +442,10 @@ namespace ColorVision.ImageEditor
             if (sender is Button button && button.Tag is string tag)
             {
                 menuPop1.IsOpen = false;
+
+
+
+
             }
         }
 

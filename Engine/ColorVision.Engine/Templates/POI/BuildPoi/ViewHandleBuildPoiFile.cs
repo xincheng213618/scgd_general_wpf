@@ -1,8 +1,11 @@
 ﻿#pragma warning disable CS8604,CS8603
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Media;
+using ColorVision.Core;
 using ColorVision.Database;
-using ColorVision.FileIO;
+using ColorVision.Engine.Services;
+using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.Draw.Rasterized;
 using CsvHelper;
 using CVCommCore.CVAlgorithm;
 using System;
@@ -14,9 +17,8 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using ColorVision.Engine.Services;
-using ColorVision.ImageEditor;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi
 {
@@ -125,46 +127,46 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
 
         public override void Handle(IViewImageA view, ViewResultAlg result)
         {
+            if (File.Exists(result.FilePath))
+                view.ImageView.OpenImage(result.FilePath);
 
             if (result.ViewResults.Count > 0 && result.ViewResults[0] is PoiCieFileModel model)
             {
                 POIPointInfo pointinfo = ReadPOIPointFromCSV(model.FileUrl);
-                int[] ints = new int[pointinfo.Positions.Count * 2];
-                for (int i = 0; i < pointinfo.Positions.Count; i++)
-                {
-                    ints[2 * i] = (int)pointinfo.Positions[i].PixelX;
-                    ints[2 * i + 1] = (int)pointinfo.Positions[i].PixelY;
-                }
+
                 if (File.Exists(result.FilePath))
                 {
-                    HImage hImage;
-                    if (CVFileUtil.IsCIEFile(result.FilePath))
-                    {
-                        CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(result.FilePath);
-                        hImage = cVCIEFile.ToWriteableBitmap().ToHImage();
+                    // 2. 获取全局画布尺寸（假设 DrawCanvas.ActualWidth/ActualHeight）
+                    int canvasWidth = (int)Math.Ceiling(view.ImageView.ActualWidth);
+                    int canvasHeight = (int)Math.Ceiling(view.ImageView.ActualHeight);
+                    if (canvasWidth == 0 || canvasHeight == 0) return;
+                    var fullRect = new Rect(0, 0, canvasWidth, canvasHeight);
+                    // 3. 新建全局大图
+                    var rtb = new RenderTargetBitmap(canvasWidth, canvasHeight, 144, 144, PixelFormats.Pbgra32);
 
-                    }
-                    else
+                    // 4. 渲染所有选中的Visual到全局
+                    var dv = new DrawingVisual();
+                    using (var dc = dv.RenderOpen())
                     {
-                        BitmapImage bitmapImage = new BitmapImage(new Uri(result.FilePath));
-                        hImage = bitmapImage.ToHImage();
-                    }
-                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, (int)pointinfo.HeaderInfo.Height, ints, ints.Length, 1);
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        if (ret == 0)
+                        for (int i = 0; i < pointinfo.Positions.Count; i++)
                         {
-                            var image = hImageProcessed.ToWriteableBitmap();
-
-                            hImageProcessed.Dispose();
-
-                            view.ImageView.FunctionImage = image;
-                            view.ImageView.ImageShow.Source = view.ImageView.FunctionImage;
+                            var point = pointinfo.Positions[i];
+                            RectangleProperties rectangleTextProperties = new RectangleProperties();
+                            rectangleTextProperties.Rect = new Rect(point.PixelX, point.PixelY, pointinfo.HeaderInfo.Width, pointinfo.HeaderInfo.Height);
+                            rectangleTextProperties.Brush = Brushes.Transparent;
+                            rectangleTextProperties.Pen = new Pen(Brushes.Red, 1);
+                            rectangleTextProperties.Id = i;
+                            rectangleTextProperties.Name = i.ToString();
+                            DVRectangle Rectangle = new DVRectangle(rectangleTextProperties);
+                            Rectangle.Render();
+                            dc.DrawDrawing(Rectangle.Drawing);
                         }
-                    });
-
+                    }
+                    rtb.Render(dv);
+                    var rasterVisual = new RasterizedSelectVisual(rtb, fullRect);
+                    rasterVisual.Attribute.Tag = pointinfo.Positions;
+                    view.ImageView.ImageShow.AddVisualCommand(rasterVisual);
                 }
-
 
             }
 

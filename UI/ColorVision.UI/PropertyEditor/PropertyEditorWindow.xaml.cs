@@ -160,9 +160,6 @@ namespace ColorVision.UI
                 };
                 var stackPanel = new StackPanel { Margin = new Thickness(10,5,10,0) };
                 border.Child = stackPanel;
-                PropertyPanel.Children.Add(border);
-                TreeViewItem treeViewItem = new TreeViewItem() { Header = categoryGroup.Key, Tag = border };
-                treeView.Items.Add(treeViewItem);
                 foreach (var property in categoryGroup.Value)
                 {
                     var browsableAttr = property.GetCustomAttribute<BrowsableAttribute>();
@@ -182,6 +179,10 @@ namespace ColorVision.UI
                         {
                             dockPanel = PropertyEditorHelper.GenTextboxProperties(property, obj);
                         }
+                        else if (property.PropertyType == typeof(System.Windows.Rect))
+                        {
+                            dockPanel = PropertyEditorHelper.GenTextboxProperties(property, obj);
+                        }
                         else if (typeof(Brush).IsAssignableFrom(property.PropertyType))
                         {
                             dockPanel = PropertyEditorHelper.GenBrushProperties(property, obj);
@@ -190,15 +191,33 @@ namespace ColorVision.UI
                         {
                             dockPanel = PropertyEditorHelper.GenCommandProperties(property, obj);
                         }
-                        else if (typeof(ViewModelBase).IsAssignableFrom(property.PropertyType))
+                        else if (property.PropertyType == typeof(FontFamily))
+                            dockPanel = PropertyEditorHelper.GenFontFamilyProperties(property, obj);
+                        else if (property.PropertyType == typeof(FontWeight))
+                            dockPanel = PropertyEditorHelper.GenFontWeightProperties(property, obj);
+                        else if (property.PropertyType == typeof(FontStyle))
+                            dockPanel = PropertyEditorHelper.GenFontStyleProperties(property, obj);
+                        else if (property.PropertyType == typeof(FontStretch))
+                            dockPanel = PropertyEditorHelper.GenFontStretchProperties(property, obj);
+                        else if (property.PropertyType == typeof(FlowDirection))
+                            dockPanel = PropertyEditorHelper.GenFlowDirectionProperties(property, obj);
+
+                        else if (typeof(INotifyPropertyChanged).IsAssignableFrom(property.PropertyType))
                         {
                             // 如果属性是ViewModelBase的子类，递归解析
-                            var nestedObj = (ViewModelBase)property.GetValue(obj);
+                            var nestedObj = (INotifyPropertyChanged)property.GetValue(obj);
                             if (nestedObj != null)
                             {
+                                stackPanel.Margin = new Thickness(0);
                                 stackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(nestedObj));
                                 continue;
                             }
+                        }
+                        else if (property.PropertyType ==typeof(object) && property.GetValue(obj) is INotifyPropertyChanged nestedObj)
+                        {
+                            stackPanel.Margin = new Thickness(0);
+                            stackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(nestedObj));
+                            continue;
                         }
                         else
                         {
@@ -223,50 +242,16 @@ namespace ColorVision.UI
                     }
 
                 }
+                if (stackPanel.Children.Count > 0)
+                {
+                    TreeViewItem treeViewItem = new TreeViewItem() { Header = categoryGroup.Key, Tag = border };
+                    treeView.Items.Add(treeViewItem);
+
+                    PropertyPanel.Children.Add(border);
+                }
             }
         }
 
-        public DockPanel GenBoolProperties(PropertyInfo property, object obj)
-        {
-            var displayNameAttr = property.GetCustomAttribute<DisplayNameAttribute>();
-            var descriptionAttr = property.GetCustomAttribute<DescriptionAttribute>();
-
-            string displayName = displayNameAttr?.DisplayName ?? property.Name;
-            displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
-
-            var dockPanel = new DockPanel();
-            var textBlock = new TextBlock
-            {
-                Text = displayName,
-                MinWidth = 120,
-                Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
-            };
-
-            var toggleSwitch = new Wpf.Ui.Controls.ToggleSwitch
-            {
-                Margin = new Thickness(5, 0, 0, 0),
-            };
-            var binding = new Binding(property.Name)
-            {
-                Source = obj,
-                Mode = BindingMode.TwoWay
-            };
-            toggleSwitch.SetBinding(ToggleButton.IsCheckedProperty, binding);
-            DockPanel.SetDock(toggleSwitch, Dock.Right);
-
-            dockPanel.Children.Add(toggleSwitch);
-            dockPanel.Children.Add(textBlock);
-            return dockPanel;
-        }
-
-        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter)
-            {
-                Common.NativeMethods.Keyboard.PressKey(0x09);
-                e.Handled = true;
-            }
-        }
 
         private void TreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {

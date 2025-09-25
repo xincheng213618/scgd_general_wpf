@@ -7,5 +7,6 @@ public enum Algorithm2Type
 	图像裁剪,
 	SFR,
 	SFR_FindROI,
-	十字计算
+	十字计算,
+	灯带检测
 }

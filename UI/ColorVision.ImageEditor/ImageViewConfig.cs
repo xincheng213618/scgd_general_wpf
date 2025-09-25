@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Core;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
@@ -80,11 +81,19 @@ namespace ColorVision.ImageEditor
         public ColormapTypes ColormapTypes { get => _ColormapTypes; set { _ColormapTypes = value; OnPropertyChanged(); ColormapTypesChanged?.Invoke(this, new EventArgs()); } }
         private ColormapTypes _ColormapTypes = ColormapTypes.COLORMAP_JET;
 
-        public bool IsLayoutUpdated{ get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; OnPropertyChanged(); } }
+        public event EventHandler<bool> LayoutUpdatedChanged;
+        public bool IsLayoutUpdated{ get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; OnPropertyChanged(); ShowMsgChanged?.Invoke(this, _IsLayoutUpdated); } }
         private bool _IsLayoutUpdated = true;
 
-        public bool IsShowText { get => _IsShowText; set { _IsShowText = value; OnPropertyChanged(); } }
+
+        public event EventHandler<bool> ShowTextChanged;
+        public bool IsShowText { get => _IsShowText; set { _IsShowText = value; OnPropertyChanged(); ShowTextChanged?.Invoke(this, _IsShowText); } }
         private bool _IsShowText = true;
+
+        public event EventHandler<bool> ShowMsgChanged;
+        public bool IsShowMsg { get => _IsShowMsg; set { _IsShowMsg = value; OnPropertyChanged(); ShowMsgChanged?.Invoke(this, _IsShowMsg); } }
+        private bool _IsShowMsg = true;
+
 
 
         public event EventHandler BalanceChanged;

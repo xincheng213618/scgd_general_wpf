@@ -1,5 +1,7 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable 
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Rasterized;
 using ColorVision.UI;
@@ -738,7 +740,6 @@ namespace ColorVision.ImageEditor
                                 circleTextProperties.Id = i;
                                 circleTextProperties.Name = i.ToString();
                                 DVCircle Circle = new DVCircle(circleTextProperties);
-                                Circle.IsShowText = IsUseText;
                                 Circle.Render();
                                 dc.DrawDrawing(Circle.Drawing);
                                 break;
@@ -750,7 +751,6 @@ namespace ColorVision.ImageEditor
                                 rectangleTextProperties.Id = i;
                                 rectangleTextProperties.Name = i.ToString();
                                 DVRectangle Rectangle = new DVRectangle(rectangleTextProperties);
-                                Rectangle.IsShowText = IsUseText;
                                 Rectangle.Render();
                                 dc.DrawDrawing(Rectangle.Drawing);
                                 break;
@@ -790,8 +790,8 @@ namespace ColorVision.ImageEditor
                             circleTextProperties.Id = i;
                             circleTextProperties.Name = i.ToString();
                             circleTextProperties.Text = string.Format("{0}{1}", TagName, i.ToString());
+                            circleTextProperties.IsShowText = IsUseText;
                             DVCircleText Circle = new DVCircleText(circleTextProperties);
-                            Circle.IsShowText = IsUseText;
                             Circle.Render();
                             ImageShow.AddVisualCommand(Circle);
                             break;
@@ -803,8 +803,8 @@ namespace ColorVision.ImageEditor
                             rectangleTextProperties.Id = i;
                             rectangleTextProperties.Name = i.ToString();
                             rectangleTextProperties.Text = string.Format("{0}{1}", TagName, i.ToString());
+                            rectangleTextProperties.IsShowText = IsUseText;
                             DVRectangleText Rectangle = new DVRectangleText(rectangleTextProperties);
-                            Rectangle.IsShowText = IsUseText;
                             Rectangle.Render();
                             ImageShow.AddVisualCommand(Rectangle);
                             break;

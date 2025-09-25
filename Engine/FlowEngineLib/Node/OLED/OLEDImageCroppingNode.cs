@@ -1,12 +1,15 @@
 using System.IO;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
+using log4net;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.OLED;
 
 public class OLEDImageCroppingNode : CVBaseServerNodeIn2Hub
 {
+	private static readonly ILog logger = LogManager.GetLogger(typeof(OLEDImageCroppingNode));
+
 	private string _TempName;
 
 	private string _ImgFileName;

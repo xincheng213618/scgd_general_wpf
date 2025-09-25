@@ -304,24 +304,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 插件管理器窗口 的本地化字符串。
-        /// </summary>
-        public static string PluginManagerWindow {
-            get {
-                return ResourceManager.GetString("PluginManagerWindow", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 插件名称 的本地化字符串。
-        /// </summary>
-        public static string PluginName {
-            get {
-                return ResourceManager.GetString("PluginName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 工程 的本地化字符串。
         /// </summary>
         public static string Project {

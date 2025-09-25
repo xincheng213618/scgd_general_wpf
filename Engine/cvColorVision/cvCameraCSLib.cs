@@ -435,7 +435,7 @@ namespace cvColorVision
         Laplace,
         CalResol,
     };
-    public struct HImage
+    public struct CVImage
     {
         public uint nWidth;
         public uint nHeight;
@@ -917,7 +917,7 @@ namespace cvColorVision
         public unsafe static extern bool CM_CalcAutoFocus(IntPtr handle, AutoFocusCfg tAtFsCfg);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvCalArticulation", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern double cvCalArticulation(EvaFunc type, HImage iImg, int dx = 0, int dy = 1, int ksize = 5, double dRatio = 0.01);
+        public unsafe static extern double cvCalArticulation(EvaFunc type, CVImage iImg, int dx = 0, int dy = 1, int ksize = 5, double dRatio = 0.01);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetAutoFocus", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool CM_GetAutoFocus(IntPtr handle, ref int nPos);
@@ -954,7 +954,7 @@ namespace cvColorVision
         public unsafe static extern bool GetPostionCanon(ref int nPosition, uint dwTimeOut);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvDisplayImage",   CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool cvDisplayImage(IntPtr hWnd, CRECT rt, HImage iImg);
+        public unsafe static extern bool cvDisplayImage(IntPtr hWnd, CRECT rt, CVImage iImg);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvCalcFit",   CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool cvCalcFit(int nFit, double[] arrX, double[] arrY, int nDataSize);
@@ -967,15 +967,15 @@ namespace cvColorVision
         public unsafe static extern bool CM_GetFitFy(int id, double dXvalue, ref double dYvalue);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvCalcFiveDot",   CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool cvCalcFiveDot(HImage iImg, double[] x, double[] y, int nThreshold);
+        public unsafe static extern bool cvCalcFiveDot(CVImage iImg, double[] x, double[] y, int nThreshold);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "getCirclePoint",   CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool getCirclePoint(uint w, uint h, uint bpp, uint channels, byte[] imgData, int thresholdValue, ref float x, ref float y);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "FovImgCentre",    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool FovImgCentre(HImage tImg, double Radio, double cameraDegrees, ref double fovDegrees, int thresholdValus, double dFovDist, FovPattern pattern, FovType type);
+        public unsafe static extern bool FovImgCentre(CVImage tImg, double Radio, double cameraDegrees, ref double fovDegrees, int thresholdValus, double dFovDist, FovPattern pattern, FovType type);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "SFRCalculation",     CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int SFRCalculation(HImage tImg, CRECT rtROI, double gamma, float[] pdfrequency, float[] pdomainSamplingData, int nLen);
+        public unsafe static extern int SFRCalculation(CVImage tImg, CRECT rtROI, double gamma, float[] pdfrequency, float[] pdomainSamplingData, int nLen);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "getCirclePoint",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool getCirclePoint(HImage matsrc, int thresholdValue, ref System.Windows.Point tPt);
+        public unsafe static extern bool getCirclePoint(CVImage matsrc, int thresholdValue, ref System.Windows.Point tPt);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "SetMachineVid", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern void SetMachineVid(int ucMachineNO);
 
@@ -997,17 +997,17 @@ namespace cvColorVision
         public unsafe static extern bool MoveDiaphragm(IntPtr handle, float dPosition, uint dwTimeOut);
 
         //[DllImport(LIBRARY_CVCAMERA, EntryPoint = "DistortionCheck",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        //public unsafe static extern int DistortionCheck(HImage tImg, SIZE iSize, BlobThreParams tBlobThreParams, float[] finalPointsX, float[] finalPointsY, ref double pointx, ref double pointy, ref double maxErrorRatio, ref double t, CornerType type /*= Circlepoint*/, SlopeType sType /*= CenterPoint*/, LayoutType lType /*= SlopeIN*/);
+        //public unsafe static extern int DistortionCheck(CVImage tImg, SIZE iSize, BlobThreParams tBlobThreParams, float[] finalPointsX, float[] finalPointsY, ref double pointx, ref double pointy, ref double maxErrorRatio, ref double t, CornerType type /*= Circlepoint*/, SlopeType sType /*= CenterPoint*/, LayoutType lType /*= SlopeIN*/);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "DistortionCheck", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int DistortionCheck(HImage tImg, SIZE iSize, ST_BlobThreParams tBlobThreParams, float[] finalPointsX, float[] finalPointsY, ref double pointx, ref double pointy, ref double maxErrorRatio, ref double t, CornerType type /*= Circlepoint*/, SlopeType sType /*= CenterPoint*/, LayoutType lType /*= SlopeIN*/, DistortionType dType);
+        public unsafe static extern int DistortionCheck(CVImage tImg, SIZE iSize, ST_BlobThreParams tBlobThreParams, float[] finalPointsX, float[] finalPointsY, ref double pointx, ref double pointy, ref double maxErrorRatio, ref double t, CornerType type /*= Circlepoint*/, SlopeType sType /*= CenterPoint*/, LayoutType lType /*= SlopeIN*/, DistortionType dType);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "FovImgCentreEX",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool FovImgCentreEX(HImage tImg, float x_c, float y_c, float x_p, float y_p, double Radio, double cameraDegrees, ref double fovDegrees, int thresholdValus, double dFovDist, FovPattern pattern, FovType type);
+        public unsafe static extern bool FovImgCentreEX(CVImage tImg, float x_c, float y_c, float x_p, float y_p, double Radio, double cameraDegrees, ref double fovDegrees, int thresholdValus, double dFovDist, FovPattern pattern, FovType type);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "GhostGlareDectect",
         CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool GhostGlareDectect(HImage tImg, int radius, int cols, int rows, float ratioH, float ratioL, string path, float[] centersX, float[] centersY, float[] blobGray, float[] dstGray, ref int memSizeH, ref int numArrH, int[] arrH, int[] dataH_X, int[] dataH_Y, ref int memSizeL, ref int numArrL, int[] arrL, int[] dataL_X, int[] dataL_Y);
+        public unsafe static extern bool GhostGlareDectect(CVImage tImg, int radius, int cols, int rows, float ratioH, float ratioL, string path, float[] centersX, float[] centersY, float[] blobGray, float[] dstGray, ref int memSizeH, ref int numArrH, int[] arrH, int[] dataH_X, int[] dataH_Y, ref int memSizeL, ref int numArrL, int[] arrL, int[] dataL_X, int[] dataL_Y);
     }
     public struct C_AoiParam
     {

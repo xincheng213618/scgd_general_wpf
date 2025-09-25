@@ -35,7 +35,7 @@ public class STNodeOutHub : STNode
 		m_bSingle = bSingle;
 		m_strOut = strTextOut;
 		Addhub();
-		base.Title = title;
+		base.Title = Lang.Get(title);
 		base.AutoSize = false;
 		base.TitleColor = Color.FromArgb(200, Color.DarkOrange);
 	}

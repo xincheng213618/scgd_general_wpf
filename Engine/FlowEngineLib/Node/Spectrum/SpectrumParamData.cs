@@ -11,4 +11,6 @@ public class SpectrumParamData
 	public bool SelfAdaptionInitDark { get; set; }
 
 	public bool AutoInitDark { get; set; }
+
+	public SMUResultData SMUData { get; set; }
 }

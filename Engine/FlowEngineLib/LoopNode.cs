@@ -74,12 +74,13 @@ public class LoopNode : CVCommonNode
 		m_end_val = 5f;
 		base.AutoSize = false;
 		base.Width = 150;
-		base.Height = 90;
+		base.Height = 100;
+		base.TitleHeight += 10;
 	}
 
 	protected override string OnGetDrawTitle()
 	{
-		return base.Title + "/" + m_nodeName;
+		return $"{base.Title}\r\n{base.NodeName}";
 	}
 
 	protected override void OnCreate()

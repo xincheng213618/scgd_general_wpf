@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
         private static string EscapeCsv(string? value)
         {
             if (string.IsNullOrEmpty(value)) return "";
-            if (value.Contains(",") || value.Contains("\"") || value.Contains("\n"))
+            if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
             {
                 return $"\"{value.Replace("\"", "\"\"")}\"";
             }

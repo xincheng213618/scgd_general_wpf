@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Templates.Jsons.FOV2
+﻿#pragma warning disable CA1051
+
+namespace ColorVision.Engine.Templates.Jsons.FOV2
 {
     public enum Pattern
     {
@@ -9,11 +11,6 @@
 
     public class FovJson
     {
-        static public string getDefaultJson()
-        {
-            var obj = new FovJson();
-            return Newtonsoft.Json.JsonConvert.SerializeObject(obj);
-        }
 
         public Pattern pattern { get; set; }
         public int threshold { get; set; } = 20000;
@@ -24,22 +21,19 @@
         public bool VerticalFov { get; set; } = true;
         public bool AnglesFov { get; set; } = true;
 
-        public bool debug = false;
+        public bool debug { get; set; }
 
-        public string debugPath = "result\\";
+        public string debugPath { get; set; } ="result\\";
 
-        public param_exactCorner ExactCorner = new();
+        public param_exactCorner ExactCorner { get; set; } = new param_exactCorner();
 
     }
 
-    public struct param_exactCorner
-    {/*角点精定位参数*/
-        public double qualityLevel = 0.04; //阈值
-        public int cutWidth = 200;
-        public int edge = 10;
+    public class param_exactCorner
+    {
 
-        public param_exactCorner()
-        {
-        }
+        public double qualityLevel { get; set; } = 0.04; //阈值
+        public int cutWidth { get; set; } = 200;
+        public int edge { get; set; } = 10;
     };
 }

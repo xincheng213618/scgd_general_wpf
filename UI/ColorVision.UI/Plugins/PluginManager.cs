@@ -2,20 +2,14 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
-using ColorVision.UI;
 using log4net;
 using Microsoft.Win32;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.Plugins
+namespace ColorVision.UI.Plugins
 {
     public class PluginWindowConfigProvider : IConfigSettingProvider
     {
@@ -58,7 +52,6 @@ namespace ColorVision.Plugins
         public ObservableCollection<PluginInfoVM> Plugins { get; private set; } = new ObservableCollection<PluginInfoVM>();
         public static PluginWindowConfig Config => PluginWindowConfig.Instance;
         public RelayCommand EditConfigCommand { get; set; }
-
         public RelayCommand OpenStoreCommand { get;  set; }
         public RelayCommand InstallPackageCommand { get; set; }
         public RelayCommand DownloadPackageCommand { get; set; }
@@ -66,11 +59,14 @@ namespace ColorVision.Plugins
         public RelayCommand RestartCommand { get; set; }
 
         private DownloadFile DownloadFile { get; set; }
+        // 在 PluginLoader 类中添加
+        public RelayCommand UpdateAllCommand { get; set; }
+
         public PluginManager()
         {
             log.Info("正在检索是否存在附加项目");
 
-            foreach (var item in UI.PluginManager.Config.Plugins)
+            foreach (var item in UI.Plugins.PluginLoader.Config.Plugins)
             {
                 if (item.Value.Manifest != null)
                 {
@@ -86,7 +82,23 @@ namespace ColorVision.Plugins
             EditConfigCommand = new RelayCommand(a => new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             OpenViewDllViersionCommand = new RelayCommand(a => OpenViewDllViersion());
             RestartCommand = new RelayCommand(a => Restart());
+            UpdateAllCommand = new RelayCommand(a => UpdateAll());
+        }
+        public void UpdateAll()
+        {
+            foreach (var plugin in Plugins)
+            {
+                // 可根据实际需求判断是否已启用
+                if (plugin.PluginInfo.Enabled)
+                {
 
+                    // 建议异步调用，避免阻塞UI
+                    Application.Current.Dispatcher.InvokeAsync(() => plugin.Update());
+
+
+
+                }
+            }
         }
 
         public void Restart()
@@ -107,7 +119,7 @@ namespace ColorVision.Plugins
         private string _SearchName;
         public async void DownloadPackage()
         {
-            string LatestReleaseUrl = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Plugins/" + SearchName + "/LATEST_RELEASE";
+            string LatestReleaseUrl = PluginLoaderrConfig.Instance.PluginUpdatePath + SearchName + "/LATEST_RELEASE";
             DownloadFile.DownloadTile = "下载" + SearchName;
             Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
             if (version == new Version())
@@ -118,10 +130,10 @@ namespace ColorVision.Plugins
             
             Application.Current.Dispatcher.Invoke(() =>
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), $"找到项目{SearchName}，{ColorVision.Properties.Resources.Version}{version}，是否下载", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), $"找到项目{SearchName}，{ColorVision.UI.Properties.Resources.Version}{version}，是否下载", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{SearchName}-{version}.zip";
-                    string url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Plugins/{SearchName}/{SearchName}-{version}.zip";
+                    string url = $"{PluginLoaderrConfig.Instance.PluginUpdatePath}{SearchName}/{SearchName}-{version}.zip";
                     WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation =WindowStartupLocation.CenterOwner };
                     if (File.Exists(downloadPath))
                     {
@@ -135,7 +147,6 @@ namespace ColorVision.Plugins
                     {
                         if (!File.Exists(downloadPath))
                         {
-                            await DownloadFile.GetIsPassWorld();
                             CancellationTokenSource _cancellationTokenSource = new();
                             Application.Current.Dispatcher.Invoke(() =>
                             {
@@ -150,60 +161,7 @@ namespace ColorVision.Plugins
 
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-
-                            try
-                            {
-                                ConfigService.Instance.SaveConfigs();
-
-                                // 解压缩 ZIP 文件到临时目录
-                                string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionPluginsUpdate");
-                                if (Directory.Exists(tempDirectory))
-                                {
-                                    Directory.Delete(tempDirectory, true);
-                                }
-                                ZipFile.ExtractToDirectory(downloadPath, tempDirectory);
-
-                                // 创建批处理文件内容
-                                string batchFilePath = Path.Combine(tempDirectory, "update.bat");
-                                string programPluginsDirectory = AppDomain.CurrentDomain.BaseDirectory + "Plugins";
-
-                                string targetPluginDirectory = Path.Combine(programPluginsDirectory, SearchName);
-
-                                string? executableName = Path.GetFileName(Environment.ProcessPath);
-
-                                string batchContent = $@"
-@echo off
-taskkill /f /im ""{executableName}""
-timeout /t 0
-xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
-start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""  -c MenuPluginManager
-rd /s /q ""{tempDirectory}""
-del ""%~f0"" & exit
-";
-                                File.WriteAllText(batchFilePath, batchContent);
-
-                                // 设置批处理文件的启动信息
-                                ProcessStartInfo startInfo = new()
-                                {
-                                    FileName = batchFilePath,
-                                    UseShellExecute = true,
-                                    WindowStyle = ProcessWindowStyle.Hidden
-                                };
-                                if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
-                                {
-                                    startInfo.Verb = "runas"; // 请求管理员权限
-                                    startInfo.WindowStyle = ProcessWindowStyle.Normal;
-                                }
-
-
-                                // 启动批处理文件并退出当前程序
-                                Process.Start(startInfo);
-                                Environment.Exit(0);
-                            }
-                            catch (Exception ex)
-                            {
-                                MessageBox.Show($"更新失败: {ex.Message}");
-                            }
+                            PluginUpdater.UpdatePlugin( downloadPath);
                         });
 
                     });
@@ -229,67 +187,12 @@ del ""%~f0"" & exit
             if (openFileDialog.ShowDialog() == true)
             {
                 string selectedZipPath = openFileDialog.FileName;
-                InstallFromZip(selectedZipPath);
+                PluginUpdater.UpdatePlugin(selectedZipPath);
             }
         }
-        private static void InstallFromZip(string zipFilePath)
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                try
-                {
-                    ConfigService.Instance.SaveConfigs();
-
-                    // 解压缩 ZIP 文件到临时目录
-                    string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionPluginsUpdate");
-                    if (Directory.Exists(tempDirectory))
-                    {
-                        Directory.Delete(tempDirectory, true);
-                    }
-                    ZipFile.ExtractToDirectory(zipFilePath, tempDirectory);
-
-                    // 创建批处理文件内容
-                    string batchFilePath = Path.Combine(tempDirectory, "update.bat");
-                    string programPluginsDirectory = AppDomain.CurrentDomain.BaseDirectory + "/Plugins";
-
-                    string? executableName = Path.GetFileName(Environment.ProcessPath);
-
-                    string batchContent = $@"
-@echo off
-taskkill /f /im ""{executableName}""
-timeout /t 0
-xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
-start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""  -c MenuPluginManager
-rd /s /q ""{tempDirectory}""
-del ""%~f0"" & exit
-";
-                    File.WriteAllText(batchFilePath, batchContent);
-
-                    // 设置批处理文件的启动信息
-                    ProcessStartInfo startInfo = new()
-                    {
-                        FileName = batchFilePath,
-                        UseShellExecute = true,
-                        WindowStyle = ProcessWindowStyle.Hidden
-                    };
-                    if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
-                    {
-                        startInfo.Verb = "runas"; // 请求管理员权限
-                        startInfo.WindowStyle = ProcessWindowStyle.Normal;
-                    }
-                    Process.Start(startInfo);
-                    Environment.Exit(0);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"更新失败: {ex.Message}");
-                }
-            });
-        }
-
         public static void OpenStore()
         {
-            PlatformHelper.Open("http://xc213618.ddns.me:9998/upload/ColorVision/Plugins/");
+            PlatformHelper.Open(PluginLoaderrConfig.Instance.PluginUpdatePath);
         }
     }
 }

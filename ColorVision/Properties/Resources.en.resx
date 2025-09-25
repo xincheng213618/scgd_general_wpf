@@ -222,14 +222,8 @@
   <data name="UploadFile" xml:space="preserve">
     <value>Upload files</value>
   </data>
-  <data name="PluginManagerWindow" xml:space="preserve">
-    <value>PluginManagerWindow</value>
-  </data>
   <data name="Version" xml:space="preserve">
     <value>Version</value>
-  </data>
-  <data name="PluginName" xml:space="preserve">
-    <value>Name</value>
   </data>
   <data name="BuildDate" xml:space="preserve">
     <value>BuildDate</value>

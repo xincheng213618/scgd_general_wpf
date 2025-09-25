@@ -9,6 +9,7 @@ namespace ColorVision.ImageEditor.Draw
     {
         [Browsable(false)]
         public TextAttribute TextAttribute { get; set; } = new TextAttribute();
+        public bool IsShowText { get; set; } = true;
 
         [Category("Attribute"), DisplayName("Text")]
         public string Text { get => TextAttribute.Text; set { TextAttribute.Text = value; OnPropertyChanged(); } }
@@ -45,34 +46,32 @@ namespace ColorVision.ImageEditor.Draw
         public DVRectangleText()
         {
             Attribute = new RectangleTextProperties();
+            TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
             Attribute.PropertyChanged += (s, e) => Render(); 
         }
 
         public DVRectangleText(RectangleTextProperties rectangleTextProperties)
         {
             Attribute = rectangleTextProperties;
+            TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
             Attribute.PropertyChanged += (s, e) => Render();
         }
 
         public override void Render()
         {
             using DrawingContext dc = RenderOpen();
-            TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
-            double size = 0;
+            dc.DrawRectangle(Attribute.Brush, Attribute.Pen, Attribute.Rect);
 
-            if (IsShowText)
+            double size = 0;
+            if (Attribute.IsShowText)
             {
-                Brush brush = Brushes.Red;
-                double fontSize = Attribute.Pen.Thickness * 10;
-                FormattedText formattedText = new(TextAttribute.Text, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, DefalutTextAttribute.Defalut.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                FormattedText formattedText = new(TextAttribute.Text, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 size = formattedText.Width / 2;
                 dc.DrawText(formattedText, new Point(Attribute.Rect.X + Attribute.Rect.Width /2 - size, Attribute.Rect.Y+ Attribute.Rect.Height / 2 - formattedText.Height / 2));
             }
-            dc.DrawRectangle(Attribute.Brush, Attribute.Pen, Attribute.Rect);
-
             if (!string.IsNullOrWhiteSpace(Attribute.Msg))
             {
-                FormattedText formattedText = new FormattedText(Attribute.Msg, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, DefalutTextAttribute.Defalut.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                FormattedText formattedText = new FormattedText(Attribute.Msg, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(formattedText, new Point(Attribute.Rect.X + size + Attribute.Rect.Width / 2 + Attribute.Pen.Thickness, Attribute.Rect.Y + Attribute.Rect.Height / 2 - formattedText.Height / 2));
             }
         }

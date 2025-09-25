@@ -1,9 +1,10 @@
-﻿using System;
+﻿using ColorVision.ImageEditor.Draw;
+using System;
 using System.Collections.Generic;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.ImageEditor.Draw
+namespace ColorVision.ImageEditor
 {
     public interface IDrawingVisual
     {

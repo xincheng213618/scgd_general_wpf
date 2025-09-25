@@ -34,7 +34,6 @@ namespace WindowsServicePlugin
             {
                 if (!File.Exists(downloadPath))
                 {
-                    await DownloadFile.GetIsPassWorld();
                     CancellationTokenSource _cancellationTokenSource = new();
                     Application.Current.Dispatcher.Invoke(() =>
                     {

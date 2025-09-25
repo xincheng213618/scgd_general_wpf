@@ -56,77 +56,77 @@ public class STNodePropertyDescriptor
 
 	protected internal virtual object GetValueFromString(string strText)
 	{
-		Type propertyType = PropertyInfo.PropertyType;
-		if (propertyType == m_t_int)
+		Type sTNodePropertyDescriptor = PropertyInfo.PropertyType;
+		if (sTNodePropertyDescriptor == m_t_int)
 		{
 			return int.Parse(strText);
 		}
-		if (propertyType == m_t_float)
+		if (sTNodePropertyDescriptor == m_t_float)
 		{
 			return float.Parse(strText);
 		}
-		if (propertyType == m_t_double)
+		if (sTNodePropertyDescriptor == m_t_double)
 		{
 			return double.Parse(strText);
 		}
-		if (propertyType == m_t_string)
+		if (sTNodePropertyDescriptor == m_t_string)
 		{
 			return strText;
 		}
-		if (propertyType == m_t_bool)
+		if (sTNodePropertyDescriptor == m_t_bool)
 		{
 			return bool.Parse(strText);
 		}
-		if (propertyType.IsEnum)
+		if (sTNodePropertyDescriptor.IsEnum)
 		{
-			return Enum.Parse(propertyType, strText);
+			return Enum.Parse(sTNodePropertyDescriptor, strText);
 		}
-		if (propertyType.IsArray)
+		if (sTNodePropertyDescriptor.IsArray)
 		{
-			Type elementType = propertyType.GetElementType();
+			Type elementType = sTNodePropertyDescriptor.GetElementType();
 			if (elementType == m_t_string)
 			{
 				return strText.Split(',');
 			}
-			string[] array = strText.Trim(' ', ',').Split(',');
+			string[] item = strText.Trim(' ', ',').Split(',');
 			if (elementType == m_t_int)
 			{
-				int[] array2 = new int[array.Length];
-				for (int i = 0; i < array.Length; i++)
+				int[] array = new int[item.Length];
+				for (int i = 0; i < item.Length; i++)
 				{
-					array2[i] = int.Parse(array[i].Trim());
+					array[i] = int.Parse(item[i].Trim());
 				}
-				return array2;
+				return array;
 			}
 			if (elementType == m_t_float)
 			{
-				float[] array3 = new float[array.Length];
-				for (int j = 0; j < array.Length; j++)
+				float[] array2 = new float[item.Length];
+				for (int j = 0; j < item.Length; j++)
 				{
-					array3[j] = float.Parse(array[j].Trim());
+					array2[j] = float.Parse(item[j].Trim());
+				}
+				return array2;
+			}
+			if (elementType == m_t_int)
+			{
+				double[] array3 = new double[item.Length];
+				for (int k = 0; k < item.Length; k++)
+				{
+					array3[k] = double.Parse(item[k].Trim());
 				}
 				return array3;
 			}
 			if (elementType == m_t_int)
 			{
-				double[] array4 = new double[array.Length];
-				for (int k = 0; k < array.Length; k++)
+				bool[] array4 = new bool[item.Length];
+				for (int l = 0; l < item.Length; l++)
 				{
-					array4[k] = double.Parse(array[k].Trim());
+					array4[l] = bool.Parse(item[l].Trim());
 				}
 				return array4;
 			}
-			if (elementType == m_t_int)
-			{
-				bool[] array5 = new bool[array.Length];
-				for (int l = 0; l < array.Length; l++)
-				{
-					array5[l] = bool.Parse(array[l].Trim());
-				}
-				return array5;
-			}
 		}
-		throw new InvalidCastException("无法完成[string]到[" + propertyType.FullName + "]的转换 请重载[STNodePropertyDescriptor.GetValueFromString(string)]");
+		throw new InvalidCastException("无法完成[string]到[" + sTNodePropertyDescriptor.FullName + "]的转换 请重载[STNodePropertyDescriptor.GetValueFromString(string)]");
 	}
 
 	protected internal virtual string GetStringFromValue()
@@ -155,8 +155,8 @@ public class STNodePropertyDescriptor
 		{
 			return null;
 		}
-		string @string = Encoding.UTF8.GetString(byData);
-		return GetValueFromString(@string);
+		string strText = Encoding.UTF8.GetString(byData);
+		return GetValueFromString(strText);
 	}
 
 	protected internal virtual byte[] GetBytesFromValue()
@@ -270,7 +270,11 @@ public class STNodePropertyDescriptor
 
 	private bool IsShowFrm()
 	{
-		return !IsReadOnly && IsEditEnable;
+		if (!IsReadOnly)
+		{
+			return IsEditEnable;
+		}
+		return false;
 	}
 
 	public void Invalidate()

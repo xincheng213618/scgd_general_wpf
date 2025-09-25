@@ -3,17 +3,14 @@ using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
-using LiveChartsCore.VisualElements;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
 
-namespace ColorVision.Plugins
+namespace ColorVision.UI.Plugins
 {
 
     /// <summary>
@@ -70,6 +67,20 @@ namespace ColorVision.Plugins
                     {
                         InitDetailInfo(pluginInfoVM);
                     }
+                    if (TabControl1.SelectedIndex == 3)
+                    {
+
+                        if (pluginInfoVM.PluginInfo?.DepsJson != null)
+                        {
+                            var target = pluginInfoVM.PluginInfo.DepsJson.Targets.Values.First();
+                            if (target != null)
+                            {
+                                var mainPackage = target.Values.FirstOrDefault();
+                                var dependencies = mainPackage?.Dependencies;
+                                DependentsListView.ItemsSource = dependencies;
+                            }
+                        }
+                    }
                 });
             }
         }
@@ -113,12 +124,18 @@ namespace ColorVision.Plugins
                             new PropertyEditorWindow(config).Show();
                         });
 
-
+                        var textBox = new TextBlock
+                        {
+                            Text = string.Join("\u200B", type.Name.ToCharArray()) ,
+                            TextWrapping = TextWrapping.WrapWithOverflow,
+                            TextTrimming = TextTrimming.CharacterEllipsis
+                        };
                         var button = new Button
                         {
                             Style = PropertyEditorHelper.ButtonCommandStyle,
-                            Content = type.Name,
-                            Command = relayCommand
+                            Content = textBox,
+                            Command = relayCommand,
+                            ToolTip = $"点击打开 {type.Name} 配置界面"
                         };
                         uniformGrid.Children.Add(button);
                     }
@@ -190,6 +207,19 @@ namespace ColorVision.Plugins
                     if (TabControl1.SelectedIndex == 2)
                     {
                         InitDetailInfo(pluginInfoVM);
+                    }
+                    if (TabControl1.SelectedIndex == 3)
+                    {
+                        if (pluginInfoVM.PluginInfo?.DepsJson != null)
+                        {
+                            var target = pluginInfoVM.PluginInfo.DepsJson.Targets.Values.First();
+                            if (target != null)
+                            {
+                                var mainPackage = target.Values.FirstOrDefault();
+                                var dependencies = mainPackage?.Dependencies;
+                                DependentsListView.ItemsSource = dependencies;
+                            }
+                        }
                     }
                 });
             }

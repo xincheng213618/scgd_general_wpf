@@ -5,43 +5,49 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
         mc:Ignorable="d"
-        Title="StartWindow"  Height="220" Width="600" BorderThickness="0" AllowsTransparency="True" Background="Transparent"  WindowStyle="None" Initialized="Window_Initialized">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="0"/>
-            <RowDefinition Height="65"/>
-            <RowDefinition Height="10"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+        Title="StartWindow"  Height="330" Width="700" BorderThickness="0" AllowsTransparency="True" Background="Transparent"  WindowStyle="None" Initialized="Window_Initialized">
+    <Border CornerRadius="20" Background="#FF2D333A" BorderThickness="2" BorderBrush="#413B39">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-        <Border  Grid.Row="1" CornerRadius="10,10,0,0" Background="#2D333A">
-            <Grid>
-                <StackPanel Margin="10">
-                    <TextBlock Text="ColorVision" HorizontalAlignment="Left" Foreground="White"  VerticalAlignment="Center"  FontSize="20"/>
-                    <TextBlock x:Name="labelVersion" Text="1.0.1.13" HorizontalAlignment="Left" Foreground="White"  />
-                </StackPanel>
-                <Image Source="/Assets/Image/ColorVision1.ico" Margin="14" HorizontalAlignment="Right" Opacity="0.9"/>
-            </Grid>
-
-        </Border>
-        
-        
-        
-        <Rectangle Grid.Row="2" Fill="#22484d4f"/>
-
-        <Border  Grid.Row="3"  CornerRadius="0,0,10,10" Background="#373B41">
-            <Border Background="#484d4f"  Margin="10" CornerRadius="4">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <TextBox x:Name="TextBoxMsg" Grid.Row="0" Text="" Margin="5,5,5,0" Padding="0" VerticalContentAlignment="Top"  Foreground="White"  Background="Transparent" BorderThickness="0"  TextChanged="TextBoxMsg_TextChanged"/>
-                    <ProgressBar Grid.Row="1" Style="{StaticResource ProgressBarDanger}" IsIndeterminate="True" Height="10"  Foreground="#B41515" Background="#373B41" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />
-                </Grid>
+            <Border Grid.ColumnSpan="2"  CornerRadius="20" Opacity="0.3">
+                <Border.Background>
+                    <ImageBrush ImageSource="/Assets/Image/ComfyUI_00080_.png" Opacity="0.5" Stretch="UniformToFill"/>
+                </Border.Background>
             </Border>
 
-        </Border>
-    </Grid>
+
+            <Border  Grid.Row="1" >
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Image Source="/Assets/Image/ColorVision1.ico" Margin="20,25" VerticalAlignment="Top" Opacity="0.9"/>
+
+                    <StackPanel Grid.Row="1" Margin="15,10" VerticalAlignment="Center">
+                        <TextBlock Text="ColorVision" HorizontalAlignment="Left" Foreground="White"  VerticalAlignment="Center"  FontSize="20" Margin="0,0,0,5"/>
+                        <TextBlock x:Name="labelVersion" Text="1.0.1.13" HorizontalAlignment="Left" Foreground="White"  FontSize="12" />
+                    </StackPanel>
+                </Grid>
+
+            </Border>
+
+            <Border  Grid.Column="1" >
+                <Grid>
+
+                    <Image Source="/Assets/Image/ColorVision1.ico" Margin="0,60,60,60" VerticalAlignment="Top" Opacity="0.3" />
+                    <Border Background="#484d4f"  Margin="0,20,20,20" CornerRadius="15" Opacity="0.8">
+                    </Border>
+
+                    <TextBox x:Name="logTextBox" Grid.Row="0" Text="" Margin="10,30,30,22" Padding="0" VerticalContentAlignment="Top" IsReadOnly="True"  Foreground="White"  Background="Transparent" BorderThickness="0"  TextChanged="TextBoxMsg_TextChanged"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+
 
 </Window>

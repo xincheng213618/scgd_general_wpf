@@ -103,6 +103,7 @@ public class AlgorithmGhostV2Node : CVBaseServerNodeIn2Hub
 		algorithmGhostInputParam.CIE_MasterId = algorithmPreStepParam.MasterId;
 		algorithmGhostInputParam.FileType = GetImageFileType(_ImgFileName);
 		algorithmGhostInputParam.ImgFileName = _ImgFileName;
+		algorithmGhostInputParam.SMUData = GetSMUResult(start);
 		return algorithmGhostInputParam;
 	}
 }

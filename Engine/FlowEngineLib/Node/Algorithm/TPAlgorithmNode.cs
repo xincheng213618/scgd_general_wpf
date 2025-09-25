@@ -96,7 +96,7 @@ public class TPAlgorithmNode : CVBaseServerNode
 	}
 
 	public TPAlgorithmNode()
-		: base("第三方算法", "ThirdPartyAlgorithms", "SVR.TPAlgorithms.Default", "DEV.ThirdPartyAlgorithms.Default")
+		: base("第三方算法", "TPAlgorithms", "SVR.TPAlgorithms.Default", "DEV.TPAlgorithms.Default")
 	{
 		operatorCode = "findDotsArrayImp";
 		_TempName = "";
@@ -163,7 +163,7 @@ public class TPAlgorithmNode : CVBaseServerNode
 		if (!string.IsNullOrEmpty(_ImgFileName))
 		{
 			tPAlgorithmInputParam.InputParam = _ImgFileName;
-			tPAlgorithmInputParam.FileType = FileExtType.Tif;
+			tPAlgorithmInputParam.FileType = GetImageFileType(_ImgFileName);
 		}
 		else
 		{

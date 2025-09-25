@@ -5,7 +5,6 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
 
-[STNode("/09 合规验证")]
 public class AlgComplianceContrastNode : CVBaseServerNodeIn2Hub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(AlgComplianceContrastNode));

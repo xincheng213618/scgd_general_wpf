@@ -1,4 +1,6 @@
 ﻿#pragma warning disable CS0414,CS8625
+using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using System;
 using System.Linq;
 using System.Windows;
@@ -7,8 +9,24 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class RectangleManager : IDisposable
+    public class RectangleManagerConfig : ViewModelBase
     {
+        public bool IsLocked { get => _IsLocked; set { _IsLocked = value; OnPropertyChanged(); } }
+        private bool _IsLocked;
+
+        public bool UseCenter { get => _UseCenter; set { _UseCenter = value; OnPropertyChanged(); } }
+        private bool _UseCenter;
+
+        public double DefalutWidth { get => _DefalutWidth; set { _DefalutWidth = value; OnPropertyChanged(); } }
+        private double _DefalutWidth = 30;
+
+        public double DefalutHeight { get => _DefalutHeight; set { _DefalutHeight = value; OnPropertyChanged(); } }
+        private double _DefalutHeight = 30;
+    }
+
+    public class RectangleManager :ViewModelBase, IDisposable, IDrawEditor
+    {
+        public RectangleManagerConfig Config { get; set; } = new RectangleManagerConfig();
         private ZoomboxSub Zoombox1 { get; set; }
         private DrawCanvas DrawCanvas { get; set; }
         public ImageViewModel ImageViewModel { get; set; }
@@ -21,26 +39,27 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas = drawCanvas;
             ImageViewModel = imageEditViewMode;
         }
-        public bool IsEnabled { get; set; } = true;
 
+        private bool _IsShow;
         public bool IsShow
         {
             get => _IsShow; set
             {
                 if (_IsShow == value) return;
                 _IsShow = value;
-                if (IsEnabled)
+                if (value)
                 {
-                    if (value)
-                    {
-                        Load();
-                    }
-                    else
-                    {
-                        UnLoad();
-                    }
+                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
+                    ImageViewModel.SlectStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(Config));
+                    Load();
                 }
-
+                else
+                {
+                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(null);
+                    ImageViewModel.SlectStackPanel.Children.Clear();
+                    UnLoad();
+                }
+                OnPropertyChanged();
             }
         }
 
@@ -61,6 +80,8 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp -= Image_PreviewMouseUp;
             DrawingRectangleCache = null;
+
+            ImageViewModel.SelectEditorVisual.ClearRender();
         }
 
 
@@ -69,8 +90,7 @@ namespace ColorVision.ImageEditor.Draw
         Point MouseUpP { get; set; }
 
         bool IsMouseDown;
-        private double DefalutWidth { get; set; } = 30;
-        private double DefalutHeight { get; set; } = 30;
+
 
 
         private void PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -91,7 +111,14 @@ namespace ColorVision.ImageEditor.Draw
 
             RectangleTextProperties rectangleTextProperties = new RectangleTextProperties();
             rectangleTextProperties.Id = did;
-            rectangleTextProperties.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + DefalutWidth, MouseDownP.Y + DefalutHeight));
+            if (Config.UseCenter)
+            {
+                rectangleTextProperties.Rect = new System.Windows.Rect(new Point(MouseDownP.X + Config.DefalutWidth / 2, MouseDownP.Y + Config.DefalutHeight / 2), new Point(MouseDownP.X - Config.DefalutWidth / 2, MouseDownP.Y - Config.DefalutHeight / 2));
+            }
+            else
+            {
+                rectangleTextProperties.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + Config.DefalutWidth, MouseDownP.Y + Config.DefalutHeight));
+            }
             rectangleTextProperties.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
             rectangleTextProperties.Text = "Point_" + did;
             DrawingRectangleCache = new DVRectangleText(rectangleTextProperties);
@@ -120,13 +147,17 @@ namespace ColorVision.ImageEditor.Draw
             {
                 MouseUpP = e.GetPosition(DrawCanvas);
 
-                if (DrawingRectangleCache.Attribute.Rect.Width == DefalutWidth && DrawingRectangleCache.Attribute.Rect.Height == DefalutHeight)
+                if (DrawingRectangleCache.Attribute.Rect.Width == Config.DefalutWidth && DrawingRectangleCache.Attribute.Rect.Height == Config.DefalutHeight)
                     DrawingRectangleCache.Render();
 
                 ImageViewModel.SelectEditorVisual.SetRender(DrawingRectangleCache);
 
-                DefalutWidth = DrawingRectangleCache.Attribute.Rect.Width;
-                DefalutHeight = DrawingRectangleCache.Attribute.Rect.Height;
+                if (!Config.IsLocked)
+                {
+                    Config.DefalutWidth = DrawingRectangleCache.Attribute.Rect.Width;
+                    Config.DefalutHeight = DrawingRectangleCache.Attribute.Rect.Height;
+                }
+
                 DrawingRectangleCache = null;
             }
 
@@ -161,7 +192,6 @@ namespace ColorVision.ImageEditor.Draw
 
 
 
-        private bool _IsShow;
 
 
 

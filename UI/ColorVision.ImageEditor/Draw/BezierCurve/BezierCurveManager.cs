@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS0414,CS8625
+using ColorVision.Common.MVVM;
 using System;
 using System.Windows;
 using System.Windows.Input;
@@ -6,7 +7,7 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class BezierCurveManager:IDisposable
+    public class BezierCurveManager:  ViewModelBase, IDisposable, IDrawEditor
     {
         private ZoomboxSub ZoomboxSub { get; set; }
         private DrawCanvas DrawCanvas { get; set; }
@@ -31,12 +32,16 @@ namespace ColorVision.ImageEditor.Draw
                 _IsShow = value;
                 if (value)
                 {
-                     Load();
+                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
+
+                    Load();
                 }
                 else
                 {
+                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(null);
                     UnLoad();
                 }
+                OnPropertyChanged();
             }
         }
 
@@ -69,13 +74,23 @@ namespace ColorVision.ImageEditor.Draw
             {
                 realKey = e.ImeProcessedKey;
             }
-            if (realKey == Key.End || realKey == Key.Escape || realKey == Key.Enter || realKey == Key.Tab | realKey == Key.Space)
+            if (realKey == Key.Escape)
+            {
+                if (DVBezierCurveCache != null)
+                {
+                    DrawCanvas.RemoveVisualCommand(DVBezierCurveCache);
+                    DVBezierCurveCache = null;
+                    IsShow = false;
+                }
+            }
+            else if (realKey == Key.End || realKey == Key.Space || realKey == Key.Enter || realKey == Key.Tab)
             {
                 if (DVBezierCurveCache != null)
                 {
                     DVBezierCurveCache.Points.RemoveAt(DVBezierCurveCache.Points.Count - 1);
                     DVBezierCurveCache.Render();
                     DVBezierCurveCache = null;
+                    IsShow = false;
                 }
                 e.Handled = true;
             }

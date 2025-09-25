@@ -1,4 +1,5 @@
 using FlowEngineLib.Base;
+using log4net;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Algorithm;
@@ -6,6 +7,8 @@ namespace FlowEngineLib.Algorithm;
 [STNode("/03_2 Algorithm")]
 public class AlgorithmNode : CVBaseServerNode
 {
+	private static readonly ILog logger = LogManager.GetLogger(typeof(AlgorithmNode));
+
 	private int _OrderIndex;
 
 	private AlgorithmType _Algorithm;
@@ -254,6 +257,7 @@ public class AlgorithmNode : CVBaseServerNode
 		case AlgorithmType.MTF:
 		case AlgorithmType.SFR:
 		case AlgorithmType.灯珠检测:
+		case AlgorithmType.灯带检测:
 		case AlgorithmType.发光区检测:
 		case AlgorithmType.JND:
 		case AlgorithmType.图像裁剪:
@@ -282,6 +286,7 @@ public class AlgorithmNode : CVBaseServerNode
 			Name = _TempName
 		};
 		getPreStepParam(start, algorithmParam);
+		algorithmParam.SMUData = GetSMUResult(start);
 		return algorithmParam;
 	}
 }

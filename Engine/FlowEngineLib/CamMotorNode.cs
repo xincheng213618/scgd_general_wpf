@@ -86,7 +86,7 @@ public class CamMotorNode : CVBaseServerNode
 	}
 
 	public CamMotorNode()
-		: base("电机/相机", "Camera", "SVR.Camera.Default", "DEV.Camera.Default")
+		: base("电机[相机]", "Camera", "SVR.Camera.Default", "DEV.Camera.Default")
 	{
 		operatorCode = "Move";
 		_bAbs = true;

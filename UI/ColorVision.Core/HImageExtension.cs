@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CA1401,CA1051,CA2101,CA1707
+using ColorVision.Core;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -6,7 +7,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision
+namespace ColorVision.Core
 {
     public static class HImageExtension
     {

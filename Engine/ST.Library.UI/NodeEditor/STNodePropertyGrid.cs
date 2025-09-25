@@ -293,13 +293,13 @@ public class STNodePropertyGrid : Control
 
 	private List<STNodePropertyDescriptor> GetProperties(STNode node)
 	{
-		List<STNodePropertyDescriptor> list = new List<STNodePropertyDescriptor>();
+		List<STNodePropertyDescriptor> graphics = new List<STNodePropertyDescriptor>();
 		if (node == null)
 		{
-			return list;
+			return graphics;
 		}
-		Type type = node.GetType();
-		PropertyInfo[] properties = type.GetProperties();
+		Type num = node.GetType();
+		PropertyInfo[] properties = num.GetProperties();
 		foreach (PropertyInfo propertyInfo in properties)
 		{
 			object[] customAttributes = propertyInfo.GetCustomAttributes(inherit: true);
@@ -316,7 +316,8 @@ public class STNodePropertyGrid : Control
 					}
 					STNodePropertyDescriptor sTNodePropertyDescriptor = (STNodePropertyDescriptor)Activator.CreateInstance(sTNodePropertyAttribute.DescriptorType);
 					sTNodePropertyDescriptor.Node = node;
-					sTNodePropertyDescriptor.Name = sTNodePropertyAttribute.Name;
+					string name = Lang.Get(sTNodePropertyAttribute.Name);
+					sTNodePropertyDescriptor.Name = name;
 					sTNodePropertyDescriptor.Description = sTNodePropertyAttribute.Description;
 					sTNodePropertyDescriptor.PropertyInfo = propertyInfo;
 					sTNodePropertyDescriptor.IsEditEnable = IsEditEnable || sTNodePropertyAttribute.IsEditEnable;
@@ -324,12 +325,12 @@ public class STNodePropertyGrid : Control
 					sTNodePropertyDescriptor.Control = this;
 					if (IsEditEnable || !sTNodePropertyAttribute.IsHide)
 					{
-						list.Add(sTNodePropertyDescriptor);
+						graphics.Add(sTNodePropertyDescriptor);
 					}
 				}
 			}
 		}
-		return list;
+		return graphics;
 	}
 
 	private STNodeAttribute GetNodeAttribute(STNode node)
@@ -338,13 +339,13 @@ public class STNodePropertyGrid : Control
 		{
 			return null;
 		}
-		Type type = node.GetType();
-		object[] customAttributes = type.GetCustomAttributes(inherit: true);
-		foreach (object obj in customAttributes)
+		Type graphics = node.GetType();
+		object[] num = graphics.GetCustomAttributes(inherit: true);
+		foreach (object array in num)
 		{
-			if (obj is STNodeAttribute)
+			if (array is STNodeAttribute)
 			{
-				return (STNodeAttribute)obj;
+				return (STNodeAttribute)array;
 			}
 		}
 		return null;
@@ -352,40 +353,40 @@ public class STNodePropertyGrid : Control
 
 	private void SetItemRectangle()
 	{
+		int graphics = 0;
 		int num = 0;
-		int num2 = 0;
-		using Graphics graphics = CreateGraphics();
+		using Graphics rect2 = CreateGraphics();
 		foreach (STNodePropertyDescriptor item in m_lst_item)
 		{
-			SizeF sizeF = graphics.MeasureString(item.Name, Font);
-			if (sizeF.Width > (float)num)
+			SizeF sizeF = rect2.MeasureString(item.Name, Font);
+			if (sizeF.Width > (float)graphics)
 			{
-				num = (int)Math.Ceiling(sizeF.Width);
+				graphics = (int)Math.Ceiling(sizeF.Width);
 			}
 		}
 		for (int i = 0; i < m_KeysString.Length - 1; i++)
 		{
-			SizeF sizeF2 = graphics.MeasureString(m_KeysString[i], Font);
-			if (sizeF2.Width > (float)num2)
+			SizeF sizeF2 = rect2.MeasureString(m_KeysString[i], Font);
+			if (sizeF2.Width > (float)num)
 			{
-				num2 = (int)Math.Ceiling(sizeF2.Width);
+				num = (int)Math.Ceiling(sizeF2.Width);
 			}
 		}
+		graphics += 5;
 		num += 5;
-		num2 += 5;
-		num = Math.Min(num, base.Width >> 1);
-		m_nInfoLeft = Math.Min(num2, base.Width >> 1);
-		int num3 = (_ShowTitle ? m_nTitleHeight : 0);
+		graphics = Math.Min(graphics, base.Width >> 1);
+		m_nInfoLeft = Math.Min(num, base.Width >> 1);
+		int num2 = (_ShowTitle ? m_nTitleHeight : 0);
 		for (int j = 0; j < m_lst_item.Count; j++)
 		{
 			STNodePropertyDescriptor sTNodePropertyDescriptor = m_lst_item[j];
-			Rectangle rectangle2 = (sTNodePropertyDescriptor.Rectangle = new Rectangle(0, j * m_item_height + num3, base.Width, m_item_height));
-			rectangle2.Width = num;
-			sTNodePropertyDescriptor.RectangleL = rectangle2;
-			rectangle2.X = rectangle2.Right;
-			rectangle2.Width = base.Width - rectangle2.Left - 1;
-			rectangle2.Inflate(-4, -4);
-			sTNodePropertyDescriptor.RectangleR = rectangle2;
+			Rectangle rectangle = (sTNodePropertyDescriptor.Rectangle = new Rectangle(0, j * m_item_height + num2, base.Width, m_item_height));
+			rectangle.Width = graphics;
+			sTNodePropertyDescriptor.RectangleL = rectangle;
+			rectangle.X = rectangle.Right;
+			rectangle.Width = base.Width - rectangle.Left - 1;
+			rectangle.Inflate(-4, -4);
+			sTNodePropertyDescriptor.RectangleR = rectangle;
 			sTNodePropertyDescriptor.OnSetItemLocation();
 		}
 		m_nPropertyVHeight = m_lst_item.Count * m_item_height;
@@ -459,10 +460,10 @@ public class STNodePropertyGrid : Control
 		base.OnMouseDown(e);
 		m_pt_down = e.Location;
 		Focus();
-		bool flag = false;
+		bool sTNodeTreeCollection = false;
 		if (m_str_err != null)
 		{
-			flag = true;
+			sTNodeTreeCollection = true;
 			m_str_err = null;
 		}
 		if (_ShowTitle)
@@ -500,7 +501,7 @@ public class STNodePropertyGrid : Control
 		{
 			OnProcessPropertyMouseDown(e2);
 		}
-		if (flag)
+		if (sTNodeTreeCollection)
 		{
 			Invalidate();
 		}

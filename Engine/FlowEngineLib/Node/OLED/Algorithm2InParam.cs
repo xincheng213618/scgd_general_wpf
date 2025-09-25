@@ -14,6 +14,8 @@ public class Algorithm2InParam : AlgorithmPreStepParam
 
 	public int BufferLen { get; set; }
 
+	public SMUResultData SMUData { get; set; }
+
 	public Algorithm2InParam(string tempName, bool isAdd, int poi_mid, int orderIndex, int bufferLen)
 	{
 		POI_MasterId = poi_mid;
@@ -25,5 +27,6 @@ public class Algorithm2InParam : AlgorithmPreStepParam
 		IsAdd = isAdd;
 		OrderIndex = orderIndex;
 		BufferLen = bufferLen;
+		SMUData = null;
 	}
 }

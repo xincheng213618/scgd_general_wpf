@@ -310,11 +310,11 @@ public class STNodeOption
 		{
 			return false;
 		}
-		STNodeEditorOptionEventArgs sTNodeEditorOptionEventArgs = new STNodeEditorOptionEventArgs(op, this, ConnectionStatus.Connecting);
-		_Owner.Owner.OnOptionConnecting(sTNodeEditorOptionEventArgs);
+		STNodeEditorOptionEventArgs e = new STNodeEditorOptionEventArgs(op, this, ConnectionStatus.Connecting);
+		_Owner.Owner.OnOptionConnecting(e);
 		OnConnecting(new STNodeOptionEventArgs(isSponsor: true, op, ConnectionStatus.Connecting));
 		op.OnConnecting(new STNodeOptionEventArgs(isSponsor: false, this, ConnectionStatus.Connecting));
-		return sTNodeEditorOptionEventArgs.Continue;
+		return e.Continue;
 	}
 
 	protected virtual bool ConnectingOptionEx(STNodeOption op)
@@ -323,10 +323,10 @@ public class STNodeOption
 		{
 			return false;
 		}
-		STNodeEditorOptionEventArgs sTNodeEditorOptionEventArgs = new STNodeEditorOptionEventArgs(op, this, ConnectionStatus.Connecting);
+		STNodeEditorOptionEventArgs e = new STNodeEditorOptionEventArgs(op, this, ConnectionStatus.Connecting);
 		OnConnecting(new STNodeOptionEventArgs(isSponsor: true, op, ConnectionStatus.Connecting));
 		op.OnConnecting(new STNodeOptionEventArgs(isSponsor: false, this, ConnectionStatus.Connecting));
-		return sTNodeEditorOptionEventArgs.Continue;
+		return e.Continue;
 	}
 
 	protected virtual bool DisConnectingOption(STNodeOption op)
@@ -339,11 +339,11 @@ public class STNodeOption
 		{
 			return false;
 		}
-		STNodeEditorOptionEventArgs sTNodeEditorOptionEventArgs = new STNodeEditorOptionEventArgs(op, this, ConnectionStatus.DisConnecting);
-		_Owner.Owner.OnOptionDisConnecting(sTNodeEditorOptionEventArgs);
+		STNodeEditorOptionEventArgs e = new STNodeEditorOptionEventArgs(op, this, ConnectionStatus.DisConnecting);
+		_Owner.Owner.OnOptionDisConnecting(e);
 		OnDisConnecting(new STNodeOptionEventArgs(isSponsor: true, op, ConnectionStatus.DisConnecting));
 		op.OnDisConnecting(new STNodeOptionEventArgs(isSponsor: false, this, ConnectionStatus.DisConnecting));
-		return sTNodeEditorOptionEventArgs.Continue;
+		return e.Continue;
 	}
 
 	public virtual ConnectionStatus ConnectOption(STNodeOption op)

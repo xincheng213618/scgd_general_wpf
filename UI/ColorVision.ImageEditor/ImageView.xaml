@@ -6,7 +6,6 @@
              xmlns:local="clr-namespace:ColorVision.ImageEditor"
              xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
              xmlns:converter="clr-namespace:ColorVision.ImageEditor.Draw.Converter"
-             xmlns:draw ="clr-namespace:ColorVision.ImageEditor.Draw"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
@@ -72,13 +71,13 @@
             <Grid Background="{StaticResource SmallGridLinesDrawingBrush}"  Visibility="Collapsed"/>
 
             <Grid x:Name="ZoomGrid" Background="{StaticResource TransparentGridBrush}">
-                <draw:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}" Grid.Row="1" Grid.RowSpan="2">
-                    <draw:DrawCanvas x:Name="ImageShow"  x:FieldModifier="public" FocusVisualStyle="{x:Null}"   RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto">
-                    </draw:DrawCanvas>
-                </draw:ZoomboxSub>
+                <local:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}" Grid.Row="1" Grid.RowSpan="2">
+                    <local:DrawCanvas x:Name="ImageShow"  x:FieldModifier="public" FocusVisualStyle="{x:Null}"   RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto">
+                    </local:DrawCanvas>
+                </local:ZoomboxSub>
+                
                 <ComboBox x:Name="ComboBoxLayers" HorizontalAlignment="Right" VerticalAlignment="Top"  Style="{StaticResource ComboBox.Small}" x:FieldModifier="public"  SelectedIndex="0" Margin="5"/>
-
-                <ToolBarTray  x:Name="ToolBarAl"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Left" Visibility="Collapsed">
+                <ToolBarTray  x:Name="ToolBarAl"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Left" Visibility="Visible">
                     <ToolBar Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" >
                         <StackPanel Orientation="Horizontal" >
                             <ComboBox x:Name="ComboxPOITemplate"  x:FieldModifier="public" Width="100" Style="{StaticResource ComboBox.Small}" HorizontalAlignment="Left" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
@@ -90,24 +89,24 @@
                 <Border x:Name="ToolBarBottom"  Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}" Padding="2" CornerRadius="5" Background="{DynamicResource SecondaryRegionBrush}"  HorizontalAlignment="Center" VerticalAlignment="Bottom"  Margin="0,0,0,10">
                     <Grid>
                         <StackPanel Orientation="Horizontal" >
-                            <ToggleButton  IsChecked="{Binding Measure}" Padding="5" Margin="0,0,2,0" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
-                                <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageruler}" />
+                            <ToggleButton  IsChecked="{Binding MeasureManager.IsShow}" Padding="5" Margin="0,0,2,0" >
+                                <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageruler}"/>
                             </ToggleButton>
-                            <ToggleButton  IsChecked="{Binding EraseVisual}" Padding="5" Margin="0,0,2,0"  Click="Button7_Click" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
+                            <ToggleButton  IsChecked="{Binding EraseManager.IsShow}" Padding="5" Margin="0,0,2,0"  Click="Button7_Click">
                                 <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageeraser}"/>
                             </ToggleButton>
-                            <ToggleButton IsChecked="{Binding DrawCircle}" Padding="5" Margin="0,0,2,0" >
+                            <ToggleButton IsChecked="{Binding CircleManager.IsShow}" Padding="5" Margin="0,0,2,0" >
                                 <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageCircle}"  />
                             </ToggleButton>
-                            <ToggleButton IsChecked="{Binding DrawRect}" Padding="5" Margin="0,0,2,0" >
+                            <ToggleButton IsChecked="{Binding RectangleManager.IsShow}" Padding="5" Margin="0,0,2,0" >
                                 <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageRect}"/>
                             </ToggleButton>
-                            <ToggleButton IsChecked="{Binding DrawPolygon}"  Padding="5" Margin="0,0,2,0"  >
+                            <ToggleButton IsChecked="{Binding PolygonManager.IsShow}"  Padding="5" Margin="0,0,2,0"  >
                                 <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}" />
                             </ToggleButton>
-                            <ToggleButton IsChecked="{Binding DrawLine}" Content="直线"  Padding="5" Margin="0,0,2,0"  >
+                            <ToggleButton IsChecked="{Binding LineManager.IsShow}" Content="直线"  Padding="5" Margin="0,0,2,0"  >
                             </ToggleButton>
-                            <ToggleButton IsChecked="{Binding DrawBezierCurve}" Padding="5" Margin="0,0,2,0">
+                            <ToggleButton IsChecked="{Binding BezierCurveManager.IsShow}" Padding="5" Margin="0,0,2,0">
                                 <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}" />
                             </ToggleButton>
 
@@ -132,12 +131,12 @@
                 </Border>
 
 
-                <ToolBarTray x:Name="ToolBar1"  VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                <ToolBarTray x:Name="ToolBarTop"  VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
                     <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True">
-                        <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding ImageEditMode}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
+                        <ToggleButton IsChecked="{Binding ImageEditMode}"  Margin="1,0">
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
                         </ToggleButton>
-                        <ToggleButton x:Name="ToggleButtonMouse"  IsChecked="{Binding ShowImageInfo}" >
+                        <ToggleButton  IsChecked="{Binding MouseMagnifier.IsShow}" Margin="1,0" >
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMouse}"  Margin="-5"/>
                         </ToggleButton>
                         <Button Command="{Binding ZoomUniformCommand}"  Margin="1,0">
@@ -249,11 +248,20 @@
             </Grid.RowDefinitions>
             <ScrollViewer Margin="5,0">
                 <StackPanel x:Name="AdvancedStackPanel">
+
                     <Border Grid.Column="1" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"  Margin="0,5" CornerRadius="5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,0,0,5">
                                 <ui:ToggleSwitch IsChecked="{Binding Config.IsLayoutUpdated}" DockPanel.Dock="Right" />
-                                <TextBlock Text="自动刷新绘图" Width="100" HorizontalAlignment="Left"/>
+                                <TextBlock Text="自动刷新" Width="100" HorizontalAlignment="Left"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <ui:ToggleSwitch IsChecked="{Binding Config.IsShowText}" DockPanel.Dock="Right" />
+                                <TextBlock Text="显示文字" Width="100" HorizontalAlignment="Left"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <ui:ToggleSwitch IsChecked="{Binding Config.IsShowMsg}" DockPanel.Dock="Right" />
+                                <TextBlock Text="显示消息" Width="100" HorizontalAlignment="Left"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
                                 <TextBlock Text="MaxZoom" Width="100"/>
@@ -267,6 +275,10 @@
                                 <TextBlock Text="伪彩色" Width="100"/>
                                 <ComboBox x:Name="ComColormapTypes" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" Text="{Binding  Config.ColormapTypes}" DisplayMemberPath="Key"/>
                             </DockPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"  Margin="0,5" CornerRadius="5">
+                        <StackPanel Margin="5">
                             <DockPanel Margin="0,5,0,5">
                                 <TextBlock Text="CVICE范围" Width="100"/>
                                 <TextBox  Text="{Binding MouseMagnifier.Radius}"/>

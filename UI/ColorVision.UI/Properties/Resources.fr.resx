@@ -291,4 +291,31 @@
   <data name="General" xml:space="preserve">
     <value>Universel</value>
   </data>
+  <data name="PluginManagerWindow" xml:space="preserve">
+    <value>FenêtreGestionnaireDePlugins</value>
+  </data>
+  <data name="PluginName" xml:space="preserve">
+    <value>Nom du plugin</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>Recherche</value>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>renouveler</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="Line" xml:space="preserve">
+    <value>D'ACCORD</value>
+  </data>
+  <data name="Column" xml:space="preserve">
+    <value>Liste</value>
+  </data>
+  <data name="Options" xml:space="preserve">
+    <value>Options</value>
+  </data>
 </root>

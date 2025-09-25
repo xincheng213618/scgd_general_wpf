@@ -154,8 +154,8 @@ internal class FrmNodePreviewPanel : Form
 		Rectangle rectangle = RectangleToClient(m_rect_handle);
 		rectangle.Y = (m_nHandleSize - 14) / 2;
 		rectangle.X += rectangle.Y + 1;
-		int num2 = (rectangle.Height = 14);
-		rectangle.Width = num2;
+		int num = (rectangle.Height = 14);
+		rectangle.Width = num;
 		m_pen.Width = 2f;
 		graphics.DrawLine(m_pen, rectangle.X + 4, rectangle.Y + 3, rectangle.X + 10, rectangle.Y + 3);
 		graphics.DrawLine(m_pen, rectangle.X + 4, rectangle.Y + 6, rectangle.X + 10, rectangle.Y + 6);

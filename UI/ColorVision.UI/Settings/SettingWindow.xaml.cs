@@ -12,26 +12,12 @@ namespace ColorVision.Settings
     /// <summary>
     /// SettingWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class SettingWindow : BaseWindow
+    public partial class SettingWindow 
     {
         public SettingWindow()
         {
             InitializeComponent();
-
-            if (IsWin10)
-            {
-                IsBlurEnabled = false;
-                ThemeManager.Current.CurrentUIThemeChanged += (e) =>
-                {
-                    Background = IsBlurEnabled ? Background : GetThemeBackGround();
-                };
-            }
-            else
-            {
-                IsBlurEnabled = ThemeConfig.Instance.TransparentWindow && IsBlurEnabled;
-            }
-            Background = IsBlurEnabled ? Background : GetThemeBackGround();
-
+            this.ApplyCaption();
         }
 
 
@@ -75,14 +61,7 @@ namespace ColorVision.Settings
                     TabItem tabItem = new TabItem() { Header = configSetting.Name , Background = Brushes.Transparent};
                     Grid grid = new Grid();
                     grid.SetResourceReference(Panel.BackgroundProperty, "GlobalBorderBrush");
-                    GroupBox groupBox = new GroupBox
-                    {
-                        Header = new TextBlock { Text = configSetting.Name, FontSize = 20 },
-                        Background = Brushes.Transparent,
-                        Template = (ControlTemplate)Resources["GroupBoxHeader1"]
-                    };
-                    groupBox.Content = configSetting.UserControl;
-                    grid.Children.Add(groupBox);
+                    grid.Children.Add(configSetting.UserControl);
                     tabItem.Content = grid;
                     TabControlSetting.Items.Add(tabItem);
                 }
@@ -102,22 +81,14 @@ namespace ColorVision.Settings
                     TabItem tabItem = new TabItem() { Header = configSetting.Name, Background = Brushes.Transparent };
                     Grid grid = new Grid();
                     grid.SetResourceReference(Panel.BackgroundProperty, "GlobalBorderBrush");
-                    GroupBox groupBox = new GroupBox
-                    {
-                        Header = new TextBlock { Text = configSetting.Name, FontSize = 20 },
-                        Background = Brushes.Transparent,
-                        Template = (ControlTemplate)Resources["GroupBoxHeader1"]
-                    };
 
                     StackPanel stackPanel = new StackPanel() { Margin = new Thickness(10) };
 
                     if (configSetting.Source is ViewModelBase obj)
                     {
-
                         stackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(obj));
-                        groupBox.Content = stackPanel;
+                        grid.Children.Add(stackPanel) ;
                     }
-                    grid.Children.Add(groupBox);
                     tabItem.Content = grid;
                     TabControlSetting.Items.Add(tabItem);
 
@@ -150,16 +121,9 @@ namespace ColorVision.Settings
                     TabItem tabItem = new TabItem() { Header = group.Group, Background = Brushes.Transparent };
                     Grid grid = new Grid();
                     grid.SetResourceReference(Panel.BackgroundProperty, "GlobalBorderBrush");
-                    GroupBox groupBox = new GroupBox
-                    {
-                        Header = new TextBlock { Text = group.Group, FontSize = 20 },
-                        Background = Brushes.Transparent,
-                        Template = (ControlTemplate)Resources["GroupBoxHeader1"]
-                    };
 
                     StackPanel stackPanel = new StackPanel() { Margin = new Thickness(10) };
-                    groupBox.Content = stackPanel;
-                    grid.Children.Add(groupBox);
+                    grid.Children.Add(stackPanel);
                     tabItem.Content = grid;
                     TabControlSetting.Items.Add(tabItem);
 

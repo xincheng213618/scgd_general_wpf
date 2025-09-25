@@ -20,7 +20,7 @@ namespace ColorVision.UI
 
         [DisplayName("最大备份数量"),Description("超过则自动清理旧备份")]
         public int MaxBackupFiles { get => _MaxBackupFiles; set { _MaxBackupFiles = value; OnPropertyChanged(); } }
-        private int _MaxBackupFiles;
+        private int _MaxBackupFiles = 10;
     }
     /// <summary>
     /// 加载插件
@@ -48,11 +48,13 @@ namespace ColorVision.UI
 
         public DateTime InitDateTime { get; set; }
 
+        public string ConfigDIFileName { get; set; }
+
         public ConfigHandler()
         {
             InitDateTime = DateTime.Now;
             string AssemblyCompany = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "ColorVision";
-            string ConfigDIFileName = $"{AssemblyCompany}Config.json";
+            ConfigDIFileName =  $"{AssemblyCompany}Config.json";
             string backupDirName = "Backup";
             if (Directory.Exists("Config"))
             {
@@ -216,16 +218,51 @@ namespace ColorVision.UI
             {
                 try
                 {
-                    if (configPair.Value is IConfigSecure configSecure)
+                    if (Application.Current == null)
                     {
-                        configSecure.Encryption();
-                        jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
-                        configSecure.Decrypt();
+                        if (configPair.Value is IConfigSecure configSecure)
+                        {
+                            configSecure.Encryption();
+                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                            configSecure.Decrypt();
+                        }
+                        else
+                        {
+                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                        }
+                    }
+                    else if (Application.Current.Dispatcher.CheckAccess())
+                    {
+                        if (configPair.Value is IConfigSecure configSecure)
+                        {
+                            configSecure.Encryption();
+                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                            configSecure.Decrypt();
+                        }
+                        else
+                        {
+                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                        }
                     }
                     else
                     {
-                        jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            if (configPair.Value is IConfigSecure configSecure)
+                            {
+                                configSecure.Encryption();
+                                jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                                configSecure.Decrypt();
+                            }
+                            else
+                            {
+                                jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                            }
+
+                        });
                     }
+
+
 
                 }
                 catch(Exception ex)
@@ -242,7 +279,6 @@ namespace ColorVision.UI
                     jObject.WriteTo(writer);
                 }
             }
-
         }
 
         public void LoadDefaultConfigs()

@@ -5,5 +5,5 @@
   "version": "1.0",
   "description": "\u56fe\u5361\u751f\u6210\u5de5\u5177",
   "dllpath": "Pattern.dll",
-  "requires": "1.3.10.4"
+  "requires": "1.3.12.11"
 }

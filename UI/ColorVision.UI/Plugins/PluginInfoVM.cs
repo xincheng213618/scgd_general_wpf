@@ -1,24 +1,18 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Properties;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
-using ColorVision.UI;
+using ColorVision.UI.Properties;
 using log4net;
-using System;
-using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision.Plugins
+namespace ColorVision.UI.Plugins
 {
     public class PluginInfoVM:ViewModelBase
     {
@@ -40,6 +34,7 @@ namespace ColorVision.Plugins
         public string? AssemblyPublicKeyToken { get; set; }
 
         public PluginInfo PluginInfo { get; set; }
+
 
         public Version LastVersion { get => _LastVersion; set { _LastVersion = value; OnPropertyChanged(); } }
         private Version _LastVersion;
@@ -92,22 +87,21 @@ namespace ColorVision.Plugins
 
         public async void CheckVersion()
         {
-            string LatestReleaseUrl = UpdateUrl + "/" + PackageName + "/LATEST_RELEASE";
+            string LatestReleaseUrl = PluginLoaderrConfig.Instance.PluginUpdatePath  + PackageName + "/LATEST_RELEASE";
             LastVersion = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
         }
 
 
-        string UpdateUrl = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Plugins";
         public async void Update()
         {
-            string LatestReleaseUrl = UpdateUrl + "/" + PackageName + "/LATEST_RELEASE";
+            string LatestReleaseUrl = PluginLoaderrConfig.Instance.PluginUpdatePath + PackageName + "/LATEST_RELEASE";
             Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
             Application.Current.Dispatcher.Invoke(() =>
             {
                 if (MessageBox.Show(Application.Current.GetActiveWindow(), "是否更新", Name, MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{PackageName}-{version}.zip";
-                    string url = $"{UpdateUrl}/{PackageName}/{PackageName}-{version}.zip";
+                    string url = $"{PluginLoaderrConfig.Instance.PluginUpdatePath}{PackageName}/{PackageName}-{version}.zip";
                     WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                     if (File.Exists(downloadPath))
                     {
@@ -121,7 +115,6 @@ namespace ColorVision.Plugins
                     {
                         if (!File.Exists(downloadPath))
                         {
-                            await DownloadFile.GetIsPassWorld();
                             CancellationTokenSource _cancellationTokenSource = new();
                             Application.Current.Dispatcher.Invoke(() =>
                             {
@@ -136,129 +129,21 @@ namespace ColorVision.Plugins
 
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-
-                            try
-                            {
-                                ConfigService.Instance.SaveConfigs();
-
-                                // 解压缩 ZIP 文件到临时目录
-                                string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionPluginsUpdate");
-                                if (Directory.Exists(tempDirectory))
-                                {
-                                    Directory.Delete(tempDirectory, true);
-                                }
-                                ZipFile.ExtractToDirectory(downloadPath, tempDirectory);
-
-                                // 创建批处理文件内容
-                                string batchFilePath = Path.Combine(tempDirectory, "update.bat");
-                                string programPluginsDirectory = AppDomain.CurrentDomain.BaseDirectory + "Plugins";
-
-                                string targetPluginDirectory = Path.Combine(programPluginsDirectory, PackageName);
-
-                                string? executableName = Path.GetFileName(Environment.ProcessPath);
-
-                                string batchContent = $@"
-@echo off
-taskkill /f /im ""{executableName}""
-timeout /t 0
-xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
-start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c MenuPluginManager
-rd /s /q ""{tempDirectory}""
-del ""%~f0"" & exit
-";
-                                File.WriteAllText(batchFilePath, batchContent);
-
-                                // 设置批处理文件的启动信息
-                                ProcessStartInfo startInfo = new()
-                                {
-                                    FileName = batchFilePath,
-                                    UseShellExecute = true,
-                                    WindowStyle = ProcessWindowStyle.Hidden
-                                };
-                                if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
-                                {
-                                    startInfo.Verb = "runas"; // 请求管理员权限
-                                    startInfo.WindowStyle = ProcessWindowStyle.Normal;
-                                }
-                                Process.Start(startInfo);
-
-                                Environment.Exit(0);
-                            }
-                            catch (Exception ex)
-                            {
-                                MessageBox.Show($"更新失败: {ex.Message}");
-                            }
+                            PluginUpdater.UpdatePlugin(downloadPath);
                         });
-
                     });
 
                 };
 
             });
-
-
-
         }
+
 
         public void Delete()
         {
             if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否确认删除插件{Name}", Resources.PluginManagerWindow, MessageBoxButton.YesNo) == MessageBoxResult.No) return;
-            ConfigService.Instance.SaveConfigs();
 
-            string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionPluginsUpdate");
-            if (Directory.Exists(tempDirectory))
-            {
-                Directory.Delete(tempDirectory, true);
-            }
-
-            Directory.CreateDirectory(tempDirectory);
-            // 创建批处理文件内容
-            string batchFilePath = Path.Combine(tempDirectory, "update.bat");
-            string programPluginsDirectory = AppDomain.CurrentDomain.BaseDirectory + "Plugins";
-
-            string targetPluginDirectory = Path.Combine(programPluginsDirectory, PackageName);
-
-            string? executableName = Path.GetFileName(Environment.ProcessPath);
-
-            string batchContent = $@"
-@echo off
-taskkill /f /im ""{executableName}""
-timeout /t 0
-setlocal
-
-rem 设置要删除的目录路径
-set targetDirectory=""{targetPluginDirectory}""
-
-rem 检查目录是否存在
-if exist %targetDirectory% (
-    echo 正在删除目录: %targetDirectory%
-    rd /s /q %targetDirectory%
-    echo 删除完成。
-) else (
-    echo 目录不存在: %targetDirectory%
-)
-
-endlocal
-start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c MenuPluginManager
-rd /s /q ""{tempDirectory}""
-del ""%~f0"" & exit
-";
-            File.WriteAllText(batchFilePath, batchContent);
-
-            // 设置批处理文件的启动信息
-            ProcessStartInfo startInfo = new()
-            {
-                FileName = batchFilePath,
-                UseShellExecute = true,
-                WindowStyle = ProcessWindowStyle.Hidden
-            };
-            if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
-            {
-                startInfo.Verb = "runas"; // 请求管理员权限
-                startInfo.WindowStyle = ProcessWindowStyle.Normal;
-            }
-            Process.Start(startInfo);
-            Environment.Exit(0);
+            PluginUpdater.DeletePlugin(PackageName);
         }
     }
 }

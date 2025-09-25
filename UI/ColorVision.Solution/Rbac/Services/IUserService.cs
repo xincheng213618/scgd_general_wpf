@@ -1,4 +1,5 @@
-﻿using ColorVision.Rbac.Dtos;
+﻿#pragma warning disable 
+using ColorVision.Rbac.Dtos;
 using SqlSugar;
 using System;
 using System.Threading;

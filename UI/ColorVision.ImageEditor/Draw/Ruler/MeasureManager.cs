@@ -1,54 +1,57 @@
-﻿using System.Windows;
+﻿using ColorVision.Common.MVVM;
+using System.Windows;
 using System.Windows.Input;
 
 namespace ColorVision.ImageEditor.Draw.Ruler
 {
-    public class ToolBarMeasure
+    public class MeasureManager:ViewModelBase,IDrawEditor
     {
         private ZoomboxSub Zoombox1 { get; set; }
-        private DrawCanvas drawCanvas { get; set; }
+        private DrawCanvas DrawCanvas { get; set; }
 
-        private FrameworkElement Parent { get; set; }
+        private ImageViewModel ImageViewModel { get; set; }
 
-        public ToolBarMeasure(FrameworkElement Parent, ZoomboxSub zombox, DrawCanvas drawCanvas)
-        {
-            this.Parent = Parent;
-            Zoombox1 = zombox;
-            this.drawCanvas = drawCanvas;
-        }
         private DrawingVisualRuler? RulerCache;
 
-
-        public bool Measure
+        public MeasureManager(ImageViewModel imageViewModel, ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
-            get => _Measure;
+            ImageViewModel = imageViewModel;
+            Zoombox1 = zombox;
+            DrawCanvas = drawCanvas;
+        }
+
+        private bool _IsShow;
+        public bool IsShow
+        {
+            get => _IsShow;
             set
             {
-                if (_Measure == value) return;
-                _Measure = value;
+                if (_IsShow == value) return;
+                _IsShow = value;
                 if (value)
                 {
-                    Parent.PreviewKeyDown += PreviewKeyDown;
-                    drawCanvas.PreviewMouseLeftButtonDown += MouseDown;
-                    drawCanvas.MouseMove += MouseMove;
-                    drawCanvas.PreviewMouseLeftButtonUp += MouseUp;
-                    drawCanvas.PreviewMouseRightButtonDown += PreviewMouseRightButtonDown;
+                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
+
+                    DrawCanvas.PreviewKeyDown += PreviewKeyDown;
+                    DrawCanvas.PreviewMouseLeftButtonDown += MouseDown;
+                    DrawCanvas.MouseMove += MouseMove;
+                    DrawCanvas.PreviewMouseLeftButtonUp += MouseUp;
+                    DrawCanvas.PreviewMouseRightButtonDown += PreviewMouseRightButtonDown;
                 }
                 else
                 {
-                    Parent.PreviewKeyDown -= PreviewKeyDown;
-                    drawCanvas.PreviewMouseLeftButtonDown -= MouseDown;
-                    drawCanvas.MouseMove -= MouseMove;
-                    drawCanvas.PreviewMouseLeftButtonUp -= MouseUp;
-                    drawCanvas.PreviewMouseRightButtonDown -= PreviewMouseRightButtonDown;
+                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(null);
+
+                    DrawCanvas.PreviewKeyDown -= PreviewKeyDown;
+                    DrawCanvas.PreviewMouseLeftButtonDown -= MouseDown;
+                    DrawCanvas.MouseMove -= MouseMove;
+                    DrawCanvas.PreviewMouseLeftButtonUp -= MouseUp;
+                    DrawCanvas.PreviewMouseRightButtonDown -= PreviewMouseRightButtonDown;
 
                 }
-
+                OnPropertyChanged();
             }
         }
-
-
-        private bool _Measure;
 
 
 
@@ -58,7 +61,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
             {
                 RulerCache = new DrawingVisualRuler();
                 RulerCache.Pen.Thickness = 1 / Zoombox1.ContentMatrix.M11;
-                drawCanvas.AddVisualCommand(RulerCache);
+                DrawCanvas.AddVisualCommand(RulerCache);
             }
         }
         private void MouseMove(object sender, MouseEventArgs e)
@@ -99,27 +102,30 @@ namespace ColorVision.ImageEditor.Draw.Ruler
 
         private void PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Escape)
+            Key realKey = e.Key;
+            if (realKey == Key.ImeProcessed)
+            {
+                realKey = e.ImeProcessedKey;
+            }
+            if (realKey == Key.Escape)
             {
                 if (RulerCache != null)
                 {
-                    drawCanvas.RemoveVisualCommand(RulerCache);
+                    DrawCanvas.RemoveVisualCommand(RulerCache);
                     RulerCache = null;
+                    IsShow = false;
                 }
             }
-            if (e.Key == Key.Enter)
+            else if (realKey == Key.End || realKey == Key.Space || realKey == Key.Enter || realKey == Key.Tab)
             {
                 if (RulerCache != null)
                 {
-                    RulerCache.MovePoints = null;
                     RulerCache.Render();
                     RulerCache = null;
+                    IsShow = false;
                 }
+                e.Handled = true;
             }
         }
-
-
-
-
     }
 }

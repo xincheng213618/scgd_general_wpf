@@ -2,6 +2,7 @@ using System.Drawing;
 using FlowEngineLib.Base;
 using FlowEngineLib.MQTT;
 using FlowEngineLib.SMU;
+using log4net;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 
@@ -10,9 +11,15 @@ namespace FlowEngineLib;
 [STNode("/04 源表")]
 public class SMUNode : CVBaseServerNode
 {
+	private static readonly ILog logger = LogManager.GetLogger(typeof(SMUNode));
+
+	private string loopName;
+
 	private STNodeOption m_in_next;
 
 	private STNodeEditText<string> m_ctrl_editText;
+
+	private STNodeEditText<string> m_ctrl_lpName;
 
 	private float m_begin_val;
 
@@ -25,8 +32,6 @@ public class SMUNode : CVBaseServerNode
 	private double m_step_val;
 
 	private int m_step_count;
-
-	private string loopName;
 
 	[STNodeProperty("电(压/流)源", "电(压/流)源", true)]
 	public SourceType Source { get; set; }
@@ -100,7 +105,7 @@ public class SMUNode : CVBaseServerNode
 		m_point_num = 5;
 		m_step_count = 0;
 		LoopName = "SMULoop";
-		base.Height += 20;
+		base.Height += 45;
 	}
 
 	protected override void OnCreate()
@@ -110,12 +115,11 @@ public class SMUNode : CVBaseServerNode
 		base.InputOptions.Add(STNodeOption.Empty);
 		base.InputOptions.Add(STNodeOption.Empty);
 		m_in_next.DataTransfer += m_in_next_DataTransfer;
-		m_ctrl_editText = new STNodeEditText<string>();
-		m_ctrl_editText.Text = "当前值";
 		Rectangle custom_item = m_custom_item;
 		custom_item.Y = 50;
-		m_ctrl_editText.DisplayRectangle = custom_item;
-		base.Controls.Add(m_ctrl_editText);
+		m_ctrl_editText = CreateControl(typeof(STNodeEditText<string>), custom_item, "Current:", string.Empty);
+		custom_item.Y += 25;
+		m_ctrl_lpName = CreateControl(typeof(STNodeEditText<string>), custom_item, "LoopName:", loopName);
 		updateUI();
 	}
 
@@ -129,6 +133,11 @@ public class SMUNode : CVBaseServerNode
 		{
 			m_ctrl_editText.Value = string.Format("{2:F4}:{0}/{1}", m_step_count, m_point_num, m_cur_val);
 		}
+	}
+
+	private string GetCurValText()
+	{
+		return $"{m_begin_val}-{m_end_val}/{m_point_num}";
 	}
 
 	private void end()
@@ -161,6 +170,17 @@ public class SMUNode : CVBaseServerNode
 		}
 	}
 
+	private void AddIVData(CVServerResponse resp, CVStartCFC start)
+	{
+		double v = resp.Data.V;
+		double i = resp.Data.I;
+		int masterId = resp.Data.MasterId;
+		int masterResultType = resp.Data.MasterResultType;
+		SMUResultData value = new SMUResultData(v, i, masterId, masterResultType);
+		string key = "SMUResult";
+		start.Data[key] = value;
+	}
+
 	private void AddCFCData(CVStartCFC start)
 	{
 		string key = loopName;
@@ -182,11 +202,15 @@ public class SMUNode : CVBaseServerNode
 	{
 		CVStartCFC trans_action = trans.trans_action;
 		string token = GetToken();
-		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, operatorCode, trans_action.SerialNumber, new SMUData(Source == SourceType.电压, m_cur_val, LimitVal), token, base.ZIndex);
+		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, operatorCode, trans_action.SerialNumber, new SMUData(Source == SourceType.Voltage_V, m_cur_val, LimitVal), token, base.ZIndex);
 		CVBaseEventCmd cmd = AddActionCmd(trans, cVMQTTRequest);
 		string message = JsonConvert.SerializeObject(cVMQTTRequest, Formatting.None);
 		MQActionEvent mQActionEvent = new MQActionEvent(cVMQTTRequest.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), cVMQTTRequest.EventName, message, token);
 		DoTransferToServer(trans, mQActionEvent, cmd);
+		if (logger.IsDebugEnabled)
+		{
+			logger.DebugFormat("[{0}] Next Step Source value = {1}", ToShortString(), m_cur_val);
+		}
 		return mQActionEvent;
 	}
 
@@ -198,7 +222,20 @@ public class SMUNode : CVBaseServerNode
 
 	protected bool HasNext()
 	{
+		if (logger.IsDebugEnabled)
+		{
+			logger.DebugFormat("[{0}] HasNext Step = {1}/{2}", ToShortString(), m_step_count, PointNum);
+		}
 		return m_step_count < PointNum;
+	}
+
+	protected override void OnServerResponse(CVServerResponse resp, CVStartCFC startCFC)
+	{
+		base.OnServerResponse(resp, startCFC);
+		if (resp != null && resp.Status == ActionStatusEnum.Finish)
+		{
+			AddIVData(resp, startCFC);
+		}
 	}
 
 	protected override CVMQTTRequest getActionEvent(STNodeOptionEventArgs e)
@@ -219,7 +256,7 @@ public class SMUNode : CVBaseServerNode
 			m_cur_val = BeginVal;
 			m_step_count = 0;
 			m_op_end.TransferData(null);
-			result = new CVMQTTRequest(GetServiceName(), GetDeviceCode(), operatorCode, cVStartCFC.SerialNumber, new SMUData(Source == SourceType.电压, m_cur_val, LimitVal), GetToken(), base.ZIndex);
+			result = new CVMQTTRequest(GetServiceName(), GetDeviceCode(), operatorCode, cVStartCFC.SerialNumber, new SMUData(Source == SourceType.Voltage_V, m_cur_val, LimitVal), GetToken(), base.ZIndex);
 			m_step_count++;
 			updateUI();
 			AddCFCData(cVStartCFC);

@@ -3,7 +3,7 @@ using System.Windows.Input;
 using System.Windows;
 using System;
 
-namespace ColorVision.ImageEditor.Draw
+namespace ColorVision.ImageEditor
 {
     public class ZoomboxSub : Zoombox
     {

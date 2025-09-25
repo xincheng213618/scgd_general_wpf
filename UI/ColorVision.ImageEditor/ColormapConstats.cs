@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8625
+using ColorVision.Core;
 using System.Collections.Generic;
 
 namespace ColorVision.ImageEditor

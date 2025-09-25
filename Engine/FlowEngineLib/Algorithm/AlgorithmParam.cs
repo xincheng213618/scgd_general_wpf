@@ -16,6 +16,8 @@ public class AlgorithmParam : AlgorithmPreStepParam
 
 	public int BufferLen { get; set; }
 
+	public SMUResultData SMUData { get; set; }
+
 	public AlgorithmParam()
 	{
 		FileType = FileExtType.None;
@@ -23,6 +25,7 @@ public class AlgorithmParam : AlgorithmPreStepParam
 		{
 			ID = -1
 		};
+		SMUData = null;
 	}
 
 	public AlgorithmParam(string imgFile, int tempId, string tempName, AlgorithmPreStepParam param, string globalVariableName)
@@ -35,5 +38,6 @@ public class AlgorithmParam : AlgorithmPreStepParam
 			ID = tempId,
 			Name = tempName
 		};
+		SMUData = null;
 	}
 }

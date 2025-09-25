@@ -14,6 +14,8 @@ public class BlackMuraParam : AlgorithmPreStepParam
 
 	public CVTemplateParam TemplateParam { get; set; }
 
+	public SMUResultData SMUData { get; set; }
+
 	public BlackMuraParam(int tempId, string tempName, string imgFileName, FileExtType fileType, string poiTempName, int[] oIndex)
 	{
 		FileType = fileType;

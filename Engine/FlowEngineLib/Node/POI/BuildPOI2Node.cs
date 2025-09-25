@@ -260,11 +260,12 @@ public class BuildPOI2Node : CVBaseServerNodeIn2Hub
 	{
 		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
 		getPreStepParam(1, algorithmPreStepParam);
-		POITypeData pOITypeData = default(POITypeData);
-		pOITypeData.PointType = _POIType;
-		pOITypeData.Width = _POIWidth;
-		pOITypeData.Height = _POIHeight;
-		POITypeData poiData = pOITypeData;
+		POITypeData poiData = new POITypeData
+		{
+			PointType = _POIType,
+			Width = _POIWidth,
+			Height = _POIHeight
+		};
 		BuildPOIData buildPOIData = new BuildPOIData(_ImgFileName, new CADMappingParam(algorithmPreStepParam.MasterId), _TempId, _TemplateName, _POIOutput, _OutputFileName, _PrefixName, _BuildType, poiData, _SavePOITempName, string.Empty, _BufferLen);
 		getPreStepParam(0, buildPOIData);
 		return buildPOIData;
@@ -272,11 +273,12 @@ public class BuildPOI2Node : CVBaseServerNodeIn2Hub
 
 	private object buildParam(CVStartCFC start)
 	{
-		POITypeData pOITypeData = default(POITypeData);
-		pOITypeData.PointType = _POIType;
-		pOITypeData.Width = _POIWidth;
-		pOITypeData.Height = _POIHeight;
-		POITypeData poiData = pOITypeData;
+		POITypeData poiData = new POITypeData
+		{
+			PointType = _POIType,
+			Width = _POIWidth,
+			Height = _POIHeight
+		};
 		BuildPOIData buildPOIData = new BuildPOIData(_ImgFileName, _TempId, _TemplateName, _POIOutput, _OutputFileName, _PrefixName, _BuildType, poiData, _SavePOITempName, string.Empty, _BufferLen);
 		getPreStepParam(start, buildPOIData);
 		return buildPOIData;

@@ -41,16 +41,12 @@ namespace ColorVision.ImageEditor.Draw.Special
         public void Load()
         {
             DrawCanvas.MouseMove += MouseMove;
-            DrawCanvas.MouseEnter += MouseEnter;
-            DrawCanvas.MouseLeave += MouseLeave;
-
         }
 
         public void UnLoad()
         {
             DrawCanvas.MouseMove -= MouseMove;
-            DrawCanvas.MouseEnter -= MouseEnter;
-            DrawCanvas.MouseLeave -= MouseLeave;
+
         }
 
         public void DrawVisualImageControl(bool Control)
@@ -147,13 +143,6 @@ namespace ColorVision.ImageEditor.Draw.Special
 
 
         }
-
-
-
-        public void MouseEnter(object sender, MouseEventArgs e) => DrawVisualImageControl(true);
-
-        public void MouseLeave(object sender, MouseEventArgs e) => DrawVisualImageControl(false);
-
 
     }
 }

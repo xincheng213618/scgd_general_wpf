@@ -14,6 +14,13 @@
     <GenerateDocumentationFile>False</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="Plugins\**" />
+    <EmbeddedResource Remove="Plugins\**" />
+    <None Remove="Plugins\**" />
+    <Page Remove="Plugins\**" />
+  </ItemGroup>
+
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
 	</ItemGroup>
@@ -50,6 +57,7 @@
     <None Remove="Assets\Image\ColorVision.ico" />
     <None Remove="Assets\Image\ColorVision.png" />
     <None Remove="Assets\Image\ColorVision1.ico" />
+    <None Remove="Assets\Image\ComfyUI_00080_.png" />
     <None Remove="Assets\Image\connect.png" />
     <None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
     <None Remove="Assets\png\background0.png" />
@@ -125,6 +133,7 @@
   <ItemGroup>
     <Resource Include="Assets\Image\ColorVision.png" />
     <Resource Include="Assets\Image\ColorVision1.ico" />
+    <Resource Include="Assets\Image\ComfyUI_00080_.png" />
     <Resource Include="Assets\Image\connect.png" />
     <Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
     <Resource Include="Assets\png\background0.png">

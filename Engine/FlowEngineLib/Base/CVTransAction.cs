@@ -73,10 +73,10 @@ public class CVTransAction
 
 	public void Cancel()
 	{
-		//foreach (KeyValuePair<string, CVBaseEventCmd> item in m_sever_actionEvent)
-		//{
-		//	item.Value.waiter.SignalMessageReceived();
-		//}
+		foreach (KeyValuePair<string, CVBaseEventCmd> item in m_sever_actionEvent)
+		{
+			item.Value.waiter.SignalMessageReceived();
+		}
 	}
 
 	public void ResetStartTime()

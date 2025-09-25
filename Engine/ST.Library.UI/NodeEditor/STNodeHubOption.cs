@@ -11,8 +11,8 @@ public class STNodeHubOption : STNodeOption
 
 	public override ConnectionStatus ConnectOption(STNodeOption op)
 	{
-		Type typeFromHandle = typeof(object);
-		if (base.DataType != typeFromHandle)
+		Type num = typeof(object);
+		if (base.DataType != num)
 		{
 			return base.ConnectOption(op);
 		}
@@ -20,7 +20,7 @@ public class STNodeHubOption : STNodeOption
 		ConnectionStatus connectionStatus = base.ConnectOption(op);
 		if (connectionStatus != ConnectionStatus.Connected)
 		{
-			base.DataType = typeFromHandle;
+			base.DataType = num;
 		}
 		return connectionStatus;
 	}
@@ -71,9 +71,9 @@ public class STNodeHubOption : STNodeOption
 		{
 			return ConnectionStatus.Connected;
 		}
-		foreach (STNodeOption inputOption in base.Owner.InputOptions)
+		foreach (STNodeOption count in base.Owner.InputOptions)
 		{
-			foreach (STNodeOption item in inputOption.ConnectedOption)
+			foreach (STNodeOption item in count.ConnectedOption)
 			{
 				if (item == op)
 				{

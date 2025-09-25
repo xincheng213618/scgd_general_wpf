@@ -71,19 +71,27 @@ namespace ColorVision.ImageEditor
             InitializeComponent();
             this.ApplyCaption();
         }
-        public ImageViewModel ImageViewModel { get; set; }
-
+        public ImageViewModel ImageViewModel => ImageView.ImageViewModel;
         private void Window_Initialized(object sender, System.EventArgs e)
         {
-            ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow);
-            ToolBar1.DataContext = ImageViewModel;
-            ImageViewModel.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
-            ImageViewModel.CrosshairFunction = true;
-            Zoombox1.ZoomUniform();
+            ImageView.ToolBarTop.Visibility = Visibility.Collapsed;
+            ImageView.ToolBarRight.Visibility = Visibility.Collapsed;
+            ImageView.ToolBarLeft.Visibility = Visibility.Collapsed;
+            ImageView.ToolBarAl.Visibility = Visibility.Collapsed;
+
+            ImageViewModel.Crosshair.IsShow = true;
+            ImageView.SetImageSource(new BitmapImage(new Uri("/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy.png", UriKind.Relative)));
+            ImageViewModel.ToolBarScaleRuler.IsShow = false;
+
+            ImageView.ComboBoxLayers.Visibility = Visibility.Collapsed;
+            ImageView.Zoombox1.ZoomUniform();
         }
 
         public void ChangeSelect(double x,double y)
         {
+            if (!ImageViewModel.Crosshair.IsShow)
+                ImageViewModel.Crosshair.IsShow = true;
+
             x = 60 + 755 * x;
             y = 689 - 755 * y;
             x = x / ImageViewModel.Crosshair.Ratio;
@@ -94,6 +102,9 @@ namespace ColorVision.ImageEditor
 
         public void ChangeSelect(ImageInfo imageInfo)
         {
+            if (!ImageViewModel.Crosshair.IsShow)
+                ImageViewModel.Crosshair.IsShow = true;
+
             double[] doubles = CIEColorConverter.RgbToCie1931xy(imageInfo.R,imageInfo.G,imageInfo.B);
             double x =60 + 755 * doubles[0];
             double Y = 689 - 755 * doubles[1];
@@ -104,55 +115,9 @@ namespace ColorVision.ImageEditor
         }
 
 
-        private void ImageShow_Initialized(object sender, System.EventArgs e)
-
-        {
-
-        }
-
-        private void ImageShow_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
-        {
-
-        }
-
-        private void ImageShow_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-
-        }
-
-        private void ImageShow_PreviewMouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-
-        }
-
-        private void ImageShow_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-
-        }
-
-        private void ImageShow_MouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
-        {
-
-        }
-
-        private void ImageShow_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
-        {
-
-        }
-
-        private void ImageShow_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
-        {
-
-        }
-
-        private void Button7_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            ImageShow.Source = new BitmapImage(new Uri("/ColorVision.ImageEditor;component/Assets/Image/cie_1976_ucs.png", UriKind.Relative));
+            ImageView.ImageShow.Source = new BitmapImage(new Uri("/ColorVision.ImageEditor;component/Assets/Image/cie_1976_ucs.png", UriKind.Relative));
             ImageViewModel.ZoomUniformToFill.Execute(sender);
         }
     }

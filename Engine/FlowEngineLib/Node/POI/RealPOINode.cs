@@ -277,11 +277,12 @@ public class RealPOINode : CVBaseServerNodeIn2Hub
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		POITypeData pOITypeData = default(POITypeData);
-		pOITypeData.PointType = _POIType;
-		pOITypeData.Width = _POIWidth;
-		pOITypeData.Height = _POIHeight;
-		POITypeData poiData = pOITypeData;
+		POITypeData poiData = new POITypeData
+		{
+			PointType = _POIType,
+			Width = _POIWidth,
+			Height = _POIHeight
+		};
 		AlgorithmPreStepParam[] array = new AlgorithmPreStepParam[masterInput.Length];
 		for (int i = 0; i < masterInput.Length; i++)
 		{
@@ -293,7 +294,10 @@ public class RealPOINode : CVBaseServerNodeIn2Hub
 		{
 			logger.DebugFormat("PreStepParams => {0}", JsonConvert.SerializeObject(array));
 		}
-		return new RealPOIData(_FilterTemplateName, _ReviseTemplateName, _ReviseFileName, _OutputTemplateName, poiData, array[0].MasterId, array[1].MasterId, _IsResultAdd, _IsSubPixel, _IsCCTWave);
+		return new RealPOIData(_FilterTemplateName, _ReviseTemplateName, _ReviseFileName, _OutputTemplateName, poiData, array[0].MasterId, array[1].MasterId, _IsResultAdd, _IsSubPixel, _IsCCTWave)
+		{
+			SMUData = GetSMUResult(start)
+		};
 	}
 
 	private void setTypeSize()

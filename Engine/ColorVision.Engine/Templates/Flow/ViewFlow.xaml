@@ -79,7 +79,7 @@
                         <Button Command="{Binding OpenFlowTemplateCommand}"  Margin="0,0,5,0"  Padding="2" Height="25" Width="25"  >
                             <Image  Source="{DynamicResource DIExpand}"/>
                         </Button>
-                        <Button Command="{Binding FlowConfig.EditCommand}"  Padding="2" Height="25" Width="25"  >
+                        <Button Command="{Binding EditCommand}"  Padding="2" Height="25" Width="25"  >
                             <Button.Triggers>
                                 <EventTrigger RoutedEvent="Button.Click">
                                     <BeginStoryboard>

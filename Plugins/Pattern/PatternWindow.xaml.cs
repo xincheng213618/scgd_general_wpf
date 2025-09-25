@@ -9,14 +9,28 @@ using Newtonsoft.Json;
 using OpenCvSharp.WpfExtensions;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Data;
 
 namespace Pattern
 {
+    public class PatternFeatureLauncher : IFeatureLauncherBase
+    {
+        public override string? Header { get; set; } = "图卡生成工具";
+
+        public override void Execute()
+        {
+            new PatternWindow() { WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+        }
+    }
+
     public class ExportTestPatternWpf : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
@@ -25,7 +39,7 @@ namespace Pattern
 
         public override void Execute()
         {
-            new PatternWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new PatternWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
     }
 
@@ -60,20 +74,31 @@ namespace Pattern
         private readonly (string, int, int)[] commonResolutions =
         {
             ("3840x2160",3840,2160), ("1920x1080",1920,1080), ("1280x720",1280,720), ("1024x768",1024,768),
-            ("800x600",800,600), ("640x480",640,480), ("自定义",0,0)
+            ("800x600",800,600), ("640x480",640,480)
         };
         static PatternWindowConfig Config => PatternWindowConfig.Instance;
 
         static PatternManager PatternManager => PatternManager.GetInstance();
-        public static List<PatternMeta> Patterns => PatternManager.Patterns;
+        public static ObservableCollection<PatternMeta> Patterns => PatternManager.Patterns;
 
         public static ObservableCollection<TemplatePatternFile> TemplatePatternFiles => PatternManager.TemplatePatternFiles;
-        public PatternMeta PatternMeta { get; set; }
+        public PatternMeta? PatternMeta { get; set; }
         ImageView imgDisplay { get; set; }
+
+        private ListCollectionView? _templateFilesView;
 
         public PatternWindow()
         {
             InitializeComponent();
+            this.Title += "-" + Assembly.GetAssembly(typeof(PatternWindow))?.GetName().Version?.ToString() ?? "";
+
+            // 初始化CollectionView用于筛选
+            _templateFilesView = new ListCollectionView(PatternManager.TemplatePatternFiles);
+            ListViewPattern.ItemsSource = _templateFilesView;
+
+            // 搜索框事件绑定
+            PatternSearchBox.TextChanged += PatternSearchBox_TextChanged;
+
             ListViewPattern.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) =>
             {
                 var selectedFilePath = PatternManager.TemplatePatternFiles[ListViewPattern.SelectedIndex].FilePath;
@@ -91,7 +116,25 @@ namespace Pattern
             }, (s, e) => { e.CanExecute = ListViewPattern.SelectedIndex > -1; }));
 
             ListViewPattern.CommandBindings.Add(new CommandBinding(Commands.ReName, (s, e) => ReName(), (s, e) => e.CanExecute = ListViewPattern.SelectedIndex > -1));
+        }
 
+        private void PatternSearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_templateFilesView == null) return;
+            string keyword = PatternSearchBox.Text.Trim();
+            if (string.IsNullOrEmpty(keyword))
+            {
+                _templateFilesView.Filter = null;
+            }
+            else
+            {
+                _templateFilesView.Filter = obj =>
+                {
+                    if (obj is TemplatePatternFile file)
+                        return file.Name != null && file.Name.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0;
+                    return false;
+                };
+            }
         }
 
         public void ReName()
@@ -105,13 +148,14 @@ namespace Pattern
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = PatternManager;
-            ListViewPattern.ItemsSource = PatternManager.GetInstance().TemplatePatternFiles;
+            //ListViewPattern.ItemsSource = PatternManager.GetInstance().TemplatePatternFiles;
             ResolutionStackPanel.DataContext = PatternWindowConfig.Instance;
             imgDisplay = new ImageView();
             //这里最好实现成不模糊的样子
             RenderOptions.SetBitmapScalingMode(imgDisplay.ImageShow, BitmapScalingMode.NearestNeighbor);
 
-            DisplayGrid.Children.Add(imgDisplay);
+            //DisplayGrid.Children.Add(imgDisplay);
+            DisplayGrid.Child = imgDisplay;
             this.Closed += (s, e) => Dispose();
             cmbFormat.ItemsSource = Enum.GetValues(typeof(PatternFormat));
             cmbFormat.SelectedIndex = 0;
@@ -124,18 +168,18 @@ namespace Pattern
             {
                 if (cmbPattern1.SelectedItem is PatternMeta selectedPattern)
                 {
-                    PatternEditorGrid.Children.Clear();
+                    //PatternEditorGrid.Children.Clear();
+                    PatternEditorGrid.Child = null;
                     if (selectedPattern.Pattern is IPattern pattern)
                     {
                         PatternMeta = selectedPattern;
-                        PatternEditorGrid.Children.Add(pattern.GetPatternEditor());
-
+                        //PatternEditorGrid.Children.Add(pattern.GetPatternEditor());
+                        PatternEditorGrid.Child = pattern.GetPatternEditor();
                     }
                 }
             };
             cmbPattern1.ItemsSource = Patterns;
             cmbPattern1.SelectedIndex = 0;
-
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -165,17 +209,10 @@ namespace Pattern
         private void CmbResolution_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             int idx = cmbResolution.SelectedIndex;
-            if (idx >= 0 && idx < commonResolutions.Length - 1)
+            if (idx >= 0 && idx < commonResolutions.Length)
             {
                 Config.Width = commonResolutions[idx].Item2;
                 Config.Height = commonResolutions[idx].Item3;
-                txtWidth.IsEnabled = false;
-                txtHeight.IsEnabled = false;
-            }
-            else // 自定义
-            {
-                txtWidth.IsEnabled = true;
-                txtHeight.IsEnabled = true;
             }
         }
 
@@ -216,14 +253,18 @@ namespace Pattern
             {
                 string pattern = File.ReadAllText(templatePath);
                 TemplatePattern templatePattern = JsonConvert.DeserializeObject<TemplatePattern>(pattern);
-                PatternMeta = Patterns.Find(p => p.Name == templatePattern.PatternName);
+                PatternMeta = Patterns.FirstOrDefault(p => p.Name == templatePattern.PatternName);
+                if (PatternMeta == null)
+                {
+                    System.Windows.MessageBox.Show("未找到对应的图案类型: " + templatePattern.PatternName);
+                    return;
+                }
                 Config.Width = templatePattern.PatternWindowConfig.Width;
                 Config.Height = templatePattern.PatternWindowConfig.Height;
 
                 PatternMeta.Pattern.SetConfig(templatePattern.Config);
-
-                PatternEditorGrid.Children.Clear();
-                PatternEditorGrid.Children.Add(PatternMeta.Pattern.GetPatternEditor());
+                PatternEditorGrid.Child = null;
+                PatternEditorGrid.Child = PatternMeta.Pattern.GetPatternEditor();
 
                 cmbPattern1.SelectedItem = PatternMeta;
 
@@ -295,9 +336,9 @@ namespace Pattern
 
         private void ListViewPattern_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            if (sender is ListView listView && listView.SelectedIndex > -1)
+            if (sender is ListView listView && listView.SelectedItem is TemplatePatternFile selectedFile)
             {
-                SetTemplatePattern(TemplatePatternFiles[listView.SelectedIndex].FilePath);
+                SetTemplatePattern(selectedFile.FilePath);
             }
         }
 

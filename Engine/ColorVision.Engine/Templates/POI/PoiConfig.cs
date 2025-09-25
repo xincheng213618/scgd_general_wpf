@@ -103,22 +103,6 @@ namespace ColorVision.Engine.Templates.POI
 
 
 
-        public bool LockDeafult { get => _LockDeafult; set { _LockDeafult = value; OnPropertyChanged(); } }
-        private bool _LockDeafult;
-        public bool UseCenter { get => _UseCenter; set { _UseCenter = value; OnPropertyChanged(); } }
-        private bool _UseCenter = false;
-
-        public double DefalutWidth { get => _DefalutWidth; set { if (LockDeafult) return;  _DefalutWidth = value; OnPropertyChanged(); } } 
-        private double _DefalutWidth = 30;
-
-        public double DefalutHeight { get => _DefalutHeight; set { if (LockDeafult) return; _DefalutHeight = value; OnPropertyChanged(); } }
-        private double _DefalutHeight = 30;
-        public double DefalutRadius { get => _DefalutRadius; set { if (LockDeafult) return; _DefalutRadius = value; OnPropertyChanged(); } }
-        private double _DefalutRadius = 30;
-
-
-
-
         [JsonIgnore]
         public bool IsPointCircle { get => DefaultPointType == GraphicTypes.Circle; set { if (value) DefaultPointType = GraphicTypes.Circle; OnPropertyChanged(); } }
         [JsonIgnore]
@@ -140,9 +124,6 @@ namespace ColorVision.Engine.Templates.POI
 
         public bool IsShowDatum { get => _IsShowDatum; set { _IsShowDatum = value; OnPropertyChanged(); } }
         private bool _IsShowDatum;
-
-        public bool IsShowText { get => _IsShowText; set { _IsShowText = value; OnPropertyChanged(); } }
-        private bool _IsShowText = true;
 
         public bool IsShowPoiConfig { get => _IsShowPoiConfig; set { _IsShowPoiConfig = value; OnPropertyChanged(); } }
         private bool _IsShowPoiConfig;

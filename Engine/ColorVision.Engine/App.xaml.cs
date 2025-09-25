@@ -1,14 +1,15 @@
-﻿using ColorVision.Engine.MQTT;
-using ColorVision.Database;
+﻿using ColorVision.Database;
+using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services;
-using ColorVision.Themes;
-using ColorVision.UI.Languages;
-using ColorVision.UI;
-using System.Threading.Tasks;
-using System.Threading;
-using System.Windows;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
+using ColorVision.Themes;
+using ColorVision.UI;
+using ColorVision.UI.Languages;
+using ColorVision.UI.Plugins;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows;
 
 namespace ColorVision.Engine
 {
@@ -23,6 +24,7 @@ namespace ColorVision.Engine
 
             this.ApplyTheme(ThemeManager.Current.AppsTheme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
+            PluginLoader.LoadPlugins("Plugins");
 
             MySqlControl.GetInstance().Connect();
             MQTTControl.GetInstance().MQTTConnectChanged += async (s, e) =>

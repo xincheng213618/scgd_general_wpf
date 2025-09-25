@@ -11,6 +11,8 @@ namespace ColorVision.ImageEditor.Draw
         [Browsable(false)]
         public TextAttribute TextAttribute { get; set; } = new TextAttribute();
 
+        public bool IsShowText { get; set; } = true;
+
         [Category("Attribute"), DisplayName("Text")]
         public string Text { get => TextAttribute.Text; set { TextAttribute.Text = value;  OnPropertyChanged(); } }
 
@@ -47,12 +49,14 @@ namespace ColorVision.ImageEditor.Draw
         public DVCircleText()
         {
             Attribute = new CircleTextProperties();
+            TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
             Attribute.PropertyChanged += (s, e) => Render();
         }
 
         public DVCircleText(CircleTextProperties circleTextProperties)
         {
             Attribute = circleTextProperties;
+            TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
             Attribute.PropertyChanged += (s, e) => Render();
         }
 
@@ -61,26 +65,23 @@ namespace ColorVision.ImageEditor.Draw
         public override void Render()
         {
             using DrawingContext dc = RenderOpen();
-            TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
+            dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.RadiusY);
+
             double size = 0;
-            if (IsShowText)
+            if (Attribute.IsShowText)
             {
-                TextAttribute.Text = Attribute.Text;
-                TextAttribute.Text = string.IsNullOrWhiteSpace(TextAttribute.Text) ? Attribute.Id ==-1? string.Empty: Attribute.Id.ToString() : TextAttribute.Text;
-                FormattedText formattedText = new(TextAttribute.Text, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, DefalutTextAttribute.Defalut.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                FormattedText formattedText = new(TextAttribute.Text, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 size = formattedText.Width / 2;
                 dc.DrawText(formattedText, new Point(Attribute.Center.X - size, Attribute.Center.Y - formattedText.Height / 2));
             }
-            dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.RadiusY);
 
             if (!string.IsNullOrWhiteSpace(Attribute.Msg))
             {
-                TextAttribute.FontSize = Attribute.Pen.Thickness * 8;
-                FormattedText formattedText = new FormattedText(Attribute.Msg, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, DefalutTextAttribute.Defalut.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                FormattedText formattedText = new FormattedText(Attribute.Msg, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(formattedText, new Point(Attribute.Center.X + size +Radius/2, Attribute.Center.Y - formattedText.Height / 2));
             }
-
         }
+
         public override Rect GetRect()
         {
             return new Rect(Attribute.Center.X - Attribute.Radius, Attribute.Center.Y - Attribute.RadiusY, Attribute.Radius * 2, Attribute.RadiusY * 2);

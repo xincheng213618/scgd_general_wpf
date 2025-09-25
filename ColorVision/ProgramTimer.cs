@@ -1,9 +1,16 @@
 ﻿// // Copyright (c) Microsoft. All rights reserved.
 // // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using ColorVision.UI;
 using log4net;
+using log4net.Appender;
+using log4net.Core;
+using log4net.Layout;
+using log4net.Repository.Hierarchy;
 using Microsoft.Win32;
 using System.Diagnostics;
+using System.Text;
+using System.Windows.Controls;
 
 namespace ColorVision
 {
@@ -41,18 +48,45 @@ namespace ColorVision
         }
     }
 
+    public class InitAppender : AppenderSkeleton
+    {
+        public StringBuilder Buffer { get; set; } = new StringBuilder();
+
+        protected override void Append(LoggingEvent loggingEvent)
+        {
+            var renderedMessage = RenderLoggingEvent(loggingEvent);
+            Buffer.Append(renderedMessage);
+        }
+
+        protected override void OnClose()
+        {
+            base.OnClose();
+            Buffer.Clear();
+        }
+    }
+
+
     public static class ProgramTimer
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(App));
         private static Stopwatch _stopwatch;
+        public static InitAppender InitAppender { get; set; }
+        private static Hierarchy Hierarchy { get; set; }
 
         public static void Start()
-       {
+        {
             _stopwatch = Stopwatch.StartNew();
+            Hierarchy = (Hierarchy)LogManager.GetRepository();
+            InitAppender = new InitAppender();
+            InitAppender.Layout = new PatternLayout("%date{HH:mm:ss;fff} %-5level %message%newline");
+            Hierarchy.Root.AddAppender(InitAppender);
+            log4net.Config.BasicConfigurator.Configure(Hierarchy);
         }
 
         public static void StopAndReport()
         {
+            Hierarchy.Root.RemoveAppender(InitAppender);
+            log4net.Config.BasicConfigurator.Configure(Hierarchy);
             if (_stopwatch != null)
             {
                 _stopwatch.Stop();
