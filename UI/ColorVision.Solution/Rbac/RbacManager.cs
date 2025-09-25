@@ -86,6 +86,13 @@ namespace ColorVision.Rbac
 
         public void OpenUserManager()
         {
+            // Check if user has admin permissions
+            if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
+            {
+                MessageBox.Show("只有管理员才能访问用户管理功能。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            
             new UserManagerWindow() { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
         }
 
@@ -98,6 +105,58 @@ namespace ColorVision.Rbac
         public List<RoleEntity> GetRoles()
         {
             return db.Queryable<RoleEntity>().Where(r => r.IsDelete != true && r.IsEnable).ToList();
+        }
+
+        public List<RoleEntity> GetUserRoles(int userId)
+        {
+            return db.Queryable<RoleEntity>()
+                .InnerJoin<UserRoleEntity>((r, ur) => r.Id == ur.RoleId)
+                .Where((r, ur) => ur.UserId == userId && r.IsDelete != true && r.IsEnable)
+                .Select(r => r)
+                .ToList();
+        }
+
+        public bool CreateRole(string name, string code, string remark = "")
+        {
+            if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
+            {
+                MessageBox.Show("当前用户无权创建角色。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            try
+            {
+                // Check if role with same code already exists
+                if (db.Queryable<RoleEntity>().Any(r => r.Code == code))
+                {
+                    return false;
+                }
+
+                var role = new RoleEntity
+                {
+                    Name = name,
+                    Code = code,
+                    Remark = remark,
+                    IsEnable = true,
+                    IsDelete = false,
+                    CreatedAt = DateTimeOffset.Now,
+                    UpdatedAt = DateTimeOffset.Now
+                };
+
+                db.Insertable(role).ExecuteCommand();
+                
+                try 
+                { 
+                    AuditLogService.AddAsync(Config.LoginResult?.UserDetail?.UserId, Config.LoginResult?.User?.Username, "role.create", $"创建角色:{name}({code})"); 
+                } 
+                catch { }
+                
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private void InitAdmin()
