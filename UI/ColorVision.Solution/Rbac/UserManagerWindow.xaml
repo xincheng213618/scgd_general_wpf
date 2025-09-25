@@ -14,16 +14,17 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <GroupBox Header="创建用户" Margin="0,0,0,10">
-            <StackPanel Orientation="Horizontal" Margin="10">
+                <StackPanel Orientation="Horizontal" Margin="10">
                 <Label Content="用户名:" VerticalAlignment="Center"/>
-                <TextBox x:Name="TxtUsername" Width="120" Margin="5,0"/>
+                <TextBox x:Name="TxtUsername" Width="120" Margin="5,0" ToolTip="输入用户登录名"/>
                 <Label Content="密码:" VerticalAlignment="Center"/>
-                <PasswordBox x:Name="TxtPassword" Width="120" Margin="5,0"/>
+                <PasswordBox x:Name="TxtPassword" Width="120" Margin="5,0" ToolTip="输入用户密码"/>
                 <Label Content="角色:" VerticalAlignment="Center"/>
-                <ComboBox x:Name="RolesComboBox" Width="100" Margin="5,0"/>
+                <ComboBox x:Name="RolesComboBox" Width="100" Margin="5,0" ToolTip="选择用户角色"/>
                 <Label Content="备注:" VerticalAlignment="Center"/>
-                <TextBox x:Name="TxtRemark" Width="120" Margin="5,0"/>
-                <Button Content="创建用户" Width="90" Margin="10,0" Click="BtnCreateUser_Click"/>
+                <TextBox x:Name="TxtRemark" Width="120" Margin="5,0" ToolTip="用户描述信息"/>
+                <Button Content="创建用户" Width="90" Margin="10,0" Click="BtnCreateUser_Click"
+                        ToolTip="创建新的系统用户"/>
             </StackPanel>
         </GroupBox>
         <GroupBox Header="角色管理" Grid.Row="1" Margin="0,0,0,10">
@@ -36,12 +37,13 @@
                 <!-- Create Role Section -->
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                     <Label Content="角色名称:" VerticalAlignment="Center"/>
-                    <TextBox x:Name="TxtRoleName" Width="120" Margin="5,0"/>
+                    <TextBox x:Name="TxtRoleName" Width="120" Margin="5,0" ToolTip="输入角色显示名称"/>
                     <Label Content="角色代码:" VerticalAlignment="Center"/>
-                    <TextBox x:Name="TxtRoleCode" Width="120" Margin="5,0"/>
+                    <TextBox x:Name="TxtRoleCode" Width="120" Margin="5,0" ToolTip="输入角色的唯一标识代码"/>
                     <Label Content="备注:" VerticalAlignment="Center"/>
-                    <TextBox x:Name="TxtRoleRemark" Width="120" Margin="5,0"/>
-                    <Button Content="创建角色" Width="90" Margin="10,0" Click="BtnCreateRole_Click"/>
+                    <TextBox x:Name="TxtRoleRemark" Width="120" Margin="5,0" ToolTip="角色描述信息"/>
+                    <Button Content="创建角色" Width="90" Margin="10,0" Click="BtnCreateRole_Click"
+                            ToolTip="创建新的用户角色"/>
                 </StackPanel>
                 
                 <!-- Role List -->

@@ -16,10 +16,13 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
-            <Button Content="登录" Command="{Binding LoginCommand}" Margin="0,0,10,0"/>
-            <Button Content="编辑信息" Command="{Binding EditCommand}" Width="75"/>
+            <Button Content="登录" Command="{Binding LoginCommand}" Margin="0,0,10,0" 
+                    ToolTip="点击登录到系统"/>
+            <Button Content="编辑信息" Command="{Binding EditCommand}" Width="75"
+                    ToolTip="编辑当前用户详细信息"/>
             <Button Content="用户管理" Command="{Binding OpenUserManagerCommand}" Width="75" 
-                    Visibility="{Binding AdminButtonVisibility}"/>
+                    Visibility="{Binding AdminButtonVisibility}"
+                    ToolTip="管理系统用户和角色（仅管理员可用）"/>
         </StackPanel>
         <!-- User Information and Avatar -->
         <Grid Grid.Row="1" Margin="10">
@@ -35,7 +38,7 @@
             <StackPanel Grid.Column="1" Margin="20" VerticalAlignment="Center">
                 <TextBlock FontSize="18" FontWeight="Bold" Margin="0,0,0,5">
                     <Run Text="当前用户: "/>
-                    <Run Text="{Binding Config.LoginResult.User.Username, FallbackValue='未登录'}"/>
+                    <Run Text="{Binding CurrentUserDisplay}"/>
                 </TextBlock>
                 <TextBlock Margin="0,0,0,2">
                     <Run Text="用户ID: "/>

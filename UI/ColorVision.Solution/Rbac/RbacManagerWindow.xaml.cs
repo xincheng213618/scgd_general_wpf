@@ -52,6 +52,16 @@ namespace ColorVision.Rbac
             }
         }
 
+        public string CurrentUserDisplay
+        {
+            get
+            {
+                var rbacManager = RbacManager.GetInstance();
+                var loginResult = rbacManager.Config.LoginResult;
+                return loginResult?.User?.Username ?? "未登录";
+            }
+        }
+
         public string StatusDisplay
         {
             get
@@ -78,7 +88,7 @@ namespace ColorVision.Rbac
                 {
                     return string.Join(", ", loginResult.Roles.Select(r => r.Name));
                 }
-                return "无";
+                return loginResult?.User?.Username != null ? "普通用户" : "未登录";
             }
         }
 
@@ -92,14 +102,22 @@ namespace ColorVision.Rbac
         {
             this.DataContext = this;
             
-            // 监听登录状态变化
+            // 如果没有登录用户，显示默认管理员信息提示
             var rbacManager = RbacManager.GetInstance();
+            if (rbacManager.Config.LoginResult?.User?.Username == null)
+            {
+                // 可以在这里设置一个默认的显示状态，提示用户登录
+                // 暂时保留当前逻辑，显示"未登录"
+            }
+            
+            // 监听登录状态变化
             if (rbacManager.Config is INotifyPropertyChanged config)
             {
                 config.PropertyChanged += (s, args) =>
                 {
                     if (args.PropertyName == nameof(RbacManagerConfig.LoginResult))
                     {
+                        OnPropertyChanged(nameof(CurrentUserDisplay));
                         OnPropertyChanged(nameof(UserRoleDisplay));
                         OnPropertyChanged(nameof(StatusDisplay));
                         OnPropertyChanged(nameof(IsAdminUser));
