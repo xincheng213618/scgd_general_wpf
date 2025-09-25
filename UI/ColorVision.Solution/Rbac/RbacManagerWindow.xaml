@@ -18,18 +18,45 @@
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
             <Button Content="登录" Command="{Binding LoginCommand}" Margin="0,0,10,0"/>
             <Button Content="编辑信息" Command="{Binding EditCommand}" Width="75"/>
-            <Button Content="用户管理" Command="{Binding OpenUserManagerCommand}" Width="75"/>
+            <Button Content="用户管理" Command="{Binding OpenUserManagerCommand}" Width="75" 
+                    Visibility="{Binding AdminButtonVisibility}"/>
         </StackPanel>
         <!-- User Information and Avatar -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="1" Margin="10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             
-            <StackPanel  Grid.Column="1" Margin="30" Orientation="Horizontal">
-                <hc:Gravatar Grid.Column="0" Id="{Binding Config.LoginResult.User.Username}"/>
-                <TextBlock Margin="5" Text="{Binding Config.LoginResult.User.Username}"/>
+            <StackPanel Grid.Column="0" Margin="20">
+                <hc:Gravatar Id="{Binding Config.LoginResult.User.Username}" Width="64" Height="64"/>
+            </StackPanel>
+            
+            <StackPanel Grid.Column="1" Margin="20" VerticalAlignment="Center">
+                <TextBlock FontSize="18" FontWeight="Bold" Margin="0,0,0,5">
+                    <Run Text="当前用户: "/>
+                    <Run Text="{Binding Config.LoginResult.User.Username, FallbackValue='未登录'}"/>
+                </TextBlock>
+                <TextBlock Margin="0,0,0,2">
+                    <Run Text="用户ID: "/>
+                    <Run Text="{Binding Config.LoginResult.User.Id, FallbackValue='N/A'}"/>
+                </TextBlock>
+                <TextBlock Margin="0,0,0,2">
+                    <Run Text="状态: "/>
+                    <Run Text="{Binding StatusDisplay, FallbackValue='未知'}"/>
+                </TextBlock>
+                <TextBlock Margin="0,0,0,2">
+                    <Run Text="角色: "/>
+                    <Run Text="{Binding UserRoleDisplay, FallbackValue='无'}"/>
+                </TextBlock>
+                <TextBlock Margin="0,0,0,2">
+                    <Run Text="权限模式: "/>
+                    <Run Text="{Binding Config.LoginResult.UserDetail.PermissionMode, FallbackValue='未知'}"/>
+                </TextBlock>
+                <TextBlock Margin="0,0,0,2" Foreground="Gray" FontSize="12">
+                    <Run Text="登录时间: "/>
+                    <Run Text="{Binding Config.LoginResult.User.UpdatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}', FallbackValue='未知'}"/>
+                </TextBlock>
             </StackPanel>
         </Grid>
     </Grid>

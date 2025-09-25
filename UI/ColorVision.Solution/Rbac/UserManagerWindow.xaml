@@ -10,6 +10,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <GroupBox Header="创建用户" Margin="0,0,0,10">
@@ -25,11 +26,50 @@
                 <Button Content="创建用户" Width="90" Margin="10,0" Click="BtnCreateUser_Click"/>
             </StackPanel>
         </GroupBox>
-        <GroupBox Header="用户列表" Grid.Row="2">
+        <GroupBox Header="角色管理" Grid.Row="1" Margin="0,0,0,10">
+            <Grid Margin="10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <!-- Create Role Section -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <Label Content="角色名称:" VerticalAlignment="Center"/>
+                    <TextBox x:Name="TxtRoleName" Width="120" Margin="5,0"/>
+                    <Label Content="角色代码:" VerticalAlignment="Center"/>
+                    <TextBox x:Name="TxtRoleCode" Width="120" Margin="5,0"/>
+                    <Label Content="备注:" VerticalAlignment="Center"/>
+                    <TextBox x:Name="TxtRoleRemark" Width="120" Margin="5,0"/>
+                    <Button Content="创建角色" Width="90" Margin="10,0" Click="BtnCreateRole_Click"/>
+                </StackPanel>
+                
+                <!-- Role List -->
+                <ListView x:Name="RolesListView" Grid.Row="1" Height="120" Margin="0,5,0,0">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="角色名称" Width="120" DisplayMemberBinding="{Binding Name}" />
+                            <GridViewColumn Header="角色代码" Width="120" DisplayMemberBinding="{Binding Code}" />
+                            <GridViewColumn Header="备注" Width="180" DisplayMemberBinding="{Binding Remark}" />
+                            <GridViewColumn Header="启用" Width="60" DisplayMemberBinding="{Binding IsEnable}" />
+                            <GridViewColumn Header="创建时间" Width="140" DisplayMemberBinding="{Binding CreatedAt}" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </Grid>
+        </GroupBox>
+        <GroupBox Header="用户列表" Grid.Row="3">
             <ListView x:Name="UsersListView" Margin="10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="用户名" Width="120" DisplayMemberBinding="{Binding Username}" />
+                        <GridViewColumn Header="角色" Width="150">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding RolesDisplay}" ToolTip="{Binding RolesDisplay}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
                         <GridViewColumn Header="备注" Width="120" DisplayMemberBinding="{Binding Remark}" />
                         <GridViewColumn Header="启用" Width="60" DisplayMemberBinding="{Binding IsEnable}" />
                         <GridViewColumn Header="删除" Width="60" DisplayMemberBinding="{Binding IsDelete}" />

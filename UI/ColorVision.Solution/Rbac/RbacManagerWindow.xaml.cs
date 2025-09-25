@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
 using ColorVision.UI.Menus;
+using System.ComponentModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -24,16 +26,86 @@ namespace ColorVision.Rbac
     /// <summary>
     /// RbacManagerWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class RbacManagerWindow : Window
+    public partial class RbacManagerWindow : Window, INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler PropertyChanged;
+        
+        private void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public bool IsAdminUser
+        {
+            get
+            {
+                return Authorization.Instance.PermissionMode <= UI.Authorizations.PermissionMode.Administrator;
+            }
+        }
+
+        public System.Windows.Visibility AdminButtonVisibility
+        {
+            get
+            {
+                return IsAdminUser ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+            }
+        }
+
+        public string StatusDisplay
+        {
+            get
+            {
+                var rbacManager = RbacManager.GetInstance();
+                var loginResult = rbacManager.Config.LoginResult;
+                
+                if (loginResult?.User != null)
+                {
+                    return loginResult.User.IsEnable ? "启用" : "禁用";
+                }
+                return "未知";
+            }
+        }
+
+        public string UserRoleDisplay
+        {
+            get
+            {
+                var rbacManager = RbacManager.GetInstance();
+                var loginResult = rbacManager.Config.LoginResult;
+                
+                if (loginResult?.Roles != null && loginResult.Roles.Any())
+                {
+                    return string.Join(", ", loginResult.Roles.Select(r => r.Name));
+                }
+                return "无";
+            }
+        }
+
         public RbacManagerWindow()
         {
             InitializeComponent();
             this.ApplyCaption();
         }
+        
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = RbacManager.GetInstance();
+            this.DataContext = this;
+            
+            // 监听登录状态变化
+            var rbacManager = RbacManager.GetInstance();
+            if (rbacManager.Config is INotifyPropertyChanged config)
+            {
+                config.PropertyChanged += (s, args) =>
+                {
+                    if (args.PropertyName == nameof(RbacManagerConfig.LoginResult))
+                    {
+                        OnPropertyChanged(nameof(UserRoleDisplay));
+                        OnPropertyChanged(nameof(StatusDisplay));
+                        OnPropertyChanged(nameof(IsAdminUser));
+                        OnPropertyChanged(nameof(AdminButtonVisibility));
+                    }
+                };
+            }
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
