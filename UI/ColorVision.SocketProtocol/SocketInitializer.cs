@@ -1,16 +1,14 @@
 ﻿using ColorVision.UI;
+using ColorVision.UI.CUDA;
+using log4net;
 
 namespace ColorVision.SocketProtocol
 {
 
     public class SocketInitializer : InitializerBase
     {
-        private readonly IMessageUpdater _messageUpdater;
+        private static readonly ILog log = LogManager.GetLogger(typeof(SystemInitializer));
 
-        public SocketInitializer(IMessageUpdater messageUpdater)
-        {
-            _messageUpdater = messageUpdater;
-        }
         public override string Name => nameof(SocketInitializer);
         public override int Order => 5;
 
@@ -18,7 +16,7 @@ namespace ColorVision.SocketProtocol
         {
             if (SocketConfig.Instance.IsServerEnabled )
             {
-                _messageUpdater.Update("启动通讯协议");
+                log.Info("启动通讯协议");
                 SocketManager.GetInstance().StartServer();
             }
             SocketConfig.Instance.ServerEnabledChanged += (s, e) =>

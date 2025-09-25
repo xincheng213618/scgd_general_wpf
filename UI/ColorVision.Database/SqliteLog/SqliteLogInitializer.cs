@@ -5,12 +5,7 @@ namespace ColorVision.Database.SqliteLog
 {
     public class SqliteLogInitializer : InitializerBase
     {
-        private readonly IMessageUpdater _messageUpdater;
-
-        public SqliteLogInitializer(IMessageUpdater messageUpdater)
-        {
-            _messageUpdater = messageUpdater;
-        }
+        public SqliteLogInitializer() { }
         public override string Name => nameof(SqliteLogInitializer);
         public override int Order => 10;
 

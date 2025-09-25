@@ -7,12 +7,7 @@ namespace ColorVision.Solution
 {
     public class SolutionManagerInitializer : InitializerBase
     {
-        private readonly IMessageUpdater log;
-
-        public SolutionManagerInitializer(IMessageUpdater messageUpdater)
-        {
-            log = messageUpdater;
-        }
+        public SolutionManagerInitializer() { }
 
         public override string Name => nameof(SolutionManagerInitializer);
 

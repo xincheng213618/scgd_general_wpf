@@ -1,8 +1,10 @@
 ﻿#pragma warning disable CS1998
 using ColorVision.Database;
 using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Templates;
 using ColorVision.UI;
 using cvColorVision;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -12,12 +14,8 @@ namespace ColorVision.Engine.Services
 {
     public class ServiceInitializer : InitializerBase
     {
-        private readonly IMessageUpdater _messageUpdater;
+        private static readonly ILog log = LogManager.GetLogger(typeof(TemplateInitializer));
 
-        public ServiceInitializer(IMessageUpdater messageUpdater)
-        {
-            _messageUpdater = messageUpdater;
-        }
 
         public override int Order => 5;
 
@@ -28,7 +26,7 @@ namespace ColorVision.Engine.Services
         {
             if (MySqlControl.GetInstance().IsConnect)
             {
-                _messageUpdater.Update("正在加载物理相机");
+                log.Info("正在加载物理相机");
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     PhyCameraManager.GetInstance();
@@ -36,7 +34,7 @@ namespace ColorVision.Engine.Services
                 });
                 if (ServicesConfig.Instance.IsAutoConfig)
                 {
-                    _messageUpdater.Update("自动配置服务中");
+                    log.Info("自动配置服务中");
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         ServiceManager.GetInstance().GenDeviceDisplayControl();
@@ -44,21 +42,21 @@ namespace ColorVision.Engine.Services
                 }
                 else
                 {
-                    _messageUpdater.Update("初始化服务");
+                    log.Info("初始化服务");
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         ServiceManager.GetInstance().GenDeviceDisplayControl();
                         new WindowDevices() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                     });
                 }
-                _messageUpdater.Update("服务初始化完成");
+                log.Info("服务初始化完成");
 
                 cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
-                _messageUpdater.Update("初始化日志");
+                log.Info("初始化日志");
             }
             else
             {
-                _messageUpdater.Update("数据库连接失败，跳过服务配置");
+                log.Info("数据库连接失败，跳过服务配置");
             }
 
         }
