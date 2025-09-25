@@ -24,7 +24,7 @@ namespace ColorVision.Rbac
 
         public RelayCommand OpenUserManagerCommand { get; set; }
 
-        public static RbacManagerConfig Config => RbacManagerConfig.Instance;
+        public RbacManagerConfig Config => RbacManagerConfig.Instance;
         public AuthService AuthService { get; set; }
         public UserService UserService { get; set; }
         public PermissionService PermissionService { get; set; }

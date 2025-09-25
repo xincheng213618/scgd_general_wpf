@@ -60,6 +60,7 @@ namespace ColorVision.Rbac
                 var loginResult = rbacManager.Config.LoginResult;
                 return loginResult?.User?.Username ?? "未登录";
             }
+            set { }
         }
 
         public string StatusDisplay
@@ -75,6 +76,7 @@ namespace ColorVision.Rbac
                 }
                 return "未知";
             }
+            set { }
         }
 
         public string UserRoleDisplay
@@ -90,6 +92,7 @@ namespace ColorVision.Rbac
                 }
                 return loginResult?.User?.Username != null ? "普通用户" : "未登录";
             }
+            set { }
         }
 
         public RbacManagerWindow()
@@ -100,10 +103,11 @@ namespace ColorVision.Rbac
         
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = this;
             
             // 如果没有登录用户，显示默认管理员信息提示
             var rbacManager = RbacManager.GetInstance();
+            this.DataContext = rbacManager;
+
             if (rbacManager.Config.LoginResult?.User?.Username == null)
             {
                 // 可以在这里设置一个默认的显示状态，提示用户登录
