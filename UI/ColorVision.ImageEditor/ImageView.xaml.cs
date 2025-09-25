@@ -288,8 +288,6 @@ namespace ColorVision.ImageEditor
             ComboBoxLayers.Visibility = Visibility.Visible;
             if (imageSource is WriteableBitmap writeableBitmap)
             {
-
-
                 int cols = writeableBitmap.PixelWidth;
                 int rows = writeableBitmap.PixelHeight;
                 int channels, depth;

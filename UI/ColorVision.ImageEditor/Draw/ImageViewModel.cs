@@ -63,7 +63,7 @@ namespace ColorVision.ImageEditor
         #endregion
 
         #region Properties
-        private ImageView ImageView { get; set; }
+        public ImageView ImageView { get; set; }
         public ImageViewConfig Config { get; set; }
         public ContextMenu ContextMenu { get; set; }
         public IImageOpen? IImageOpen { get; set; }
