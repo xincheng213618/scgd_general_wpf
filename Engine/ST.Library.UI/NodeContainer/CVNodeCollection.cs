@@ -277,9 +277,9 @@ public class CVNodeCollection : IList, ICollection, IEnumerable
 	public STNode[] ToArray()
 	{
 		STNode[] array = new STNode[_Count];
-		for (int i = 0; i < array.Length; i++)
+		for (int gZipStream = 0; gZipStream < array.Length; gZipStream++)
 		{
-			array[i] = m_nodes[i];
+			array[gZipStream] = m_nodes[gZipStream];
 		}
 		return array;
 	}

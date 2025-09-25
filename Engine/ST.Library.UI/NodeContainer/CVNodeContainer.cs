@@ -187,9 +187,9 @@ public class CVNodeContainer
 	private STNode GetNodeFromData(byte[] byData)
 	{
 		int num = 0;
-		string @string = Encoding.UTF8.GetString(byData, num + 1, byData[num]);
+		string text = Encoding.UTF8.GetString(byData, num + 1, byData[num]);
 		num += byData[num] + 1;
-		string string2 = Encoding.UTF8.GetString(byData, num + 1, byData[num]);
+		string text2 = Encoding.UTF8.GetString(byData, num + 1, byData[num]);
 		num += byData[num] + 1;
 		int num2 = 0;
 		Dictionary<string, byte[]> dictionary = new Dictionary<string, byte[]>();
@@ -197,23 +197,23 @@ public class CVNodeContainer
 		{
 			num2 = BitConverter.ToInt32(byData, num);
 			num += 4;
-			string string3 = Encoding.UTF8.GetString(byData, num, num2);
+			string key = Encoding.UTF8.GetString(byData, num, num2);
 			num += num2;
 			num2 = BitConverter.ToInt32(byData, num);
 			num += 4;
 			byte[] array = new byte[num2];
 			Array.Copy(byData, num, array, 0, num2);
 			num += num2;
-			dictionary.Add(string3, array);
+			dictionary.Add(key, array);
 		}
 		Type type = null;
-		if (m_dic_model_type.ContainsKey(@string))
+		if (m_dic_model_type.ContainsKey(text))
 		{
-			type = m_dic_model_type[@string];
+			type = m_dic_model_type[text];
 		}
 		if (type == null)
 		{
-			throw new TypeLoadException("无法找到类型 {" + @string.Split('|')[1] + "} 所在程序集 确保程序集 {" + @string.Split('|')[0] + "} 已被编辑器正确加载 可通过调用LoadAssembly()加载程序集");
+			throw new TypeLoadException("无法找到类型 {" + text.Split('|')[1] + "} 所在程序集 确保程序集 {" + text.Split('|')[0] + "} 已被编辑器正确加载 可通过调用LoadAssembly()加载程序集");
 		}
 		STNode sTNode = (STNode)Activator.CreateInstance(type);
 		sTNode.Create();

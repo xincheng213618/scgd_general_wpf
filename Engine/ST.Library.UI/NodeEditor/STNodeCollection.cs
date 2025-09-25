@@ -253,9 +253,9 @@ public class STNodeCollection : IList, ICollection, IEnumerable
 	{
 		if (elements + _Count > m_nodes.Length)
 		{
-			STNode[] array = new STNode[Math.Max(m_nodes.Length * 2, elements + _Count)];
-			m_nodes.CopyTo(array, 0);
-			m_nodes = array;
+			STNode[] num = new STNode[Math.Max(m_nodes.Length * 2, elements + _Count)];
+			m_nodes.CopyTo(num, 0);
+			m_nodes = num;
 		}
 	}
 

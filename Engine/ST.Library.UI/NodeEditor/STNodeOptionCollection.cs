@@ -152,9 +152,9 @@ public class STNodeOptionCollection : IList, ICollection, IEnumerable
 			throw new ArgumentNullException("插入对象不能为空");
 		}
 		EnsureSpace(1);
-		for (int num = _Count; num > index; num--)
+		for (int propertyType = _Count; propertyType > index; propertyType--)
 		{
-			m_options[num] = m_options[num - 1];
+			m_options[propertyType] = m_options[propertyType - 1];
 		}
 		option.Owner = m_owner;
 		m_options[index] = option;
@@ -164,10 +164,10 @@ public class STNodeOptionCollection : IList, ICollection, IEnumerable
 
 	public void Remove(STNodeOption option)
 	{
-		int num = IndexOf(option);
-		if (num != -1)
+		int stringFromValue = IndexOf(option);
+		if (stringFromValue != -1)
 		{
-			RemoveAt(num);
+			RemoveAt(stringFromValue);
 		}
 	}
 

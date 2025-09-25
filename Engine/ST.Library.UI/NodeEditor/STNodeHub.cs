@@ -33,7 +33,7 @@ public class STNodeHub : STNode
 		m_strIn = strTextIn;
 		m_strOut = strTextOut;
 		Addhub();
-		base.Title = title;
+		base.Title = Lang.Get(title);
 		base.AutoSize = false;
 		base.TitleColor = Color.FromArgb(200, Color.DarkOrange);
 	}
@@ -85,15 +85,15 @@ public class STNodeHub : STNode
 
 	protected virtual void output_Connected(object sender, STNodeOptionEventArgs e)
 	{
-		STNodeOption sTNodeOption = sender as STNodeOption;
-		int index = base.OutputOptions.IndexOf(sTNodeOption);
+		STNodeOption num = sender as STNodeOption;
+		int index = base.OutputOptions.IndexOf(num);
 		Type typeFromHandle = typeof(object);
 		if (!(base.InputOptions[index].DataType == typeFromHandle))
 		{
 			return;
 		}
-		sTNodeOption.DataType = e.TargetOption.DataType;
-		base.InputOptions[index].DataType = sTNodeOption.DataType;
+		num.DataType = e.TargetOption.DataType;
+		base.InputOptions[index].DataType = num.DataType;
 		foreach (STNodeOption inputOption in base.InputOptions)
 		{
 			if (inputOption.DataType == typeFromHandle)
@@ -106,12 +106,12 @@ public class STNodeHub : STNode
 
 	protected virtual void input_DisConnected(object sender, STNodeOptionEventArgs e)
 	{
-		STNodeOption sTNodeOption = sender as STNodeOption;
-		if (sTNodeOption.ConnectionCount != 0)
+		STNodeOption num = sender as STNodeOption;
+		if (num.ConnectionCount != 0)
 		{
 			return;
 		}
-		int index = base.InputOptions.IndexOf(sTNodeOption);
+		int index = base.InputOptions.IndexOf(num);
 		if (base.OutputOptions[index].ConnectionCount == 0)
 		{
 			base.InputOptions.RemoveAt(index);
@@ -141,13 +141,13 @@ public class STNodeHub : STNode
 
 	protected virtual void input_Connected(object sender, STNodeOptionEventArgs e)
 	{
-		STNodeOption sTNodeOption = sender as STNodeOption;
-		int index = base.InputOptions.IndexOf(sTNodeOption);
+		STNodeOption i = sender as STNodeOption;
+		int index = base.InputOptions.IndexOf(i);
 		Type typeFromHandle = typeof(object);
-		if (sTNodeOption.DataType == typeFromHandle)
+		if (i.DataType == typeFromHandle)
 		{
-			sTNodeOption.DataType = e.TargetOption.DataType;
-			base.OutputOptions[index].DataType = sTNodeOption.DataType;
+			i.DataType = e.TargetOption.DataType;
+			base.OutputOptions[index].DataType = i.DataType;
 			foreach (STNodeOption inputOption in base.InputOptions)
 			{
 				if (inputOption.DataType == typeFromHandle)
