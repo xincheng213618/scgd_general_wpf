@@ -169,6 +169,7 @@ public class AlgorithmFindLightAreaNode : CVBaseServerNode
 		FindLightAreaParam findLightAreaParam = new FindLightAreaParam(_TempId, _TempName, _ImgFileName, GetImageFileType(_ImgFileName), _SavePOITempName, oIndex);
 		getPreStepParam(start, findLightAreaParam);
 		findLightAreaParam.BufferLen = _BufferLen;
+		findLightAreaParam.SMUData = GetSMUResult(start);
 		return findLightAreaParam;
 	}
 }

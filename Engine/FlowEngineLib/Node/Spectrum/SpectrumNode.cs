@@ -1,5 +1,6 @@
 using System.Drawing;
 using FlowEngineLib.Base;
+using log4net;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Spectrum;
@@ -7,6 +8,8 @@ namespace FlowEngineLib.Node.Spectrum;
 [STNode("/05 光谱仪")]
 public class SpectrumNode : CVBaseServerNode
 {
+	private static readonly ILog logger = LogManager.GetLogger(typeof(SpectrumNode));
+
 	private SPCommCmdType _Cmd;
 
 	private float _Temp;
@@ -160,13 +163,15 @@ public class SpectrumNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
+		SMUResultData sMUResult = GetSMUResult(start);
 		return new SpectrumParamData
 		{
 			IntegralTime = _Temp,
 			NumberOfAverage = _AveNum,
 			AutoIntegration = _AutoIntTime,
 			SelfAdaptionInitDark = _SelfDark,
-			AutoInitDark = _AutoInitDark
+			AutoInitDark = _AutoInitDark,
+			SMUData = sMUResult
 		};
 	}
 }

@@ -22,6 +22,8 @@ public class RealPOIData
 
 	public bool IsCCTWave { get; set; }
 
+	public SMUResultData SMUData { get; set; }
+
 	public RealPOIData(string filterTempName, string reviseTempName, string reviseFileName, string outTempName, POITypeData poiData, int cie_mid, int poi_mid, bool isResultAdd, bool isSubPixel, bool isCCTWave)
 	{
 		POIReviseFileName = reviseFileName;

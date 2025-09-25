@@ -14,6 +14,8 @@ public class AlgorithmGhostInputParam : AlgorithmPreStepParam
 
 	public int BufferLen { get; set; }
 
+	public SMUResultData SMUData { get; set; }
+
 	public AlgorithmGhostInputParam(int tempId, string tempName, int bufferLen)
 	{
 		TemplateParam = new CVTemplateParam

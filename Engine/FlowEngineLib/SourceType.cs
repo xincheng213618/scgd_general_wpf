@@ -2,6 +2,6 @@ namespace FlowEngineLib;
 
 public enum SourceType
 {
-	电压,
-	电流
+	Voltage_V,
+	Current_I
 }

@@ -131,6 +131,7 @@ namespace ColorVision.UI
             {
                 Hierarchy.Root.RemoveAppender(TextBoxAppender);
                 log4net.Config.BasicConfigurator.Configure(Hierarchy);
+                LogConfig.Instance.AutoRefresh = true;
             };
 
             this.DataContext = LogConfig.Instance;

@@ -309,11 +309,12 @@ public class BuildPOINode : CVBaseServerNode
 	private object buildCommonParam(CVStartCFC start)
 	{
 		BuildPOIData buildPOIData = null;
-		POITypeData pOITypeData = default(POITypeData);
-		pOITypeData.PointType = _POIType;
-		pOITypeData.Width = _POIWidth;
-		pOITypeData.Height = _POIHeight;
-		POITypeData poiData = pOITypeData;
+		POITypeData poiData = new POITypeData
+		{
+			PointType = _POIType,
+			Width = _POIWidth,
+			Height = _POIHeight
+		};
 		buildPOIData = _BuildType switch
 		{
 			POIBuildType.Common => new BuildPOIData(_ImgFileName, _TempId, _TemplateName, _POIOutput, _OutputFileName, _PrefixName, _BuildType, poiData, _SavePOITempName, _LayoutROITemplate, _BufferLen), 

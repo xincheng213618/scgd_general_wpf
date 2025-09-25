@@ -47,25 +47,17 @@ public class PhyDeviceControlNode : CVBaseServerNode
 		: base("物理设备控制", "Camera", "SVR.Camera.Default", "DEV.Camera.Default")
 	{
 		operatorCode = "Open";
-		base.Height = 105;
-		_DeviceType = CVDeviceType.相机;
+		base.Height = 108;
+		_DeviceType = CVDeviceType.Camera;
 		_CmdType = CVDeviceControlCmd.Open;
 	}
 
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_editText = new STNodeEditText<CVDeviceType>();
-		m_ctrl_editText.Text = "类型";
-		m_ctrl_editText.DisplayRectangle = m_custom_item;
-		m_ctrl_editText.Value = _DeviceType;
-		base.Controls.Add(m_ctrl_editText);
+		m_ctrl_editText = CreateControl(typeof(STNodeEditText<CVDeviceType>), m_custom_item, "DeviceType:", _DeviceType);
 		m_custom_item.Y += 25;
-		m_ctrl_cmd = new STNodeEditText<CVDeviceControlCmd>();
-		m_ctrl_cmd.Text = "命令";
-		m_ctrl_cmd.DisplayRectangle = m_custom_item;
-		m_ctrl_cmd.Value = _CmdType;
-		base.Controls.Add(m_ctrl_cmd);
+		m_ctrl_cmd = CreateControl(typeof(STNodeEditText<CVDeviceControlCmd>), m_custom_item, "Command:", _CmdType);
 	}
 
 	private void setDeviceType()
@@ -73,7 +65,7 @@ public class PhyDeviceControlNode : CVBaseServerNode
 		m_ctrl_editText.Value = _DeviceType;
 		switch (_DeviceType)
 		{
-		case CVDeviceType.相机:
+		case CVDeviceType.Camera:
 			base.NodeType = "Camera";
 			m_nodeName = "SVR.Camera.Default";
 			base.DeviceCode = "DEV.Camera.Default";
@@ -83,17 +75,17 @@ public class PhyDeviceControlNode : CVBaseServerNode
 			m_nodeName = "SVR.PG.Default";
 			base.DeviceCode = "DEV.PG.Default";
 			break;
-		case CVDeviceType.光谱仪:
+		case CVDeviceType.Spectrometer:
 			base.NodeType = "Spectrum";
 			m_nodeName = "SVR.Spectrum.Default";
 			base.DeviceCode = "DEV.Spectrum.Default";
 			break;
-		case CVDeviceType.源表:
+		case CVDeviceType.SMU:
 			base.NodeType = "SMU";
 			m_nodeName = "SVR.SMU.Default";
 			base.DeviceCode = "DEV.SMU.Default";
 			break;
-		case CVDeviceType.通用传感器:
+		case CVDeviceType.GeneralSensor:
 			base.NodeType = "Sensor";
 			m_nodeName = "SVR.Sensor.Default";
 			base.DeviceCode = "DEV.Sensor.Default";
@@ -126,7 +118,7 @@ public class PhyDeviceControlNode : CVBaseServerNode
 		deviceControlData = new DeviceControlData();
 		switch (_DeviceType)
 		{
-		case CVDeviceType.光谱仪:
+		case CVDeviceType.Spectrometer:
 			deviceControlData = new SPDeviceControlData();
 			break;
 		}

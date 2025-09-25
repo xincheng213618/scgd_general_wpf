@@ -138,11 +138,6 @@ public class POINode : CVBaseServerNode
 		}
 	}
 
-	private void setTempName()
-	{
-		m_ctrl_temp.Value = $"{_TempId}:{_TemplateName}";
-	}
-
 	public POINode()
 		: base("关注点算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
@@ -180,10 +175,18 @@ public class POINode : CVBaseServerNode
 		return $"{_FilterTemplateName}/{_ReviseTemplateName}";
 	}
 
+	private void setTempName()
+	{
+		m_ctrl_temp.Value = $"{_TempId}:{_TemplateName}";
+	}
+
 	protected override object getBaseEventData(CVStartCFC start)
 	{
 		AlgorithmPreStepParam param = new AlgorithmPreStepParam();
 		getPreStepParam(start, param);
-		return new POIDataParam(_ImgFileName, _TempId, _TemplateName, _FilterTemplateName, _ReviseTemplateName, _OutputTemplateName, param, _IsSubPixel, _IsCCTWave);
+		return new POIDataParam(_ImgFileName, _TempId, _TemplateName, _FilterTemplateName, _ReviseTemplateName, _OutputTemplateName, param, _IsSubPixel, _IsCCTWave)
+		{
+			SMUData = GetSMUResult(start)
+		};
 	}
 }

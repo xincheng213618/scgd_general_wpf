@@ -1,4 +1,5 @@
 using log4net;
+using ST.Library.UI;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.MQTT;
@@ -41,7 +42,7 @@ internal class MQTTBaseNode : STNode
 
 	public MQTTBaseNode(string title)
 	{
-		base.Title = title;
+		base.Title = Lang.Get(title);
 	}
 
 	protected override void OnCreate()

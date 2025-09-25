@@ -8,9 +8,8 @@ namespace FlowEngineLib;
 public class DisplayHub : STNodeInHub
 {
 	public DisplayHub()
-		: base(bSingle: true)
+		: base(bSingle: true, "值显示HUB")
 	{
-		base.Title = "值显示HUB";
 	}
 
 	protected override void DoInputDataTransfer(STNodeOption sender, STNodeOptionEventArgs e)

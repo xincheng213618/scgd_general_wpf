@@ -9,8 +9,6 @@ using System.Windows.Threading;
 
 namespace ColorVision.UI
 {
-
-
     public class TextBoxAppender : AppenderSkeleton
     {
         private readonly TextBox _textBox;
@@ -28,9 +26,8 @@ namespace ColorVision.UI
 
         private readonly TextBox _logTextBoxSearch;
 
-        public TextBoxAppender(TextBox textBox,TextBox logTextBoxSerch, int flushIntervalMs =100)
+        public TextBoxAppender(TextBox textBox,TextBox logTextBoxSerch)
         {
-            FlushIntervalMs = flushIntervalMs;
             _textBox = textBox ?? throw new ArgumentNullException(nameof(textBox));
             _logTextBoxSearch = logTextBoxSerch ?? throw new ArgumentNullException(nameof(logTextBoxSerch));
             _flushTimer = new DispatcherTimer
@@ -67,7 +64,7 @@ namespace ColorVision.UI
 
         private void FlushBuffer()
         {
-            string logs;
+            string logs;  
             bool reverse;
             lock (_lock)
             {

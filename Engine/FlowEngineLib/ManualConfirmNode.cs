@@ -25,7 +25,7 @@ public class ManualConfirmNode : CVCommonNodeHub
 	public ManualConfirmNode()
 		: base(bSingle: true, "手动确认")
 	{
-		_MessageText = "进行下一步!";
+		_MessageText = "Next Step!";
 	}
 
 	protected override void input_DataTransfer(object sender, STNodeOptionEventArgs e)

@@ -1,5 +1,7 @@
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
+using FlowEngineLib.Node.OLED;
+using log4net;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
@@ -7,6 +9,8 @@ namespace FlowEngineLib.Node.Algorithm;
 [STNode("/03_5 OLED")]
 public class AlgorithmOLED_AOINode : CVBaseServerNode
 {
+	private static readonly ILog logger = LogManager.GetLogger(typeof(OLEDRebuildPixelsNode));
+
 	private AlgorithmOLED_AOIType _Algorithm;
 
 	private CVOLED_COLOR _Color;
@@ -142,7 +146,7 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 	}
 
 	public AlgorithmOLED_AOINode()
-		: base("OLED.AOI算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
+		: base("OLED.AOI", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
 		_Algorithm = AlgorithmOLED_AOIType.线缺陷;
 		operatorCode = "OLED.FindVHLine";
@@ -195,6 +199,7 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 			Name = _TempName
 		};
 		getPreStepParam(start, algorithmOLEDAOIParam);
+		algorithmOLEDAOIParam.SMUData = GetSMUResult(start);
 		return algorithmOLEDAOIParam;
 	}
 }

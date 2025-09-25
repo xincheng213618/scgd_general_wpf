@@ -20,7 +20,8 @@ public class LoopNextNode : CVCommonNode
 	{
 		base.AutoSize = false;
 		base.Width = 140;
-		base.Height = 90;
+		base.Height = 100;
+		base.TitleHeight += 10;
 	}
 
 	protected override void OnNodeNameChanged(string oldValue, string newValue)
@@ -30,7 +31,7 @@ public class LoopNextNode : CVCommonNode
 
 	protected override string OnGetDrawTitle()
 	{
-		return base.Title + "/" + m_nodeName;
+		return $"{base.Title}\r\n{base.NodeName}";
 	}
 
 	protected override void OnCreate()
@@ -41,11 +42,7 @@ public class LoopNextNode : CVCommonNode
 		m_op_end = base.OutputOptions.Add("OUT", typeof(CVStartCFC), bSingle: false);
 		m_op_loop = base.OutputOptions.Add("OUT_LP_NEXT", typeof(CVLoopCFC), bSingle: false);
 		m_in_start.DataTransfer += m_in_start_DataTransfer;
-		m_ctrl_editText = new STNodeEditText<string>();
-		m_ctrl_editText.Text = "值";
-		m_ctrl_editText.Value = "";
-		m_ctrl_editText.DisplayRectangle = new Rectangle(5, 45, base.Width - 10, OptionItemHeight);
-		base.Controls.Add(m_ctrl_editText);
+		m_ctrl_editText = CreateControl(typeof(STNodeEditText<string>), new Rectangle(5, 45, base.Width - 10, OptionItemHeight), "Value:", string.Empty);
 	}
 
 	private void m_in_start_DataTransfer(object sender, STNodeOptionEventArgs e)

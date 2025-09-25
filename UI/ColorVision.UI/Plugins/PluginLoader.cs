@@ -173,7 +173,10 @@ namespace ColorVision.UI.Plugins
 
                         if (File.Exists(dllPath))
                         {
+                            log.Info($"加载插件: {manifest.Name}");
+
                             pluginInfo.Assembly = Assembly.LoadFrom(dllPath);
+
                             var assembly = pluginInfo.Assembly;
 
                             pluginInfo.AssemblyName = assembly.GetName().Name;
@@ -184,6 +187,8 @@ namespace ColorVision.UI.Plugins
                             pluginInfo.AssemblyPublicKeyToken = BitConverter.ToString(assembly.GetName().GetPublicKeyToken() ?? Array.Empty<byte>());
                             pluginInfo.Name = manifest.Name;
                             pluginInfo.Description = manifest.Description;
+
+
                         }
                         else
                         {

@@ -16,6 +16,8 @@ public class FindLightAreaParam : AlgorithmPreStepParam
 
 	public int BufferLen { get; set; }
 
+	public SMUResultData SMUData { get; set; }
+
 	public FindLightAreaParam(int tempId, string tempName, string imgFileName, FileExtType fileType, string poiTempName, int[] oIndex)
 	{
 		FileType = fileType;

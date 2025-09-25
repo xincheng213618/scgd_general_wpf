@@ -12,7 +12,7 @@ internal class Timer : CVCommonNodeHub
 
 	private Dictionary<string, MyTimer> timer = new Dictionary<string, MyTimer>();
 
-	[STNodeProperty("Time", "Time")]
+	[STNodeProperty("Timer.Time", "Time")]
 	public int Time
 	{
 		get

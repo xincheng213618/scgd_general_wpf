@@ -63,7 +63,7 @@ public class TPAlgorithm2Node : CVBaseServerNodeIn2Hub
 	}
 
 	public TPAlgorithm2Node()
-		: base("第三方算法2", "ThirdPartyAlgorithms", "SVR.TPAlgorithms.Default", "DEV.ThirdPartyAlgorithms.Default")
+		: base("第三方算法2", "TPAlgorithms", "SVR.TPAlgorithms.Default", "DEV.TPAlgorithms.Default")
 	{
 		operatorCode = "";
 		_TempName = "";

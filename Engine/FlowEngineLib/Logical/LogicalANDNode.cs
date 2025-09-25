@@ -16,9 +16,8 @@ public class LogicalANDNode : STNodeInHub
 	private int masterId;
 
 	public LogicalANDNode()
-		: base(bSingle: true)
+		: base(bSingle: true, "逻辑与")
 	{
-		base.Title = "逻辑与";
 		masterId = -1;
 	}
 

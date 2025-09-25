@@ -137,10 +137,10 @@ public class CVServiceProxy
 		{
 			trans.trans_action.GetStartNode().DoPublish(act);
 		}
-		//Task.Run(delegate
-		//{
-		//	WaitingOverTime(cmd);
-		//});
+		Task.Run(delegate
+		{
+			WaitingOverTime(cmd);
+		});
 	}
 
 	public void DoServerStatusDataTransfer(object data)

@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using FlowEngineLib.MQTT;
+using ST.Library.UI;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Base;
@@ -45,7 +46,7 @@ public class CVCommonNode : STNode
 		}
 	}
 
-	[STNodeProperty("设备Code", "设备Code", false, false)]
+	[STNodeProperty("设备代码", "设备代码", false, false)]
 	public string DeviceCode
 	{
 		get
@@ -97,7 +98,7 @@ public class CVCommonNode : STNode
 
 	public CVCommonNode(string title, string nodeType, string nodeName, string deviceCode)
 	{
-		base.Title = title;
+		base.Title = Lang.Get(title);
 		m_nodeType = nodeType;
 		m_nodeName = nodeName;
 		DeviceCode = deviceCode;

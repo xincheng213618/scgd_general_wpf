@@ -28,11 +28,12 @@ public class BuildPOILoopNode : CVBaseLoopServerNode<POINodeProperty>
 
 	protected override object getBaseEventData(CVStartCFC start, POINodeProperty property)
 	{
-		POITypeData pOITypeData = default(POITypeData);
-		pOITypeData.PointType = POIPointTypes.None;
-		pOITypeData.Width = 0f;
-		pOITypeData.Height = 0f;
-		POITypeData poiData = pOITypeData;
+		POITypeData poiData = new POITypeData
+		{
+			PointType = POIPointTypes.None,
+			Width = 0f,
+			Height = 0f
+		};
 		BuildPOIData buildPOIData = new BuildPOIData(property.ImgFileName, -1, property.TempName, property.POIOutput, property.OutputFileName, string.Empty, POIBuildType.Common, poiData, string.Empty, string.Empty, 1024);
 		getPreStepParam(start, buildPOIData);
 		return buildPOIData;

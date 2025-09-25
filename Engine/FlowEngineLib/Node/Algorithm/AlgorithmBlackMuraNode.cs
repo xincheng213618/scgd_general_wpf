@@ -115,6 +115,7 @@ public class AlgorithmBlackMuraNode : CVBaseServerNode
 		}
 		BlackMuraParam blackMuraParam = new BlackMuraParam(_TempId, _TempName, _ImgFileName, GetImageFileType(_ImgFileName), _SavePOITempName, oIndex);
 		getPreStepParam(start, blackMuraParam);
+		blackMuraParam.SMUData = GetSMUResult(start);
 		return blackMuraParam;
 	}
 

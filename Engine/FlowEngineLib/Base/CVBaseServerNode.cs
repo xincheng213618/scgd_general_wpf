@@ -446,7 +446,7 @@ public class CVBaseServerNode : CVCommonNode
 							}
 							return;
 						}
-						if (cVTransAction.trans_action.FlowStatus != 0)
+						if (cVTransAction.trans_action.FlowStatus != StatusTypeEnum.Runing)
 						{
 							DoTransferToServer(cVStartCFC, e);
 						}
@@ -760,5 +760,19 @@ public class CVBaseServerNode : CVCommonNode
 			result = (text.Contains("tif") ? FileExtType.Tif : ((!text.Contains("cvraw")) ? ((!text.Contains("cvcie")) ? FileExtType.Tif : FileExtType.CIE) : FileExtType.Raw));
 		}
 		return result;
+	}
+
+	protected SMUResultData GetSMUResult(CVStartCFC start)
+	{
+		if (start.Data.ContainsKey("SMUResult"))
+		{
+			string text = JsonConvert.SerializeObject(start.Data["SMUResult"]);
+			if (logger.IsDebugEnabled)
+			{
+				logger.DebugFormat("{0}", text);
+			}
+			return JsonConvert.DeserializeObject<SMUResultData>(text);
+		}
+		return null;
 	}
 }

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.MQTT;
@@ -11,8 +10,6 @@ public class MQTTPublishHub : STNodeInHub
 	private int _Port = 1883;
 
 	private MQTTHelper _MQTTHelper;
-
-	private Dictionary<string, MQTTObject> MQTTEvents = new Dictionary<string, MQTTObject>();
 
 	[STNodeProperty("Server", "Server")]
 	public string Server

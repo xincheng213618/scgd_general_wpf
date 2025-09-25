@@ -94,6 +94,7 @@ namespace ColorVision
             if (exportFile != null)
             {
                 bool isok = FileProcessorFactory.GetInstance().ExportFile(exportFile);
+                ProgramTimer.StopAndReport();
                 if (isok)
                 {
                     return;
@@ -111,6 +112,7 @@ namespace ColorVision
                 bool isok = FileProcessorFactory.GetInstance().HandleFile(inputFile);
                 if (isok)
                 {
+                    ProgramTimer.StopAndReport();
                     return;
                 }
                 else
