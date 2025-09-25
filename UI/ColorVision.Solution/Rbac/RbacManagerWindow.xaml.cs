@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System.ComponentModel;
 using System.Linq;
@@ -39,7 +40,7 @@ namespace ColorVision.Rbac
         {
             get
             {
-                return Authorization.Instance.PermissionMode <= UI.Authorizations.PermissionMode.Administrator;
+                return Authorization.Instance.PermissionMode <= PermissionMode.Administrator;
             }
         }
 

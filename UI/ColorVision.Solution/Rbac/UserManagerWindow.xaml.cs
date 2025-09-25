@@ -1,4 +1,5 @@
 ﻿using ColorVision.Rbac.ViewModels;
+using ColorVision.UI.Authorizations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -52,7 +53,7 @@ namespace ColorVision.Rbac
         private async void BtnCreateUser_Click(object sender, RoutedEventArgs e)
         {
             // UI 层二次校验，防止普通用户通过窗口创建
-            if (UI.Authorizations.Authorization.Instance.PermissionMode > UI.Authorizations.PermissionMode.Administrator)
+            if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
                 MessageBox.Show("权限不足：只有管理员可以创建用户", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
@@ -91,7 +92,7 @@ namespace ColorVision.Rbac
         private void BtnCreateRole_Click(object sender, RoutedEventArgs e)
         {
             // UI 层二次校验，防止普通用户通过窗口创建角色
-            if (UI.Authorizations.Authorization.Instance.PermissionMode > UI.Authorizations.PermissionMode.Administrator)
+            if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
                 MessageBox.Show("权限不足：只有管理员可以创建角色", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;

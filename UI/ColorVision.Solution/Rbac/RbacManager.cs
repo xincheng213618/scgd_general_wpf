@@ -87,7 +87,7 @@ namespace ColorVision.Rbac
         public void OpenUserManager()
         {
             // Check if user has admin permissions
-            if (Authorization.Instance.PermissionMode > UI.Authorizations.PermissionMode.Administrator)
+            if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
                 MessageBox.Show("只有管理员才能访问用户管理功能。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
@@ -118,7 +118,7 @@ namespace ColorVision.Rbac
 
         public bool CreateRole(string name, string code, string remark = "")
         {
-            if (Authorization.Instance.PermissionMode > UI.Authorizations.PermissionMode.Administrator)
+            if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
                 MessageBox.Show("当前用户无权创建角色。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
