@@ -28,7 +28,6 @@ namespace ColorVision.Engine.Services.Devices.FileServer
 
         public ImageView View { get => DeviceFileServer.View; }
 
-        private NetFileUtil netFileUtil;
 
         public FileServerDisplayControl(DeviceFileServer deviceFileServer)
         {

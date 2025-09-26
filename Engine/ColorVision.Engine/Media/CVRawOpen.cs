@@ -355,7 +355,7 @@ namespace ColorVision.Engine.Media
             {
                 await Task.Run(() =>
                 {
-                    CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filePath);
+                    CVCIEFile cVCIEFile = CVFileUtil.OpenLocalCVFile(filePath);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         imageView.OpenImage(cVCIEFile.ToWriteableBitmap());

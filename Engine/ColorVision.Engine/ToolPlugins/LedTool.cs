@@ -124,7 +124,7 @@ namespace ColorVision.Engine.ToolPlugins
                 return;
             }
 
-            HImage? hImage = new NetFileUtil().OpenLocalCVFile(LedToolConfig.Instance.SelectedPath1).ToWriteableBitmap()?.ToHImage();
+            HImage? hImage = CVFileUtil.OpenLocalCVFile(LedToolConfig.Instance.SelectedPath1).ToWriteableBitmap()?.ToHImage();
 
             if (hImage == null)
             {
