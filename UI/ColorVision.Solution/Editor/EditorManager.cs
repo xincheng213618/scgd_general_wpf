@@ -17,22 +17,6 @@ namespace ColorVision.Solution
         /// Key: file extension (e.g., ".cs"), Value: editor type full name
         /// </summary>
         public Dictionary<string, string> DefaultEditors { get; set; } = new Dictionary<string, string>();
-
-        /// <summary>
-        /// Save the current configuration to persistent storage
-        /// </summary>
-        public void Save()
-        {
-            ConfigService.Instance.SaveConfigs();
-        }
-
-        /// <summary>
-        /// Load configuration from persistent storage
-        /// </summary>
-        public void Load()
-        {
-            // Configuration is automatically loaded by ConfigService
-        }
     }
 
     /// <summary>
@@ -157,7 +141,7 @@ namespace ColorVision.Solution
             {
                 _defaultEditors[extLower] = editorType;
                 EditorManagerConfig.Instance.DefaultEditors[extLower] = editorType.FullName;
-                EditorManagerConfig.Instance.Save(); // 自动保存配置
+                ConfigService.Instance.Save<EditorManagerConfig>();
             }
         }
 
