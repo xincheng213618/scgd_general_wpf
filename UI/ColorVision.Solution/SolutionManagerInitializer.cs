@@ -27,7 +27,6 @@ namespace ColorVision.Solution
                 parser.SetValue("solutionpath",input);
             }
 
-
             var solutionpath = parser.GetValue("solutionpath");
 
             _= Application.Current.Dispatcher.BeginInvoke(() =>
