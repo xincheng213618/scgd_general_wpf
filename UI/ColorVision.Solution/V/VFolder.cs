@@ -11,13 +11,17 @@ using System.Windows.Media;
 
 namespace ColorVision.Solution.V
 {
-    public class VFolder : VObject
+    /// <summary>
+    /// Visual representation of a folder in the solution explorer.
+    /// Implements IDisposable to properly manage FileSystemWatcher resources.
+    /// Provides folder-specific operations like opening in explorer, adding subfolders, etc.
+    /// </summary>
+    public class VFolder : VObject, IDisposable
     {
         public IFolderMeta FolderMeta { get; set; }
 
         public DirectoryInfo DirectoryInfo { get => FolderMeta.DirectoryInfo; set { FolderMeta.DirectoryInfo = value; } }
         public RelayCommand OpenFileInExplorerCommand { get; set; }
-        public RelayCommand CopyFullPathCommand { get; set; }
         public RelayCommand AddDirCommand { get; set; }
         FileSystemWatcher FileSystemWatcher { get; set; }
         public bool HasFile { get => this.HasFile(); }
@@ -28,6 +32,22 @@ namespace ColorVision.Solution.V
             FolderMeta = folder;
             FullPath = DirectoryInfo.FullName;
             Name1 = DirectoryInfo.Name;
+            Initialize();
+        }
+
+        public override void Initialize()
+        {
+            base.Initialize();
+            
+            InitializeFileSystemWatcher();
+            InitializeCommands();
+            InitializeEventHandlers();
+            
+            Task.Run(() => GeneralChild());
+        }
+
+        private void InitializeFileSystemWatcher()
+        {
             if (DirectoryInfo != null && DirectoryInfo.Exists)
             {
                 FileSystemWatcher = new FileSystemWatcher(DirectoryInfo.FullName);
@@ -73,14 +93,18 @@ namespace ColorVision.Solution.V
 
                 };
                 FileSystemWatcher.EnableRaisingEvents = true;
-
             }
+        }
 
+        private void InitializeCommands()
+        {
             OpenFileInExplorerCommand = new RelayCommand(a => PlatformHelper.OpenFolder(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
-            CopyFullPathCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             AddDirCommand = new RelayCommand(a => VMUtil.CreatFolders(this, DirectoryInfo.FullName));
             OpenInCmdCommand = new RelayCommand(a => System.Diagnostics.Process.Start("cmd.exe", $"/K cd \"{DirectoryInfo.FullName}\""), a => DirectoryInfo.Exists);
-            Task.Run(() => GeneralChild());
+        }
+
+        private void InitializeEventHandlers()
+        {
             AddChildEventHandler +=(s,e) => NotifyPropertyChanged(nameof(HasFile));
         }
         public override void Open()
@@ -114,7 +138,6 @@ namespace ColorVision.Solution.V
             });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Add", Order = 10, Header = Resources.MenuAdd });
             MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddFolder", Order = 1, Header = "添加文件夹",Command = AddDirCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = "复制完整路径" ,Icon = MenuItemIcon.TryFindResource("DICopy") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MenuOpenFileInExplorer", Order = 200, Command = OpenFileInExplorerCommand, Header = Resources.MenuOpenFileInExplorer });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenInCmdCommad", Order = 200, Header = "在终端中打开", Command = OpenInCmdCommand });
         }
@@ -128,43 +151,132 @@ namespace ColorVision.Solution.V
 
         public override bool ReName(string name)
         {
-            if (string.IsNullOrWhiteSpace(name)) { MessageBox.Show("路径地址不允许为空"); return false; }
+            if (string.IsNullOrWhiteSpace(name)) 
+            { 
+                ShowUserError("文件夹名称不允许为空");
+                return false; 
+            }
+
+            string? originalPath = null;
+            DirectoryInfo? originalDirectoryInfo = null;
+            bool fileSystemWatcherWasEnabled = false;
 
             try
             {
                 if (DirectoryInfo.Parent != null)
                 {
-                    if (FileSystemWatcher!=null)
+                    originalPath = DirectoryInfo.FullName;
+                    originalDirectoryInfo = new DirectoryInfo(originalPath);
+                    
+                    // 记录操作日志
+                    LogOperation($"开始重命名文件夹: {originalPath} -> {name}");
+
+                    // 临时禁用文件系统监视器
+                    if (FileSystemWatcher?.EnableRaisingEvents == true)
+                    {
+                        fileSystemWatcherWasEnabled = true;
                         FileSystemWatcher.EnableRaisingEvents = false;
+                    }
 
                     foreach (var item in VisualChildren)
                     {
-                        if (item is VFolder vFolder)
+                        if (item is VFolder vFolder && vFolder.FileSystemWatcher?.EnableRaisingEvents == true)
                         {
                             vFolder.FileSystemWatcher.EnableRaisingEvents = false;
                         }
-
                     }
+
                     string destinationDirectoryPath = Path.Combine(DirectoryInfo.Parent.FullName, name);
+                    
+                    // 检查目标路径是否已存在
+                    if (Directory.Exists(destinationDirectoryPath))
+                    {
+                        ShowUserError($"目标文件夹 '{name}' 已存在");
+                        return false;
+                    }
+
                     Directory.Move(DirectoryInfo.FullName, destinationDirectoryPath);
                     DirectoryInfo = new DirectoryInfo(destinationDirectoryPath);
+                    FullPath = destinationDirectoryPath;
 
                     VisualChildren.Clear();
-                    VMUtil.Instance.GeneralChild(this,DirectoryInfo);
+                    VMUtil.Instance.GeneralChild(this, DirectoryInfo);
+                    
                     if (FileSystemWatcher != null)
                     {
                         FileSystemWatcher.Path = DirectoryInfo.FullName;
-                        FileSystemWatcher.EnableRaisingEvents = true;
+                        if (fileSystemWatcherWasEnabled)
+                        {
+                            FileSystemWatcher.EnableRaisingEvents = true;
+                        }
                     }
+
+                    LogOperation($"成功重命名文件夹: {originalPath} -> {destinationDirectoryPath}");
                     return true;
                 }
+                else
+                {
+                    ShowUserError("无法重命名根目录");
+                    return false;
+                }
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                LogError($"重命名文件夹失败 - 权限不足: {ex.Message}", ex);
+                ShowUserError("权限不足，无法重命名文件夹");
+                return RollbackRename(originalPath, originalDirectoryInfo, fileSystemWatcherWasEnabled);
+            }
+            catch (DirectoryNotFoundException ex)
+            {
+                LogError($"重命名文件夹失败 - 目录未找到: {ex.Message}", ex);
+                ShowUserError("源文件夹不存在");
                 return false;
+            }
+            catch (IOException ex)
+            {
+                LogError($"重命名文件夹失败 - IO错误: {ex.Message}", ex);
+                ShowUserError($"文件夹重命名失败: {ex.Message}");
+                return RollbackRename(originalPath, originalDirectoryInfo, fileSystemWatcherWasEnabled);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
-                return false;
+                LogError($"重命名文件夹失败 - 未知错误: {ex.Message}", ex);
+                ShowUserError($"重命名失败: {ex.Message}");
+                return RollbackRename(originalPath, originalDirectoryInfo, fileSystemWatcherWasEnabled);
             }
+        }
+
+        private bool RollbackRename(string? originalPath, DirectoryInfo? originalDirectoryInfo, bool fileSystemWatcherWasEnabled)
+        {
+            try
+            {
+                if (originalDirectoryInfo != null && originalPath != null)
+                {
+                    LogOperation($"尝试回滚重命名操作: {originalPath}");
+                    DirectoryInfo = originalDirectoryInfo;
+                    FullPath = originalPath;
+                    
+                    if (FileSystemWatcher != null)
+                    {
+                        FileSystemWatcher.Path = originalPath;
+                        if (fileSystemWatcherWasEnabled)
+                        {
+                            FileSystemWatcher.EnableRaisingEvents = true;
+                        }
+                    }
+                    
+                    VisualChildren.Clear();
+                    VMUtil.Instance.GeneralChild(this, DirectoryInfo);
+                    LogOperation("成功回滚重命名操作");
+                }
+            }
+            catch (Exception rollbackEx)
+            {
+                LogError($"回滚重命名操作失败: {rollbackEx.Message}", rollbackEx);
+                ShowUserError("回滚操作也失败了，文件夹状态可能不一致");
+            }
+            
+            return false;
         }
 
         public override void Delete()
@@ -192,5 +304,32 @@ namespace ColorVision.Solution.V
 
         public override bool CanCut { get => _CanCut; set { _CanCut = value; NotifyPropertyChanged(); } }
         private bool _CanCut = true;
+
+        #region IDisposable Support
+        private bool _disposed = false;
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    FileSystemWatcher?.Dispose();
+                }
+                _disposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        ~VFolder()
+        {
+            Dispose(false);
+        }
+        #endregion
     }
 }

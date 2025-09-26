@@ -1,11 +1,14 @@
 ﻿using ColorVision.Common.NativeMethods;
 using ColorVision.UI.Menus;
-using System.ComponentModel;
 using System.IO;
 
 namespace ColorVision.Solution.FileMeta
 {
-    [FileExtension(".jpg|.png|.jpeg|.tif|.bmp|.tiff")]
+    /// <summary>
+    /// File meta for image file types.
+    /// Updated to use the new FileMetaForExtensionAttribute registration system.
+    /// </summary>
+    [FileMetaForExtension(".jpg|.png|.jpeg|.tif|.bmp|.tiff", name: "Image File", isDefault: true)]
     public class FileImage : FileMetaBase
     {
         public FileImage() { }
@@ -19,10 +22,18 @@ namespace ColorVision.Solution.FileMeta
 
         public override IEnumerable<MenuItemMetadata> GetMenuItems()
         {
-            MenuItemMetadata menuItemMetadata = new MenuItemMetadata();
-            return base.GetMenuItems();
+            var menuItems = base.GetMenuItems().ToList();
+            
+            // Add image-specific menu items
+            menuItems.Add(new MenuItemMetadata 
+            { 
+                GuidId = "ViewImage", 
+                Order = 1, 
+                Header = "查看图像", 
+                Icon = MenuItemIcon.TryFindResource("DIImage") 
+            });
+            
+            return menuItems;
         }
-
     }
-
 }
