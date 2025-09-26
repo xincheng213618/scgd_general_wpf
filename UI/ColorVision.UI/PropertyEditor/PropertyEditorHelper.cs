@@ -496,14 +496,23 @@ namespace ColorVision.UI
                     }
                     list.Add(prop);
 
-                    // If nested ViewModelBase, recurse
-                    if (typeof(ViewModelBase).IsAssignableFrom(prop.PropertyType))
+                    try
                     {
-                        if (prop.GetValue(source) is ViewModelBase nestedVm)
+                        // If nested ViewModelBase, recurse
+                        if (typeof(ViewModelBase).IsAssignableFrom(prop.PropertyType))
                         {
-                            CollectProperties(nestedVm);
+                            if (prop.GetValue(source) is ViewModelBase nestedVm)
+                            {
+                                CollectProperties(nestedVm);
+                            }
                         }
                     }
+                    catch(Exception ex)
+                    {
+
+                    }
+
+
                 }
             }
 

@@ -77,6 +77,7 @@
     <ProjectReference Include="..\UI\ColorVision.SocketProtocol\ColorVision.SocketProtocol.csproj" />
     <ProjectReference Include="..\UI\ColorVision.Solution\ColorVision.Solution.csproj" />
     <ProjectReference Include="..\UI\ColorVision.UI\ColorVision.UI.csproj" />
+    <ProjectReference Include="..\UI\ColorVision.Common\ColorVision.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>

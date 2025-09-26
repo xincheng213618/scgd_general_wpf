@@ -1,10 +1,14 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
+using ColorVision.Common.MVVM; // Added for RelayCommand
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -26,6 +30,26 @@ namespace ColorVision
     }
 
     /// <summary>
+    /// 用于持久化 ConfigManagerWindow 的位置/尺寸设置
+    /// </summary>
+    public class ConfigManagerWindowConfig : WindowConfig
+    {
+        public static ConfigManagerWindowConfig Instance => ConfigService.Instance.GetRequiredService<ConfigManagerWindowConfig>();
+    }
+
+    /// <summary>
+    /// 针对配置项的搜索封装
+    /// </summary>
+    internal class ConfigSearch : ISearch
+    {
+        public SearchType Type => SearchType.Menu; // 复用枚举
+        public string? GuidId { get; init; }
+        public string? Header { get; init; }
+        public object? Icon { get; init; }
+        public ICommand? Command { get; init; }
+    }
+
+    /// <summary>
     /// ConfigManagerWindow.xaml 的交互逻辑
     /// </summary>
     public partial class ConfigManagerWindow : Window
@@ -33,30 +57,65 @@ namespace ColorVision
         public ConfigManagerWindow()
         {
             InitializeComponent();
+            // 标题栏主题与图标
+            this.ApplyCaption();
+            // 恢复窗口位置
+            ConfigManagerWindowConfig.Instance.SetWindow(this);
         }
-        List<KeyValuePair<Type, IConfig>> Templates  = new List<KeyValuePair<Type, IConfig>>();
+        List<KeyValuePair<Type, IConfig>> Templates = new List<KeyValuePair<Type, IConfig>>();
+
+        public ObservableCollection<ISearch> Searches { get; set; } = new ObservableCollection<ISearch>();
+        public List<ISearch> filteredResults { get; set; } = new List<ISearch>();
+        private readonly char[] Chars = new[] { ' ' };
+
         private void Window_Initialized(object sender, EventArgs e)
         {
-            Templates  = ConfigHandler.GetInstance().Configs.ToList();
+            // 读取所有配置实例
+            Templates = ConfigHandler.GetInstance().Configs.ToList();
 
-            // 统计模板总数
-            int totalTemplateCount = Templates.Count;
+            // 排序：按类型名
+            Templates = Templates.OrderBy(p => p.Key.Name).ToList();
 
             // 绑定到 ListView
             ListView2.ItemsSource = Templates;
 
-            // 显示汇总信息
-            SummaryText.Text = $"共计{Templates.Count}类模板，{totalTemplateCount}个模板";
+            // 统计信息（类型数量 == 模板类别，实例数量 == 与类型数量一致）
+            int typeCount = Templates.Count;
+            SummaryText.Text = $"共计{typeCount}类配置";
+
+            BuildSearchItems();
         }
 
-        public ObservableCollection<ISearch> Searches { get; set; } = new ObservableCollection<ISearch>();
-        public List<ISearch> filteredResults { get; set; } = new List<ISearch>();
+        private void BuildSearchItems()
+        {
+            Searches.Clear();
+            foreach (var pair in Templates)
+            {
+                var type = pair.Key;
+                var value = pair.Value;
 
-        private readonly char[] Chars = new[] { ' ' };
+                string displayName = type.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName
+                    ?? (value?.GetType().GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? type.Name);
+
+                RelayCommand relayCommand = new RelayCommand(_ =>
+                {
+                    new PropertyEditorWindow(value).Show();
+                });
+
+                Searches.Add(new ConfigSearch
+                {
+                    GuidId = type.FullName,
+                    Header = displayName,
+                    Command = relayCommand
+                });
+            }
+        }
+
         private void Searchbox_GotFocus(object sender, RoutedEventArgs e)
         {
-            //Searches = new ObservableCollection<ISearch>(new SearchProvider().GetSearchItems());
+            // 预留：如需动态刷新，可在此重新 BuildSearchItems()
         }
+
         private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (sender is TextBox textBox)
@@ -73,10 +132,9 @@ namespace ColorVision
 
                     filteredResults = Searches
                         .OfType<ISearch>()
-                        .Where(template => keywords.All(keyword =>
-                            template.Header.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
-                            template.GuidId.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase)
-                            ))
+                        .Where(item => keywords.All(keyword =>
+                            (item.Header?.Contains(keyword, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                            (item.GuidId?.Contains(keyword, StringComparison.OrdinalIgnoreCase) ?? false)))
                         .ToList();
                     ListView1.ItemsSource = filteredResults;
                     if (filteredResults.Count > 0)
@@ -89,38 +147,50 @@ namespace ColorVision
 
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-
+            // 可扩展：显示预览信息
         }
 
         private void Searchbox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (e.Key == System.Windows.Input.Key.Enter)
             {
-                if (ListView1.SelectedIndex > -1)
+                if (ListView1.SelectedIndex > -1 && ListView1.Items.Count > 0)
                 {
                     Searchbox.Text = string.Empty;
                     filteredResults[ListView1.SelectedIndex].Command?.Execute(this);
+                    SearchPopup.IsOpen = false;
+                    e.Handled = true;
                 }
             }
-            if (e.Key == System.Windows.Input.Key.Up)
+            else if (e.Key == System.Windows.Input.Key.Up)
             {
                 if (ListView1.SelectedIndex > 0)
+                {
                     ListView1.SelectedIndex -= 1;
+                    e.Handled = true;
+                }
             }
-            if (e.Key == System.Windows.Input.Key.Down)
+            else if (e.Key == System.Windows.Input.Key.Down)
             {
                 if (ListView1.SelectedIndex < filteredResults.Count - 1)
+                {
                     ListView1.SelectedIndex += 1;
-
+                    e.Handled = true;
+                }
+            }
+            else if (e.Key == Key.Escape)
+            {
+                SearchPopup.IsOpen = false;
             }
         }
 
         private void ListView1_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (ListView1.SelectedIndex > -1)
+            if (ListView1.SelectedIndex > -1 && ListView1.Items.Count > 0)
             {
                 Searchbox.Text = string.Empty;
                 filteredResults[ListView1.SelectedIndex].Command?.Execute(this);
+                SearchPopup.IsOpen = false;
             }
         }
 
@@ -130,7 +200,7 @@ namespace ColorVision
             {
                 if (Templates[ListView2.SelectedIndex].Value is IConfig template)
                 {
-                    SummaryText1.Text = $"当前选择：{template}";
+                    SummaryText1.Text = $"当前选择：{GetDisplayName(Templates[ListView2.SelectedIndex].Key, template)}";
                 }
                 else
                 {
@@ -141,6 +211,13 @@ namespace ColorVision
             {
                 SummaryText1.Text = string.Empty;
             }
+        }
+
+        private static string GetDisplayName(Type type, IConfig instance)
+        {
+            return type.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName
+                ?? instance.GetType().GetCustomAttribute<DisplayNameAttribute>()?.DisplayName
+                ?? type.Name;
         }
 
         private void ListView2_MouseDoubleCick(object sender, MouseButtonEventArgs e)
