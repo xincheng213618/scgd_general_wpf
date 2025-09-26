@@ -35,12 +35,11 @@ namespace ProjectARVRLite
             Assembly.LoadFrom("ColorVision.Engine.dll"); ;
 
             var _IComponentInitializers = new List<IInitializer>();
-            MessageUpdater messageUpdater = new MessageUpdater();
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitializer).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    if (Activator.CreateInstance(type, messageUpdater) is IInitializer componentInitialize)
+                    if (Activator.CreateInstance(type) is IInitializer componentInitialize)
                     {
                         _IComponentInitializers.Add(componentInitialize);
                     }
