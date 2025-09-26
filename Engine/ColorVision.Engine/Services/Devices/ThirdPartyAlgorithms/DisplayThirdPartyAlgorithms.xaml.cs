@@ -40,28 +40,14 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
         public string DisPlayName => Device.Config.Name;
 
-        private NetFileUtil netFileUtil;
-
         public DisplayThirdPartyAlgorithms(DeviceThirdPartyAlgorithms device)
         {
             Device = device;
             InitializeComponent();
 
-            netFileUtil = new NetFileUtil();
-            netFileUtil.handler += NetFileUtil_handler;
         }
 
-        private void NetFileUtil_handler(object sender, NetFileEvent arg)
-        {
-            if (arg.Code == 0 && arg.FileData.data != null)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    View.OpenImage(arg.FileData);
-                });
-            }
 
-        }
 
 
         private void Service_OnAlgorithmEvent(MsgReturn arg)
@@ -100,11 +86,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                     }
                     break;
                 case MQTTFileServerEventEnum.Event_File_Download:
-                    DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                    if (pm_dl != null)
-                    {
-                        if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, CVType.CIE);
-                    }
                     break;
                 default:
                     List<AlgResultMasterModel> resultMaster = null;

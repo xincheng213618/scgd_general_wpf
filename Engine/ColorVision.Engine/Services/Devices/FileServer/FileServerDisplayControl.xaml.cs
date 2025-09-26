@@ -35,9 +35,6 @@ namespace ColorVision.Engine.Services.Devices.FileServer
             DeviceFileServer = deviceFileServer;
             InitializeComponent();
 
-            netFileUtil = new NetFileUtil();
-            netFileUtil.handler += NetFileUtil_handler;
-
             DeviceFileServer.DService.OnImageData += Service_OnImageData;
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
@@ -49,16 +46,6 @@ namespace ColorVision.Engine.Services.Devices.FileServer
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
-        private void NetFileUtil_handler(object sender, NetFileEvent arg)
-        {
-            if (arg.Code == 0 && arg.FileData.data != null)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    View.OpenImage(arg.FileData.ToWriteableBitmap());
-                });
-            }
-        }
 
         private void Service_OnImageData(object sender, FileServerDataEvent arg)
         {
@@ -73,18 +60,13 @@ namespace ColorVision.Engine.Services.Devices.FileServer
                     break;
                 case MQTTFileServerEventEnum.Event_File_Download:
                     DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                    FileDownload(pm_dl);
+                    //FileDownload(pm_dl);
                     break;
                 default:
                     break;
             }
         }
 
-
-        private void FileDownload(DeviceFileUpdownParam param)
-        {
-            if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, (CVType)FileExtType.Src);
-        }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
