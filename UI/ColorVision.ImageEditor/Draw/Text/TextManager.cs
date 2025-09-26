@@ -1,0 +1,172 @@
+#pragma warning disable CS0414,CS8625
+using ColorVision.Common.MVVM;
+using ColorVision.UI;
+using System;
+using System.Linq;
+using System.Windows;
+using System.Windows.Input;
+using System.Windows.Media;
+
+namespace ColorVision.ImageEditor.Draw
+{
+    public class TextManagerConfig : ViewModelBase
+    {
+        public bool IsLocked { get => _IsLocked; set { _IsLocked = value; OnPropertyChanged(); } }
+        private bool _IsLocked;
+
+        public double DefaultFontSize { get => _DefaultFontSize; set { _DefaultFontSize = value; OnPropertyChanged(); } }
+        private double _DefaultFontSize = 18;
+
+        public string DefaultText { get => _DefaultText; set { _DefaultText = value; OnPropertyChanged(); } }
+        private string _DefaultText = "Text";
+
+        public bool FollowZoom { get => _FollowZoom; set { _FollowZoom = value; OnPropertyChanged(); } }
+        private bool _FollowZoom = true;
+    }
+
+    public class TextManager : ViewModelBase, IDisposable, IDrawEditor
+    {
+        public TextManagerConfig Config { get; set; } = new TextManagerConfig();
+        private ZoomboxSub Zoombox { get; set; }
+        private DrawCanvas DrawCanvas { get; set; }
+        public ImageViewModel ImageViewModel { get; set; }
+
+        private DVText? TextCache;
+        private Point MouseDownP;
+        private bool IsMouseDown;
+
+        public TextManager(ImageViewModel imageViewModel, ZoomboxSub zoombox, DrawCanvas drawCanvas)
+        {
+            Zoombox = zoombox;
+            DrawCanvas = drawCanvas;
+            ImageViewModel = imageViewModel;
+        }
+
+        private bool _IsShow;
+        public bool IsShow
+        {
+            get => _IsShow; set
+            {
+                if (_IsShow == value) return;
+                _IsShow = value;
+                if (value)
+                {
+                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
+                    ImageViewModel.SlectStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(Config));
+                    Load();
+                }
+                else
+                {
+                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(null);
+                    ImageViewModel.SlectStackPanel.Children.Clear();
+                    UnLoad();
+                }
+                OnPropertyChanged();
+            }
+        }
+
+        private int CheckNo()
+        {
+            if (ImageViewModel.DrawingVisualLists.Count > 0 && ImageViewModel.DrawingVisualLists.Last() is DrawingVisualBase drawingVisual)
+            {
+                return drawingVisual.ID + 1;
+            }
+            else
+            {
+                return 1;
+            }
+        }
+
+        private void Load()
+        {
+            DrawCanvas.MouseMove += MouseMove;
+            DrawCanvas.MouseEnter += MouseEnter;
+            DrawCanvas.MouseLeave += MouseLeave;
+            DrawCanvas.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
+            DrawCanvas.PreviewMouseUp += Image_PreviewMouseUp;
+        }
+
+        private void UnLoad()
+        {
+            DrawCanvas.MouseMove -= MouseMove;
+            DrawCanvas.MouseEnter -= MouseEnter;
+            DrawCanvas.MouseLeave -= MouseLeave;
+            DrawCanvas.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
+            DrawCanvas.PreviewMouseUp -= Image_PreviewMouseUp;
+            TextCache = null;
+            ImageViewModel.SelectEditorVisual.ClearRender();
+        }
+
+        private void PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            DrawCanvas.CaptureMouse();
+            MouseDownP = e.GetPosition(DrawCanvas);
+            IsMouseDown = true;
+
+            if (ImageViewModel.SelectEditorVisual.GetContainingRect(MouseDownP))
+            {
+                return;
+            }
+            else
+            {
+                ImageViewModel.SelectEditorVisual.ClearRender();
+            }
+
+            if (TextCache != null) return;
+
+            int did = CheckNo();
+            TextProperties textProperties = new TextProperties();
+            textProperties.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#AA000000"));
+            textProperties.Text = "请在这里输入";
+            textProperties.Id = did;
+            textProperties.Text = Config.DefaultText + "_" + did;
+            textProperties.Position = MouseDownP;
+            textProperties.Pen = new Pen(Brushes.Red, 1 / Zoombox.ContentMatrix.M11);
+            textProperties.TextAttribute.FontSize = Config.DefaultFontSize / Zoombox.ContentMatrix.M11;
+            TextCache = new DVText(textProperties);
+            TextCache.Render();
+            DrawCanvas.AddVisualCommand(TextCache);
+            e.Handled = true;
+        }
+
+        private void Image_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            DrawCanvas.ReleaseMouseCapture();
+            IsMouseDown = false;
+            if (TextCache != null)
+            {
+                ImageViewModel.SelectEditorVisual.SetRender(TextCache);
+                if (!Config.IsLocked)
+                {
+                    Config.DefaultFontSize = TextCache.Attribute.TextAttribute.FontSize * Zoombox.ContentMatrix.M11; // 保存逻辑尺寸
+                }
+                TextCache = null;
+            }
+            e.Handled = true;
+        }
+
+        private void MouseMove(object sender, MouseEventArgs e)
+        {
+            if (IsMouseDown && TextCache != null)
+            {
+                var point = e.GetPosition(DrawCanvas);
+                // 拖拽改变高度 -> 字号
+                double deltaY = System.Math.Abs(point.Y - MouseDownP.Y);
+                double fontSize = deltaY;
+                if (fontSize < 5) fontSize = Config.DefaultFontSize / Zoombox.ContentMatrix.M11; // 最小
+                TextCache.Attribute.TextAttribute.FontSize = fontSize / (Config.FollowZoom ? 1 : Zoombox.ContentMatrix.M11);
+                TextCache.Render();
+            }
+            e.Handled = true;
+        }
+
+        private void MouseEnter(object sender, MouseEventArgs e) { }
+        private void MouseLeave(object sender, MouseEventArgs e) { }
+
+        public void Dispose()
+        {
+            UnLoad();
+            GC.SuppressFinalize(this);
+        }
+    }
+}
