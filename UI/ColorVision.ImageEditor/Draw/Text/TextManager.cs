@@ -122,7 +122,8 @@ namespace ColorVision.ImageEditor.Draw
             textProperties.Text = Config.DefaultText + "_" + did;
             textProperties.Position = MouseDownP;
             textProperties.Pen = new Pen(Brushes.Red, 1 / Zoombox.ContentMatrix.M11);
-            textProperties.TextAttribute.FontSize = Config.DefaultFontSize / Zoombox.ContentMatrix.M11;
+            textProperties.TextAttribute.FontSize = Config.DefaultFontSize;
+            textProperties.Rect = new Rect(MouseDownP.X, MouseDownP.Y,100,100);
             TextCache = new DVText(textProperties);
             TextCache.Render();
             DrawCanvas.AddVisualCommand(TextCache);
@@ -141,6 +142,7 @@ namespace ColorVision.ImageEditor.Draw
                     Config.DefaultFontSize = TextCache.Attribute.TextAttribute.FontSize * Zoombox.ContentMatrix.M11; // ±£´æÂß¼­³ß´ç
                 }
                 TextCache = null;
+                IsShow = false;
             }
             e.Handled = true;
         }

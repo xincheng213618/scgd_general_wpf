@@ -74,6 +74,9 @@ namespace ColorVision.Engine.Services.PhyCameras
         [CommandDisplay("修改电机配置")]
         public RelayCommand UpdateMotorConfigCommand {get; set; }
 
+        [CommandDisplay("导出副本")]
+        public RelayCommand GenCopyCommand { get; set; }
+
         [CommandDisplay("校正生成工具")]
         public RelayCommand OepnCalibrationToolCommand { get; set; }
 
@@ -133,8 +136,14 @@ namespace ColorVision.Engine.Services.PhyCameras
             OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code ?? string.Empty)));
             UpdateMotorConfigCommand = new RelayCommand(a => UpdateMotorConfig());
             OpenLicenseCacheCommand = new RelayCommand(a => OpenLicenseCache());
+            GenCopyCommand = new RelayCommand(a => GenCopy());
             //这里是为了加载对应的
         }
+        public void GenCopy()
+        {
+
+        }
+
         public static void OpenLicenseCache()
         {
             string DirLicense = $"{Environments.DirAppData}\\Licenses";

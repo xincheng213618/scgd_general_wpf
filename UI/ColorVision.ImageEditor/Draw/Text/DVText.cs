@@ -70,17 +70,12 @@ namespace ColorVision.ImageEditor.Draw
             Attribute = textProperties;
             if (Attribute.FontSize <= 0)
                 TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
-            //Attribute.PropertyChanged += (s,e)=> Render();
+            Attribute.PropertyChanged += (s,e)=> Render();
         }
 
         public override void Render()
         {
             using DrawingContext dc = RenderOpen();
-            if (!Attribute.IsShowText || string.IsNullOrEmpty(TextAttribute.Text))
-            {
-                Attribute.Rect = new Rect(Attribute.Position.X, Attribute.Position.Y, 0, 0);
-                return;
-            }
             FormattedText formattedText = new(
                 TextAttribute.Text,
                 CultureInfo.CurrentCulture,
@@ -93,42 +88,20 @@ namespace ColorVision.ImageEditor.Draw
             // 画背景
             if (Attribute.Background != null && Attribute.Background != Brushes.Transparent)
             {
-                dc.DrawRectangle(Attribute.Background, null, new Rect(Attribute.Position, new Size(formattedText.Width, formattedText.Height)));
+                dc.DrawRectangle(Attribute.Background, null, Attribute.Rect);
             }
             // 文本
             dc.DrawText(formattedText, Attribute.Position);
 
-            // Msg 追加显示在文本右侧
-            if (!string.IsNullOrWhiteSpace(Attribute.Msg))
-            {
-                FormattedText formattedMsg = new(
-                    Attribute.Msg,
-                    CultureInfo.CurrentCulture,
-                    TextAttribute.FlowDirection,
-                    new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch),
-                    TextAttribute.FontSize,
-                    TextAttribute.Brush,
-                    VisualTreeHelper.GetDpi(this).PixelsPerDip);
-                dc.DrawText(formattedMsg, new Point(Attribute.Position.X + formattedText.Width + Attribute.Pen.Thickness, Attribute.Position.Y));
-                Attribute.Rect = new Rect(Attribute.Position.X, Attribute.Position.Y, formattedText.Width + formattedMsg.Width + Attribute.Pen.Thickness, System.Math.Max(formattedText.Height, formattedMsg.Height));
-            }
-            else
-            {
-                Attribute.Rect = new Rect(Attribute.Position.X, Attribute.Position.Y, formattedText.Width, formattedText.Height);
-            }
         }
 
         public override Rect GetRect() => Attribute.Rect;
 
         public override void SetRect(Rect rect)
         {
+            Attribute.Rect = rect;
             // 移动
             Attribute.Position = new Point(rect.X, rect.Y);
-            // 根据高度调整字体，保持与矩形/圆拖拽类似体验
-            if (rect.Height > 0)
-            {
-                TextAttribute.FontSize = rect.Height; // 直接映射高度
-            }
             Render();
         }
     }

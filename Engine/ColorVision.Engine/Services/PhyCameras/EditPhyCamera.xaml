@@ -63,8 +63,8 @@
                                     <ui:ToggleSwitch IsChecked="{Binding CFW.IsNDPort}"/>
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
-                                    <TextBlock Text="NDMaxExpTime:" Width="120"/>
-                                    <TextBox Text="{Binding CFW.NDMaxExpTime}"/>
+                                    <TextBlock Text="NDMinExpTime:" Width="120"/>
+                                    <TextBox Text="{Binding CFW.NDMinExpTime}"/>
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
                                     <TextBlock Text="NDMaxExpTime:" Width="120"/>
