@@ -1,4 +1,5 @@
 using ColorVision.UI;
+using System.IO;
 using System.Reflection;
 
 namespace ColorVision.Solution.FolderMeta

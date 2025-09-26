@@ -23,7 +23,7 @@ namespace ColorVision.Solution
         /// </summary>
         public void Save()
         {
-            ConfigService.Instance.Save();
+            ConfigService.Instance.SaveConfigs();
         }
 
         /// <summary>

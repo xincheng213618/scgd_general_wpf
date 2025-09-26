@@ -51,7 +51,7 @@ namespace ColorVision.ImageEditor
         /// <param name="left">左边距</param>
         /// <param name="right">右边距</param>
         /// <returns>缩放后的新顶点列表</returns>
-        public static List<Point>  ScalePolygon(List<Point> points, double top, double bottom, double left, double right)
+        public static List<Point> ScalePolygon(List<Point> points, double top, double bottom, double left, double right)
         {
             if (points.Count != 4)
             {
@@ -111,7 +111,7 @@ namespace ColorVision.ImageEditor
         /// <param name="polygon">The list of points defining the polygon.</param>
         /// <param name="offset">The distance to inset (positive) or outset (negative).</param>
         /// <returns>A new list of points for the offsetx polygon.</returns>
-        public static List<Point> InsetPolygon(List<Point> polygon, double offsetX,double offsetY)
+        public static List<Point> InsetPolygon(List<Point> polygon, double offsetX, double offsetY)
         {
             if (polygon == null || polygon.Count < 3) return polygon;
 
@@ -533,7 +533,7 @@ namespace ColorVision.ImageEditor
                         double x1 = Config.CenterX + Config.AreaCircleRadius * Math.Cos(i * 2 * Math.PI / Config.AreaCircleNum + Math.PI / 180 * Config.AreaCircleAngle);
                         double y1 = Config.CenterY + Config.AreaCircleRadius * Math.Sin(i * 2 * Math.PI / Config.AreaCircleNum + Math.PI / 180 * Config.AreaCircleAngle);
 
-                        int did =  i + 1; ;
+                        int did = i + 1; ;
                         switch (Config.DefaultPointType)
                         {
                             case GraphicDrawTypes.Circle:
@@ -606,13 +606,15 @@ namespace ColorVision.ImageEditor
                     }
                     break;
                 case GraphicTypes.Quadrilateral:
-                    List<Point> quadPoints =
-                    [
-                        Config.Polygon1,
+                    List<Point> quadPoints = new List<Point>()
+                    {
+                                                Config.Polygon1,
                             Config.Polygon2,
                             Config.Polygon3,
                             Config.Polygon4,
-                        ];
+
+            };
+
                     GenerateGridInQuadrilateral(quadPoints);
                     break;
                 default:
@@ -639,7 +641,7 @@ namespace ColorVision.ImageEditor
                         break;
                     case GraphicDrawTypes.Rect:
                         offsetx = Config.DefaultRectWidth / 2.0;
-                        offsety = Config.DefaultRectHeight/ 2.0;
+                        offsety = Config.DefaultRectHeight / 2.0;
                         break;
                 }
 
@@ -648,7 +650,7 @@ namespace ColorVision.ImageEditor
                     switch (pOIPosition)
                     {
                         case DrawingGraphicPosition.Internal:
-                            points = ImageEditorHelper.InsetPolygon(points, -offsetx,-offsety);
+                            points = ImageEditorHelper.InsetPolygon(points, -offsetx, -offsety);
                             break;
                         case DrawingGraphicPosition.External:
                             points = ImageEditorHelper.InsetPolygon(points, offsetx, offsety);
@@ -702,7 +704,7 @@ namespace ColorVision.ImageEditor
                     generatedPoints.Add(point);
                 }
             }
-            
+
             if (useGlobalBitmap)
             {
                 // 2. 获取全局画布尺寸（假设 DrawCanvas.ActualWidth/ActualHeight）
@@ -711,7 +713,7 @@ namespace ColorVision.ImageEditor
                 if (canvasWidth == 0 || canvasHeight == 0) return;
 
                 double minX = generatedPoints.Min(p => p.X);
-                minX = minX> 0 ? minX : 0;
+                minX = minX > 0 ? minX : 0;
                 double minY = generatedPoints.Min(p => p.Y);
                 minY = minY > 0 ? minY : 0;
                 double maxX = generatedPoints.Max(p => p.X);
