@@ -16,7 +16,8 @@ namespace ColorVision.Solution.V
 
         public VMUtil()
         {
-            FileMetaRegistry.RegisterFileMetasFromAssemblies();
+            // Initialize both registries
+            VObjectFactory.InitializeRegistries();
         }
 
         public static void CreatFolders(VObject vObject,string FullName)
@@ -33,7 +34,9 @@ namespace ColorVision.Solution.V
                 }
                 Directory.CreateDirectory(newName);
                 DirectoryInfo directoryInfo = new DirectoryInfo(newName);
-                VFolder vFolder = new VFolder(new BaseFolder(directoryInfo));
+                
+                // Use factory pattern with new registry system
+                VFolder vFolder = VObjectFactory.CreateVFolder(directoryInfo);
                 vObject.AddChild(vFolder);
                 vObject.SortByName();
                 if (!vObject.IsExpanded)
@@ -57,8 +60,8 @@ namespace ColorVision.Solution.V
                 {
                     continue;
                 }
-                BaseFolder folder = new BaseFolder(item);
-                var vFolder = new VFolder(folder);
+                // Use factory pattern with new registry system
+                var vFolder = VObjectFactory.CreateVFolder(item);
                 vObject.AddChild(vFolder);
             }
 
@@ -80,8 +83,8 @@ namespace ColorVision.Solution.V
         int i;
         public async Task CreateDir(IObject vObject, DirectoryInfo directoryInfo)
         {
-            BaseFolder folder = new(directoryInfo);
-            var vFolder = new VFolder(folder);
+            // Use factory pattern with new registry system
+            var vFolder = VObjectFactory.CreateVFolder(directoryInfo);
             vObject.AddChild(vFolder);
             await GeneralChild(vFolder, directoryInfo);
 
@@ -108,19 +111,13 @@ namespace ColorVision.Solution.V
                 extension = Path.GetExtension(targetPath);
                 fileInfo = new FileInfo(targetPath);
             }
-            var type = FileMetaRegistry.GetFileMetaTypeByExtension(extension);
-            if (type != null)
+            
+            // Use factory pattern for consistent VFile creation
+            Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                if (Activator.CreateInstance(type, fileInfo) is IFileMeta file)
-                {
-                    Application.Current.Dispatcher.BeginInvoke(() =>
-                    {
-                        VFile vFile = new VFile(file);
-                        vObject.AddChild(vFile);
-                    });
-                }
-            }
-
+                VFile vFile = VObjectFactory.CreateVFile(fileInfo);
+                vObject.AddChild(vFile);
+            });
         }
 
 
