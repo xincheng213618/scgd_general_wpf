@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if page.title %}{{ page.title }} - {{ site.title }}{% else %}{{ site.title }}{% endif %}</title>
+    <meta name="description" content="{% if page.description %}{{ page.description }}{% else %}{{ site.description }}{% endif %}">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown-light.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css">
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #24292f;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+        }
+        
+        .header {
+            background-color: #24292f;
+            color: white;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        
+        .header h1 a {
+            color: white;
+            text-decoration: none;
+        }
+        
+        .header nav ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            gap: 20px;
+        }
+        
+        .header nav a {
+            color: #f0f6fc;
+            text-decoration: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .header nav a:hover {
+            background-color: #30363d;
+            color: white;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 30px;
+        }
+        
+        .sidebar {
+            background-color: #f6f8fa;
+            padding: 20px;
+            border-radius: 8px;
+            height: fit-content;
+            position: sticky;
+            top: 100px;
+        }
+        
+        .sidebar h3 {
+            margin-top: 0;
+            color: #24292f;
+            font-size: 1.1rem;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .sidebar li {
+            margin: 8px 0;
+        }
+        
+        .sidebar a {
+            color: #0969da;
+            text-decoration: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: block;
+            transition: background-color 0.2s ease;
+        }
+        
+        .sidebar a:hover {
+            background-color: #dbeafe;
+        }
+        
+        .content {
+            min-width: 0;
+        }
+        
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: none;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .breadcrumb {
+            color: #656d76;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+        
+        .breadcrumb a {
+            color: #0969da;
+            text-decoration: none;
+        }
+        
+        .footer {
+            background-color: #f6f8fa;
+            padding: 20px 0;
+            margin-top: 40px;
+            text-align: center;
+            color: #656d76;
+        }
+        
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .header nav ul {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+        
+        /* Mermaid diagram styling */
+        .mermaid {
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1><a href="{{ site.baseurl }}/">{{ site.title }}</a></h1>
+            <nav>
+                <ul>
+                    <li><a href="{{ site.baseurl }}/opendeep/getting-started/入门指南">入门指南</a></li>
+                    <li><a href="{{ site.baseurl }}/opendeep/introduction/简介">项目简介</a></li>
+                    <li><a href="{{ site.baseurl }}/opendeep/developer-guide/开发者指南">开发者指南</a></li>
+                    <li><a href="{{ site.github.repository_url }}" target="_blank">GitHub</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <h3>导航菜单</h3>
+            <ul>
+                <li><a href="{{ site.baseurl }}/">首页</a></li>
+                <li><a href="{{ site.baseurl }}/opendeep/getting-started/入门指南">🚀 入门指南</a></li>
+                <li><a href="{{ site.baseurl }}/opendeep/introduction/简介">📖 项目简介</a></li>
+                <li><a href="{{ site.baseurl }}/opendeep/developer-guide/开发者指南">🛠️ 开发者指南</a></li>
+                <li><a href="{{ site.baseurl }}/opendeep/introduction/system-architecture/系统架构概览">🏗️ 系统架构</a></li>
+                <li><a href="{{ site.baseurl }}/opendeep/user-interface-guide/">🎨 用户界面</a></li>
+                <li><a href="{{ site.baseurl }}/opendeep/device-management/">📱 设备管理</a></li>
+            </ul>
+            
+            <h3>相关链接</h3>
+            <ul>
+                <li><a href="{{ site.github.repository_url }}" target="_blank">📂 源代码仓库</a></li>
+                <li><a href="{{ site.github.repository_url }}/releases" target="_blank">📦 版本发布</a></li>
+                <li><a href="{{ site.github.repository_url }}/issues" target="_blank">🐛 问题反馈</a></li>
+            </ul>
+        </aside>
+
+        <main class="content">
+            {% if page.url != "/" and page.url != "/index.html" %}
+            <div class="breadcrumb">
+                <a href="{{ site.baseurl }}/">首页</a> / 
+                {% assign parts = page.url | split: '/' %}
+                {% for part in parts %}
+                    {% if part != '' and forloop.last == false %}
+                        {{ part | replace: '-', ' ' | replace: '_', ' ' | capitalize }} /
+                    {% endif %}
+                {% endfor %}
+                {% if page.title %}{{ page.title }}{% endif %}
+            </div>
+            {% endif %}
+
+            <div class="markdown-body">
+                {{ content }}
+            </div>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <p>© 2024 视彩（上海）光电技术有限公司 | ColorVision Inc.</p>
+        <p>本项目采用 <a href="{{ site.github.repository_url }}/blob/master/LICENSE">MIT 许可证</a></p>
+    </footer>
+
+    <!-- Mermaid.js for diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif'
+            }
+        });
+    </script>
+    
+    <!-- Prism.js for code highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>
