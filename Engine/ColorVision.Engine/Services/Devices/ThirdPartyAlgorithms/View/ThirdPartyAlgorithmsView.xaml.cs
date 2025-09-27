@@ -41,8 +41,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
             InitializeComponent();
         }
 
-        private NetFileUtil netFileUtil;
-
         public static ViewThirdPartyAlgorithmsConfig Config => ViewThirdPartyAlgorithmsConfig.Instance;
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -59,20 +57,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
             }
             listView1.ItemsSource = ViewResults;
 
-            netFileUtil = new NetFileUtil();
-            netFileUtil.handler += NetFileUtil_handler;
         }
 
-        private void NetFileUtil_handler(object sender, NetFileEvent arg)
-        {
-            if (arg.Code == 0 && arg.FileData.data != null)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    OpenImage(arg.FileData);
-                });
-            }
-        }
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 

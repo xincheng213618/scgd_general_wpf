@@ -13,15 +13,39 @@ using System.Windows;
 
 namespace ColorVision.Solution.V
 {
+    /// <summary>
+    /// Interface defining the contract for visual objects in the solution explorer
+    /// </summary>
     public interface IObject
     {
+        /// <summary>
+        /// Parent object in the hierarchy
+        /// </summary>
         public VObject Parent { get; set; }
+        
+        /// <summary>
+        /// Collection of child visual objects
+        /// </summary>
         public ObservableCollection<VObject> VisualChildren { get; set; }
+        
+        /// <summary>
+        /// Adds a child object to the visual hierarchy
+        /// </summary>
+        /// <param name="vObject">Child object to add</param>
         public abstract void AddChild(VObject vObject);
+        
+        /// <summary>
+        /// Removes a child object from the visual hierarchy
+        /// </summary>
+        /// <param name="vObject">Child object to remove</param>
         public abstract void RemoveChild(VObject vObject);
     }
 
 
+    /// <summary>
+    /// Base class for all visual objects in the solution explorer.
+    /// Provides common functionality for tree view items including commands, menus, and properties.
+    /// </summary>
     [DataContract]
     public class VObject : INotifyPropertyChanged, IObject
     {
@@ -76,6 +100,7 @@ namespace ColorVision.Solution.V
         public RelayCommand RemoveChildrenCommand { get; set; }
         public RelayCommand OpenCommand { get; set; }
         public RelayCommand DeleteCommand { get; set; }
+        public RelayCommand CopyFullPathCommand { get; set; }
 
         public RelayCommand PropertyCommand { get; set; }
 
@@ -93,12 +118,20 @@ namespace ColorVision.Solution.V
         public VObject()
         {
             VisualChildren = new ObservableCollection<VObject>() { };
-            OpenCommand = new RelayCommand((s) => Open());
             MenuItemMetadatas = new List<MenuItemMetadata>();
-            DeleteCommand = new RelayCommand(s =>Delete());
-            PropertyCommand = new RelayCommand(s => ShowProperty());
             ContextMenu = new ContextMenu();
             ContextMenu.Initialized += (s, e) => { InitMenuItem(); InitContextMenu(); };
+        }
+
+        /// <summary>
+        /// Initialize commands and event handlers. Called after constructor to avoid heavy constructor.
+        /// </summary>
+        public virtual void Initialize()
+        {
+            OpenCommand = new RelayCommand((s) => Open());
+            DeleteCommand = new RelayCommand(s => Delete());
+            PropertyCommand = new RelayCommand(s => ShowProperty());
+            CopyFullPathCommand = new RelayCommand(s => CopyFullPath(), s => !string.IsNullOrEmpty(FullPath));
         }
 
         public virtual void InitContextMenu()
@@ -169,6 +202,7 @@ namespace ColorVision.Solution.V
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Paste", Order = 102, Command = ApplicationCommands.Paste, Header = UI.Properties.Resources.MenuPaste, Icon =MenuItemIcon.TryFindResource("DIPaste"), InputGestureText = "Crtl+V" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Delete", Order = 103, Command = ApplicationCommands.Delete, Header = UI.Properties.Resources.MenuDelete,Icon = MenuItemIcon.TryFindResource("DIDelete"), InputGestureText = "Del" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ReName", Order = 104, Command = Commands.ReName, Header = UI.Properties.Resources.MenuRename ,Icon = MenuItemIcon.TryFindResource("DIRename"), InputGestureText = "F2" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = "复制完整路径", Icon = MenuItemIcon.TryFindResource("DICopy") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = PropertyCommand, Header = ColorVision.Solution.Properties.Resources.MenuProperty, Icon = MenuItemIcon.TryFindResource("DIProperty") });
 
         }
@@ -202,6 +236,54 @@ namespace ColorVision.Solution.V
         public virtual void Open()
         {
 
+        }
+
+        public virtual void CopyFullPath()
+        {
+            if (!string.IsNullOrEmpty(FullPath))
+            {
+                Common.NativeMethods.Clipboard.SetText(FullPath);
+            }
+        }
+
+        /// <summary>
+        /// Log an operation for tracking purposes
+        /// </summary>
+        /// <param name="message">Operation message</param>
+        protected virtual void LogOperation(string message)
+        {
+            // TODO: Implement proper logging using a logging framework
+            System.Diagnostics.Debug.WriteLine($"[VObject] {DateTime.Now:yyyy-MM-dd HH:mm:ss} INFO: {message}");
+        }
+
+        /// <summary>
+        /// Log an error for tracking purposes
+        /// </summary>
+        /// <param name="message">Error message</param>
+        /// <param name="exception">Exception details</param>
+        protected virtual void LogError(string message, Exception? exception = null)
+        {
+            // TODO: Implement proper logging using a logging framework
+            var fullMessage = exception != null ? $"{message}\nException: {exception}" : message;
+            System.Diagnostics.Debug.WriteLine($"[VObject] {DateTime.Now:yyyy-MM-dd HH:mm:ss} ERROR: {fullMessage}");
+        }
+
+        /// <summary>
+        /// Show user-friendly error message
+        /// </summary>
+        /// <param name="message">User-friendly error message</param>
+        protected virtual void ShowUserError(string message)
+        {
+            MessageBox.Show(message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+
+        /// <summary>
+        /// Show user-friendly information message
+        /// </summary>
+        /// <param name="message">Information message</param>
+        protected virtual void ShowUserInfo(string message)
+        {
+            MessageBox.Show(message, "提示", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         public virtual void Copy()

@@ -7,12 +7,7 @@ namespace ColorVision.Solution
 {
     public class SolutionManagerInitializer : InitializerBase
     {
-        private readonly IMessageUpdater log;
-
-        public SolutionManagerInitializer(IMessageUpdater messageUpdater)
-        {
-            log = messageUpdater;
-        }
+        public SolutionManagerInitializer() { }
 
         public override string Name => nameof(SolutionManagerInitializer);
 
@@ -31,7 +26,6 @@ namespace ColorVision.Solution
             {
                 parser.SetValue("solutionpath",input);
             }
-
 
             var solutionpath = parser.GetValue("solutionpath");
 

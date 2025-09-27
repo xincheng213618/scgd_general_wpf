@@ -40,7 +40,11 @@
                                 </LinearGradientBrush>
                             </Button.Background>
                         </Button>
-                        <TextBlock Text="{x:Static resx:Resources.Create_an_account}" HorizontalAlignment="Center"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                        <TextBlock HorizontalAlignment="Center"  Foreground="{DynamicResource GlobalTextBrush}">
+                            <Hyperlink Click="RegisterHyperlink_Click" ToolTip="注册新账户">
+                                <Run Text="{x:Static resx:Resources.Create_an_account}" />
+                            </Hyperlink>
+                        </TextBlock>
                     </StackPanel>
 
                     

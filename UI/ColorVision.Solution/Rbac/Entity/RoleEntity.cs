@@ -1,8 +1,10 @@
 ﻿using SqlSugar;
+using System;
 
 namespace ColorVision.Rbac
 {
     [SugarTable("sys_role")]
+    [SugarIndex("uidx_sys_role_code", nameof(Code), OrderByType.Asc, true)]
     public class RoleEntity
     {
         [SugarColumn(IsPrimaryKey = true, IsIdentity = true, ColumnName = "id")]
@@ -22,5 +24,10 @@ namespace ColorVision.Rbac
 
         [SugarColumn(ColumnName = "is_delete")]
         public bool? IsDelete { get; set; } = false;
+
+        [SugarColumn(ColumnName = "created_at", IsNullable = true)]
+        public DateTimeOffset? CreatedAt { get; set; } = DateTimeOffset.Now;
+        [SugarColumn(ColumnName = "updated_at", IsNullable = true)]
+        public DateTimeOffset? UpdatedAt { get; set; } = DateTimeOffset.Now;
     }
 }

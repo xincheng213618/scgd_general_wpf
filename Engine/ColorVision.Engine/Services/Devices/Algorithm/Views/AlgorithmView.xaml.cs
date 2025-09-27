@@ -47,8 +47,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             InitializeComponent();
         }
 
-        private NetFileUtil netFileUtil;
-
         public ViewAlgorithmConfig Config => ViewAlgorithmConfig.Instance;
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -67,9 +65,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
             listView1.ItemsSource = ViewResults;
-
-            netFileUtil = new NetFileUtil();
-            netFileUtil.handler += NetFileUtil_handler;
 
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
@@ -90,16 +85,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         }
 
 
-        private void NetFileUtil_handler(object sender, NetFileEvent arg)
-        {
-            if (arg.Code == 0 && arg.FileData.data != null)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    OpenImage(arg.FileData);
-                });
-            }
-        }
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 

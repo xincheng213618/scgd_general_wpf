@@ -63,42 +63,8 @@ namespace ColorVision.Engine.Services.PhyCameras
             ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
                                               select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
 
-            void ComboxCameraModeSelectionChanged()
-            {
-                if (EditConfig.CameraMode == CameraMode.LV_MODE)
-                {
-                    ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
-                                                      where e1 != ImageChannel.Three
-                                                      select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
-                    EditConfig.CFW.IsUseCFW = false;
-                    EditConfig.Channel = ImageChannel.One;
-
-                }
-                else if (EditConfig.CameraMode == CameraMode.BV_MODE)
-                {
-                    ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
-                                                      where e1 != ImageChannel.One
-                                                      select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
-                    EditConfig.CFW.IsUseCFW = false;
-                    EditConfig.Channel = ImageChannel.Three;
-                }
-                else if (EditConfig.CameraMode == CameraMode.CV_MODE)
-                {
-                    ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
-                                                      where e1 != ImageChannel.One
-                                                      select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
-                    EditConfig.Channel = ImageChannel.Three;
-                    EditConfig.CFW.IsUseCFW = true;
-                }
-                else
-                {
-                    ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
-                                                      select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
-                }
-            }
-
-            ComboxCameraMode.SelectionChanged += (s, e) => ComboxCameraModeSelectionChanged();
-            ComboxCameraModeSelectionChanged();
+            ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
+                                              select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
 
             var ImageChannelTypeList = new[]{
                  new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_X, "Channel_R"),

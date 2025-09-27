@@ -389,6 +389,82 @@ namespace ColorVision.UI
             }
         }
 
+        public void Save<T1>() where T1 : IConfig
+        {
+            var type = typeof(T1);
+            var configName = type.Name;
+
+            if (Configs == null)
+            {
+                Configs = new Dictionary<Type, IConfig>();
+            }
+
+            // Ensure the config instance exists (will load or create default)
+            var configInstance = GetRequiredService<T1>();
+
+            JObject jObject = new JObject();
+            if (File.Exists(ConfigFilePath))
+            {
+                try
+                {
+                    jObject = JObject.Parse(File.ReadAllText(ConfigFilePath));
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                    // If parse fails, start with a clean object to avoid corrupt carry-over
+                    jObject = new JObject();
+                }
+            }
+
+            void Persist()
+            {
+                if (configInstance is IConfigSecure secure)
+                {
+                    secure.Encryption();
+                    jObject[configName] = JToken.FromObject(configInstance, JsonSerializer.Create(JsonSerializerSettings));
+                    secure.Decrypt();
+                }
+                else
+                {
+                    jObject[configName] = JToken.FromObject(configInstance, JsonSerializer.Create(JsonSerializerSettings));
+                }
+            }
+
+            try
+            {
+                if (Application.Current == null)
+                {
+                    Persist();
+                }
+                else if (Application.Current.Dispatcher.CheckAccess())
+                {
+                    Persist();
+                }
+                else
+                {
+                    Application.Current.Dispatcher.Invoke(Persist);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error($"保存单个配置 {configName} 失败", ex);
+                return;
+            }
+
+            try
+            {
+                using (StreamWriter file = File.CreateText(ConfigFilePath))
+                using (JsonTextWriter writer = new JsonTextWriter(file))
+                {
+                    jObject.WriteTo(writer);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error($"写入配置文件 {ConfigFilePath} 失败", ex);
+            }
+        }
     }
 
 }

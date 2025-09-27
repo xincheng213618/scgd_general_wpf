@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.UI;
+using ColorVision.UI.CUDA;
+using log4net;
 using System;
 using System.IO;
 using System.ServiceProcess;
@@ -11,13 +13,7 @@ namespace ColorVision.Engine
 {
     public class MySqlInitializer : InitializerBase
     {
-
-        private readonly IMessageUpdater _messageUpdater;
-
-        public MySqlInitializer(IMessageUpdater messageUpdater)
-        {
-            _messageUpdater = messageUpdater;
-        }
+        private static readonly ILog log = LogManager.GetLogger(typeof(MySqlInitializer));
         public override string Name => nameof(MySqlInitializer);
         public override int Order => 1;
 
@@ -25,10 +21,10 @@ namespace ColorVision.Engine
         {
             if (MySqlSetting.Instance.IsUseMySql)
             {
-                _messageUpdater.Update("正在检测MySql数据库连接情况");
+                log.Info("正在检测MySql数据库连接情况");
                 bool isConnect = await MySqlControl.GetInstance().Connect();
 
-                _messageUpdater.Update($"MySql数据库连接{(MySqlControl.GetInstance().IsConnect ? Properties.Resources.Success : Properties.Resources.Failure)}");
+                log.Info($"MySql数据库连接{(MySqlControl.GetInstance().IsConnect ? Properties.Resources.Success : Properties.Resources.Failure)}");
 
                 if (!isConnect)
                 {
@@ -40,7 +36,7 @@ namespace ColorVision.Engine
                             try
                             {
                                 var status = serviceController.Status;
-                                _messageUpdater.Update($"检测服务，状态{status}，正在尝试启动服务");
+                                log.Info($"检测服务，状态{status}，正在尝试启动服务");
                                 if (Tool.IsAdministrator())
                                 {
                                     serviceController.Start();
@@ -61,7 +57,7 @@ namespace ColorVision.Engine
                                 // 服务不存在
                                 if (File.Exists(MySqlLocalConfig.Instance.MysqldPath))
                                 {
-                                    _messageUpdater.Update("MySQL服务未安装，正在尝试手动安装MySQL服务。");
+                                    log.Info("MySQL服务未安装，正在尝试手动安装MySQL服务。");
 
                                     string cmd = $"{MySqlLocalConfig.Instance.MysqldPath} --install MySQL&&net start MySQL";
                                     if (Tool.ExecuteCommandAsAdmin(cmd))
@@ -74,7 +70,7 @@ namespace ColorVision.Engine
                         }
                         catch (Exception ex)
                         {
-                            _messageUpdater.Update(ex.Message);
+                            log.Error(ex.Message);
                         }
                     }
                     Application.Current.Dispatcher.Invoke(() =>

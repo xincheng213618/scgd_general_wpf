@@ -1,7 +1,10 @@
 ﻿#pragma warning disable
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
+using ColorVision.Engine.Templates;
 using ColorVision.UI;
+using log4net;
+using log4net.Util;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -62,12 +65,9 @@ namespace ColorVision.Engine.Services.RC
 
     public class RCInitializer : InitializerBase
     {
-        private readonly IMessageUpdater _messageUpdater;
+        private static readonly ILog log = LogManager.GetLogger(typeof(TemplateInitializer));
 
-        public RCInitializer(IMessageUpdater messageUpdater)
-        {
-            _messageUpdater = messageUpdater;
-        }
+
         public override string Name => nameof(RCInitializer);
         public override IEnumerable<string> Dependencies => new List<string>() { nameof(MqttInitializer) };
         public override int Order => 4;
@@ -86,11 +86,11 @@ namespace ColorVision.Engine.Services.RC
         {
             if (!RCSetting.Instance.IsUseRCService)
             {
-                _messageUpdater.Update("跳过注册中心连接");
+                log.Info("跳过注册中心连接");
                 return;
             }
 
-            _messageUpdater.Update("正在尝试连接注册中心");
+            log.Info("正在尝试连接注册中心");
             bool isConnect = await MqttRCService.GetInstance().Connect();
             if (isConnect)
             {
@@ -107,7 +107,7 @@ namespace ColorVision.Engine.Services.RC
                 try
                 {
                     var status = serviceController.Status; // 如果服务不存在会抛出异常
-                    _messageUpdater.Update("检测到本地注册中心配置, 正在尝试启动");
+                    log.Info("检测到本地注册中心配置, 正在尝试启动");
 
                     if (status == ServiceControllerStatus.Stopped || status == ServiceControllerStatus.Paused)
                     {
@@ -120,7 +120,7 @@ namespace ColorVision.Engine.Services.RC
                         {
                             if (!Tool.ExecuteCommandAsAdmin("net start RegistrationCenterService"))
                             {
-                                _messageUpdater.Update("以管理员权限启动 RegistrationCenterService 服务失败。");
+                                log.Info("以管理员权限启动 RegistrationCenterService 服务失败。");
                                 ShowManualConnectDialog();
                                 return;
                             }
@@ -128,7 +128,7 @@ namespace ColorVision.Engine.Services.RC
                     }
                     else if (status == ServiceControllerStatus.Running)
                     {
-                        _messageUpdater.Update("RegistrationCenterService 服务已在运行。");
+                        log.Info("RegistrationCenterService 服务已在运行。");
                     }
 
                     isConnect = await MqttRCService.GetInstance().Connect();
@@ -164,7 +164,7 @@ namespace ColorVision.Engine.Services.RC
                             }
                             if (!Tool.ExecuteCommandAsAdmin(creatrcmd))
                             {
-                                _messageUpdater.Update("创建服务失败");
+                                log.Info("创建服务失败");
                             }
                         }
                         catch (Exception ex)
@@ -174,7 +174,7 @@ namespace ColorVision.Engine.Services.RC
 
                         if (!Tool.ExecuteCommandAsAdmin("net start RegistrationCenterService"))
                         {
-                            _messageUpdater.Update("以管理员权限启动 RegistrationCenterService 服务失败。");
+                            log.Info("以管理员权限启动 RegistrationCenterService 服务失败。");
                             ShowManualConnectDialog();
                             return;
                         }
@@ -183,16 +183,14 @@ namespace ColorVision.Engine.Services.RC
                     }
 
 
-                    _messageUpdater.Update("未检测到 RegistrationCenterService 服务，请确认已正确安装。");
+                    log.Info("未检测到 RegistrationCenterService 服务，请确认已正确安装。");
                     ShowManualConnectDialog();
                     return;
                 }
             }
             catch (Exception ex)
             {
-
-
-                _messageUpdater.Update("查找服务时异常: " + ex.Message);
+                log.Error(ex);
                 ShowManualConnectDialog();
                 return;
             }

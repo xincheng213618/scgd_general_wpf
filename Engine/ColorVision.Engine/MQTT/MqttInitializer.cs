@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.UI;
+using log4net;
 using System;
 using System.ServiceProcess;
 using System.Threading.Tasks;
@@ -9,38 +10,34 @@ namespace ColorVision.Engine.MQTT
 {
     public class MqttInitializer : InitializerBase
     {
-        private readonly IMessageUpdater _messageUpdater;
+        private static readonly ILog log = LogManager.GetLogger(typeof(MqttInitializer));
 
-        public MqttInitializer(IMessageUpdater messageUpdater)
-        {
-            _messageUpdater = messageUpdater;
-        }
+        public MqttInitializer() { }
         public override string Name => nameof(MqttInitializer);
         public override int Order => 2;
         public override async Task InitializeAsync()
         {
             if (!MQTTSetting.Instance.IsUseMQTT)
             {
-                _messageUpdater.Update("已经跳过MQTT服务器连接");
+                log.Info("已经跳过MQTT服务器连接");
                 return;
             }
-            _messageUpdater.Update("正在检测MQTT服务器连接情况");
-
+            log.Info("正在检测MQTT服务器连接情况");
 
             bool isConnect = await MQTTControl.GetInstance().Connect();
-            _messageUpdater.Update($"MQTT服务器连接{(MQTTControl.GetInstance().IsConnect ? Properties.Resources.Success : Properties.Resources.Failure)}");
+            log.Info($"MQTT服务器连接{(MQTTControl.GetInstance().IsConnect ? Properties.Resources.Success : Properties.Resources.Failure)}");
             if (isConnect) return;
 
             if (MQTTControl.Config.Host == "127.0.0.1" || MQTTControl.Config.Host == "localhost")
             {
-                _messageUpdater.Update("检测到配置本机服务，正在尝试查找本机服务mosquitto");
+                log.Info("检测到配置本机服务，正在尝试查找本机服务mosquitto");
                 try
                 {
                     ServiceController serviceController = new ServiceController("Mosquitto Broker");
                     try
                     {
-                        var status = serviceController.Status; // 会抛异常: 服务不存在
-                        _messageUpdater.Update($"检测服务mosquitto，状态 {status}，正在尝试启动服务");
+                        var status = serviceController.Status;
+                        log.Info($"检测服务mosquitto，状态 {status}，正在尝试启动服务");
 
                         if (status == ServiceControllerStatus.Stopped || status == ServiceControllerStatus.Paused)
                         {
@@ -52,14 +49,14 @@ namespace ColorVision.Engine.MQTT
                             {
                                 if (!Tool.ExecuteCommandAsAdmin("net start mosquitto"))
                                 {
-                                    _messageUpdater.Update("以管理员权限启动 mosquitto 服务失败。");
+                                    log.Info("以管理员权限启动 mosquitto 服务失败。");
                                     return;
                                 }
                             }
                         }
                         else if (status == ServiceControllerStatus.Running)
                         {
-                            _messageUpdater.Update("mosquitto 服务已在运行。");
+                            log.Info("mosquitto 服务已在运行。");
                         }
 
                         isConnect = await MQTTControl.GetInstance().Connect();
@@ -67,12 +64,12 @@ namespace ColorVision.Engine.MQTT
                     }
                     catch (InvalidOperationException)
                     {
-                        _messageUpdater.Update("未检测到 Mosquitto Broker 服务，请确认已正确安装。");
+                        log.Info("未检测到 Mosquitto Broker 服务，请确认已正确安装。");
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
-                    _messageUpdater.Update(ex.Message);
+                    log.Info(ex.Message);
                 }
             }
             Application.Current.Dispatcher.Invoke(() =>

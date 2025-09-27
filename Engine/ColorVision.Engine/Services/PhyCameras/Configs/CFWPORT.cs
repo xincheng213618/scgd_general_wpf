@@ -62,9 +62,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public double NDMinExpTime { get => _NDMinExpTime; set { _NDMinExpTime = value; OnPropertyChanged(); } }
         private double _NDMinExpTime;
 
-        public int[] NDRate { get; set; } = System.Array.Empty<int>();
+        public List<int> NDRate { get; set; } = new List<int>();
 
-        public string[] NDCaliNameGroups { get; set; } = System.Array.Empty<string>();
+        public List<string> NDCaliNameGroups { get; set; } = new List<string>();
 
 
         public string NDRatesJson
@@ -73,7 +73,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
             set
             {
                 if (!string.IsNullOrEmpty(value))
-                    NDRate = JsonConvert.DeserializeObject<int[]>(value);
+                    NDRate = JsonConvert.DeserializeObject<List<int>>(value);
             }
         }
 
@@ -83,7 +83,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
             set
             {
                 if (!string.IsNullOrEmpty(value))
-                    NDCaliNameGroups = JsonConvert.DeserializeObject<string[]>(value);
+                    NDCaliNameGroups = JsonConvert.DeserializeObject<List<string>>(value);
             }
         }
 

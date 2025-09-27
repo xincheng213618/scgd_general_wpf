@@ -76,6 +76,7 @@ namespace ColorVision
         public static void Start()
         {
             _stopwatch = Stopwatch.StartNew();
+
             Hierarchy = (Hierarchy)LogManager.GetRepository();
             InitAppender = new InitAppender();
             InitAppender.Layout = new PatternLayout("%date{HH:mm:ss;fff} %-5level %message%newline");
@@ -85,8 +86,6 @@ namespace ColorVision
 
         public static void StopAndReport()
         {
-            Hierarchy.Root.RemoveAppender(InitAppender);
-            log4net.Config.BasicConfigurator.Configure(Hierarchy);
             if (_stopwatch != null)
             {
                 _stopwatch.Stop();

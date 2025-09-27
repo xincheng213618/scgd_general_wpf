@@ -22,12 +22,7 @@ namespace ColorVision.Engine.Templates
     /// </summary>
     public class TemplateInitializer : InitializerBase
     {
-        private readonly IMessageUpdater _messageUpdater;
-
-        public TemplateInitializer(IMessageUpdater messageUpdater)
-        {
-            _messageUpdater = messageUpdater;
-        }
+        private static readonly ILog log = LogManager.GetLogger(typeof(TemplateInitializer));
 
         public override int Order => 4;
 
@@ -37,7 +32,7 @@ namespace ColorVision.Engine.Templates
 
         public override async Task InitializeAsync()
         {
-            _messageUpdater.Update("正在加载模板");
+            log.Info("正在加载模板");
             Application.Current.Dispatcher.Invoke(() => TemplateControl.GetInstance());
         }
     }

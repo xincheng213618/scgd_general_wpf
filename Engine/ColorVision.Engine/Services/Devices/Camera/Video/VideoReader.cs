@@ -2,7 +2,6 @@
 using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
-using ColorVision.ImageEditor.Draw.Text;
 using ColorVision.UI;
 using log4net;
 using System;

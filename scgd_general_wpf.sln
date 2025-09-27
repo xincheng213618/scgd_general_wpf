@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.35906.104 d17.14
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11018.127 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision", "ColorVision\ColorVision.csproj", "{AD038578-6456-48BF-9379-151DCBE9DBF5}"
 EndProject
@@ -99,6 +99,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectLUX", "Projects\ProjectLUX\ProjectLUX.csproj", "{A2417BA3-DE1D-1C88-213C-6B3DA76BEC5D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pattern", "Plugins\Pattern\Pattern.csproj", "{C56ADCEB-6F3D-43D2-8398-182F545B82B9}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_helper_test", "Test\opencv_helper_test\opencv_helper_test.vcxproj", "{D19D50AD-3762-4AA4-8883-9660EC833B9B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -602,6 +604,22 @@ Global
 		{C56ADCEB-6F3D-43D2-8398-182F545B82B9}.Release|x64.Build.0 = Release|x64
 		{C56ADCEB-6F3D-43D2-8398-182F545B82B9}.Release|x86.ActiveCfg = Release|x64
 		{C56ADCEB-6F3D-43D2-8398-182F545B82B9}.Release|x86.Build.0 = Release|x64
+		{D19D50AD-3762-4AA4-8883-9660EC833B9B}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{D19D50AD-3762-4AA4-8883-9660EC833B9B}.Debug|Any CPU.Build.0 = Debug|x64
+		{D19D50AD-3762-4AA4-8883-9660EC833B9B}.Debug|ARM64.ActiveCfg = Debug|x64
+		{D19D50AD-3762-4AA4-8883-9660EC833B9B}.Debug|ARM64.Build.0 = Debug|x64
+		{D19D50AD-3762-4AA4-8883-9660EC833B9B}.Debug|x64.ActiveCfg = Debug|x64
+		{D19D50AD-3762-4AA4-8883-9660EC833B9B}.Debug|x64.Build.0 = Debug|x64
+		{D19D50AD-3762-4AA4-8883-9660EC833B9B}.Debug|x86.ActiveCfg = Debug|Win32
+		{D19D50AD-3762-4AA4-8883-9660EC833B9B}.Debug|x86.Build.0 = Debug|Win32
+		{D19D50AD-3762-4AA4-8883-9660EC833B9B}.Release|Any CPU.ActiveCfg = Release|x64
+		{D19D50AD-3762-4AA4-8883-9660EC833B9B}.Release|Any CPU.Build.0 = Release|x64
+		{D19D50AD-3762-4AA4-8883-9660EC833B9B}.Release|ARM64.ActiveCfg = Release|x64
+		{D19D50AD-3762-4AA4-8883-9660EC833B9B}.Release|ARM64.Build.0 = Release|x64
+		{D19D50AD-3762-4AA4-8883-9660EC833B9B}.Release|x64.ActiveCfg = Release|x64
+		{D19D50AD-3762-4AA4-8883-9660EC833B9B}.Release|x64.Build.0 = Release|x64
+		{D19D50AD-3762-4AA4-8883-9660EC833B9B}.Release|x86.ActiveCfg = Release|Win32
+		{D19D50AD-3762-4AA4-8883-9660EC833B9B}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -636,9 +654,10 @@ Global
 		{4B33902B-4B3B-C996-E3A1-70FAF9CA5511} = {BF3D024B-583C-403A-A213-BFC0D1BED4F0}
 		{A2417BA3-DE1D-1C88-213C-6B3DA76BEC5D} = {7D74447C-5191-4C1D-BEB2-B537366B980D}
 		{C56ADCEB-6F3D-43D2-8398-182F545B82B9} = {3978403E-55E4-4AAC-8978-1D39651BEA7C}
+		{D19D50AD-3762-4AA4-8883-9660EC833B9B} = {17024679-C50D-4948-A0F7-4A67B6EFBEA8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_AutoCreateNewLanguageFiles = True
 		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
+		RESX_AutoCreateNewLanguageFiles = True
 	EndGlobalSection
 EndGlobal

@@ -1,7 +1,10 @@
 ﻿#pragma warning disable 
 using ColorVision.Rbac.Dtos;
+using ColorVision.Rbac.Security;
 using SqlSugar;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,12 +16,61 @@ namespace ColorVision.Rbac.Services
 
         // 使用乐观并发：传入原始的 UpdatedAt 作为 expected，用于防止覆盖他人修改
         Task UpdateUserDetailAsync(UserDetailDto dto, DateTimeOffset expectedUpdatedAt, CancellationToken ct = default);
+        Task<bool> CreateUserAsync(string username, string password, string? remark = null, IEnumerable<int>? roleIds = null, CancellationToken ct = default);
+        Task<List<RoleDto>> GetAllRolesAsync(CancellationToken ct = default);
     }
 
     public class UserService : IUserService
     {
         private readonly ISqlSugarClient _db;
         public UserService(ISqlSugarClient db) { _db = db; }
+
+        public async Task<bool> CreateUserAsync(string username, string password, string? remark = null, IEnumerable<int>? roleIds = null, CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrEmpty(password)) return false;
+            username = username.Trim();
+
+            if (await _db.Queryable<UserEntity>().AnyAsync(u => u.Username == username, ct))
+                return false;
+
+            var utcNow = DateTimeOffset.UtcNow;
+            var user = new UserEntity
+            {
+                Username = username,
+                Password = PasswordHasher.Hash(password),
+                IsEnable = true,
+                IsDelete = false,
+                Remark = remark ?? string.Empty,
+                CreatedAt = utcNow,
+                UpdatedAt = utcNow
+            };
+            var userId = await _db.Insertable(user).ExecuteReturnIdentityAsync();
+
+            // 详情表
+            await _db.Insertable(new UserDetailEntity
+            {
+                UserId = userId,
+                CreatedAt = utcNow,
+                UpdatedAt = utcNow
+            }).ExecuteCommandAsync();
+
+            if (roleIds != null)
+            {
+                var list = roleIds.Distinct().Select(rid => new UserRoleEntity { UserId = userId, RoleId = rid }).ToList();
+                if (list.Count > 0)
+                    await _db.Insertable(list).ExecuteCommandAsync();
+            }
+            return true;
+        }
+
+        public async Task<List<RoleDto>> GetAllRolesAsync(CancellationToken ct = default)
+        {
+            var roles = await _db.Queryable<RoleEntity>()
+                .Where(r => r.IsDelete != true && r.IsEnable)
+                .Select(r => new RoleDto { Id = r.Id, Name = r.Name })
+                .ToListAsync(ct);
+            return roles;
+        }
 
         // ... 其他方法省略
 

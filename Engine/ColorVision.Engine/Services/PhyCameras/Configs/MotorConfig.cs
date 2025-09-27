@@ -137,7 +137,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
         [DisplayName("相机联动")]
         public bool IsCameraLinkage { get => _IsCameraLinkage; set { _IsCameraLinkage = value; OnPropertyChanged(); } }
-        private bool _IsCameraLinkage = true;
+        private bool _IsCameraLinkage;
 
 
         [DisplayName("VID")]

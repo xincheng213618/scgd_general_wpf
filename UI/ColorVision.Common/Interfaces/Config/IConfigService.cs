@@ -6,6 +6,8 @@
         void SaveConfigs();
         void LoadConfigs();
 
+        void Save<T1>() where T1 : IConfig;
+
     }
 
 

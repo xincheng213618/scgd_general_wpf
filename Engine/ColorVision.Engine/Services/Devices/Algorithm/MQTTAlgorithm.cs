@@ -19,7 +19,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
     public class MQTTAlgorithm : MQTTDeviceService<ConfigAlgorithm>
     {
         public DeviceAlgorithm Device { get; set; }
-        private NetFileUtil netFileUtil = new NetFileUtil();
 
 
         public MQTTAlgorithm(DeviceAlgorithm device, ConfigAlgorithm Config) : base(Config)
@@ -27,18 +26,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             Device = device;
             MsgReturnReceived += MQTTAlgorithm_MsgReturnReceived;   
             DeviceStatus = DeviceStatusType.Unknown;
-            netFileUtil.handler += NetFileUtil_handler;
         }
-        private void NetFileUtil_handler(object sender, NetFileEvent arg)
-        {
-            if (arg.Code == 0 && arg.FileData.data != null)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    Device.View.OpenImage(arg.FileData);
-                });
-            }
-        }
+
 
         private void MQTTAlgorithm_MsgReturnReceived(MsgReturn msg)
         {
@@ -87,7 +76,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(msg.Data));
                     if (pm_dl != null)
                     {
-                        if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, (CVType)FileExtType.CIE);
                     }
                     break;
                 default:

@@ -475,5 +475,38 @@ namespace ColorVision.FileIO
             }
             return  -2;
         }
+
+
+        public static CVCIEFile OpenLocalCVFile(string fileName)
+        {
+            CVType extType = CVType.Src;
+            if (Path.GetExtension(fileName).Contains("cvraw"))
+            {
+                extType = CVType.Raw;
+            }
+            else if (Path.GetExtension(fileName).Contains("cvcie"))
+            {
+                extType = CVType.CIE;
+            }
+            return OpenLocalCVFile(fileName, extType);
+        }
+
+        public static CVCIEFile OpenLocalCVFile(string fileName, CVType extType)
+        {
+            CVCIEFile fileInfo = new CVCIEFile();
+            if (extType == CVType.CIE)
+            {
+                CVFileUtil.ReadCVCIE(fileName, out fileInfo);
+            }
+            else if (extType == CVType.Raw)
+            {
+                CVFileUtil.ReadCVRaw(fileName, out fileInfo);
+            }
+            else if (extType == CVType.Src)
+            {
+                CVFileUtil.ReadCVRaw(fileName, out fileInfo);
+            }
+            return fileInfo;
+        }
     }
 }

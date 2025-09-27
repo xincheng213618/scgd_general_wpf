@@ -57,6 +57,7 @@ namespace ColorVision.ImageEditor
         public Gridline Gridline { get; set; }
         public ToolBarScaleRuler ToolBarScaleRuler { get; set; }
         public ToolReferenceLine ToolConcentricCircle { get; set; }
+        public TextManager TextManager { get; set; } // 新增
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
         public SelectEditorVisual SelectEditorVisual { get; set; }
         public StackPanel SlectStackPanel { get; set; } = new StackPanel();
@@ -81,49 +82,49 @@ namespace ColorVision.ImageEditor
 
         public ImageViewModel(ImageView Parent, ZoomboxSub zoombox, DrawCanvas drawCanvas)
         {
-            // 初始化属性
+            // ?????????
             this.ImageView = Parent;
             ZoomboxSub = zoombox;
             Image = drawCanvas;
             Config = new ImageViewConfig();
             ContextMenu = new ContextMenu();
 
-            // 初始化辅助类
+            // ???????????
             _transformOperations = new ImageTransformOperations(drawCanvas);
             _fileOperations = new ImageFileOperations(drawCanvas, Parent);
             _fullScreenMode = new ImageFullScreenMode(Parent);
 
-            // 注册上下文菜单提供程序
+            // ?????????????????
             RegisterContextMenuProviders();
             
-            // 初始化选择编辑器
+            // ???????????
             SelectEditorVisual = new SelectEditorVisual(this, drawCanvas, zoombox);
 
-            // 配置命令绑定
+            // ?????????
             SetupCommandBindings(drawCanvas);
-            // 创建命令
+            // ????????
             CreateCommands();
 
             _keyboardHandler = new ImageKeyboardHandler(Parent, this, ZoomboxSub, Config, ZoomInCommand, ZoomOutCommand);
 
-            // 设置鼠标和键盘处理
+            // ??????????????
             SetupInputHandling(drawCanvas);
 
-            // 初始化各种工具和管理器
+            // ?????????????????$
             InitializeTools(zoombox, drawCanvas);
 
 
 
-            // 设置上下文菜单
+            // ????????????
             _contextMenuManager = new ImageContextMenuManager(this, drawCanvas, ContextMenu, ContextMenuProviders);
             Image.ContextMenuOpening += _contextMenuManager.HandleContextMenuOpening;
             Image.ContextMenu = ContextMenu;
             ZoomboxSub.ContextMenu = ContextMenu;
 
-            // 设置布局更新处理
+            // ???ò?????????
             ZoomboxSub.LayoutUpdated += Zoombox1_LayoutUpdated;
 
-            // 初始化键盘处理器
+            // ?????????????$
         }
 
         double oldMax;
@@ -203,13 +204,13 @@ namespace ColorVision.ImageEditor
         {
             drawCanvas.PreviewMouseDown += (s, e) =>
             {
-                Keyboard.ClearFocus(); // 清除当前焦点
+                Keyboard.ClearFocus(); // ??????????
                 drawCanvas.Focus();
             };
             
             drawCanvas.PreviewKeyDown += (s, e) =>
             {
-                Keyboard.ClearFocus(); // 清除当前焦点
+                Keyboard.ClearFocus(); // ??????????
                 drawCanvas.Focus();
             };
             
@@ -231,30 +232,32 @@ namespace ColorVision.ImageEditor
             CircleManager = new CircleManager(this, zoombox, drawCanvas);
             RectangleManager = new RectangleManager(this, zoombox, drawCanvas);
             EraseManager = new EraseManager(this, zoombox, drawCanvas);
+            TextManager = new TextManager(this, zoombox, drawCanvas); // 初始化 TextManager
         }
 
         private void CreateCommands()
         {
-            // 缩放命令
+            // ????????
             ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill(), a => Image != null && Image.Source != null);
             ZoomUniformCommand = new RelayCommand(a => ZoomboxSub.ZoomUniform(), a => Image != null && Image.Source != null);
             ZoomInCommand = new RelayCommand(a => ZoomboxSub.Zoom(1.25), a => Image != null && Image.Source != null);
             ZoomOutCommand = new RelayCommand(a => ZoomboxSub.Zoom(0.8), a => Image != null && Image.Source != null);
             ZoomNoneCommand = new RelayCommand(a => ZoomboxSub.ZoomNone(), a => Image != null && Image.Source != null);
 
-            // 图像操作命令
-            FlipHorizontalCommand = new RelayCommand(a => _transformOperations.FlipHorizontal(), a => Image != null && Image.Source != null);
+            // ??????????
+// ...existing code...
             FlipVerticalCommand = new RelayCommand(a => _transformOperations.FlipVertical(), a => Image != null && Image.Source != null);
             RotateLeftCommand = new RelayCommand(a => _transformOperations.RotateLeft());
             RotateRightCommand = new RelayCommand(a => _transformOperations.RotateRight());
             
-            // 文件操作命令
+            // ???????????
+// ...existing code...
             OpenImageCommand = new RelayCommand(a => OpenImage());
             SaveAsImageCommand = new RelayCommand(a => SaveAs(), a => Image != null && Image.Source != null);
             PrintImageCommand = new RelayCommand(a => Print(), a => Image != null && Image.Source != null);
             ClearImageCommand = new RelayCommand(a => ClearImage(), a => Image != null && Image.Source != null);
             
-            // 其他命令
+            // ????????
             PropertyCommand = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(ImageView), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
             FullCommand = new RelayCommand(a => MaxImage());
         }
@@ -286,7 +289,7 @@ namespace ColorVision.ImageEditor
         #region Properties with change notification
       
         /// <summary>
-        /// 当前的缩放分辨率
+        /// ?????????????
         /// </summary>
         public double ZoomRatio
         {
@@ -334,6 +337,7 @@ namespace ColorVision.ImageEditor
             RectangleManager?.Dispose();
             PolygonManager?.Dispose();
             BezierCurveManager?.Dispose();
+            TextManager?.Dispose();
             
             if (DrawingVisualLists != null)
             {

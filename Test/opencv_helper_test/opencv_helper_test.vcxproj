@@ -111,6 +111,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <BrowseInformation>true</BrowseInformation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -142,32 +143,7 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CrossLineChart.cpp" />
-    <ClCompile Include="DrawRotatedRect.cpp" />
-    <ClCompile Include="fourLinePair.cpp" />
-    <ClCompile Include="ImageCopyToCenter.cpp" />
-    <ClCompile Include="logoDetect.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="makeARTestPic.cpp" />
-    <ClCompile Include="makeBinocularFusionChart.cpp" />
-    <ClCompile Include="makechessPicture.cpp" />
-    <ClCompile Include="makechessPicture_SFR.cpp" />
-    <ClCompile Include="makeCrossLine.cpp" />
-    <ClCompile Include="makeGhostCicle.cpp" />
-    <ClCompile Include="makeGhostSquare.cpp" />
-    <ClCompile Include="makeGoerTekMTF_Chart.cpp" />
-    <ClCompile Include="makeGradiantPic.cpp" />
-    <ClCompile Include="makelinePair.cpp" />
-    <ClCompile Include="makePerioPicture.cpp" />
-    <ClCompile Include="makePurePic.cpp" />
-    <ClCompile Include="makeSFRpic.cpp" />
-    <ClCompile Include="makeVidPointChart.cpp" />
-    <ClCompile Include="makeVrTestPicture.cpp" />
-    <ClCompile Include="makeVRTestPic_AAC.cpp" />
-    <ClCompile Include="makeXimenziLinecpp.cpp" />
-    <ClCompile Include="make_9point_DistortionChart.cpp" />
     <ClCompile Include="opencv_helper_test.cpp" />
-    <ClCompile Include="Rotate.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="function.h" />

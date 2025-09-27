@@ -27,7 +27,7 @@ namespace ColorVision
     /// <summary>
     /// StartWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class StartWindow : Window, IMessageUpdater
+    public partial class StartWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(StartWindow));
         public StartWindow()
@@ -54,6 +54,8 @@ namespace ColorVision
             Hierarchy = (Hierarchy)LogManager.GetRepository();
             TextBoxAppender = new TextBoxAppender(logTextBox, new TextBox());
             TextBoxAppender.Layout = new PatternLayout("%date{HH:mm:ss;fff} %-5level %message%newline");
+            Hierarchy.Root.RemoveAppender(ProgramTimer.InitAppender);
+
             Hierarchy.Root.AddAppender(TextBoxAppender);
             log4net.Config.BasicConfigurator.Configure(Hierarchy);
 
@@ -81,7 +83,7 @@ namespace ColorVision
                 {
                     foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitializer).IsAssignableFrom(t) && !t.IsAbstract))
                     {
-                        if (Activator.CreateInstance(type, this) is IInitializer componentInitialize)
+                        if (Activator.CreateInstance(type) is IInitializer componentInitialize)
                         {
                             if (!skipNames.Contains(componentInitialize.Name))
                             {
@@ -238,12 +240,6 @@ namespace ColorVision
 
         }
 
-
-
-        public void Update(string message)
-        {
-            log.Info(message);
-        }
         public static string? GetTargetFrameworkVersion()
         {
             var assembly = Assembly.GetExecutingAssembly();

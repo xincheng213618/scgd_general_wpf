@@ -4,13 +4,26 @@ using System.IO;
 
 namespace ColorVision.Solution
 {
+    /// <summary>
+    /// Configuration class for editor manager settings.
+    /// Stores default editor mappings for different file extensions.
+    /// </summary>
     public class EditorManagerConfig : IConfig
     {
         public static EditorManagerConfig Instance => ConfigService.Instance.GetRequiredService<EditorManagerConfig>();
 
+        /// <summary>
+        /// Dictionary mapping file extensions to default editor type names
+        /// Key: file extension (e.g., ".cs"), Value: editor type full name
+        /// </summary>
         public Dictionary<string, string> DefaultEditors { get; set; } = new Dictionary<string, string>();
     }
 
+    /// <summary>
+    /// Manages editor registration and selection for different file types.
+    /// Supports automatic registration using attributes and provides methods to
+    /// get appropriate editors for files and folders.
+    /// </summary>
     public class EditorManager
     {
         public static EditorManager Instance { get; } = new EditorManager();
@@ -128,7 +141,7 @@ namespace ColorVision.Solution
             {
                 _defaultEditors[extLower] = editorType;
                 EditorManagerConfig.Instance.DefaultEditors[extLower] = editorType.FullName;
-                // 持久化逻辑略
+                ConfigService.Instance.Save<EditorManagerConfig>();
             }
         }
 

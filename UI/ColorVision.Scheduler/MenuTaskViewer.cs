@@ -1,5 +1,6 @@
 ﻿using ColorVision.UI;
 using ColorVision.UI.Menus;
+using Microsoft.VisualBasic.Logging;
 using System.Windows;
 
 namespace ColorVision.Scheduler
@@ -20,12 +21,6 @@ namespace ColorVision.Scheduler
 
     public class TaskViewerInitializer : InitializerBase
     {
-        private readonly IMessageUpdater log;
-
-        public TaskViewerInitializer(IMessageUpdater messageUpdater)
-        {
-            log = messageUpdater;
-        }
 
         public override string Name => nameof(TaskViewerInitializer);
 
@@ -33,7 +28,6 @@ namespace ColorVision.Scheduler
 
         public override async Task InitializeAsync()
         {
-            log.Update("初始化定时任务");
             QuartzSchedulerManager.GetInstance();
             await Task.Delay(0);
         }

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -34,13 +35,13 @@ namespace ColorVision.Update
             EditCommand = new RelayCommand(a => new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             OpenInExplorerCommand = new RelayCommand(a => Common.Utilities.PlatformHelper.Open("CHANGELOG.md"));
 
-            OpenInWeview2Command = new RelayCommand(a => 
+            OpenInWeview2Command = new RelayCommand(a =>
             {
                 if (File.Exists("CHANGELOG.md"))
                 {
                     string markdown = File.ReadAllText("CHANGELOG.md");
                     string html = Markdig.Markdown.ToHtml(markdown);
-                    new MarkdownViewWindow(html) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+                    new MarkdownViewWindow(html) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
                 }
             }
             );
@@ -59,7 +60,7 @@ namespace ColorVision.Update
     {
         public ObservableCollection<ChangeLogEntry> ChangeLogEntrys { get; set; }
 
-        public static ChangelogWindowConfig WindowConfig =>ConfigService.Instance.GetRequiredService<ChangelogWindowConfig>();
+        public static ChangelogWindowConfig WindowConfig => ConfigService.Instance.GetRequiredService<ChangelogWindowConfig>();
 
 
         public ChangelogWindow()
@@ -73,17 +74,7 @@ namespace ColorVision.Update
         {
             this.DataContext = WindowConfig;
 
-            string changelogPath = "CHANGELOG.md";
-            if (File.Exists(changelogPath))
-            {
-                string changelogContent = File.ReadAllText(changelogPath);
-                ChangeLogEntrys = Parse(changelogContent);
-                ChangeLogListView.ItemsSource = ChangeLogEntrys;
-            }
-            else
-            {
-                MessageBox.Show("无法找到更新记录");
-            }
+            LoadChangeLog();
 
             if (ChangeLogListView.View is GridView gridView)
             {
@@ -94,6 +85,29 @@ namespace ColorVision.Update
             }
         }
 
+        private void LoadChangeLog()
+        {
+            const string changelogPath = "CHANGELOG.md";
+            try
+            {
+                if (File.Exists(changelogPath))
+                {
+                    string changelogContent = File.ReadAllText(changelogPath);
+                    ChangeLogEntrys = Parse(changelogContent);
+                    ChangeLogListView.ItemsSource = ChangeLogEntrys;
+                }
+                else
+                {
+                    MessageBox.Show("无法找到更新记录");
+                    ChangeLogEntrys = new ObservableCollection<ChangeLogEntry>();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("读取更新记录失败: " + ex.Message);
+                ChangeLogEntrys = new ObservableCollection<ChangeLogEntry>();
+            }
+        }
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
@@ -142,7 +156,7 @@ namespace ColorVision.Update
             ChangeLogEntry currentEntry = null;
 
             foreach (var line in lines)
-            {
+                {
                 if (line.StartsWith("## [",StringComparison.CurrentCulture))
                 {
                     if (currentEntry != null)
@@ -157,7 +171,7 @@ namespace ColorVision.Update
                     currentEntry.ReleaseDate = DateTime.Parse(headerParts[1].Trim());
                 }
                 else if (currentEntry != null && Regex.IsMatch(line, @"^\d+\.", RegexOptions.CultureInvariant))
-                {
+                    {
                     currentEntry?.Changes.Add(line.Trim());
                 }
             }
@@ -186,21 +200,19 @@ namespace ColorVision.Update
                 {
                     ChangeLogListView.ItemsSource = ChangeLogEntrys;
                 }
-                else
+                else if (ChangeLogEntrys != null)
                 {
                     var keywords = textBox.Text.Split(Chars1, StringSplitOptions.RemoveEmptyEntries);
 
                     filteredResults = ChangeLogEntrys
-                        .OfType<ChangeLogEntry>()
-                        .Where(template => keywords.All(keyword =>
-                            template.Version.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
-                            template.ReleaseDate.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase)||
-                            template.ChangeLog.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase)
-                            ))
+                        .Where(entry => keywords.All(keyword =>
+                            (!string.IsNullOrEmpty(entry.Version) && entry.Version.Contains(keyword, StringComparison.OrdinalIgnoreCase)) ||
+                            entry.ReleaseDate.ToString("yyyy-MM-dd").Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                            entry.ChangeLog.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                        ))
                         .ToList();
 
                     ChangeLogListView.ItemsSource = filteredResults;
-
                 }
             }
         }
