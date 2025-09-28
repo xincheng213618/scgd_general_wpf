@@ -1,27 +1,17 @@
 ﻿using ColorVision.Common.Algorithms;
-using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Services.Devices.Camera;
-using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons;
-using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.FindCross;
 using ColorVision.Engine.Templates.Jsons.FOV2;
-using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
-using ColorVision.Engine.Templates.MTF;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Templates.POI.Image;
 using ColorVision.ImageEditor.Draw;
@@ -29,36 +19,26 @@ using ColorVision.Scheduler;
 using ColorVision.SocketProtocol;
 using ColorVision.Themes;
 using ColorVision.UI;
-using ColorVision.UI.Extension;
 using ColorVision.UI.LogImp;
 using CVCommCore.CVAlgorithm;
 using FlowEngineLib;
 using FlowEngineLib.Base;
-using LiveChartsCore.Kernel;
 using log4net;
-using log4net.Util;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using ProjectARVRPro;
 using ProjectARVRPro.PluginConfig;
 using ProjectARVRPro.Services;
 using Quartz;
-using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Net.Sockets;
-using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Linq;
 
 namespace ProjectARVRPro
 {
@@ -112,6 +92,7 @@ namespace ProjectARVRPro
         public static ObjectiveTestResultFix ObjectiveTestResultFix => FixManager.GetInstance().ObjectiveTestResultFix;
 
         public static ProcessManager ProcessManager => ProcessManager.GetInstance();
+        public ObservableCollection<ProcessMeta> ProcessMetas { get; } = ProcessManager.ProcessMetas;
 
         public ARVRWindow()
         {
@@ -626,77 +607,50 @@ namespace ProjectARVRPro
             result.CreateTime = DateTime.Now;
             result.Result = true;
 
-
-            if (result.Model.Contains("White51"))
+            // ===== 自定义 IProcess 分发逻辑开始 =====
+            try
             {
-                log.Info("正在解析White51的流程");
-
-                ObjectiveTestResult.FlowW51TestReslut = true;
-
-                var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
-                if (values.Count > 0)
+                var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
+                if (meta?.Process != null)
                 {
-                    result.FileName = values[0].FileUrl;
-                }
-                var AlgResultMasterlists = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
-                log.Info($"AlgResultMasterlists count {AlgResultMasterlists.Count}");
-                foreach (var AlgResultMaster in AlgResultMasterlists)
-                {
-                    if (AlgResultMaster.ImgFileType == ViewResultAlgType.FindLightArea)
+                    log.Info($"匹配到自定义流程 {meta.Name} -> {meta.ProcessTypeName}; 使用 IProcess 处理 {result.Model}");
+                    var ctx = new IProcessExecutionContext
                     {
-                        result.ViewReslutW51.AlgResultLightAreaModels = AlgResultLightAreaDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                        Batch = Batch,
+                        Result = result,
+                        ObjectiveTestResult = ObjectiveTestResult,
+                        ObjectiveTestResultFix = ObjectiveTestResultFix,
+                        RecipeConfig = recipeConfig,
+                        Logger = log
+                    };
+                    bool executed = false;
+                    try
+                    {
+                        executed = meta.Process.Execute(ctx);
                     }
-
-                    if (AlgResultMaster.ImgFileType == ViewResultAlgType.FOV)
+                    catch (Exception ex)
                     {
-                        List<DetailCommonModel> AlgResultModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
-                        if (AlgResultModels.Count == 1)
-                        {
-                            DFovView view1 = new DFovView(AlgResultModels[0]);
-
-                            view1.Result.result.D_Fov = view1.Result.result.D_Fov * ObjectiveTestResultFix.W51DiagonalFieldOfViewAngle;
-                            view1.Result.result.ClolorVisionH_Fov = view1.Result.result.ClolorVisionH_Fov * ObjectiveTestResultFix.W51HorizontalFieldOfViewAngle;
-                            view1.Result.result.ClolorVisionV_Fov = view1.Result.result.ClolorVisionV_Fov * ObjectiveTestResultFix.W51VerticalFieldOfViewAngle;
-
-                            result.ViewResultWhite.DFovView = view1;
-                            ObjectiveTestResult.W51DiagonalFieldOfViewAngle = new ObjectiveTestItem()
-                            {
-                                Name = "DiagonalFieldOfViewAngle",
-                                LowLimit = recipeConfig.DiagonalFieldOfViewAngleMin,
-                                UpLimit = recipeConfig.DiagonalFieldOfViewAngleMax,
-                                Value = view1.Result.result.D_Fov,
-                                TestValue = view1.Result.result.D_Fov.ToString("F3")
-                            };
-
-                            ObjectiveTestResult.W51HorizontalFieldOfViewAngle = new ObjectiveTestItem()
-                            {
-                                Name = "HorizontalFieldOfViewAngle",
-                                LowLimit = recipeConfig.HorizontalFieldOfViewAngleMin,
-                                UpLimit = recipeConfig.HorizontalFieldOfViewAngleMax,
-                                Value = view1.Result.result.ClolorVisionH_Fov,
-                                TestValue = view1.Result.result.ClolorVisionH_Fov.ToString("F3")
-                            };
-                            ObjectiveTestResult.W51VerticalFieldOfViewAngle = new ObjectiveTestItem()
-                            {
-                                Name = "VerticalFieldOfViewAngle",
-                                LowLimit = recipeConfig.VerticalFieldOfViewAngleMin,
-                                UpLimit = recipeConfig.VerticalFieldOfViewAngleMax,
-                                Value = view1.Result.result.ClolorVisionV_Fov,
-                                TestValue = view1.Result.result.ClolorVisionV_Fov.ToString("F3")
-                            };
-                            result.ViewReslutW51.DiagonalFieldOfViewAngle = ObjectiveTestResult.W51DiagonalFieldOfViewAngle;
-                            result.ViewReslutW51.HorizontalFieldOfViewAngle = ObjectiveTestResult.W51HorizontalFieldOfViewAngle;
-                            result.ViewReslutW51.VerticalFieldOfViewAngle = ObjectiveTestResult.W51VerticalFieldOfViewAngle;
-
-
-                            result.Result = result.Result && ObjectiveTestResult.W51DiagonalFieldOfViewAngle.TestResult;
-                            result.Result = result.Result && ObjectiveTestResult.W51HorizontalFieldOfViewAngle.TestResult;
-                            result.Result = result.Result && ObjectiveTestResult.W51VerticalFieldOfViewAngle.TestResult;
-                        }
-
+                        log.Error("自定义 IProcess 执行异常", ex);
+                    }
+                    if (executed)
+                    {
+                        ViewResultManager.Save(result);
+                        ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
+                        if (IsTestTypeCompleted())
+                            TestCompleted();
+                        return; // 已处理，直接返回
+                    }
+                    else
+                    {
+                        log.Warn("自定义 IProcess 执行失败，继续使用内置解析逻辑");
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                log.Error("匹配/执行自定义 IProcess 出错，回退内置逻辑", ex);
+            }
+            // ===== 自定义 IProcess 分发逻辑结束 =====
 
             if (result.Model.Contains("White255"))
             {
@@ -798,7 +752,7 @@ namespace ProjectARVRPro
                                     UpLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesvMax,
                                     Value = poiResultCIExyuvData.v,
                                     TestValue=poiResultCIExyuvData.v.ToString("F3")
-                                };
+                               };
 
 
                                 result.Result = result.Result && ObjectiveTestResult.W255CenterLunimance.TestResult;
@@ -1222,103 +1176,6 @@ namespace ProjectARVRPro
                                         TestValue = mtf.verticalAverage.ToString()
                                     };
                                     result.Result = result.Result && ObjectiveTestResult.MTF_HV_V_RightDown_0_4F.TestResult;
-                                }
-
-                                if (mtf.name == "LeftUp_0.8F")
-                                {
-                                    mtf.horizontalAverage = mtf.horizontalAverage * ObjectiveTestResultFix.MTF_HV_H_LeftUp_0_8F;
-                                    mtf.verticalAverage = mtf.verticalAverage * ObjectiveTestResultFix.MTF_HV_V_LeftUp_0_8F;
-
-                                    ObjectiveTestResult.MTF_HV_H_LeftUp_0_8F = new ObjectiveTestItem()
-                                    {
-                                        Name = "MTF_HV_H_LeftUp_0_8F",
-                                        LowLimit = recipeConfig.MTF_HV_H_LeftUp_0_8FMin,
-                                        UpLimit = recipeConfig.MTF_HV_H_LeftUp_0_8FMax,
-                                        Value = mtf.horizontalAverage,
-                                        TestValue = mtf.horizontalAverage.ToString()
-                                    };
-                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_H_LeftUp_0_8F.TestResult;
-                                    ObjectiveTestResult.MTF_HV_V_LeftUp_0_8F = new ObjectiveTestItem()
-                                    {
-                                        Name = "MTF_HV_V_LeftUp_0_8F",
-                                        LowLimit = recipeConfig.MTF_HV_V_LeftUp_0_8FMin,
-                                        UpLimit = recipeConfig.MTF_HV_V_LeftUp_0_8FMax,
-                                        Value = mtf.verticalAverage,
-                                        TestValue = mtf.verticalAverage.ToString()
-                                    };
-                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_V_LeftUp_0_8F.TestResult;
-                                }
-                                if (mtf.name == "RightUp_0.8F")
-                                {
-                                    mtf.horizontalAverage = mtf.horizontalAverage * ObjectiveTestResultFix.MTF_HV_H_RightUp_0_8F;
-                                    mtf.verticalAverage = mtf.verticalAverage * ObjectiveTestResultFix.MTF_HV_V_RightUp_0_8F;
-
-                                    ObjectiveTestResult.MTF_HV_H_RightUp_0_8F = new ObjectiveTestItem()
-                                    {
-                                        Name = "MTF_HV_H_RightUp_0_8F",
-                                        LowLimit = recipeConfig.MTF_HV_H_RightUp_0_8FMin,
-                                        UpLimit = recipeConfig.MTF_HV_H_RightUp_0_8FMax,
-                                        Value = mtf.horizontalAverage,
-                                        TestValue = mtf.horizontalAverage.ToString()
-                                    };
-                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_H_RightUp_0_8F.TestResult;
-                                    ObjectiveTestResult.MTF_HV_V_RightUp_0_8F = new ObjectiveTestItem()
-                                    {
-                                        Name = "MTF_HV_V_RightUp_0_8F",
-                                        LowLimit = recipeConfig.MTF_HV_V_RightUp_0_8FMin,
-                                        UpLimit = recipeConfig.MTF_HV_V_RightUp_0_8FMax,
-                                        Value = mtf.verticalAverage,
-                                        TestValue = mtf.verticalAverage.ToString()
-                                    };
-                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_V_RightUp_0_8F.TestResult;
-                                }
-                                if (mtf.name == "LeftDown_0.8F")
-                                {
-                                    mtf.horizontalAverage = mtf.horizontalAverage * ObjectiveTestResultFix.MTF_HV_H_LeftDown_0_8F;
-                                    mtf.verticalAverage = mtf.verticalAverage * ObjectiveTestResultFix.MTF_HV_V_LeftDown_0_8F;
-
-                                    ObjectiveTestResult.MTF_HV_H_LeftDown_0_8F = new ObjectiveTestItem()
-                                    {
-                                        Name = "MTF_HV_H_LeftDown_0_8F",
-                                        LowLimit = recipeConfig.MTF_HV_H_LeftDown_0_8FMin,
-                                        UpLimit = recipeConfig.MTF_HV_H_LeftDown_0_8FMax,
-                                        Value = mtf.horizontalAverage,
-                                        TestValue = mtf.horizontalAverage.ToString()
-                                    };
-                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_H_LeftDown_0_8F.TestResult;
-                                    ObjectiveTestResult.MTF_HV_V_LeftDown_0_8F = new ObjectiveTestItem()
-                                    {
-                                        Name = "MTF_HV_V_LeftDown_0_8F",
-                                        LowLimit = recipeConfig.MTF_HV_V_LeftDown_0_8FMin,
-                                        UpLimit = recipeConfig.MTF_HV_V_LeftDown_0_8FMax,
-                                        Value = mtf.verticalAverage,
-                                        TestValue = mtf.verticalAverage.ToString()
-                                    };
-                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_V_LeftDown_0_8F.TestResult;
-                                }
-                                if (mtf.name == "RightDown_0.8F")
-                                {
-                                    mtf.horizontalAverage = mtf.horizontalAverage * ObjectiveTestResultFix.MTF_HV_H_RightDown_0_8F;
-                                    mtf.verticalAverage = mtf.verticalAverage * ObjectiveTestResultFix.MTF_HV_V_RightDown_0_8F;
-
-                                    ObjectiveTestResult.MTF_HV_H_RightDown_0_8F = new ObjectiveTestItem()
-                                    {
-                                        Name = "MTF_HV_H_RightDown_0_8F",
-                                        LowLimit = recipeConfig.MTF_HV_H_RightDown_0_8FMin,
-                                        UpLimit = recipeConfig.MTF_HV_H_RightDown_0_8FMax,
-                                        Value = mtf.horizontalAverage,
-                                        TestValue = mtf.horizontalAverage.ToString()
-                                    };
-                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_H_RightDown_0_8F.TestResult;
-                                    ObjectiveTestResult.MTF_HV_V_RightDown_0_8F = new ObjectiveTestItem()
-                                    {
-                                        Name = "MTF_HV_V_RightDown_0_8F",
-                                        LowLimit = recipeConfig.MTF_HV_V_RightDown_0_8FMin,
-                                        UpLimit = recipeConfig.MTF_HV_V_RightDown_0_8FMax,
-                                        Value = mtf.verticalAverage,
-                                        TestValue = mtf.verticalAverage.ToString()
-                                    };
-                                    result.Result = result.Result && ObjectiveTestResult.MTF_HV_V_RightDown_0_8F.TestResult;
                                 }
                             }
                             result.ViewRelsultMTFH.MTFDetailViewReslut = mtfresults;
@@ -2067,7 +1924,6 @@ namespace ProjectARVRPro
             outputText.Document.Blocks.Add(paragraph);
             SNtextBox.Focus();
         }
-
 
 
 
