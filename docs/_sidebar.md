@@ -38,6 +38,24 @@
 - [ColorVision.Engine](engine-components/ColorVision.Engine)
 - [ColorVision.FileIO](engine-components/ColorVision.FileIO)
 - [cvColorVision](engine-components/cvColorVision)
+- [FlowEngineLib](../Engine/FlowEngineLib/README)
+
+## 📚 模块概述
+
+### Core Modules (核心模块)
+
+- [ColorVision.Core](../UI/ColorVision.Core/README) - C++互操作核心接口
+- [ColorVision.Database](../UI/ColorVision.Database/README) - 数据库访问层
+- [ColorVision.SocketProtocol](../UI/ColorVision.SocketProtocol/README) - 网络通信协议
+- [ColorVision.Scheduler](../UI/ColorVision.Scheduler/README) - 任务调度系统
+
+### Plugin System (插件系统)
+
+- [插件系统概述](../Plugins/README) - 插件架构和标准插件
+
+### Customer Projects (客户项目)
+
+- [ProjectShiyuan](../Projects/ProjectShiyuan/README) - 世源科技定制项目
 
 ### Solution管理
 
