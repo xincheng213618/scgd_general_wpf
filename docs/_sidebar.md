@@ -18,6 +18,8 @@
 ## 🏗️ Architecture
 
 - [系统架构概览](introduction/system-architecture/系统架构概览)
+- [架构运行时](architecture/architecture-runtime)
+- [组件交互矩阵](architecture/component-interactions)
 
 ## 💻 Modules
 
@@ -57,18 +59,24 @@
 
 - [插件管理](plugins/plugin-management/插件管理)
 - [使用标准插件](plugins/using-standard-plugins/使用标准插件)
+- [插件生命周期](plugins/plugin-lifecycle)
+- [开发插件指南](plugins/developing-a-plugin)
 
 ## ⚙️ Flow Engine
 
 - [流程引擎](algorithm-engine-templates/flow-engine/流程引擎)
+- [流程引擎概览](flow-engine/flow-engine-overview)
+- [状态模型](flow-engine/state-model)
+- [扩展点](flow-engine/extensibility-points)
 
-## 📋 Templates
+## 📋 Templates & Algorithms
 
 - [算法引擎与模板](algorithm-engine-templates/算法引擎与模板)
 - [模板管理](algorithm-engine-templates/template-management/模板管理)
 - [基于JSON的通用模板](algorithm-engine-templates/json-based-templates/基于JSON的通用模板)
 - [通用算法模块](algorithm-engine-templates/common-algorithm-primitives/通用算法模块)
 - [特定领域算法模板](algorithm-engine-templates/specialized-algorithms/特定领域算法模板)
+- [算法文档模板](algorithms/_template)
 
 ## 🛠️ Troubleshooting
 
@@ -86,6 +94,7 @@
 ## 🔒 Security/RBAC
 
 - [安全与权限控制](security/)
+- [RBAC 模型](rbac/rbac-model)
 
 ## 📡 API
 
@@ -131,3 +140,15 @@
 ## 其他组件
 
 - [ColorVision.SocketProtocol](ui-components/ColorVision.SocketProtocol)
+
+## 🗄️ Data Storage
+
+- [数据存储概览](data-storage/)
+
+## 🚀 Deployment
+
+- [部署文档](deployment/)
+
+## 🔄 Updates
+
+- [自动更新](update/)
