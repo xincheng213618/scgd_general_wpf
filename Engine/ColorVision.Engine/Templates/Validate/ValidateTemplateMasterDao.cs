@@ -16,8 +16,16 @@ namespace ColorVision.Engine.Templates.Validate
         public string Code { get; set; }
         [SugarColumn(ColumnName ="create_date")]
         public DateTime? CreateDate { get; set; } = DateTime.Now;
+
+        [SugarColumn(ColumnName = "is_enable")]
+        public bool IsEnable { get; set; } = true;
+
+        [SugarColumn(ColumnName = "is_delete")]
+        public bool IsDelete { get; set; }
+
         [SugarColumn(ColumnName ="remark")]
         public string Remark { get; set; }
+
         [SugarColumn(ColumnName = "tenant_id")]
         public int TenantId { get; set; } = 0;
     }

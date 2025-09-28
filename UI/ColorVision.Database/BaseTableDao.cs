@@ -2,6 +2,7 @@
 using SqlSugar;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -63,7 +64,21 @@ namespace ColorVision.Database
             return props;
         }
 
-        private static bool HasProperty<T>(string name) => GetProps(typeof(T)).Any(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
+        private static bool HasProperty<T>(string name)
+        {
+            var props = GetProps(typeof(T));
+            foreach (var prop in props)
+            {
+                var sugarAttr = prop.GetCustomAttribute<SugarColumn>();
+                var columnName = sugarAttr?.ColumnName ?? prop.Name;
+                if (string.Equals(columnName, name, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(prop.Name, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         private static object NormalizeValue(object value)
         {
