@@ -1,0 +1,21 @@
+# ColorVision
+
+> 光电技术与色彩管理一体化平台
+
+基于 Windows WPF 技术的专业应用程序，专注于提供先进的色彩管理和光电技术解决方案。支持多设备集成、流程自动化、插件扩展，满足光电技术研发与工业自动化需求。
+
+<!-- 徽章 -->
+![.NET Version](https://img.shields.io/badge/.NET-8.0-blue.svg)
+![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)
+![WPF](https://img.shields.io/badge/UI-WPF-blue.svg)
+![License](https://img.shields.io/github/license/xincheng213618/scgd_general_wpf.svg)
+![Stars](https://img.shields.io/github/stars/xincheng213618/scgd_general_wpf.svg)
+
+[开始使用](getting-started/入门指南)
+[系统架构](introduction/system-architecture/系统架构概览)
+[解决方案管理](ui-components/ColorVision.Solution)
+[设备集成](device-management/)
+[GitHub](https://github.com/xincheng213618/scgd_general_wpf)
+
+<!-- 背景色 -->
+![color](#0969da)
