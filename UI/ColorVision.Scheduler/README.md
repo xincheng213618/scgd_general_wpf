@@ -1,3 +1,60 @@
-ColorVision.Scheduler
+# ColorVision.Scheduler
 
-基于UI的定时任务控件，使用Quartz.Net实现，提供定时任务的管理，执行，监控等功能
+## 功能定位
+
+任务调度系统，基于Quartz.NET实现的定时任务管理组件。
+
+## 作用范围
+
+UI调度模块，为用户提供任务计划、定时执行、监控管理等功能。
+
+## 主要功能点
+
+- **任务计划管理** - 创建、编辑、删除定时任务
+- **Cron表达式支持** - 灵活的时间配置，支持复杂的执行计划
+- **任务监控** - 实时查看任务执行状态和历史记录
+- **执行策略** - 立即执行、延迟执行、重复执行等多种模式
+- **失败重试** - 任务失败时的自动重试机制
+- **日志记录** - 详细的任务执行日志和错误信息
+- **UI界面** - 用户友好的任务管理界面
+
+## 与主程序的依赖关系
+
+**被引用方式**:
+- ColorVision 主程序集成调度界面
+- 通过菜单或插件方式加载
+
+**引用的程序集**:
+- Quartz.NET - 任务调度核心库
+- ColorVision.Common - 通用接口和基类
+
+## 使用方式
+
+### 引用方式
+```xml
+<ProjectReference Include="..\ColorVision.Scheduler\ColorVision.Scheduler.csproj" />
+```
+
+### 在主程序中的启用
+- 通过任务计划程序菜单打开
+- 支持后台服务模式运行
+
+## 开发调试
+
+```bash
+dotnet build UI/ColorVision.Scheduler/ColorVision.Scheduler.csproj
+```
+
+## 目录说明
+
+- 包含Quartz.NET封装和调度UI控件
+- 任务配置和监控界面实现
+
+## 相关文档链接
+
+- [任务调度使用指南](../../docs/ui-components/UI组件概览.md)
+- [入门指南](../../docs/getting-started/入门指南.md)
+
+## 维护者
+
+ColorVision UI团队
