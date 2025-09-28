@@ -21,6 +21,9 @@ namespace ProjectARVRPro
         public static RecipeManager RecipeManager => RecipeManager.GetInstance();
         public static FixManager FixManager => FixManager.GetInstance();
         public static SummaryManager SummaryManager => SummaryManager.GetInstance();
+        public static ProcessManager ProcessManager => ProcessManager.GetInstance();
+
+
 
         [JsonIgnore]
         public RelayCommand OpenTemplateCommand { get; set; }

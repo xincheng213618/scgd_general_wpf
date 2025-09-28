@@ -45,6 +45,7 @@ namespace ProjectARVRPro
         public ObservableCollection<ProcessMeta> ProcessMetas { get; } = new ObservableCollection<ProcessMeta>();
 
         public ObservableCollection<TemplateModel<FlowParam>> templateModels = TemplateFlow.Params;
+        public RelayCommand EditCommand { get; set; }
 
         public ProcessManager()
         {
@@ -66,15 +67,13 @@ namespace ProjectARVRPro
                 }
             }
 
-            foreach (var process in Processes)
-            {
-                ProcessMetas.Add(new ProcessMeta()
-                {
-                    Name = process.GetType().Name,
-                    FlowTemplate = process.GetType().DeclaringType?.Namespace ?? "Unknown",
-                    Process = process
-                });
-            }
+            EditCommand = new RelayCommand(a => Edit());
+        }
+        public void Edit()
+        {
+            ProcessManagerWindow processManagerWindow = new ProcessManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            processManagerWindow.DataContext = this;
+            processManagerWindow.ShowDialog();
         }
 
         public void GenStepBar(HandyControl.Controls.StepBar stepBar)
