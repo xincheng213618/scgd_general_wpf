@@ -40,20 +40,24 @@ plugins:
 # Navigation structure
 navigation:
   - title: "入门指南"
-    url: "/opendeep/getting-started/入门指南"
+    url: "/getting-started/入门指南"
     description: "快速开始使用 ColorVision"
   
   - title: "项目简介" 
-    url: "/opendeep/introduction/简介"
+    url: "/introduction/简介"
     description: "了解项目设计理念和核心功能"
     
   - title: "开发者指南"
-    url: "/opendeep/developer-guide/开发者指南"
+    url: "/developer-guide/开发者指南"
     description: "面向开发者的详细指南"
     
   - title: "系统架构"
-    url: "/opendeep/introduction/system-architecture/系统架构概览"
+    url: "/introduction/system-architecture/系统架构概览"
     description: "系统架构和设计思路"
+    
+  - title: "UI组件"
+    url: "/ui-components/UI组件概览"
+    description: "用户界面组件详细说明"
 
 # Collections
 collections:
@@ -88,7 +92,7 @@ defaults:
       layout: "default"
       
   - scope:
-      path: "opendeep"
+      path: ""
       type: "pages"
     values:
       layout: "doc"
