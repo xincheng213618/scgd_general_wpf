@@ -7,7 +7,9 @@
     <meta name="description" content="{% if page.description %}{{ page.description }}{% else %}{{ site.description }}{% endif %}">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown-light.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
     
     <style>
         body {
@@ -172,10 +174,297 @@
         .mermaid {
             text-align: center;
             margin: 20px 0;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e1e4e8;
         }
+        
+        /* Enhanced code block styling */
+        pre {
+            background-color: #f6f8fa !important;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            padding: 16px;
+            overflow-x: auto;
+            font-size: 14px;
+            line-height: 1.45;
+            margin: 16px 0;
+        }
+        
+        code {
+            background-color: rgba(175, 184, 193, 0.2);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        
+        /* Table styling */
+        .markdown-body table {
+            border-collapse: collapse;
+            margin: 20px 0;
+            width: 100%;
+            background-color: transparent;
+        }
+        
+        .markdown-body table th,
+        .markdown-body table td {
+            padding: 6px 13px;
+            border: 1px solid #d0d7de;
+        }
+        
+        .markdown-body table th {
+            background-color: #f6f8fa;
+            font-weight: 600;
+        }
+        
+        .markdown-body table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+        
+        /* Alert boxes */
+        .alert {
+            padding: 12px 16px;
+            border-left: 4px solid;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+        
+        .alert-info {
+            background-color: #f6ffed;
+            border-color: #52c41a;
+            color: #389e0d;
+        }
+        
+        .alert-warning {
+            background-color: #fffbe6;
+            border-color: #faad14;
+            color: #d46b08;
+        }
+        
+        .alert-danger {
+            background-color: #fff2f0;
+            border-color: #ff4d4f;
+            color: #cf1322;
+        }
+        
+        /* Search box */
+        .search-container {
+            position: relative;
+            margin: 20px 0;
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .search-box:focus {
+            outline: none;
+            border-color: #0969da;
+            box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
+        }
+        
+        /* Table of Contents */
+        .toc {
+            background-color: #f6f8fa;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 20px 0;
+        }
+        
+        .toc h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            color: #24292f;
+        }
+        
+        .toc ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .toc li {
+            margin: 4px 0;
+        }
+        
+        .toc a {
+            color: #0969da;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Progress bar */
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background-color: #e1e4e8;
+            border-radius: 2px;
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1001;
+        }
+        
+        .progress-bar-fill {
+            height: 100%;
+            background-color: #0969da;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        /* Scroll to top button */
+        .scroll-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 48px;
+            height: 48px;
+            background-color: #0969da;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .scroll-top:hover {
+            background-color: #0550ae;
+            transform: translateY(-2px);
+        }
+        
+        .scroll-top.visible {
+            display: flex;
+        }
+        
+        /* Enhanced sidebar */
+        .sidebar h3 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .sidebar h3 i {
+            font-size: 16px;
+            color: #656d76;
+        }
+        
+        /* Copy button for code blocks */
+        .code-container {
+            position: relative;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #f6f8fa;
+            border: 1px solid #d0d7de;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .code-container:hover .copy-btn {
+            opacity: 1;
+        }
+        
+        .copy-btn:hover {
+            background: #e1e4e8;
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #0d1117;
+                color: #c9d1d9;
+            }
+            
+            .header {
+                background-color: #161b22;
+            }
+            
+            .sidebar {
+                background-color: #161b22;
+                border: 1px solid #30363d;
+            }
+            
+            .footer {
+                background-color: #161b22;
+                color: #8b949e;
+            }
+            
+            .markdown-body {
+                background-color: #0d1117;
+                color: #c9d1d9;
+            }
+            
+            .mermaid {
+                background-color: #161b22;
+                border-color: #30363d;
+            }
+        }
+    </style>
+    
+    <!-- Enhanced meta tags for SEO -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{% if page.title %}{{ page.title }} - {{ site.title }}{% else %}{{ site.title }}{% endif %}">
+    <meta property="og:description" content="{% if page.description %}{{ page.description }}{% else %}{{ site.description }}{% endif %}">
+    <meta property="og:url" content="{{ site.url }}{{ site.baseurl }}{{ page.url }}">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{% if page.title %}{{ page.title }} - {{ site.title }}{% else %}{{ site.title }}{% endif %}">
+    <meta name="twitter:description" content="{% if page.description %}{{ page.description }}{% else %}{{ site.description }}{% endif %}">
+    
+    <!-- Structured data -->
+    <script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "TechArticle",
+        "headline": "{% if page.title %}{{ page.title }}{% else %}{{ site.title }}{% endif %}",
+        "description": "{% if page.description %}{{ page.description }}{% else %}{{ site.description }}{% endif %}",
+        "author": {
+            "@type": "Organization",
+            "name": "{{ site.author }}"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "{{ site.author }}"
+        },
+        "url": "{{ site.url }}{{ site.baseurl }}{{ page.url }}"
+    }
+    </script>
     </style>
 </head>
 <body>
+    <!-- Progress bar -->
+    <div class="progress-bar">
+        <div class="progress-bar-fill" id="progressBarFill"></div>
+    </div>
+
     <header class="header">
         <div class="header-content">
             <h1><a href="{{ site.baseurl }}/">{{ site.title }}</a></h1>
@@ -192,23 +481,47 @@
 
     <div class="container">
         <aside class="sidebar">
-            <h3>导航菜单</h3>
+            <div class="search-container">
+                <input type="text" class="search-box" placeholder="🔍 搜索文档..." id="searchBox">
+            </div>
+            
+            <h3><i class="fas fa-compass"></i>导航菜单</h3>
             <ul>
-                <li><a href="{{ site.baseurl }}/">首页</a></li>
+                <li><a href="{{ site.baseurl }}/">🏠 首页</a></li>
                 <li><a href="{{ site.baseurl }}/getting-started/入门指南">🚀 入门指南</a></li>
                 <li><a href="{{ site.baseurl }}/introduction/简介">📖 项目简介</a></li>
                 <li><a href="{{ site.baseurl }}/developer-guide/开发者指南">🛠️ 开发者指南</a></li>
                 <li><a href="{{ site.baseurl }}/introduction/system-architecture/系统架构概览">🏗️ 系统架构</a></li>
-                <li><a href="{{ site.baseurl }}/user-interface-guide/">🎨 用户界面</a></li>
-                <li><a href="{{ site.baseurl }}/ui-components/UI组件概览">🧩 UI组件</a></li>
-                <li><a href="{{ site.baseurl }}/device-management/">📱 设备管理</a></li>
             </ul>
             
-            <h3>相关链接</h3>
+            <h3><i class="fas fa-cogs"></i>Engine组件</h3>
             <ul>
-                <li><a href="{{ site.github.repository_url }}" target="_blank">📂 源代码仓库</a></li>
-                <li><a href="{{ site.github.repository_url }}/releases" target="_blank">📦 版本发布</a></li>
-                <li><a href="{{ site.github.repository_url }}/issues" target="_blank">🐛 问题反馈</a></li>
+                <li><a href="{{ site.baseurl }}/engine-components/Engine组件概览">⚙️ Engine概览</a></li>
+                <li><a href="{{ site.baseurl }}/engine-components/ColorVision.Engine">🎯 流程引擎</a></li>
+                <li><a href="{{ site.baseurl }}/engine-components/cvColorVision">🎨 算法引擎</a></li>
+                <li><a href="{{ site.baseurl }}/engine-components/ColorVision.FileIO">📁 文件IO</a></li>
+                <li><a href="{{ site.baseurl }}/algorithm-engine-templates/flow-engine/流程引擎">🔄 流程设计器</a></li>
+            </ul>
+            
+            <h3><i class="fas fa-paint-brush"></i>UI组件</h3>
+            <ul>
+                <li><a href="{{ site.baseurl }}/user-interface-guide/">🎨 用户界面</a></li>
+                <li><a href="{{ site.baseurl }}/ui-components/UI组件概览">🧩 UI组件概览</a></li>
+                <li><a href="{{ site.baseurl }}/ui-components/ColorVision.UI">🖼️ 底层控件库</a></li>
+                <li><a href="{{ site.baseurl }}/ui-components/ColorVision.Themes">🎭 主题系统</a></li>
+            </ul>
+            
+            <h3><i class="fas fa-mobile-alt"></i>设备管理</h3>
+            <ul>
+                <li><a href="{{ site.baseurl }}/device-management/">📱 设备管理</a></li>
+                <li><a href="{{ site.baseurl }}/camera-service/">📷 相机服务</a></li>
+            </ul>
+            
+            <h3><i class="fas fa-link"></i>相关链接</h3>
+            <ul>
+                <li><a href="{{ site.github.repository_url }}" target="_blank"><i class="fab fa-github"></i> 源代码仓库</a></li>
+                <li><a href="{{ site.github.repository_url }}/releases" target="_blank"><i class="fas fa-download"></i> 版本发布</a></li>
+                <li><a href="{{ site.github.repository_url }}/issues" target="_blank"><i class="fas fa-bug"></i> 问题反馈</a></li>
             </ul>
         </aside>
 
@@ -237,20 +550,235 @@
         <p>本项目采用 <a href="{{ site.github.repository_url }}/blob/master/LICENSE">MIT 许可证</a></p>
     </footer>
 
+    <!-- Scroll to top button -->
+    <button class="scroll-top" id="scrollTopBtn" title="返回顶部">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- Enhanced JavaScript Libraries -->
     <!-- Mermaid.js for diagrams -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    
+    <!-- Highlight.js for code highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/csharp.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/cpp.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/json.min.js"></script>
+    
+    <!-- Prism.js as fallback -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
     <script>
+        // Initialize Mermaid
         mermaid.initialize({ 
             startOnLoad: true,
-            theme: 'default',
+            theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default',
             themeVariables: {
                 fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif'
-            }
+            },
+            securityLevel: 'loose'
         });
+        
+        // Initialize Highlight.js
+        hljs.highlightAll();
+        
+        // Progress bar functionality
+        function updateProgressBar() {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const progress = (scrollTop / scrollHeight) * 100;
+            document.getElementById('progressBarFill').style.width = progress + '%';
+        }
+        
+        // Scroll to top functionality
+        function handleScrollTopButton() {
+            const scrollTopBtn = document.getElementById('scrollTopBtn');
+            if (window.pageYOffset > 300) {
+                scrollTopBtn.classList.add('visible');
+            } else {
+                scrollTopBtn.classList.remove('visible');
+            }
+        }
+        
+        // Smooth scroll to top
+        document.getElementById('scrollTopBtn').addEventListener('click', function() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+        
+        // Search functionality
+        function initializeSearch() {
+            const searchBox = document.getElementById('searchBox');
+            if (!searchBox) return;
+            
+            searchBox.addEventListener('input', function(e) {
+                const searchTerm = e.target.value.toLowerCase();
+                const contentElements = document.querySelectorAll('.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body p, .markdown-body li');
+                
+                contentElements.forEach(element => {
+                    const text = element.textContent.toLowerCase();
+                    if (searchTerm && !text.includes(searchTerm)) {
+                        element.style.opacity = '0.3';
+                    } else {
+                        element.style.opacity = '1';
+                    }
+                });
+            });
+        }
+        
+        // Add copy buttons to code blocks
+        function addCopyButtons() {
+            const codeBlocks = document.querySelectorAll('pre code');
+            codeBlocks.forEach(block => {
+                const container = document.createElement('div');
+                container.className = 'code-container';
+                
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn';
+                copyBtn.innerHTML = '<i class="fas fa-copy"></i> 复制';
+                copyBtn.title = '复制代码';
+                
+                copyBtn.addEventListener('click', function() {
+                    navigator.clipboard.writeText(block.textContent).then(() => {
+                        copyBtn.innerHTML = '<i class="fas fa-check"></i> 已复制';
+                        setTimeout(() => {
+                            copyBtn.innerHTML = '<i class="fas fa-copy"></i> 复制';
+                        }, 2000);
+                    });
+                });
+                
+                block.parentNode.parentNode.insertBefore(container, block.parentNode);
+                container.appendChild(block.parentNode);
+                container.appendChild(copyBtn);
+            });
+        }
+        
+        // Generate table of contents
+        function generateTOC() {
+            const tocContainer = document.querySelector('.toc');
+            if (!tocContainer) return;
+            
+            const headings = document.querySelectorAll('.markdown-body h1, .markdown-body h2, .markdown-body h3');
+            if (headings.length === 0) return;
+            
+            const tocList = document.createElement('ul');
+            headings.forEach((heading, index) => {
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                
+                const id = heading.id || `heading-${index}`;
+                heading.id = id;
+                
+                a.href = `#${id}`;
+                a.textContent = heading.textContent;
+                a.style.paddingLeft = `${(parseInt(heading.tagName.charAt(1)) - 1) * 12}px`;
+                
+                li.appendChild(a);
+                tocList.appendChild(li);
+            });
+            
+            tocContainer.appendChild(tocList);
+        }
+        
+        // Lazy load images
+        function lazyLoadImages() {
+            const images = document.querySelectorAll('img[data-src]');
+            const imageObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        img.src = img.dataset.src;
+                        img.removeAttribute('data-src');
+                        observer.unobserve(img);
+                    }
+                });
+            });
+            
+            images.forEach(img => imageObserver.observe(img));
+        }
+        
+        // Dark mode toggle
+        function initializeDarkMode() {
+            const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            
+            // Update mermaid theme on change
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+                // Reinitialize mermaid with new theme
+                mermaid.initialize({ 
+                    theme: e.matches ? 'dark' : 'default',
+                    startOnLoad: true
+                });
+            });
+        }
+        
+        // Keyboard shortcuts
+        function initializeKeyboardShortcuts() {
+            document.addEventListener('keydown', function(e) {
+                // Ctrl/Cmd + K for search focus
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    const searchBox = document.getElementById('searchBox');
+                    if (searchBox) {
+                        searchBox.focus();
+                    }
+                }
+                
+                // Escape to clear search
+                if (e.key === 'Escape') {
+                    const searchBox = document.getElementById('searchBox');
+                    if (searchBox) {
+                        searchBox.value = '';
+                        searchBox.dispatchEvent(new Event('input'));
+                    }
+                }
+                
+                // Home/End keys for scroll
+                if (e.key === 'Home' && e.ctrlKey) {
+                    e.preventDefault();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+                if (e.key === 'End' && e.ctrlKey) {
+                    e.preventDefault();
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                }
+            });
+        }
+        
+        // Event listeners
+        window.addEventListener('scroll', function() {
+            updateProgressBar();
+            handleScrollTopButton();
+        });
+        
+        // Initialize everything when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            updateProgressBar();
+            handleScrollTopButton();
+            initializeSearch();
+            addCopyButtons();
+            generateTOC();
+            lazyLoadImages();
+            initializeDarkMode();
+            initializeKeyboardShortcuts();
+            
+            console.log('ColorVision Docs - Enhanced features loaded');
+        });
+        
+        // Service Worker for offline support (optional)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('{{ site.baseurl }}/sw.js').then(function(registration) {
+                    console.log('SW registered: ', registration);
+                }).catch(function(registrationError) {
+                    console.log('SW registration failed: ', registrationError);
+                });
+            });
+        }
     </script>
-    
-    <!-- Prism.js for code highlighting -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-core.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/plugins/autoloader/prism-autoloader.min.js"></script>
 </body>
 </html>
