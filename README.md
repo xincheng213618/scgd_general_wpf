@@ -2,6 +2,10 @@
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/xincheng213618/scgd_general_wpf)
 
+## 📖 文档入口
+
+**完整文档站点**: https://xincheng213618.github.io/scgd_general_wpf/
+
 ## 项目简介
 
 ColrVision Inc 开发的一款 Windows WPF 应用程序。
