@@ -4,14 +4,14 @@ using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using ColorVision.UI;
 using Newtonsoft.Json;
-using ProjectARVRLite.PluginConfig;
+using ProjectARVRPro.PluginConfig;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Windows;
 
-namespace ProjectARVRLite
+namespace ProjectARVRPro
 {
     public class ProjectARVRLiteConfig: ViewModelBase, IConfig
     {

@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS8601,CS8622,CA1822,CS8602
-using ColorVision.Common.Collections;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using System;
@@ -11,7 +10,7 @@ namespace ColorVision.Engine.Templates.POI
 {
     public partial class EidtPoiDataGridForm : Form
     {
-        public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new BulkObservableCollection<IDrawingVisual>();
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
 
         public EidtPoiDataGridForm(ObservableCollection<IDrawingVisual> drawingVisualLists)
         {

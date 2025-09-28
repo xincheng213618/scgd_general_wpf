@@ -83,13 +83,13 @@ namespace ColorVision.Engine.Templates.POI
         [SugarColumn(ColumnName ="is_enable")]
         public bool? IsEnable { get; set; } = true;
 
-        [SugarColumn(ColumnName ="is_delete")]
+        [SugarColumn(ColumnName = "is_delete")]
         public bool? IsDelete { get; set; } = false;
 
         [SugarColumn(ColumnName ="remark")]
         public string? Remark { get; set; }
 
-        [SugarColumn(ColumnName ="tenant_id")]
+        [SugarColumn(ColumnName = "tenant_id")]
         public int TenantId { get; set; }
     }
 

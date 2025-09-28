@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace ProjectARVRLite.Properties {
+namespace ProjectARVRPro.Properties {
     using System;
     
     
