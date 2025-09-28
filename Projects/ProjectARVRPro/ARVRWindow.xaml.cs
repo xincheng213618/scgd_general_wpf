@@ -1,5 +1,4 @@
-﻿#pragma warning disable
-using ColorVision.Common.Algorithms;
+﻿using ColorVision.Common.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
@@ -87,6 +86,7 @@ namespace ProjectARVRPro
         }
     }
 
+
     public class SwitchPG
     {
         public ARVR1TestType ARVRTestType { get; set; }
@@ -110,6 +110,8 @@ namespace ProjectARVRPro
         public static ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = ViewResultManager.ViewResluts;
 
         public static ObjectiveTestResultFix ObjectiveTestResultFix => FixManager.GetInstance().ObjectiveTestResultFix;
+
+        public static ProcessManager ProcessManager => ProcessManager.GetInstance();
 
         public ARVRWindow()
         {
@@ -247,8 +249,7 @@ namespace ProjectARVRPro
             }
             IsSwitchRun = false;
         }
-
-       
+ 
         public STNodeEditor STNodeEditorMain { get; set; }
         private FlowEngineControl flowEngine;
         private Timer timer;
@@ -261,6 +262,7 @@ namespace ProjectARVRPro
         private LogOutput? logOutput;
         private void Window_Initialized(object sender, EventArgs e)
         {
+            ProcessManager.GenStepBar(stepBar);
             this.DataContext = ProjectARVRProConfig.Instance;
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
@@ -439,7 +441,6 @@ namespace ProjectARVRPro
             CurrentFlowResult = new ProjectARVRReuslt();
             CurrentFlowResult.SN = ProjectARVRProConfig.Instance.SN;
             CurrentFlowResult.Model = FlowTemplate.Text;
-            ;
 
             CurrentFlowResult.TestType = CurrentTestType;
 
