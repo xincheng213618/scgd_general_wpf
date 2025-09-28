@@ -1,17 +1,12 @@
-﻿using ColorVision.UI.Menus;
+﻿using ColorVision.UI;
 using System.Windows;
 
 namespace ProjectARVRPro.PluginConfig
 {
 
-
-
-    public class ProjectARVRMenu : MenuItemBase
+    public class ProjectARVRLitePlugin : IFeatureLauncherBase
     {
-        public override string OwnerGuid => MenuItemConstants.Tool;
-
-        public override int Order => 100;
-        public override string Header => "ARVRLite检测";
+        public override string? Header => "ARVR检测Pro";
 
         public override void Execute()
         {

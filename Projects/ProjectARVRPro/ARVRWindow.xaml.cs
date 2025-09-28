@@ -103,7 +103,7 @@ namespace ProjectARVRPro
         private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
         public static ARVRWindowConfig Config => ARVRWindowConfig.Instance;
 
-        public static ProjectARVRLiteConfig ProjectConfig => ProjectARVRLiteConfig.Instance;
+        public static ProjectARVRProConfig ProjectConfig => ProjectARVRProConfig.Instance;
 
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
 
@@ -131,14 +131,14 @@ namespace ProjectARVRPro
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    ProjectARVRLiteConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
+                    ProjectARVRProConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
                 });
             }
             else
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    ProjectARVRLiteConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
+                    ProjectARVRProConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
                 });
             }
         }
@@ -261,7 +261,7 @@ namespace ProjectARVRPro
         private LogOutput? logOutput;
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = ProjectARVRLiteConfig.Instance;
+            this.DataContext = ProjectARVRProConfig.Instance;
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
             flowEngine = new FlowEngineControl(false);
@@ -286,7 +286,7 @@ namespace ProjectARVRPro
             timer.Change(Timeout.Infinite, 100); // 停止定时器
 
 
-            if (ProjectARVRLiteConfig.Instance.LogControlVisibility)
+            if (ProjectARVRProConfig.Instance.LogControlVisibility)
             {
                 logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
                 LogGrid.Children.Add(logOutput);
@@ -437,7 +437,7 @@ namespace ProjectARVRPro
             LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
 
             CurrentFlowResult = new ProjectARVRReuslt();
-            CurrentFlowResult.SN = ProjectARVRLiteConfig.Instance.SN;
+            CurrentFlowResult.SN = ProjectARVRProConfig.Instance.SN;
             CurrentFlowResult.Model = FlowTemplate.Text;
             ;
 
@@ -518,7 +518,7 @@ namespace ProjectARVRPro
                 flowEngine.LoadFromBase64(string.Empty);
                 Refresh();
 
-                if (TryCount < ProjectARVRLiteConfig.Instance.TryCountMax)
+                if (TryCount < ProjectARVRProConfig.Instance.TryCountMax)
                 {
                     Task.Delay(200).ContinueWith(t =>
                     {
@@ -574,7 +574,7 @@ namespace ProjectARVRPro
 
                 TryCount = 0;
 
-                if (ProjectARVRLiteConfig.Instance.AllowTestFailures)
+                if (ProjectARVRProConfig.Instance.AllowTestFailures)
                 {
                     //如果允许失败，则切换PG，并且提前设置流程,执行结束时直接发送结束
                     if (!IsTestTypeCompleted())
@@ -961,7 +961,7 @@ namespace ProjectARVRPro
             {
                 log.Info("正在解析黑画面的流程");
                 ObjectiveTestResult.FlowBlackTestReslut = true;
-                if (ViewResluts.FirstOrDefault(a => a.SN == ProjectARVRLiteConfig.Instance.SN) is ProjectARVRReuslt result1)
+                if (ViewResluts.FirstOrDefault(a => a.SN == ProjectARVRProConfig.Instance.SN) is ProjectARVRReuslt result1)
                 {
                     result.ViewResultWhite =result1.ViewResultWhite;
                 }

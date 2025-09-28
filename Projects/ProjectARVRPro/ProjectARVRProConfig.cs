@@ -13,9 +13,9 @@ using System.Windows;
 
 namespace ProjectARVRPro
 {
-    public class ProjectARVRLiteConfig: ViewModelBase, IConfig
+    public class ProjectARVRProConfig: ViewModelBase, IConfig
     {
-        public static ProjectARVRLiteConfig Instance => ConfigService.Instance.GetRequiredService<ProjectARVRLiteConfig>();
+        public static ProjectARVRProConfig Instance => ConfigService.Instance.GetRequiredService<ProjectARVRProConfig>();
 
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
         public static RecipeManager RecipeManager => RecipeManager.GetInstance();
@@ -42,7 +42,7 @@ namespace ProjectARVRPro
         [JsonIgnore]
         public RelayCommand InitTestCommand { get; set; }
 
-        public ProjectARVRLiteConfig()
+        public ProjectARVRProConfig()
         {
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
@@ -117,13 +117,13 @@ namespace ProjectARVRPro
         public static void OpenChangeLog()
         {
             // 资源文件的完整名称
-            string resourceName = "ProjectARVR.CHANGELOG.md";
+            string resourceName = "ProjectARVRPro.CHANGELOG.md";
             OpenResourceName("CHANGELOG", resourceName);
         }
         public static void OpenReadMe()
         {
             // 资源文件的完整名称
-            string resourceName = "ProjectARVR.README.md";
+            string resourceName = "ProjectARVRPro.README.md";
             OpenResourceName("README",resourceName);
         }
         public static void OpenLog()
