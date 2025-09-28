@@ -51,7 +51,15 @@ namespace ColorVision.Database
             }
         }
 
-        private static SqlSugarClient GetDb() => MySqlControl.GetInstance().DB;
+        private static SqlSugarClient GetDb()
+        {
+            return new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = MySqlControl.GetConnectionString(),
+                DbType = SqlSugar.DbType.MySql,
+                IsAutoCloseConnection = true
+            });
+        }
 
         private static readonly Dictionary<Type, PropertyInfo[]> _propsCache = new();
         private static PropertyInfo[] GetProps(Type t)

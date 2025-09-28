@@ -23,8 +23,6 @@ namespace ColorVision.Database
         public static MySqlControl GetInstance() { lock (_locker) { return _instance ??= new MySqlControl(); } }
 
         public static MySqlConfig Config => MySqlSetting.Instance.MySqlConfig;
-        private volatile MySqlConnection _conn; // 用于切换
-        public MySqlConnection MySqlConnection => _conn;
 
         public SqlSugarClient DB 
         { 
@@ -51,22 +49,14 @@ namespace ColorVision.Database
                 await Task.Delay(10000); // 等待配置加载完成
                 MySqlLocalServicesManager.GetInstance();
             });
-
         }
 
         public event EventHandler MySqlConnectChanged;
 
         public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; OnPropertyChanged(); } }
         private bool _IsConnect;
+
         private static readonly char[] separator = new[] { ';' };
-
-        public string ConnectionString { get; private set; }
-
-        ///https://blog.csdn.net/a79412906/article/details/8971534
-        ///https://bugs.mysql.com/bug.php?Id=2400
-        //BatchExecuteQuery("SET SESSION  interactive_timeout=31536000;SET SESSION  wait_timeout=2147424;");
-
-        //BatchExecuteQuery("SHOW VARIABLES LIKE 'interactive_timeout';SHOW VARIABLES LIKE 'wait_timeout';");
 
         public Task<bool> Connect()
         {
@@ -76,9 +66,7 @@ namespace ColorVision.Database
                 IsConnect = false;
                 var newConn = new MySqlConnection() { ConnectionString = connStr };
                 newConn.Open();
-                var oldConn = Interlocked.Exchange(ref _conn, newConn); // 原子切换
 
-                ConnectionString = connStr;
                 log.Info($"数据库连接成功:{connStr}");
 
                 DB?.Dispose();
@@ -106,10 +94,9 @@ namespace ColorVision.Database
                     log.Info("local_infile 已经支持");
                 }
                 IsConnect = true;
-                if (ConnectionString != connStr)
-                {
-                    Application.Current.Dispatcher.BeginInvoke(() => MySqlConnectChanged?.Invoke(newConn, new EventArgs()));
-                }
+                newConn.Close();
+                newConn.Dispose();
+
                 return Task.FromResult(true);
             }
             catch (MySqlException ex)
@@ -222,11 +209,6 @@ namespace ColorVision.Database
             }
         }
 
-        public void Close()
-        {
-            MySqlConnection.Close();
-        }
-
 
         public List<string> GetTableNames()
         {
@@ -291,7 +273,6 @@ namespace ColorVision.Database
 
         public void Dispose()
         {
-            MySqlConnection?.Dispose();
             DB?.Dispose();
             GC.SuppressFinalize(this);
         }
