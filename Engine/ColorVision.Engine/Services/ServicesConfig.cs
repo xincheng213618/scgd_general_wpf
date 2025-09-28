@@ -12,16 +12,6 @@ namespace ColorVision.Engine.Services
             {
                 new ConfigSettingMetadata
                 {
-                    Name =   Properties.Resources.IsDefaultOpenService,
-                    Description =  Properties.Resources.IsDefaultOpenService,
-                    Group ="Engine",
-                    Order = 15,
-                    Type = ConfigSettingType.Bool,
-                    BindingName =nameof(ServicesConfig.IsAutoConfig),
-                    Source = ServicesConfig.Instance,
-                },
-                new ConfigSettingMetadata
-                {
                     Name = Properties.Resources.IsRetorePlayControls,
                     Description = Properties.Resources.IsRetorePlayControls,
                     Group ="Engine",
@@ -40,9 +30,6 @@ namespace ColorVision.Engine.Services
         public static ServicesConfig Instance => ConfigService.Instance.GetRequiredService<ServicesConfig>();
 
         public int ShowType { get; set; }
-
-        public bool IsAutoConfig { get => _IsAutoConfig; set { _IsAutoConfig = value; OnPropertyChanged(); } }
-        private bool _IsAutoConfig = true;
 
     }
 }

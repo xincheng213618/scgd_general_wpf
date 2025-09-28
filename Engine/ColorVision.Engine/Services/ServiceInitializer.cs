@@ -26,33 +26,12 @@ namespace ColorVision.Engine.Services
         {
             if (MySqlControl.GetInstance().IsConnect)
             {
-                log.Info("正在加载物理相机");
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     PhyCameraManager.GetInstance();
-                    ServiceManager ServiceManager = ServiceManager.GetInstance();
+                    ServiceManager.GetInstance().GenDeviceDisplayControl();
                 });
-                if (ServicesConfig.Instance.IsAutoConfig)
-                {
-                    log.Info("自动配置服务中");
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        ServiceManager.GetInstance().GenDeviceDisplayControl();
-                    });
-                }
-                else
-                {
-                    log.Info("初始化服务");
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        ServiceManager.GetInstance().GenDeviceDisplayControl();
-                        new WindowDevices() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                    });
-                }
-                log.Info("服务初始化完成");
-
                 cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
-                log.Info("初始化日志");
             }
             else
             {
