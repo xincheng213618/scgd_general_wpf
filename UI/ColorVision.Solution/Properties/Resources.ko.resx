@@ -261,4 +261,10 @@
   <data name="Create_an_account" xml:space="preserve">
     <value>계정을 만들기</value>
   </data>
+  <data name="Line" xml:space="preserve">
+    <value>좋아요</value>
+  </data>
+  <data name="Column" xml:space="preserve">
+    <value>목록</value>
+  </data>
 </root>

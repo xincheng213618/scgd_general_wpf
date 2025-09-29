@@ -14,7 +14,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 
-namespace ColorVision.UI.PropertyEditor
+namespace ColorVision.Solution.Editor.AvalonEditor
 {
     /// <summary>
     /// AvalonEditControll.xaml 的交互逻辑

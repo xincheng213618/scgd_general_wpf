@@ -309,12 +309,6 @@
   <data name="Version" xml:space="preserve">
     <value>バージョン</value>
   </data>
-  <data name="Line" xml:space="preserve">
-    <value>わかりました</value>
-  </data>
-  <data name="Column" xml:space="preserve">
-    <value>リスト</value>
-  </data>
   <data name="Options" xml:space="preserve">
     <value>オプション</value>
   </data>
