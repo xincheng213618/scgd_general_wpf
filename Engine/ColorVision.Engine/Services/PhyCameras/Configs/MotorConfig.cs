@@ -1,7 +1,8 @@
 ﻿#pragma warning disable
-using Newtonsoft.Json;
-using cvColorVision;
 using ColorVision.Common.MVVM;
+using ColorVision.UI;
+using cvColorVision;
+using Newtonsoft.Json;
 using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.PhyCameras.Configs
@@ -47,11 +48,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public FOCUS_COMMUN eFOCUSCOMMUN { get => _eFOCUSCOMMUN; set { _eFOCUSCOMMUN = value; OnPropertyChanged(); } }
         private FOCUS_COMMUN _eFOCUSCOMMUN;
 
-        [DisplayName("串口"), PropertyEditorType(PropertyEditorType.TextSerialPort)]
+        [DisplayName("串口"), PropertyEditorType(typeof(TextSerialPortPropertiesEditor))]
         public string SzComName { get => _szComName; set { _szComName = value; OnPropertyChanged(); } }
         private string _szComName = "COM1";
 
-        [DisplayName("波特率"), PropertyEditorType(PropertyEditorType.TextBaudRate)]
+        [DisplayName("波特率"), PropertyEditorType(typeof(TextBaudRatePropertiesEditor))]
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
         private int _BaudRate = 115200;
 
@@ -152,7 +153,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         [DisplayName("IsUseVID")]
         public bool IsUseVID { get => _IsUseVID; set { _IsUseVID = value; OnPropertyChanged(); } }
         private bool _IsUseVID ;
-        [DisplayName("MappingFileName"), PropertyEditorType(PropertyEditorType.TextSelectFile)]
+        [DisplayName("MappingFileName"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string MappingFileName { get=>_MappingFileName; set { _MappingFileName = value; OnPropertyChanged(); } }
         private string _MappingFileName = string.Empty;
         [DisplayName("Fit")]

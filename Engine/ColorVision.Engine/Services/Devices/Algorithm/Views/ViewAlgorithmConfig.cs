@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; OnPropertyChanged(); } }
         private bool _IsShowSideListView;
 
-        [DisplayName("数据列保存路径"),PropertyEditorType(PropertyEditorType.TextSelectFolder)]
+        [DisplayName("数据列保存路径"),PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string SaveSideDataDirPath { get => _SaveSideDataDirPath; set { _SaveSideDataDirPath = value; OnPropertyChanged(); } }
         private string _SaveSideDataDirPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
@@ -57,7 +57,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
 
         [DisplayName("显示位点信息")]
-        [PropertyEditorType(PropertyEditorType.TextSelectFile)]
+        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string ShowDateFilePath { get => _ShowDateFilePath; set { _ShowDateFilePath = value; OnPropertyChanged(); } }
         private string _ShowDateFilePath;
 
