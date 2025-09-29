@@ -241,4 +241,10 @@
   <data name="Create_an_account" xml:space="preserve">
     <value>注册一个</value>
   </data>
+  <data name="Line" xml:space="preserve">
+    <value>行</value>
+  </data>
+  <data name="Column" xml:space="preserve">
+    <value>列</value>
+  </data>
 </root>

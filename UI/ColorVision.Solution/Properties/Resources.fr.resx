@@ -261,4 +261,10 @@
   <data name="Create_an_account" xml:space="preserve">
     <value>Enregistrez un</value>
   </data>
+  <data name="Line" xml:space="preserve">
+    <value>D'ACCORD</value>
+  </data>
+  <data name="Column" xml:space="preserve">
+    <value>Liste</value>
+  </data>
 </root>

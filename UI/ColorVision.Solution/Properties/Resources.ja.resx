@@ -261,4 +261,10 @@
   <data name="Create_an_account" xml:space="preserve">
     <value>アカウントを作成する</value>
   </data>
+  <data name="Line" xml:space="preserve">
+    <value>わかりました</value>
+  </data>
+  <data name="Column" xml:space="preserve">
+    <value>リスト</value>
+  </data>
 </root>

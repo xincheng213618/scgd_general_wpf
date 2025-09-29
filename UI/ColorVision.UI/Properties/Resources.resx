@@ -271,12 +271,6 @@
   <data name="General" xml:space="preserve">
     <value>通用</value>
   </data>
-  <data name="Line" xml:space="preserve">
-    <value>行</value>
-  </data>
-  <data name="Column" xml:space="preserve">
-    <value>列</value>
-  </data>
   <data name="PluginManagerWindow" xml:space="preserve">
     <value>插件管理器窗口</value>
   </data>

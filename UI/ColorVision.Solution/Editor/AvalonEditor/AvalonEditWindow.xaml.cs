@@ -15,7 +15,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 
 
-namespace ColorVision.UI
+namespace ColorVision.Solution.Editor.AvalonEditor
 {
     /// <summary>
     /// Interaction logic for AvalonEditWindow.xaml

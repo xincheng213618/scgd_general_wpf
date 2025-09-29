@@ -1,8 +1,13 @@
-﻿using ICSharpCode.AvalonEdit.Document;
+﻿using ColorVision.UI;
+using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Folding;
+using System.ComponentModel;
+using System.Reflection;
+using System.Windows.Controls;
 
-namespace ColorVision.UI
+namespace ColorVision.Solution.Editor.AvalonEditor
 {
+
     /// <summary>
     /// Allows producing foldings from a document based on braces.
     /// </summary>

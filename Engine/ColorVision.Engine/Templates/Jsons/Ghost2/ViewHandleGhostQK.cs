@@ -13,6 +13,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using ColorVision.Engine.Services;
+using ColorVision.Solution.Editor.AvalonEditor;
 
 namespace ColorVision.Engine.Templates.Jsons.Ghost2
 {

@@ -40,11 +40,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             DataContext = Device;
             EditConfig = Device.Config.Clone();
             EditContent.DataContext = EditConfig;
-
-            CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
-            CameraPhyID.DisplayMemberPath = "Code";
             EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig));
-
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
