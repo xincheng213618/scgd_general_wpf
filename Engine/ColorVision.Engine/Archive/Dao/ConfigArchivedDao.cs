@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Archive.Dao
         [SugarColumn(ColumnName ="path"), DisplayName("数据目录"), PropertyEditorType(PropertyEditorType.TextSelectFolder)]
         public string Path { get => Regex.Replace(_Path, @"(?<!\\)\\(?!\\)", @"\\"); set { _Path = value; OnPropertyChanged(); } }
         private string _Path;
-        [SugarColumn(ColumnName ="cron_expression"), DisplayName("Cron表达式"), PropertyEditorType(PropertyEditorType.CronExpression)]
+        [SugarColumn(ColumnName ="cron_expression"), DisplayName("Cron表达式"), PropertyEditorType(typeof(CronExpressionPropertiesEditor))]
         public string CronExpression { get => _CronExpression; set { _CronExpression = value; OnPropertyChanged(); } }
         private string _CronExpression;
         [SugarColumn(ColumnName ="data_save_days"), DisplayName("数据保存天数"),]

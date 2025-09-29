@@ -26,6 +26,7 @@ namespace ColorVision.UI
 
         // Cache for resources and reflection results
         public static ConcurrentDictionary<Type, Lazy<ResourceManager?>> ResourceManagerCache { get; set; } = new();
+        public static ConcurrentDictionary<Type, IPropertyEditor> CustomEditorCache { get; } = new();
 
         // Cached resource lookups per app lifetime (lookups are cheap but repeated hundreds of times in dynamic editors)
         public static Brush GlobalTextBrush => (Brush)Application.Current.FindResource("GlobalTextBrush");
@@ -179,10 +180,15 @@ namespace ColorVision.UI
             // If a custom editor Type is specified, try to create and use it
             if (editorAttr?.EditorType != null)
             {
+                if (CustomEditorCache.TryGetValue(editorAttr.EditorType, out var cachedEditor))
+                {
+                    return cachedEditor.GenProperties(property, obj);
+                }
                 try
                 {
                     if (Activator.CreateInstance(editorAttr.EditorType) is IPropertyEditor customEditor)
                     {
+                        CustomEditorCache[editorAttr.EditorType] = customEditor; // cache
                         return customEditor.GenProperties(property, obj);
                     }
                 }
@@ -250,34 +256,6 @@ namespace ColorVision.UI
                         dockPanel.Children.Add(openFolderBtn);
                         dockPanel.Children.Add(selectBtn);
                         dockPanel.Children.Add(textbox);
-                    }
-                    break;
-                case PropertyEditorType.TextJson:
-                    {
-                        var editCmd = new RelayCommand(_ =>
-                        {
-                            var owner = Application.Current.GetActiveWindow();
-                            var wnd = new AvalonEditWindow { WindowStartupLocation = WindowStartupLocation.CenterOwner, Owner = owner };
-                            wnd.SetJsonText(property.GetValue(obj) as string ?? string.Empty);
-                            wnd.Closing += (_, __) => property.SetValue(obj, wnd.GetJsonText());
-                            wnd.ShowDialog();
-                        });
-                        var iconBtn = CreateIconSpinButton(editCmd);
-                        var binding = CreateTwoWayBinding(obj, property.Name);
-                        var textbox = CreateSmallTextBox(binding);
-                        DockPanel.SetDock(iconBtn, Dock.Right);
-                        dockPanel.Children.Add(iconBtn);
-                        dockPanel.Children.Add(textbox);
-                    }
-                    break;
-                case PropertyEditorType.CronExpression:
-                    {
-                        var cronBtn = new Button { Content = "在线Cron表达式生成器", Margin = new Thickness(5, 0, 0, 0), ToolTip = "打开在线Cron表达式生成器" };
-                        DockPanel.SetDock(cronBtn, Dock.Right);
-                        cronBtn.Click += (_, __) => PlatformHelper.Open("https://cron.qqe2.com/");
-                        var cronTextBox = CreateSmallTextBox(CreateTwoWayBinding(obj, property.Name));
-                        dockPanel.Children.Add(cronBtn);
-                        dockPanel.Children.Add(cronTextBox);
                     }
                     break;
                 case PropertyEditorType.TextSerialPort:
