@@ -124,6 +124,7 @@ namespace ColorVision.UI
             dockPanel.Children.Add(textBlock);
 
             var textBinding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);
+            textBinding.Converter = SingleBackslashConverter.Instance;
             var textbox = PropertyEditorHelper.CreateSmallTextBox(textBinding);
 
             var selectBtn = new Button

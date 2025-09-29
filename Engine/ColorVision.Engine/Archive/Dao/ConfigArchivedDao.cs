@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Archive.Dao
         [SugarColumn(ColumnName ="id"), Browsable(false)]
         public int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }
         private int _Id;
-        [SugarColumn(ColumnName ="path"), DisplayName("数据目录"), PropertyEditorType(PropertyEditorType.TextSelectFolder)]
+        [SugarColumn(ColumnName ="path"), DisplayName("数据目录"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string Path { get => Regex.Replace(_Path, @"(?<!\\)\\(?!\\)", @"\\"); set { _Path = value; OnPropertyChanged(); } }
         private string _Path;
         [SugarColumn(ColumnName ="cron_expression"), DisplayName("Cron表达式"), PropertyEditorType(typeof(CronExpressionPropertiesEditor))]

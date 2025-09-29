@@ -153,7 +153,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         [DisplayName("IsUseVID")]
         public bool IsUseVID { get => _IsUseVID; set { _IsUseVID = value; OnPropertyChanged(); } }
         private bool _IsUseVID ;
-        [DisplayName("MappingFileName"), PropertyEditorType(PropertyEditorType.TextSelectFile)]
+        [DisplayName("MappingFileName"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string MappingFileName { get=>_MappingFileName; set { _MappingFileName = value; OnPropertyChanged(); } }
         private string _MappingFileName = string.Empty;
         [DisplayName("Fit")]

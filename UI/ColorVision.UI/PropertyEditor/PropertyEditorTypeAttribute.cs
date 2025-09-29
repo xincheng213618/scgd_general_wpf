@@ -10,10 +10,14 @@ namespace System.ComponentModel
     {
         Default,
         Bool,
-        Text,
+        Text, // generic text
         Enum,
         TextSelectFolder,
-        TextSelectFile
+        TextSelectFile,
+        TextSerialPort,
+        TextBaudRate,
+        TextJson,
+        CronExpression
     }
     public enum CommandType
     {

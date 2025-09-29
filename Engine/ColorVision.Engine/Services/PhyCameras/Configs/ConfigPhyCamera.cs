@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1707
 using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using cvColorVision;
 using System;
 using System.ComponentModel;
@@ -143,7 +144,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
     public class FileSeviceConfig :ViewModelBase
     {
-        [DisplayName("数据存储路径"),PropertyEditorType(PropertyEditorType.TextSelectFolder)]
+        [DisplayName("数据存储路径"),PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string FileBasePath { get => _FileBasePath; set { _FileBasePath = value; OnPropertyChanged(); } }
         private string _FileBasePath = "D:\\CVTest";
         /// <summary>

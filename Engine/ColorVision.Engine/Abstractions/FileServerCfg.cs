@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using System;
 using System.ComponentModel;
 
@@ -14,7 +15,7 @@ namespace ColorVision.Engine
         /// <summary>
         /// 数据基础路径
         /// </summary>
-        [DisplayName("数据基础路径"),PropertyEditorType(PropertyEditorType.TextSelectFolder)]
+        [DisplayName("数据基础路径"),PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string DataBasePath { get => _DataBasePath; set { _DataBasePath = value; OnPropertyChanged(); } }
         private string _DataBasePath = "D:\\CVTest";
 

@@ -201,63 +201,6 @@ namespace ColorVision.UI
 
             switch (editorType)
             {
-                case PropertyEditorType.TextSelectFile:
-                    {
-                        var textBinding = CreateTwoWayBinding(obj, property.Name);
-                        var textbox = CreateSmallTextBox(textBinding);
-                        var selectBtn = new Button { Content = "...", Margin = new Thickness(5, 0, 0, 0) };
-                        selectBtn.Click += (_, __) =>
-                        {
-                            var ofd = new Microsoft.Win32.OpenFileDialog();
-                            var path = property.GetValue(obj) as string;
-#if NET8_0
-                            if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
-                            {
-                                ofd.DefaultDirectory = Directory.GetDirectoryRoot(path);
-                            }
-#endif
-                            if (ofd.ShowDialog() == true)
-                            {
-                                property.SetValue(obj, ofd.FileName);
-                            }
-                        };
-                        var openFolderBtn = new Button { Content = "🗁", Margin = new Thickness(5, 0, 0, 0), ToolTip = "打开所在文件夹" };
-                        openFolderBtn.Click += (_, __) =>
-                        {
-                            var path = property.GetValue(obj) as string;
-                            if (!string.IsNullOrWhiteSpace(path)) PlatformHelper.OpenFolder(path);
-                        };
-                        DockPanel.SetDock(selectBtn, Dock.Right);
-                        DockPanel.SetDock(openFolderBtn, Dock.Right);
-                        dockPanel.Children.Add(openFolderBtn);
-                        dockPanel.Children.Add(selectBtn);
-                        dockPanel.Children.Add(textbox);
-                    }
-                    break;
-                case PropertyEditorType.TextSelectFolder:
-                    {
-                        var textBinding = CreateTwoWayBinding(obj, property.Name);
-                        var textbox = CreateSmallTextBox(textBinding);
-                        var selectBtn = new Button { Content = "...", Margin = new Thickness(5, 0, 0, 0) };
-                        selectBtn.Click += (_, __) =>
-                        {
-                            using var folderDialog = new System.Windows.Forms.FolderBrowserDialog { SelectedPath = property.GetValue(obj) as string ?? string.Empty };
-                            if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK && !string.IsNullOrWhiteSpace(folderDialog.SelectedPath))
-                                property.SetValue(obj, folderDialog.SelectedPath);
-                        };
-                        var openFolderBtn = new Button { Content = "🗁", Margin = new Thickness(5, 0, 0, 0), ToolTip = "打开文件夹" };
-                        openFolderBtn.Click += (_, __) =>
-                        {
-                            var path = property.GetValue(obj) as string;
-                            if (!string.IsNullOrWhiteSpace(path)) PlatformHelper.OpenFolder(path);
-                        };
-                        DockPanel.SetDock(selectBtn, Dock.Right);
-                        DockPanel.SetDock(openFolderBtn, Dock.Right);
-                        dockPanel.Children.Add(openFolderBtn);
-                        dockPanel.Children.Add(selectBtn);
-                        dockPanel.Children.Add(textbox);
-                    }
-                    break;
                 default:
                     {
                         Binding binding = CreateTwoWayBinding(obj, property.Name);
