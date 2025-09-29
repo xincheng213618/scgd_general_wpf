@@ -176,6 +176,19 @@ namespace ColorVision.UI
             var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
             var editorType = editorAttr?.PropertyEditorType ?? PropertyEditorType.Default;
 
+            // If a custom editor Type is specified, try to create and use it
+            if (editorAttr?.EditorType != null)
+            {
+                try
+                {
+                    if (Activator.CreateInstance(editorAttr.EditorType) is IPropertyEditor customEditor)
+                    {
+                        return customEditor.GenProperties(property, obj);
+                    }
+                }
+                catch { /* ignore and fallback */ }
+            }
+
             var dockPanel = new DockPanel();
             var textBlock = CreateLabel(property, rm);
             dockPanel.Children.Add(textBlock);
@@ -185,13 +198,8 @@ namespace ColorVision.UI
                 case PropertyEditorType.TextSelectFile:
                     {
                         var textBinding = CreateTwoWayBinding(obj, property.Name);
-
                         var textbox = CreateSmallTextBox(textBinding);
-                        var selectBtn = new Button
-                        {
-                            Content = "...",
-                            Margin = new Thickness(5, 0, 0, 0)
-                        };
+                        var selectBtn = new Button { Content = "...", Margin = new Thickness(5, 0, 0, 0) };
                         selectBtn.Click += (_, __) =>
                         {
                             var ofd = new Microsoft.Win32.OpenFileDialog();
@@ -207,186 +215,101 @@ namespace ColorVision.UI
                                 property.SetValue(obj, ofd.FileName);
                             }
                         };
-
-                        var openFolderBtn = new Button
-                        {
-                            Content = "🗁",
-                            Margin = new Thickness(5, 0, 0, 0),
-                            ToolTip = "打开所在文件夹"
-                        };
+                        var openFolderBtn = new Button { Content = "🗁", Margin = new Thickness(5, 0, 0, 0), ToolTip = "打开所在文件夹" };
                         openFolderBtn.Click += (_, __) =>
                         {
                             var path = property.GetValue(obj) as string;
-                            if (!string.IsNullOrWhiteSpace(path))
-                            {
-                                PlatformHelper.OpenFolder(path);
-                            }
+                            if (!string.IsNullOrWhiteSpace(path)) PlatformHelper.OpenFolder(path);
                         };
-
                         DockPanel.SetDock(selectBtn, Dock.Right);
                         DockPanel.SetDock(openFolderBtn, Dock.Right);
-
                         dockPanel.Children.Add(openFolderBtn);
                         dockPanel.Children.Add(selectBtn);
                         dockPanel.Children.Add(textbox);
                     }
                     break;
-
                 case PropertyEditorType.TextSelectFolder:
                     {
                         var textBinding = CreateTwoWayBinding(obj, property.Name);
                         var textbox = CreateSmallTextBox(textBinding);
-
-                        var selectBtn = new Button
-                        {
-                            Content = "...",
-                            Margin = new Thickness(5, 0, 0, 0)
-                        };
+                        var selectBtn = new Button { Content = "...", Margin = new Thickness(5, 0, 0, 0) };
                         selectBtn.Click += (_, __) =>
                         {
-                            using var folderDialog = new System.Windows.Forms.FolderBrowserDialog
-                            {
-                                SelectedPath = property.GetValue(obj) as string ?? string.Empty
-                            };
-                            if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                            {
-                                if (!string.IsNullOrWhiteSpace(folderDialog.SelectedPath))
-                                {
-                                    property.SetValue(obj, folderDialog.SelectedPath);
-                                }
-                            }
+                            using var folderDialog = new System.Windows.Forms.FolderBrowserDialog { SelectedPath = property.GetValue(obj) as string ?? string.Empty };
+                            if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK && !string.IsNullOrWhiteSpace(folderDialog.SelectedPath))
+                                property.SetValue(obj, folderDialog.SelectedPath);
                         };
-
-                        var openFolderBtn = new Button
-                        {
-                            Content = "🗁",
-                            Margin = new Thickness(5, 0, 0, 0),
-                            ToolTip = "打开文件夹"
-                        };
+                        var openFolderBtn = new Button { Content = "🗁", Margin = new Thickness(5, 0, 0, 0), ToolTip = "打开文件夹" };
                         openFolderBtn.Click += (_, __) =>
                         {
                             var path = property.GetValue(obj) as string;
-                            if (!string.IsNullOrWhiteSpace(path))
-                            {
-                                PlatformHelper.OpenFolder(path);
-                            }
+                            if (!string.IsNullOrWhiteSpace(path)) PlatformHelper.OpenFolder(path);
                         };
-
                         DockPanel.SetDock(selectBtn, Dock.Right);
                         DockPanel.SetDock(openFolderBtn, Dock.Right);
-
                         dockPanel.Children.Add(openFolderBtn);
                         dockPanel.Children.Add(selectBtn);
                         dockPanel.Children.Add(textbox);
                     }
                     break;
-
                 case PropertyEditorType.TextJson:
                     {
                         var editCmd = new RelayCommand(_ =>
                         {
                             var owner = Application.Current.GetActiveWindow();
-                            var wnd = new AvalonEditWindow
-                            {
-                                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                                Owner = owner
-                            };
+                            var wnd = new AvalonEditWindow { WindowStartupLocation = WindowStartupLocation.CenterOwner, Owner = owner };
                             wnd.SetJsonText(property.GetValue(obj) as string ?? string.Empty);
                             wnd.Closing += (_, __) => property.SetValue(obj, wnd.GetJsonText());
                             wnd.ShowDialog();
                         });
-
                         var iconBtn = CreateIconSpinButton(editCmd);
-
                         var binding = CreateTwoWayBinding(obj, property.Name);
                         var textbox = CreateSmallTextBox(binding);
-
                         DockPanel.SetDock(iconBtn, Dock.Right);
                         dockPanel.Children.Add(iconBtn);
                         dockPanel.Children.Add(textbox);
                     }
                     break;
-
                 case PropertyEditorType.CronExpression:
                     {
-                        var cronBtn = new Button
-                        {
-                            Content = "在线Cron表达式生成器",
-                            Margin = new Thickness(5, 0, 0, 0),
-                            ToolTip = "打开在线Cron表达式生成器"
-                        };
+                        var cronBtn = new Button { Content = "在线Cron表达式生成器", Margin = new Thickness(5, 0, 0, 0), ToolTip = "打开在线Cron表达式生成器" };
                         DockPanel.SetDock(cronBtn, Dock.Right);
                         cronBtn.Click += (_, __) => PlatformHelper.Open("https://cron.qqe2.com/");
-
                         var cronTextBox = CreateSmallTextBox(CreateTwoWayBinding(obj, property.Name));
-
                         dockPanel.Children.Add(cronBtn);
                         dockPanel.Children.Add(cronTextBox);
                     }
                     break;
-
                 case PropertyEditorType.TextSerialPort:
                     {
-                        // Prefer real ports if available; fallback to common names
-                        //var ports = System.IO.Ports.SerialPort.GetPortNames();
-                        //var serials = ports is { Length: > 0 }
-                        //    ? ports.OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList()
-                        //    : new List<string> { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10", "COM11", "COM12", "COM13", "COM14", "COM15", "COM16" };
-
-                        var serials =  new List<string> { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10", "COM11", "COM12", "COM13", "COM14", "COM15", "COM16" };
-
-                        var combo = new HandyControl.Controls.ComboBox
-                        {
-                            Margin = new Thickness(5, 0, 0, 0),
-                            Style = ComboBoxSmallStyle,
-                            IsEditable = true,
-                            ItemsSource = serials
-                        };
+                        var serials = new List<string> { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10", "COM11", "COM12", "COM13", "COM14", "COM15", "COM16" };
+                        var combo = new HandyControl.Controls.ComboBox { Margin = new Thickness(5, 0, 0, 0), Style = ComboBoxSmallStyle, IsEditable = true, ItemsSource = serials };
                         HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
                         combo.SetBinding(ComboBox.TextProperty, CreateTwoWayBinding(obj, property.Name));
-
                         dockPanel.Children.Add(combo);
                     }
                     break;
-
                 case PropertyEditorType.TextBaudRate:
                     {
                         var baudRates = new List<int> { 921600, 460800, 230400, 115200, 57600, 38400, 19200, 14400, 9600, 4800, 2400, 1200, 600, 300 };
-                        var combo = new HandyControl.Controls.ComboBox
-                        {
-                            Margin = new Thickness(5, 0, 0, 0),
-                            Style = ComboBoxSmallStyle,
-                            IsEditable = true,
-                            ItemsSource = baudRates
-                        };
+                        var combo = new HandyControl.Controls.ComboBox { Margin = new Thickness(5, 0, 0, 0), Style = ComboBoxSmallStyle, IsEditable = true, ItemsSource = baudRates };
                         HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
                         combo.SetBinding(ComboBox.TextProperty, CreateTwoWayBinding(obj, property.Name));
-
                         dockPanel.Children.Add(combo);
                     }
                     break;
-
                 default:
                     {
                         Binding binding = CreateTwoWayBinding(obj, property.Name);
-                        binding.UpdateSourceTrigger = editorAttr?.UpdateSourceTrigger??UpdateSourceTrigger.Default;
-
+                        binding.UpdateSourceTrigger = editorAttr?.UpdateSourceTrigger ?? UpdateSourceTrigger.Default;
                         var t = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
-                        if (t == typeof(float) || property.PropertyType == typeof(double))
-                        {
-                            binding.StringFormat = "0.0################";
-                        }
-
+                        if (t == typeof(float) || property.PropertyType == typeof(double)) binding.StringFormat = "0.0################";
                         var textbox = CreateSmallTextBox(binding);
-
-
-
                         textbox.PreviewKeyDown += TextBox_PreviewKeyDown;
                         dockPanel.Children.Add(textbox);
                     }
                     break;
             }
-
             return dockPanel;
         }
 
@@ -744,14 +667,14 @@ namespace ColorVision.UI
 
         // Helpers
 
-        private static string GetDisplayName(ResourceManager? rm, PropertyInfo prop, string? overrideName = null)
+        public static string GetDisplayName(ResourceManager? rm, PropertyInfo prop, string? overrideName = null)
         {
             var displayNameAttr = prop.GetCustomAttribute<DisplayNameAttribute>();
             var raw = overrideName ?? displayNameAttr?.DisplayName ?? prop.Name;
             return rm?.GetString(raw, Thread.CurrentThread.CurrentUICulture) ?? raw;
         }
 
-        private static TextBlock CreateLabel(PropertyInfo property, ResourceManager? rm)
+        public static TextBlock CreateLabel(PropertyInfo property, ResourceManager? rm)
         {
             var desc = property.GetCustomAttribute<DescriptionAttribute>()?.Description;
             var tb = new TextBlock
@@ -764,7 +687,7 @@ namespace ColorVision.UI
             return tb;
         }
 
-        private static Binding CreateTwoWayBinding(object source, string path)
+        public static Binding CreateTwoWayBinding(object source, string path)
         {
             return new Binding(path)
             {
@@ -774,7 +697,7 @@ namespace ColorVision.UI
             };
         }
 
-        private static TextBox CreateSmallTextBox(Binding binding)
+        public static TextBox CreateSmallTextBox(Binding binding)
         {
             var tb = new TextBox
             {
@@ -785,7 +708,7 @@ namespace ColorVision.UI
             return tb;
         }
 
-        private static Button CreateIconSpinButton(ICommand command)
+        public static Button CreateIconSpinButton(ICommand command)
         {
             var btn = new Button
             {
@@ -828,7 +751,7 @@ namespace ColorVision.UI
             return btn;
         }
 
-        private static bool IsTextEditableType(Type t)
+        public static bool IsTextEditableType(Type t)
         {
             // Includes common primitives and nullable counterparts that can be edited via TextBox
             t = Nullable.GetUnderlyingType(t) ?? t;

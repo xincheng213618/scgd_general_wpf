@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8603,CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.UI;
 using Newtonsoft.Json;
 using SqlSugar;
 using System.ComponentModel;
@@ -85,7 +86,7 @@ namespace ColorVision.Engine.Archive.Dao
         public int CfgType { get => _CfgType; set { _CfgType = value; OnPropertyChanged(); } }
         private int _CfgType;
 
-        [SugarColumn(ColumnName ="cfg_value"), DisplayName(nameof(CfgValue)),PropertyEditorType(PropertyEditorType.TextJson)]
+        [SugarColumn(ColumnName ="cfg_value"), DisplayName(nameof(CfgValue)), PropertyEditorType(typeof(TextJsonPropertiesEditor))]
         public string CfgValue { get => _CfgValue; set { _CfgValue = value; OnPropertyChanged(); } }
         private string _CfgValue;
 
