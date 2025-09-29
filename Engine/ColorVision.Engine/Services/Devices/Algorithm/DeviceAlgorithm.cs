@@ -25,11 +25,16 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             EditCommand = new RelayCommand(a =>
             {
-                EditAlgorithm window = new(this);
-                window.Owner = Application.Current.GetActiveWindow();
-                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.ShowDialog();
+                var propertyEditorWindow = new PropertyEditorWindow(Config, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                propertyEditorWindow.Submited += (s, e) => Save();
+                propertyEditorWindow.ShowDialog();
+
             }, a => AccessControl.Check(PermissionMode.Administrator));
+        }
+
+        private void Con_Submited(object? sender, EventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         readonly Lazy<DisplayAlgorithm> DisplayAlgorithmControlLazy;
