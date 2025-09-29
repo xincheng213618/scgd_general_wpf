@@ -1620,7 +1620,7 @@ namespace ProjectLUX
 
 
 
-            string filePath = Path.Combine(ViewResultManager.Config.SavePathCsv, $"ObjectiveTestResults_{timeStr}.csv");
+            string filePath = Path.Combine(ViewResultManager.Config.CsvSavePath, $"ObjectiveTestResults_{timeStr}.csv");
 
             List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
 

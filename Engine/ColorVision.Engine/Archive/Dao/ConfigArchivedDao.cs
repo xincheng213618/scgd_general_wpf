@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8603,CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.UI;
 using Newtonsoft.Json;
 using SqlSugar;
 using System.ComponentModel;
@@ -15,10 +16,10 @@ namespace ColorVision.Engine.Archive.Dao
         [SugarColumn(ColumnName ="id"), Browsable(false)]
         public int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }
         private int _Id;
-        [SugarColumn(ColumnName ="path"), DisplayName("数据目录"), PropertyEditorType(PropertyEditorType.TextSelectFolder)]
+        [SugarColumn(ColumnName ="path"), DisplayName("数据目录"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string Path { get => Regex.Replace(_Path, @"(?<!\\)\\(?!\\)", @"\\"); set { _Path = value; OnPropertyChanged(); } }
         private string _Path;
-        [SugarColumn(ColumnName ="cron_expression"), DisplayName("Cron表达式"), PropertyEditorType(PropertyEditorType.CronExpression)]
+        [SugarColumn(ColumnName ="cron_expression"), DisplayName("Cron表达式"), PropertyEditorType(typeof(CronExpressionPropertiesEditor))]
         public string CronExpression { get => _CronExpression; set { _CronExpression = value; OnPropertyChanged(); } }
         private string _CronExpression;
         [SugarColumn(ColumnName ="data_save_days"), DisplayName("数据保存天数"),]
@@ -85,7 +86,7 @@ namespace ColorVision.Engine.Archive.Dao
         public int CfgType { get => _CfgType; set { _CfgType = value; OnPropertyChanged(); } }
         private int _CfgType;
 
-        [SugarColumn(ColumnName ="cfg_value"), DisplayName(nameof(CfgValue)),PropertyEditorType(PropertyEditorType.TextJson)]
+        [SugarColumn(ColumnName ="cfg_value"), DisplayName(nameof(CfgValue)), PropertyEditorType(typeof(TextJsonPropertiesEditor))]
         public string CfgValue { get => _CfgValue; set { _CfgValue = value; OnPropertyChanged(); } }
         private string _CfgValue;
 

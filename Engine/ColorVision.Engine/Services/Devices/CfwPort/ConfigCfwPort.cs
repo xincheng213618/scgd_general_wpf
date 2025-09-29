@@ -1,14 +1,15 @@
-﻿using System.ComponentModel;
+﻿using ColorVision.UI;
+using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.CfwPort
 {
     public class ConfigCfwPort: DeviceServiceConfig
     {
-        [DisplayName("SzComName"), PropertyEditorType(PropertyEditorType.TextSerialPort)]
+        [DisplayName("SzComName"), PropertyEditorType(typeof(TextSerialPortPropertiesEditor))]
         public string SzComName { get => _szComName; set { _szComName = value; OnPropertyChanged(); } }
         private string _szComName = "COM1";
 
-        [DisplayName("BaudRate"), PropertyEditorType(PropertyEditorType.TextBaudRate)]
+        [DisplayName("BaudRate"), PropertyEditorType(typeof(TextBaudRatePropertiesEditor))]
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
         private int _BaudRate = 115200;
 

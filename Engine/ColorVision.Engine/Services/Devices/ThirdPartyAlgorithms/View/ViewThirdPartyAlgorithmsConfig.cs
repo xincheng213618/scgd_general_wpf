@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
         public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; OnPropertyChanged(); } }
         private bool _IsShowSideListView = true;
 
-        [DisplayName("数据列保存路径"), PropertyEditorType(PropertyEditorType.TextSelectFolder)]
+        [DisplayName("数据列保存路径"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string SaveSideDataDirPath { get => _SaveSideDataDirPath; set { _SaveSideDataDirPath = value; OnPropertyChanged(); } }
         private string _SaveSideDataDirPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 

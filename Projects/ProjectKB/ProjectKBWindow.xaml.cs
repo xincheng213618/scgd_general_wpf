@@ -615,7 +615,7 @@ namespace ProjectKB
             }
             ViewResultManager.Save(KBItemMaster);
 
-            string resultPath = ViewResultManager.Config.SavePathText + $"\\{KBItemMaster.SN}-{KBItemMaster.CreateTime:yyyyMMddHHmmssffff}.txt";
+            string resultPath = ViewResultManager.Config.TextSavePath + $"\\{KBItemMaster.SN}-{KBItemMaster.CreateTime:yyyyMMddHHmmssffff}.txt";
             string result = $"{KBItemMaster.SN},{(KBItemMaster.Result ? "Pass" : "Fail")}, ,";
 
             log.Debug($"结果正在写入{resultPath},result:{result}");
@@ -626,7 +626,7 @@ namespace ProjectKB
                 string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
                 string regexPattern = $"[{Regex.Escape(invalidChars)}]";
 
-                string csvpath = ViewResultManager.Config.SavePathCsv + $"\\{Regex.Replace(KBItemMaster.Model, regexPattern, "")}_{KBItemMaster.CreateTime:yyyyMMdd}.csv";
+                string csvpath = ViewResultManager.Config.CsvSavePath + $"\\{Regex.Replace(KBItemMaster.Model, regexPattern, "")}_{KBItemMaster.CreateTime:yyyyMMdd}.csv";
 
                 KBItemMaster.SaveCsv(csvpath);
                 log.Debug($"writecsv:{csvpath}");

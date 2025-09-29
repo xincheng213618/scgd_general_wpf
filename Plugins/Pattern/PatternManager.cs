@@ -16,7 +16,7 @@ namespace Pattern
 {
     public class PatternManagerConfig:ViewModelBase,IConfig
     {
-        [DisplayName("图卡生成路径"), PropertyEditorType(PropertyEditorType.TextSelectFolder)]
+        [DisplayName("图卡生成路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string SaveFilePath { get => _SaveFilePath; set { _SaveFilePath = value; OnPropertyChanged(); } }
         private string _SaveFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Pattern");
 

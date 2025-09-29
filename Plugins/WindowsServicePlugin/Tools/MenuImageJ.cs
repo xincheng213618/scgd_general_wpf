@@ -21,11 +21,11 @@ namespace WindowsServicePlugin.Tools
     {
         public static ImageJConfig Instance => ConfigService.Instance.GetRequiredService<ImageJConfig>();
 
-        [DisplayName("ImageJ路径"),PropertyEditorType(PropertyEditorType.TextSelectFile)]
+        [DisplayName("ImageJ路径"),PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string ImageJPath { get => _ImageJPath; set { _ImageJPath = value; } }
         private string _ImageJPath = string.Empty;
 
-        [DisplayName("BeyondCompare路径"), PropertyEditorType(PropertyEditorType.TextSelectFile)]
+        [DisplayName("BeyondCompare路径"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string BeyondComparePath { get => _BeyondComparePath; set { _BeyondComparePath = value; } }
         private string _BeyondComparePath = string.Empty;
 

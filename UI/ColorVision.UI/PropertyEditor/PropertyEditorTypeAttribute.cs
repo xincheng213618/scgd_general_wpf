@@ -1,34 +1,17 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using ColorVision.UI;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Windows.Controls;
 using System.Windows.Data;
 
 ///这里划到xi
 namespace System.ComponentModel
 {
-    public enum PropertyEditorType
-    {
-        Default,
-        Bool,
-        Text,
-        Enum,
-        TextSelectFolder,
-        TextSelectFile,
-        TextSerialPort,
-        TextBaudRate,
-        TextJson,
-        CronExpression
-    }
     public enum CommandType
     {
-        /// <summary>
-        /// 普通
-        /// </summary>
         Normal,
-        /// <summary>
-        /// 红色
-        /// </summary>
         Highlighted,
     }
-
 
     [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)] 
     public sealed class CommandDisplayAttribute : Attribute
@@ -36,17 +19,9 @@ namespace System.ComponentModel
         public static readonly CommandDisplayAttribute Default;
         public string DisplayName { get; }
         public int Order { get; set; }
-
         public CommandType CommandType { get; set; } = CommandType.Normal;
-
-        public CommandDisplayAttribute(string displayName) 
-        {
-            DisplayName = displayName; 
-        }
-
-
+        public CommandDisplayAttribute(string displayName) => DisplayName = displayName; 
     }
-
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Event)]
     public class PropertyVisibilityAttribute : Attribute
@@ -60,51 +35,33 @@ namespace System.ComponentModel
         }
     }
 
-
-
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Event)]
+    /// <summary>
+    /// 属性编辑器类型特性: 仅指定一个实现 IPropertyEditor 的类型。
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Property)]
     public class PropertyEditorTypeAttribute : Attribute
     {
         public static readonly PropertyEditorTypeAttribute Default = new PropertyEditorTypeAttribute();
 
-        public virtual PropertyEditorType PropertyEditorType => PropertyEditorTypeValue;
-
-        protected PropertyEditorType PropertyEditorTypeValue { get; set; }
-
         public UpdateSourceTrigger UpdateSourceTrigger { get; set; } = UpdateSourceTrigger.PropertyChanged;
 
-        public PropertyEditorTypeAttribute(PropertyEditorType propertyEditorType)
-        {
-            PropertyEditorTypeValue = propertyEditorType;
-        }
-        public PropertyEditorTypeAttribute() : this(PropertyEditorType.Default)
-        {
-        }
+        /// <summary>
+        /// 自定义编辑器类型 (必须实现 IPropertyEditor). 若为空则使用 TextboxPropertiesEditor。
+        /// </summary>
+        public Type? EditorType { get; } = typeof(TextboxPropertiesEditor);
 
-        public PropertyEditorTypeAttribute(PropertyEditorType propertyEditorType, object[] itemSourse)
+        public PropertyEditorTypeAttribute() { }
+        public PropertyEditorTypeAttribute(Type editorType)
         {
-            PropertyEditorTypeValue = propertyEditorType;
-            ItemSourse = itemSourse;
+            EditorType = editorType;
         }
-        public object[] ItemSourse { get; set; }
-
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (obj is PropertyEditorTypeAttribute displayNameAttribute)
-            {
-                return displayNameAttribute.PropertyEditorTypeValue == PropertyEditorTypeValue;
-            }
+            if (obj is PropertyEditorTypeAttribute other)
+                return other.EditorType == EditorType;
             return false;
         }
-
-        public override int GetHashCode()
-        {
-            return PropertyEditorTypeValue.GetHashCode();
-        }
-
-        public override bool IsDefaultAttribute()
-        {
-            return Equals(Default);
-        }
+        public override int GetHashCode() => HashCode.Combine(EditorType);
+        public override bool IsDefaultAttribute() => Equals(Default);
     }
 }
