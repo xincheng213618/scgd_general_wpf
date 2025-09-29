@@ -1,5 +1,5 @@
-﻿using ColorVision.UI;
-using ColorVision.UI.PropertyEditor;
+﻿using ColorVision.Solution.Editor.AvalonEditor;
+using ColorVision.UI;
 using System.ComponentModel;
 using System.Windows;
 

@@ -5,6 +5,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Services;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.Solution.Editor.AvalonEditor;
 using ColorVision.UI;
 using log4net;
 using Newtonsoft.Json;

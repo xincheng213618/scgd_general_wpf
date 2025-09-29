@@ -1,11 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Solution.Editor.AvalonEditor;
 using ColorVision.UI;
-using System.ComponentModel;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Solution.Editor.AvalonEditor
+namespace  System.ComponentModel
 {
     public class TextJsonPropertiesEditor : IPropertyEditor
     {

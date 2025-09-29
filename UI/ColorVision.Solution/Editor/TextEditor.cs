@@ -1,8 +1,8 @@
 ﻿using AvalonDock.Layout;
 using ColorVision.Common.Utilities;
 using ColorVision.Solution.Editor;
+using ColorVision.Solution.Editor.AvalonEditor;
 using ColorVision.Solution.Searches;
-using ColorVision.UI.PropertyEditor;
 using System.IO;
 using System.Windows;
 

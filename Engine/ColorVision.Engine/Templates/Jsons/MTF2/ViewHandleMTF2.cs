@@ -7,6 +7,7 @@ using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.Solution.Editor.AvalonEditor;
 using ColorVision.UI;
 using log4net;
 using Newtonsoft.Json;

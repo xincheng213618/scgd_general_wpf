@@ -20,6 +20,7 @@ using System.Windows.Data;
 using System.Windows.Media;
 using static iText.StyledXmlParser.Jsoup.Select.Evaluator;
 using ColorVision.Engine.Services;
+using ColorVision.Solution.Editor.AvalonEditor;
 
 namespace ColorVision.Engine.Templates.Jsons.FindCross
 {

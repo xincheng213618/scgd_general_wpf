@@ -3,7 +3,8 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.UI;
+using ColorVision.Engine.Services;
+using ColorVision.Solution.Editor.AvalonEditor;
 using log4net;
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -13,7 +14,6 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
 {
