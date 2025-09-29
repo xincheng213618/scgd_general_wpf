@@ -13,9 +13,7 @@ namespace System.ComponentModel
         Text,
         Enum,
         TextSelectFolder,
-        TextSelectFile,
-        TextSerialPort,
-        TextBaudRate,
+        TextSelectFile
     }
     public enum CommandType
     {

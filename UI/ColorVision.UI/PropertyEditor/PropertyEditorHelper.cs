@@ -258,24 +258,6 @@ namespace ColorVision.UI
                         dockPanel.Children.Add(textbox);
                     }
                     break;
-                case PropertyEditorType.TextSerialPort:
-                    {
-                        var serials = new List<string> { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10", "COM11", "COM12", "COM13", "COM14", "COM15", "COM16" };
-                        var combo = new HandyControl.Controls.ComboBox { Margin = new Thickness(5, 0, 0, 0), Style = ComboBoxSmallStyle, IsEditable = true, ItemsSource = serials };
-                        HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
-                        combo.SetBinding(ComboBox.TextProperty, CreateTwoWayBinding(obj, property.Name));
-                        dockPanel.Children.Add(combo);
-                    }
-                    break;
-                case PropertyEditorType.TextBaudRate:
-                    {
-                        var baudRates = new List<int> { 921600, 460800, 230400, 115200, 57600, 38400, 19200, 14400, 9600, 4800, 2400, 1200, 600, 300 };
-                        var combo = new HandyControl.Controls.ComboBox { Margin = new Thickness(5, 0, 0, 0), Style = ComboBoxSmallStyle, IsEditable = true, ItemsSource = baudRates };
-                        HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
-                        combo.SetBinding(ComboBox.TextProperty, CreateTwoWayBinding(obj, property.Name));
-                        dockPanel.Children.Add(combo);
-                    }
-                    break;
                 default:
                     {
                         Binding binding = CreateTwoWayBinding(obj, property.Name);
