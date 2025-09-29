@@ -1325,7 +1325,7 @@ namespace ProjectARVRPro
                         try
                         {
                             string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                            string filePath = Path.Combine(ViewResultManager.Config.SavePathCsv, $"MTF_H_{timeStr}.csv");
+                            string filePath = Path.Combine(ViewResultManager.Config.CsvSavePath, $"MTF_H_{timeStr}.csv");
                             var csvBuilder = new StringBuilder();
                             csvBuilder.AppendLine($"name,x,y,w,h,mtfValue");
                             var mtfs = result.ViewRelsultMTFH.MTFDetailViewReslut.MTFResult?.result;
@@ -1605,7 +1605,7 @@ namespace ProjectARVRPro
 
 
 
-            string filePath = Path.Combine(ViewResultManager.Config.SavePathCsv, $"ObjectiveTestResults_{timeStr}.csv");
+            string filePath = Path.Combine(ViewResultManager.Config.CsvSavePath, $"ObjectiveTestResults_{timeStr}.csv");
 
             List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
 

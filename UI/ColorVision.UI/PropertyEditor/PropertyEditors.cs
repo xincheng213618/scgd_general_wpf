@@ -1,15 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Data;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Collections.Generic; // added
 
 namespace ColorVision.UI
 {
@@ -18,15 +13,12 @@ namespace ColorVision.UI
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);
-            var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
-            var editorType = editorAttr?.PropertyEditorType ?? PropertyEditorType.Default;
-
             var dockPanel = new DockPanel();
             var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
             dockPanel.Children.Add(textBlock);
 
             Binding binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);
-            binding.UpdateSourceTrigger = editorAttr?.UpdateSourceTrigger ?? UpdateSourceTrigger.Default;
+            binding.UpdateSourceTrigger = UpdateSourceTrigger.Default;
 
             var t = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
             if (t == typeof(float) || property.PropertyType == typeof(double))
@@ -35,15 +27,12 @@ namespace ColorVision.UI
             }
 
             var textbox = PropertyEditorHelper.CreateSmallTextBox(binding);
-
             textbox.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
             dockPanel.Children.Add(textbox);
-
             return dockPanel;
         }
     }
 
-    // Default / simple text editor (already provided by TextboxPropertiesEditor)
     public class BoolPropertiesEditor : IPropertyEditor
     {
         public DockPanel GenProperties(PropertyInfo property, object obj)
@@ -68,11 +57,7 @@ namespace ColorVision.UI
             var textBinding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);
             var textbox = PropertyEditorHelper.CreateSmallTextBox(textBinding);
 
-            var selectBtn = new Button
-            {
-                Content = "...",
-                Margin = new Thickness(5, 0, 0, 0)
-            };
+            var selectBtn = new Button { Content = "...", Margin = new Thickness(5, 0, 0, 0) };
             selectBtn.Click += (_, __) =>
             {
                 var ofd = new Microsoft.Win32.OpenFileDialog();
@@ -89,24 +74,15 @@ namespace ColorVision.UI
                 }
             };
 
-            var openFolderBtn = new Button
-            {
-                Content = "🗁",
-                Margin = new Thickness(5, 0, 0, 0),
-                ToolTip = "打开所在文件夹"
-            };
+            var openFolderBtn = new Button { Content = "🗁", Margin = new Thickness(5, 0, 0, 0), ToolTip = "打开所在文件夹" };
             openFolderBtn.Click += (_, __) =>
             {
                 var path = property.GetValue(obj) as string;
-                if (!string.IsNullOrWhiteSpace(path))
-                {
-                    PlatformHelper.OpenFolder(path);
-                }
+                if (!string.IsNullOrWhiteSpace(path)) PlatformHelper.OpenFolder(path);
             };
 
             DockPanel.SetDock(selectBtn, Dock.Right);
             DockPanel.SetDock(openFolderBtn, Dock.Right);
-
             dockPanel.Children.Add(openFolderBtn);
             dockPanel.Children.Add(selectBtn);
             dockPanel.Children.Add(textbox);
@@ -124,47 +100,25 @@ namespace ColorVision.UI
             dockPanel.Children.Add(textBlock);
 
             var textBinding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);
-            textBinding.Converter = SingleBackslashConverter.Instance;
             var textbox = PropertyEditorHelper.CreateSmallTextBox(textBinding);
 
-            var selectBtn = new Button
-            {
-                Content = "...",
-                Margin = new Thickness(5, 0, 0, 0)
-            };
+            var selectBtn = new Button { Content = "...", Margin = new Thickness(5, 0, 0, 0) };
             selectBtn.Click += (_, __) =>
             {
-                using var folderDialog = new System.Windows.Forms.FolderBrowserDialog
-                {
-                    SelectedPath = property.GetValue(obj) as string ?? string.Empty
-                };
-                if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                {
-                    if (!string.IsNullOrWhiteSpace(folderDialog.SelectedPath))
-                    {
-                        property.SetValue(obj, folderDialog.SelectedPath);
-                    }
-                }
+                using var folderDialog = new System.Windows.Forms.FolderBrowserDialog { SelectedPath = property.GetValue(obj) as string ?? string.Empty };
+                if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK && !string.IsNullOrWhiteSpace(folderDialog.SelectedPath))
+                    property.SetValue(obj, folderDialog.SelectedPath);
             };
 
-            var openFolderBtn = new Button
-            {
-                Content = "🗁",
-                Margin = new Thickness(5, 0, 0, 0),
-                ToolTip = "打开文件夹"
-            };
+            var openFolderBtn = new Button { Content = "🗁", Margin = new Thickness(5, 0, 0, 0), ToolTip = "打开文件夹" };
             openFolderBtn.Click += (_, __) =>
             {
                 var path = property.GetValue(obj) as string;
-                if (!string.IsNullOrWhiteSpace(path))
-                {
-                    PlatformHelper.OpenFolder(path);
-                }
+                if (!string.IsNullOrWhiteSpace(path)) PlatformHelper.OpenFolder(path);
             };
 
             DockPanel.SetDock(selectBtn, Dock.Right);
             DockPanel.SetDock(openFolderBtn, Dock.Right);
-
             dockPanel.Children.Add(openFolderBtn);
             dockPanel.Children.Add(selectBtn);
             dockPanel.Children.Add(textbox);
@@ -184,11 +138,7 @@ namespace ColorVision.UI
             var editCmd = new RelayCommand(_ =>
             {
                 var owner = Application.Current.GetActiveWindow();
-                var wnd = new AvalonEditWindow
-                {
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                    Owner = owner
-                };
+                var wnd = new AvalonEditWindow { WindowStartupLocation = WindowStartupLocation.CenterOwner, Owner = owner };
                 wnd.SetJsonText(property.GetValue(obj) as string ?? string.Empty);
                 wnd.Closing += (_, __) => property.SetValue(obj, wnd.GetJsonText());
                 wnd.ShowDialog();
@@ -214,12 +164,7 @@ namespace ColorVision.UI
             var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
             dockPanel.Children.Add(textBlock);
 
-            var cronBtn = new Button
-            {
-                Content = "在线Cron表达式生成器",
-                Margin = new Thickness(5, 0, 0, 0),
-                ToolTip = "打开在线Cron表达式生成器"
-            };
+            var cronBtn = new Button { Content = "在线Cron表达式生成器", Margin = new Thickness(5, 0, 0, 0), ToolTip = "打开在线Cron表达式生成器" };
             cronBtn.Click += (_, __) => PlatformHelper.Open("https://cron.qqe2.com/");
             DockPanel.SetDock(cronBtn, Dock.Right);
 
@@ -240,13 +185,7 @@ namespace ColorVision.UI
             var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
             dockPanel.Children.Add(textBlock);
 
-            var combo = new HandyControl.Controls.ComboBox
-            {
-                Margin = new Thickness(5, 0, 0, 0),
-                Style = PropertyEditorHelper.ComboBoxSmallStyle,
-                IsEditable = true,
-                ItemsSource = SerialPorts
-            };
+            var combo = new HandyControl.Controls.ComboBox { Margin = new Thickness(5, 0, 0, 0), Style = PropertyEditorHelper.ComboBoxSmallStyle, IsEditable = true, ItemsSource = SerialPorts };
             HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
             combo.SetBinding(ComboBox.TextProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name));
             dockPanel.Children.Add(combo);
@@ -264,18 +203,11 @@ namespace ColorVision.UI
             var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
             dockPanel.Children.Add(textBlock);
 
-            var combo = new HandyControl.Controls.ComboBox
-            {
-                Margin = new Thickness(5, 0, 0, 0),
-                Style = PropertyEditorHelper.ComboBoxSmallStyle,
-                IsEditable = true,
-                ItemsSource = BaudRates
-            };
+            var combo = new HandyControl.Controls.ComboBox { Margin = new Thickness(5, 0, 0, 0), Style = PropertyEditorHelper.ComboBoxSmallStyle, IsEditable = true, ItemsSource = BaudRates };
             HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
             combo.SetBinding(ComboBox.TextProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name));
             dockPanel.Children.Add(combo);
             return dockPanel;
         }
     }
-
 }

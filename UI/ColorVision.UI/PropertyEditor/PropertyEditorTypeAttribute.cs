@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using ColorVision.UI;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -6,19 +7,6 @@ using System.Windows.Data;
 ///这里划到xi
 namespace System.ComponentModel
 {
-    public enum PropertyEditorType
-    {
-        Default,
-        Bool,
-        Text, // generic text
-        Enum,
-        TextSelectFolder,
-        TextSelectFile,
-        TextSerialPort,
-        TextBaudRate,
-        TextJson,
-        CronExpression
-    }
     public enum CommandType
     {
         Normal,
@@ -47,21 +35,22 @@ namespace System.ComponentModel
         }
     }
 
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Event)]
+    /// <summary>
+    /// 属性编辑器类型特性: 仅指定一个实现 IPropertyEditor 的类型。
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Property)]
     public class PropertyEditorTypeAttribute : Attribute
     {
         public static readonly PropertyEditorTypeAttribute Default = new PropertyEditorTypeAttribute();
-        public virtual PropertyEditorType PropertyEditorType => PropertyEditorTypeValue;
-        protected PropertyEditorType PropertyEditorTypeValue { get; set; }
+
         public UpdateSourceTrigger UpdateSourceTrigger { get; set; } = UpdateSourceTrigger.PropertyChanged;
+
         /// <summary>
-        /// 可选: 自定义编辑器类型(实现 IPropertyEditor 即可, 在运行时由调用方用反射实例化并 cast)。Attribute 中不直接引用接口, 以避免编译依赖问题。
+        /// 自定义编辑器类型 (必须实现 IPropertyEditor). 若为空则使用 TextboxPropertiesEditor。
         /// </summary>
         public Type? EditorType { get; }
 
-        public PropertyEditorTypeAttribute(PropertyEditorType propertyEditorType) => PropertyEditorTypeValue = propertyEditorType;
-        public PropertyEditorTypeAttribute() : this(PropertyEditorType.Default) { }
-
+        public PropertyEditorTypeAttribute() { }
         public PropertyEditorTypeAttribute(Type editorType)
         {
             EditorType = editorType;
@@ -70,10 +59,10 @@ namespace System.ComponentModel
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is PropertyEditorTypeAttribute other)
-                return other.PropertyEditorTypeValue == PropertyEditorTypeValue && other.EditorType == EditorType;
+                return other.EditorType == EditorType;
             return false;
         }
-        public override int GetHashCode() => HashCode.Combine(PropertyEditorTypeValue, EditorType);
+        public override int GetHashCode() => HashCode.Combine(EditorType);
         public override bool IsDefaultAttribute() => Equals(Default);
     }
 }

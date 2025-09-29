@@ -1727,7 +1727,7 @@ namespace ProjectARVR
 
 
 
-            string filePath = Path.Combine(ViewResultManager.Config.SavePathCsv, $"ObjectiveTestResults_{timeStr}.csv");
+            string filePath = Path.Combine(ViewResultManager.Config.TextSavePath, $"ObjectiveTestResults_{timeStr}.csv");
 
             List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
 

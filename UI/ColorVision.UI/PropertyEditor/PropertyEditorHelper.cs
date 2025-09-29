@@ -175,9 +175,8 @@ namespace ColorVision.UI
         {
             var rm = GetResourceManager(obj);
             var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
-            var editorType = editorAttr?.PropertyEditorType ?? PropertyEditorType.Default;
 
-            // If a custom editor Type is specified, try to create and use it
+            // Custom editor instantiation and cache
             if (editorAttr?.EditorType != null)
             {
                 if (CustomEditorCache.TryGetValue(editorAttr.EditorType, out var cachedEditor))
@@ -188,31 +187,24 @@ namespace ColorVision.UI
                 {
                     if (Activator.CreateInstance(editorAttr.EditorType) is IPropertyEditor customEditor)
                     {
-                        CustomEditorCache[editorAttr.EditorType] = customEditor; // cache
+                        CustomEditorCache[editorAttr.EditorType] = customEditor;
                         return customEditor.GenProperties(property, obj);
                     }
                 }
-                catch { /* ignore and fallback */ }
+                catch { }
             }
 
+            // Fallback default textbox editor
             var dockPanel = new DockPanel();
             var textBlock = CreateLabel(property, rm);
             dockPanel.Children.Add(textBlock);
-
-            switch (editorType)
-            {
-                default:
-                    {
-                        Binding binding = CreateTwoWayBinding(obj, property.Name);
-                        binding.UpdateSourceTrigger = editorAttr?.UpdateSourceTrigger ?? UpdateSourceTrigger.Default;
-                        var t = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
-                        if (t == typeof(float) || property.PropertyType == typeof(double)) binding.StringFormat = "0.0################";
-                        var textbox = CreateSmallTextBox(binding);
-                        textbox.PreviewKeyDown += TextBox_PreviewKeyDown;
-                        dockPanel.Children.Add(textbox);
-                    }
-                    break;
-            }
+            Binding binding = CreateTwoWayBinding(obj, property.Name);
+            binding.UpdateSourceTrigger = editorAttr?.UpdateSourceTrigger ?? UpdateSourceTrigger.PropertyChanged;
+            var t = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+            if (t == typeof(float) || property.PropertyType == typeof(double)) binding.StringFormat = "0.0################";
+            var textbox = CreateSmallTextBox(binding);
+            textbox.PreviewKeyDown += TextBox_PreviewKeyDown;
+            dockPanel.Children.Add(textbox);
             return dockPanel;
         }
 

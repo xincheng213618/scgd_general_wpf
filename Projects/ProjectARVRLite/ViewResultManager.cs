@@ -32,12 +32,12 @@ namespace ProjectARVRPro
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; OnPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;
        [DisplayName("Csv保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("ARVR")]
-        public string SavePathCsv { get => _SavePathCsv; set { _SavePathCsv = value; OnPropertyChanged(); } }
-        private string _SavePathCsv = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");
+        public string CsvSavePath { get => _CsvSavePath; set { _CsvSavePath = value; OnPropertyChanged(); } }
+        private string _CsvSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");
 
         [DisplayName("Text保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("ARVR")]
-        public string SavePathText { get => _SavePathText; set { _SavePathText = value; OnPropertyChanged(); } }
-        private string _SavePathText = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");
+        public string TextSavePath { get => _TextSavePath; set { _TextSavePath = value; OnPropertyChanged(); } }
+        private string _TextSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");
     }
 
     public class ViewResultManager : ViewModelBase,IDisposable
@@ -84,10 +84,10 @@ namespace ProjectARVRPro
             _db.CodeFirst.InitTables<ProjectARVRReuslt>();
             LoadAll(Config.Count);
 
-            if (!Directory.Exists(Config.SavePathCsv))
-                Directory.CreateDirectory(Config.SavePathCsv);
-            if (!Directory.Exists(Config.SavePathText))
-                Directory.CreateDirectory(Config.SavePathText);
+            if (!Directory.Exists(Config.CsvSavePath))
+                Directory.CreateDirectory(Config.CsvSavePath);
+            if (!Directory.Exists(Config.TextSavePath))
+                Directory.CreateDirectory(Config.TextSavePath);
         }
 
 
