@@ -19,8 +19,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
     public class VideoReaderConfig:ViewModelBase,IConfig
     {
-        public bool IsOpen1 { get => _IsOpen; set { _IsOpen = value; OnPropertyChanged(); } }
-        private bool _IsOpen = true;
+        public bool UseA { get => _UseA; set { _UseA = value; OnPropertyChanged(); } }
+        private bool _UseA = false;
+
+        public bool IsAce { get => _IsAce; set { _IsAce = value; OnPropertyChanged(); } }
+        private bool _IsAce = true;
+
 
         public FocusAlgorithm  EvaFunc { get => _EvaFunc; set { _EvaFunc = value; OnPropertyChanged(); } }
         private FocusAlgorithm  _EvaFunc = FocusAlgorithm .Laplacian;
@@ -145,7 +149,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                         await Task.Delay(1);
                         continue;
                     }
-                    if (VideoReaderConfig.IsOpen1)
+                    if (VideoReaderConfig.UseA)
                     {
                         // 直接从帧数据构造 HImage，无需内存拷贝
                         if (_calculationHImage == null || _calculationHImage.Value.cols != width || _calculationHImage.Value.rows != height || _calculationHImage.Value.channels != channels || _calculationHImage.Value.depth != bpp / 8)
@@ -164,7 +168,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                             {
                                 DVRectangleText.Rect = new Rect(0, 0, width, height);
                             });
-
                         }
                         if (_calculationHImage != null)
                         {
@@ -172,17 +175,58 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                             if (_calculationHImage is HImage hImage)
                             {
                                 Rect rect = DVRectangleText.Rect;
-                                Thread task = new Thread(() =>
+                                if (VideoReaderConfig.IsAce)
                                 {
-                                    // 在后台线程执行计算
-                                    double articulation = OpenCVMediaHelper.M_CalArtculation(hImage, FocusAlgorithm.Laplacian, (int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height);
-                                    Application.Current?.Dispatcher.Invoke(() =>
+                                    Thread task = new Thread(() =>
                                     {
-                                        DVRectangleText.Attribute.Text = $"Articulation: {articulation:F5}";
+                                        // 在后台线程执行计算
+                                        double articulation = OpenCVMediaHelper.M_CalArtculation(hImage, FocusAlgorithm.Laplacian, (int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height);
+                                        Application.Current?.Dispatcher.Invoke(() =>
+                                        {
+                                            DVRectangleText.Attribute.Text = $"Articulation: {articulation:F5}";
+                                        });
+                                        log.Info($"Image Articulation: {articulation}");
                                     });
-                                    log.Info($"Image Articulation: {articulation}");
-                                });
-                                task.Start();
+                                    task.Start();
+                                }
+
+                                if (Image.Config.IsPseudo)
+                                {
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+
+                                        uint min = (uint)Image.PseudoSlider.ValueStart;
+                                        uint max = (uint)Image.PseudoSlider.ValueEnd;
+
+                                        log.Info($"ImagePath，正在执行PseudoColor,min:{min},max:{max}");
+
+                                        Thread task1 = new Thread(() =>
+                                        {
+                                            int ret = OpenCVMediaHelper.M_PseudoColor(hImage, out HImage hImageProcessed, min, max, Image.Config.ColormapTypes, 0);
+                                            Application.Current.Dispatcher.Invoke(() =>
+                                            {
+                                                if (ret == 0)
+                                                {
+                                                    if (!HImageExtension.UpdateWriteableBitmap(Image.FunctionImage, hImageProcessed))
+                                                    {
+                                                        var image = hImageProcessed.ToWriteableBitmap();
+                                                        hImageProcessed.Dispose();
+
+                                                        Image.FunctionImage = image;
+                                                    }
+                                                    if (Image.Config.IsPseudo == true)
+                                                    {
+                                                        Image.ImageShow.Source = Image.FunctionImage;
+                                                    }
+                                                }
+                                            });
+                                        });
+
+                                        task1.Start();
+                                    });
+
+                                }
+ 
                             }
                         }
 
@@ -198,32 +242,36 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                                 ArrayPool<byte>.Shared.Return(lastFrameData);
                             return;
                         }
-                        WriteableBitmap writeableBitmap = Image.ImageShow.Source as WriteableBitmap;
-                        bool needNewBitmap = writeableBitmap == null
-                            || writeableBitmap.PixelWidth != width
-                            || writeableBitmap.PixelHeight != height
-                            || GetPixelFormat(channels, bpp) != writeableBitmap.Format;
 
-                        if (needNewBitmap)
+                        if (!Image.Config.IsPseudo)
                         {
-                            writeableBitmap = new WriteableBitmap(
-                                width,
-                                height,
-                                96, 96,
-                                GetPixelFormat(channels, bpp),
-                                null);
-                            Image.ImageShow.Source = writeableBitmap;
+                            WriteableBitmap writeableBitmap = Image.ImageShow.Source as WriteableBitmap;
+                            bool needNewBitmap = writeableBitmap == null
+                                || writeableBitmap.PixelWidth != width
+                                || writeableBitmap.PixelHeight != height
+                                || GetPixelFormat(channels, bpp) != writeableBitmap.Format;
+
+                            if (needNewBitmap)
+                            {
+                                writeableBitmap = new WriteableBitmap(
+                                    width,
+                                    height,
+                                    96, 96,
+                                    GetPixelFormat(channels, bpp),
+                                    null);
+                                Image.ImageShow.Source = writeableBitmap;
+                            }
+
+                            writeableBitmap!.Lock();
+                            writeableBitmap.WritePixels(
+                                new Int32Rect(0, 0, width, height),
+                                buffer,
+                                width * channels * (bpp / 8),
+                                0);
+                            writeableBitmap.Unlock();
                         }
 
-                        writeableBitmap!.Lock();
-                        writeableBitmap.WritePixels(
-                            new Int32Rect(0, 0, width, height),
-                            buffer,
-                            width * channels * (bpp / 8),
-                            0);
-                        writeableBitmap.Unlock();
-
-                        Interlocked.Increment(ref frameCount);
+                            Interlocked.Increment(ref frameCount);
 
                         // 帧率统计
                         if (fpsTimer.ElapsedMilliseconds >= 1000)

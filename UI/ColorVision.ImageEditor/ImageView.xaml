@@ -206,10 +206,10 @@
                         </Button>
                         <Button  Content="3D" Click="Button_3D_Click" Padding="5" Margin="0,0,0,2"/>
                         <StackPanel>
-                            <ToggleButton x:Name="Pseudo"  Click="ToggleButton_Click"  Margin="0,0,0,2" >
+                            <ToggleButton x:Name="Pseudo"  Click="ToggleButton_Click"  IsChecked="{Binding Config.IsPseudo}" Margin="0,0,0,2" >
                                 <Image  Style="{StaticResource ToolBarImage}"   Source="/ColorVision.ImageEditor;component/Assets/png/PowerToy.png" Margin="-5"/>
                             </ToggleButton>
-                            <Grid  Height="200"  Visibility="{Binding ElementName=Pseudo,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+                            <Grid  Height="200"  Visibility="{Binding Config.IsPseudo,Converter={StaticResource bool2VisibilityConverter}}">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
@@ -229,7 +229,7 @@
                                     </Border>
                                     <Border Grid.Row="2" Background="Black" CornerRadius="0,0,10,10 "/>
                                 </Grid>
-                                <hc:RangeSlider Grid.Row="1"  x:Name="PseudoSlider" FocusVisualStyle="{x:Null}" ValueChanged="PseudoSlider_ValueChanged"  Style="{StaticResource RangeSliderBaseStyle}" Background="Transparent" hc:TipElement.Visibility="Visible" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0" Orientation="Vertical" HorizontalAlignment="Center" />
+                                <hc:RangeSlider Grid.Row="1"  x:Name="PseudoSlider" x:FieldModifier="public" FocusVisualStyle="{x:Null}" ValueChanged="PseudoSlider_ValueChanged"  Style="{StaticResource RangeSliderBaseStyle}" Background="Transparent" hc:TipElement.Visibility="Visible" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0" Orientation="Vertical" HorizontalAlignment="Center" />
                             </Grid>
                         </StackPanel>
                     </ToolBar>
