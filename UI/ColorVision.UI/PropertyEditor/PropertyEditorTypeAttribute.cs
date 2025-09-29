@@ -48,14 +48,13 @@ namespace System.ComponentModel
         /// <summary>
         /// 自定义编辑器类型 (必须实现 IPropertyEditor). 若为空则使用 TextboxPropertiesEditor。
         /// </summary>
-        public Type? EditorType { get; }
+        public Type? EditorType { get; } = typeof(TextboxPropertiesEditor);
 
         public PropertyEditorTypeAttribute() { }
         public PropertyEditorTypeAttribute(Type editorType)
         {
             EditorType = editorType;
         }
-
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is PropertyEditorTypeAttribute other)

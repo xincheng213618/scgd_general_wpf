@@ -1,10 +1,7 @@
 using System.Reflection;
 using System.Windows.Controls;
 
-namespace ColorVision.UI
+namespace System.ComponentModel
 {
-    public interface IPropertyEditor
-    {
-        DockPanel GenProperties(PropertyInfo property, object obj);
-    }
+
 }

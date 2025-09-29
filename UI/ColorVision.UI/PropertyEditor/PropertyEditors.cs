@@ -1,13 +1,19 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.UI;
 using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
-namespace ColorVision.UI
+namespace System.ComponentModel
 {
+    public interface IPropertyEditor
+    {
+        DockPanel GenProperties(PropertyInfo property, object obj);
+    }
+
     public class TextboxPropertiesEditor : IPropertyEditor
     {
         public DockPanel GenProperties(PropertyInfo property, object obj)
