@@ -9,6 +9,7 @@ using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.ComponentModel; // Added
 
 
 namespace ColorVision.Engine.Services.Devices.SMU
@@ -36,6 +37,21 @@ namespace ColorVision.Engine.Services.Devices.SMU
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
+
+            // When switching between voltage and current modes, swap the source and limit values so that the numbers follow the semantic meaning instead of the textbox position
+            if (Config is INotifyPropertyChanged npc)
+            {
+                npc.PropertyChanged += (s, ev) =>
+                {
+                    if (ev.PropertyName == nameof(ConfigSMU.IsSourceV))
+                    {
+                        // Swap MeasureVal (source) and LmtVal (limit)
+                        double oldMeasure = Config.MeasureVal;
+                        Config.MeasureVal = Config.LmtVal;
+                        Config.LmtVal = oldMeasure;
+                    }
+                };
+            }
 
             this.ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
