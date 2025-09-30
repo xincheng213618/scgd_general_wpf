@@ -20,7 +20,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
     public class VideoReaderConfig:ViewModelBase,IConfig
     {
         public bool UseA { get => _UseA; set { _UseA = value; OnPropertyChanged(); } }
-        private bool _UseA = false;
+        private bool _UseA;
 
         public bool IsAce { get => _IsAce; set { _IsAce = value; OnPropertyChanged(); } }
         private bool _IsAce = true;
