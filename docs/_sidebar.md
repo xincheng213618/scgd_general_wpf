@@ -77,6 +77,7 @@
 
 - [插件管理](plugins/plugin-management/插件管理)
 - [使用标准插件](plugins/using-standard-plugins/使用标准插件)
+  - [Pattern Plugin - 图卡生成工具](plugins/using-standard-plugins/pattern)
 - [插件生命周期](plugins/plugin-lifecycle)
 - [开发插件指南](plugins/developing-a-plugin)
 
