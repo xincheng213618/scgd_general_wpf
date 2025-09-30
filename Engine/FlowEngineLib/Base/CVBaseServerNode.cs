@@ -151,16 +151,18 @@ public class CVBaseServerNode : CVCommonNode
 		m_trans_action = new Dictionary<string, CVTransAction>();
 	}
 
-	private void WaitingOverTime(CVBaseEventCmd cmd)
+	private async void WaitingOverTime(CVBaseEventCmd cmd)
 	{
 		CVMQTTRequest cmd2 = cmd.cmd;
 		int maxDelay = GetMaxDelay();
-		Task<bool> task = cmd.waiter.WaitForMessage(maxDelay);
+
+		// 使用异步等待，避免线程池阻塞
+		bool result = await cmd.waiter.WaitForMessageAsync(maxDelay);
 		if (logger.IsInfoEnabled)
 		{
-			logger.InfoFormat("[{0}]Task.WaitOverTime => {1}", ToShortString(), task.Result);
+			logger.InfoFormat("[{0}]Task.WaitOverTime => {1}", ToShortString(), result);
 		}
-		if (task.Result)
+		if (result)
 		{
 			return;
 		}
@@ -310,10 +312,9 @@ public class CVBaseServerNode : CVCommonNode
 		{
 			trans.trans_action.GetStartNode().DoPublish(act);
 		}
-		//Task.Run(delegate
-		//{
-		//	WaitingOverTime(cmd);
-		//});
+
+		// 使用 Task.Run 启动超时监控，避免阻塞主线程
+		Task.Run(() => WaitingOverTime(cmd));
 	}
 
 	public bool DoServerStatusRecv(CVBaseDataFlowResp statusEvent)
@@ -340,7 +341,8 @@ public class CVBaseServerNode : CVCommonNode
 			if (cVServerResponse.Status != ActionStatusEnum.Pending && cVTransByEvent.m_sever_actionEvent.ContainsKey(cVServerResponse.Id))
 			{
 				CVBaseEventCmd cVBaseEventCmd = cVTransByEvent.m_sever_actionEvent[cVServerResponse.Id];
-				//cVBaseEventCmd.waiter.SignalMessageReceived();
+				// 通知等待器消息已接收，这会立即结束超时等待
+				cVBaseEventCmd.waiter.SignalMessageReceived();
 				cVBaseEventCmd.resp = cVServerResponse;
 				OnServerResponse(cVServerResponse, cVTransByEvent.trans_action);
 				if (!IsCacheActResponse(cVTransByEvent, cVServerResponse))
