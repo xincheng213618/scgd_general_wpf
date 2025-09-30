@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using System.Windows.Input;
 using System.Windows.Interop;
 
@@ -129,13 +129,11 @@ namespace ColorVision.UI.HotKey.GlobalHotKey
         /// <param name="callBack">回调函数</param>
         public static void UnRegister(IntPtr hWnd, HotKeyCallBackHanlder callBack)
         {
-            foreach (KeyValuePair<int, HotKeyCallBackHanlder> var in keymap)
+            var keysToRemove = keymap.Where(kv => kv.Value == callBack).Select(kv => kv.Key).ToList();
+            foreach (var key in keysToRemove)
             {
-                if (var.Value == callBack)
-                {
-                    UnregisterHotKey(hWnd, var.Key);
-                    keymap.Remove(var.Key);
-                }
+                UnregisterHotKey(hWnd, key);
+                keymap.Remove(key);
             }
         }
 
