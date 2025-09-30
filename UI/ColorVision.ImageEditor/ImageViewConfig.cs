@@ -81,6 +81,10 @@ namespace ColorVision.ImageEditor
         public ColormapTypes ColormapTypes { get => _ColormapTypes; set { _ColormapTypes = value; OnPropertyChanged(); ColormapTypesChanged?.Invoke(this, new EventArgs()); } }
         private ColormapTypes _ColormapTypes = ColormapTypes.COLORMAP_JET;
 
+        public bool IsPseudo { get => _IsPseudo; set { _IsPseudo = value; OnPropertyChanged(); } }
+        private bool _IsPseudo ;
+
+
         public event EventHandler<bool> LayoutUpdatedChanged;
         public bool IsLayoutUpdated{ get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; OnPropertyChanged(); ShowMsgChanged?.Invoke(this, _IsLayoutUpdated); } }
         private bool _IsLayoutUpdated = true;
