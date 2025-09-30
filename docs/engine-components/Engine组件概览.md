@@ -37,17 +37,21 @@ Engine 目录包含了 ColorVision 系统的核心算法引擎和处理组件，
   - 实时状态监控
 
 #### 2. [cvColorVision](./cvColorVision.md)
-**底层色彩视觉算法库**
+**视觉处理核心模块（C# 封装库）**
 - **主要功能**:
-  - 核心图像处理算法
-  - 色彩空间转换
-  - 图像质量评估
-  - 计算机视觉算法
+  - 相机控制与图像采集
+  - 色彩空间转换（XYZ/xy/uv）
+  - 设备通信（TCP/串口）
+  - 图像算法（AOI、OLED、光谱）
 - **关键特性**:
-  - 高性能C++实现
-  - OpenCV集成
-  - CUDA加速支持
-  - 多线程处理
+  - C# P/Invoke 封装
+  - 底层 C++ DLL（cvCamera.dll、cvOled.dll）
+  - OpenCV 基础（底层实现）
+  - CUDA 加速支持（底层）
+- **技术架构**:
+  - 封装层：C# (.NET)
+  - 底层库：C++ (OpenCV 4.x)
+  - 接口方式：P/Invoke (DllImport)
 
 #### 3. [ColorVision.FileIO](./ColorVision.FileIO.md)
 **文件输入输出处理模块**
