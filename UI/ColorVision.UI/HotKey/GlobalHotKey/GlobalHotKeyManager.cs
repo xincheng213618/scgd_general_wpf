@@ -67,7 +67,7 @@ namespace ColorVision.UI.HotKey.GlobalHotKey
         public bool ModifiedHotkey(HotKeys hotkeys)
         {
             GlobalHotKey.UnRegister(WindowHandle, hotkeys.HotKeyHandler);
-            return hotkeys.Hotkey != null && hotkeys.Hotkey == Hotkey.None && GlobalHotKey.Register(WindowHandle, hotkeys.Hotkey.Modifiers, hotkeys.Hotkey.Key, hotkeys.HotKeyHandler);
+            return hotkeys.Hotkey != null && hotkeys.Hotkey != Hotkey.None && GlobalHotKey.Register(WindowHandle, hotkeys.Hotkey.Modifiers, hotkeys.Hotkey.Key, hotkeys.HotKeyHandler);
         }
 
         public void ModifiedHotkey(Hotkey hotkey, HotKeyCallBackHanlder callBack)

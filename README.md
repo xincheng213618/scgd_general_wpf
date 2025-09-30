@@ -2,6 +2,23 @@
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/xincheng213618/scgd_general_wpf)
 
+## 📋 目录
+
+- [项目简介](#项目简介)
+- [在线文档](#-在线文档--github-pages)
+- [快速入口](#-快速入口)
+- [主要特性](#-主要特性)
+- [目录结构](#-目录结构)
+- [快速开始](#-快速开始)
+- [文档结构说明](#-文档结构说明)
+- [插件机制说明](#-插件机制说明)
+- [子项目说明](#-子项目说明)
+- [更新日志](#-更新日志)
+- [功能总览](#二功能总览)
+- [架构概览](#三架构概览)
+- [安装与构建](#六安装与构建)
+- [贡献指南](#十九贡献指南)
+
 ## 项目简介
 
 ColorVision 是一款基于 WPF 的专业视觉检测平台，采用模块化架构设计，支持多框架协同工作。专注于提供高效、精准的图像处理及分析功能，适用于光电技术、色彩管理、质量检测等应用场景。
@@ -267,6 +284,9 @@ public Color BackgroundColor { get; set; }
 - **Quartz Scheduler 封装** - 企业级调度引擎集成
 - **任务状态监听** - 生命周期事件处理
 - **批量控制** - 任务组管理和批量操作
+- **任务恢复健壮性** - 启动时自动恢复历史任务，遇到类型丢失或异常任务会自动跳过并弹窗提示，保证系统整体可用性
+- **任务管理界面右键菜单** - 支持编辑、查看属性、暂停、继续、删除、立即执行等操作，提升任务管理体验
+- **异常处理与提示** - 任务调度器增强了异常捕获和用户提示，提升健壮性和易用性
 
 ### 算法结果浏览
 
@@ -332,7 +352,7 @@ dotnet build Plugins/YourPlugin/YourPlugin.csproj
 # 直接运行
 .\ColorVision.exe
 
-# 或通过dotnet运行
+# 或通过dotent运行
 dotnet run --project ColorVision
 ```
 
@@ -851,6 +871,8 @@ public interface IAuthenticationService
 | `DisplayNameAttribute` | 显示名称 | `[DisplayName("背景颜色")]` |
 | `DescriptionAttribute` | 属性描述 | `[Description("设置控件背景颜色")]` |
 | `PropertyVisibilityAttribute` | 可见性控制 | `[PropertyVisibility(nameof(IsVisible))]` |
+| `PropertyOrderAttribute` | 属性显示顺序 | `[PropertyOrder(10)]` |
+| `CategoryOrderAttribute` | 类别显示顺序 | `[CategoryOrder("外观", 1)]` |
 
 ### 扩展接口清单
 
@@ -867,6 +889,14 @@ public interface IAuthenticationService
 
 **ColorVision 开发团队**  
 **视彩（上海）光电技术有限公司**
+
+
+
+
+
+
+
+
 
 
 

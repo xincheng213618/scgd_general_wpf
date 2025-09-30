@@ -1,9 +1,12 @@
 ﻿using ColorVision.Themes;
+using Newtonsoft.Json;
 using Quartz;
 using Quartz.Impl;
 using Quartz.Impl.Matchers;
 using System.Collections.ObjectModel;
 using System.Windows;
+using System.Windows.Controls;
+using ColorVision.UI;
 
 namespace ColorVision.Scheduler
 {
@@ -30,6 +33,29 @@ namespace ColorVision.Scheduler
                 listener.JobExecutedEvent += OnJobExecuted;
             }
             this.ApplyCaption();
+
+            // 添加右键菜单
+            var menuEdit = new MenuItem { Header = "编辑任务" };
+            menuEdit.Click += MenuEdit_Click;
+            var menuView = new MenuItem { Header = "查看属性" };
+            menuView.Click += MenuView_Click;
+            var menuPause = new MenuItem { Header = "暂停任务" };
+            menuPause.Click += MenuPause_Click;
+            var menuResume = new MenuItem { Header = "继续任务" };
+            menuResume.Click += MenuResume_Click;
+            var menuDelete = new MenuItem { Header = "删除任务" };
+            menuDelete.Click += MenuDelete_Click;
+            var menuTrigger = new MenuItem { Header = "立即执行" };
+            menuTrigger.Click += MenuTrigger_Click;
+            var contextMenu = new ContextMenu();
+            contextMenu.Items.Add(menuEdit);
+            contextMenu.Items.Add(menuView);
+            contextMenu.Items.Add(new Separator());
+            contextMenu.Items.Add(menuPause);
+            contextMenu.Items.Add(menuResume);
+            contextMenu.Items.Add(menuTrigger);
+            contextMenu.Items.Add(menuDelete);
+            ListViewTask.ContextMenu = contextMenu;
         }
 
         private async void LoadTasks()
@@ -113,6 +139,66 @@ namespace ColorVision.Scheduler
         {
             CreateTask createTask = new CreateTask() { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation =WindowStartupLocation.CenterOwner };
             createTask.ShowDialog();
+        }
+
+        private void MenuEdit_Click(object sender, RoutedEventArgs e)
+        {
+            if (ListViewTask.SelectedItem is SchedulerInfo info)
+            {
+                // 深拷贝一份用于编辑
+                var editInfo = JsonConvert.DeserializeObject<SchedulerInfo>(JsonConvert.SerializeObject(info, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All }), new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
+                var win = new CreateTask { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner, SchedulerInfo = editInfo };
+                if (win.ShowDialog() == true)
+                {
+                    // 编辑完成后更新
+                    QuartzSchedulerManager.UpdateJob(editInfo);
+                }
+            }
+        }
+
+        private void MenuView_Click(object sender, RoutedEventArgs e)
+        {
+            if (ListViewTask.SelectedItem is SchedulerInfo info)
+            {
+                var win = new ColorVision.UI.PropertyEditorWindow(info, false) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                win.ShowDialog();
+            }
+        }
+
+        private async void MenuPause_Click(object sender, RoutedEventArgs e)
+        {
+            if (ListViewTask.SelectedItem is SchedulerInfo info)
+            {
+                await QuartzSchedulerManager.StopJob(info.JobName, info.GroupName);
+                info.Status = SchedulerStatus.Paused;
+            }
+        }
+
+        private async void MenuResume_Click(object sender, RoutedEventArgs e)
+        {
+            if (ListViewTask.SelectedItem is SchedulerInfo info)
+            {
+                await QuartzSchedulerManager.ResumeJob(info.JobName, info.GroupName);
+                info.Status = SchedulerStatus.Ready;
+            }
+        }
+
+        private async void MenuDelete_Click(object sender, RoutedEventArgs e)
+        {
+            if (ListViewTask.SelectedItem is SchedulerInfo info)
+            {
+                await QuartzSchedulerManager.RemoveJob(info.JobName, info.GroupName);
+                TaskInfos.Remove(info);
+            }
+        }
+
+        private async void MenuTrigger_Click(object sender, RoutedEventArgs e)
+        {
+            if (ListViewTask.SelectedItem is SchedulerInfo info)
+            {
+                var jobKey = new Quartz.JobKey(info.JobName, info.GroupName);
+                await QuartzSchedulerManager.Scheduler.TriggerJob(jobKey);
+            }
         }
     }
 }

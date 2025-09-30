@@ -1,4 +1,4 @@
-﻿using System.Windows.Controls;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ColorVision.UI.HotKey.WindowHotKey
@@ -63,17 +63,18 @@ namespace ColorVision.UI.HotKey.WindowHotKey
         }
         public static bool UnRegister(HotKeyCallBackHanlder callBack)
         {
-            foreach (KeyValuePair<int, HotKeyCallBackHanlder> var in AllKeyMap)
+            var keysToRemove = AllKeyMap.Where(kv => kv.Value == callBack).Select(kv => kv.Key).ToList();
+            foreach (var key in keysToRemove)
             {
-                if (var.Value == callBack)
-                    AllKeyMap.Remove(var.Key);
+                AllKeyMap.Remove(key);
             }
+            
             foreach (var item in ControlHookKeyMap)
             {
-                foreach (KeyValuePair<int, HotKeyCallBackHanlder> var in item.Value)
+                var controlKeysToRemove = item.Value.Where(kv => kv.Value == callBack).Select(kv => kv.Key).ToList();
+                foreach (var key in controlKeysToRemove)
                 {
-                    if (var.Value == callBack)
-                        item.Value.Remove(var.Key);
+                    item.Value.Remove(key);
                 }
             }
             return true;

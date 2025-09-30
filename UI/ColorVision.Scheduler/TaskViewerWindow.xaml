@@ -74,17 +74,6 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="{x:Static properties:Resources.Command}">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Content="{x:Static properties:Resources.Stop}" Command="{Binding  PausedCommand}"/>
-                                    <Button Content="{x:Static properties:Resources.Resume}" Command="{Binding ResumeJobCommand}"/>
-                                    <Button Content="{x:Static properties:Resources.Delete}" Command="{Binding DeleteCommand}"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
                 </GridView>
             </ListView.View>
         </ListView>

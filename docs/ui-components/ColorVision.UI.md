@@ -203,14 +203,66 @@ ColorVision.UI 提供完整的国际化支持：
 
 ## 热键系统
 
-### 全局热键
-支持系统级别的快捷键注册，即使应用程序在后台也能响应。
+ColorVision.UI 提供了完整的热键管理系统，支持全局热键和窗口热键两种模式。
 
-### 快捷键配置
-用户可以通过设置界面自定义快捷键组合。
+### 核心特性
 
-### 冲突检测
-自动检测快捷键冲突并提供解决方案。
+- **全局热键 (Global HotKey)**: 系统级别的快捷键注册，即使应用程序在后台也能响应
+- **窗口热键 (Window HotKey)**: 窗口或控件级别的快捷键，仅在控件获得焦点时响应
+- **快捷键配置**: 用户可以通过设置界面自定义快捷键组合
+- **配置持久化**: 自动保存和加载用户自定义的热键设置
+- **冲突检测**: 自动检测快捷键冲突并提供解决方案
+- **插件化支持**: 通过 IHotKey 接口支持插件扩展
+
+### 快速开始
+
+```csharp
+// 注册全局热键
+var manager = GlobalHotKeyManager.GetInstance(this);
+manager.Register(
+    new Hotkey(Key.F1, ModifierKeys.Control | ModifierKeys.Alt),
+    () => ShowHelp()
+);
+
+// 注册窗口热键
+var windowManager = WindowHotKeyManager.GetInstance(this);
+windowManager.Register(
+    new Hotkey(Key.S, ModifierKeys.Control),
+    () => SaveDocument()
+);
+
+// 通过扩展方法添加热键
+this.AddHotKeys(new HotKeys("保存", 
+    new Hotkey(Key.S, ModifierKeys.Control),
+    SaveDocument));
+```
+
+### 架构组件
+
+```mermaid
+graph LR
+    A[HotKey System] --> B[Global HotKey]
+    A --> C[Window HotKey]
+    B --> D[GlobalHotKeyManager]
+    B --> E[Win32 API]
+    C --> F[WindowHotKeyManager]
+    C --> G[WPF Events]
+```
+
+### 详细文档
+
+完整的 HotKey 系统设计、API 参考、使用指南和最佳实践，请参阅：
+
+📖 **[HotKey 系统设计文档](./HotKey系统设计文档.md)**
+
+该文档包含：
+- 详细的架构设计和类图
+- 核心组件完整说明
+- 多种使用场景示例
+- 设计模式分析
+- API 完整参考
+- 最佳实践和优化建议
+- 已知问题和解决方案
 
 ## 窗口操作增强
 

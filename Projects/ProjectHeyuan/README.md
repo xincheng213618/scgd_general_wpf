@@ -1,6 +1,6 @@
 # ProjectHeyuan
 
-## 功能定位
+## 🎯 功能定位
 
 河源精电客户定制项目 - 基于ColorVision平台的专用测试解决方案
 
