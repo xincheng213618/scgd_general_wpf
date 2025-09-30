@@ -210,15 +210,13 @@ namespace ColorVision.UI
                             dockPanel = PropertyEditorHelper.GenCommandProperties(property, obj);
                         }
                         else if (property.PropertyType == typeof(FontFamily))
-                            dockPanel = PropertyEditorHelper.GenFontFamilyProperties(property, obj);
+                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<FontFamilyPropertiesEditor>().GenProperties(property, obj);
                         else if (property.PropertyType == typeof(FontWeight))
-                            dockPanel = PropertyEditorHelper.GenFontWeightProperties(property, obj);
+                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<FontWeightPropertiesEditor>().GenProperties(property, obj);
                         else if (property.PropertyType == typeof(FontStyle))
-                            dockPanel = PropertyEditorHelper.GenFontStyleProperties(property, obj);
+                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<FontStylePropertiesEditor>().GenProperties(property, obj);
                         else if (property.PropertyType == typeof(FontStretch))
-                            dockPanel = PropertyEditorHelper.GenFontStretchProperties(property, obj);
-                        else if (property.PropertyType == typeof(FlowDirection))
-                            dockPanel = PropertyEditorHelper.GenFlowDirectionProperties(property, obj);
+                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<FontStretchPropertiesEditor>().GenProperties(property, obj);
 
                         else if (typeof(INotifyPropertyChanged).IsAssignableFrom(property.PropertyType))
                         {

@@ -19,7 +19,7 @@ namespace ColorVision.UI.HotKey
         
         #region static
         public readonly static Hotkey None = new(Key.None,ModifierKeys.None);
-        public static bool IsNullOrEmpty(Hotkey hotkey) => hotkey != null && hotkey != None;
+        public static bool IsNullOrEmpty(Hotkey hotkey) => hotkey == null || hotkey == None;
         public static int ToInt(Hotkey hotkey) => ((int)hotkey.Modifiers << 8) + (int)hotkey.Key;
         #endregion
 
