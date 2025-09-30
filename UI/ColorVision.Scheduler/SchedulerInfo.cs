@@ -41,44 +41,9 @@ namespace ColorVision.Scheduler
         Forever
     }
 
+    // 纯数据对象，不再包含命令
     public class SchedulerInfo: ViewModelBase
     {
-        [JsonIgnore]
-        public RelayCommand PausedCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand DeleteCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand RunCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand ResumeJobCommand { get; set; }
-
-        public SchedulerInfo()
-        {
-            PausedCommand = new RelayCommand(ExecuteStopCommand,a => Status != SchedulerStatus.Paused);
-            ResumeJobCommand = new RelayCommand(ExecuteResumeJobCommand, a => Status == SchedulerStatus.Paused);
-            DeleteCommand = new RelayCommand(ExecuteDeleteCommand, a => true);
-        }
-
-        private async void ExecuteResumeJobCommand(object obj)
-        {
-            var schedulerManager = QuartzSchedulerManager.GetInstance();
-            await schedulerManager.ResumeJob(JobName, GroupName);
-            Status = SchedulerStatus.Ready;
-        }
-
-        private async void ExecuteStopCommand(object parameter)
-        {
-            var schedulerManager = QuartzSchedulerManager.GetInstance();
-            await schedulerManager.StopJob(JobName, GroupName);
-            Status = SchedulerStatus.Paused;
-        }
-        private async void ExecuteDeleteCommand(object parameter)
-        {
-            var schedulerManager = QuartzSchedulerManager.GetInstance();
-            await schedulerManager.RemoveJob(JobName, GroupName);
-            schedulerManager.TaskInfos.Remove(this);
-        }
-
         public SchedulerStatus Status { get => _Status; set { _Status = value; OnPropertyChanged(); } }
         private SchedulerStatus _Status;
 
@@ -97,7 +62,6 @@ namespace ColorVision.Scheduler
         // 仅在延迟启动模式下使用
         public TimeSpan Delay { get => _Delay; set { _Delay = value; OnPropertyChanged(); } }
         private TimeSpan _Delay;
-
 
         public JobExecutionMode Mode { get => _Mode; set { _Mode = value; 
                 OnPropertyChanged(); 
@@ -126,11 +90,8 @@ namespace ColorVision.Scheduler
 
         public bool IsCalendar => _Mode == JobExecutionMode.Calendar;
 
-
-
         public int RunCount { get => _RunCount; set { _RunCount = value; OnPropertyChanged(); } }
         private int _RunCount;
-
 
         public string JobName { get => _JobName; set { _JobName = value; OnPropertyChanged(); } }
         private string _JobName;
@@ -142,7 +103,6 @@ namespace ColorVision.Scheduler
 
         public Type JobType { get => _JobType; set { _JobType = value; OnPropertyChanged(); } }
         private Type _JobType;
-
 
         public string NextFireTime { get => _NextFireTime; set { _NextFireTime = value; OnPropertyChanged(); } }
         private string _NextFireTime;

@@ -4,17 +4,62 @@ using Quartz;
 using Quartz.Impl;
 using System.Collections.ObjectModel;
 using System.Windows;
+using System.IO;
+using Newtonsoft.Json;
 
 namespace ColorVision.Scheduler
 {
+    public interface ISchedulerService
+    {
+        ObservableCollection<SchedulerInfo> TaskInfos { get; }
+        Task PauseAll();
+        Task ResumeAll();
+        Task Start();
+        Task Stop();
+        Task StopJob(string jobName, string groupName);
+        Task RemoveJob(string jobName, string groupName);
+        Task ResumeJob(string jobName, string groupName);
+        Task CreateJob(SchedulerInfo schedulerInfo);
+        Task UpdateJob(SchedulerInfo schedulerInfo);
+        string GetNewJobName(string jobName);
+        string GetNewGroupName(string groupName);
+        Dictionary<string, Type> Jobs { get; }
+        IScheduler Scheduler { get; }
+        TaskExecutionListener Listener { get; }
+        void SaveTasks();
+        void LoadTasks();
+    }
+
     public class QuartzSchedulerConfig : IConfig
     {
         public static QuartzSchedulerConfig Instance => ConfigService.Instance.GetRequiredService<QuartzSchedulerConfig>();
         public ObservableCollection<SchedulerInfo> TaskInfos { get; set; } = new ObservableCollection<SchedulerInfo>();
 
+        private static readonly string ConfigFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scheduler_tasks.json");
+
+        public void Save()
+        {
+            var json = JsonConvert.SerializeObject(TaskInfos, Formatting.Indented, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
+            File.WriteAllText(ConfigFile, json);
+        }
+
+        public void Load()
+        {
+            if (File.Exists(ConfigFile))
+            {
+                var json = File.ReadAllText(ConfigFile);
+                var list = JsonConvert.DeserializeObject<ObservableCollection<SchedulerInfo>>(json, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
+                if (list != null)
+                {
+                    TaskInfos.Clear();
+                    foreach (var item in list)
+                        TaskInfos.Add(item);
+                }
+            }
+        }
     }
 
-    public class QuartzSchedulerManager
+    public class QuartzSchedulerManager : ISchedulerService
     {
         private static QuartzSchedulerManager _instance;
         private static readonly object _locker = new();
@@ -22,42 +67,42 @@ namespace ColorVision.Scheduler
         public ObservableCollection<SchedulerInfo> TaskInfos => QuartzSchedulerConfig.Instance.TaskInfos;
         public IScheduler Scheduler { get; set; }
         public TaskExecutionListener Listener { get; set; }
-
         public Dictionary<string, Type> Jobs { get; set; }
-
         public RelayCommand PauseAllCommand { get; set; }
         public RelayCommand ResumeAllCommand { get; set; }
         public RelayCommand StartCommand { get; set; }
         public RelayCommand ShutdownCommand { get; set; }
 
-
         public QuartzSchedulerManager()
         {
+            QuartzSchedulerConfig.Instance.Load();
             Task.Run(() => Start());
         }
 
         public string GetNewJobName(string jobName)
         {
-            if (TaskInfos.Any(x => x.JobName == jobName))
+            if (!TaskInfos.Any(x => x.JobName == jobName))
                 return jobName;
             for (int i = 1; i < 999; i++)
             {
-                if (TaskInfos.Any(x => x.JobName == $"{jobName}{i}"))
-                    return $"{jobName}{i}";
+                var newName = $"{jobName}{i}";
+                if (!TaskInfos.Any(x => x.JobName == newName))
+                    return newName;
             }
-            return jobName;
+            return jobName + Guid.NewGuid().ToString("N").Substring(0, 6);
         }
 
         public string GetNewGroupName(string groupName)
         {
-            if (TaskInfos.Any(x => x.GroupName == groupName))
+            if (!TaskInfos.Any(x => x.GroupName == groupName))
                 return groupName;
             for (int i = 1; i < 999; i++)
             {
-                if (TaskInfos.Any(x => x.GroupName == $"{groupName}{i}"))
-                    return $"{groupName}{i}";
+                var newName = $"{groupName}{i}";
+                if (!TaskInfos.Any(x => x.GroupName == newName))
+                    return newName;
             }
-            return groupName;
+            return groupName + Guid.NewGuid().ToString("N").Substring(0, 6);
         }
 
         public async Task PauseAll()
@@ -126,6 +171,12 @@ namespace ColorVision.Scheduler
             {
                 await Scheduler.DeleteJob(jobKey);
             }
+            var info = TaskInfos.FirstOrDefault(x => x.JobName == jobName && x.GroupName == groupName);
+            if (info != null)
+            {
+                TaskInfos.Remove(info);
+                SaveTasks();
+            }
         }
         public async Task ResumeJob(string jobName, string groupName)
         {
@@ -138,17 +189,42 @@ namespace ColorVision.Scheduler
 
         public async Task CreateJob(SchedulerInfo schedulerInfo)
         {
+            // 参数校验
+            if (!ValidateSchedulerInfo(schedulerInfo, out string errorMsg))
+            {
+                MessageBox.Show(errorMsg, "参数错误");
+                return;
+            }
             var selectedJobType = schedulerInfo.JobType;
-
-            var scheduler = await StdSchedulerFactory.GetDefaultScheduler();
-            // 动态创建Job实例
+            var scheduler = Scheduler;
+            if (scheduler == null)
+                return;
             var job = JobBuilder.Create(selectedJobType)
                 .WithIdentity(schedulerInfo.JobName, schedulerInfo.GroupName)
                 .Build();
+            ITrigger trigger = BuildTrigger(schedulerInfo);
+            if (trigger != null)
+            {
+                await scheduler.ScheduleJob(job, trigger);
+                schedulerInfo.NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
+                if (!TaskInfos.Contains(schedulerInfo))
+                {
+                    TaskInfos.Add(schedulerInfo);
+                    SaveTasks();
+                }
+            }
+        }
 
-            // 创建触发器
-            TriggerBuilder triggerBuilder = TriggerBuilder.Create().WithIdentity($"{schedulerInfo.JobName}-trigger", schedulerInfo.GroupName);
+        public async Task UpdateJob(SchedulerInfo schedulerInfo)
+        {
+            // 先删除原任务，再创建新任务
+            await RemoveJob(schedulerInfo.JobName, schedulerInfo.GroupName);
+            await CreateJob(schedulerInfo);
+        }
 
+        private ITrigger BuildTrigger(SchedulerInfo schedulerInfo)
+        {
+            var triggerBuilder = TriggerBuilder.Create().WithIdentity($"{schedulerInfo.JobName}-trigger", schedulerInfo.GroupName);
             switch (schedulerInfo.JobStartMode)
             {
                 case JobStartMode.Immediate:
@@ -163,35 +239,31 @@ namespace ColorVision.Scheduler
             switch (schedulerInfo.Mode)
             {
                 case JobExecutionMode.Simple:
-
-
-
-                    triggerBuilder
-                        .WithSimpleSchedule(x => 
+                    triggerBuilder.WithSimpleSchedule(x =>
+                    {
+                        switch (schedulerInfo.RepeatMode)
                         {
-                            switch (schedulerInfo.RepeatMode)
-                            {
-                                case JobRepeatMode.Multiple:
-                                    x.WithInterval(schedulerInfo.Interval);
-                                    x.WithRepeatCount(schedulerInfo.RepeatCount);
-                                    break;
-                                case JobRepeatMode.Forever:
-                                    x.WithInterval(schedulerInfo.Interval);
-                                    x.RepeatForever();
-                                    break;
+                            case JobRepeatMode.Multiple:
+                                x.WithInterval(schedulerInfo.Interval);
+                                x.WithRepeatCount(schedulerInfo.RepeatCount);
+                                break;
+                            case JobRepeatMode.Forever:
+                                x.WithInterval(schedulerInfo.Interval);
+                                x.RepeatForever();
+                                break;
                             case JobRepeatMode.Once:
                             default:
-                                    break;
-                            }
-                        });
+                                break;
+                        }
+                    });
                     break;
                 case JobExecutionMode.Calendar:
-                    triggerBuilder.WithCalendarIntervalSchedule(x => x.WithIntervalInDays(1)); // 每天执行一次
+                    triggerBuilder.WithCalendarIntervalSchedule(x => x.WithIntervalInDays(1));
                     break;
                 case JobExecutionMode.Interval:
                     triggerBuilder.WithDailyTimeIntervalSchedule(x =>
                     {
-                        x.WithInterval((int)schedulerInfo.Interval.TotalSeconds ,IntervalUnit.Second);
+                        x.WithInterval((int)schedulerInfo.Interval.TotalSeconds, IntervalUnit.Second);
                         switch (schedulerInfo.RepeatMode)
                         {
                             case JobRepeatMode.Multiple:
@@ -212,54 +284,57 @@ namespace ColorVision.Scheduler
                 default:
                     break;
             }
+            return triggerBuilder.Build();
+        }
 
-            if (triggerBuilder != null)
+        private bool ValidateSchedulerInfo(SchedulerInfo info, out string errorMsg)
+        {
+            if (info.JobType == null)
             {
-                ITrigger trigger = triggerBuilder.Build();
-                // 调度Job
-                await scheduler.ScheduleJob(job, trigger);
-                schedulerInfo.NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
-                if (!TaskInfos.Contains(schedulerInfo))
+                errorMsg = "任务类型不能为空";
+                return false;
+            }
+            if (string.IsNullOrWhiteSpace(info.JobName) || string.IsNullOrWhiteSpace(info.GroupName))
+            {
+                errorMsg = "任务名和分组名不能为空";
+                return false;
+            }
+            if (info.Mode == JobExecutionMode.Cron)
+            {
+                if (string.IsNullOrWhiteSpace(info.CronExpression))
                 {
-                    TaskInfos.Add(schedulerInfo);
-
+                    errorMsg = "Cron表达式不能为空";
+                    return false;
+                }
+                if (!Quartz.CronExpression.IsValidExpression(info.CronExpression))
+                {
+                    errorMsg = "Cron表达式不合法";
+                    return false;
                 }
             }
-        }
-
-        public async Task<SchedulerInfo?> CreateJob(string jobName, string groupName, string cronExpression, string selectedJobName)
-        {
-            var selectedJobType = Jobs[selectedJobName];
-
-            var scheduler = await StdSchedulerFactory.GetDefaultScheduler();
-
-            // 动态创建Job实例
-            var job = JobBuilder.Create(selectedJobType)
-                .WithIdentity(jobName, groupName)
-                .UsingJobData("scriptPath", "path\\to\\your\\script.cmd")
-                .Build();
-
-            // 创建触发器
-            var trigger = TriggerBuilder.Create()
-                .WithIdentity($"{jobName}-trigger", groupName)
-                .WithCronSchedule(cronExpression)
-                .Build();
-
-            // 调度Job
-            await scheduler.ScheduleJob(job, trigger);
-
-            // 添加任务信息到列表  
-            var taskInfo = new SchedulerInfo
+            if ((info.Mode == JobExecutionMode.Simple || info.Mode == JobExecutionMode.Interval) && info.Interval.TotalSeconds <= 0)
             {
-                JobName = jobName,
-                GroupName = groupName,
-                NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A",
-                PreviousFireTime = trigger.GetPreviousFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A"
-            };
-            MessageBox.Show("Task created successfully.");
-            return taskInfo;
+                errorMsg = "间隔时间必须大于0";
+                return false;
+            }
+            if (info.RepeatMode == JobRepeatMode.Multiple && info.RepeatCount <= 0)
+            {
+                errorMsg = "重复次数必须大于0";
+                return false;
+            }
+            errorMsg = string.Empty;
+            return true;
         }
 
+        public void SaveTasks()
+        {
+            QuartzSchedulerConfig.Instance.Save();
+        }
+
+        public void LoadTasks()
+        {
+            QuartzSchedulerConfig.Instance.Load();
+        }
 
         public async Task Stop()
         {
