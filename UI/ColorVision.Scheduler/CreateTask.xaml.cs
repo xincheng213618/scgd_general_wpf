@@ -48,7 +48,17 @@ namespace ColorVision.Scheduler
                 MessageBox.Show("Please fill in all fields.");
                 return;
             }
-            var taskInfo = QuartzSchedulerManager.GetInstance().CreateJob(SchedulerInfo);
+            // 判断是新增还是编辑
+            var isEdit = QuartzSchedulerManager.GetInstance().TaskInfos.Any(x => x.JobName == jobName && x.GroupName == groupName);
+            if (isEdit)
+            {
+                QuartzSchedulerManager.GetInstance().UpdateJob(SchedulerInfo);
+            }
+            else
+            {
+                QuartzSchedulerManager.GetInstance().CreateJob(SchedulerInfo);
+            }
+            this.DialogResult = true;
             this.Close();
         }
 

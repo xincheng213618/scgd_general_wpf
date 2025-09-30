@@ -284,6 +284,9 @@ public Color BackgroundColor { get; set; }
 - **Quartz Scheduler 封装** - 企业级调度引擎集成
 - **任务状态监听** - 生命周期事件处理
 - **批量控制** - 任务组管理和批量操作
+- **任务恢复健壮性** - 启动时自动恢复历史任务，遇到类型丢失或异常任务会自动跳过并弹窗提示，保证系统整体可用性
+- **任务管理界面右键菜单** - 支持编辑、查看属性、暂停、继续、删除、立即执行等操作，提升任务管理体验
+- **异常处理与提示** - 任务调度器增强了异常捕获和用户提示，提升健壮性和易用性
 
 ### 算法结果浏览
 
@@ -349,7 +352,7 @@ dotnet build Plugins/YourPlugin/YourPlugin.csproj
 # 直接运行
 .\ColorVision.exe
 
-# 或通过dotnet运行
+# 或通过dotent运行
 dotnet run --project ColorVision
 ```
 
@@ -886,6 +889,14 @@ public interface IAuthenticationService
 
 **ColorVision 开发团队**  
 **视彩（上海）光电技术有限公司**
+
+
+
+
+
+
+
+
 
 
 

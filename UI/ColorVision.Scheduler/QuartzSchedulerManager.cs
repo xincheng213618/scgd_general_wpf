@@ -144,15 +144,34 @@ namespace ColorVision.Scheduler
                 {
                     if (typeof(IJob).IsAssignableFrom(type) && !type.IsInterface)
                     {
-                        Jobs.Add(type.Name, type);
+                        Jobs[type.Name] = type;
                     }
                 }
             }
             //5s 后恢复任务
             await Task.Delay(5000);
+            var failedJobs = new List<string>();
             foreach (var item in QuartzSchedulerConfig.Instance.TaskInfos)
             {
-                await CreateJob(item);
+                try
+                {
+                    if (item.JobType != null)
+                    {
+                        await CreateJob(item);
+                    }
+                    else
+                    {
+                        failedJobs.Add($"{item.JobName}({item.GroupName}) 类型丢失");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    failedJobs.Add($"{item.JobName}({item.GroupName}): {ex.Message}");
+                }
+            }
+            if (failedJobs.Count > 0)
+            {
+                MessageBox.Show("以下任务未能恢复：\n" + string.Join("\n", failedJobs), "任务恢复警告");
             }
         }
         public async Task StopJob(string jobName, string groupName)
