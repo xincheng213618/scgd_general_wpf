@@ -119,12 +119,13 @@ namespace ColorVision.UI.HotKey
                 Window window = WindowList[vk];
                 if (hotKeys.Kinds == HotKeyKinds.Global)
                 {
-                    hotKeys.IsRegistered = GlobalHotKeyManager.GetInstance(window).Register(hotKeys.Hotkey, hotKeys.HotKeyHandler);
+                    GlobalHotKeyManager.GetInstance(window).UnRegister(hotKeys);
                 }
                 else
                 {
-                    hotKeys.IsRegistered = WindowHotKeyManager.GetInstance(window).Register(hotKeys.Hotkey, hotKeys.HotKeyHandler);
+                    WindowHotKeyManager.GetInstance(window).UnRegister(hotKeys);
                 }
+                hotKeys.IsRegistered = false;
             }
         }
 

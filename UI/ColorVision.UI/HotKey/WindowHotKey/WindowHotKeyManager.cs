@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.UI.HotKey.WindowHotKey
@@ -80,12 +80,10 @@ namespace ColorVision.UI.HotKey.WindowHotKey
         public bool UnRegister(HotKeyCallBackHanlder callBack)
         {
             WindowHotKey.UnRegister(callBack);
-            foreach (var item in HotKeysList)
+            var itemsToRemove = HotKeysList.Where(item => callBack == item.HotKeyHandler).ToList();
+            foreach (var item in itemsToRemove)
             {
-                if (callBack == item.HotKeyHandler)
-                {
-                    HotKeysList.Remove(item);
-                }
+                HotKeysList.Remove(item);
             }
             return true;
         }
@@ -102,12 +100,10 @@ namespace ColorVision.UI.HotKey.WindowHotKey
             WindowHotKey.UnRegister(callBack);
             WindowHotKey.Register(control, hotkey, callBack);
 
-            foreach (var item in HotKeysList)
+            var itemsToRemove = HotKeysList.Where(item => callBack == item.HotKeyHandler).ToList();
+            foreach (var item in itemsToRemove)
             {
-                if (callBack == item.HotKeyHandler)
-                {
-                    HotKeysList.Remove(item);
-                }
+                HotKeysList.Remove(item);
             }
             HotKeysList.Add(new HotKeys() { Hotkey = hotkey, HotKeyHandler = callBack });
         }
