@@ -1,6 +1,6 @@
 # ColorVision.UI
 
-ColorVision.UI 是 ColorVision 系统的底层控件库，提供了丰富的 UI 组件、系统功能和框架支持。它是整个应用程序 UI 层的基础，包含菜单管理、配置系统、多语言支持、热键管理、日志系统等核心功能。
+ColorVision.UI 是 ColorVision 系统de
 
 ## 🎨 核心功能
 
