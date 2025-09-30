@@ -1,6 +1,6 @@
 # ProjectARVRPro
 
-## 功能定位
+## 🎯 功能定位
 
 ARVR Pro 专业版测试系统 - 针对AR/VR显示设备的全面光学性能测试解决方案
 

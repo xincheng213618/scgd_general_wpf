@@ -1,6 +1,6 @@
 # ProjectBlackMura
 
-## 功能定位
+## 🎯 功能定位
 
 BlackMura 缺陷检测测试插件 - 专用于显示面板黑色缺陷（Black Mura）检测的测试解决方案
 

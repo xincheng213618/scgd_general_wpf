@@ -1,6 +1,6 @@
 # ProjectARVRLite
 
-## 功能定位
+## 🎯 功能定位
 
 ARVR Lite 轻量版测试系统 - 为AR/VR显示设备提供简化的快速测试解决方案
 

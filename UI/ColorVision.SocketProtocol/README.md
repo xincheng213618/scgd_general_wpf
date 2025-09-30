@@ -1,6 +1,6 @@
 # ColorVision.SocketProtocol
 
-## 功能定位
+## 🎯 功能定位
 
 网络通信协议模块，提供Socket和串口通信功能。
 

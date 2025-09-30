@@ -1,6 +1,6 @@
 # ColorVision.Common
 
-## 功能定位
+## 🎯 功能定位
 
 通用基础框架库，提供整个ColorVision系统的基础接口定义、MVVM支持和通用工具类。
 
