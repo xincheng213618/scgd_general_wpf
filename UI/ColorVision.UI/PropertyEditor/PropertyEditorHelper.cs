@@ -28,14 +28,59 @@ namespace ColorVision.UI
         public static ConcurrentDictionary<Type, Lazy<ResourceManager?>> ResourceManagerCache { get; set; } = new();
         public static ConcurrentDictionary<Type, IPropertyEditor> CustomEditorCache { get; } = new();
 
+        /// <summary>
+        /// Gets or creates a cached instance of the specified property editor type
+        /// </summary>
+        /// <typeparam name="T">The property editor type</typeparam>
+        /// <returns>Cached or new instance of the property editor</returns>
+        public static T GetOrCreateEditor<T>() where T : IPropertyEditor, new()
+        {
+            var type = typeof(T);
+            if (CustomEditorCache.TryGetValue(type, out var cachedEditor))
+            {
+                return (T)cachedEditor;
+            }
+
+            var newEditor = new T();
+            CustomEditorCache[type] = newEditor;
+            return newEditor;
+        }
+
+        private static readonly Lazy<ResourceCache> Resources = new(() => new ResourceCache());
+        private class ResourceCache
+        {
+            public Brush GlobalTextBrush { get; }
+            public Brush GlobalBorderBrush { get; }
+            public Brush BorderBrush { get; }
+            public Style ButtonCommandStyle { get; }
+            public Style ComboBoxSmallStyle { get; }
+            public Style TextBoxSmallStyle { get; }
+            public IValueConverter Bool2VisibilityConverter { get; }
+
+            public ResourceCache()
+            {
+                var app = Application.Current ?? throw new InvalidOperationException("Application.Current 未初始化");
+
+                GlobalTextBrush = (Brush)app.FindResource("GlobalTextBrush");
+                GlobalBorderBrush = (Brush)app.FindResource("GlobalBorderBrush");
+                BorderBrush = (Brush)app.FindResource("BorderBrush");
+                ButtonCommandStyle = (Style)app.FindResource("ButtonCommand");
+                ComboBoxSmallStyle = (Style)app.FindResource("ComboBox.Small");
+                TextBoxSmallStyle = (Style)app.FindResource("TextBox.Small");
+                Bool2VisibilityConverter = app.TryFindResource("bool2VisibilityConverter") as IValueConverter
+                    ?? throw new InvalidOperationException("bool2VisibilityConverter 资源未找到");
+            }
+        }
         // Cached resource lookups per app lifetime (lookups are cheap but repeated hundreds of times in dynamic editors)
-        public static Brush GlobalTextBrush => (Brush)Application.Current.FindResource("GlobalTextBrush");
-        public static Brush GlobalBorderBrush => (Brush)Application.Current.FindResource("GlobalBorderBrush");
-        public static Brush BorderBrush => (Brush)Application.Current.FindResource("BorderBrush");
-        public static Style ButtonCommandStyle => (Style)Application.Current.FindResource("ButtonCommand");
-        public static Style ComboBoxSmallStyle => (Style)Application.Current.FindResource("ComboBox.Small");
-        public static Style TextBoxSmallStyle => (Style)Application.Current.FindResource("TextBox.Small");
-        public static IValueConverter? Bool2VisibilityConverter => Application.Current.TryFindResource("bool2VisibilityConverter") as IValueConverter;
+
+        public static Brush GlobalTextBrush => Resources.Value.GlobalTextBrush;
+        public static Brush GlobalBorderBrush => Resources.Value.GlobalBorderBrush;
+        public static Brush BorderBrush => Resources.Value.BorderBrush;
+        public static Style ButtonCommandStyle => Resources.Value.ButtonCommandStyle;
+        public static Style ComboBoxSmallStyle => Resources.Value.ComboBoxSmallStyle;
+        public static Style TextBoxSmallStyle => Resources.Value.TextBoxSmallStyle;
+        public static IValueConverter Bool2VisibilityConverter => Resources.Value.Bool2VisibilityConverter;
+
 
         public static ResourceManager? GetResourceManager(object obj)
         {
@@ -359,13 +404,13 @@ namespace ColorVision.UI
                         dockPanel = GenBrushProperties(property, obj);
                     }
                     else if (property.PropertyType == typeof(FontFamily))
-                        dockPanel = PropertyEditorHelper.GenFontFamilyProperties(property, obj);
+                        dockPanel = GetOrCreateEditor<FontFamilyPropertiesEditor>().GenProperties(property, obj);
                     else if (property.PropertyType == typeof(FontWeight))
-                        dockPanel = PropertyEditorHelper.GenFontWeightProperties(property, obj);
+                        dockPanel = GetOrCreateEditor<FontWeightPropertiesEditor>().GenProperties(property, obj);
                     else if (property.PropertyType == typeof(FontStyle))
-                        dockPanel = PropertyEditorHelper.GenFontStyleProperties(property, obj);
+                        dockPanel = GetOrCreateEditor<FontStylePropertiesEditor>().GenProperties(property, obj);
                     else if (property.PropertyType == typeof(FontStretch))
-                        dockPanel = PropertyEditorHelper.GenFontStretchProperties(property, obj);
+                        dockPanel = GetOrCreateEditor<FontStretchPropertiesEditor>().GenProperties(property, obj);
                     else if (typeof(ICommand).IsAssignableFrom(property.PropertyType))
                     {
                         dockPanel = GenCommandProperties(property, obj);
@@ -403,116 +448,6 @@ namespace ColorVision.UI
             }
 
             return propertyPanel;
-        }
-
-
-        public static DockPanel GenFontFamilyProperties(PropertyInfo property, object obj)
-        {
-            var rm = GetResourceManager(obj);
-            var dockPanel = new DockPanel();
-
-            var textBlock = CreateLabel(property, rm);
-            var comboBox = new ComboBox
-            {
-                Margin = new Thickness(5, 0, 0, 0),
-                MinWidth = ControlMinWidth,
-                Style = ComboBoxSmallStyle,
-                DisplayMemberPath = "Value",
-                SelectedValuePath = "Key",
-                ItemsSource = Fonts.SystemFontFamilies
-                    .Select(f => new KeyValuePair<FontFamily, string>(
-                        f,
-                        f.FamilyNames.TryGetValue(XmlLanguage.GetLanguage(CultureInfo.CurrentCulture.Name), out string fontName) ? fontName : f.Source
-                    )).ToList()
-            };
-
-            var binding = CreateTwoWayBinding(obj, property.Name);
-            comboBox.SetBinding(ComboBox.SelectedValueProperty, binding);
-            DockPanel.SetDock(comboBox, Dock.Right);
-
-            dockPanel.Children.Add(comboBox);
-            dockPanel.Children.Add(textBlock);
-            return dockPanel;
-        }
-
-        public static DockPanel GenFontWeightProperties(PropertyInfo property, object obj)
-        {
-            var rm = GetResourceManager(obj);
-            var dockPanel = new DockPanel();
-
-            var textBlock = CreateLabel(property, rm);
-            var comboBox = new ComboBox
-            {
-                Margin = new Thickness(5, 0, 0, 0),
-                MinWidth = ControlMinWidth,
-                Style = ComboBoxSmallStyle,
-                DisplayMemberPath = "Value",
-                SelectedValuePath = "Key",
-                ItemsSource = typeof(FontWeights).GetProperties()
-                    .Select(p => new KeyValuePair<FontWeight, string>((FontWeight)p.GetValue(null), p.Name)).ToList()
-            };
-
-            var binding = CreateTwoWayBinding(obj, property.Name);
-            comboBox.SetBinding(ComboBox.SelectedValueProperty, binding);
-            DockPanel.SetDock(comboBox, Dock.Right);
-
-            dockPanel.Children.Add(comboBox);
-            dockPanel.Children.Add(textBlock);
-            return dockPanel;
-        }
-
-        // FontStyle
-        public static DockPanel GenFontStyleProperties(PropertyInfo property, object obj)
-        {
-            var rm = GetResourceManager(obj);
-            var dockPanel = new DockPanel();
-
-            var textBlock = CreateLabel(property, rm);
-            var comboBox = new ComboBox
-            {
-                Margin = new Thickness(5, 0, 0, 0),
-                MinWidth = ControlMinWidth,
-                Style = ComboBoxSmallStyle,
-                DisplayMemberPath = "Value",
-                SelectedValuePath = "Key",
-                ItemsSource = typeof(FontStyles).GetProperties()
-                    .Select(p => new KeyValuePair<FontStyle, string>((FontStyle)p.GetValue(null), p.Name)).ToList()
-            };
-
-            var binding = CreateTwoWayBinding(obj, property.Name);
-            comboBox.SetBinding(ComboBox.SelectedValueProperty, binding);
-            DockPanel.SetDock(comboBox, Dock.Right);
-
-            dockPanel.Children.Add(comboBox);
-            dockPanel.Children.Add(textBlock);
-            return dockPanel;
-        }
-
-        // FontStretch
-        public static DockPanel GenFontStretchProperties(PropertyInfo property, object obj)
-        {
-            var rm = GetResourceManager(obj);
-            var dockPanel = new DockPanel();
-
-            var textBlock = CreateLabel(property, rm);
-            var comboBox = new ComboBox
-            {
-                Margin = new Thickness(5, 0, 0, 0),
-                MinWidth = ControlMinWidth,
-                Style = ComboBoxSmallStyle,
-                DisplayMemberPath = "Value",
-                SelectedValuePath = "Key",
-                ItemsSource = typeof(FontStretches).GetProperties()
-                    .Select(p => new KeyValuePair<FontStretch, string>((FontStretch)p.GetValue(null), p.Name)).ToList()
-            };
-
-            var binding = CreateTwoWayBinding(obj, property.Name);
-            comboBox.SetBinding(ComboBox.SelectedValueProperty, binding);
-            DockPanel.SetDock(comboBox, Dock.Right);
-
-            dockPanel.Children.Add(comboBox);
-            dockPanel.Children.Add(textBlock);
-            return dockPanel;
         }
 
         // Helpers
