@@ -1,254 +1,156 @@
-# **键盘测试**
+# ProjectKB - 键盘测试系统
+
+## 🎯 功能定位
+
+键盘背光亮度测试系统 - 专为键盘产品的亮度、均匀性和光学性能测试提供的完整解决方案。
+
+## 作用范围
+
+专注于键盘产品的质量检测，包括按键亮度、光晕检测、亮度均匀性等光学参数的测试和分析。
+
+## 主要功能点
+
+### 亮度测试
+- **按键亮度测量** - 精确测量单个按键的亮度值
+- **光晕检测** - 检测按键周围的光晕现象
+- **键帽整体测量** - 字符+光源的整体亮度测试
+- **最小/最大/平均亮度** - 全键盘亮度统计分析
+
+### 均匀性分析
+- **亮度一致性** - 计算键盘整体亮度均匀性 (Uniformity=min/max)
+- **局部对比度** - 检测暗键和亮键的局部对比度
+- **颜色一致性** - 分析键盘的颜色均匀性
+- **色差测试** - 测量键盘的色差值
+
+### POI模板管理
+- **关注点配置** - 在主程序中配置测试关注点
+- **模板导入** - 将POI配置导入到KB测试流程
+- **参数管理** - 管理测试相关的参数信息
+
+### 测试流程
+- **流程配置** - 配置完整的测试流程
+- **相机取图** - 添加相机模块获取键盘图像
+- **KB模板设置** - 配置KB测试模板和参数
+- **灰度计算** - 计算图像灰度值
+- **亮度校正** - 通过校正获取准确的亮度值
+- **结果判定** - 根据SPEC标准判定测试结果
+
+## 测试规格 (SPEC)
+
+### 测试项目
+- **最小亮度 (MinLv)** - 所有按键中的最小亮度值
+- **最大亮度 (MaxLv)** - 所有按键中的最大亮度值
+- **平均亮度 (AvgLv)** - 全键盘的平均亮度
+- **亮度一致性 (Uniformity)** - 亮度的均匀程度
+- **局部对比度** - 暗键和亮键的局部对比度
+- **色差 (ColorDifference)** - 键盘的色差值
+- **杂光 (StrayLight)** - 杂散光检测
+
+### 判定标准
+测试结果根据以下条件判定：
+- 平均亮度大于最小亮度限制
+- 平均亮度小于最大亮度限制
+- 平均亮度大于预设值
+- 亮度一致性大于预设值
+- 所有条件满足时判定为**PASS**，否则为**FAIL**
+
+## 数据输出
+
+### CSV报告格式
+测试数据自动写入CSV文件，包含以下字段：
+- 基本信息：Id, Model, SerialNumber, POISet, DateTime
+- 测试结果：AvgLv, MinLv, MaxLv, LvUniformity
+- 详细数据：DarkestKey, BrightestKey, ColorDifference
+- 失效信息：NbrFailedPts, LvFailures, LocalContrastFailures
+- 对比度：DarkKeyLocalContrast, BrightKeyLocalContrast
+- 其他参数：LocalDarkestKey, LocalBrightestKey, StrayLight
+- 判定结果：Result
+- 限制值：MinKeyLv, MaxKeyLv, MinAvgLv, MaxAvgLv, MinLvUniformity等
+
+### 测试报告
+- 自动生成详细测试报告
+- 保存到用户指定的路径
+- 包含图像和测试数据
+
+## Modbus集成
+
+### 触发模式
+- **手动执行** - 通过界面手动启动测试
+- **Modbus触发** - 根据Modbus信号自动触发测试
+
+### 默认配置
+- **IP地址**: 192.168.6.1
+- **端口**: 502
+- **寄存器地址**: D0 (0号地址)
+- **自动连接**: UI启动时自动尝试连接
+- **状态显示**: 连接状态在状态栏中显示
+
+## MES系统集成
+
+项目支持与MES（制造执行系统）集成，通过FunTestDll.dll提供的接口实现：
+- 版本检查
+- 工号验证
+- 条码状态检查
+- 测试数据上传
+- 工单信息查询
+
+**注意**: MES接口的详细说明请参考技术文档或联系技术支持团队。
+
+## 与主程序的依赖关系
+
+**引用的程序集**:
+- ColorVision.Engine - 核心引擎功能
+- ColorVision.Engine.Templates - 模板管理
+- ColorVision.UI - 基础UI组件
+- ColorVision.ImageEditor - 图像处理和标注
 
-用户可以在主程序中配置关注点和关注点相关的参数信息，然后导入到KB模板中。
+**被引用方式**:
+- 作为插件集成到主程序
+- 支持独立窗口模式运行
 
-流程的配置过程，添加一个取图的相机模块，然后配置KB模块，设置KB模板，根据相机图像和KB模板获取图像后，计算KB的灰度值，然后通过校正获取亮度值。
-在计算完成流程后，根据KB模板的设定，将计算结果与KB模板的设定值进行比较，然后显示结果和图像信息，然后生成CSV和报告。
+## 使用方式
 
-## SPEC：
+### 测试流程步骤
+1. **配置POI模板** - 在主程序中设置关注点
+2. **配置KB模板** - 设置测试参数和判定标准
+3. **添加相机模块** - 配置图像采集设备
+4. **执行测试流程** - 运行完整的测试流程
+5. **分析结果** - 查看测试结果和生成报告
+6. **导出数据** - 保存CSV和测试报告
 
-最小亮度（MiniLv）
-最大亮度（MaxLv）
-平均亮度（Avg Lv）
-亮度一致性（Uniformity）
+### 引用方式
+```xml
+<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
+<ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
+```
 
-结果根据SPEC, 平均亮度大于最小亮度，小于最大亮度，平均亮度大于预设， 亮度一致性大于预设，即判定成功，否则失败。
+## 开发调试
 
-数据会写入预设的CSV中，然后生成报告，保存到用户指定的路径中。
+```bash
+dotnet build Projects/ProjectKB/ProjectKB.csproj
+```
 
-**CSV格式：**
+## 目录说明
 
-"Id","Model", "SerialNumber", "POISet", "AvgLv", "MinLv", "MaxLv", "LvUniformity","DarkestKey", "BrightestKey", "ColorDifference", "NbrFailedPts", "LvFailures",  "LocalContrastFailures", "DarkKeyLocalContrast", "BrightKeyLocalContrast",  "LocalDarkestKey", "LocalBrightestKey", "StrayLight", "Result", "DateTime", ....., "LimitProfile",            "MinKeyLv", "MaxKeyLv", "MinAvgLv", "MaxAvgLv", "MinLvUniformity", "MaxDarkLocalContrast", "MaxBrightLocalContrast", "MaxNbrFailedPoints", "MaxColorDifference", "MaxStrayLight", "MinInterKeyUniformity","MinInterKeyColorUniformity"。
+- `Views/` - 测试界面和窗口
+- `Models/` - 数据模型和配置
+- `Services/` - 业务服务和算法接口
+- `Config/` - 配置文件目录
+- `Templates/` - KB测试模板
 
+## 术语说明
 
+- **Key (按键)** - 单个按键字符
+- **Halo (光晕)** - 按键周围的光晕效果
+- **键帽** - 字符+光源等整体
+- **Uniformity (均匀性)** - 亮度一致性，计算公式: min/max
 
-## **Modbus配置**
+## 相关文档链接
 
-按照要求，程序可以手动执行，也可以根据Modbus配置触发执行。
+- [测试流程配置](../../docs/engine-components/README.md)
+- [算法引擎文档](../../docs/algorithms/README.md)
+- [MES集成说明](../../docs/integration/mes-integration.md) *(如有)*
 
-默认配置modbus 192.168.6.1 端口502, 寄存器地址 D0, 即 0号
+## 维护者
 
-默认modbus 会在UI启动时自动尝试连接，连接后会在状态栏中显示是否已经连接。
-
-
-
-## 其他
-
-Key：字符
-Halo：光晕
-键帽：字符+光源等整体
-
-最小亮度：
-1.单独测量Key或者Halo，所有key或者Halo中最小值。
-2.Key与Halo一起测量的时候，键帽整体最小值
-
-亮度一致性：
-Uniformity=min/max
-
-
-
-## FunTestDll.dll
-
-
-> PID DLL说明
-
-1.  function CheckVersion(str: pchar): pchar; stdcall;
-
-> 参数说明：str表示条码。
->
-> 说明：此接口的功能是检查系统版本号。若正确，则返回"N"，否则返回"发现程式新版本，请更新后作业！"。
-
-2.  function CheckOPNO(OPNO: pchar): pchar; stdcall;
-
-> 参数说明：OPNO表示工号。
->
-> 说明：此接口的功能是检查工号是否正确。
->
-> 如果此工号在MES系统中没有权限，则提示"此账号\[\' + OPNO +
-> \'\]不存在!"；
->
-> 否则返回"N"。
-
-3.  function ATE_test(str: PChar): PChar; stdcall;
-
-> 参数说明：str表示条码。Collect_test中stage应为"ATE"。
->
-> 说明：此接口的功能是检查条码当前状态是否是ATE测试。
-
-4.  function AOI_test(str: PChar): PChar; stdcall;
-
-> 参数说明：str表示条码。Collect_test中stage应为"AOI"。
->
-> 说明：此接口的功能是检查条码当前状态是否是AOI测试。
-
-5.  function DARK_test(str: PChar): PChar; stdcall;
-
-> 参数说明：str表示条码。Collect_test中stage应为"DARK"。
->
-> 说明：此接口的功能是检查条码当前状态是否是光箱测试。
-
-6.  function Fun2Test_test(str: PChar): PChar; stdcall;
-
-> 参数说明：str表示条码。Collect_test中stage应为"FUN2"。
->
-> 说明：此接口的功能是检查条码当前状态是否是功能刷键测试。
-
-7.  function KM_FEELING_test (str: PChar): PChar; stdcall;
-
-> 参数说明：str表示条码。Collect_test中stage应为"KM_FEELING_TEST"。
->
-> 说明：此接口的功能是检查条码当前状态是否是KM Feeling测试。
-
-8.  function Sens_test(str: PChar): PChar; stdcall;
-
-> 参数说明：str表示条码。Collect_test中stage应为"SENSTEST"。
->
-> 说明：此接口的功能是检查条码当前状态是否是灵敏测试。
-
-9.  function Resistance_test(str: PChar): PChar; stdcall;
-
-> 参数说明：str表示条码。Collect_test中stage应为"RESISTANCE"。
->
-> 说明：此接口的功能是检查条码当前状态是否是KM 测阻值测试。
-
-10. function PLG_test(str: PChar): PChar; stdcall;
-
-> 参数说明：str表示条码。PLG_test中stage应为"PLG"。
->
-> 说明：此接口的功能是检查条码当前状态是否是KM PLG检验。
-
-11. function Mouse_test(str: PChar): PChar; stdcall;
-
-> 参数说明：str表示条码。Collect_test中stage应为"MOUSE"。
->
-> 说明：此接口的功能是检查条码当前状态是否是MOUSE测试。
-
-12. function Fun3Test_test(str: PChar): PChar; stdcall;
-
-> 参数说明：str表示条码。Collect_test中stage应为"Fun3"。
->
-> 说明：此接口的功能是检查条码当前状态是否是Fun3测试。
->
-> 1.3-1.11的返回值如下：
->
-> 如果条码还未归属过工单，则提示"此条码还没有归属工单，请先归属工单"；
->
-> 如果条码所在的线别已达到不良率停线警告值值，则提示"XX站XX线不良率超出设置的停线值强制停线,请先解锁！"；
->
-> 如条码所在的线别有重大不良（某站检到特定的不良现象）则提示"XX站XX线重大不良：XXX停线,请先解锁！"；
->
-> 如果条码AOI站到包装站超时则提示"采集失败,条码XXX
-> AOI到包装站超过规定时间,请先解码回流!"；
->
-> 如果条码AOI站到包装站超时解锁后没有重新回流则提示"采集失败,条码XXX
-> AOI到包装站超过规定时间解码后需重新回流!"；
->
-> 如果条码ATE到AOI超时则提示"此条码XXX
-> ATE与AOI测试超过时间，请先解锁"；如果条码已经维修报废则提示"此条码已经维修报废"；
->
-> 如果条码的当前状态不是此站，则提示"此条码XXX当前应做XXX站"；
->
-> 否则返回"N"。
-
-13. function CheckWIP(Stage, Barcode: PChar): PChar; stdcall;
-
-> 参数说明：Stage表示站别代码（F010,F160...），Barcode表示条码。
->
-> 说明：此接口的功能是检查条码是否可以做当前站测试。
->
-> 如果当前DLL版本不正确，则提示"发现程式新版本，请更新后作业！"；
->
-> 如果当前站别代码不正确，则提示"站别\' + stage + \'错误,请先确认！"；
->
-> 如果条码还未归属过工单，则提示"此条码还没有归属工单，请先归属工单"；
->
-> 如果条码所在的线别已达到不良率停线警告值值，则提示"XX站XX线不良率超出设置的停线值强制停线,请先解锁！"；
->
-> 如条码所在的线别有重大不良（某站检到特定的不良现象）则提示"XX站XX线重大不良：XXX停线,请先解锁！"；
->
-> 如果条码AOI站到包装站超时则提示"采集失败,条码XXX
-> AOI到包装站超过规定时间,请先解码回流!"；
->
-> 如果条码AOI站到包装站超时解锁后没有重新回流则提示"采集失败,条码XXX
-> AOI到包装站超过规定时间解码后需重新回流!"；
->
-> 如果条码ATE到AOI超时则提示"此条码XXX
-> ATE与AOI测试超过时间，请先解锁"；如果条码已经维修报废则提示"此条码已经维修报废"；
->
-> 如果条码的当前状态不是此站，则提示"此条码XXX当前应做XXX站"；
->
-> 否则返回"N"。
->
-> 此接口不适用贴背光站F007！！
-
-14. function
-    Collect_test(Stage,Barcode_NO,Barcode_Result,MachineNO,Line,Opno,
-
-> DefectCode_Result,Barcode_Test: PChar): PChar; stdcall;
-
-参数说明：有8个参数，其中stage表示站别(比如：ATE、FUN2、DARK、AOI,PLG或者直接用站别代码表示)，Barcode_NO表示扫描的条码，Barcode_Result
-表示测试结果（pass/fail），MachineNO表示机台号，Line表示线别，opno表示作业人员工号，DefectCode_Result表示不良信息（格式如下:NG:不良代码1\^不良键位1:
-不良代码2\^不良键位2 举例：NG: FQ3378\^G:
-FQ3377\^A），Barcode_Test存放其他数值(比如电流、电压，可为空)。
-
-> 说明：此接口的功能是上传测试数据。
->
-> 上传成功返回"N"。
-
-15. function GetModelVer(BCNO: PChar): PChar; stdcall;
-
-> 参数说明:BCNO表示工单号
->
-> 说明:按工单号返回机种-版本。其中：机种为工单号所在机种；版本为工单号所在料号对应的版本（SFC中"功能测试版本维护"的资料）。
->
-> 返回值说明：输入的工单不存在，则返回"工单\[\' + BCNO + \'\]不存在！"；
->
-> 输入的工单对应的版本不存在，则返回"料号\[\' + partno +
-> \'\]对应的版本不存在！"；否则返回机种-版本。
-
-16. function CheckBL_WIP(Stage, str, BL: PChar): PChar; stdcall;
-
-> 参数说明：Stage表示站别代码（F007），str表示条码, BL背光条码。
->
-> 说明：此接口的功能是检查条码是否可以做当前站测试。
->
-> 如果当前DLL版本不正确，则提示"发现程式新版本，请更新后作业！"；
->
-> 如果当前站别代码不正确，则提示"站别\' + stage + \'错误,请先确认！"；
->
-> 如果条码还未归属过工单，则提示"此条码还没有归属工单，请先归属工单"；
->
-> 如果条码所在的线别已达到不良率停线警告值值，则提示"XX站XX线不良率超出设置的停线值强制停线,请先解锁！"；
->
-> 如条码所在的线别有重大不良（某站检到特定的不良现象）则提示"XX站XX线重大不良：XXX停线,请先解锁！"；
->
-> 如果条码AOI站到包装站超时则提示"采集失败,条码XXX
-> AOI到包装站超过规定时间,请先解码回流!"；
->
-> 如果条码AOI站到包装站超时解锁后没有重新回流则提示"采集失败,条码XXX
-> AOI到包装站超过规定时间解码后需重新回流!"；
->
-> 如果条码ATE到AOI超时则提示"此条码XXX
-> ATE与AOI测试超过时间，请先解锁"；如果条码已经维修报废则提示"此条码已经维修报废"；
->
-> 如果条码的当前状态不是此站，则提示"此条码XXX当前应做XXX站"；
->
-> 如果设定背光规则，则按背光规则片片卡控唯一性，否则背光须以6K或9Z
-> 开头；
->
-> 否则返回"N"。
-
-17. function Get_ModelVersion(BCNO:PChar ):PChar ;stdcall ;
-
-> 说明：此接口功能是输入工单号，带出机种-版本，有一个参数，类型为string，其中BCNO表示工单号。
-
-18. function Get_ModelVersionLanguage(BCNO:PChar ):PChar ;stdcall ;
-
-> 说明：此接口功能是输入工单号，带出机种-版本-语言别，有一个参数，类型为string，其中BCNO表示工单号。
-
-
-
-
-
-
-
+ColorVision 项目团队

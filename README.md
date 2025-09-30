@@ -2,6 +2,23 @@
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/xincheng213618/scgd_general_wpf)
 
+## 📋 目录
+
+- [项目简介](#项目简介)
+- [在线文档](#-在线文档--github-pages)
+- [快速入口](#-快速入口)
+- [主要特性](#-主要特性)
+- [目录结构](#-目录结构)
+- [快速开始](#-快速开始)
+- [文档结构说明](#-文档结构说明)
+- [插件机制说明](#-插件机制说明)
+- [子项目说明](#-子项目说明)
+- [更新日志](#-更新日志)
+- [功能总览](#二功能总览)
+- [架构概览](#三架构概览)
+- [安装与构建](#六安装与构建)
+- [贡献指南](#十九贡献指南)
+
 ## 项目简介
 
 ColorVision 是一款基于 WPF 的专业视觉检测平台，采用模块化架构设计，支持多框架协同工作。专注于提供高效、精准的图像处理及分析功能，适用于光电技术、色彩管理、质量检测等应用场景。
@@ -851,6 +868,8 @@ public interface IAuthenticationService
 | `DisplayNameAttribute` | 显示名称 | `[DisplayName("背景颜色")]` |
 | `DescriptionAttribute` | 属性描述 | `[Description("设置控件背景颜色")]` |
 | `PropertyVisibilityAttribute` | 可见性控制 | `[PropertyVisibility(nameof(IsVisible))]` |
+| `PropertyOrderAttribute` | 属性显示顺序 | `[PropertyOrder(10)]` |
+| `CategoryOrderAttribute` | 类别显示顺序 | `[CategoryOrder("外观", 1)]` |
 
 ### 扩展接口清单
 

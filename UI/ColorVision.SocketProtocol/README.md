@@ -1,6 +1,6 @@
 # ColorVision.SocketProtocol
 
-## 功能定位
+## 🎯 功能定位
 
 网络通信协议模块，提供Socket和串口通信功能。
 
@@ -44,9 +44,48 @@
 dotnet build UI/ColorVision.SocketProtocol/ColorVision.SocketProtocol.csproj
 ```
 
+## 通信示例
+
+### Socket通信示例
+```csharp
+// 创建TCP客户端
+var client = new SocketClient("192.168.1.100", 8080);
+
+// 连接服务器
+await client.ConnectAsync();
+
+// 发送数据
+await client.SendAsync(data);
+
+// 接收数据
+var response = await client.ReceiveAsync();
+```
+
+### 串口通信示例
+```csharp
+// 配置串口
+var serialPort = new SerialPortClient
+{
+    PortName = "COM3",
+    BaudRate = 9600,
+    DataBits = 8,
+    Parity = Parity.None,
+    StopBits = StopBits.One
+};
+
+// 打开串口
+serialPort.Open();
+
+// 发送数据
+serialPort.Write(data);
+
+// 接收数据
+var response = serialPort.Read();
+```
+
 ## 相关文档链接
 
-- [设备管理文档](../../docs/device-management/README.md)
+- [设备通信文档](../../docs/engine-components/README.md)
 - [网络通信指南](../../docs/getting-started/入门指南.md)
 
 ## 维护者

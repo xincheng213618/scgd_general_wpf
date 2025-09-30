@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Resources;
 using System.Windows;
@@ -148,7 +149,18 @@ namespace ColorVision.UI
         {
             categoryGroups.Clear();
             GenCategoryGroups(obj);
-            foreach (var categoryGroup in categoryGroups)
+            
+            // Get category order from CategoryOrderAttribute on the class
+            var type = obj.GetType();
+            var categoryOrderAttrs = type.GetCustomAttributes<CategoryOrderAttribute>().ToList();
+            var categoryOrderMap = categoryOrderAttrs.ToDictionary(a => a.Category, a => a.Order);
+
+            // Sort categories: first by order (if specified), then alphabetically
+            var sortedCategories = categoryGroups
+                .OrderBy(cg => categoryOrderMap.TryGetValue(cg.Key, out var order) ? order : int.MaxValue)
+                .ThenBy(cg => cg.Key, StringComparer.Ordinal);
+
+            foreach (var categoryGroup in sortedCategories)
             {
                 var border = new Border
                 {
@@ -160,7 +172,13 @@ namespace ColorVision.UI
                 };
                 var stackPanel = new StackPanel { Margin = new Thickness(10,5,10,0) };
                 border.Child = stackPanel;
-                foreach (var property in categoryGroup.Value)
+                
+                // Sort properties: first by PropertyOrderAttribute, then by name
+                var sortedProperties = categoryGroup.Value
+                    .OrderBy(p => p.GetCustomAttribute<PropertyOrderAttribute>()?.Order ?? int.MaxValue)
+                    .ThenBy(p => PropertyEditorHelper.GetDisplayName(resourceManager, p));
+
+                foreach (var property in sortedProperties)
                 {
                     var browsableAttr = property.GetCustomAttribute<BrowsableAttribute>();
                     
