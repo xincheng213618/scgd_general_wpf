@@ -2,681 +2,1641 @@
 
 ## 目录
 1. [概述](#概述)
-2. [核心功能](#核心功能)
-3. [架构设计](#架构设计)
-4. [算法模块](#算法模块)
-5. [图像处理](#图像处理)
-6. [色彩空间](#色彩空间)
-7. [计算机视觉](#计算机视觉)
-8. [性能优化](#性能优化)
-9. [使用示例](#使用示例)
-10. [API参考](#api参考)
+2. [技术架构](#技术架构)
+3. [核心模块](#核心模块)
+4. [相机控制](#相机控制)
+5. [色彩处理](#色彩处理)
+6. [设备通信](#设备通信)
+7. [图像算法](#图像算法)
+8. [使用示例](#使用示例)
+9. [API参考](#api参考)
+10. [常见问题](#常见问题)
 
 ## 概述
 
-**cvColorVision** 是 ColorVision 系统的底层色彩视觉算法库，采用 C++ 实现，基于 OpenCV 构建。它提供了高性能的图像处理、色彩分析和计算机视觉算法，是整个系统的算法核心。
+**cvColorVision** 是 ColorVision 系统的视觉处理核心模块，提供图像采集、色彩分析和视觉算法的底层实现。它是一个 **C# 封装库**，通过 P/Invoke 技术调用底层 **C++ DLL**（cvCamera.dll、cvOled.dll）实现高性能的图像处理功能。
 
 ### 基本信息
 
-- **实现语言**: C++
-- **基础库**: OpenCV 4.x
-- **加速支持**: CUDA, OpenCL
-- **架构**: 模块化, 多线程
-- **特色功能**: 色彩空间转换、图像质量评估、特征检测、机器视觉算法
+- **封装层语言**: C# (.NET)
+- **底层实现**: C++ (基于 OpenCV 4.x)
+- **接口方式**: P/Invoke (DllImport)
+- **硬件支持**: 多种相机型号、光谱仪、传感器
+- **加速支持**: CUDA (GPU 加速，底层支持)
+- **特色功能**: 
+  - 相机控制与图像采集
+  - 色彩空间转换与测量
+  - 设备通信（TCP/串口）
+  - OLED 像素检测
+  - AOI 缺陷检测
+  - 光谱数据处理
 
-## 核心功能
+## 技术架构
 
-### 1. 图像处理算法
-- **基础滤波**: 高斯滤波、中值滤波、双边滤波
-- **形态学处理**: 膨胀、腐蚀、开闭运算
-- **边缘检测**: Canny、Sobel、Laplacian算子
-- **图像增强**: 直方图均衡化、伽马校正、锐化
+### 整体架构
 
-### 2. 色彩空间处理
-- **色彩空间转换**: RGB、HSV、LAB、XYZ、YUV转换
-- **色彩校正**: 白平衡、色温调整、色彩匹配
-- **色差计算**: ΔE76、ΔE94、ΔE2000色差公式
-- **色域分析**: 色域范围检测和分析
+```
+┌─────────────────────────────────────────────────────────┐
+│              ColorVision 应用层                          │
+│              (ColorVision.Engine)                        │
+└──────────────────────┬──────────────────────────────────┘
+                       │ 调用
+                       ↓
+┌─────────────────────────────────────────────────────────┐
+│          cvColorVision (C# 封装层)                       │
+│  ┌──────────────┬──────────────┬──────────────────┐    │
+│  │  相机控制    │   色彩处理    │    设备通信      │    │
+│  ├──────────────┼──────────────┼──────────────────┤    │
+│  │  图像算法    │   工具类      │    数据结构      │    │
+│  └──────────────┴──────────────┴──────────────────┘    │
+└──────────────────────┬──────────────────────────────────┘
+                       │ P/Invoke (DllImport)
+                       ↓
+┌─────────────────────────────────────────────────────────┐
+│          底层 C++ DLL 库                                 │
+│  ┌──────────────────────────────────────────────┐      │
+│  │  cvCamera.dll (相机控制和图像处理)            │      │
+│  │  - OpenCV 4.x                                 │      │
+│  │  - CUDA 加速                                  │      │
+│  │  - 多种相机 SDK                               │      │
+│  └──────────────────────────────────────────────┘      │
+│  ┌──────────────────────────────────────────────┐      │
+│  │  cvOled.dll (OLED 专用算法)                   │      │
+│  │  - 像素检测                                   │      │
+│  │  - 摩尔纹滤波                                 │      │
+│  └──────────────────────────────────────────────┘      │
+└─────────────────────────────────────────────────────────┘
+```
 
-### 3. 特征检测与匹配
-- **角点检测**: Harris、FAST、ORB特征点
-- **边缘检测**: 直线、圆形、轮廓检测
-- **模板匹配**: 单模板、多模板、变形模板匹配
-- **对象识别**: 形状、纹理、颜色特征识别
-
-### 4. 测量与标定
-- **几何测量**: 距离、角度、面积、周长测量
-- **相机标定**: 内参、外参、畸变校正
-- **立体视觉**: 双目测距、三维重建
-- **精度评估**: 测量精度和重复性评估
-
-## 架构设计
+### 模块化设计
 
 ```mermaid
 graph TB
     subgraph "cvColorVision 核心架构"
-        A[图像处理模块] --> A1[基础滤波]
-        A --> A2[形态学处理]
-        A --> A3[图像增强]
+        A[相机控制模块] --> A1[相机初始化]
+        A --> A2[图像采集]
+        A --> A3[参数控制]
         
-        B[色彩空间模块] --> B1[空间转换]
-        B --> B2[色彩校正]
-        B --> B3[色差计算]
+        B[色彩处理模块] --> B1[XYZ 转换]
+        B --> B2[色度计算]
+        B --> B3[光谱分析]
         
-        C[特征检测模块] --> C1[角点检测]
-        C --> C2[边缘检测]
-        C --> C3[模板匹配]
+        C[设备通信模块] --> C1[TCP 通信]
+        C --> C2[串口通信]
+        C --> C3[传感器控制]
         
-        D[测量标定模块] --> D1[几何测量]
-        D --> D2[相机标定]
-        D --> D3[立体视觉]
-        
-        E[性能优化层] --> E1[CUDA加速]
-        E --> E2[多线程处理]
-        E --> E3[内存管理]
+        D[图像算法模块] --> D1[AOI 检测]
+        D --> D2[OLED 算法]
+        D --> D3[点检测]
     end
     
-    subgraph "外部依赖"
-        F[OpenCV Core]
-        G[OpenCV ImgProc]
-        H[OpenCV Features2D]
-        I[OpenCV Calib3D]
-        J[CUDA Runtime]
+    subgraph "底层 DLL"
+        E[cvCamera.dll]
+        F[cvOled.dll]
     end
     
-    A --> F
-    B --> G
-    C --> H
-    D --> I
-    E1 --> J
+    A --> E
+    B --> E
+    C --> E
+    D --> E
+    D --> F
 ```
 
-## 算法模块
+## 核心模块
 
-### ImageProcessor 图像处理器
+### 模块分类总览
 
-```cpp
-class ImageProcessor
+| 分类 | 文件 | 行数 | 主要功能 |
+|------|------|------|----------|
+| **相机控制** | cvCameraCSLib.cs | 1061 | 相机初始化、图像采集、参数控制 |
+| | CMStruct.cs | 155 | 相机数据结构和枚举 |
+| **色彩处理** | ConvertXYZ.cs | 98 | XYZ 色彩空间转换 |
+| | Spectrometer.cs | 138 | 光谱数据处理 |
+| **设备通信** | SensorComm.cs | 115 | 传感器 TCP/串口通信 |
+| | PG.cs | 50 | Pattern Generator 控制 |
+| | PassSx.cs | 73 | 电源设备控制 |
+| **图像算法** | Algorithms.cs | 13 | 基础点检测算法 |
+| | AoiParam.cs | 44 | AOI 缺陷检测 |
+| | KeyBoard.cs | 24 | 键盘光晕检测 |
+| | CvOledDLL.cs | 26 | OLED 算法接口 |
+| | CVLED_COLOR.cs | 9 | LED 颜色定义 |
+| | CVOLED_ERROR.cs | 15 | 错误码定义 |
+| **工具类** | Util/CfgFile.cs | 50 | 配置文件读写 |
+| **总计** | | **1821** | |
+
+## 相机控制
+
+### cvCameraCSLib - 相机控制主模块
+
+这是最核心的模块（1061 行），提供完整的相机控制功能。
+
+#### 支持的相机类型
+
+```csharp
+public enum CameraType
 {
-public:
-    // 基础滤波
-    static cv::Mat gaussianBlur(const cv::Mat& src, cv::Size ksize, double sigma);
-    static cv::Mat medianBlur(const cv::Mat& src, int ksize);
-    static cv::Mat bilateralFilter(const cv::Mat& src, int d, double sigmaColor, double sigmaSpace);
-    
-    // 形态学处理
-    static cv::Mat morphologyEx(const cv::Mat& src, int operation, const cv::Mat& kernel);
-    static cv::Mat erode(const cv::Mat& src, const cv::Mat& kernel, int iterations = 1);
-    static cv::Mat dilate(const cv::Mat& src, const cv::Mat& kernel, int iterations = 1);
-    
-    // 图像增强
-    static cv::Mat equalizeHistogram(const cv::Mat& src);
-    static cv::Mat gammaCorrection(const cv::Mat& src, double gamma);
-    static cv::Mat sharpen(const cv::Mat& src, double strength);
-};
-```
-
-### ColorSpaceConverter 色彩空间转换器
-
-```cpp
-class ColorSpaceConverter
-{
-public:
-    // 色彩空间转换
-    static cv::Mat convertColorSpace(const cv::Mat& src, int srcSpace, int dstSpace);
-    static cv::Mat rgb2xyz(const cv::Mat& rgb);
-    static cv::Mat xyz2lab(const cv::Mat& xyz);
-    static cv::Mat rgb2hsv(const cv::Mat& rgb);
-    
-    // 色差计算
-    static double deltaE76(const cv::Vec3f& lab1, const cv::Vec3f& lab2);
-    static double deltaE94(const cv::Vec3f& lab1, const cv::Vec3f& lab2);
-    static double deltaE2000(const cv::Vec3f& lab1, const cv::Vec3f& lab2);
-    
-    // 白平衡校正
-    static cv::Mat whiteBalance(const cv::Mat& src, const cv::Vec3f& whitePoint);
-    static cv::Mat colorTemperatureAdjust(const cv::Mat& src, double temperature);
-};
-```
-
-### FeatureDetector 特征检测器
-
-```cpp
-class FeatureDetector
-{
-public:
-    // 角点检测
-    static std::vector<cv::Point2f> detectHarrisCorners(const cv::Mat& src, double threshold);
-    static std::vector<cv::KeyPoint> detectFASTKeypoints(const cv::Mat& src);
-    static std::vector<cv::KeyPoint> detectORBKeypoints(const cv::Mat& src, int maxFeatures);
-    
-    // 边缘检测
-    static cv::Mat cannyEdgeDetection(const cv::Mat& src, double threshold1, double threshold2);
-    static std::vector<cv::Vec2f> detectLines(const cv::Mat& edges, double rho, double theta);
-    static std::vector<cv::Vec3f> detectCircles(const cv::Mat& src, double dp, double minDist);
-    
-    // 轮廓检测
-    static std::vector<std::vector<cv::Point>> findContours(const cv::Mat& binary);
-    static std::vector<cv::Point> findLargestContour(const cv::Mat& binary);
-};
-```
-
-## 图像处理
-
-### 基础滤波算法
-
-#### 高斯滤波
-```cpp
-cv::Mat ImageProcessor::gaussianBlur(const cv::Mat& src, cv::Size ksize, double sigma)
-{
-    cv::Mat dst;
-    cv::GaussianBlur(src, dst, ksize, sigma, sigma, cv::BORDER_DEFAULT);
-    return dst;
+    CV_Q,           // QHY 相机（色度模式）
+    LV_Q,           // QHY 相机（亮度模式）
+    BV_Q,           // QHY 相机（黑白模式）
+    MIL_CL,         // Matrox CameraLink 相机
+    MIL_CXP,        // Matrox CoaXPress 相机
+    BV_H,           // Hikvision 黑白相机
+    LV_H,           // Hikvision 亮度相机
+    HK_CXP,         // Hikvision CoaXPress
+    CV_HK_USB,      // Hikvision USB 相机
+    // ... 更多类型
 }
 ```
 
-#### 双边滤波
-```cpp
-cv::Mat ImageProcessor::bilateralFilter(const cv::Mat& src, int d, double sigmaColor, double sigmaSpace)
+#### 相机模式
+
+```csharp
+public enum CameraMode
 {
-    cv::Mat dst;
-    cv::bilateralFilter(src, dst, d, sigmaColor, sigmaSpace);
-    return dst;
+    CV_MODE,        // 色度模式（Color Value）
+    BV_MODE,        // 黑白模式（Black/White）
+    LV_MODE,        // 亮度模式（Luminance Value）
+    LVTOBV_MODE,    // 亮度转黑白模式
 }
 ```
 
-### 图像增强算法
+#### 主要功能
 
-#### 自适应直方图均衡化
-```cpp
-cv::Mat ImageProcessor::adaptiveHistogramEqualization(const cv::Mat& src)
+##### 1. 相机初始化与管理
+
+```csharp
+// 初始化相机
+IntPtr CM_Init(CameraType camType);
+
+// 打开相机（通过索引）
+bool CM_Open(IntPtr handle, int index);
+
+// 关闭相机
+bool CM_Close(IntPtr handle);
+
+// 释放相机资源
+bool CM_Uninit(IntPtr handle);
+```
+
+##### 2. 图像采集
+
+```csharp
+// 采集单帧图像
+int CM_GetImage(IntPtr handle, byte[] rawArray);
+
+// 开始实时预览
+bool CM_StartLive(IntPtr handle, LiveShowEvent liveCallBack);
+
+// 停止实时预览
+bool CM_StopLive(IntPtr handle);
+```
+
+##### 3. 相机参数控制
+
+**曝光控制**:
+```csharp
+// 设置曝光时间（微秒）
+bool CM_SetExposureTime(IntPtr handle, uint exposureTime);
+
+// 获取曝光时间
+uint CM_GetExposureTime(IntPtr handle);
+```
+
+**增益控制**:
+```csharp
+// 设置增益
+bool CM_SetGain(IntPtr handle, double gain);
+
+// 获取增益
+double CM_GetGain(IntPtr handle);
+```
+
+**白平衡控制**:
+```csharp
+// 设置白平衡 RGB
+bool CM_SetWhiteBalance(IntPtr handle, double wbR, double wbG, double wbB);
+
+// 自动白平衡
+bool CM_AutoWhiteBalance(IntPtr handle);
+```
+
+##### 4. 图像信息获取
+
+```csharp
+// 获取图像宽度
+int CM_GetImageWidth(IntPtr handle);
+
+// 获取图像高度
+int CM_GetImageHeight(IntPtr handle);
+
+// 获取图像位深
+int CM_GetImageBpp(IntPtr handle);
+
+// 获取图像通道数
+int CM_GetImageChannels(IntPtr handle);
+```
+
+### CMStruct - 数据结构定义
+
+#### 采集模式
+
+```csharp
+public enum TakeImageMode
 {
-    cv::Mat lab, dst;
-    cv::cvtColor(src, lab, cv::COLOR_BGR2LAB);
-    
-    std::vector<cv::Mat> channels;
-    cv::split(lab, channels);
-    
-    // 创建CLAHE对象
-    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(2.0, cv::Size(8, 8));
-    clahe->apply(channels[0], channels[0]);
-    
-    cv::merge(channels, lab);
-    cv::cvtColor(lab, dst, cv::COLOR_LAB2BGR);
-    
-    return dst;
+    Measure_Normal = 0,     // 标准测量模式
+    Live,                   // 实时预览模式
+    Measure_Fast,           // 快速测量模式
+    Measure_FastEx          // 扩展快速模式
 }
 ```
 
-#### 伽马校正
-```cpp
-cv::Mat ImageProcessor::gammaCorrection(const cv::Mat& src, double gamma)
+#### 标定类型
+
+```csharp
+public enum CalibrationType
 {
-    cv::Mat dst;
-    cv::Mat lookupTable(1, 256, CV_8U);
-    uchar* p = lookupTable.ptr();
-    
-    for (int i = 0; i < 256; ++i) {
-        p[i] = cv::saturate_cast<uchar>(pow(i / 255.0, gamma) * 255.0);
-    }
-    
-    cv::LUT(src, lookupTable, dst);
-    return dst;
+    DarkNoise = 0,          // 暗噪声标定
+    DefectWPoint,           // 白点缺陷
+    DefectBPoint,           // 黑点缺陷
+    DefectPoint,            // 综合缺陷
+    DSNU,                   // 暗信号不均匀性
+    Uniformity,             // 均匀性标定
+    Luminance,              // 亮度标定
+    Distortion,             // 畸变标定
+    ColorShift,             // 色偏标定
+    // ... 更多类型
 }
 ```
 
-## 色彩空间
+#### 图像通道类型
 
-### RGB到LAB转换
-
-```cpp
-cv::Mat ColorSpaceConverter::rgb2lab(const cv::Mat& rgb)
+```csharp
+public enum ImageChannelType
 {
-    cv::Mat xyz, lab;
-    
-    // RGB转XYZ
-    cv::cvtColor(rgb, xyz, cv::COLOR_RGB2XYZ);
-    
-    // XYZ转LAB
-    cv::cvtColor(xyz, lab, cv::COLOR_XYZ2Lab);
-    
-    return lab;
+    Gray_X = 0,             // X 通道灰度
+    Gray_Y = 1,             // Y 通道灰度
+    Gray_Z = 2,             // Z 通道灰度
+    xCIE = 3,               // CIE x 色度
+    yCIE = 4,               // CIE y 色度
+    CIE_X = 7,              // CIE X 三刺激值
+    CIE_Y = 8,              // CIE Y 三刺激值
+    CIE_Z = 9,              // CIE Z 三刺激值
+    // ... 更多类型
 }
 ```
 
-### 色差计算
+## 色彩处理
 
-#### Delta E 2000 色差公式
-```cpp
-double ColorSpaceConverter::deltaE2000(const cv::Vec3f& lab1, const cv::Vec3f& lab2)
+### ConvertXYZ - 色彩空间转换
+
+提供 XYZ 色彩空间转换和色度计算功能。
+
+#### 初始化与资源管理
+
+```csharp
+// 初始化 XYZ 转换器
+IntPtr CM_InitXYZ(IntPtr cameraHandle);
+
+// 设置图像缓冲区
+int CM_SetBufferXYZ(IntPtr handle, uint w, uint h, uint bpp, uint channels, byte[] rawArray);
+
+// 释放资源
+int CM_UnInitXYZ(IntPtr handle);
+```
+
+#### 圆形区域测量
+
+```csharp
+// 获取 XYZ 和 xyuv 色度坐标（圆形区域）
+int CM_GetXYZxyuvCircle(
+    IntPtr handle, 
+    int pX, int pY,             // 中心点坐标
+    ref float X, ref float Y, ref float Z,    // XYZ 三刺激值
+    ref float x, ref float y,                 // xy 色度坐标
+    ref float u, ref float v,                 // uv 色度坐标
+    double nRadius = 3                        // 半径
+);
+
+// 批量测量（圆形区域）
+int CM_GetXYZxyuvCircleEx(
+    IntPtr handle,
+    int[] pX, int[] pY,         // 多个点的坐标数组
+    float[] pdX, float[] pdY, float[] pdZ,    // XYZ 结果数组
+    float[] pdx, float[] pdy,                 // xy 结果数组
+    float[] pdu, float[] pdv,                 // uv 结果数组
+    int nLen,                   // 点的数量
+    string szFileName,          // 结果保存文件
+    double nRadius = 0.0
+);
+```
+
+#### 矩形区域测量
+
+```csharp
+// 获取 XYZ 值（矩形区域）
+int CM_GetXYZRect(
+    IntPtr handle,
+    int nX, int nY,             // 左上角坐标
+    ref float dX, ref float dY, ref float dZ,
+    int nRw, int nRh            // 矩形宽度和高度
+);
+
+// 批量测量（矩形区域）
+int CM_GetXYZRectEx(
+    IntPtr handle,
+    int[] pX, int[] pY,
+    float[] pdX, float[] pdY, float[] pdZ,
+    int nLen,
+    string szFileName,
+    int nRw, int nRh
+);
+```
+
+#### 色度和色温计算
+
+```csharp
+// 获取色度坐标和色温
+int CM_GetxyuvCCTWaveCircle(
+    IntPtr handle,
+    int pX, int pY,
+    ref float x, ref float y,   // xy 色度
+    ref float u, ref float v,   // uv 色度
+    ref float CCT,              // 相关色温（K）
+    ref float Wave,             // 主波长（nm）
+    double nRadius = 3
+);
+```
+
+#### 滤波设置
+
+```csharp
+// 设置滤波器
+int CM_SetFilter(IntPtr handle, bool bEnable, float fthreshold);
+
+// 设置 XYZ 滤波器
+int CM_SetFilterXYZ(IntPtr handle, bool bEnable, int nType, float fthreshold);
+```
+
+### Spectrometer - 光谱数据处理
+
+#### 光谱参数结构
+
+```csharp
+public struct COLOR_PARA
 {
-    double L1 = lab1[0], a1 = lab1[1], b1 = lab1[2];
-    double L2 = lab2[0], a2 = lab2[1], b2 = lab2[2];
+    // CIE 1931 色坐标
+    public float fCIEx;
+    public float fCIEy;
+    public float fCIEz;
     
-    // 计算色度值
-    double C1 = sqrt(a1*a1 + b1*b1);
-    double C2 = sqrt(a2*a2 + b2*b2);
-    double Cab = (C1 + C2) / 2.0;
+    // CIE 2015 色坐标
+    public float fCIEx_2015;
+    public float fCIEy_2015;
+    public float fCIEz_2015;
     
-    // G值计算
-    double G = 0.5 * (1 - sqrt(pow(Cab, 7) / (pow(Cab, 7) + pow(25, 7))));
+    // xy 色度坐标
+    public float fx;
+    public float fy;
     
-    // 校正后的a值
-    double ap1 = a1 * (1 + G);
-    double ap2 = a2 * (1 + G);
+    // uv 色度坐标
+    public float fu;
+    public float fv;
     
-    // 重新计算色度值
-    double Cp1 = sqrt(ap1*ap1 + b1*b1);
-    double Cp2 = sqrt(ap2*ap2 + b2*b2);
+    // 2015 色度坐标
+    public float fx_2015;
+    public float fy_2015;
+    public float fu_2015;
+    public float fv_2015;
     
-    // 色相角计算
-    double hp1 = atan2(b1, ap1) * 180.0 / M_PI;
-    double hp2 = atan2(b2, ap2) * 180.0 / M_PI;
+    // 色温和色差
+    public float fCCT;          // 相关色温（K）
+    public float dC;            // 色差 dC
     
-    // 更多复杂计算...
-    // 返回最终的Delta E 2000值
-    return deltaE;
+    // 波长参数
+    public float fLd;           // 主波长（nm）
+    public float fPur;          // 色纯度（%）
+    public float fLp;           // 峰值波长（nm）
+    public float fHW;           // 半波宽（nm）
+    public float fLav;          // 平均波长（nm）
+    
+    // 显色性
+    public float fRa;           // 显色性指数 Ra
+    public float[] fRi;         // 显色性指数 R1-R15（数组）
+    
+    // 颜色比例
+    public float fRR;           // 红色比
+    public float fGR;           // 绿色比
+    public float fBR;           // 蓝色比
+    
+    // 光度和辐射度
+    public float fPh;           // 光度值
+    public float fPhe;          // 辐射度值
+    public float fPlambda;      // 绝对光谱系数
+    
+    // 光谱范围
+    public float fSpect1;       // 起始波长
+    public float fSpect2;       // 结束波长
 }
 ```
 
-### 白平衡算法
+## 设备通信
 
-```cpp
-cv::Mat ColorSpaceConverter::whiteBalance(const cv::Mat& src, const cv::Vec3f& whitePoint)
+### SensorComm - 传感器通信
+
+支持 TCP/IP 和串口两种通信方式。
+
+#### 通信类型
+
+```csharp
+public enum Communicate_Type
 {
-    cv::Mat dst = src.clone();
-    
-    // 计算各通道的缩放因子
-    cv::Scalar meanValues = cv::mean(src);
-    
-    std::vector<cv::Mat> channels;
-    cv::split(src, channels);
-    
-    for (int i = 0; i < 3; i++) {
-        double scale = whitePoint[i] / meanValues[i];
-        channels[i] *= scale;
-    }
-    
-    cv::merge(channels, dst);
-    return dst;
+    Communicate_Tcp = 0,        // TCP/IP 通信
+    Communicate_Serial,         // 串口通信
 }
 ```
 
-## 计算机视觉
+#### 传感器客户端
 
-### 模板匹配
+##### 初始化与连接
 
-```cpp
-class TemplateMatchResult
-{
-public:
-    cv::Point location;
-    double matchValue;
-    double angle;
-    cv::Size templateSize;
-};
+```csharp
+// 初始化传感器通信
+IntPtr CM_InitSensorComm(Communicate_Type eCOM_Type);
 
-class TemplateeMatcher
-{
-public:
-    static std::vector<TemplateMatchResult> matchTemplate(
-        const cv::Mat& image, 
-        const cv::Mat& templ, 
-        int method = cv::TM_CCOEFF_NORMED,
-        double threshold = 0.8)
-    {
-        cv::Mat result;
-        cv::matchTemplate(image, templ, result, method);
-        
-        std::vector<TemplateMatchResult> matches;
-        
-        // 查找所有匹配位置
-        cv::Mat mask;
-        cv::threshold(result, mask, threshold, 1.0, cv::THRESH_BINARY);
-        
-        std::vector<cv::Point> locations;
-        cv::findNonZero(mask, locations);
-        
-        for (const auto& loc : locations) {
-            TemplateMatchResult match;
-            match.location = loc;
-            match.matchValue = result.at<float>(loc);
-            match.templateSize = templ.size();
-            matches.push_back(match);
-        }
-        
-        return matches;
-    }
-};
+// 连接到传感器（TCP）
+bool CM_ConnectToSensor(IntPtr handle, string szIPAddress, uint nPort);
+
+// 连接到传感器（串口）
+bool CM_InitSerialSensor(IntPtr handle, string szComName, ulong BaudRate);
+
+// 检查连接状态
+bool CM_SensorConnected(IntPtr handle);
+
+// 断开连接
+bool CM_DestroySensor(IntPtr handle);
+
+// 释放资源
+bool CM_UnInitSensorComm(IntPtr handle);
 ```
 
-### 形状检测
+##### 指令收发
 
-```cpp
-class ShapeDetector
-{
-public:
-    struct Circle {
-        cv::Point2f center;
-        float radius;
-    };
-    
-    struct Rectangle {
-        cv::Point2f vertices[4];
-        double angle;
-    };
-    
-    static std::vector<Circle> detectCircles(const cv::Mat& src, double dp = 1, double minDist = 30)
-    {
-        cv::Mat gray;
-        if (src.channels() > 1) {
-            cv::cvtColor(src, gray, cv::COLOR_BGR2GRAY);
-        } else {
-            gray = src;
-        }
-        
-        std::vector<cv::Vec3f> circles;
-        cv::HoughCircles(gray, circles, cv::HOUGH_GRADIENT, dp, minDist);
-        
-        std::vector<Circle> result;
-        for (const auto& c : circles) {
-            Circle circle;
-            circle.center = cv::Point2f(c[0], c[1]);
-            circle.radius = c[2];
-            result.push_back(circle);
-        }
-        
-        return result;
-    }
-};
+```csharp
+// 发送指令并接收响应
+bool CM_SendCmdToSensorEx(
+    IntPtr handle,
+    string szCmd,           // 发送的指令
+    byte[] szResponses,     // 接收缓冲区
+    ulong dwTimeOut         // 超时时间（ms）
+);
+
+// 发送二进制指令
+int CM_SendCmdToSensorEx2(
+    IntPtr handle,
+    byte[] szCmd, int nSendLen,         // 发送数据
+    byte[] szResponses, int nResLen,    // 接收数据
+    ulong dwTimeOut
+);
 ```
 
-## 性能优化
+#### TCP Server
 
-### CUDA 加速
+##### 服务器创建
 
-```cpp
-#ifdef USE_CUDA
-class CudaImageProcessor
-{
-public:
-    static cv::cuda::GpuMat gaussianBlurCuda(const cv::cuda::GpuMat& src, cv::Size ksize, double sigma)
-    {
-        cv::cuda::GpuMat dst;
-        cv::Ptr<cv::cuda::Filter> filter = cv::cuda::createGaussianFilter(
-            src.type(), src.type(), ksize, sigma);
-        filter->apply(src, dst);
-        return dst;
-    }
-    
-    static cv::cuda::GpuMat bilateralFilterCuda(const cv::cuda::GpuMat& src, 
-                                               int kernel_size, 
-                                               float sigma_color, 
-                                               float sigma_spatial)
-    {
-        cv::cuda::GpuMat dst;
-        cv::cuda::bilateralFilter(src, dst, kernel_size, sigma_color, sigma_spatial);
-        return dst;
-    }
-};
-#endif
+```csharp
+// 回调函数定义
+public delegate void ReceiveCallback(IntPtr data1, IntPtr data2, byte[] data3, int data4);
+public delegate void ListenCallback(IntPtr data1, IntPtr data2, bool data3);
+
+// 创建 TCP 服务器
+IntPtr CM_CreateTCPServer(
+    uint nPort,
+    IntPtr hOperate,
+    ReceiveCallback receiveCallback,
+    ListenCallback listenCallback
+);
 ```
 
-### 多线程处理
+##### 服务器操作
 
-```cpp
-class ParallelImageProcessor
-{
-public:
-    static cv::Mat processParallel(const cv::Mat& src, 
-                                  std::function<cv::Mat(const cv::Mat&)> processor,
-                                  int numThreads = 0)
-    {
-        if (numThreads == 0) {
-            numThreads = cv::getNumThreads();
-        }
-        
-        // 分割图像为多个区域
-        std::vector<cv::Rect> regions = divideImage(src, numThreads);
-        std::vector<cv::Mat> results(regions.size());
-        
-        // 并行处理每个区域
-        cv::parallel_for_(cv::Range(0, regions.size()), [&](const cv::Range& range) {
-            for (int i = range.start; i < range.end; i++) {
-                cv::Mat roi = src(regions[i]);
-                results[i] = processor(roi);
-            }
-        });
-        
-        // 合并结果
-        return mergeResults(results, regions, src.size());
-    }
-};
+```csharp
+// 检查 Socket 状态
+bool CM_Sv_IsSocketOpened(IntPtr hServer);
+
+// 检查客户端连接
+bool CM_Sv_IsConnected(IntPtr hServer, IntPtr hClient);
+
+// 向所有客户端发送数据
+ulong CM_Sv_Send(IntPtr hServer, byte[] lpBuffer, ulong dwLength);
+
+// 向指定客户端发送数据
+ulong CM_Sv_SendEx(IntPtr hServer, IntPtr hClient, byte[] lpBuffer, ulong dwLength);
+
+// 获取客户端数量
+long CM_Sv_GetClientCount(IntPtr hServer);
+
+// 获取客户端 IP
+bool CM_Sv_GetClientIP(IntPtr hServer, IntPtr hClient, char[] szIPAddress, ref uint nPort);
 ```
 
-### 内存管理
+### PG - Pattern Generator 控制
 
-```cpp
-class MemoryPool
+图案生成器（测试图案）控制模块。
+
+#### PG 类型
+
+```csharp
+public enum PG_Type
 {
-private:
-    std::vector<cv::Mat> pool;
-    std::mutex poolMutex;
+    GX09C_LCM = 0,      // GX09C LCD 模块
+    SKYCODE,            // SKYCODE 图案生成器
+}
+```
+
+#### 主要功能
+
+```csharp
+// 初始化 PG
+IntPtr CM_InitPG(PG_Type ePgType, Communicate_Type eCOMType);
+
+// 连接到 PG（TCP）
+bool CM_ConnectToPG(IntPtr handle, string szIPAddress, uint nPort);
+
+// 连接到 PG（串口）
+bool CM_InitSerialPG(IntPtr handle, string szComName, ulong BaudRate);
+
+// 检查连接
+bool CM_IsConnectedPG(IntPtr handle);
+
+// 启动图案显示
+bool CM_StartPG(IntPtr handle);
+
+// 停止图案显示
+bool CM_StopPG(IntPtr handle);
+
+// 切换图案
+bool CM_SwitchUpPG(IntPtr handle);          // 上一个
+bool CM_SwitchDownPG(IntPtr handle);        // 下一个
+bool CM_SwitchFramePG(IntPtr handle, int nIndex);  // 指定帧
+
+// 关闭连接
+bool CM_ClosePG(IntPtr handle);
+
+// 释放资源
+bool CM_UnInitPG(IntPtr handle);
+```
+
+### PassSx - 电源控制
+
+电源设备（源表）控制模块。
+
+#### 主要功能
+
+```csharp
+// 打开网络设备
+int OpenNetDevice(bool bNet, string devName);
+
+// 关闭设备
+bool CloseDevice(int nDevID);
+
+// 获取设备标识
+bool cvPssSxGetIDN(int nDevID, byte[] pszIdn, ref int strLen);
+
+// 测量数据（设置电压/电流并测量）
+bool cvMeasureData(
+    int nDevID,
+    double measureVal,      // 测量值（V 或 mA）
+    double lmtVal,          // 限制值
+    ref double rstV,        // 返回电压
+    ref double rstI         // 返回电流
+);
+
+// 单步测量
+bool cvStepMeasureData(
+    int nDevID,
+    double measureVal,
+    double lmtVal,
+    ref double rstV,
+    ref double rstI
+);
+
+// 序列扫描
+bool cvSweepData(
+    int nDevID,
+    double srcRng,          // 源量程
+    double lmtRng,          // 限制量程
+    double lmtVal,          // 限制值
+    double startVal,        // 起始值
+    double stopVal,         // 结束值
+    int points,             // 点数
+    double[] pVList,        // 电压数组
+    double[] pIList         // 电流数组
+);
+
+// 设置输出
+bool CvPssSxSetOutput(int nDevID);
+
+// 设置源类型（电压源/电流源）
+bool cvPssSxSetSourceV(int nDevID, bool isSourceV);
+```
+
+## 图像算法
+
+### Algorithms - 基础点检测
+
+```csharp
+// 点检测算法
+int forPoint(
+    byte[] inputim,         // 输入图像
+    out int[] xPos,         // 输出 X 坐标数组
+    out int[] yPos,         // 输出 Y 坐标数组
+    int h, int w,           // 图像高度和宽度
+    int nbpp,               // 位深
+    int nChannels,          // 通道数
+    int method,             // 检测方法
+    ref int pointNumber,    // 点的数量
+    int pointDistance,      // 点间距
+    int startPosition,      // 起始位置
+    int binaryPercentage    // 二值化百分比
+);
+```
+
+### AoiParam - AOI 缺陷检测
+
+#### 检测参数
+
+```csharp
+public struct AoiParam
+{
+    // 面积过滤
+    public bool filter_by_area;
+    public int max_area;
+    public int min_area;
     
-public:
-    cv::Mat acquire(cv::Size size, int type)
-    {
-        std::lock_guard<std::mutex> lock(poolMutex);
-        
-        for (auto it = pool.begin(); it != pool.end(); ++it) {
-            if (it->size() == size && it->type() == type) {
-                cv::Mat mat = *it;
-                pool.erase(it);
-                return mat;
-            }
-        }
-        
-        return cv::Mat(size, type);
-    }
+    // 对比度过滤
+    public bool filter_by_contrast;
+    public float max_contrast;
+    public float min_contrast;
+    public float contrast_brightness;
+    public float contrast_darkness;
     
-    void release(cv::Mat& mat)
-    {
-        if (!mat.empty()) {
-            std::lock_guard<std::mutex> lock(poolMutex);
-            pool.push_back(mat);
-            mat = cv::Mat(); // 清空引用
-        }
-    }
-};
+    // 图像处理参数
+    public int blur_size;           // 模糊核大小
+    public int min_contour_size;    // 最小轮廓大小
+    public int erode_size;          // 腐蚀核大小
+    public int dilate_size;         // 膨胀核大小
+    
+    // 检测区域
+    public int left;
+    public int right;
+    public int top;
+    public int bottom;
+}
+```
+
+#### 检测功能
+
+```csharp
+// 创建 AOI 检测器
+IntPtr CreateAOIDetector();
+
+// 设置检测参数
+bool AOIDetectorSetParam(IntPtr handle, AoiParam aoiParam);
+
+// 输入图像进行检测
+int AOIDetectorInput(
+    IntPtr handle,
+    uint w, uint h,
+    uint bpp, uint channels,
+    byte[] rawArray
+);
+
+// 获取检测结果 Blob
+bool GetAoiDetectorBlob(IntPtr handle, int nIndex, PartiCle tParticle);
+
+// 释放检测器
+bool ReleaseAOIDetector(IntPtr handle);
+```
+
+### KeyBoard - 键盘光晕检测
+
+```csharp
+// 初始化键盘源数据
+void CM_InitialKeyBoardSrc(
+    int w, int h,
+    int bpp, int channels,
+    IntPtr imgdata,
+    int saveProcessData,
+    string debugPath,
+    float exp,
+    string luminFile,
+    int doCali = 1
+);
+
+// 计算光晕
+float CM_CalculateHalo(
+    IRECT keyRect,          // 键盘区域
+    int outMOVE,            // 外部移动
+    int threadV,            // 阈值
+    int haloSize,           // 光晕大小
+    string savePath,
+    ushort[] gray,
+    ref uint pixNum
+);
+
+// 计算键盘亮度
+float CM_CalculateKey(
+    IRECT keyRect,
+    int inMOVE,
+    int threadV,
+    string path,
+    ushort[] gray,
+    ref uint pixNum
+);
+
+// 获取检测结果
+int CM_GetKeyBoardResult(
+    ref int w, ref int h,
+    ref int bpp, ref int channels,
+    byte[] pData
+);
+```
+
+### CvOledDLL - OLED 算法
+
+#### OLED 颜色类型
+
+```csharp
+public enum CVLED_COLOR
+{
+    CVLED_R = 0,            // 红色
+    CVLED_G,                // 绿色
+    CVLED_B,                // 蓝色
+    CVLED_W,                // 白色
+    CVLED_ALL               // 全部
+}
+```
+
+#### 错误码
+
+```csharp
+public enum CVOLED_ERROR
+{
+    CVOLED_OK = 0,          // 成功
+    CVOLED_ERROR_PARAM,     // 参数错误
+    CVOLED_ERROR_FILE,      // 文件错误
+    CVOLED_ERROR_MEMORY,    // 内存错误
+    CVOLED_ERROR_UNKNOWN    // 未知错误
+}
+```
+
+#### 主要功能
+
+```csharp
+// 初始化 OLED 算法
+void CvOledInit();
+
+// 释放 OLED 算法
+void CvOledRealse();
+
+// 加载参数
+CVOLED_ERROR CvLoadParam(string json);
+
+// 加载图片
+ulong loadPictureMemLength(string path);
+int loadPicture(string path, ref int w, ref int h, byte[] imgdata);
+
+// 查找点阵
+CVOLED_ERROR findDotsArray(
+    int w, int h,
+    byte[] imgdata,
+    int type,
+    CVLED_COLOR color
+);
+
+// 重建像素
+CVOLED_ERROR rebuildPixels(
+    int w, int h,
+    byte[] imgdata,
+    int type,
+    CVLED_COLOR color,
+    float exp,
+    string path
+);
+
+// 摩尔纹滤波
+CVOLED_ERROR morieFilter(
+    int w, int h,
+    byte[] imgdata,
+    int type,
+    string path
+);
 ```
 
 ## 使用示例
 
-### 完整的图像处理流水线
+### 示例 1: 相机初始化和图像采集
 
-```cpp
-#include "cvColorVision.h"
+```csharp
+using cvColorVision;
+using System;
 
-int main()
+class CameraExample
 {
-    // 加载图像
-    cv::Mat image = cv::imread("input.jpg");
-    if (image.empty()) {
-        std::cerr << "无法加载图像" << std::endl;
-        return -1;
-    }
+    private IntPtr cameraHandle;
     
-    // 1. 预处理 - 去噪
-    cv::Mat denoised = ImageProcessor::bilateralFilter(image, 9, 80, 80);
-    
-    // 2. 色彩空间转换
-    cv::Mat lab = ColorSpaceConverter::rgb2lab(denoised);
-    
-    // 3. 图像增强
-    cv::Mat enhanced = ImageProcessor::adaptiveHistogramEqualization(lab);
-    
-    // 4. 特征检测
-    cv::Mat gray;
-    cv::cvtColor(enhanced, gray, cv::COLOR_BGR2GRAY);
-    auto keypoints = FeatureDetector::detectORBKeypoints(gray, 500);
-    
-    // 5. 形状检测
-    auto circles = ShapeDetector::detectCircles(gray);
-    
-    // 6. 结果可视化
-    cv::Mat result = enhanced.clone();
-    
-    // 绘制关键点
-    for (const auto& kp : keypoints) {
-        cv::circle(result, kp.pt, 3, cv::Scalar(0, 255, 0), -1);
-    }
-    
-    // 绘制圆形
-    for (const auto& circle : circles) {
-        cv::circle(result, circle.center, circle.radius, cv::Scalar(0, 0, 255), 2);
-    }
-    
-    // 保存结果
-    cv::imwrite("output.jpg", result);
-    
-    // 输出统计信息
-    std::cout << "检测到关键点: " << keypoints.size() << std::endl;
-    std::cout << "检测到圆形: " << circles.size() << std::endl;
-    
-    return 0;
-}
-```
-
-### 色差分析示例
-
-```cpp
-void colorDifferenceAnalysis(const cv::Mat& reference, const cv::Mat& sample)
-{
-    // 转换为LAB色彩空间
-    cv::Mat refLab = ColorSpaceConverter::rgb2lab(reference);
-    cv::Mat sampleLab = ColorSpaceConverter::rgb2lab(sample);
-    
-    // 计算每个像素的色差
-    cv::Mat deltaE(reference.size(), CV_64F);
-    
-    for (int y = 0; y < reference.rows; y++) {
-        for (int x = 0; x < reference.cols; x++) {
-            cv::Vec3f refColor = refLab.at<cv::Vec3f>(y, x);
-            cv::Vec3f sampleColor = sampleLab.at<cv::Vec3f>(y, x);
+    public bool InitializeCamera()
+    {
+        try
+        {
+            // 初始化相机（QHY 色度相机）
+            cameraHandle = cvCameraCSLib.CM_Init(CameraType.CV_Q);
             
-            double de2000 = ColorSpaceConverter::deltaE2000(refColor, sampleColor);
-            deltaE.at<double>(y, x) = de2000;
+            if (cameraHandle == IntPtr.Zero)
+            {
+                Console.WriteLine("相机初始化失败");
+                return false;
+            }
+            
+            // 打开第一个相机
+            if (!cvCameraCSLib.CM_Open(cameraHandle, 0))
+            {
+                Console.WriteLine("打开相机失败");
+                return false;
+            }
+            
+            // 设置相机参数
+            cvCameraCSLib.CM_SetExposureTime(cameraHandle, 100000); // 100ms
+            cvCameraCSLib.CM_SetGain(cameraHandle, 1.0);
+            
+            Console.WriteLine("相机初始化成功");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"初始化异常: {ex.Message}");
+            return false;
         }
     }
     
-    // 统计分析
-    cv::Scalar meanDE, stdDE;
-    cv::meanStdDev(deltaE, meanDE, stdDE);
+    public byte[] CaptureImage()
+    {
+        try
+        {
+            // 获取图像尺寸
+            int width = cvCameraCSLib.CM_GetImageWidth(cameraHandle);
+            int height = cvCameraCSLib.CM_GetImageHeight(cameraHandle);
+            int bpp = cvCameraCSLib.CM_GetImageBpp(cameraHandle);
+            int channels = cvCameraCSLib.CM_GetImageChannels(cameraHandle);
+            
+            // 计算图像缓冲区大小
+            int bufferSize = width * height * channels * (bpp / 8);
+            byte[] imageData = new byte[bufferSize];
+            
+            // 采集图像
+            int result = cvCameraCSLib.CM_GetImage(cameraHandle, imageData);
+            
+            if (result == 0)
+            {
+                Console.WriteLine($"采集图像成功: {width}x{height}, {bpp}bit, {channels}ch");
+                return imageData;
+            }
+            else
+            {
+                Console.WriteLine($"采集图像失败，错误码: {result}");
+                return null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"采集异常: {ex.Message}");
+            return null;
+        }
+    }
     
-    double minDE, maxDE;
-    cv::minMaxLoc(deltaE, &minDE, &maxDE);
+    public void Cleanup()
+    {
+        if (cameraHandle != IntPtr.Zero)
+        {
+            cvCameraCSLib.CM_Close(cameraHandle);
+            cvCameraCSLib.CM_Uninit(cameraHandle);
+            cameraHandle = IntPtr.Zero;
+            Console.WriteLine("相机已关闭");
+        }
+    }
+}
+```
+
+### 示例 2: 色彩空间转换和测量
+
+```csharp
+using cvColorVision;
+using System;
+using System.Collections.Generic;
+
+class ColorMeasurement
+{
+    private IntPtr cameraHandle;
+    private IntPtr xyzHandle;
     
-    std::cout << "色差统计:" << std::endl;
-    std::cout << "平均色差: " << meanDE[0] << std::endl;
-    std::cout << "标准差: " << stdDE[0] << std::endl;
-    std::cout << "最小色差: " << minDE << std::endl;
-    std::cout << "最大色差: " << maxDE << std::endl;
+    public bool Initialize(IntPtr camHandle)
+    {
+        cameraHandle = camHandle;
+        
+        // 初始化 XYZ 转换器
+        xyzHandle = ConvertXYZ.CM_InitXYZ(cameraHandle);
+        
+        if (xyzHandle == IntPtr.Zero)
+        {
+            Console.WriteLine("XYZ 转换器初始化失败");
+            return false;
+        }
+        
+        Console.WriteLine("XYZ 转换器初始化成功");
+        return true;
+    }
     
-    // 生成色差热图
-    cv::Mat heatmap;
-    cv::normalize(deltaE, heatmap, 0, 255, cv::NORM_MINMAX, CV_8U);
-    cv::applyColorMap(heatmap, heatmap, cv::COLORMAP_JET);
-    cv::imwrite("color_difference_heatmap.jpg", heatmap);
+    public ColorData MeasureColor(byte[] imageData, int width, int height, 
+                                  int bpp, int channels, int x, int y, double radius = 3)
+    {
+        try
+        {
+            // 设置图像缓冲区
+            int result = ConvertXYZ.CM_SetBufferXYZ(xyzHandle, 
+                (uint)width, (uint)height, (uint)bpp, (uint)channels, imageData);
+            
+            if (result != 0)
+            {
+                Console.WriteLine("设置缓冲区失败");
+                return null;
+            }
+            
+            // 测量 XYZ 和色度坐标
+            float X = 0, Y = 0, Z = 0;
+            float x_chr = 0, y_chr = 0, u = 0, v = 0;
+            
+            result = ConvertXYZ.CM_GetXYZxyuvCircle(xyzHandle, x, y,
+                ref X, ref Y, ref Z, ref x_chr, ref y_chr, ref u, ref v, radius);
+            
+            if (result == 0)
+            {
+                var colorData = new ColorData
+                {
+                    X = X, Y = Y, Z = Z,
+                    x = x_chr, y = y_chr,
+                    u = u, v = v
+                };
+                
+                Console.WriteLine($"测量成功: XYZ=({X:F2}, {Y:F2}, {Z:F2}), xy=({x_chr:F4}, {y_chr:F4})");
+                return colorData;
+            }
+            else
+            {
+                Console.WriteLine($"测量失败，错误码: {result}");
+                return null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"测量异常: {ex.Message}");
+            return null;
+        }
+    }
+    
+    public List<ColorData> BatchMeasure(byte[] imageData, int width, int height,
+                                        int bpp, int channels, 
+                                        List<Point> points, double radius = 3)
+    {
+        var results = new List<ColorData>();
+        
+        try
+        {
+            // 设置图像缓冲区
+            ConvertXYZ.CM_SetBufferXYZ(xyzHandle, 
+                (uint)width, (uint)height, (uint)bpp, (uint)channels, imageData);
+            
+            // 准备批量测量的参数
+            int pointCount = points.Count;
+            int[] xPos = new int[pointCount];
+            int[] yPos = new int[pointCount];
+            float[] xValues = new float[pointCount];
+            float[] yValues = new float[pointCount];
+            float[] zValues = new float[pointCount];
+            float[] xChrom = new float[pointCount];
+            float[] yChrom = new float[pointCount];
+            float[] uChrom = new float[pointCount];
+            float[] vChrom = new float[pointCount];
+            
+            for (int i = 0; i < pointCount; i++)
+            {
+                xPos[i] = points[i].X;
+                yPos[i] = points[i].Y;
+            }
+            
+            // 批量测量
+            int result = ConvertXYZ.CM_GetXYZxyuvCircleEx(xyzHandle,
+                xPos, yPos, xValues, yValues, zValues,
+                xChrom, yChrom, uChrom, vChrom,
+                pointCount, "", radius);
+            
+            if (result == 0)
+            {
+                for (int i = 0; i < pointCount; i++)
+                {
+                    results.Add(new ColorData
+                    {
+                        X = xValues[i], Y = yValues[i], Z = zValues[i],
+                        x = xChrom[i], y = yChrom[i],
+                        u = uChrom[i], v = vChrom[i]
+                    });
+                }
+                Console.WriteLine($"批量测量成功: {pointCount} 个点");
+            }
+            else
+            {
+                Console.WriteLine($"批量测量失败，错误码: {result}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"批量测量异常: {ex.Message}");
+        }
+        
+        return results;
+    }
+    
+    public void Cleanup()
+    {
+        if (xyzHandle != IntPtr.Zero)
+        {
+            ConvertXYZ.CM_ReleaseBuffer(xyzHandle);
+            ConvertXYZ.CM_UnInitXYZ(xyzHandle);
+            xyzHandle = IntPtr.Zero;
+            Console.WriteLine("XYZ 转换器已释放");
+        }
+    }
+}
+
+class ColorData
+{
+    public float X { get; set; }
+    public float Y { get; set; }
+    public float Z { get; set; }
+    public float x { get; set; }
+    public float y { get; set; }
+    public float u { get; set; }
+    public float v { get; set; }
+}
+
+class Point
+{
+    public int X { get; set; }
+    public int Y { get; set; }
+}
+```
+
+### 示例 3: 传感器通信（TCP）
+
+```csharp
+using cvColorVision;
+using System;
+using System.Text;
+
+class SensorCommunication
+{
+    private IntPtr sensorHandle;
+    
+    public bool ConnectToSensor(string ipAddress, uint port)
+    {
+        try
+        {
+            // 初始化 TCP 传感器
+            sensorHandle = SensorComm.CM_InitSensorComm(Communicate_Type.Communicate_Tcp);
+            
+            if (sensorHandle == IntPtr.Zero)
+            {
+                Console.WriteLine("传感器初始化失败");
+                return false;
+            }
+            
+            // 连接到传感器
+            bool connected = SensorComm.CM_ConnectToSensor(sensorHandle, ipAddress, port);
+            
+            if (connected)
+            {
+                Console.WriteLine($"连接传感器成功: {ipAddress}:{port}");
+                return true;
+            }
+            else
+            {
+                Console.WriteLine("连接传感器失败");
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"连接异常: {ex.Message}");
+            return false;
+        }
+    }
+    
+    public string SendCommand(string command, ulong timeout = 5000)
+    {
+        try
+        {
+            if (!SensorComm.CM_SensorConnected(sensorHandle))
+            {
+                Console.WriteLine("传感器未连接");
+                return null;
+            }
+            
+            byte[] response = new byte[4096];
+            
+            bool result = SensorComm.CM_SendCmdToSensorEx(
+                sensorHandle, command, response, timeout);
+            
+            if (result)
+            {
+                // 转换响应为字符串
+                int nullIndex = Array.IndexOf(response, (byte)0);
+                if (nullIndex < 0) nullIndex = response.Length;
+                
+                string responseStr = Encoding.ASCII.GetString(response, 0, nullIndex);
+                Console.WriteLine($"命令: {command}, 响应: {responseStr}");
+                return responseStr;
+            }
+            else
+            {
+                Console.WriteLine($"发送命令失败: {command}");
+                return null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"发送命令异常: {ex.Message}");
+            return null;
+        }
+    }
+    
+    public void Disconnect()
+    {
+        if (sensorHandle != IntPtr.Zero)
+        {
+            SensorComm.CM_DestroySensor(sensorHandle);
+            SensorComm.CM_UnInitSensorComm(sensorHandle);
+            sensorHandle = IntPtr.Zero;
+            Console.WriteLine("传感器已断开");
+        }
+    }
+}
+```
+
+### 示例 4: AOI 缺陷检测
+
+```csharp
+using cvColorVision;
+using System;
+
+class AOIDetection
+{
+    private IntPtr aoiHandle;
+    
+    public bool Initialize()
+    {
+        aoiHandle = cvCameraCSLib.CreateAOIDetector();
+        
+        if (aoiHandle == IntPtr.Zero)
+        {
+            Console.WriteLine("AOI 检测器创建失败");
+            return false;
+        }
+        
+        Console.WriteLine("AOI 检测器创建成功");
+        return true;
+    }
+    
+    public int DetectDefects(byte[] imageData, int width, int height, 
+                             int bpp, int channels)
+    {
+        try
+        {
+            // 配置检测参数
+            AoiParam param = new AoiParam
+            {
+                filter_by_area = true,
+                min_area = 10,
+                max_area = 10000,
+                filter_by_contrast = true,
+                min_contrast = 0.1f,
+                max_contrast = 1.0f,
+                contrast_brightness = 0.8f,
+                contrast_darkness = 0.2f,
+                blur_size = 5,
+                min_contour_size = 3,
+                erode_size = 3,
+                dilate_size = 3,
+                left = 0,
+                right = width,
+                top = 0,
+                bottom = height
+            };
+            
+            // 设置参数
+            if (!cvCameraCSLib.AOIDetectorSetParam(aoiHandle, param))
+            {
+                Console.WriteLine("设置 AOI 参数失败");
+                return -1;
+            }
+            
+            // 输入图像进行检测
+            int defectCount = cvCameraCSLib.AOIDetectorInput(aoiHandle,
+                (uint)width, (uint)height, (uint)bpp, (uint)channels, imageData);
+            
+            if (defectCount >= 0)
+            {
+                Console.WriteLine($"检测到 {defectCount} 个缺陷");
+                
+                // 获取每个缺陷的详细信息
+                for (int i = 0; i < defectCount; i++)
+                {
+                    PartiCle particle = new PartiCle();
+                    if (cvCameraCSLib.GetAoiDetectorBlob(aoiHandle, i, particle))
+                    {
+                        // 处理缺陷信息...
+                        Console.WriteLine($"缺陷 {i}: 面积={particle.area}, 位置=({particle.x}, {particle.y})");
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("检测失败");
+            }
+            
+            return defectCount;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"检测异常: {ex.Message}");
+            return -1;
+        }
+    }
+    
+    public void Cleanup()
+    {
+        if (aoiHandle != IntPtr.Zero)
+        {
+            cvCameraCSLib.ReleaseAOIDetector(aoiHandle);
+            aoiHandle = IntPtr.Zero;
+            Console.WriteLine("AOI 检测器已释放");
+        }
+    }
+}
+```
+
+### 示例 5: 完整工作流程
+
+```csharp
+using cvColorVision;
+using System;
+
+class CompleteWorkflow
+{
+    public void Run()
+    {
+        CameraExample camera = new CameraExample();
+        ColorMeasurement colorMeas = new ColorMeasurement();
+        
+        try
+        {
+            // 1. 初始化相机
+            if (!camera.InitializeCamera())
+            {
+                Console.WriteLine("相机初始化失败，退出");
+                return;
+            }
+            
+            // 2. 初始化色彩测量
+            if (!colorMeas.Initialize(camera.cameraHandle))
+            {
+                Console.WriteLine("色彩测量初始化失败，退出");
+                return;
+            }
+            
+            // 3. 采集图像
+            byte[] imageData = camera.CaptureImage();
+            if (imageData == null)
+            {
+                Console.WriteLine("图像采集失败，退出");
+                return;
+            }
+            
+            // 4. 获取图像信息
+            int width = cvCameraCSLib.CM_GetImageWidth(camera.cameraHandle);
+            int height = cvCameraCSLib.CM_GetImageHeight(camera.cameraHandle);
+            int bpp = cvCameraCSLib.CM_GetImageBpp(camera.cameraHandle);
+            int channels = cvCameraCSLib.CM_GetImageChannels(camera.cameraHandle);
+            
+            // 5. 测量色彩
+            var colorData = colorMeas.MeasureColor(imageData, width, height, 
+                                                   bpp, channels, 
+                                                   width/2, height/2, 10.0);
+            
+            if (colorData != null)
+            {
+                Console.WriteLine("=== 测量结果 ===");
+                Console.WriteLine($"三刺激值: X={colorData.X:F2}, Y={colorData.Y:F2}, Z={colorData.Z:F2}");
+                Console.WriteLine($"xy 色度: x={colorData.x:F4}, y={colorData.y:F4}");
+                Console.WriteLine($"uv 色度: u={colorData.u:F4}, v={colorData.v:F4}");
+            }
+            
+            Console.WriteLine("工作流程完成");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"工作流程异常: {ex.Message}");
+        }
+        finally
+        {
+            // 6. 清理资源
+            colorMeas.Cleanup();
+            camera.Cleanup();
+        }
+    }
 }
 ```
 
 ## API参考
 
-### 主要头文件
+### 命名规范
 
-```cpp
-// 主要包含文件
-#include "ImageProcessor.h"      // 图像处理算法
-#include "ColorSpaceConverter.h" // 色彩空间转换
-#include "FeatureDetector.h"     // 特征检测
-#include "TemplateeMatcher.h"    // 模板匹配
-#include "ShapeDetector.h"       // 形状检测
-#include "CameraCalibrator.h"    // 相机标定
-#include "PerformanceOptimizer.h"// 性能优化
+cvColorVision 的 API 遵循以下命名规范：
+
+- **前缀**: `CM_` 表示 Camera/Color Measurement
+- **动词**: Init/Uninit, Open/Close, Start/Stop, Get/Set
+- **对象**: Camera, XYZ, Sensor, PG, AOI 等
+
+### 返回值约定
+
+- **IntPtr**: 句柄类型，`IntPtr.Zero` 表示失败
+- **bool**: 布尔类型，`true` 表示成功，`false` 表示失败
+- **int**: 整数类型，通常 `0` 表示成功，负数表示错误码，正数可能表示计数
+
+### 错误处理最佳实践
+
+```csharp
+// 1. 检查句柄是否为空
+IntPtr handle = CM_Init(cameraType);
+if (handle == IntPtr.Zero)
+{
+    throw new Exception("初始化失败");
+}
+
+// 2. 检查布尔返回值
+if (!CM_Open(handle, 0))
+{
+    throw new Exception("打开失败");
+}
+
+// 3. 检查整数返回值
+int result = CM_GetImage(handle, imageData);
+if (result != 0)
+{
+    throw new Exception($"获取图像失败，错误码: {result}");
+}
+
+// 4. 使用 try-finally 确保资源释放
+try
+{
+    // ... 操作 ...
+}
+finally
+{
+    CM_Close(handle);
+    CM_Uninit(handle);
+}
 ```
 
-### 错误处理
+### 线程安全性
 
-```cpp
-enum class CVisionError
-{
-    Success = 0,
-    InvalidInput,
-    InsufficientMemory,
-    UnsupportedFormat,
-    ProcessingError,
-    CudaError
-};
+**注意**: cvColorVision 的底层 C++ DLL 可能不是完全线程安全的。建议：
 
-class CVisionException : public std::exception
+1. 每个线程使用独立的句柄
+2. 对共享资源使用锁保护
+3. 避免同时从多个线程访问同一相机
+
+```csharp
+private readonly object lockObj = new object();
+
+public byte[] ThreadSafeCapture()
 {
-public:
-    CVisionException(CVisionError error, const std::string& message)
-        : error_(error), message_(message) {}
-    
-    CVisionError getError() const { return error_; }
-    const char* what() const noexcept override { return message_.c_str(); }
-    
-private:
-    CVisionError error_;
-    std::string message_;
-};
+    lock (lockObj)
+    {
+        return camera.CaptureImage();
+    }
+}
 ```
 
-### 配置管理
+## 常见问题
 
-```cpp
-struct CVisionConfig
-{
-    // CUDA配置
-    bool enableCuda = false;
-    int cudaDeviceId = 0;
-    
-    // 内存配置
-    bool useMemoryPool = true;
-    size_t maxMemoryPoolSize = 1024 * 1024 * 1024; // 1GB
-    
-    // 线程配置
-    int numThreads = 0; // 0 = 自动检测
-    
-    // 精度配置
-    double defaultThreshold = 0.8;
-    int defaultIterations = 10;
-};
+### Q1: DllNotFoundException 异常
 
-// 全局配置单例
-class CVisionSystem
+**问题**: 运行时提示找不到 cvCamera.dll 或 cvOled.dll
+
+**解决方案**:
+1. 确保 DLL 文件在以下位置之一：
+   - 与可执行文件相同目录
+   - 系统 PATH 环境变量中
+   - Windows\System32 目录（不推荐）
+
+2. 检查平台匹配（x86/x64）
+
+3. 使用 Dependency Walker 检查 DLL 依赖
+
+### Q2: 相机打开失败
+
+**问题**: CM_Open 返回 false
+
+**可能原因**:
+1. 相机未连接或未识别
+2. 相机驱动未安装
+3. 相机被其他程序占用
+4. 权限不足（需要管理员权限）
+
+**解决方案**:
+```csharp
+// 1. 检查相机数量
+int cameraCount = CM_GetCameraCount();
+Console.WriteLine($"检测到 {cameraCount} 个相机");
+
+// 2. 尝试不同的相机索引
+for (int i = 0; i < cameraCount; i++)
 {
-public:
-    static CVisionSystem& getInstance() {
-        static CVisionSystem instance;
-        return instance;
+    if (CM_Open(handle, i))
+    {
+        Console.WriteLine($"成功打开相机 {i}");
+        break;
+    }
+}
+
+// 3. 以管理员权限运行程序
+```
+
+### Q3: 图像数据异常
+
+**问题**: 获取的图像数据全黑或有异常
+
+**可能原因**:
+1. 缓冲区大小计算错误
+2. 曝光时间过短或过长
+3. 增益设置不当
+4. 相机模式不匹配
+
+**解决方案**:
+```csharp
+// 1. 正确计算缓冲区大小
+int width = CM_GetImageWidth(handle);
+int height = CM_GetImageHeight(handle);
+int bpp = CM_GetImageBpp(handle);
+int channels = CM_GetImageChannels(handle);
+int bufferSize = width * height * channels * (bpp / 8);
+
+// 2. 调整曝光和增益
+CM_SetExposureTime(handle, 50000);  // 50ms
+CM_SetGain(handle, 2.0);
+
+// 3. 确认相机模式
+CameraMode mode = CM_GetCameraMode(handle);
+Console.WriteLine($"相机模式: {mode}");
+```
+
+### Q4: 色彩测量返回异常值
+
+**问题**: XYZ 或 xy 值异常（如负数、过大）
+
+**可能原因**:
+1. 未正确设置图像缓冲区
+2. 测量位置超出图像范围
+3. 图像数据格式不匹配
+4. 滤波器设置不当
+
+**解决方案**:
+```csharp
+// 1. 设置缓冲区前验证数据
+if (imageData == null || imageData.Length == 0)
+{
+    throw new ArgumentException("图像数据无效");
+}
+
+// 2. 验证测量位置
+if (x < 0 || x >= width || y < 0 || y >= height)
+{
+    throw new ArgumentOutOfRangeException("测量位置超出范围");
+}
+
+// 3. 禁用滤波器进行测试
+CM_SetFilter(xyzHandle, false, 0.0f);
+
+// 4. 检查返回值
+int result = CM_GetXYZxyuvCircle(xyzHandle, x, y, 
+    ref X, ref Y, ref Z, ref x_chr, ref y_chr, ref u, ref v, radius);
+if (result != 0)
+{
+    Console.WriteLine($"测量失败，错误码: {result}");
+}
+```
+
+### Q5: 内存泄漏
+
+**问题**: 长时间运行后内存占用持续增长
+
+**可能原因**:
+1. 未释放句柄
+2. 图像缓冲区未及时释放
+3. 回调函数中的对象未释放
+
+**解决方案**:
+```csharp
+// 1. 使用 using 模式或确保 Cleanup
+public class CameraWrapper : IDisposable
+{
+    private IntPtr handle;
+    
+    public void Dispose()
+    {
+        Cleanup();
+        GC.SuppressFinalize(this);
     }
     
-    void initialize(const CVisionConfig& config);
-    void shutdown();
-    const CVisionConfig& getConfig() const { return config_; }
+    private void Cleanup()
+    {
+        if (handle != IntPtr.Zero)
+        {
+            CM_Close(handle);
+            CM_Uninit(handle);
+            handle = IntPtr.Zero;
+        }
+    }
     
-private:
-    CVisionConfig config_;
-    bool initialized_ = false;
-};
+    ~CameraWrapper()
+    {
+        Cleanup();
+    }
+}
+
+// 2. 及时释放大型缓冲区
+byte[] imageData = new byte[bufferSize];
+// ... 使用 imageData ...
+imageData = null;
+GC.Collect();  // 在关键时刻手动触发 GC
+```
+
+### Q6: TCP 通信超时
+
+**问题**: 传感器通信经常超时
+
+**解决方案**:
+```csharp
+// 1. 增加超时时间
+SensorComm.CM_SendCmdToSensorEx(handle, command, response, 10000);  // 10秒
+
+// 2. 检查网络连接
+if (!SensorComm.CM_SensorConnected(handle))
+{
+    // 尝试重新连接
+    SensorComm.CM_DestroySensor(handle);
+    SensorComm.CM_ConnectToSensor(handle, ipAddress, port);
+}
+
+// 3. 使用异步模式或重试机制
+int retryCount = 3;
+for (int i = 0; i < retryCount; i++)
+{
+    if (SendCommand(command, timeout))
+    {
+        break;
+    }
+    System.Threading.Thread.Sleep(1000);  // 等待1秒后重试
+}
 ```
 
 ## 相关资源
 
-- [OpenCV 官方文档](https://docs.opencv.org/)
-- [CUDA 编程指南](https://docs.nvidia.com/cuda/)
-- [图像处理算法参考](../developer-guide/image-processing-algorithms/)
-- [性能优化指南](../developer-guide/performance-optimization/)
-- [API 完整参考](../developer-guide/api-reference/cvColorVision/)
+### 内部文档
+- [算法组件文档](../../docs/algorithms/README.md)
+- [流程引擎使用指南](../../docs/engine-components/ColorVision.Engine.md)
+- [插件开发指南](../../docs/plugins/README.md)
+
+### 外部资源
+- [OpenCV 文档](https://docs.opencv.org/)
+- [P/Invoke 教程](https://docs.microsoft.com/en-us/dotnet/standard/native-interop/pinvoke)
+- [C# 互操作性](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/interop/)
+
+### 技术支持
+- GitHub Issues: [提交问题](https://github.com/xincheng213618/scgd_general_wpf/issues)
+- 文档问题: [文档仓库](https://github.com/xincheng213618/scgd_general_wpf/tree/master/docs)
+
+---
+
+**版本**: 2025.8.9.0  
+**最后更新**: 2025-01-XX  
+**维护者**: ColorVision 算法团队
