@@ -199,8 +199,6 @@ namespace ColorVision.UI
                             dockPanel = PropertyEditorHelper.GenFontStyleProperties(property, obj);
                         else if (property.PropertyType == typeof(FontStretch))
                             dockPanel = PropertyEditorHelper.GenFontStretchProperties(property, obj);
-                        else if (property.PropertyType == typeof(FlowDirection))
-                            dockPanel = PropertyEditorHelper.GenFlowDirectionProperties(property, obj);
 
                         else if (typeof(INotifyPropertyChanged).IsAssignableFrom(property.PropertyType))
                         {

@@ -173,9 +173,7 @@ namespace ColorVision.UI
 
         public static DockPanel GenTextboxProperties(PropertyInfo property, object obj)
         {
-            var rm = GetResourceManager(obj);
             var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
-
             // Custom editor instantiation and cache
             if (editorAttr?.EditorType != null)
             {
@@ -193,19 +191,7 @@ namespace ColorVision.UI
                 }
                 catch { }
             }
-
-            // Fallback default textbox editor
-            var dockPanel = new DockPanel();
-            var textBlock = CreateLabel(property, rm);
-            dockPanel.Children.Add(textBlock);
-            Binding binding = CreateTwoWayBinding(obj, property.Name);
-            binding.UpdateSourceTrigger = editorAttr?.UpdateSourceTrigger ?? UpdateSourceTrigger.PropertyChanged;
-            var t = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
-            if (t == typeof(float) || property.PropertyType == typeof(double)) binding.StringFormat = "0.0################";
-            var textbox = CreateSmallTextBox(binding);
-            textbox.PreviewKeyDown += TextBox_PreviewKeyDown;
-            dockPanel.Children.Add(textbox);
-            return dockPanel;
+            return new TextboxPropertiesEditor().GenProperties(property, obj);
         }
 
         public static DockPanel GenBrushProperties(PropertyInfo property, object obj)
@@ -380,8 +366,6 @@ namespace ColorVision.UI
                         dockPanel = PropertyEditorHelper.GenFontStyleProperties(property, obj);
                     else if (property.PropertyType == typeof(FontStretch))
                         dockPanel = PropertyEditorHelper.GenFontStretchProperties(property, obj);
-                    else if (property.PropertyType == typeof(FlowDirection))
-                        dockPanel = PropertyEditorHelper.GenFlowDirectionProperties(property, obj);
                     else if (typeof(ICommand).IsAssignableFrom(property.PropertyType))
                     {
                         dockPanel = GenCommandProperties(property, obj);
@@ -530,35 +514,6 @@ namespace ColorVision.UI
             dockPanel.Children.Add(textBlock);
             return dockPanel;
         }
-
-        // FlowDirection
-        public static DockPanel GenFlowDirectionProperties(PropertyInfo property, object obj)
-        {
-            var rm = GetResourceManager(obj);
-            var dockPanel = new DockPanel();
-
-            var textBlock = CreateLabel(property, rm);
-            var comboBox = new ComboBox
-            {
-                Margin = new Thickness(5, 0, 0, 0),
-                MinWidth = ControlMinWidth,
-                Style = ComboBoxSmallStyle,
-                DisplayMemberPath = "Value",
-                SelectedValuePath = "Key",
-                ItemsSource = Enum.GetValues(typeof(FlowDirection))
-                    .Cast<FlowDirection>()
-                    .Select(f => new KeyValuePair<FlowDirection, string>(f, f.ToString())).ToList()
-            };
-
-            var binding = CreateTwoWayBinding(obj, property.Name);
-            comboBox.SetBinding(ComboBox.SelectedValueProperty, binding);
-            DockPanel.SetDock(comboBox, Dock.Right);
-
-            dockPanel.Children.Add(comboBox);
-            dockPanel.Children.Add(textBlock);
-            return dockPanel;
-        }
-
 
         // Helpers
 
