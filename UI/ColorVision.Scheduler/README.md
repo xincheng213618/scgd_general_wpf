@@ -1,6 +1,6 @@
 # ColorVision.Scheduler
 
-## 功能定位
+## 🎯 功能定位
 
 任务调度系统，基于Quartz.NET实现的定时任务管理组件。
 
