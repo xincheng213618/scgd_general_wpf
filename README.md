@@ -851,6 +851,8 @@ public interface IAuthenticationService
 | `DisplayNameAttribute` | 显示名称 | `[DisplayName("背景颜色")]` |
 | `DescriptionAttribute` | 属性描述 | `[Description("设置控件背景颜色")]` |
 | `PropertyVisibilityAttribute` | 可见性控制 | `[PropertyVisibility(nameof(IsVisible))]` |
+| `PropertyOrderAttribute` | 属性显示顺序 | `[PropertyOrder(10)]` |
+| `CategoryOrderAttribute` | 类别显示顺序 | `[CategoryOrder("外观", 1)]` |
 
 ### 扩展接口清单
 
