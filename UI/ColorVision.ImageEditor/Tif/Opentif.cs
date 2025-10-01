@@ -53,42 +53,10 @@ namespace ColorVision.ImageEditor.Tif
         }
     }
 
-    [FileExtension(".bmp|.jpg|.jpeg|.png|.webp|.ico|gif")]
-    public class OpenCommon: IImageOpen
-    {
-
-        public async void OpenImage(ImageView imageView, string? filePath)
-        {
-            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return;
-
-            await Task.Run(() =>
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    byte[] imageData = File.ReadAllBytes(filePath);
-                    BitmapImage bitmapImage = ImageUtils.CreateBitmapImage(imageData);
-                    imageView.SetImageSource(bitmapImage.ToWriteableBitmap());
-
-                    imageView.ComboBoxLayers.SelectedIndex = 0;
-                    imageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src", "R", "G", "B" };
-                    imageView.AddSelectionChangedHandler(imageView.ComboBoxLayersSelectionChanged);
-
-                    imageView.UpdateZoomAndScale();
-                });
-            });
-
-        }
-        public List<MenuItemMetadata> GetContextMenuItems(ImageViewConfig imageView) 
-        {
-            return new List<MenuItemMetadata>();
-        }
-    }
-
 
     [FileExtension(".tif|.tiff")]
     public class Opentif : IImageOpen
     {
-
         public static int GetChannelCount(BitmapSource source)
         {
             PixelFormat format = source.Format;
@@ -153,7 +121,9 @@ namespace ColorVision.ImageEditor.Tif
             // 将浮点值转换为0-65535范围的16位整数
             for (int i = 0; i < floatPixels.Length; i++)
             {
-                ushortPixels[i] = (ushort)(floatPixels[i] * 65535);
+                float v = floatPixels[i];
+                if (v < 0) v = 0; if (v > 1) v = 1;
+                ushortPixels[i] = (ushort)(v * 65535);
             }
             // 创建一个新的WriteableBitmap对象
             WriteableBitmap writeableBitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Gray16, null);
@@ -168,45 +138,25 @@ namespace ColorVision.ImageEditor.Tif
         {
             if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return;
 
+            BitmapImage? bitmapImage = null;
             await Task.Run(() =>
             {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    var data = TiffReader.ReadTiff(filePath);
-                    int channel = GetChannelCount(data);
-                    if (channel == 1)
-                    {
-                        imageView.ComboBoxLayers.SelectedIndex = 0;
-                        imageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src" };
-                        imageView.AddSelectionChangedHandler(imageView.ComboBoxLayersSelectionChanged);
-                    }
-                    else
-                    {
-                        imageView.ComboBoxLayers.SelectedIndex = 0;
-                        imageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src", "R", "G", "B" };
-                        imageView.AddSelectionChangedHandler(imageView.ComboBoxLayersSelectionChanged);
-                    }
-
-                    if (data.Format == PixelFormats.Gray32Float)
-                    {
-                        WriteableBitmap writeableBitmap = new WriteableBitmap(data);
-                        HImage hImage = writeableBitmap.ToHImage();
-                        int i = OpenCVMediaHelper.M_ConvertGray32Float(hImage, out HImage hImageProcessed);
-                        imageView.SetImageSource(hImageProcessed.ToWriteableBitmap());
-                        hImageProcessed.Dispose();
-
-                        hImage.Dispose();
-                    }
-                    else
-                    {
-                        imageView.SetImageSource(new WriteableBitmap(data));
-                    }
-                    imageView.UpdateZoomAndScale();
-                });
+                using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                var tmp = new BitmapImage();
+                tmp.BeginInit();
+                tmp.CacheOption = BitmapCacheOption.OnLoad;
+                tmp.StreamSource = stream;
+                tmp.EndInit();
+                tmp.Freeze();
+                bitmapImage = tmp;
             });
-
+            if (bitmapImage == null) return;
+            imageView.SetImageSource(bitmapImage.ToWriteableBitmap());
+            imageView.ComboBoxLayers.SelectedIndex = 0;
+            imageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src", "R", "G", "B" };
+            imageView.AddSelectionChangedHandler(imageView.ComboBoxLayersSelectionChanged);
+            imageView.UpdateZoomAndScale();
         }
-
         public List<MenuItemMetadata> GetContextMenuItems(ImageViewConfig imageView)
         {
             return new List<MenuItemMetadata>();
