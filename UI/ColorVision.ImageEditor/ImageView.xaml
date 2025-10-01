@@ -134,7 +134,7 @@
                 </Border>
 
 
-                <ToolBarTray x:Name="ToolBarTop"  VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                <ToolBarTray x:Name="ToolBarTop" x:FieldModifier="public"  VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
                     <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True">
                         <ToggleButton IsChecked="{Binding ImageEditMode}"  Margin="1,0">
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
@@ -179,7 +179,7 @@
                         </ToggleButton>
                     </ToolBar>
                 </ToolBarTray>
-                <ToolBarTray x:Name="ToolBarRight" HorizontalAlignment="Left" Orientation="Vertical" Margin="2,50,0,0"  VerticalAlignment="Top">
+                <ToolBarTray x:Name="ToolBarRight" x:FieldModifier="public"  HorizontalAlignment="Left" Orientation="Vertical" Margin="2,50,0,0"  VerticalAlignment="Top">
                     <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
                         <Button Command="{Binding OpenImageCommand}" Margin="0,0,0,2" Padding="5">
                             <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource openDrawingImage}" />
@@ -193,7 +193,7 @@
                     </ToolBar>
                 </ToolBarTray>
 
-                <ToolBarTray x:Name="ToolBarLeft"  Orientation="Vertical" Margin="2,50,2,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top">
+                <ToolBarTray x:Name="ToolBarLeft" x:FieldModifier="public"  Orientation="Vertical" Margin="2,50,2,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top">
                     <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
                         <ToggleButton x:Name="AdvancedButton" Margin="0,0,0,2"  Padding="5">
                             <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIExpand}" />
