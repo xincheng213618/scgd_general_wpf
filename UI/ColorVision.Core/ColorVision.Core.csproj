@@ -6,7 +6,7 @@
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-		<VersionPrefix>1.3.8.3</VersionPrefix>
+		<VersionPrefix>1.3.9.1</VersionPrefix>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 		<IncludeSymbols>True</IncludeSymbols>
@@ -24,27 +24,27 @@
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</Content>
-		<Content Include="..\..\packages\opencv\x64\opencv_core4100.dll" Link="runtimes\win-x64\native\opencv_core4100.dll">
+		<Content Include="..\..\packages\opencv\x64\vc17\bin\opencv_core4120.dll" Link="runtimes\win-x64\native\opencv_core4120.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</Content>
-		<Content Include="..\..\packages\opencv\x64\opencv_highgui4100.dll" Link="runtimes\win-x64\native\opencv_highgui4100.dll">
+		<Content Include="..\..\packages\opencv\x64\vc17\bin\opencv_highgui4120.dll" Link="runtimes\win-x64\native\opencv_highgui4120.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</Content>
-		<Content Include="..\..\packages\opencv\x64\opencv_imgcodecs4100.dll" Link="runtimes\win-x64\native\opencv_imgcodecs4100.dll">
+		<Content Include="..\..\packages\opencv\x64\vc17\bin\opencv_imgcodecs4120.dll" Link="runtimes\win-x64\native\opencv_imgcodecs4120.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</Content>
-		<Content Include="..\..\packages\opencv\x64\opencv_imgproc4100.dll" Link="runtimes\win-x64\native\opencv_imgproc4100.dll">
+		<Content Include="..\..\packages\opencv\x64\vc17\bin\opencv_imgproc4120.dll" Link="runtimes\win-x64\native\opencv_imgproc4120.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</Content>
-		<Content Include="..\..\packages\opencv\x64\opencv_videoio4100.dll" Link="runtimes\win-x64\native\opencv_videoio4100.dll">
+		<Content Include="..\..\packages\opencv\x64\vc17\bin\opencv_videoio4120.dll" Link="runtimes\win-x64\native\opencv_videoio4120.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
