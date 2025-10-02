@@ -104,10 +104,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_helper_test", "Test\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectARVRPro", "Projects\ProjectARVRPro\ProjectARVRPro.csproj", "{F23FB3E2-39AD-B3E8-6806-E8D511F3B1E6}"
 EndProject
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "python_backend", "python_backend\python_backend.pyproj", "{F9F68141-67EC-4FCB-86DE-2A256A0E6DCE}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BenchmarkSuite2", "BenchmarkSuite2\BenchmarkSuite2.csproj", "{FF431CE1-8DAA-F2E0-6083-541E879F0B56}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -642,38 +638,6 @@ Global
 		{F23FB3E2-39AD-B3E8-6806-E8D511F3B1E6}.Release|x64.Build.0 = Release|x64
 		{F23FB3E2-39AD-B3E8-6806-E8D511F3B1E6}.Release|x86.ActiveCfg = Release|x64
 		{F23FB3E2-39AD-B3E8-6806-E8D511F3B1E6}.Release|x86.Build.0 = Release|x64
-		{F9F68141-67EC-4FCB-86DE-2A256A0E6DCE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F9F68141-67EC-4FCB-86DE-2A256A0E6DCE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F9F68141-67EC-4FCB-86DE-2A256A0E6DCE}.Debug|ARM64.ActiveCfg = Debug|Any CPU
-		{F9F68141-67EC-4FCB-86DE-2A256A0E6DCE}.Debug|ARM64.Build.0 = Debug|Any CPU
-		{F9F68141-67EC-4FCB-86DE-2A256A0E6DCE}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{F9F68141-67EC-4FCB-86DE-2A256A0E6DCE}.Debug|x64.Build.0 = Debug|Any CPU
-		{F9F68141-67EC-4FCB-86DE-2A256A0E6DCE}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{F9F68141-67EC-4FCB-86DE-2A256A0E6DCE}.Debug|x86.Build.0 = Debug|Any CPU
-		{F9F68141-67EC-4FCB-86DE-2A256A0E6DCE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F9F68141-67EC-4FCB-86DE-2A256A0E6DCE}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F9F68141-67EC-4FCB-86DE-2A256A0E6DCE}.Release|ARM64.ActiveCfg = Release|Any CPU
-		{F9F68141-67EC-4FCB-86DE-2A256A0E6DCE}.Release|ARM64.Build.0 = Release|Any CPU
-		{F9F68141-67EC-4FCB-86DE-2A256A0E6DCE}.Release|x64.ActiveCfg = Release|Any CPU
-		{F9F68141-67EC-4FCB-86DE-2A256A0E6DCE}.Release|x64.Build.0 = Release|Any CPU
-		{F9F68141-67EC-4FCB-86DE-2A256A0E6DCE}.Release|x86.ActiveCfg = Release|Any CPU
-		{F9F68141-67EC-4FCB-86DE-2A256A0E6DCE}.Release|x86.Build.0 = Release|Any CPU
-		{FF431CE1-8DAA-F2E0-6083-541E879F0B56}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{FF431CE1-8DAA-F2E0-6083-541E879F0B56}.Debug|Any CPU.Build.0 = Debug|x64
-		{FF431CE1-8DAA-F2E0-6083-541E879F0B56}.Debug|ARM64.ActiveCfg = Debug|ARM64
-		{FF431CE1-8DAA-F2E0-6083-541E879F0B56}.Debug|ARM64.Build.0 = Debug|ARM64
-		{FF431CE1-8DAA-F2E0-6083-541E879F0B56}.Debug|x64.ActiveCfg = Debug|x64
-		{FF431CE1-8DAA-F2E0-6083-541E879F0B56}.Debug|x64.Build.0 = Debug|x64
-		{FF431CE1-8DAA-F2E0-6083-541E879F0B56}.Debug|x86.ActiveCfg = Debug|x64
-		{FF431CE1-8DAA-F2E0-6083-541E879F0B56}.Debug|x86.Build.0 = Debug|x64
-		{FF431CE1-8DAA-F2E0-6083-541E879F0B56}.Release|Any CPU.ActiveCfg = Release|x64
-		{FF431CE1-8DAA-F2E0-6083-541E879F0B56}.Release|Any CPU.Build.0 = Release|x64
-		{FF431CE1-8DAA-F2E0-6083-541E879F0B56}.Release|ARM64.ActiveCfg = Release|ARM64
-		{FF431CE1-8DAA-F2E0-6083-541E879F0B56}.Release|ARM64.Build.0 = Release|ARM64
-		{FF431CE1-8DAA-F2E0-6083-541E879F0B56}.Release|x64.ActiveCfg = Release|x64
-		{FF431CE1-8DAA-F2E0-6083-541E879F0B56}.Release|x64.Build.0 = Release|x64
-		{FF431CE1-8DAA-F2E0-6083-541E879F0B56}.Release|x86.ActiveCfg = Release|x64
-		{FF431CE1-8DAA-F2E0-6083-541E879F0B56}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -712,7 +676,7 @@ Global
 		{F23FB3E2-39AD-B3E8-6806-E8D511F3B1E6} = {7D74447C-5191-4C1D-BEB2-B537366B980D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
 		RESX_AutoCreateNewLanguageFiles = True
+		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
 	EndGlobalSection
 EndGlobal
