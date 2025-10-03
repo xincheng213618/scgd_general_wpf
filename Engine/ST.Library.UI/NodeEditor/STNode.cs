@@ -39,7 +39,7 @@ public abstract class STNode
 
 	private int _Height = 40;
 
-	private int _ItemHeight = 22;
+	private int _ItemHeight = 20;
 
 	private bool _AutoSize = true;
 
