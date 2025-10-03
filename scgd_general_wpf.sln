@@ -11,13 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "解决方案项", "解决�
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
 		CHANGELOG.md = CHANGELOG.md
-		clear-bin.ps1 = clear-bin.ps1
-		docs\ColorVision API V1.1.md = docs\ColorVision API V1.1.md
-		ColorVision.snk = ColorVision.snk
-		copydll.bat = copydll.bat
 		Directory.Build.props = Directory.Build.props
 		README.md = README.md
-		docs\Software License Agreement.md = docs\Software License Agreement.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{55F5939D-C4F5-498D-97B0-8117E84F0FB1}"
@@ -676,7 +671,7 @@ Global
 		{F23FB3E2-39AD-B3E8-6806-E8D511F3B1E6} = {7D74447C-5191-4C1D-BEB2-B537366B980D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_AutoCreateNewLanguageFiles = True
 		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
+		RESX_AutoCreateNewLanguageFiles = True
 	EndGlobalSection
 EndGlobal

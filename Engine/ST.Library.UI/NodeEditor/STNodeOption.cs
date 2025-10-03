@@ -229,7 +229,8 @@ public class STNodeOption
 		{
 			throw new ArgumentNullException("指定的数据类型不能为空");
 		}
-		_DotSize = 10;
+		// Increase default dot size to make connection points easier to hit
+		_DotSize = 17;
 		m_hs_connected = new HashSet<STNodeOption>();
 		_DataType = dataType;
 		_Text = strText;

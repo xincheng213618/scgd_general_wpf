@@ -1234,7 +1234,8 @@ public abstract class STNode
 	{
 		if (_Owner != null)
 		{
-			_Owner.Invalidate(_Owner.CanvasToControl(new Rectangle(_Left - 5, _Top - 5, _Width + 10, _Height + 10)));
+			// enlarge invalidation padding to cover bigger dots around node edges
+			_Owner.Invalidate(_Owner.CanvasToControl(new Rectangle(_Left - 8, _Top - 8, _Width + 16, _Height + 16)));
 		}
 	}
 
@@ -1245,8 +1246,8 @@ public abstract class STNode
 		if (_Owner != null)
 		{
 			rect = _Owner.CanvasToControl(rect);
-			rect.Width++;
-			rect.Height++;
+			rect.Width += 2;
+			rect.Height += 2;
 			_Owner.Invalidate(rect);
 		}
 	}
