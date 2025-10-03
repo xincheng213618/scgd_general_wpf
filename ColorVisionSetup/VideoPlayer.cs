@@ -275,7 +275,6 @@ namespace ColorVisionSetup
 			}
 			catch (Exception ex)
 			{
-				Utils.Log("VideoPlayer::Initialize failed with error -> " + ex.Message);
 			}
 		}
 	}

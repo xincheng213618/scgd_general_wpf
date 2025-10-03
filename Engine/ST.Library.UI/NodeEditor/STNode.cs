@@ -39,13 +39,13 @@ public abstract class STNode
 
 	private int _Height = 40;
 
-	private int _ItemHeight = 20;
+	private int _ItemHeight = 22;
 
 	private bool _AutoSize = true;
 
 	private Rectangle _MarkRectangle;
 
-	private int _TitleHeight = 20;
+	private int _TitleHeight = 25;
 
 	private STNodeOptionCollection _InputOptions;
 
@@ -385,7 +385,7 @@ public abstract class STNode
 
 	public int Bottom => _Top + _Height;
 
-	public Rectangle Rectangle => new Rectangle(_Left, _Top, _Width, _Height);
+	public Rectangle Rectangle => new Rectangle(_Left, _Top, _Width, _Height + _TitleHeight -20);
 
 	public Rectangle TitleRectangle => new Rectangle(_Left, _Top, _Width, _TitleHeight);
 
@@ -652,12 +652,14 @@ public abstract class STNode
 
 	protected internal virtual void OnDrawNode(DrawingTools dt)
 	{
-		dt.Graphics.SmoothingMode = SmoothingMode.None;
+        dt.Graphics.SmoothingMode = SmoothingMode.None;
 		if (_BackColor.A != 0)
 		{
 			dt.SolidBrush.Color = _BackColor;
-			dt.Graphics.FillRectangle(dt.SolidBrush, _Left, _Top + _TitleHeight, _Width, Height - _TitleHeight);
+			dt.Graphics.FillRectangle(dt.SolidBrush, _Left, _Top + _TitleHeight, _Width, Height  -20);
 		}
+
+
 		OnDrawTitle(dt);
 		OnDrawBody(dt);
 	}
@@ -739,7 +741,10 @@ public abstract class STNode
 				point = control.Location;
 				dt.Graphics.TranslateTransform(empty.X, empty.Y);
 				dt.Graphics.SmoothingMode = SmoothingMode.None;
-				control.OnPaint(dt);
+				control.Width = Width - 10;
+
+				control.Height = 25;
+                control.OnPaint(dt);
 			}
 		}
 		dt.Graphics.TranslateTransform(-_Left - point.X, -_Top - _TitleHeight - point.Y);
@@ -1339,6 +1344,18 @@ public abstract class STNode
 
 	public void Create()
 	{
-		OnCreate();
+        string title = OnGetDrawTitle();
+        string[] lines = title.Split(new[] { '\n' }, StringSplitOptions.None);
+        int lineCount = lines.Length;
+        _TitleHeight = lineCount * 22;
+
+        // 计算每行最大字符数
+        int maxCharCount = 0;
+        foreach (string line in lines)
+        {
+            if (line.Length > maxCharCount) maxCharCount = line.Length;
+        }
+        _Width = Math.Max(_Width, maxCharCount * 11); // 最小宽度300
+        OnCreate();
 	}
 }

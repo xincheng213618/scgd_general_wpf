@@ -66,31 +66,26 @@ namespace ColorVisionSetup
 
         public static UNPACK_RESULT UnpackAndInstallRedist()
         {
-            Utils.Log("Core::Unpacking resources");
             try
             {
-                Utils.Log("Core::Installing runtime");
                 unpackResource("logi_installer_shared.dll");
                 unpackResource("logi_codecs_shared.dll");
                 _dllHandleSharedInstaller = LoadLibraryW(Path.Combine(TempPath, "logi_installer_shared.dll").Replace("/", "\\"));
                 if (_dllHandleSharedInstaller == IntPtr.Zero)
                 {
                     int lastWin32Error = Marshal.GetLastWin32Error();
-                    Utils.Log($"Core::Failed to load the shared installer dll ({lastWin32Error}), exiting");
                     return UNPACK_RESULT.FAILED_DLL_LOADING;
                 }
                 _dllHandleWebp = LoadLibraryW(Path.Combine(TempPath,"logi_codecs_shared.dll").Replace("/", "\\"));
                 if (_dllHandleWebp == IntPtr.Zero)
                 {
                     int lastWin32Error2 = Marshal.GetLastWin32Error();
-                    Utils.Log($"Core::Failed to load the shared codecs dll ({lastWin32Error2}), exiting");
                     return UNPACK_RESULT.FAILED_DLL_LOADING;
                 }
                 return UNPACK_RESULT.SUCCESS;
             }
             catch (Exception ex)
             {
-                Utils.Log("Core::Error: " + ex.Message);
                 return UNPACK_RESULT.FAILED_UNPACKING;
             }
         }
@@ -109,11 +104,9 @@ namespace ColorVisionSetup
                     FreeLibrary(_dllHandleWebp);
                     _dllHandleWebp = IntPtr.Zero;
                 }
-                Utils.Log("DLLs have been released");
             }
             catch (Exception ex)
             {
-                Utils.Log("Failed to release DLLs with error " + ex.Message);
             }
         }
 
