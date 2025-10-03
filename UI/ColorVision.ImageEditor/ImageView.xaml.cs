@@ -515,18 +515,13 @@ namespace ColorVision.ImageEditor
             });
 
         }
-        bool IsUpdateZoomAndScale = true;
         public void UpdateZoomAndScale()
         {
-            if (IsUpdateZoomAndScale)
+            Application.Current?.Dispatcher.BeginInvoke(() =>
             {
-                Application.Current?.Dispatcher.BeginInvoke(() =>
-                {
-                    Zoombox1.ZoomUniform();
-                    ImageViewModel.ToolBarScaleRuler.Render();
-                });
-                IsUpdateZoomAndScale = false;
-            }
+                Zoombox1.ZoomUniform();
+                ImageViewModel.ToolBarScaleRuler.Render();
+            });
         }
 
         private void CM_AutoLevelsAdjust(object sender, RoutedEventArgs e)

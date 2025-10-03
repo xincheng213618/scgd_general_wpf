@@ -3,12 +3,12 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <IncludePath>$(SolutionDir)packages\opencv\include\opencv2;$(SolutionDir)packages\opencv\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)packages\opencv\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)packages\opencv\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)packages\opencv\x64\vc17\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <Link>
-      <AdditionalDependencies>opencv_core4100d.lib;opencv_highgui4100d.lib;opencv_imgcodecs4100d.lib;opencv_imgproc4100d.lib;opencv_videoio4100d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_core4120d.lib;opencv_highgui4120d.lib;opencv_imgcodecs4120d.lib;opencv_imgproc4120d.lib;opencv_videoio4120d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup />

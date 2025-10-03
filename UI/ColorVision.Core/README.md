@@ -2,7 +2,7 @@
 
 ## 🎯 功能定位
 
-核心接口模块，提供C++算法库的.NET互操作接口。
+核心接口模块，OpencCV412,提供C++算法库的.NET互操作接口。 
 
 ## 作用范围
 
@@ -25,28 +25,7 @@
 **引用的外部依赖**:
 - C++ 算法动态链接库
 - P/Invoke 接口定义
-
-## 使用方式
-
-### 引用方式
-```xml
-<ProjectReference Include="..\ColorVision.Core\ColorVision.Core.csproj" />
-```
-
-### 在主程序中的启用
-- 通过cvColorVision模块自动加载
-- 算法节点执行时自动调用
-
-## 开发调试
-
-```bash
-dotnet build UI/ColorVision.Core/ColorVision.Core.csproj
-```
-
-## 相关文档链接
-
-- [算法组件文档](../../docs/algorithms/README.md)
-- [性能优化指南](../../docs/performance/README.md)
+- 
 
 ## 维护者
 

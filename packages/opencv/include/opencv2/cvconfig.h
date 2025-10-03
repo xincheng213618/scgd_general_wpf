@@ -63,10 +63,10 @@
 #define HAVE_INTTYPES_H 1
 
 /* Intel Integrated Performance Primitives */
-/* #undef HAVE_IPP */
-/* #undef HAVE_IPP_ICV */
-/* #undef HAVE_IPP_IW */
-/* #undef HAVE_IPP_IW_LL */
+#define HAVE_IPP
+#define HAVE_IPP_ICV
+#define HAVE_IPP_IW
+#define HAVE_IPP_IW_LL
 
 /* JPEG-2000 codec */
 #define HAVE_OPENJPEG
@@ -77,6 +77,9 @@
 
 /* IJG JPEG codec */
 #define HAVE_JPEG
+
+/* JPEG XL codec */
+/* #undef HAVE_JPEGXL */
 
 /* GDCM DICOM codec */
 /* #undef HAVE_GDCM */

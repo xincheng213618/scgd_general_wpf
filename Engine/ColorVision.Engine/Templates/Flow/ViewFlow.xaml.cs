@@ -1,7 +1,9 @@
 ﻿#pragma warning disable CA1720,CS8602
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.ImageEditor;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
@@ -15,6 +17,8 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Services.Flow
 {
@@ -81,6 +85,9 @@ namespace ColorVision.Engine.Services.Flow
                 ThemeManager.Current.CurrentUIThemeChanged += ThemeChanged;
                 ThemeChanged(ThemeManager.Current.CurrentUITheme);
             }
+
+
+
         }
 
         void ThemeChanged(Theme theme)
@@ -210,6 +217,22 @@ namespace ColorVision.Engine.Services.Flow
 
             FlowEngineControl.AttachNodeEditor(STNodeEditorMain);
 
+            ImageView.ToolBarTop.Visibility = Visibility.Collapsed;
+            ImageView.ToolBarRight.Visibility = Visibility.Collapsed;
+            ImageView.ToolBarLeft.Visibility = Visibility.Collapsed;
+            ImageView.ToolBarAl.Visibility = Visibility.Collapsed;
+
+            ImageView.SetImageSource(new BitmapImage(new Uri("/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy.png", UriKind.Relative)));
+            ImageView.ImageViewModel.ToolBarScaleRuler.IsShow = false;
+
+            STNodeEditorMain.Paint += (s, e) =>
+            {
+                DebounceTimer.AddOrResetTimer("RenderMiniMap", 100, ()=> Application.Current?.Dispatcher.BeginInvoke(() =>
+                {
+                    ImageView.ImageShow.Source = RenderMiniMap();
+                }));
+            };
+
 
             View = new View();
             ViewGridManager.GetInstance().AddView(0, this);
@@ -234,6 +257,36 @@ namespace ColorVision.Engine.Services.Flow
                 }
             };
             STNodeEditorHelper = new STNodeEditorHelper(this,STNodeEditorMain, STNodeTreeView1, STNodePropertyGrid1, SignStackPannel);
+        }
+
+
+
+        // 渲染 STNodeEditorMain 到 BitmapSource
+        public BitmapSource RenderMiniMap()
+        {
+            // 获取 WinForms 控件的句柄并生成 Bitmap
+            var bmp = new System.Drawing.Bitmap(STNodeEditorMain.Width, STNodeEditorMain.Height);
+            STNodeEditorMain.DrawToBitmap(bmp, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height));
+
+            // 转换为 WPF BitmapSource 并缩放
+            var hBitmap = bmp.GetHbitmap();
+            var bitmapSource = Imaging.CreateBitmapSourceFromHBitmap(
+                hBitmap,
+                IntPtr.Zero,
+                Int32Rect.Empty,
+                BitmapSizeOptions.FromWidthAndHeight(STNodeEditorMain.Width, STNodeEditorMain.Height)
+            );
+            // 释放 GDI 资源
+            NativeMethods.DeleteObject(hBitmap);
+            bmp.Dispose();
+            return bitmapSource;
+        }
+
+        // Win32 资源释放
+        internal static class NativeMethods
+        {
+            [System.Runtime.InteropServices.DllImport("gdi32.dll")]
+            public static extern bool DeleteObject(IntPtr hObject);
         }
 
 

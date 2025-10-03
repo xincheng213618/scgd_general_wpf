@@ -3,11 +3,13 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Text;
-
+using System.Diagnostics;
 
 namespace ColorVision.FileIO
 {
-
+    /// <summary>
+    /// 图像通道类型枚举。
+    /// </summary>
     public enum CVImageChannelType
     {
         SRC = 0,
@@ -24,89 +26,76 @@ namespace ColorVision.FileIO
         CIE_v = 17
     }
 
+    /// <summary>
+    /// CVCIE文件操作工具类，支持CVCIE格式的读写、通道提取等。
+    /// </summary>
     public static class CVFileUtil
     {
-        const string MagicHeader = "CVCIE";
-        const int HeaderSize = 5;
-        const int MinimumFileSize = HeaderSize + 4; // Minimum file size to contain the header and version
+        private const string MagicHeader = "CVCIE";
+        private const int HeaderSize = 5;
+        private const int MinimumFileSize = HeaderSize + 4; // Minimum file size to contain the header and version
+        private static readonly Encoding Encoding1 = Encoding.GetEncoding("GBK");
 
+        /// <summary>
+        /// 判断文件是否为CVCIE格式。
+        /// </summary>
         public static bool IsCIEFile(string filePath)
         {
-            if (!File.Exists(filePath))
-            {
-                return false;
-            }
+            if (!File.Exists(filePath)) return false;
             try
             {
-                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read,FileShare.Read))
+                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (BinaryReader br = new BinaryReader(fs))
                 {
-                    if (fs.Length < 5)
-                    {
-                        return false;
-                    }
-                    using (BinaryReader br = new BinaryReader(fs))
-                    {
-                        string fileHeader = new string(br.ReadChars(5));
-                        return fileHeader == "CVCIE";
-                    }
+                    if (fs.Length < HeaderSize) return false;
+                    string fileHeader = new string(br.ReadChars(HeaderSize));
+                    return fileHeader == MagicHeader;
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"[IsCIEFile] Exception: {ex}");
                 return false;
             }
         }
 
+        /// <summary>
+        /// 判断字节数组是否为CVCIE格式。
+        /// </summary>
         public static bool IsCIEFile(byte[] fileData)
         {
             if (fileData == null || fileData.Length < HeaderSize) return false;
-            // Convert the first 5 bytes to a string
             string fileHeader = Encoding.ASCII.GetString(fileData, 0, HeaderSize);
             return fileHeader == MagicHeader;
         }
 
+        /// <summary>
+        /// 读取CVCIE文件头信息（文件路径）。
+        /// </summary>
         public static int ReadCIEFileHeader(string filePath, out CVCIEFile cvcie)
         {
             cvcie = default(CVCIEFile);
-            if (!File.Exists(filePath))
+            if (!File.Exists(filePath)) return -1;
+            try
             {
-                return -1;
-            }
-            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-            {
-                if (fs.Length < 9)
-                {
-                    return -1;
-                }
+                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 using (BinaryReader br = new BinaryReader(fs))
                 {
-                    string fileHeader = new string(br.ReadChars(5));
-                    if (fileHeader != "CVCIE")
-                    {
-                        return -1;
-                    }
-                    cvcie.FileExtType = ((!filePath.Contains(".cvraw")) ? (filePath.Contains(".cvsrc") ? CVType.Src : CVType.CIE) : CVType.Raw);
+                    if (fs.Length < 9) return -1;
+                    string fileHeader = new string(br.ReadChars(HeaderSize));
+                    if (fileHeader != MagicHeader) return -1;
+                    cvcie.FileExtType = filePath.Contains(".cvraw") ? CVType.Raw : filePath.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
                     uint ver = (cvcie.version = br.ReadUInt32());
-                    if (ver != 1 && ver != 2)
-                    {
-                        return -1;
-                    }
+                    if (ver != 1 && ver != 2) return -1;
                     int fileNameLen = br.ReadInt32();
                     if (fileNameLen > 0 && fs.Position + fileNameLen <= fs.Length)
-                    {
                         cvcie.srcFileName = new string(br.ReadChars(fileNameLen));
-                    }
                     cvcie.gain = br.ReadSingle();
                     cvcie.channels = (int)br.ReadUInt32();
-                    if (fs.Position + cvcie.channels * 4 > fs.Length)
-                    {
-                        return -1;
-                    }
+                    if (fs.Position + cvcie.channels * 4 > fs.Length) return -1;
                     cvcie.exp = new float[cvcie.channels];
                     for (int i = 0; i < cvcie.channels; i++)
-                    {
                         cvcie.exp[i] = br.ReadSingle();
-                    }
                     cvcie.rows = (int)br.ReadUInt32();
                     cvcie.cols = (int)br.ReadUInt32();
                     cvcie.bpp = (int)br.ReadUInt32();
@@ -114,112 +103,175 @@ namespace ColorVision.FileIO
                     return (int)fs.Position;
                 }
             }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ReadCIEFileHeader] Exception: {ex}");
+                return -1;
+            }
         }
 
+        /// <summary>
+        /// 读取CVCIE文件头信息（字节数组）。
+        /// </summary>
         public static int ReadCIEFileHeader(byte[] fileData, out CVCIEFile cvcie)
         {
             cvcie = default(CVCIEFile);
-            if (fileData == null || fileData.Length < 9)
+            if (fileData == null || fileData.Length < 9) return -1;
+            try
             {
-                return -1;
-            }
-            string fileHeader = Encoding.ASCII.GetString(fileData, 0, 5);
-            if (fileHeader != "CVCIE")
-            {
-                return -1;
-            }
-            int startIndex = 5;
-            uint version = (cvcie.version = BitConverter.ToUInt32(fileData, startIndex));
-            if (version != 1 && version != 2)
-            {
-                return -1;
-            }
-            startIndex += 4;
-            int fileNameLength = BitConverter.ToInt32(fileData, startIndex);
-            startIndex += 4;
-            if (fileNameLength < 0 || startIndex + fileNameLength > fileData.Length)
-            {
-                return -1;
-            }
-            cvcie.srcFileName = Encoding.GetEncoding("GBK").GetString(fileData, startIndex, fileNameLength);
-            startIndex += fileNameLength;
-            if (!TryReadSingle(fileData, ref startIndex, out cvcie.gain))
-            {
-                return -1;
-            }
-            if (!TryReadUInt32(fileData, ref startIndex, out cvcie.channels))
-            {
-                return -1;
-            }
-            if (startIndex + cvcie.channels * 4 > fileData.Length)
-            {
-                return -1;
-            }
-            cvcie.exp = new float[cvcie.channels];
-            for (int i = 0; i < cvcie.channels; i++)
-            {
-                cvcie.exp[i] = BitConverter.ToSingle(fileData, startIndex);
+                string fileHeader = Encoding.ASCII.GetString(fileData, 0, HeaderSize);
+                if (fileHeader != MagicHeader) return -1;
+                int startIndex = HeaderSize;
+                uint version = (cvcie.version = BitConverter.ToUInt32(fileData, startIndex));
+                if (version != 1 && version != 2) return -1;
                 startIndex += 4;
+                int fileNameLength = BitConverter.ToInt32(fileData, startIndex);
+                startIndex += 4;
+                if (fileNameLength < 0 || startIndex + fileNameLength > fileData.Length) return -1;
+                cvcie.srcFileName = Encoding1.GetString(fileData, startIndex, fileNameLength);
+                startIndex += fileNameLength;
+                if (!TryReadSingle(fileData, ref startIndex, out cvcie.gain)) return -1;
+                if (!TryReadUInt32(fileData, ref startIndex, out cvcie.channels)) return -1;
+                if (startIndex + cvcie.channels * 4 > fileData.Length) return -1;
+                cvcie.exp = new float[cvcie.channels];
+                for (int i = 0; i < cvcie.channels; i++)
+                {
+                    cvcie.exp[i] = BitConverter.ToSingle(fileData, startIndex);
+                    startIndex += 4;
+                }
+                if (!TryReadUInt32(fileData, ref startIndex, out cvcie.rows)) return -1;
+                if (!TryReadUInt32(fileData, ref startIndex, out cvcie.cols)) return -1;
+                if (!TryReadUInt32(fileData, ref startIndex, out cvcie.bpp)) return -1;
+                return startIndex;
             }
-            if (!TryReadUInt32(fileData, ref startIndex, out cvcie.rows))
+            catch (Exception ex)
             {
+                Debug.WriteLine($"[ReadCIEFileHeader(byte[])] Exception: {ex}");
                 return -1;
             }
-            if (!TryReadUInt32(fileData, ref startIndex, out cvcie.cols))
-            {
-                return -1;
-            }
-            if (!TryReadUInt32(fileData, ref startIndex, out cvcie.bpp))
-            {
-                return -1;
-            }
-            return startIndex;
         }
 
+        /// <summary>
+        /// 读取CVCIE文件数据部分（文件路径）。
+        /// </summary>
         public static bool ReadCIEFileData(string filePath, ref CVCIEFile fileInfo, int dataStartIndex)
         {
-            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read,FileShare.Read))
+            try
             {
+                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 using (BinaryReader br = new BinaryReader(fs))
                 {
-                    if (fs.Length < dataStartIndex)
-                    {
-                        return false;
-                    }
+                    if (fs.Length < dataStartIndex) return false;
                     fs.Position = dataStartIndex;
                     uint version = fileInfo.version;
-                    if (1 == 0)
-                    {
-                    }
-                    long num = ((version != 2) ? br.ReadInt32() : br.ReadInt64());
-                    if (1 == 0)
-                    {
-                    }
-                    long dataLen = num;
+                    long dataLen = (version != 2) ? br.ReadInt32() : br.ReadInt64();
                     if (dataLen > 0 && fs.Position + dataLen <= fs.Length)
                     {
-                        fileInfo.data = new byte[dataLen];
-                        long totalBytesRead;
+                        try
+                        {
+                            fileInfo.data = new byte[dataLen];
+                        }
+                        catch (OutOfMemoryException oom)
+                        {
+                            Debug.WriteLine($"[ReadCIEFileData] OutOfMemoryException: {oom}");
+                            return false;
+                        }
+                        long totalBytesRead = 0;
                         int bytesRead;
-                        for (totalBytesRead = 0L; totalBytesRead < dataLen; totalBytesRead += bytesRead)
+                        while (totalBytesRead < dataLen)
                         {
                             int bytesToRead = (int)Math.Min(81920L, dataLen - totalBytesRead);
                             bytesRead = br.Read(fileInfo.data, (int)totalBytesRead, bytesToRead);
-                            if (bytesRead == 0)
-                            {
-                                break;
-                            }
+                            if (bytesRead == 0) break;
+                            totalBytesRead += bytesRead;
                         }
-                        if (totalBytesRead == dataLen)
-                        {
-                            return true;
-                        }
+                        if (totalBytesRead == dataLen) return true;
                     }
                     return false;
                 }
             }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ReadCIEFileData] Exception: {ex}");
+                return false;
+            }
         }
 
+        /// <summary>
+        /// 读取CVCIE文件数据部分（字节数组）。
+        /// </summary>
+        public static bool ReadCIEFileData(byte[] fileData, ref CVCIEFile fileInfo, int dataStartIndex)
+        {
+            if (fileData == null || fileData.Length < dataStartIndex) return false;
+            try
+            {
+                using (MemoryStream ms = new MemoryStream(fileData))
+                using (BinaryReader br = new BinaryReader(ms))
+                {
+                    ms.Position = dataStartIndex;
+                    if (ms.Length - ms.Position < 4) return false;
+                    uint version = fileInfo.version;
+                    long dataLen = (version != 2) ? br.ReadInt32() : br.ReadInt64();
+                    if (dataLen > 0 && ms.Position + dataLen <= ms.Length)
+                    {
+                        try
+                        {
+                            fileInfo.data = new byte[dataLen];
+                        }
+                        catch (OutOfMemoryException oom)
+                        {
+                            Debug.WriteLine($"[ReadCIEFileData(byte[])] OutOfMemoryException: {oom}");
+                            return false;
+                        }
+                        long totalBytesRead = 0;
+                        int bytesRead;
+                        while (totalBytesRead < dataLen)
+                        {
+                            int bytesToRead = (int)Math.Min(81920L, dataLen - totalBytesRead);
+                            bytesRead = br.Read(fileInfo.data, (int)totalBytesRead, bytesToRead);
+                            if (bytesRead == 0) break;
+                            totalBytesRead += bytesRead;
+                        }
+                        if (totalBytesRead == dataLen) return true;
+                    }
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ReadCIEFileData(byte[])] Exception: {ex}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 读取文件为字节数组，自动释放资源。
+        /// </summary>
+        public static byte[] ReadFile(string fileName)
+        {
+            if (!File.Exists(fileName)) return null;
+            try
+            {
+                using (FileStream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (BinaryReader binaryReader = new BinaryReader(fileStream))
+                {
+                    long length = fileStream.Length;
+                    if (length > int.MaxValue) throw new IOException("File too large");
+                    byte[] bytes = new byte[length];
+                    binaryReader.Read(bytes, 0, bytes.Length);
+                    return bytes;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ReadFile] Exception: {ex}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 尝试从字节数组读取一个UInt32。
+        /// </summary>
         private static bool TryReadUInt32(byte[] data, ref int startIndex, out int value)
         {
             if (startIndex + 4 > data.Length)
@@ -232,6 +284,9 @@ namespace ColorVision.FileIO
             return true;
         }
 
+        /// <summary>
+        /// 尝试从字节数组读取一个Single。
+        /// </summary>
         private static bool TryReadSingle(byte[] data, ref int startIndex, out float value)
         {
             if (startIndex + sizeof(int) > data.Length)
@@ -243,74 +298,10 @@ namespace ColorVision.FileIO
             startIndex += sizeof(int);
             return true;
         }
-        private static bool TryReadInt32(byte[] data, ref int startIndex, out int value)
-        {
-            if (startIndex + sizeof(int) > data.Length)
-            {
-                value = 0;
-                return false;
-            }
-            value = BitConverter.ToInt32(data, startIndex);
-            startIndex += sizeof(int);
-            return true;
-        }
 
-        public static bool ReadCIEFileData(byte[] fileData, ref CVCIEFile fileInfo, int dataStartIndex)
-        {
-            if (fileData == null || fileData.Length < dataStartIndex)
-            {
-                return false;
-            }
-            using (MemoryStream ms = new MemoryStream(fileData))
-            {
-                using (BinaryReader br = new BinaryReader(ms))
-                {
-                    ms.Position = dataStartIndex;
-                    if (ms.Length - ms.Position < 4)
-                    {
-                        return false;
-                    }
-                    uint version = fileInfo.version;
-                    if (1 == 0)
-                    {
-                    }
-                    long num = ((version != 2) ? br.ReadInt32() : br.ReadInt64());
-                    if (1 == 0)
-                    {
-                    }
-                    long dataLen = num;
-                    if (dataLen > 0 && ms.Position + dataLen <= ms.Length)
-                    {
-                        fileInfo.data = new byte[dataLen];
-                        long totalBytesRead;
-                        int bytesRead;
-                        for (totalBytesRead = 0L; totalBytesRead < dataLen; totalBytesRead += bytesRead)
-                        {
-                            int bytesToRead = (int)Math.Min(81920L, dataLen - totalBytesRead);
-                            bytesRead = br.Read(fileInfo.data, (int)totalBytesRead, bytesToRead);
-                            if (bytesRead == 0)
-                            {
-                                break;
-                            }
-                        }
-                        if (totalBytesRead == dataLen)
-                        {
-                            return true;
-                        }
-                    }
-                    return true;
-                }
-            }
-        }
-
-
-        public static bool Read(byte[] fileData, out CVCIEFile fileInfo)
-        {
-            int index = ReadCIEFileHeader(fileData, out fileInfo);
-            if (index > 0)
-                return ReadCIEFileData(fileData, ref fileInfo, index);
-            return false;
-        }
+        /// <summary>
+        /// 读取CVCIE或CVRAW文件（自动判断格式）。
+        /// </summary>
         public static bool Read(string filePath, out CVCIEFile fileInfo)
         {
             int index = ReadCIEFileHeader(filePath, out fileInfo);
@@ -319,38 +310,20 @@ namespace ColorVision.FileIO
             return false;
         }
 
-        private static Encoding Encoding1 = Encoding.GetEncoding("GBK");
-        public static int WriteFile(string fileName, CVCIEFile fileInfo)
+        /// <summary>
+        /// 读取CVCIE或CVRAW文件（自动判断格式，字节数组）。
+        /// </summary>
+        public static bool Read(byte[] fileData, out CVCIEFile fileInfo)
         {
-            using (FileStream fileStream = new FileStream(fileName, FileMode.Create))
-            {
-                using (BinaryWriter writer = new BinaryWriter(fileStream))
-                {
-                    int ver = 1;
-                    char[] hd = new char[5] { 'C', 'V', 'C', 'I', 'E' };
-                    writer.Write(hd);
-                    writer.Write(ver);
-                    byte[] srcFileNameBytes = Encoding1.GetBytes(fileInfo.srcFileName);
-                    writer.Write(srcFileNameBytes.Length);
-                    writer.Write(srcFileNameBytes);
-                    writer.Write(fileInfo.gain);
-                    writer.Write(fileInfo.channels);
-                    for (int i = 0; i < fileInfo.exp.Length; i++)
-                    {
-                        writer.Write(fileInfo.exp[i]);
-                    }
-                    writer.Write(fileInfo.rows);
-                    writer.Write(fileInfo.cols);
-                    writer.Write(fileInfo.bpp);
-                    writer.Write(fileInfo.data.Length);
-                    writer.Write(fileInfo.data);
-                    return 0;
-                }
-            }
+            int index = ReadCIEFileHeader(fileData, out fileInfo);
+            if (index > 0)
+                return ReadCIEFileData(fileData, ref fileInfo, index);
+            return false;
         }
 
-        public static bool ReadCVRaw(string fileName, out CVCIEFile fileInfo) => Read(fileName, out fileInfo);
-
+        /// <summary>
+        /// 按通道类型打开本地文件（自动判断扩展名）。
+        /// </summary>
         public static CVCIEFile OpenLocalFileChannel(string fileName, CVImageChannelType channelType)
         {
             string ext = Path.GetExtension(fileName)?.ToLower(CultureInfo.CurrentCulture);
@@ -358,26 +331,9 @@ namespace ColorVision.FileIO
             return OpenLocalFileChannel(fileName, fileExtType, channelType);
         }
 
-        public static bool ReadCVCIE(string fileName, out CVCIEFile fileInfo)
-        {
-            int startIndex = CVFileUtil.ReadCIEFileHeader(fileName, out fileInfo);
-            if (startIndex < 0) return false;
-            fileInfo.FilePath = fileName;
-
-            if (!string.IsNullOrEmpty(fileInfo.srcFileName))
-            {
-                if (CVFileUtil.ReadCVCIESrc(fileName, out CVCIEFile fileInf))
-                {
-                    fileInfo = fileInf;
-                    fileInfo.FilePath = fileName;
-                    return true;
-                }
-            }
-
-            return ReadCIEFileData(fileName, ref fileInfo, startIndex);
-        }
-
-
+        /// <summary>
+        /// 按通道类型和文件类型打开本地文件。
+        /// </summary>
         public static CVCIEFile OpenLocalFileChannel(string fileName, CVType extType, CVImageChannelType channelType)
         {
             if (channelType == CVImageChannelType.SRC)
@@ -412,71 +368,9 @@ namespace ColorVision.FileIO
             return data;
         }
 
-
-
-        public static bool ReadCVCIESrc(string FileName, out CVCIEFile fileOut)
-        {
-            fileOut = new CVCIEFile();
-            int index = ReadCIEFileHeader(FileName, out CVCIEFile cvcie);
-            if (index < 0) return false;
-            if (!File.Exists(cvcie.srcFileName))
-                cvcie.srcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.srcFileName);
-
-            if (File.Exists(cvcie.srcFileName))
-            {
-                if (IsCIEFile(cvcie.srcFileName))
-                {
-                    fileOut.FileExtType = CVType.Raw;
-                    return Read(cvcie.srcFileName, out fileOut);
-                }
-                else
-                {
-                    if (cvcie.srcFileName!=null)
-                    {
-                        fileOut.data = ReadFile(cvcie.srcFileName);
-                        fileOut.FileExtType = CVType.Tif;
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        public static byte[] ReadFile(string fileName)
-        {
-            if (File.Exists(fileName))
-            {
-                FileStream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-                BinaryReader binaryReader = new BinaryReader(fileStream);
-                long length = fileStream.Length;
-                byte[] bytes = new byte[length];
-                binaryReader.Read(bytes, 0, bytes.Length);
-                return bytes;
-            }
-            return null;
-        }
-
-
-        public static int ReadCVCIEXYZ(string FileName, int channel, out CVCIEFile fileOut)
-        {
-            int index = ReadCIEFileHeader(FileName, out fileOut);
-            if (index < 0) return -1;
-            ReadCIEFileData(FileName, ref fileOut, index);
-
-            if (fileOut.channels > 1)
-            {
-                fileOut.FileExtType = CVType.Raw;
-                fileOut.channels = 1;
-                int len = fileOut.cols * fileOut.rows * fileOut.bpp / 8;
-                byte[] data = new byte[len];
-                Buffer.BlockCopy(fileOut.data, channel * len, data, 0, len);
-                fileOut.data = data;
-                return 0;
-            }
-            return  -2;
-        }
-
-
+        /// <summary>
+        /// 按文件类型自动打开本地CV文件。
+        /// </summary>
         public static CVCIEFile OpenLocalCVFile(string fileName)
         {
             CVType extType = CVType.Src;
@@ -491,6 +385,9 @@ namespace ColorVision.FileIO
             return OpenLocalCVFile(fileName, extType);
         }
 
+        /// <summary>
+        /// 按指定类型打开本地CV文件。
+        /// </summary>
         public static CVCIEFile OpenLocalCVFile(string fileName, CVType extType)
         {
             CVCIEFile fileInfo = new CVCIEFile();
@@ -507,6 +404,51 @@ namespace ColorVision.FileIO
                 CVFileUtil.ReadCVRaw(fileName, out fileInfo);
             }
             return fileInfo;
+        }
+
+        /// <summary>
+        /// 读取CVRAW文件（兼容接口）。
+        /// </summary>
+        public static bool ReadCVRaw(string fileName, out CVCIEFile fileInfo) => Read(fileName, out fileInfo);
+
+        /// <summary>
+        /// 读取CVCIE文件（兼容接口）。
+        /// </summary>
+        public static bool ReadCVCIE(string fileName, out CVCIEFile fileInfo)
+        {
+            int startIndex = CVFileUtil.ReadCIEFileHeader(fileName, out fileInfo);
+            if (startIndex < 0) return false;
+            fileInfo.FilePath = fileName;
+            return ReadCIEFileData(fileName, ref fileInfo, startIndex);
+        }
+
+        /// <summary>
+        /// 按通道读取CVCIE文件的指定通道数据。
+        /// </summary>
+        public static int ReadCVCIEXYZ(string fileName, int channel, out CVCIEFile fileOut)
+        {
+            int index = ReadCIEFileHeader(fileName, out fileOut);
+            if (index < 0) return -1;
+            ReadCIEFileData(fileName, ref fileOut, index);
+            if (fileOut.channels > 1)
+            {
+                fileOut.FileExtType = CVType.Raw;
+                fileOut.channels = 1;
+                int len = fileOut.cols * fileOut.rows * fileOut.bpp / 8;
+                try
+                {
+                    byte[] data = new byte[len];
+                    Buffer.BlockCopy(fileOut.data, channel * len, data, 0, len);
+                    fileOut.data = data;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[ReadCVCIEXYZ] Exception: {ex}");
+                    return -2;
+                }
+                return 0;
+            }
+            return -2;
         }
     }
 }

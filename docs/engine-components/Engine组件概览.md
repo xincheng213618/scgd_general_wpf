@@ -37,17 +37,21 @@ Engine 目录包含了 ColorVision 系统的核心算法引擎和处理组件，
   - 实时状态监控
 
 #### 2. [cvColorVision](./cvColorVision.md)
-**底层色彩视觉算法库**
+**视觉处理核心模块（C# 封装库）**
 - **主要功能**:
-  - 核心图像处理算法
-  - 色彩空间转换
-  - 图像质量评估
-  - 计算机视觉算法
+  - 相机控制与图像采集
+  - 色彩空间转换（XYZ/xy/uv）
+  - 设备通信（TCP/串口）
+  - 图像算法（AOI、OLED、光谱）
 - **关键特性**:
-  - 高性能C++实现
-  - OpenCV集成
-  - CUDA加速支持
-  - 多线程处理
+  - C# P/Invoke 封装
+  - 底层 C++ DLL（cvCamera.dll、cvOled.dll）
+  - OpenCV 基础（底层实现）
+  - CUDA 加速支持（底层）
+- **技术架构**:
+  - 封装层：C# (.NET)
+  - 底层库：C++ (OpenCV 4.x)
+  - 接口方式：P/Invoke (DllImport)
 
 #### 3. [ColorVision.FileIO](./ColorVision.FileIO.md)
 **文件输入输出处理模块**
@@ -78,17 +82,28 @@ Engine 目录包含了 ColorVision 系统的核心算法引擎和处理组件，
   - 状态持久化
 
 #### 5. [ST.Library.UI](./ST.Library.UI.md)
-**节点编辑器UI库**
+**专业可视化节点编辑器UI库**
 - **主要功能**:
-  - 可视化节点编辑器
-  - 流程图渲染
-  - 交互操作处理
-  - 界面组件
+  - 可视化节点编辑器（STNodeEditor）
+  - 节点系统（STNode 基类）
+  - 属性编辑器（STNodePropertyGrid）
+  - 节点库管理（STNodeTreeView）
+  - 连接管理与验证
+  - 节点容器扩展（CVNode）
 - **关键特性**:
-  - 拖拽编辑支持
-  - 自动布局算法
-  - 撤销重做功能
-  - 属性面板集成
+  - 拖拽式节点连接
+  - 类型安全的数据流
+  - 实时属性编辑
+  - 撤销/重做支持
+  - 多语言支持（中/英）
+  - 程序集动态加载
+  - 自定义节点扩展
+  - 画布缩放平移
+- **技术规格**:
+  - 框架版本: .NET 8.0 / .NET Framework 4.7.2
+  - UI技术: Windows Forms
+  - 代码规模: ~10,500 行代码
+  - 版本号: 1.2.0.2410
 
 ## 组件架构
 

@@ -12,6 +12,6 @@ public class CVBaseEventCmd
 	{
 		this.cmd = cmd;
 		this.resp = resp;
-		//waiter = new LockFreeMessageWaiter();
+		waiter = new LockFreeMessageWaiter();
 	}
 }
