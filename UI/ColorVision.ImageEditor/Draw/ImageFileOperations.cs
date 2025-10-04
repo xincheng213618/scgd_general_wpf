@@ -39,37 +39,6 @@ namespace ColorVision.ImageEditor
         }
 
         /// <summary>
-        /// 显示"另存为"对话框
-        /// </summary>
-        public void SaveAs()
-        {
-            using var dialog = new System.Windows.Forms.SaveFileDialog();
-            dialog.Filter = "Png (*.png) | *.png";
-            dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
-            dialog.RestoreDirectory = true;
-            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-            Save(dialog.FileName);
-        }
-
-        /// <summary>
-        /// 保存图像到指定文件
-        /// </summary>
-        /// <param name="fileName">文件路径</param>
-        public void Save(string fileName)
-        {
-            RenderTargetBitmap renderTargetBitmap = new((int)_image.ActualWidth, (int)_image.ActualHeight, 96, 96, PixelFormats.Pbgra32);
-            renderTargetBitmap.Render(_image);
-
-            // 创建一个PngBitmapEncoder对象来保存位图为PNG文件
-            PngBitmapEncoder pngEncoder = new();
-            pngEncoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
-
-            // 将PNG内容保存到文件
-            using FileStream fileStream = new(fileName, FileMode.Create);
-            pngEncoder.Save(fileStream);
-        }
-
-        /// <summary>
         /// 打印图像
         /// </summary>
         public void Print()

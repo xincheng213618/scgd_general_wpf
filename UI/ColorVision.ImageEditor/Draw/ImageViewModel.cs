@@ -23,7 +23,6 @@ namespace ColorVision.ImageEditor
 
         #region Commands
 
-        public RelayCommand SaveAsImageCommand { get; set; }
         public RelayCommand ClearImageCommand { get; set; }
         public RelayCommand PrintImageCommand { get; set; }
         public RelayCommand PropertyCommand { get; set; }
@@ -192,11 +191,6 @@ namespace ColorVision.ImageEditor
                 (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
                 
             drawCanvas.CommandBindings.Add(new CommandBinding(
-                ApplicationCommands.SaveAs, 
-                (s, e) => SaveAs(), 
-                (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
-                
-            drawCanvas.CommandBindings.Add(new CommandBinding(
                 ApplicationCommands.Close, 
                 (s, e) => ClearImage(), 
                 (s, e) => { e.CanExecute = Image.Source != null; }));
@@ -222,7 +216,6 @@ namespace ColorVision.ImageEditor
 
         private void CreateCommands()
         {
-            SaveAsImageCommand = new RelayCommand(a => SaveAs(), a => Image != null && Image.Source != null);
             PrintImageCommand = new RelayCommand(a => Print(), a => Image != null && Image.Source != null);
             ClearImageCommand = new RelayCommand(a => ClearImage(), a => Image != null && Image.Source != null);
             
@@ -232,21 +225,9 @@ namespace ColorVision.ImageEditor
         #region Public Methods
                 
         public void Print() => _fileOperations.Print();
-        
-        public void SaveAs() => _fileOperations.SaveAs();
-        
-        public void Save(string fileName) => _fileOperations.Save(fileName);
-        
-        public void FlipHorizontal() => _transformOperations.FlipHorizontal();
-        
-        public void FlipVertical() => _transformOperations.FlipVertical();
-        
-        public void RotateRight() => _transformOperations.RotateRight();
-        
-        public void RotateLeft() => _transformOperations.RotateLeft();
-        
-        public void MaxImage() => ImageFullScreenMode.ToggleFullScreen();
-        
+
+        public void Save(string file) => ImageView.Save(file);
+
         public void ClearImage() => _fileOperations.ClearImage(ToolBarScaleRuler, ClearImageEventHandler);
         
         #endregion

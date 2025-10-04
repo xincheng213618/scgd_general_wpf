@@ -20,7 +20,7 @@ namespace ColorVision.ImageEditor.EditorTools.WindowTools
 
         public ICommand? Command { get; set; } = new RelayCommand(_ =>
         {
-            EditorContext.ImageViewModel.MaxImage();
+            EditorContext.ImageViewModel.ImageFullScreenMode.ToggleFullScreen();
         });
     }
 }

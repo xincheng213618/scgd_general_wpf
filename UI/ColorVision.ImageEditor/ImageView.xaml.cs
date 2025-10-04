@@ -115,6 +115,8 @@ namespace ColorVision.ImageEditor
                                       select new KeyValuePair<MagnigifierType, string>(e1, e1.ToString());
 
             this.CommandBindings.Add(new CommandBinding( ApplicationCommands.Open, (s, e) => OpenImage(),(s, e) => { e.CanExecute = true; }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = true; }));
+
         }
 
         public void OpenImage()
@@ -126,6 +128,38 @@ namespace ColorVision.ImageEditor
                 OpenImage(openFileDialog.FileName);
             }
         }
+
+        /// <summary>
+        /// 显示"另存为"对话框
+        /// </summary>
+        public void SaveAs()
+        {
+            using var dialog = new System.Windows.Forms.SaveFileDialog();
+            dialog.Filter = "Png (*.png) | *.png";
+            dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+            dialog.RestoreDirectory = true;
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            Save(dialog.FileName);
+        }
+
+        /// <summary>
+        /// 保存图像到指定文件
+        /// </summary>
+        /// <param name="fileName">文件路径</param>
+        public void Save(string fileName)
+        {
+            RenderTargetBitmap renderTargetBitmap = new((int)ImageShow.Width, (int)ImageShow.Height, 96, 96, PixelFormats.Pbgra32);
+            renderTargetBitmap.Render(ImageShow);
+
+            // 创建一个PngBitmapEncoder对象来保存位图为PNG文件
+            PngBitmapEncoder pngEncoder = new();
+            pngEncoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
+
+            // 将PNG内容保存到文件
+            using FileStream fileStream = new(fileName, FileMode.Create);
+            pngEncoder.Save(fileStream);
+        }
+
 
         public void Clear(object? sender, EventArgs e)
         {

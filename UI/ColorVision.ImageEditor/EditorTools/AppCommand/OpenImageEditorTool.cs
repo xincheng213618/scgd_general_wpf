@@ -7,7 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ColorVision.ImageEditor.EditorTools.Open
+namespace ColorVision.ImageEditor.EditorTools.AppCommand
 {
     public record class OpenImageEditorTool(EditorContext EditorContext) : IEditorTool
     {
