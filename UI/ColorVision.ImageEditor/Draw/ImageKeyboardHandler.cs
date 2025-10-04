@@ -40,13 +40,13 @@ namespace ColorVision.ImageEditor
         public void HandleKeyDown(object sender, KeyEventArgs e)
         {
             // F11全屏处理
-            if (e.Key == Key.F11)
-            {
-                if (!_viewModel.IsMax)
-                    _viewModel.FullCommand.Execute(null);
-                e.Handled = true;
-                return;
-            }
+            //if (e.Key == Key.F11)
+            //{
+            //    if (!_viewModel.IsMax)
+            //        _viewModel.FullCommand.Execute(null);
+            //    e.Handled = true;
+            //    return;
+            //}
 
             // 编辑模式下的键盘操作
             if (_viewModel.ImageEditMode)

@@ -1,3 +1,4 @@
+using ColorVision.ImageEditor.EditorTools.Window;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -75,7 +76,8 @@ namespace ColorVision.ImageEditor
             else
             {
                 IsMax = false;
-                if (_oldWindowStatus.Parent != null)
+                if (_oldWindowStatus == null) return;
+                if ( _oldWindowStatus.Parent != null)
                 {
                     window.WindowStyle = _oldWindowStatus.WindowStyle;
                     window.WindowState = _oldWindowStatus.WindowState;

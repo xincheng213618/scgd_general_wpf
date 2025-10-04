@@ -21,7 +21,6 @@ namespace ColorVision.ImageEditor
         private readonly Guid _guid = Guid.NewGuid();
 
         #region Commands
-        public RelayCommand FullCommand { get; set; }
 
         public RelayCommand SaveAsImageCommand { get; set; }
         public RelayCommand ClearImageCommand { get; set; }
@@ -98,7 +97,7 @@ namespace ColorVision.ImageEditor
 
             RegisterContextMenuProviders();
 
-            imageView.ToolBarBottom.Children.Add(SlectStackPanel);
+            imageView.AdvancedStackPanel.Children.Add(SlectStackPanel);
 
 
             SelectEditorVisual = new SelectEditorVisual(this, drawCanvas, zoombox);
@@ -131,6 +130,12 @@ namespace ColorVision.ImageEditor
             Image.ContextMenuOpening += _contextMenuManager.HandleContextMenuOpening;
             Image.ContextMenu = ContextMenu;
             ZoomboxSub.ContextMenu = ContextMenu;
+
+            // 移除旧的 FullCommand 按钮（位于 ToolBarTop 的第 3 个）
+            if (imageView.ToolBarTop.Items.Count > 2 && imageView.ToolBarTop.Items[2] is FrameworkElement fe)
+            {
+                imageView.ToolBarTop.Items.RemoveAt(2);
+            }
 
             ZoomboxSub.LayoutUpdated += Zoombox1_LayoutUpdated;
         }
@@ -234,7 +239,6 @@ namespace ColorVision.ImageEditor
             ClearImageCommand = new RelayCommand(a => ClearImage(), a => Image != null && Image.Source != null);
             
             PropertyCommand = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(ImageView), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
-            FullCommand = new RelayCommand(a => MaxImage());
         }
 
         #region Public Methods

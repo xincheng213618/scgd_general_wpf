@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.ImageEditor
+namespace ColorVision.ImageEditor.EditorTools.Window
 {
     public class ImagePlacementContext
     {
