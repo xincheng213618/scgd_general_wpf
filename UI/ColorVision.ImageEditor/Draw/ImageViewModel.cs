@@ -227,7 +227,6 @@ namespace ColorVision.ImageEditor
         public void Print() => _fileOperations.Print();
 
         public void Save(string file) => ImageView.Save(file);
-
         public void ClearImage() => _fileOperations.ClearImage(ToolBarScaleRuler, ClearImageEventHandler);
         
         #endregion

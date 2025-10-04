@@ -1,4 +1,5 @@
 ﻿using ColorVision.UI;
+using ColorVision.UI.Menus;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -13,7 +14,7 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
 
         public int Order { get; set; } = 1;
 
-        public object Icon { get; set; } = new Image() { Source = (DrawingImage)Application.Current.FindResource("DrawingImageSave") };
+        public object? Icon { get; set; } = MenuItemIcon.TryFindResource("DISave");
 
         public ICommand? Command { get; set; } = ApplicationCommands.SaveAs;
     }

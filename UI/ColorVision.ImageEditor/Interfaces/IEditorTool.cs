@@ -38,7 +38,7 @@ namespace ColorVision.UI
         public string? GuidId { get; }
         public int Order { get; }
 
-        public object Icon { get; }
+        public object? Icon { get; }
         public ICommand? Command { get; }
     }
 
@@ -49,6 +49,8 @@ namespace ColorVision.UI
     
     public static class ToolBarLocalExtensions
     {
+
+
         public static ToolBar? GetRegionToolBar(this ImageView imageView, ToolBarLocal loc)
         {
             return loc switch
@@ -132,6 +134,14 @@ namespace ColorVision.UI
                 ToolBarLocal.Right => new Thickness(0, 5, 0, 0),
                 _ => new Thickness(5, 0, 0, 0)
             };
+        }
+
+        public static Image GetImageFromResource(string resourcePath)
+        {
+            var image = new Image();
+            // 动态资源引用，资源变更时自动更新
+            image.SetResourceReference(Image.SourceProperty, resourcePath);
+            return image;
         }
     }
 

@@ -11,7 +11,10 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
         {
             var MenuItemMetadatas = new  List<MenuItemMetadata>();
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenImage", Order = 10, Header = Properties.Resources.Open, Command = ApplicationCommands.Open , Icon = MenuItemIcon.TryFindResource("DIOpen") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "SaveAsImage", Order = 300, Header = Properties.Resources.SaveAsImage, Command = ApplicationCommands.SaveAs });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "SaveAsImage", Order = 300, Header = Properties.Resources.SaveAsImage, Command = ApplicationCommands.SaveAs ,Icon = MenuItemIcon.TryFindResource("DISave") });
+
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 11, Header = Properties.Resources.Clear, Command = ApplicationCommands.Close, Icon = MenuItemIcon.TryFindResource("DIDelete") });
+
             return MenuItemMetadatas;
         }
     }

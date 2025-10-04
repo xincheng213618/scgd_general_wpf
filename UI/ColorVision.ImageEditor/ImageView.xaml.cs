@@ -116,6 +116,7 @@ namespace ColorVision.ImageEditor
 
             this.CommandBindings.Add(new CommandBinding( ApplicationCommands.Open, (s, e) => OpenImage(),(s, e) => { e.CanExecute = true; }));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = true; }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
 
         }
 
