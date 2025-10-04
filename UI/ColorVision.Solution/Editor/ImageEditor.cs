@@ -51,7 +51,7 @@ namespace ColorVision.Solution.Editor
                 };
                 layoutDocument.Closing += async (s, e) =>
                 {
-                    imageView.ImageViewModel.ClearImageCommand.Execute(null);
+                    imageView.Clear();
                     await Task.Delay(10);
                     imageView.Dispose();
                 };

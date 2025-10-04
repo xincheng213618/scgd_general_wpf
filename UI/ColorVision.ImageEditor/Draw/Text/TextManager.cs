@@ -27,7 +27,7 @@ namespace ColorVision.ImageEditor.Draw
     public class TextManager : ViewModelBase, IDisposable, IDrawEditor
     {
         public TextManagerConfig Config { get; set; } = new TextManagerConfig();
-        private ZoomboxSub Zoombox { get; set; }
+        private Zoombox Zoombox { get; set; }
         private DrawCanvas DrawCanvas { get; set; }
         public ImageViewModel ImageViewModel { get; set; }
 
@@ -35,7 +35,7 @@ namespace ColorVision.ImageEditor.Draw
         private Point MouseDownP;
         private bool IsMouseDown;
 
-        public TextManager(ImageViewModel imageViewModel, ZoomboxSub zoombox, DrawCanvas drawCanvas)
+        public TextManager(ImageViewModel imageViewModel, Zoombox zoombox, DrawCanvas drawCanvas)
         {
             Zoombox = zoombox;
             DrawCanvas = drawCanvas;

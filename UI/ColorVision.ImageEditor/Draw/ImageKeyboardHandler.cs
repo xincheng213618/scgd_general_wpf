@@ -1,6 +1,3 @@
-using ColorVision.Common.MVVM;
-using ColorVision.ImageEditor.Draw;
-using Gu.Wpf.Geometry;
 using System;
 using System.IO;
 using System.Linq;
@@ -17,25 +14,19 @@ namespace ColorVision.ImageEditor
     {
         private readonly ImageView _imageView;
         private readonly ImageViewModel _viewModel;
-        private readonly ZoomboxSub _zoomboxSub;
+        private readonly Zoombox _zoomboxSub;
         private readonly ImageViewConfig _config;
-        private readonly RelayCommand _zoomInCommand;
-        private readonly RelayCommand _zoomOutCommand;
 
         public ImageKeyboardHandler(
             ImageView ImageView,
             ImageViewModel viewModel,
-            ZoomboxSub zoomboxSub,
-            ImageViewConfig config,
-            RelayCommand zoomInCommand,
-            RelayCommand zoomOutCommand)
+            Zoombox zoomboxSub,
+            ImageViewConfig config)
         {
             _imageView = ImageView ?? throw new ArgumentNullException(nameof(ImageView));
             _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
             _zoomboxSub = zoomboxSub ?? throw new ArgumentNullException(nameof(zoomboxSub));
             _config = config ?? throw new ArgumentNullException(nameof(config));
-            _zoomInCommand = zoomInCommand ?? throw new ArgumentNullException(nameof(zoomInCommand));
-            _zoomOutCommand = zoomOutCommand ?? throw new ArgumentNullException(nameof(zoomOutCommand));
         }
 
         /// <summary>
@@ -46,13 +37,13 @@ namespace ColorVision.ImageEditor
         public void HandleKeyDown(object sender, KeyEventArgs e)
         {
             // F11全屏处理
-            if (e.Key == Key.F11)
-            {
-                if (!_viewModel.IsMax)
-                    _viewModel.FullCommand.Execute(null);
-                e.Handled = true;
-                return;
-            }
+            //if (e.Key == Key.F11)
+            //{
+            //    if (!_viewModel.IsMax)
+            //        _viewModel.FullCommand.Execute(null);
+            //    e.Handled = true;
+            //    return;
+            //}
 
             // 编辑模式下的键盘操作
             if (_viewModel.ImageEditMode)
@@ -71,17 +62,7 @@ namespace ColorVision.ImageEditor
         /// </summary>
         private void HandleEditModeKeyDown(KeyEventArgs e)
         {
-            if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Add || e.Key == Key.I))
-            {
-                _zoomInCommand.RaiseExecute(e);
-                e.Handled = true;
-            }
-            else if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Subtract || e.Key == Key.O))
-            {
-                _zoomOutCommand.RaiseExecute(e);
-                e.Handled = true;
-            }
-            else if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Left || e.Key == Key.A))
+             if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Left || e.Key == Key.A))
             {
                 MoveView(-10, 0);
                 e.Handled = true;
@@ -108,17 +89,7 @@ namespace ColorVision.ImageEditor
         /// </summary>
         private void HandleBrowseModeKeyDown(KeyEventArgs e)
         {
-            if (e.Key == Key.Add)
-            {
-                _zoomInCommand.RaiseExecute(e);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Subtract)
-            {
-                _zoomOutCommand.RaiseExecute(e);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Left)
+            if (e.Key == Key.Left)
             {
                 MoveView(-10, 0);
                 e.Handled = true;

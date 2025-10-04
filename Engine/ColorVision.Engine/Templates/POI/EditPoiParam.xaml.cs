@@ -64,7 +64,7 @@ namespace ColorVision.Engine.Templates.POI
 
         public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
 
-        public ZoomboxSub Zoombox1 => ImageView.Zoombox1;
+        public Zoombox Zoombox1 => ImageView.Zoombox1;
 
         public DrawCanvas ImageShow => ImageView.ImageShow;
         public ImageViewModel ImageViewModel => ImageView.ImageViewModel;

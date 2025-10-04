@@ -3,7 +3,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ColorVision.ImageEditor
+namespace ColorVision.ImageEditor.EditorTools.Rotate
 {
     /// <summary>
     /// 图像变换操作类，处理旋转、翻转等图像变换操作

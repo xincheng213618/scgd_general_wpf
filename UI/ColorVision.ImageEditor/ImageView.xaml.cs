@@ -60,8 +60,6 @@ namespace ColorVision.ImageEditor
         {
             ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow);
 
-            AdvancedStackPanel.Children.Insert(0, ImageViewModel.SlectStackPanel);
-
             DataContext = ImageViewModel;
             Config.ColormapTypesChanged -= Config_ColormapTypesChanged;
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
@@ -113,7 +111,67 @@ namespace ColorVision.ImageEditor
             ComboxeType.ItemsSource = from e1 in Enum.GetValues(typeof(MagnigifierType)).Cast<MagnigifierType>()
                                       select new KeyValuePair<MagnigifierType, string>(e1, e1.ToString());
 
-            
+            this.CommandBindings.Add(new CommandBinding( ApplicationCommands.Open, (s, e) => OpenImage(),(s, e) => { e.CanExecute = true; }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = true; }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
+            CommandBindings.Add(new CommandBinding( ApplicationCommands.Print,(s, e) => Print(), (s, e) => { e.CanExecute = true; }));
+        }
+        /// <summary>
+        /// 打印图像
+        /// </summary>
+        public void Print()
+        {
+            PrintDialog printDialog = new();
+            if (printDialog.ShowDialog() == true)
+            {
+                // 创建一个可打印的区域
+                Size pageSize = new(printDialog.PrintableAreaWidth, printDialog.PrintableAreaHeight);
+                ImageShow.Measure(pageSize);
+                ImageShow.Arrange(new Rect(5, 5, pageSize.Width, pageSize.Height));
+
+                // 开始打印
+                printDialog.PrintVisual(ImageShow, "Printing");
+            }
+        }
+        public void OpenImage()
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.RestoreDirectory = true;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                OpenImage(openFileDialog.FileName);
+            }
+        }
+
+        /// <summary>
+        /// 显示"另存为"对话框
+        /// </summary>
+        public void SaveAs()
+        {
+            using var dialog = new System.Windows.Forms.SaveFileDialog();
+            dialog.Filter = "Png (*.png) | *.png";
+            dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+            dialog.RestoreDirectory = true;
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            Save(dialog.FileName);
+        }
+
+        /// <summary>
+        /// 保存图像到指定文件
+        /// </summary>
+        /// <param name="fileName">文件路径</param>
+        public void Save(string fileName)
+        {
+            RenderTargetBitmap renderTargetBitmap = new((int)ImageShow.Width, (int)ImageShow.Height, 96, 96, PixelFormats.Pbgra32);
+            renderTargetBitmap.Render(ImageShow);
+
+            // 创建一个PngBitmapEncoder对象来保存位图为PNG文件
+            PngBitmapEncoder pngEncoder = new();
+            pngEncoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
+
+            // 将PNG内容保存到文件
+            using FileStream fileStream = new(fileName, FileMode.Create);
+            pngEncoder.Save(fileStream);
         }
 
 
@@ -178,11 +236,15 @@ namespace ColorVision.ImageEditor
 
         public void Clear()
         {
+
             Config.Properties.Clear();
             Config.FilePath = string.Empty;
             FunctionImage = null;
             ViewBitmapSource = null;
+            ImageShow.Clear();
             ImageShow.Source = null;
+            ImageShow.UpdateLayout();
+
             if (HImageCache != null)
             {
                 HImageCache?.Dispose();

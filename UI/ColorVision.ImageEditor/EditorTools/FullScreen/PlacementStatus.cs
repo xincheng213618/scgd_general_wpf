@@ -2,9 +2,9 @@
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.ImageEditor
+namespace ColorVision.ImageEditor.EditorTools.FullScreen
 {
-    public class ImagePlacementContext
+    public class PlacementStatus
     {
         public object Root { get; set; }
         public Panel Parent { get; set; }

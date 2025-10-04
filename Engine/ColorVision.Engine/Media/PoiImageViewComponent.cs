@@ -54,7 +54,11 @@ namespace ColorVision.Engine.Templates.POI.Image
                 Task.Run(() => LoadMysql(imageView));
             }
             imageView.ComboxPOITemplate.SelectionChanged += ComboxPOITemplate_SelectionChanged;
-            imageView.ButtonCalculPOI.Click += CalculPOI_Click;
+
+            Button button = new Button() { Content = "POI", Margin = new Thickness(2, 0, 0, 0) };
+            button.Click += CalculPOI_Click;
+            imageView.ToolBarAl.Items.Add(button);
+
 
             async Task LoadMysql(ImageView imageView)
             {

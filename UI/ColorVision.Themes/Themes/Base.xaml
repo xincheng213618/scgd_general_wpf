@@ -12,6 +12,7 @@
     <BooleanToVisibilityConverter x:Key="bool2VisibilityConverter"/>
     <converter:InverseBooleanConverter x:Key="inverseBooleanConverter"/>
     <converter:BooleanToVisibilityReConverter x:Key="bool2VisibilityConverter1"/>
+    
     <Style TargetType="{x:Type AccessText}">
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="SnapsToDevicePixels" Value="True" />

@@ -10,11 +10,11 @@ namespace ColorVision.ImageEditor.Draw.Special
 {
     public class Gridline
     {
-        private ZoomboxSub ZoomboxSub { get; set; }
+        private Zoombox ZoomboxSub { get; set; }
         private DrawCanvas DrawCanvas { get; set; }
 
         public DrawingVisual DrawVisualImage { get; set; }
-        public Gridline(ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public Gridline(Zoombox zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
             DrawCanvas = drawCanvas;

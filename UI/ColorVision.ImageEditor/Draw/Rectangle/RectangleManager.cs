@@ -27,13 +27,13 @@ namespace ColorVision.ImageEditor.Draw
     public class RectangleManager :ViewModelBase, IDisposable, IDrawEditor
     {
         public RectangleManagerConfig Config { get; set; } = new RectangleManagerConfig();
-        private ZoomboxSub Zoombox1 { get; set; }
+        private Zoombox Zoombox1 { get; set; }
         private DrawCanvas DrawCanvas { get; set; }
         public ImageViewModel ImageViewModel { get; set; }
 
         private DVRectangleText DrawingRectangleCache;
 
-        public RectangleManager(ImageViewModel imageEditViewMode, ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public RectangleManager(ImageViewModel imageEditViewMode, Zoombox zombox, DrawCanvas drawCanvas)
         {
             Zoombox1 = zombox;
             DrawCanvas = drawCanvas;

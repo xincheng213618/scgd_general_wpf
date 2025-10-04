@@ -9,14 +9,14 @@ namespace ColorVision.ImageEditor.Draw
 {
     public class PolygonManager : ViewModelBase, IDisposable, IDrawEditor
     {
-        private ZoomboxSub ZoomboxSub { get; set; }
+        private Zoombox ZoomboxSub { get; set; }
         private DrawCanvas DrawCanvas { get; set; }
 
         public DVPolygon? DrawingVisualPolygonCache { get; set; }
 
         public ImageViewModel ImageViewModel { get; set; }
 
-        public PolygonManager(ImageViewModel imageViewModel, ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public PolygonManager(ImageViewModel imageViewModel, Zoombox zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
             DrawCanvas = drawCanvas;

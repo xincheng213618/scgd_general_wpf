@@ -4,6 +4,8 @@ using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.ImageEditor.EditorTools.Rotate;
+using ColorVision.ImageEditor.EditorTools.FullScreen;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -20,22 +22,9 @@ namespace ColorVision.ImageEditor
         private readonly Guid _guid = Guid.NewGuid();
 
         #region Commands
-        public RelayCommand ZoomUniformToFill { get; set; }
-        public RelayCommand ZoomUniformCommand { get; set; }
-        public RelayCommand ZoomInCommand { get; set; }
-        public RelayCommand ZoomOutCommand { get; set; }
-        public RelayCommand ZoomNoneCommand { get; set; }
 
-        public RelayCommand FullCommand { get; set; }
-        public RelayCommand RotateLeftCommand { get; set; }
-        public RelayCommand RotateRightCommand { get; set; }
-        public RelayCommand FlipHorizontalCommand { get; set; }
-        public RelayCommand FlipVerticalCommand { get; set; }
-        public RelayCommand SaveAsImageCommand { get; set; }
         public RelayCommand ClearImageCommand { get; set; }
         public RelayCommand PrintImageCommand { get; set; }
-        public RelayCommand PropertyCommand { get; set; }
-        public RelayCommand OpenImageCommand { get; set; }
         #endregion
 
         #region Events
@@ -43,7 +32,7 @@ namespace ColorVision.ImageEditor
         #endregion
 
         #region Components
-        public ZoomboxSub ZoomboxSub { get; set; }
+        public Zoombox ZoomboxSub { get; set; }
         public DrawCanvas Image { get; set; }
         public BezierCurveManager BezierCurveManager { get; set; }
         public CircleManager CircleManager { get; set; }
@@ -61,6 +50,8 @@ namespace ColorVision.ImageEditor
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
         public SelectEditorVisual SelectEditorVisual { get; set; }
         public StackPanel SlectStackPanel { get; set; } = new StackPanel();
+        public ImageFullScreenMode ImageFullScreenMode { get; set; }
+
         #endregion
 
         #region Properties
@@ -74,57 +65,66 @@ namespace ColorVision.ImageEditor
 
         #region Helper Classes
         private ImageTransformOperations _transformOperations;
-        private ImageFileOperations _fileOperations;
-        private ImageFullScreenMode _fullScreenMode;
         private ImageContextMenuManager _contextMenuManager;
         private ImageKeyboardHandler _keyboardHandler;
         #endregion
 
-        public ImageViewModel(ImageView Parent, ZoomboxSub zoombox, DrawCanvas drawCanvas)
+        public IEditorToolFactory IEditorToolFactory { get; set; }
+
+        public ImageViewModel(ImageView imageView, Zoombox zoombox, DrawCanvas drawCanvas)
         {
-            // ?????????
-            this.ImageView = Parent;
+
+            var context = new EditorContext()
+            {
+                ImageViewModel = this,
+                DrawCanvas = drawCanvas,
+                ZoomboxSub = zoombox
+            };
+            IEditorToolFactory = new IEditorToolFactory(imageView, context);
+
+
+            this.ImageView = imageView;
             ZoomboxSub = zoombox;
             Image = drawCanvas;
             Config = new ImageViewConfig();
             ContextMenu = new ContextMenu();
 
-            // ???????????
             _transformOperations = new ImageTransformOperations(drawCanvas);
-            _fileOperations = new ImageFileOperations(drawCanvas, Parent);
-            _fullScreenMode = new ImageFullScreenMode(Parent);
+            ImageFullScreenMode = new ImageFullScreenMode(imageView);
 
-            // ?????????????????
             RegisterContextMenuProviders();
-            
-            // ???????????
+
+            imageView.AdvancedStackPanel.Children.Add(SlectStackPanel);
+
+
             SelectEditorVisual = new SelectEditorVisual(this, drawCanvas, zoombox);
 
-            // ?????????
-            SetupCommandBindings(drawCanvas);
-            // ????????
-            CreateCommands();
 
-            _keyboardHandler = new ImageKeyboardHandler(Parent, this, ZoomboxSub, Config, ZoomInCommand, ZoomOutCommand);
+            _keyboardHandler = new ImageKeyboardHandler(imageView, this, ZoomboxSub, Config);
 
-            // ??????????????
-            SetupInputHandling(drawCanvas);
+            drawCanvas.PreviewMouseDown += (s, e) =>
+            {
+                Keyboard.ClearFocus();
+                drawCanvas.Focus();
+            };
 
-            // ?????????????????$
+            drawCanvas.PreviewKeyDown += (s, e) =>
+            {
+                Keyboard.ClearFocus();
+                drawCanvas.Focus();
+            };
+
+            drawCanvas.PreviewKeyDown += _keyboardHandler.HandleKeyDown;
+
+
             InitializeTools(zoombox, drawCanvas);
 
 
-
-            // ????????????
             _contextMenuManager = new ImageContextMenuManager(this, drawCanvas, ContextMenu, ContextMenuProviders);
             Image.ContextMenuOpening += _contextMenuManager.HandleContextMenuOpening;
             Image.ContextMenu = ContextMenu;
             ZoomboxSub.ContextMenu = ContextMenu;
-
-            // ???¨°?????????
             ZoomboxSub.LayoutUpdated += Zoombox1_LayoutUpdated;
-
-            // ?????????????$
         }
 
         double oldMax;
@@ -177,47 +177,7 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private void SetupCommandBindings(DrawCanvas drawCanvas)
-        {
-            drawCanvas.CommandBindings.Add(new CommandBinding(
-                ApplicationCommands.Print, 
-                (s, e) => Print(), 
-                (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
-                
-            drawCanvas.CommandBindings.Add(new CommandBinding(
-                ApplicationCommands.SaveAs, 
-                (s, e) => SaveAs(), 
-                (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
-                
-            drawCanvas.CommandBindings.Add(new CommandBinding(
-                ApplicationCommands.Open, 
-                (s, e) => OpenImage(), 
-                (s, e) => { e.CanExecute = true; }));
-                
-            drawCanvas.CommandBindings.Add(new CommandBinding(
-                ApplicationCommands.Close, 
-                (s, e) => ClearImage(), 
-                (s, e) => { e.CanExecute = Image.Source != null; }));
-        }
-
-        private void SetupInputHandling(DrawCanvas drawCanvas)
-        {
-            drawCanvas.PreviewMouseDown += (s, e) =>
-            {
-                Keyboard.ClearFocus(); // ??????????
-                drawCanvas.Focus();
-            };
-            
-            drawCanvas.PreviewKeyDown += (s, e) =>
-            {
-                Keyboard.ClearFocus(); // ??????????
-                drawCanvas.Focus();
-            };
-            
-            drawCanvas.PreviewKeyDown += _keyboardHandler.HandleKeyDown;
-        }
-
-        private void InitializeTools(ZoomboxSub zoombox, DrawCanvas drawCanvas)
+        private void InitializeTools(Zoombox zoombox, DrawCanvas drawCanvas)
         {
             MouseMagnifier = new MouseMagnifier(zoombox, drawCanvas);
             Crosshair = new Crosshair(zoombox, drawCanvas);
@@ -235,54 +195,11 @@ namespace ColorVision.ImageEditor
             TextManager = new TextManager(this, zoombox, drawCanvas); // ³õÊ¼»¯ TextManager
         }
 
-        private void CreateCommands()
-        {
-            // ????????
-            ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill(), a => Image != null && Image.Source != null);
-            ZoomUniformCommand = new RelayCommand(a => ZoomboxSub.ZoomUniform(), a => Image != null && Image.Source != null);
-            ZoomInCommand = new RelayCommand(a => ZoomboxSub.Zoom(1.25), a => Image != null && Image.Source != null);
-            ZoomOutCommand = new RelayCommand(a => ZoomboxSub.Zoom(0.8), a => Image != null && Image.Source != null);
-            ZoomNoneCommand = new RelayCommand(a => ZoomboxSub.ZoomNone(), a => Image != null && Image.Source != null);
-
-            // ??????????
-// ...existing code...
-            FlipVerticalCommand = new RelayCommand(a => _transformOperations.FlipVertical(), a => Image != null && Image.Source != null);
-            RotateLeftCommand = new RelayCommand(a => _transformOperations.RotateLeft());
-            RotateRightCommand = new RelayCommand(a => _transformOperations.RotateRight());
-            
-            // ???????????
-// ...existing code...
-            OpenImageCommand = new RelayCommand(a => OpenImage());
-            SaveAsImageCommand = new RelayCommand(a => SaveAs(), a => Image != null && Image.Source != null);
-            PrintImageCommand = new RelayCommand(a => Print(), a => Image != null && Image.Source != null);
-            ClearImageCommand = new RelayCommand(a => ClearImage(), a => Image != null && Image.Source != null);
-            
-            // ????????
-            PropertyCommand = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(ImageView), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
-            FullCommand = new RelayCommand(a => MaxImage());
-        }
-
         #region Public Methods
-        
-        public void OpenImage() => _fileOperations.OpenImage();
-        
-        public void Print() => _fileOperations.Print();
-        
-        public void SaveAs() => _fileOperations.SaveAs();
-        
-        public void Save(string fileName) => _fileOperations.Save(fileName);
-        
-        public void FlipHorizontal() => _transformOperations.FlipHorizontal();
-        
-        public void FlipVertical() => _transformOperations.FlipVertical();
-        
-        public void RotateRight() => _transformOperations.RotateRight();
-        
-        public void RotateLeft() => _transformOperations.RotateLeft();
-        
-        public void MaxImage() => _fullScreenMode.ToggleFullScreen();
-        
-        public void ClearImage() => _fileOperations.ClearImage(ToolBarScaleRuler, ClearImageEventHandler);
+                
+        public void Save(string file) => ImageView.Save(file);
+        public void ClearImage() => ImageView.Clear();
+
         
         #endregion
 

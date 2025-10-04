@@ -217,22 +217,6 @@ namespace ColorVision.Engine.Services.Flow
 
             FlowEngineControl.AttachNodeEditor(STNodeEditorMain);
 
-            ImageView.ToolBarTop.Visibility = Visibility.Collapsed;
-            ImageView.ToolBarRight.Visibility = Visibility.Collapsed;
-            ImageView.ToolBarLeft.Visibility = Visibility.Collapsed;
-            ImageView.ToolBarAl.Visibility = Visibility.Collapsed;
-
-            ImageView.SetImageSource(new BitmapImage(new Uri("/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy.png", UriKind.Relative)));
-            ImageView.ImageViewModel.ToolBarScaleRuler.IsShow = false;
-
-            STNodeEditorMain.Paint += (s, e) =>
-            {
-                DebounceTimer.AddOrResetTimer("RenderMiniMap", 100, ()=> Application.Current?.Dispatcher.BeginInvoke(() =>
-                {
-                    ImageView.ImageShow.Source = RenderMiniMap();
-                }));
-            };
-
 
             View = new View();
             ViewGridManager.GetInstance().AddView(0, this);

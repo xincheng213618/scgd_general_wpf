@@ -21,13 +21,13 @@ namespace ColorVision.ImageEditor.Draw
     public class CircleManager: ViewModelBase, IDisposable, IDrawEditor
     {
         public CircleManagerConfig Config { get; set; } = new CircleManagerConfig();
-        private ZoomboxSub Zoombox1 { get; set; }
+        private Zoombox Zoombox1 { get; set; }
         private DrawCanvas DrawCanvas { get; set; }
         public ImageViewModel ImageViewModel { get; set; }
 
         private DVCircleText DrawCircleCache;
 
-        public CircleManager(ImageViewModel imageEditViewMode, ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public CircleManager(ImageViewModel imageEditViewMode, Zoombox zombox, DrawCanvas drawCanvas)
         {
             Zoombox1 = zombox;
             DrawCanvas = drawCanvas;

@@ -71,125 +71,78 @@
             <Grid Background="{StaticResource SmallGridLinesDrawingBrush}"  Visibility="Collapsed"/>
 
             <Grid x:Name="ZoomGrid" Background="{StaticResource TransparentGridBrush}">
-                <local:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}" Grid.Row="1" Grid.RowSpan="2">
+                <local:Zoombox x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}" Grid.Row="1" Grid.RowSpan="2">
                     <local:DrawCanvas x:Name="ImageShow"  x:FieldModifier="public" FocusVisualStyle="{x:Null}"   RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto">
                     </local:DrawCanvas>
-                </local:ZoomboxSub>
+
+                </local:Zoombox>
                 
                 <ComboBox x:Name="ComboBoxLayers" HorizontalAlignment="Right" VerticalAlignment="Top"  Style="{StaticResource ComboBox.Small}" x:FieldModifier="public"  SelectedIndex="0" Margin="5"/>
-                <ToolBarTray  x:Name="ToolBarAl"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Left" Visibility="Visible">
-                    <ToolBar Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" >
-                        <StackPanel Orientation="Horizontal" >
-                            <ComboBox x:Name="ComboxPOITemplate"  x:FieldModifier="public" Width="100" Style="{StaticResource ComboBox.Small}" HorizontalAlignment="Left" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
-                            <Button x:Name="ButtonCalculPOI"  x:FieldModifier="public" Content="POI"/>
-                        </StackPanel>
-                    </ToolBar>
-                </ToolBarTray>
+                <ToolBar x:Name="ToolBarAl"  x:FieldModifier="public" Style="{StaticResource ToolBarBaseStyle}" Background="Transparent" ToolBarTray.IsLocked="True"  VerticalAlignment="Bottom" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Left" Visibility="Visible">
+                    <ComboBox x:Name="ComboxPOITemplate"  x:FieldModifier="public" Width="100" HorizontalAlignment="Left" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
+                </ToolBar>
 
-                <Border x:Name="ToolBarBottom"  Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}" Padding="2" CornerRadius="5" Background="{DynamicResource SecondaryRegionBrush}"  HorizontalAlignment="Center" VerticalAlignment="Bottom"  Margin="0,0,0,10">
-                    <Grid>
-                        <StackPanel Orientation="Horizontal" >
-                            <ToggleButton  IsChecked="{Binding MeasureManager.IsShow}" Padding="5" Margin="0,0,2,0" >
-                                <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageruler}"/>
-                            </ToggleButton>
-                            <ToggleButton  IsChecked="{Binding EraseManager.IsShow}" Padding="5" Margin="0,0,2,0"  Click="Button7_Click">
-                                <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageeraser}"/>
-                            </ToggleButton>
-                            <ToggleButton IsChecked="{Binding CircleManager.IsShow}" Padding="5" Margin="0,0,2,0" >
-                                <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageCircle}"  />
-                            </ToggleButton>
-                            <ToggleButton IsChecked="{Binding RectangleManager.IsShow}" Padding="5" Margin="0,0,2,0" >
-                                <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageRect}"/>
-                            </ToggleButton>
-                            <ToggleButton IsChecked="{Binding PolygonManager.IsShow}"  Padding="5" Margin="0,0,2,0"  >
-                                <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}" />
-                            </ToggleButton>
-                            <ToggleButton IsChecked="{Binding LineManager.IsShow}" Content="L" Width="30"  Padding="5" Margin="0,0,2,0"  >
-                            </ToggleButton>
-                            <ToggleButton IsChecked="{Binding TextManager.IsShow}" Content="T" Width="30" Padding="5" Margin="0,0,2,0"  >
-                            </ToggleButton>
-                            
-                            <ToggleButton IsChecked="{Binding BezierCurveManager.IsShow}" Padding="5" Margin="0,0,2,0">
-                                <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}" />
-                            </ToggleButton>
+                <Border  Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}" Padding="2" CornerRadius="5" Background="{DynamicResource SecondaryRegionBrush}"  HorizontalAlignment="Center" VerticalAlignment="Bottom"  Margin="0,0,0,10">
+                    <StackPanel Orientation="Horizontal" x:Name="ToolBarBottom"  >
+                        <ToggleButton  IsChecked="{Binding MeasureManager.IsShow}" Padding="5" Margin="0,0,2,0" >
+                            <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageruler}"/>
+                        </ToggleButton>
+                        <ToggleButton  IsChecked="{Binding EraseManager.IsShow}" Padding="5" Margin="0,0,2,0" Click="Button7_Click">
+                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageeraser}"/>
+                        </ToggleButton>
+                        <ToggleButton IsChecked="{Binding CircleManager.IsShow}" Padding="5" Margin="0,0,2,0" >
+                            <Image Source="{DynamicResource DrawingImageCircle}"  />
+                        </ToggleButton>
+                        <ToggleButton IsChecked="{Binding RectangleManager.IsShow}" Padding="5" Margin="0,0,2,0" >
+                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageRect}"/>
+                        </ToggleButton>
+                        <ToggleButton IsChecked="{Binding PolygonManager.IsShow}"  Padding="5" Margin="0,0,2,0"  >
+                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}" />
+                        </ToggleButton>
+                        <ToggleButton IsChecked="{Binding LineManager.IsShow}" Content="L" Width="30"  Padding="5" Margin="0,0,2,0"  />
 
-                            <Button x:Name="reference"  Click="reference_Click" Padding="5"   >
-                                <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource ConcentricCirclesDrawImg}" />
-                            </Button>
-                            <Popup x:Name="menuPop1" StaysOpen="False" Margin="0" PlacementTarget="{Binding ElementName=reference}"  AllowsTransparency="True">
-                                <StackPanel Margin="0">
-                                    <Button Content="无" Command="{Binding ToolConcentricCircle.SelectNoneCommand}" Click="reference1_Click" Width="80" Tag="-1"/>
-                                    <Button Content="十字准线" Command="{Binding ToolConcentricCircle.Select2Command}" Click="reference1_Click" Width="80" Tag="2"/>
-                                    <Button Content="同心圆" Command="{Binding ToolConcentricCircle.Select0Command}" Click="reference1_Click" Width="80" Tag="0"/>
-                                    <Button Content="单十字准线" Command="{Binding ToolConcentricCircle.Select1Command}" Click="reference1_Click" Width="80"  Tag="1"/>
-                                    <Button Content="锁定" Command="{Binding ToolConcentricCircle.LockCommand}" Click="reference1_Click" Width="80"  Tag="1"/>
-                                </StackPanel>
-                            </Popup>
-                            <Button Click="EditDIExpand_Click" Padding="5"   >
-                                <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DIExpand}" />
-                            </Button>
-                        </StackPanel>
+                        <ToggleButton IsChecked="{Binding TextManager.IsShow}" Content="T" Width="30" Padding="5" Margin="0,0,2,0"  />
 
-                    </Grid>
+
+                        <ToggleButton IsChecked="{Binding BezierCurveManager.IsShow}" Padding="5" Margin="0,0,2,0">
+                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}" />
+                        </ToggleButton>
+
+                        <Button x:Name="reference"  Click="reference_Click" Padding="5"   >
+                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource ConcentricCirclesDrawImg}" />
+                        </Button>
+                        <Popup x:Name="menuPop1" StaysOpen="False" Margin="0" PlacementTarget="{Binding ElementName=reference}"  AllowsTransparency="True">
+                            <StackPanel Margin="0">
+                                <Button Content="无" Command="{Binding ToolConcentricCircle.SelectNoneCommand}" Click="reference1_Click" Width="80" Tag="-1"/>
+                                <Button Content="十字准线" Command="{Binding ToolConcentricCircle.Select2Command}" Click="reference1_Click" Width="80" Tag="2"/>
+                                <Button Content="同心圆" Command="{Binding ToolConcentricCircle.Select0Command}" Click="reference1_Click" Width="80" Tag="0"/>
+                                <Button Content="单十字准线" Command="{Binding ToolConcentricCircle.Select1Command}" Click="reference1_Click" Width="80"  Tag="1"/>
+                                <Button Content="锁定" Command="{Binding ToolConcentricCircle.LockCommand}" Click="reference1_Click" Width="80"  Tag="1"/>
+                            </StackPanel>
+                        </Popup>
+                        <Button Click="EditDIExpand_Click" Padding="5"   >
+                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DIExpand}" />
+                        </Button>
+                    </StackPanel>
+
                 </Border>
-
-
-                <ToolBarTray x:Name="ToolBarTop" x:FieldModifier="public"  VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
-                    <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True">
+                <ToolBarTray x:Name="ToolBarTop" VerticalAlignment="Top" Grid.Row="0"  HorizontalAlignment="Center">
+                    <ToolBar  ToolBarTray.IsLocked="True" Margin="0,2,4,0" >
                         <ToggleButton IsChecked="{Binding ImageEditMode}"  Margin="1,0">
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
                         </ToggleButton>
-                        <ToggleButton  IsChecked="{Binding MouseMagnifier.IsShow}" Margin="1,0" >
-                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMouse}"  Margin="-5"/>
+                        <ToggleButton  IsChecked="{Binding MouseMagnifier.IsShow}" Margin="1,0"  Height="27" Width="27" Padding="3">
+                            <Image  Source="{DynamicResource DrawingImageMouse}"/>
                         </ToggleButton>
-                        <Button Command="{Binding ZoomUniformCommand}"  Margin="1,0">
-                            <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImage1_1}"  Margin="-5"/>
-                        </Button>
-                        <Button Command="{Binding ZoomInCommand}"  Margin="1,0">
-                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagezoom_in}"   Margin="-5"/>
-                        </Button>
-                        <Button  Command="{Binding ZoomOutCommand}"  Margin="1,0">
-                            <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagezoom_out}"  Margin="-5"/>
-                        </Button>
-                        <Button Command="{Binding ZoomNoneCommand}"  Margin="1,0">
-                            <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageexpend}"  Margin="-5"/>
-                        </Button>
-                        <ToggleButton Command="{Binding FullCommand}" Margin="1,0" >
-                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMax}"  Margin="-5"/>
-                        </ToggleButton>
-                        <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}"/>
-                        <Button   Command="{Binding PropertyCommand}" Margin="1,0" Padding="5">
-                            <Button.Triggers>
-                                <EventTrigger RoutedEvent="Button.Click">
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </EventTrigger>
-                            </Button.Triggers>
-                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
-                                <TextBlock.RenderTransform>
-                                    <RotateTransform x:Name="rotateTransform2" CenterX="8" CenterY="8"/>
-                                </TextBlock.RenderTransform>
-                            </TextBlock>
-                        </Button>
                         <ToggleButton IsChecked="{Binding Gridline.IsShow}">
                             <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIGridlines}"  Margin="-5"/>
                         </ToggleButton>
+                        <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}"/>
                     </ToolBar>
                 </ToolBarTray>
-                <ToolBarTray x:Name="ToolBarRight" x:FieldModifier="public"  HorizontalAlignment="Left" Orientation="Vertical" Margin="2,50,0,0"  VerticalAlignment="Top">
-                    <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
-                        <Button Command="{Binding OpenImageCommand}" Margin="0,0,0,2" Padding="5">
-                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource openDrawingImage}" />
-                        </Button>
-                        <Button Command="{Binding SaveAsImageCommand}" Margin="0,0,0,2" Padding="5">
-                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageSave}" />
-                        </Button>
-                        <Button Command="{Binding ClearImageCommand}" Margin="0,0,0,2" Padding="5">
-                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageClear}" />
-                        </Button>
+
+                <ToolBarTray x:Name="ToolBarRight" HorizontalAlignment="Left" Orientation="Vertical" Margin="2,50,0,0"  VerticalAlignment="Top">
+                    <ToolBar ToolBarTray.IsLocked="True" Padding="2,3"  >
                     </ToolBar>
                 </ToolBarTray>
 

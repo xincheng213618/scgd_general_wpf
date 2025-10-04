@@ -9,14 +9,14 @@ namespace ColorVision.ImageEditor.Draw
 {
     public class BezierCurveManager:  ViewModelBase, IDisposable, IDrawEditor
     {
-        private ZoomboxSub ZoomboxSub { get; set; }
+        private Zoombox ZoomboxSub { get; set; }
         private DrawCanvas DrawCanvas { get; set; }
 
         public DrawingVisual BezierCurveImpCache { get; set; }
 
         public ImageViewModel ImageViewModel { get; set; }
 
-        public BezierCurveManager(ImageViewModel imageViewModel, ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public BezierCurveManager(ImageViewModel imageViewModel, Zoombox zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
             DrawCanvas = drawCanvas;

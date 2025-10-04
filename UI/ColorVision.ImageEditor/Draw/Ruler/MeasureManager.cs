@@ -6,14 +6,14 @@ namespace ColorVision.ImageEditor.Draw.Ruler
 {
     public class MeasureManager:ViewModelBase,IDrawEditor
     {
-        private ZoomboxSub Zoombox1 { get; set; }
+        private Zoombox Zoombox1 { get; set; }
         private DrawCanvas DrawCanvas { get; set; }
 
         private ImageViewModel ImageViewModel { get; set; }
 
         private DrawingVisualRuler? RulerCache;
 
-        public MeasureManager(ImageViewModel imageViewModel, ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public MeasureManager(ImageViewModel imageViewModel, Zoombox zombox, DrawCanvas drawCanvas)
         {
             ImageViewModel = imageViewModel;
             Zoombox1 = zombox;

@@ -105,8 +105,6 @@
                 </StackPanel>
             </Border>
 
-            <im:ImageView x:Name="ImageView" Grid.Row="1"  Height="200"/>
-
             <Border x:Name="SignStackBorder" Grid.Row="3"  Background="{DynamicResource SecondaryRegionBrush}" Visibility="Collapsed" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0" Margin="5,0,5,5" CornerRadius="5">
                 <StackPanel x:Name="SignStackPannel"  Orientation="Vertical" Margin="3" >
                 </StackPanel>
