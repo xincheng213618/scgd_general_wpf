@@ -30,12 +30,27 @@ namespace ColorVision.Scheduler
         void LoadTasks();
     }
 
-    public class QuartzSchedulerConfig : IConfig
+    public class QuartzSchedulerManager : ISchedulerService
     {
-        public static QuartzSchedulerConfig Instance => ConfigService.Instance.GetRequiredService<QuartzSchedulerConfig>();
+        private static QuartzSchedulerManager _instance;
+        private static readonly object _locker = new();
+        public static QuartzSchedulerManager GetInstance() { lock (_locker) { return _instance ??= new QuartzSchedulerManager(); } }
+        private static readonly string ConfigFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scheduler_tasks.json");
         public ObservableCollection<SchedulerInfo> TaskInfos { get; set; } = new ObservableCollection<SchedulerInfo>();
 
-        private static readonly string ConfigFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scheduler_tasks.json");
+        public IScheduler Scheduler { get; set; }
+        public TaskExecutionListener Listener { get; set; }
+        public Dictionary<string, Type> Jobs { get; set; }
+        public RelayCommand PauseAllCommand { get; set; }
+        public RelayCommand ResumeAllCommand { get; set; }
+        public RelayCommand StartCommand { get; set; }
+        public RelayCommand ShutdownCommand { get; set; }
+
+        public QuartzSchedulerManager()
+        {
+            Load();
+            Task.Run(() => Start());
+        }
 
         public void Save()
         {
@@ -57,27 +72,7 @@ namespace ColorVision.Scheduler
                 }
             }
         }
-    }
 
-    public class QuartzSchedulerManager : ISchedulerService
-    {
-        private static QuartzSchedulerManager _instance;
-        private static readonly object _locker = new();
-        public static QuartzSchedulerManager GetInstance() { lock (_locker) { return _instance ??= new QuartzSchedulerManager(); } }
-        public ObservableCollection<SchedulerInfo> TaskInfos => QuartzSchedulerConfig.Instance.TaskInfos;
-        public IScheduler Scheduler { get; set; }
-        public TaskExecutionListener Listener { get; set; }
-        public Dictionary<string, Type> Jobs { get; set; }
-        public RelayCommand PauseAllCommand { get; set; }
-        public RelayCommand ResumeAllCommand { get; set; }
-        public RelayCommand StartCommand { get; set; }
-        public RelayCommand ShutdownCommand { get; set; }
-
-        public QuartzSchedulerManager()
-        {
-            QuartzSchedulerConfig.Instance.Load();
-            Task.Run(() => Start());
-        }
 
         public string GetNewJobName(string jobName)
         {
@@ -151,7 +146,7 @@ namespace ColorVision.Scheduler
             //5s 后恢复任务
             await Task.Delay(5000);
             var failedJobs = new List<string>();
-            foreach (var item in QuartzSchedulerConfig.Instance.TaskInfos)
+            foreach (var item in TaskInfos)
             {
                 try
                 {
@@ -347,12 +342,12 @@ namespace ColorVision.Scheduler
 
         public void SaveTasks()
         {
-            QuartzSchedulerConfig.Instance.Save();
+            Save();
         }
 
         public void LoadTasks()
         {
-            QuartzSchedulerConfig.Instance.Load();
+            Load();
         }
 
         public async Task Stop()

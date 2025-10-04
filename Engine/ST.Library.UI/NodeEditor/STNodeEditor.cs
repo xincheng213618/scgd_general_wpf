@@ -1622,12 +1622,12 @@ public class STNodeEditor : Control
 		if (op.IsInput)
 		{
 			m_pt_dot_down.X = op.DotLeft;
-			m_pt_dot_down.Y = op.DotTop + 5;
+			m_pt_dot_down.Y = op.DotTop + op.DotSize / 2;
 		}
 		else
 		{
 			m_pt_dot_down.X = op.DotLeft + op.DotSize;
-			m_pt_dot_down.Y = op.DotTop + 5;
+			m_pt_dot_down.Y = op.DotTop + op.DotSize / 2;
 		}
 		m_ca = CanvasAction.ConnectOption;
 		m_option_down = op;

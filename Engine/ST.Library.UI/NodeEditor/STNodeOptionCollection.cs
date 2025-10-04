@@ -75,6 +75,7 @@ public class STNodeOptionCollection : IList, ICollection, IEnumerable
 	public STNodeOption Add(string strText, Type dataType, bool bSingle)
 	{
 		int num = Add(new STNodeOption(strText, dataType, bSingle));
+		// ensure option dot size follows editor preference if owner exists
 		return m_options[num];
 	}
 
@@ -91,6 +92,11 @@ public class STNodeOptionCollection : IList, ICollection, IEnumerable
 			num = _Count;
 			option.Owner = m_owner;
 			option.IsInput = m_isInput;
+			// if the node has a larger item height, enlarge dots a bit for better UX
+			if (option.DotSize < 12 && m_owner != null && m_owner.ItemHeight > 20)
+			{
+				option.GetType().GetProperty("DotSize", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public)?.SetValue(option, 16);
+			}
 			m_options[_Count++] = option;
 			Invalidate();
 		}
@@ -114,6 +120,10 @@ public class STNodeOptionCollection : IList, ICollection, IEnumerable
 			{
 				sTNodeOption.Owner = m_owner;
 				sTNodeOption.IsInput = m_isInput;
+				if (sTNodeOption.DotSize < 12 && m_owner != null && m_owner.ItemHeight > 20)
+				{
+					sTNodeOption.GetType().GetProperty("DotSize", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public)?.SetValue(sTNodeOption, 16);
+				}
 				m_options[_Count++] = sTNodeOption;
 			}
 		}
