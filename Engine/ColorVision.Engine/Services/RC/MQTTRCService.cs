@@ -112,9 +112,10 @@ namespace ColorVision.Engine.Services.RC
                     switch (json.EventName)
                     {
                         case MQTTNodeServiceEventEnum.Event_Regist:
-                            MQTTNodeServiceRegistResponse resp = JsonConvert.DeserializeObject<MQTTNodeServiceRegistResponse>(Msg);
+                            //MQTTNodeServiceRegistResponse resp = JsonConvert.DeserializeObject<MQTTNodeServiceRegistResponse>(Msg);
                             break;
                         case MQTTNodeServiceEventEnum.Event_Startup:
+
                             MQTTNodeServiceStartupRequest req = JsonConvert.DeserializeObject<MQTTNodeServiceStartupRequest>(Msg);
                             if (req != null)
                             {
