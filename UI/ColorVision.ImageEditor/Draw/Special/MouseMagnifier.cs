@@ -35,13 +35,13 @@ namespace ColorVision.ImageEditor.Draw.Special
     /// </summary>
     public class MouseMagnifier
     {
-        private ZoomboxSub ZoomboxSub { get; set; }
+        private Zoombox ZoomboxSub { get; set; }
         private DrawCanvas Image { get; set; }
 
         public DrawingVisual DrawVisualImage { get; set; }
 
         public event MouseMoveColorHandler MouseMoveColorHandler;
-        public MouseMagnifier(ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public MouseMagnifier(Zoombox zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
             Image = drawCanvas;

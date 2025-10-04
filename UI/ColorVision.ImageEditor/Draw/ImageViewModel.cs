@@ -32,7 +32,7 @@ namespace ColorVision.ImageEditor
         #endregion
 
         #region Components
-        public ZoomboxSub ZoomboxSub { get; set; }
+        public Zoombox ZoomboxSub { get; set; }
         public DrawCanvas Image { get; set; }
         public BezierCurveManager BezierCurveManager { get; set; }
         public CircleManager CircleManager { get; set; }
@@ -71,7 +71,7 @@ namespace ColorVision.ImageEditor
 
         public IEditorToolFactory IEditorToolFactory { get; set; }
 
-        public ImageViewModel(ImageView imageView, ZoomboxSub zoombox, DrawCanvas drawCanvas)
+        public ImageViewModel(ImageView imageView, Zoombox zoombox, DrawCanvas drawCanvas)
         {
 
             var context = new EditorContext()
@@ -177,7 +177,7 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private void InitializeTools(ZoomboxSub zoombox, DrawCanvas drawCanvas)
+        private void InitializeTools(Zoombox zoombox, DrawCanvas drawCanvas)
         {
             MouseMagnifier = new MouseMagnifier(zoombox, drawCanvas);
             Crosshair = new Crosshair(zoombox, drawCanvas);

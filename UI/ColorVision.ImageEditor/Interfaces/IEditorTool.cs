@@ -28,7 +28,7 @@ namespace ColorVision.UI
     {
         public ImageViewModel ImageViewModel { get; set; }
         public DrawCanvas DrawCanvas { get; set; }
-        public ZoomboxSub ZoomboxSub { get; set; }
+        public Zoombox ZoomboxSub { get; set; }
     }
 
     public interface IEditorTool

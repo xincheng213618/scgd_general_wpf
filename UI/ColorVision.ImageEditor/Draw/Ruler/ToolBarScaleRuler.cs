@@ -7,13 +7,13 @@ namespace ColorVision.ImageEditor.Draw.Ruler
 {
     public class ToolBarScaleRuler
     {
-        private ZoomboxSub Zoombox1 { get; set; }
+        private Zoombox Zoombox1 { get; set; }
         private DrawCanvas drawCanvas { get; set; }
 
         private FrameworkElement Parent { get; set; }
         private Grid GridEx { get; set; }
 
-        public ToolBarScaleRuler(FrameworkElement Parent, ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public ToolBarScaleRuler(FrameworkElement Parent, Zoombox zombox, DrawCanvas drawCanvas)
         {
             this.Parent = Parent;
             Zoombox1 = zombox;

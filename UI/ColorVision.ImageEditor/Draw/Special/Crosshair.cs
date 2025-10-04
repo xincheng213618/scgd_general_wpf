@@ -8,12 +8,12 @@ namespace ColorVision.ImageEditor.Draw.Special
 {
     public class Crosshair
     {
-        private ZoomboxSub ZoomboxSub { get; set; }
+        private Zoombox ZoomboxSub { get; set; }
         private DrawCanvas DrawCanvas { get; set; }
 
         public DrawingVisual DrawVisualImage { get; set; }
 
-        public Crosshair(ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public Crosshair(Zoombox zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
             DrawCanvas = drawCanvas;

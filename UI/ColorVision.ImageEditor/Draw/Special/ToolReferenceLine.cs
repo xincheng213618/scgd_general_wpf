@@ -324,7 +324,7 @@ namespace ColorVision.ImageEditor.Draw.Special
 
     public class ToolReferenceLine: ViewModelBase, IDrawEditor
     {
-        private ZoomboxSub ZoomboxSub { get; set; }
+        private Zoombox ZoomboxSub { get; set; }
         private DrawCanvas Image { get; set; }
 
         public ReferenceLine ReferenceLine { get; set; }
@@ -336,7 +336,7 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         public ImageViewModel ImageViewModel { get; set; }
 
-        public ToolReferenceLine(ImageViewModel imageEditViewMode, ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public ToolReferenceLine(ImageViewModel imageEditViewMode, Zoombox zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
             Image = drawCanvas;

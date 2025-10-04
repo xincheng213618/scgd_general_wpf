@@ -78,7 +78,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
 		<PackageReference Include="log4net" Version="3.2.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="HelixToolkit.Core.Wpf" Version="2.27.3" />

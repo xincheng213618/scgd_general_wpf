@@ -1,6 +1,3 @@
-using ColorVision.Common.MVVM;
-using ColorVision.ImageEditor.Draw;
-using Gu.Wpf.Geometry;
 using System;
 using System.IO;
 using System.Linq;
@@ -17,13 +14,13 @@ namespace ColorVision.ImageEditor
     {
         private readonly ImageView _imageView;
         private readonly ImageViewModel _viewModel;
-        private readonly ZoomboxSub _zoomboxSub;
+        private readonly Zoombox _zoomboxSub;
         private readonly ImageViewConfig _config;
 
         public ImageKeyboardHandler(
             ImageView ImageView,
             ImageViewModel viewModel,
-            ZoomboxSub zoomboxSub,
+            Zoombox zoomboxSub,
             ImageViewConfig config)
         {
             _imageView = ImageView ?? throw new ArgumentNullException(nameof(ImageView));

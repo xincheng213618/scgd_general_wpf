@@ -37,13 +37,13 @@ namespace ColorVision.ImageEditor.Draw
     {
         public DrawCanvas DrawCanvas { get; set; }
 
-        public ZoomboxSub ZoomboxSub { get; set; }
+        public Zoombox ZoomboxSub { get; set; }
         public ImageViewModel ImageViewModel { get; set; }
 
         private DrawingVisual SelectRect = new DrawingVisual();
 
         Guid Guid { get; set; }
-        public SelectEditorVisual(ImageViewModel imageViewModel, DrawCanvas drawCanvas, ZoomboxSub zoomboxSub)
+        public SelectEditorVisual(ImageViewModel imageViewModel, DrawCanvas drawCanvas, Zoombox zoomboxSub)
         {
             ImageViewModel = imageViewModel;
             DrawCanvas = drawCanvas;
@@ -565,7 +565,7 @@ namespace ColorVision.ImageEditor.Draw
         }
         private void DrawCanvas_MouseMove(object sender, MouseEventArgs e)
         {
-            if (sender is DrawCanvas drawCanvas && (ZoomboxSub.ActivateOn == ModifierKeys.None || !Keyboard.Modifiers.HasFlag(ZoomboxSub.ActivateOn)))
+            if (sender is DrawCanvas drawCanvas && (ZoomboxSub.ActivateOn == ModifierKeys.None || !Keyboard.Modifiers.HasFlag((Enum)ZoomboxSub.ActivateOn)))
             {
                 var point = e.GetPosition(drawCanvas);
                 if (IsMouseDown)
@@ -637,7 +637,7 @@ namespace ColorVision.ImageEditor.Draw
 
         private void DrawCanvas_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
-            if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(ZoomboxSub.ActivateOn))
+            if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag((Enum)ZoomboxSub.ActivateOn))
             {
                 if (IsMouseDown)
                 {
