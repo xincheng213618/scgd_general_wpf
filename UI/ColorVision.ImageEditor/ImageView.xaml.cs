@@ -3,9 +3,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
-using ColorVision.ImageEditor.EditorTools;
-using ColorVision.UI;
-using Gu.Wpf.Geometry;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -117,9 +114,25 @@ namespace ColorVision.ImageEditor
             this.CommandBindings.Add(new CommandBinding( ApplicationCommands.Open, (s, e) => OpenImage(),(s, e) => { e.CanExecute = true; }));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = true; }));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
-
+            CommandBindings.Add(new CommandBinding( ApplicationCommands.Print,(s, e) => Print(), (s, e) => { e.CanExecute = true; }));
         }
+        /// <summary>
+        /// 打印图像
+        /// </summary>
+        public void Print()
+        {
+            PrintDialog printDialog = new();
+            if (printDialog.ShowDialog() == true)
+            {
+                // 创建一个可打印的区域
+                Size pageSize = new(printDialog.PrintableAreaWidth, printDialog.PrintableAreaHeight);
+                ImageShow.Measure(pageSize);
+                ImageShow.Arrange(new Rect(5, 5, pageSize.Width, pageSize.Height));
 
+                // 开始打印
+                printDialog.PrintVisual(ImageShow, "Printing");
+            }
+        }
         public void OpenImage()
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();

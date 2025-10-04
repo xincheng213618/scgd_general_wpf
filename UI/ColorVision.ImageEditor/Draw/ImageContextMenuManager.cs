@@ -1,4 +1,3 @@
-using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
@@ -100,10 +99,12 @@ namespace ColorVision.ImageEditor
                 MenuItemMetadatas.AddRange(item.GetContextMenuItems(_viewModel.Config));
             }
 
+            // 缩放菜单
+            foreach (var item in _viewModel.IEditorToolFactory.IIEditorToolContextMenus)
+            {
+                MenuItemMetadatas.AddRange(item.GetContextMenuItems());
+            }
 
-
-            // 添加标准菜单项
-            AddStandardMenuItems(MenuItemMetadatas);
 
             var iMenuItems = MenuItemMetadatas.OrderBy(item => item.Order).ToList();
             
@@ -197,22 +198,6 @@ namespace ColorVision.ImageEditor
             _contextMenu.Items.Insert(4, menuItemBitmapScalingMode);
         }
 
-        /// <summary>
-        /// 添加标准菜单项
-        /// </summary>
-        /// <param name="MenuItemMetadatas">菜单项元数据列表</param>
-        private void AddStandardMenuItems(List<MenuItemMetadata> MenuItemMetadatas)
-        {
-            // 缩放菜单
-            foreach (var item in _viewModel.IEditorToolFactory.IIEditorToolContextMenus)
-            {
-                MenuItemMetadatas.AddRange(item.GetContextMenuItems());
-            }
 
-
-            // 其他功能
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Print", Order = 300, Header = Properties.Resources.Print, Command = _viewModel.PrintImageCommand, Icon = MenuItemIcon.TryFindResource("DIPrint"), InputGestureText = "Ctrl+P" });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = _viewModel.PropertyCommand, Header = Properties.Resources.Property, Icon = MenuItemIcon.TryFindResource("DIProperty"), InputGestureText = "Tab" });
-        }
     }
 }

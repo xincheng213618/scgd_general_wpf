@@ -25,7 +25,6 @@ namespace ColorVision.ImageEditor
 
         public RelayCommand ClearImageCommand { get; set; }
         public RelayCommand PrintImageCommand { get; set; }
-        public RelayCommand PropertyCommand { get; set; }
         #endregion
 
         #region Events
@@ -66,7 +65,6 @@ namespace ColorVision.ImageEditor
 
         #region Helper Classes
         private ImageTransformOperations _transformOperations;
-        private ImageFileOperations _fileOperations;
         private ImageContextMenuManager _contextMenuManager;
         private ImageKeyboardHandler _keyboardHandler;
         #endregion
@@ -92,7 +90,6 @@ namespace ColorVision.ImageEditor
             ContextMenu = new ContextMenu();
 
             _transformOperations = new ImageTransformOperations(drawCanvas);
-            _fileOperations = new ImageFileOperations(drawCanvas, imageView);
             ImageFullScreenMode = new ImageFullScreenMode(imageView);
 
             RegisterContextMenuProviders();
@@ -102,9 +99,6 @@ namespace ColorVision.ImageEditor
 
             SelectEditorVisual = new SelectEditorVisual(this, drawCanvas, zoombox);
 
-            SetupCommandBindings(drawCanvas);
- 
-            CreateCommands();
 
             _keyboardHandler = new ImageKeyboardHandler(imageView, this, ZoomboxSub, Config);
 
@@ -183,19 +177,6 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private void SetupCommandBindings(DrawCanvas drawCanvas)
-        {
-            drawCanvas.CommandBindings.Add(new CommandBinding(
-                ApplicationCommands.Print, 
-                (s, e) => Print(), 
-                (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
-                
-            drawCanvas.CommandBindings.Add(new CommandBinding(
-                ApplicationCommands.Close, 
-                (s, e) => ClearImage(), 
-                (s, e) => { e.CanExecute = Image.Source != null; }));
-        }
-
         private void InitializeTools(ZoomboxSub zoombox, DrawCanvas drawCanvas)
         {
             MouseMagnifier = new MouseMagnifier(zoombox, drawCanvas);
@@ -214,18 +195,8 @@ namespace ColorVision.ImageEditor
             TextManager = new TextManager(this, zoombox, drawCanvas); // ³õÊ¼»¯ TextManager
         }
 
-        private void CreateCommands()
-        {
-            PrintImageCommand = new RelayCommand(a => Print(), a => Image != null && Image.Source != null);
-            ClearImageCommand = new RelayCommand(a => ClearImage(), a => Image != null && Image.Source != null);
-            
-            PropertyCommand = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(ImageView), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
-        }
-
         #region Public Methods
                 
-        public void Print() => _fileOperations.Print();
-
         public void Save(string file) => ImageView.Save(file);
         public void ClearImage() => ImageView.Clear();
 
