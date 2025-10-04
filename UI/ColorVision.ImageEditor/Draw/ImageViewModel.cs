@@ -5,6 +5,7 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.ImageEditor.EditorTools.Rotate;
+using ColorVision.ImageEditor.EditorTools.FullScreen;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -52,6 +53,8 @@ namespace ColorVision.ImageEditor
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
         public SelectEditorVisual SelectEditorVisual { get; set; }
         public StackPanel SlectStackPanel { get; set; } = new StackPanel();
+        public ImageFullScreenMode ImageFullScreenMode { get; set; }
+
         #endregion
 
         #region Properties
@@ -66,7 +69,6 @@ namespace ColorVision.ImageEditor
         #region Helper Classes
         private ImageTransformOperations _transformOperations;
         private ImageFileOperations _fileOperations;
-        private ImageFullScreenMode _fullScreenMode;
         private ImageContextMenuManager _contextMenuManager;
         private ImageKeyboardHandler _keyboardHandler;
         #endregion
@@ -93,7 +95,7 @@ namespace ColorVision.ImageEditor
 
             _transformOperations = new ImageTransformOperations(drawCanvas);
             _fileOperations = new ImageFileOperations(drawCanvas, imageView);
-            _fullScreenMode = new ImageFullScreenMode(imageView);
+            ImageFullScreenMode = new ImageFullScreenMode(imageView);
 
             RegisterContextMenuProviders();
 
@@ -130,13 +132,6 @@ namespace ColorVision.ImageEditor
             Image.ContextMenuOpening += _contextMenuManager.HandleContextMenuOpening;
             Image.ContextMenu = ContextMenu;
             ZoomboxSub.ContextMenu = ContextMenu;
-
-            // 移除旧的 FullCommand 按钮（位于 ToolBarTop 的第 3 个）
-            if (imageView.ToolBarTop.Items.Count > 2 && imageView.ToolBarTop.Items[2] is FrameworkElement fe)
-            {
-                imageView.ToolBarTop.Items.RemoveAt(2);
-            }
-
             ZoomboxSub.LayoutUpdated += Zoombox1_LayoutUpdated;
         }
 
@@ -259,7 +254,7 @@ namespace ColorVision.ImageEditor
         
         public void RotateLeft() => _transformOperations.RotateLeft();
         
-        public void MaxImage() => _fullScreenMode.ToggleFullScreen();
+        public void MaxImage() => ImageFullScreenMode.ToggleFullScreen();
         
         public void ClearImage() => _fileOperations.ClearImage(ToolBarScaleRuler, ClearImageEventHandler);
         

@@ -10,7 +10,7 @@ namespace ColorVision.ImageEditor.EditorTools.WindowTools
         {
             var items = new List<MenuItemMetadata>();
 
-            items.Add(new MenuItemMetadata() {  GuidId = "Full", Order = 1, Header = Properties.Resources.FullScreen, Command = new FullScreenEditorTool(context).Command, Icon = MenuItemIcon.TryFindResource("DIMax") });
+            items.Add(new MenuItemMetadata() {  GuidId = "Full", Order = 500, Header = Properties.Resources.FullScreen, Command = new FullScreenEditorTool(context).Command, Icon = MenuItemIcon.TryFindResource("DIMax") });
             return items;
         }
     }

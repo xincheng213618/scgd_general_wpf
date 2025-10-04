@@ -1,10 +1,9 @@
-using ColorVision.ImageEditor.EditorTools.Window;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.ImageEditor
+namespace ColorVision.ImageEditor.EditorTools.FullScreen
 {
     /// <summary>
     /// 图像全屏模式管理类
@@ -12,7 +11,7 @@ namespace ColorVision.ImageEditor
     public class ImageFullScreenMode
     {
         private readonly FrameworkElement _parent;
-        private ImagePlacementContext _oldWindowStatus;
+        private PlacementStatus _oldWindowStatus;
         
         public bool IsMax { get; private set; }
 
@@ -41,7 +40,7 @@ namespace ColorVision.ImageEditor
                 IsMax = true;
                 if (_parent.Parent is Panel p)
                 {
-                    _oldWindowStatus = new ImagePlacementContext();
+                    _oldWindowStatus = new PlacementStatus();
                     _oldWindowStatus.Parent = p;
                     _oldWindowStatus.WindowState = window.WindowState;
                     _oldWindowStatus.WindowStyle = window.WindowStyle;
@@ -58,7 +57,7 @@ namespace ColorVision.ImageEditor
                 }
                 else if (_parent.Parent is ContentControl content)
                 {
-                    _oldWindowStatus = new ImagePlacementContext();
+                    _oldWindowStatus = new PlacementStatus();
                     _oldWindowStatus.ContentParent = content;
                     _oldWindowStatus.WindowState = window.WindowState;
                     _oldWindowStatus.WindowStyle = window.WindowStyle;
