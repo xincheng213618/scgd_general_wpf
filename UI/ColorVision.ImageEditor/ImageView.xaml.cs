@@ -223,11 +223,15 @@ namespace ColorVision.ImageEditor
 
         public void Clear()
         {
+
             Config.Properties.Clear();
             Config.FilePath = string.Empty;
             FunctionImage = null;
             ViewBitmapSource = null;
+            ImageShow.Clear();
             ImageShow.Source = null;
+            ImageShow.UpdateLayout();
+
             if (HImageCache != null)
             {
                 HImageCache?.Dispose();

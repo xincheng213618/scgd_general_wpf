@@ -23,20 +23,6 @@ namespace ColorVision.ImageEditor
             _image = image ?? throw new ArgumentNullException(nameof(image));
         }
 
-        /// <summary>
-        /// 清除图像
-        /// </summary>
-        /// <param name="toolBarScaleRuler">标尺工具栏</param>
-        /// <param name="clearImageEventHandler">清除图像事件处理器</param>
-        public void ClearImage(ToolBarScaleRuler toolBarScaleRuler, EventHandler clearImageEventHandler)
-        {
-            _image.Clear();
-            _image.Source = null;
-            _image.UpdateLayout();
-
-            toolBarScaleRuler.IsShow = false;
-            clearImageEventHandler?.Invoke(this, new EventArgs());
-        }
 
         /// <summary>
         /// 打印图像
