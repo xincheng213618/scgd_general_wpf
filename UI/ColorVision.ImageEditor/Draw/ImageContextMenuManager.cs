@@ -204,7 +204,6 @@ namespace ColorVision.ImageEditor
         private void AddStandardMenuItems(List<MenuItemMetadata> MenuItemMetadatas)
         {
             // 打开/清除图像
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenImage", Order = 10, Header = Properties.Resources.Open, Command = _viewModel.OpenImageCommand, Icon = MenuItemIcon.TryFindResource("DIOpen") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 11, Header = Properties.Resources.Clear, Command = _viewModel.ClearImageCommand, Icon = MenuItemIcon.TryFindResource("DIDelete") });
 
             // 缩放菜单

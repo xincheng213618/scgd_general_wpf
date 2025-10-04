@@ -125,26 +125,23 @@
                     </StackPanel>
 
                 </Border>
+                <ToolBarTray x:Name="ToolBarTop" VerticalAlignment="Top" Grid.Row="0"  HorizontalAlignment="Center">
+                    <ToolBar  ToolBarTray.IsLocked="True" Margin="0,2,4,0" >
+                        <ToggleButton IsChecked="{Binding ImageEditMode}"  Margin="1,0">
+                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
+                        </ToggleButton>
+                        <ToggleButton  IsChecked="{Binding MouseMagnifier.IsShow}" Margin="1,0"  Height="27" Width="27" Padding="3">
+                            <Image  Source="{DynamicResource DrawingImageMouse}"/>
+                        </ToggleButton>
+                        <ToggleButton IsChecked="{Binding Gridline.IsShow}">
+                            <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIGridlines}"  Margin="-5"/>
+                        </ToggleButton>
+                        <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}"/>
+                    </ToolBar>
+                </ToolBarTray>
 
-                <ToolBar  x:Name="ToolBarTop" x:FieldModifier="public"  Margin="0,2,4,0"  VerticalAlignment="Top" Grid.Row="0"  HorizontalAlignment="Center">
-                    <ToggleButton IsChecked="{Binding ImageEditMode}"  Margin="1,0">
-                        <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
-                    </ToggleButton>
-                    <ToggleButton  IsChecked="{Binding MouseMagnifier.IsShow}" Margin="1,0"  Height="27" Width="27" Padding="3">
-                        <Image  Source="{DynamicResource DrawingImageMouse}"/>
-                    </ToggleButton>
-                    <ToggleButton IsChecked="{Binding Gridline.IsShow}">
-                        <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIGridlines}"  Margin="-5"/>
-                    </ToggleButton>
-                    <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}"/>
-
-                </ToolBar>
-
-                <ToolBarTray x:Name="ToolBarRight" x:FieldModifier="public"  HorizontalAlignment="Left" Orientation="Vertical" Margin="2,50,0,0"  VerticalAlignment="Top">
-                    <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
-                        <Button Command="{Binding OpenImageCommand}" Margin="0,0,0,2" Padding="5">
-                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource openDrawingImage}" />
-                        </Button>
+                <ToolBarTray x:Name="ToolBarRight" HorizontalAlignment="Left" Orientation="Vertical" Margin="2,50,0,0"  VerticalAlignment="Top">
+                    <ToolBar ToolBarTray.IsLocked="True" Padding="2,3"  >
                         <Button Command="{Binding SaveAsImageCommand}" Margin="0,0,0,2" Padding="5">
                             <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageSave}" />
                         </Button>

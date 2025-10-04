@@ -27,7 +27,6 @@ namespace ColorVision.ImageEditor
         public RelayCommand ClearImageCommand { get; set; }
         public RelayCommand PrintImageCommand { get; set; }
         public RelayCommand PropertyCommand { get; set; }
-        public RelayCommand OpenImageCommand { get; set; }
         #endregion
 
         #region Events
@@ -198,11 +197,6 @@ namespace ColorVision.ImageEditor
                 (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
                 
             drawCanvas.CommandBindings.Add(new CommandBinding(
-                ApplicationCommands.Open, 
-                (s, e) => OpenImage(), 
-                (s, e) => { e.CanExecute = true; }));
-                
-            drawCanvas.CommandBindings.Add(new CommandBinding(
                 ApplicationCommands.Close, 
                 (s, e) => ClearImage(), 
                 (s, e) => { e.CanExecute = Image.Source != null; }));
@@ -228,7 +222,6 @@ namespace ColorVision.ImageEditor
 
         private void CreateCommands()
         {
-            OpenImageCommand = new RelayCommand(a => OpenImage());
             SaveAsImageCommand = new RelayCommand(a => SaveAs(), a => Image != null && Image.Source != null);
             PrintImageCommand = new RelayCommand(a => Print(), a => Image != null && Image.Source != null);
             ClearImageCommand = new RelayCommand(a => ClearImage(), a => Image != null && Image.Source != null);
@@ -237,9 +230,7 @@ namespace ColorVision.ImageEditor
         }
 
         #region Public Methods
-        
-        public void OpenImage() => _fileOperations.OpenImage();
-        
+                
         public void Print() => _fileOperations.Print();
         
         public void SaveAs() => _fileOperations.SaveAs();

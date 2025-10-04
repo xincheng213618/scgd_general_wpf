@@ -46,14 +46,29 @@ namespace ColorVision.UI
     {
         public List<MenuItemMetadata> GetContextMenuItems();
     }
-
+    
+    public static class ToolBarLocalExtensions
+    {
+        public static ToolBar? GetRegionToolBar(this ImageView imageView, ToolBarLocal loc)
+        {
+            return loc switch
+            {
+                ToolBarLocal.Top => imageView.ToolBarTop.ToolBars.Count > 0 ? imageView.ToolBarTop.ToolBars[0] : null,
+                ToolBarLocal.Left => imageView.ToolBarLeft.ToolBars.Count > 0 ? imageView.ToolBarLeft.ToolBars[0] : null,
+                ToolBarLocal.Right => imageView.ToolBarRight.ToolBars.Count > 0 ? imageView.ToolBarRight.ToolBars[0] : null,
+                ToolBarLocal.RightBottom => imageView.ToolBarRight.ToolBars.Count > 0 ? imageView.ToolBarRight.ToolBars[0] : null,
+                ToolBarLocal.LeftTop => imageView.ToolBarLeft.ToolBars.Count > 0 ? imageView.ToolBarLeft.ToolBars[0] : null,
+                _ => null
+            };
+        }
+    }
 
     public class IEditorToolFactory
     {
         public ObservableCollection<IEditorTool> IEditorTools { get; set; } = new ObservableCollection<IEditorTool>();
         public ObservableCollection<IIEditorToolContextMenu> IIEditorToolContextMenus { get; set; } = new ObservableCollection<IIEditorToolContextMenu>();
 
-        public IEditorToolFactory(ImageView imageView,EditorContext context)
+        public IEditorToolFactory(ImageView imageView, EditorContext context)
         {
             foreach (var assembly in Application.Current.GetAssemblies())
             {
@@ -83,17 +98,20 @@ namespace ColorVision.UI
                 }
             }
 
-            var or = IEditorTools.OrderBy(a=>a.Order).ToList();
 
-            for (int i = 0; i < or.Count; i++)
+            foreach (var group in IEditorTools.GroupBy(t => t.ToolBarLocal))
             {
-                var editorTool = or[i];
-                Button button = GenIEditorTool(editorTool);
-                if (i != 0)
+                var toolBar = imageView.GetRegionToolBar(group.Key);
+                if (toolBar == null) continue;
+
+                var margin = GetSpacingFor(group.Key);
+                int i = 0;
+                foreach (var tool in group.OrderBy(t => t.Order))
                 {
-                    button.Margin = new Thickness(5, 0, 0, 0);
+                    var btn = GenIEditorTool(tool);
+                    if (i++ > 0) btn.Margin = margin; // 非第一个才加间距
+                    toolBar.Items.Add(btn);
                 }
-                imageView.ToolBarTop.Items.Add(button);
             }
         }
 
@@ -104,6 +122,16 @@ namespace ColorVision.UI
             button.Command = editorTool.Command;
             return button;
 
+        }
+        private static Thickness GetSpacingFor(ToolBarLocal loc)
+        {
+            return loc switch
+            {
+                ToolBarLocal.Top => new Thickness(5, 0, 0, 0),
+                ToolBarLocal.Left => new Thickness(0, 5, 0, 0),
+                ToolBarLocal.Right => new Thickness(0, 5, 0, 0),
+                _ => new Thickness(5, 0, 0, 0)
+            };
         }
     }
 

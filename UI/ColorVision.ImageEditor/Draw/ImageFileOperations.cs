@@ -24,19 +24,6 @@ namespace ColorVision.ImageEditor
         }
 
         /// <summary>
-        /// 打开图像文件
-        /// </summary>
-        public void OpenImage()
-        {
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.RestoreDirectory = true;
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                _imageView.OpenImage(openFileDialog.FileName);
-            }
-        }
-
-        /// <summary>
         /// 清除图像
         /// </summary>
         /// <param name="toolBarScaleRuler">标尺工具栏</param>
