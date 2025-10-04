@@ -13,7 +13,7 @@ namespace ColorVision.ImageEditor.EditorTools.WindowTools
         public string? GuidId => "FullScreen";
         public int Order { get; set; } = 50;
 
-        public object Icon { get; set; } = IEditorToolFactory.GetImageFromResource("DrawingImageMax");
+        public object Icon { get; set; } = IEditorToolFactory.TryFindResource("DrawingImageMax");
 
         public ICommand? Command { get; set; } = new RelayCommand(_ =>
         {

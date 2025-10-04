@@ -135,8 +135,8 @@ namespace ColorVision.UI
                 _ => new Thickness(5, 0, 0, 0)
             };
         }
-
-        public static Image GetImageFromResource(string resourcePath)
+        
+        public static Image TryFindResource(string resourcePath)
         {
             var image = new Image();
             // 动态资源引用，资源变更时自动更新

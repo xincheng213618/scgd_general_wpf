@@ -9,9 +9,9 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
         public ToolBarLocal ToolBarLocal => ToolBarLocal.Right;
         public string? GuidId => "CloseImageEditorTool";
 
-        public int Order { get; set; } = 1;
+        public int Order { get; set; } = 3;
 
-        public object? Icon { get; set; } = MenuItemIcon.TryFindResource("DrawingImageClear");
+        public object? Icon { get; set; } = IEditorToolFactory.TryFindResource("DrawingImageClear");
         public ICommand? Command { get; set; } = ApplicationCommands.Close;
     }
 

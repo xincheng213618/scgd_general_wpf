@@ -12,7 +12,7 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
         public ToolBarLocal ToolBarLocal => ToolBarLocal.Right;
         public string? GuidId => "SaveAs";
 
-        public int Order { get; set; } = 1;
+        public int Order { get; set; } = 2;
 
         public object? Icon { get; set; } = MenuItemIcon.TryFindResource("DISave");
 
