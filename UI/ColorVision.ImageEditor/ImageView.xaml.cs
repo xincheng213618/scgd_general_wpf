@@ -428,9 +428,9 @@ namespace ColorVision.ImageEditor
 
             ImageShow.RaiseImageInitialized();
             ImageViewModel.ToolBarScaleRuler.IsShow = true;
+            CommandManager.InvalidateRequerySuggested();
 
         }
-
 
         public ImageSource FunctionImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
