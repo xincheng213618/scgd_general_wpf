@@ -4,6 +4,8 @@ using System.Collections.Generic;
 
 namespace ColorVision.ImageEditor
 {
+
+
     public interface IImageOpen
     {
         public List<MenuItemMetadata> GetContextMenuItems(ImageViewConfig imageView);

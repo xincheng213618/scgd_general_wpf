@@ -100,6 +100,8 @@ namespace ColorVision.ImageEditor
                 MenuItemMetadatas.AddRange(item.GetContextMenuItems(_viewModel.Config));
             }
 
+
+
             // 添加标准菜单项
             AddStandardMenuItems(MenuItemMetadatas);
 
@@ -206,18 +208,11 @@ namespace ColorVision.ImageEditor
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 11, Header = Properties.Resources.Clear, Command = _viewModel.ClearImageCommand, Icon = MenuItemIcon.TryFindResource("DIDelete") });
 
             // 缩放菜单
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Zoom", Order = 100, Header = Properties.Resources.Zoom, Icon = MenuItemIcon.TryFindResource("DIZoom") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomIn", Order = 1, Header = Properties.Resources.ZoomIn, Command = _viewModel.ZoomInCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomOut", Order = 2, Header = Properties.Resources.ZoomOut, Command = _viewModel.ZoomOutCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomNone", Order = 3, Header = Properties.Resources.ZoomNone, Command = _viewModel.ZoomNoneCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomUniform", Order = 4, Header = Properties.Resources.ZoomUniform, Command = _viewModel.ZoomUniformCommand });
+            foreach (var item in _viewModel.IEditorToolFactory.IIEditorToolContextMenus)
+            {
+                MenuItemMetadatas.AddRange(item.GetContextMenuItems());
+            }
 
-            // 旋转菜单
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Rotate", Order = 101, Header = Properties.Resources.Rotate, Icon = MenuItemIcon.TryFindResource("DIRotate") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "RotateLeft", Order = 1, Header = Properties.Resources.RotateLeft, Command = _viewModel.RotateLeftCommand, Icon = MenuItemIcon.TryFindResource("DIRotateLeft") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "RotateRight", Order = 2, Header = Properties.Resources.RotateRight, Command = _viewModel.RotateRightCommand, Icon = MenuItemIcon.TryFindResource("DIRotateRight") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "FlipHorizontal", Order = 3, Header = Properties.Resources.FlipHorizontal, Command = _viewModel.FlipHorizontalCommand, Icon = MenuItemIcon.TryFindResource("DIFlipHorizontal") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "FlipVertical", Order = 4, Header = Properties.Resources.FlipVertical, Command = _viewModel.FlipVerticalCommand, Icon = MenuItemIcon.TryFindResource("DIFlipVertical") });
 
             // 其他功能
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Full", Order = 200, Header = Properties.Resources.FullScreen, Command = _viewModel.FullCommand });

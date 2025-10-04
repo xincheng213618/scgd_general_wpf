@@ -1,9 +1,8 @@
-﻿using ColorVision.ImageEditor.Draw.Ruler;
-using System.Windows;
-using System;
+﻿using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes;
+using System;
+using System.Windows;
 using System.Windows.Media.Imaging;
-using ColorVision.ImageEditor.Draw.Special;
 
 namespace ColorVision.ImageEditor
 {
@@ -118,7 +117,7 @@ namespace ColorVision.ImageEditor
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             ImageView.ImageShow.Source = new BitmapImage(new Uri("/ColorVision.ImageEditor;component/Assets/Image/cie_1976_ucs.png", UriKind.Relative));
-            ImageViewModel.ZoomUniformToFill.Execute(sender);
+            ImageView.Zoombox1.ZoomUniformToFill();
         }
     }
 }

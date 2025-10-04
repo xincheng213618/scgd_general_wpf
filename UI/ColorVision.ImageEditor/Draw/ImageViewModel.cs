@@ -4,6 +4,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.ImageEditor.EditorTools.Rotate;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -20,17 +21,8 @@ namespace ColorVision.ImageEditor
         private readonly Guid _guid = Guid.NewGuid();
 
         #region Commands
-        public RelayCommand ZoomUniformToFill { get; set; }
-        public RelayCommand ZoomUniformCommand { get; set; }
-        public RelayCommand ZoomInCommand { get; set; }
-        public RelayCommand ZoomOutCommand { get; set; }
-        public RelayCommand ZoomNoneCommand { get; set; }
-
         public RelayCommand FullCommand { get; set; }
-        public RelayCommand RotateLeftCommand { get; set; }
-        public RelayCommand RotateRightCommand { get; set; }
-        public RelayCommand FlipHorizontalCommand { get; set; }
-        public RelayCommand FlipVerticalCommand { get; set; }
+
         public RelayCommand SaveAsImageCommand { get; set; }
         public RelayCommand ClearImageCommand { get; set; }
         public RelayCommand PrintImageCommand { get; set; }
@@ -80,51 +72,67 @@ namespace ColorVision.ImageEditor
         private ImageKeyboardHandler _keyboardHandler;
         #endregion
 
-        public ImageViewModel(ImageView Parent, ZoomboxSub zoombox, DrawCanvas drawCanvas)
+        public IEditorToolFactory IEditorToolFactory { get; set; }
+
+        public ImageViewModel(ImageView imageView, ZoomboxSub zoombox, DrawCanvas drawCanvas)
         {
-            // ?????????
-            this.ImageView = Parent;
+
+            var context = new EditorContext()
+            {
+                ImageViewModel = this,
+                DrawCanvas = drawCanvas,
+                ZoomboxSub = zoombox
+            };
+            IEditorToolFactory = new IEditorToolFactory(imageView, context);
+
+
+            this.ImageView = imageView;
             ZoomboxSub = zoombox;
             Image = drawCanvas;
             Config = new ImageViewConfig();
             ContextMenu = new ContextMenu();
 
-            // ???????????
             _transformOperations = new ImageTransformOperations(drawCanvas);
-            _fileOperations = new ImageFileOperations(drawCanvas, Parent);
-            _fullScreenMode = new ImageFullScreenMode(Parent);
+            _fileOperations = new ImageFileOperations(drawCanvas, imageView);
+            _fullScreenMode = new ImageFullScreenMode(imageView);
 
-            // ?????????????????
             RegisterContextMenuProviders();
-            
-            // ???????????
+
+            imageView.ToolBarBottom.Children.Add(SlectStackPanel);
+
+
             SelectEditorVisual = new SelectEditorVisual(this, drawCanvas, zoombox);
 
-            // ?????????
             SetupCommandBindings(drawCanvas);
-            // ????????
+ 
             CreateCommands();
 
-            _keyboardHandler = new ImageKeyboardHandler(Parent, this, ZoomboxSub, Config, ZoomInCommand, ZoomOutCommand);
+            _keyboardHandler = new ImageKeyboardHandler(imageView, this, ZoomboxSub, Config);
 
-            // ??????????????
-            SetupInputHandling(drawCanvas);
+            drawCanvas.PreviewMouseDown += (s, e) =>
+            {
+                Keyboard.ClearFocus();
+                drawCanvas.Focus();
+            };
 
-            // ?????????????????$
+            drawCanvas.PreviewKeyDown += (s, e) =>
+            {
+                Keyboard.ClearFocus();
+                drawCanvas.Focus();
+            };
+
+            drawCanvas.PreviewKeyDown += _keyboardHandler.HandleKeyDown;
+
+
             InitializeTools(zoombox, drawCanvas);
 
 
-
-            // ????????????
             _contextMenuManager = new ImageContextMenuManager(this, drawCanvas, ContextMenu, ContextMenuProviders);
             Image.ContextMenuOpening += _contextMenuManager.HandleContextMenuOpening;
             Image.ContextMenu = ContextMenu;
             ZoomboxSub.ContextMenu = ContextMenu;
 
-            // ???¨°?????????
             ZoomboxSub.LayoutUpdated += Zoombox1_LayoutUpdated;
-
-            // ?????????????$
         }
 
         double oldMax;
@@ -200,23 +208,6 @@ namespace ColorVision.ImageEditor
                 (s, e) => { e.CanExecute = Image.Source != null; }));
         }
 
-        private void SetupInputHandling(DrawCanvas drawCanvas)
-        {
-            drawCanvas.PreviewMouseDown += (s, e) =>
-            {
-                Keyboard.ClearFocus(); // ??????????
-                drawCanvas.Focus();
-            };
-            
-            drawCanvas.PreviewKeyDown += (s, e) =>
-            {
-                Keyboard.ClearFocus(); // ??????????
-                drawCanvas.Focus();
-            };
-            
-            drawCanvas.PreviewKeyDown += _keyboardHandler.HandleKeyDown;
-        }
-
         private void InitializeTools(ZoomboxSub zoombox, DrawCanvas drawCanvas)
         {
             MouseMagnifier = new MouseMagnifier(zoombox, drawCanvas);
@@ -237,27 +228,11 @@ namespace ColorVision.ImageEditor
 
         private void CreateCommands()
         {
-            // ????????
-            ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill(), a => Image != null && Image.Source != null);
-            ZoomUniformCommand = new RelayCommand(a => ZoomboxSub.ZoomUniform(), a => Image != null && Image.Source != null);
-            ZoomInCommand = new RelayCommand(a => ZoomboxSub.Zoom(1.25), a => Image != null && Image.Source != null);
-            ZoomOutCommand = new RelayCommand(a => ZoomboxSub.Zoom(0.8), a => Image != null && Image.Source != null);
-            ZoomNoneCommand = new RelayCommand(a => ZoomboxSub.ZoomNone(), a => Image != null && Image.Source != null);
-
-            // ??????????
-// ...existing code...
-            FlipVerticalCommand = new RelayCommand(a => _transformOperations.FlipVertical(), a => Image != null && Image.Source != null);
-            RotateLeftCommand = new RelayCommand(a => _transformOperations.RotateLeft());
-            RotateRightCommand = new RelayCommand(a => _transformOperations.RotateRight());
-            
-            // ???????????
-// ...existing code...
             OpenImageCommand = new RelayCommand(a => OpenImage());
             SaveAsImageCommand = new RelayCommand(a => SaveAs(), a => Image != null && Image.Source != null);
             PrintImageCommand = new RelayCommand(a => Print(), a => Image != null && Image.Source != null);
             ClearImageCommand = new RelayCommand(a => ClearImage(), a => Image != null && Image.Source != null);
             
-            // ????????
             PropertyCommand = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(ImageView), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
             FullCommand = new RelayCommand(a => MaxImage());
         }

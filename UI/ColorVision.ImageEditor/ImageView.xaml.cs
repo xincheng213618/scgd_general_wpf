@@ -3,6 +3,9 @@ using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.ImageEditor.EditorTools;
+using ColorVision.UI;
+using Gu.Wpf.Geometry;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -59,8 +62,6 @@ namespace ColorVision.ImageEditor
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow);
-
-            AdvancedStackPanel.Children.Insert(0, ImageViewModel.SlectStackPanel);
 
             DataContext = ImageViewModel;
             Config.ColormapTypesChanged -= Config_ColormapTypesChanged;
