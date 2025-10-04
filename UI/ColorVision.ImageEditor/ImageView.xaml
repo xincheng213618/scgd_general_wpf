@@ -74,6 +74,7 @@
                 <local:Zoombox x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}" Grid.Row="1" Grid.RowSpan="2">
                     <local:DrawCanvas x:Name="ImageShow"  x:FieldModifier="public" FocusVisualStyle="{x:Null}"   RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto">
                     </local:DrawCanvas>
+
                 </local:Zoombox>
                 
                 <ComboBox x:Name="ComboBoxLayers" HorizontalAlignment="Right" VerticalAlignment="Top"  Style="{StaticResource ComboBox.Small}" x:FieldModifier="public"  SelectedIndex="0" Margin="5"/>
