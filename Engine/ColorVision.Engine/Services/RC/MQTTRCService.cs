@@ -21,6 +21,57 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.RC
 {
+    public class MQTTNodeServiceHeader
+    {
+        public string Version { get; set; }
+
+        public string MsgId { get; set; }
+
+        public string NodeName { get; set; }
+
+        public string ServiceType { get; set; }
+
+        public string EventName { get; set; }
+
+    }
+    public class MQTTNodeServiceStartupRequest : MQTTNodeServiceHeader
+    {
+        public MQTTServiceNode Data { get; set; }
+    }
+
+    public class MQTTNodeServiceRegistResponse : MQTTNodeServiceHeader
+    {
+        public int Code { get; set; }
+
+        public string Message { get; set; }
+
+        public NodeToken Token { get; set; }
+
+    }
+    public class MQTTNodeServiceResponseHeader
+    {
+        public string Version { get; set; }
+
+        public string MsgId { get; set; }
+
+        public string NodeName { get; set; }
+
+        public string EventName { get; set; }
+
+        public int Code { get; set; }
+
+        public string Message { get; set; }
+
+    }
+    public class MQTTRCServicesQueryResponse : MQTTNodeServiceResponseHeader
+    {
+        public Dictionary<CVServiceType, List<MQTTNodeService>> Data { get; set; }
+    }
+    public class MQTTRCServiceStatusQueryResponse : MQTTNodeServiceResponseHeader
+    {
+        public List<MQTTNodeServiceStatus> Data { get; set; }
+    }
+
     /// <summary>
     /// 注册服务
     /// </summary>
@@ -100,7 +151,7 @@ namespace ColorVision.Engine.Services.RC
         {
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
-                LastAliveTime = DateTime.Now; ;
+                LastAliveTime = DateTime.Now; 
 
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
                 try
