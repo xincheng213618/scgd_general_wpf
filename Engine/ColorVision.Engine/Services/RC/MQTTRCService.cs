@@ -171,28 +171,50 @@ namespace ColorVision.Engine.Services.RC
                             //MQTTNodeServiceRegistResponse resp = JsonConvert.DeserializeObject<MQTTNodeServiceRegistResponse>(Msg);
                             break;
                         case MQTTNodeServiceEventEnum.Event_Startup:
-                            MQTTNodeServiceStartupRequest req = JsonConvert.DeserializeObject<MQTTNodeServiceStartupRequest>(Msg);
-                            if (req?.Data?.Token != null)
+                            try
                             {
-                                // 线程安全地更新Token
-                                lock (_tokenLock)
+                                if (!string.IsNullOrWhiteSpace(Msg))
                                 {
-                                    Token = req.Data.Token;
-                                }
-                                
-                                // 在UI线程上更新IsConnect属性(如果需要触发UI更新)
-                                Application.Current?.Dispatcher.BeginInvoke(() =>
-                                {
-                                    IsConnect = true;
-                                });
-                                
-                                // 读取TryTestRegist是线程安全的(volatile)
-                                if (!TryTestRegist)
-                                {
-                                    QueryServices();
+                                    var settings = new JsonSerializerSettings
+                                    {
+                                        NullValueHandling = NullValueHandling.Ignore,
+                                        MissingMemberHandling = MissingMemberHandling.Ignore,
+                                        Error = (sender, args) => args.ErrorContext.Handled = true
+                                    };
+                                    MQTTNodeServiceStartupRequest req = JsonConvert.DeserializeObject<MQTTNodeServiceStartupRequest>(Msg, settings);
+                                    if (req?.Data?.Token != null)
+                                    {
+                                        // 线程安全地更新Token
+                                        lock (_tokenLock)
+                                        {
+                                            Token = req.Data.Token;
+                                        }
+
+                                        // 在UI线程上更新IsConnect属性(如果需要触发UI更新)
+                                        Application.Current?.Dispatcher.BeginInvoke(() =>
+                                        {
+                                            IsConnect = true;
+                                        });
+
+                                        // 读取TryTestRegist是线程安全的(volatile)
+                                        if (!TryTestRegist)
+                                        {
+                                            QueryServices();
+                                        }
+                                    }
                                 }
                             }
-                            break;
+                            catch (JsonException ex)
+                            {
+                                log.Error($"JSON deserialization failed: {ex.Message}");
+                                return Task.CompletedTask;
+                            }
+                            catch (Exception ex)
+                            {
+                                log.Error(ex);
+                                return Task.CompletedTask;
+                            }
+                           break;
                         case MQTTNodeServiceEventEnum.Event_QueryServices:
                             MQTTRCServicesQueryResponse respQurey = JsonConvert.DeserializeObject<MQTTRCServicesQueryResponse>(Msg);
                             if (respQurey != null)
