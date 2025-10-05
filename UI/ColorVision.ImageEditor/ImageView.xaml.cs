@@ -28,6 +28,8 @@ namespace ColorVision.ImageEditor
     public partial class ImageView : UserControl, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
+        public Guid Id { get; set; } = Guid.NewGuid();
+
         public ImageViewModel ImageViewModel { get; set; }
         public ImageViewConfig Config => ImageViewModel.Config;
         public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.DrawingVisualLists;
@@ -328,11 +330,22 @@ namespace ColorVision.ImageEditor
                     }
 
                 }
+                DebounceTimer.AddOrResetTimer("HImageCacheDispose" + Id.ToString(), 1000, HImageCacheDispose);
                 return _hImageCache;
             }
             set { _hImageCache = value; }
         }
         private HImage? _hImageCache;
+
+
+        public void HImageCacheDispose()
+        {
+            if (HImageCache != null)
+            {
+                HImageCache?.Dispose();
+                _hImageCache = null;
+            }
+        }
 
 
         public void SetImageSource(ImageSource imageSource)

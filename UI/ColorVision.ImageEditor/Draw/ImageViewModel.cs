@@ -19,7 +19,7 @@ namespace ColorVision.ImageEditor
     public class ImageViewModel : ViewModelBase, IDisposable
     {
         public DrawEditorManager DrawEditorManager { get; set; } = new DrawEditorManager();
-        private readonly Guid _guid = Guid.NewGuid();
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         #region Commands
 
@@ -136,7 +136,7 @@ namespace ColorVision.ImageEditor
                 {
                     oldMax = ZoomboxSub.ContentMatrix.M11;
                     double scale = 1 / ZoomboxSub.ContentMatrix.M11;
-                    DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + _guid.ToString(), 20, () => ImageLayoutUpdatedRender(scale, DrawingVisualLists));
+                    DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + Id.ToString(), 20, () => ImageLayoutUpdatedRender(scale, DrawingVisualLists));
                 }
             }
 

@@ -2,8 +2,7 @@
   "profiles": {
     "ColorVision": {
       "commandName": "Project",
-      "commandLineArgs": "-i \"C:\\Users\\Xin\\Documents\\ColorVision\\默认工程\\默认工程.cvsln\"",
-      "nativeDebugging": true,
+      "nativeDebugging": false,
       "hotReloadEnabled": true
     }
   }
