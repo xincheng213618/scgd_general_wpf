@@ -87,7 +87,6 @@ namespace ColorVision.Engine.Templates.Flow
             SignStackPanel = stackPanel;
             STNodeEditor.NodeAdded += StNodeEditor1_NodeAdded;
             STNodeEditor.ActiveChanged += STNodeEditorMain_ActiveChanged;
-            STNodePropertyGrid1.SetInfoKey("Xincheng", "1791746286@qq.com", "https://xincheng213618.com/", "Xincheng");
 
             AddContentMenu();
 

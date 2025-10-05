@@ -160,8 +160,11 @@ public class CVBaseServerNode : CVCommonNode
 		bool result = await cmd.waiter.WaitForMessageAsync(maxDelay);
 		if (logger.IsInfoEnabled)
 		{
-			logger.InfoFormat("[{0}]Task.WaitOverTime => {1}", ToShortString(), result);
-		}
+            if (result)
+                logger.InfoFormat("[{0}]Task.Completed successfully", ToShortString());
+            else
+                logger.InfoFormat("[{0}]Task.Timed out after {1}ms", ToShortString(), maxDelay);
+        }
 		if (result)
 		{
 			return;
