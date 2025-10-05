@@ -30,7 +30,6 @@ namespace ColorVision.ImageEditor
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
         public ImageViewModel ImageViewModel { get; set; }
         public ImageViewConfig Config => ImageViewModel.Config;
-
         public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.DrawingVisualLists;
 
         public ImageView()
@@ -400,6 +399,8 @@ namespace ColorVision.ImageEditor
                 Config.AddProperties("Channel", channels);
                 Config.AddProperties("Depth", depth);
                 Config.AddProperties("Stride", stride);
+                Config.AddProperties("DpiX", writeableBitmap.DpiX);
+                Config.AddProperties("DpiY", writeableBitmap.DpiY);
 
                 Config.Channel = channels;
                 Config.Ochannel = channels;
@@ -473,7 +474,9 @@ namespace ColorVision.ImageEditor
                             {
                                 if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                                 {
-                                    var image = hImageProcessed.ToWriteableBitmap();
+                                    double DpiX = Config.GetProperties<double>("DpiX");
+                                    double DpiY = Config.GetProperties<double>("DpiY");
+                                    var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
                                     hImageProcessed.Dispose();
 
                                     FunctionImage = image;
@@ -565,8 +568,9 @@ namespace ColorVision.ImageEditor
                     {
                         if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                         {
-                            var image = hImageProcessed.ToWriteableBitmap();
-
+                            double DpiX = Config.GetProperties<double>("DpiX");
+                            double DpiY = Config.GetProperties<double>("DpiY");
+                            var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
                             hImageProcessed.Dispose();
                             FunctionImage = image;
                         }
@@ -602,7 +606,9 @@ namespace ColorVision.ImageEditor
                 {
                     if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                     {
-                        var image = hImageProcessed.ToWriteableBitmap();
+                        double DpiX = Config.GetProperties<double>("DpiX");
+                        double DpiY = Config.GetProperties<double>("DpiY");
+                        var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
 
                         hImageProcessed.Dispose();
                         FunctionImage = image;
@@ -628,8 +634,9 @@ namespace ColorVision.ImageEditor
                         {
                             if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                             {
-                                var image = hImageProcessed.ToWriteableBitmap();
-
+                                double DpiX = Config.GetProperties<double>("DpiX");
+                                double DpiY = Config.GetProperties<double>("DpiY");
+                                var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
                                 hImageProcessed.Dispose();
 
                                 FunctionImage = image;
@@ -647,7 +654,9 @@ namespace ColorVision.ImageEditor
                         {
                             if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                             {
-                                var image = hImageProcessed.ToWriteableBitmap();
+                                double DpiX = Config.GetProperties<double>("DpiX");
+                                double DpiY = Config.GetProperties<double>("DpiY");
+                                var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
                                 hImageProcessed.Dispose();
 
                                 FunctionImage = image;
@@ -678,7 +687,9 @@ namespace ColorVision.ImageEditor
                 {
                     if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                     {
-                        var image = hImageProcessed.ToWriteableBitmap();
+                        double DpiX = Config.GetProperties<double>("DpiX");
+                        double DpiY = Config.GetProperties<double>("DpiY");
+                        var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
 
                         hImageProcessed.Dispose();
 
@@ -719,7 +730,9 @@ namespace ColorVision.ImageEditor
                 {
                     if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                     {
-                        var image = hImageProcessed.ToWriteableBitmap();
+                        double DpiX = Config.GetProperties<double>("DpiX");
+                        double DpiY = Config.GetProperties<double>("DpiY");
+                        var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
                         hImageProcessed.Dispose();
 
                         FunctionImage = image;
@@ -789,7 +802,10 @@ namespace ColorVision.ImageEditor
                 {
                     if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                     {
-                        var image = hImageProcessed.ToWriteableBitmap();
+                        double DpiX = Config.GetProperties<double>("DpiX");
+                        double DpiY = Config.GetProperties<double>("DpiY");
+                        var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
+                        
                         hImageProcessed.Dispose();
 
                         FunctionImage = image;
@@ -819,7 +835,9 @@ namespace ColorVision.ImageEditor
                         {
                             if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                             {
-                                var image = hImageProcessed.ToWriteableBitmap();
+                                double DpiX = Config.GetProperties<double>("DpiX");
+                                double DpiY = Config.GetProperties<double>("DpiY");
+                                var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
                                 hImageProcessed.Dispose();
 
                                 FunctionImage = image;
@@ -861,7 +879,10 @@ namespace ColorVision.ImageEditor
                         {
                             if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                             {
-                                var image = hImageProcessed.ToWriteableBitmap();
+                                double DpiX = Config.GetProperties<double>("DpiX");
+                                double DpiY = Config.GetProperties<double>("DpiY");
+                                var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
+                                
                                 hImageProcessed.Dispose();
 
                                 FunctionImage = image;
@@ -896,7 +917,10 @@ namespace ColorVision.ImageEditor
                         {
                             if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                             {
-                                var image = hImageProcessed.ToWriteableBitmap();
+                                double DpiX = Config.GetProperties<double>("DpiX");
+                                double DpiY = Config.GetProperties<double>("DpiY");
+                                var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
+
                                 hImageProcessed.Dispose();
 
                                 FunctionImage = image;

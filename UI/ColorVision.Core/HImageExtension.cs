@@ -90,10 +90,10 @@ namespace ColorVision.Core
             return true;
         }
 
-        public static WriteableBitmap ToWriteableBitmap(this HImage hImage)
+        public static WriteableBitmap ToWriteableBitmap(this HImage hImage,double DpiX = 96, double DpiY =96)
         {
             PixelFormat format = hImage.ToPixelFormat();
-            WriteableBitmap writeableBitmap = new(hImage.cols, hImage.rows, 96.0, 96.0, format, null);
+            WriteableBitmap writeableBitmap = new WriteableBitmap(hImage.cols, hImage.rows, DpiX, DpiY, format, null);
 
             writeableBitmap.Lock();
 
