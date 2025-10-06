@@ -34,6 +34,7 @@ namespace ColorVision.ImageEditor
         public ImageViewConfig Config => ImageViewModel.Config;
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.DrawingVisualLists;
+        public event EventHandler ClearImageEventHandler;
 
         public ImageView()
         {
@@ -68,9 +69,6 @@ namespace ColorVision.ImageEditor
 
             foreach (var item in ImageViewModel.IEditorToolFactory.IImageComponents)
                 item.Execute(this);
-
-
-            ImageViewModel.ClearImageEventHandler += Clear;
 
             ImageShow.VisualsAdd += ImageShow_VisualsAdd;
             ImageShow.VisualsRemove += ImageShow_VisualsRemove;
@@ -226,7 +224,7 @@ namespace ColorVision.ImageEditor
 
         public void Clear()
         {
-
+            ClearImageEventHandler?.Invoke(this, new EventArgs());
             Config.Properties.Clear();
             Config.FilePath = string.Empty;
             FunctionImage = null;
@@ -941,7 +939,6 @@ namespace ColorVision.ImageEditor
         public void Dispose()
         {
             Clear();
-            ImageViewModel.ClearImageEventHandler -= Clear;
             ImageViewModel.Dispose();
 
             ImageShow.VisualsAdd -= ImageShow_VisualsAdd;

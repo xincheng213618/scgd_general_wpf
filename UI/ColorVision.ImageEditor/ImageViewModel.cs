@@ -25,15 +25,7 @@ namespace ColorVision.ImageEditor
 
         public Guid Id { get; set; } = Guid.NewGuid();
 
-        #region Commands
 
-        public RelayCommand ClearImageCommand { get; set; }
-        public RelayCommand PrintImageCommand { get; set; }
-        #endregion
-
-        #region Events
-        public event EventHandler ClearImageEventHandler;
-        #endregion
 
         #region Components
         public Zoombox ZoomboxSub { get; set; }
@@ -324,10 +316,8 @@ namespace ColorVision.ImageEditor
         #endregion
 
         #region Properties with change notification
-      
-        /// <summary>
-        /// ?????????????
-        /// </summary>
+
+
         public double ZoomRatio
         {
             get => ZoomboxSub.ContentMatrix.M11;
@@ -371,7 +361,6 @@ namespace ColorVision.ImageEditor
             {
                 item.Dispose();
             }
-
 
             if (DrawingVisualLists != null)
             {

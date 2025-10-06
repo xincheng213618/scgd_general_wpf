@@ -198,7 +198,7 @@ namespace ColorVision.Engine.Media
 
             imageView.ImageViewModel.MouseMagnifier.ClearEventInvocations("MouseMoveColorHandler");
 
-            imageView.ImageViewModel.ClearImageEventHandler += (s, e) =>
+            imageView.ClearImageEventHandler += (s, e) =>
             {
                 int result = ConvertXYZ.CM_ReleaseBuffer(imageView.Config.ConvertXYZhandle);
                 imageView.Config.AddProperties("IsBufferSet", false);
