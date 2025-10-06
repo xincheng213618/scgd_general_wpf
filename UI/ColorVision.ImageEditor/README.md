@@ -152,6 +152,7 @@ dotnet build UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj
 ## 相关文档链接
 
 - [图像处理指南](../../docs/ui-components/ColorVision.ImageEditor.md)
+- [改进建议文档](./改进建议.md) - 详细的优化方案和最佳实践
 - [算法结果可视化](../../docs/algorithms/README.md)
 - [UI组件概览](../../docs/ui-components/UI组件概览.md)
 
