@@ -117,6 +117,7 @@ namespace ColorVision.ImageEditor
                         InputGestureText = iMenuItem.InputGestureText,
                         Command = iMenuItem.Command,
                         Tag = iMenuItem,
+                        IsChecked = iMenuItem.IsChecked ?? false,
                         Visibility = iMenuItem.Visibility,
                     };
 
@@ -148,6 +149,7 @@ namespace ColorVision.ImageEditor
                     Command = menuItemMeta.Command,
                     Icon = menuItemMeta.Icon,
                     InputGestureText = menuItemMeta.InputGestureText,
+                    IsChecked = menuItemMeta.IsChecked ?? false,
                 };
                 if (menuItemMeta.GuidId != null)
                     CreateMenu(menuItem, menuItemMeta.GuidId);
@@ -156,40 +158,6 @@ namespace ColorVision.ImageEditor
 
                 _contextMenu.Items.Add(menuItem);
             }
-
-            // 添加位图缩放模式菜单
-            AddBitmapScalingModeMenu();
-        }
-
-        /// <summary>
-        /// 添加位图缩放模式菜单
-        /// </summary>
-        private void AddBitmapScalingModeMenu()
-        {
-            MenuItem menuItemBitmapScalingMode = new() { Header = Properties.Resources.BitmapScalingMode };
-            
-            void UpdateBitmapScalingMode()
-            {
-                var ime = RenderOptions.GetBitmapScalingMode(_image);
-                menuItemBitmapScalingMode.Items.Clear();
-                foreach (var item in Enum.GetValues(typeof(BitmapScalingMode)).Cast<BitmapScalingMode>().GroupBy(mode => (int)mode).Select(group => group.First()))
-                {
-                    MenuItem menuItem1 = new() { Header = item.ToString() };
-                    if (ime != item)
-                    {
-                        menuItem1.Click += (s, e) =>
-                        {
-                            RenderOptions.SetBitmapScalingMode(_image, item);
-                        };
-                    }
-                    menuItem1.IsChecked = ime == item;
-                    menuItemBitmapScalingMode.Items.Add(menuItem1);
-                }
-            }
-            
-            menuItemBitmapScalingMode.SubmenuOpened += (s, e) => UpdateBitmapScalingMode();
-            UpdateBitmapScalingMode();
-            _contextMenu.Items.Insert(4, menuItemBitmapScalingMode);
         }
 
 
