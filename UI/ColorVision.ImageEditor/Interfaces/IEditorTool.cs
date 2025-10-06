@@ -7,6 +7,8 @@ using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
 
 namespace ColorVision.UI
@@ -30,6 +32,16 @@ namespace ColorVision.UI
 
         public object? Icon { get; }
         public ICommand? Command { get; }
+    }
+
+    // New: toggle-capable editor tool
+    public interface IEditorToggleTool : IEditorTool
+    {
+        // Bindable toggle state. Use INotifyPropertyChanged on the implementation if the state can change programmatically.
+        public bool? IsChecked { get; set; }
+
+        // Optional three-state toggle. Default implementations can return false.
+        public bool IsThreeState { get; }
     }
 
     public interface IIEditorToolContextMenu
@@ -141,13 +153,39 @@ namespace ColorVision.UI
 
         }
 
-        public static Button GenIEditorTool(IEditorTool  editorTool)
+        // Updated: return FrameworkElement to allow both Button and ToggleButton
+        public static FrameworkElement GenIEditorTool(IEditorTool editorTool)
         {
-            Button button = new Button() { Height = 27, Width = 27, Padding = new Thickness(3) };
-            button.Content = editorTool.Icon;
-            button.Command = editorTool.Command;
-            return button;
+            if (editorTool is IEditorToggleTool toggleTool)
+            {
+                var tbtn = new ToggleButton
+                {
+                    Height = 27,
+                    Width = 27,
+                    Padding = new Thickness(3),
+                    IsThreeState = toggleTool.IsThreeState,
+                    Content = editorTool.Icon,
+                    Command = editorTool.Command,
+                    DataContext = toggleTool
+                };
 
+                // Bind IsChecked to the tool's IsChecked property (two-way)
+                var binding = new Binding(nameof(IEditorToggleTool.IsChecked))
+                {
+                    Source = toggleTool,
+                    Mode = BindingMode.TwoWay,
+                    UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged
+                };
+                tbtn.SetBinding(ToggleButton.IsCheckedProperty, binding);
+                return tbtn;
+            }
+            else
+            {
+                var button = new Button() { Height = 27, Width = 27, Padding = new Thickness(3) };
+                button.Content = editorTool.Icon;
+                button.Command = editorTool.Command;
+                return button;
+            }
         }
         private static Thickness GetSpacingFor(ToolBarLocal loc)
         {

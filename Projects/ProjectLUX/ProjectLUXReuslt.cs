@@ -24,7 +24,6 @@ using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
 using ColorVision.Engine.Templates.MTF;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.Engine.Templates.POI.Image;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.SocketProtocol;
 using ColorVision.Themes;
