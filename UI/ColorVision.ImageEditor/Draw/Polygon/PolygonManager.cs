@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using System;
 using System.Windows;
 using System.Windows.Input;
@@ -6,7 +7,7 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class PolygonManager : ViewModelBase, IDisposable, IDrawEditor
+    public class PolygonManager : IEditorToggleToolBase, IDisposable
     {
         private Zoombox ZoomboxSub => EditorContext.Zoombox;
         private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
@@ -18,17 +19,22 @@ namespace ColorVision.ImageEditor.Draw
         public PolygonManager(EditorContext context)
         {
             EditorContext = context;
+            ToolBarLocal = ToolBarLocal.Draw;
+            Icon = IEditorToolFactory.TryFindResource("DrawingImagePolygon");
         }
+
+
+
 
         public DVPolygon? DrawingVisualPolygonCache { get; set; }
 
-        private bool _IsShow;
-        public bool IsShow
+        private bool _IsChecked;
+        public override bool IsChecked
         {
-            get => _IsShow; set
+            get => _IsChecked; set
             {
-                if (_IsShow == value) return;
-                _IsShow = value;
+                if (_IsChecked == value) return;
+                _IsChecked = value;
                 if (value)
                 {
                     ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
@@ -78,7 +84,7 @@ namespace ColorVision.ImageEditor.Draw
                 {
                     DrawCanvas.RemoveVisualCommand(DrawingVisualPolygonCache);
                     DrawingVisualPolygonCache = null;
-                    IsShow = false;
+                    IsChecked = false;
                 }
             }
             else if (realKey == Key.End || realKey == Key.Space || realKey == Key.Enter || realKey == Key.Tab)
@@ -88,7 +94,7 @@ namespace ColorVision.ImageEditor.Draw
                     DrawingVisualPolygonCache.Points.RemoveAt(DrawingVisualPolygonCache.Points.Count - 1);
                     DrawingVisualPolygonCache.Render();
                     DrawingVisualPolygonCache = null;
-                    IsShow = false;
+                    IsChecked = false;
                 }
                 e.Handled = true;
             }

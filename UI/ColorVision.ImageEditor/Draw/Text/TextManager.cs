@@ -3,6 +3,7 @@ using ColorVision.UI;
 using System;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -23,7 +24,7 @@ namespace ColorVision.ImageEditor.Draw
         private bool _FollowZoom = true;
     }
 
-    public class TextManager : ViewModelBase, IDisposable, IDrawEditor
+    public class TextManager : IEditorToggleToolBase, IDisposable
     {
         public TextManagerConfig Config { get; set; } = new TextManagerConfig();
         private Zoombox Zoombox => EditorContext.Zoombox;
@@ -34,20 +35,16 @@ namespace ColorVision.ImageEditor.Draw
         public TextManager(EditorContext context)
         {
             EditorContext = context;
+            ToolBarLocal = ToolBarLocal.Draw;
+            Icon = new TextBlock() { Text = "T" };
         }
 
-
-        private DVText? TextCache;
-        private Point MouseDownP;
-        private bool IsMouseDown;
-
-        private bool _IsShow;
-        public bool IsShow
+        public override bool IsChecked
         {
-            get => _IsShow; set
+            get => _IsChecked; set
             {
-                if (_IsShow == value) return;
-                _IsShow = value;
+                if (_IsChecked == value) return;
+                _IsChecked = value;
                 if (value)
                 {
                     ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
@@ -63,7 +60,12 @@ namespace ColorVision.ImageEditor.Draw
                 OnPropertyChanged();
             }
         }
+        private bool _IsChecked;
 
+
+        private DVText? TextCache;
+        private Point MouseDownP;
+        private bool IsMouseDown;
         private int CheckNo()
         {
             if (ImageViewModel.DrawingVisualLists.Count > 0 && ImageViewModel.DrawingVisualLists.Last() is DrawingVisualBase drawingVisual)
@@ -141,7 +143,7 @@ namespace ColorVision.ImageEditor.Draw
                     Config.DefaultFontSize = TextCache.Attribute.TextAttribute.FontSize * Zoombox.ContentMatrix.M11; // ±£´æÂß¼­³ß´ç
                 }
                 TextCache = null;
-                IsShow = false;
+                IsChecked = false;
             }
             e.Handled = true;
         }

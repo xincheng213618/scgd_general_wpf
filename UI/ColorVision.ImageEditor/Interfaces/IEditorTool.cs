@@ -1,4 +1,5 @@
-﻿using ColorVision.ImageEditor;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,7 @@ namespace ColorVision.UI
     public enum ToolBarLocal
     {
         Top,
-        Bottom,
+        Draw,
         Left,
         Right,
         RightBottom,
@@ -38,11 +39,24 @@ namespace ColorVision.UI
     public interface IEditorToggleTool : IEditorTool
     {
         // Bindable toggle state. Use INotifyPropertyChanged on the implementation if the state can change programmatically.
-        public bool? IsChecked { get; set; }
-
-        // Optional three-state toggle. Default implementations can return false.
-        public bool IsThreeState { get; }
+        public bool IsChecked { get; set; }
     }
+
+    public abstract class IEditorToggleToolBase : ViewModelBase, IEditorToggleTool
+    {
+        public virtual ToolBarLocal ToolBarLocal { get; set; } = ToolBarLocal.Draw;
+
+        public virtual string? GuidId  => GetType().Name;
+
+        public virtual int Order { get; set; } = 1;
+
+        public virtual object Icon { get; set; }
+
+        public virtual ICommand? Command { get; set; }
+
+        public virtual bool IsChecked { get; set; }
+    }
+
 
     public interface IIEditorToolContextMenu
     {
@@ -61,6 +75,7 @@ namespace ColorVision.UI
                 ToolBarLocal.Right => imageView.ToolBarRight.ToolBars.Count > 0 ? imageView.ToolBarRight.ToolBars[0] : null,
                 ToolBarLocal.RightBottom => imageView.ToolBarRight.ToolBars.Count > 0 ? imageView.ToolBarRight.ToolBars[0] : null,
                 ToolBarLocal.LeftTop => imageView.ToolBarLeft.ToolBars.Count > 0 ? imageView.ToolBarLeft.ToolBars[0] : null,
+                ToolBarLocal.Draw => imageView.ToolBarDraw.ToolBars.Count > 0 ? imageView.ToolBarDraw.ToolBars[0] : null,
                 _ => null
             };
         }
@@ -163,7 +178,6 @@ namespace ColorVision.UI
                     Height = 27,
                     Width = 27,
                     Padding = new Thickness(3),
-                    IsThreeState = toggleTool.IsThreeState,
                     Content = editorTool.Icon,
                     Command = editorTool.Command,
                     DataContext = toggleTool

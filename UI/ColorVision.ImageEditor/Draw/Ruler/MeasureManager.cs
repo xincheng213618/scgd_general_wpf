@@ -1,9 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using System.Windows.Input;
 
 namespace ColorVision.ImageEditor.Draw.Ruler
 {
-    public class MeasureManager:ViewModelBase,IDrawEditor
+    public class MeasureManager: IEditorToggleToolBase
     {
         private Zoombox Zoombox1 => EditorContext.Zoombox;
         private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
@@ -14,19 +15,21 @@ namespace ColorVision.ImageEditor.Draw.Ruler
         public MeasureManager(EditorContext context)
         {
             EditorContext = context;
+            ToolBarLocal = ToolBarLocal.Draw;
+            Icon = IEditorToolFactory.TryFindResource("DrawingImageruler");
         }
 
         private DrawingVisualRuler? RulerCache;
 
 
-        private bool _IsShow;
-        public bool IsShow
+        private bool _IsChecked;
+        public override bool IsChecked
         {
-            get => _IsShow;
+            get => _IsChecked;
             set
             {
-                if (_IsShow == value) return;
-                _IsShow = value;
+                if (_IsChecked == value) return;
+                _IsChecked = value;
                 if (value)
                 {
                     ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
@@ -112,7 +115,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
                 {
                     DrawCanvas.RemoveVisualCommand(RulerCache);
                     RulerCache = null;
-                    IsShow = false;
+                    IsChecked = false;
                 }
             }
             else if (realKey == Key.End || realKey == Key.Space || realKey == Key.Enter || realKey == Key.Tab)
@@ -121,7 +124,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
                 {
                     RulerCache.Render();
                     RulerCache = null;
-                    IsShow = false;
+                    IsChecked = false;
                 }
                 e.Handled = true;
             }

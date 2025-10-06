@@ -127,7 +127,7 @@ namespace ColorVision.ImageEditor
             Crosshair = new Crosshair(zoombox, drawCanvas);
             Gridline = new Gridline(zoombox, drawCanvas);
             ToolBarScaleRuler = new ToolBarScaleRuler(ImageView, zoombox, drawCanvas);
-            ToolConcentricCircle = new ToolReferenceLine(this, zoombox, drawCanvas);
+            ToolConcentricCircle = new ToolReferenceLine(context);
 
             MeasureManager = new MeasureManager(context);
             PolygonManager = new PolygonManager(context);

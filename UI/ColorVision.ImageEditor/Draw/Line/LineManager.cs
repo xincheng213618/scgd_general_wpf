@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using System;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -8,7 +10,7 @@ namespace ColorVision.ImageEditor.Draw
 {
 
 
-    public class LineManager : ViewModelBase, IDisposable,IDrawEditor
+    public class LineManager : IEditorToggleToolBase, IDisposable
     {
         private Zoombox ZoomboxSub => EditorContext.Zoombox;
         private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
@@ -18,18 +20,20 @@ namespace ColorVision.ImageEditor.Draw
         public LineManager(EditorContext context)
         {
             EditorContext = context;
+            ToolBarLocal = ToolBarLocal.Draw;
+            Icon =  new TextBlock() { Text = "L"};
         }
 
         public DVLine? DVLineCache { get; set; }
 
 
-        private bool _IsShow;
-        public bool IsShow
+        private bool _IsChecked;
+        public override bool IsChecked
         {
-            get => _IsShow; set
+            get => _IsChecked; set
             {
-                if (_IsShow == value) return;
-                _IsShow = value;
+                if (_IsChecked == value) return;
+                _IsChecked = value;
                 if (value)
                 {
                     ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
@@ -100,7 +104,7 @@ namespace ColorVision.ImageEditor.Draw
                 DVLineCache.Points.Add(MouseUpP);
                 DVLineCache.Render();
                 ImageViewModel.SelectEditorVisual.SetRender(DVLineCache);
-                IsShow = false;
+                IsChecked = false;
                 DVLineCache = null;
             }
             e.Handled = true;

@@ -1,3 +1,4 @@
+using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Windows.Controls;
@@ -13,31 +14,24 @@ namespace ColorVision.ImageEditor
         IEnumerable<MenuItem> GetContextMenuItems(ImageViewModel imageViewModel, object obj);
     }
 
-    /// <summary>
-    /// »æÍ¼±à¼­Æ÷½Ó¿Ú
-    /// </summary>
-    public interface IDrawEditor
-    {
-        public bool IsShow { get; set; }
-    }
 
     /// <summary>
     /// »æÍ¼±à¼­Æ÷¹ÜÀíÀà
     /// </summary>
     public class DrawEditorManager
     {
-        public IDrawEditor? Current { get; set; }
+        public IEditorToggleTool? Current { get; set; }
 
-        public void SetCurrentDrawEditor(IDrawEditor? drawEditor)
+        public void SetCurrentDrawEditor(IEditorToggleTool? drawEditor)
         {
             if(Current != null)
             {
-                Current.IsShow = false;
+                Current.IsChecked = false;
             }
             Current = drawEditor;
             if (Current != null)
             {
-                Current.IsShow = true;
+                Current.IsChecked = true;
             }
         }
     }

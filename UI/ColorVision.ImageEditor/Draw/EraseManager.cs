@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS0414,CS8625
 using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using System;
 using System.Linq;
 using System.Windows;
@@ -8,7 +9,7 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class EraseManager : ViewModelBase, IDisposable, IDrawEditor
+    public class EraseManager : IEditorToggleToolBase, IDisposable
     {
         private Zoombox Zoombox1 => EditorContext.Zoombox;
         private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
@@ -19,15 +20,17 @@ namespace ColorVision.ImageEditor.Draw
         public EraseManager(EditorContext context)
         {
             EditorContext = context;
+            ToolBarLocal = ToolBarLocal.Draw;
+            Icon = IEditorToolFactory.TryFindResource("DrawingImageeraser");
         }
         DrawingVisual EraseVisual { get; set; }
 
-        public bool IsShow
+        public override bool IsChecked
         {
-            get => _IsShow; set
+            get => _IsChecked; set
             {
-                if (_IsShow == value) return;
-                _IsShow = value;
+                if (_IsChecked == value) return;
+                _IsChecked = value;
                 if (value)
                 {
                     ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
@@ -148,7 +151,7 @@ namespace ColorVision.ImageEditor.Draw
 
 
 
-        private bool _IsShow;
+        private bool _IsChecked;
 
 
         public void Dispose()

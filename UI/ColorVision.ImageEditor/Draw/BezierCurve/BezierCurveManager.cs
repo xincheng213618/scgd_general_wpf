@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS0414,CS8625
 using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using System;
 using System.Windows;
 using System.Windows.Input;
@@ -7,7 +8,7 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public  class BezierCurveManager:  ViewModelBase, IDisposable, IDrawEditor
+    public  class BezierCurveManager: IEditorToggleToolBase, IDisposable
     {
         private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
         public EditorContext EditorContext { get; set; }
@@ -15,15 +16,17 @@ namespace ColorVision.ImageEditor.Draw
         public BezierCurveManager(EditorContext context)
         {
             EditorContext = context;
+            ToolBarLocal = ToolBarLocal.Draw;
+            Icon = IEditorToolFactory.TryFindResource("DrawingImagePolygon");
         }
 
-        private bool _IsShow;
-        public bool IsShow
+        private bool _IsChecked;
+        public override bool IsChecked
         {
-            get => _IsShow; set
+            get => _IsChecked; set
             {
-                if (_IsShow == value) return;
-                _IsShow = value;
+                if (_IsChecked == value) return;
+                _IsChecked = value;
                 if (value)
                 {
                     EditorContext.ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
@@ -74,7 +77,7 @@ namespace ColorVision.ImageEditor.Draw
                 {
                     DrawCanvas.RemoveVisualCommand(DVBezierCurveCache);
                     DVBezierCurveCache = null;
-                    IsShow = false;
+                    _IsChecked = false;
                 }
             }
             else if (realKey == Key.End || realKey == Key.Space || realKey == Key.Enter || realKey == Key.Tab)
@@ -84,7 +87,7 @@ namespace ColorVision.ImageEditor.Draw
                     DVBezierCurveCache.Points.RemoveAt(DVBezierCurveCache.Points.Count - 1);
                     DVBezierCurveCache.Render();
                     DVBezierCurveCache = null;
-                    IsShow = false;
+                    _IsChecked = false;
                 }
                 e.Handled = true;
             }

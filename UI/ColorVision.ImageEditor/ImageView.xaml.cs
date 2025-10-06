@@ -228,7 +228,7 @@ namespace ColorVision.ImageEditor
         {
             if (sender is ToggleButton toggleButton)
             {
-                if (ImageViewModel.EraseManager.IsShow)
+                if (ImageViewModel.EraseManager.IsChecked)
                 {
                     Zoombox1.ActivateOn = toggleButton.IsChecked == true ? ModifierKeys.Control : ModifierKeys.None;
                 }

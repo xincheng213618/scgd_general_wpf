@@ -69,7 +69,7 @@ namespace ColorVision.ImageEditor
         {
             if (ComboBoxFontFamily.SelectedIndex > -1)
             {
-                //MessageBox.IsShow("!");
+                //MessageBox.IsChecked("!");
             }
         }
 
