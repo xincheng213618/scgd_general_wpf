@@ -50,7 +50,7 @@ namespace ColorVision.Engine.Media
     }
 
     [FileExtension(".cvraw|.cvcie")]
-    public class CVRawOpen : IImageOpen
+    public record class CVRawOpen(EditorContext EditorContext) : IImageOpen
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CVRawOpen));
 

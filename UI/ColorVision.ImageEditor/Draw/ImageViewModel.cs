@@ -73,20 +73,23 @@ namespace ColorVision.ImageEditor
 
         public ImageViewModel(ImageView imageView, Zoombox zoombox, DrawCanvas drawCanvas)
         {
+            Config = new ImageViewConfig();
 
             var context = new EditorContext()
             {
                 ImageViewModel = this,
                 DrawCanvas = drawCanvas,
-                ZoomboxSub = zoombox
+                ZoomboxSub = zoombox,
+                ImageViewConfig = Config
             };
+
             IEditorToolFactory = new IEditorToolFactory(imageView, context);
 
 
             this.ImageView = imageView;
             ZoomboxSub = zoombox;
             Image = drawCanvas;
-            Config = new ImageViewConfig();
+
             ContextMenu = new ContextMenu();
 
             _transformOperations = new ImageTransformOperations(drawCanvas);

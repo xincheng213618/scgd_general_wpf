@@ -66,7 +66,7 @@ namespace ColorVision.ImageEditor
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
             Config.BalanceChanged += ImageViewConfig_BalanceChanged;
 
-            foreach (var item in ComponentManager.GetInstance().IImageComponents)
+            foreach (var item in ImageViewModel.IEditorToolFactory.IImageComponents)
                 item.Execute(this);
 
 
@@ -293,7 +293,7 @@ namespace ColorVision.ImageEditor
                     Config.AddProperties("FileSize", fileSize);
 
                     string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
-                    if (ComponentManager.GetInstance().IImageOpens.TryGetValue(ext, out var imageOpen))
+                    if (ImageViewModel.IEditorToolFactory.IImageOpens.TryGetValue(ext, out var imageOpen))
                     {
                         ImageViewModel.IImageOpen = imageOpen;
                         Config.AddProperties("ImageViewOpen", ImageViewModel.IImageOpen);

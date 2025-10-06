@@ -6,6 +6,7 @@ using HandyControl.Controls;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -22,13 +23,6 @@ namespace ColorVision.UI
         Right,
         RightBottom,
         LeftTop
-    }
-
-    public class EditorContext
-    {
-        public ImageViewModel ImageViewModel { get; set; }
-        public DrawCanvas DrawCanvas { get; set; }
-        public Zoombox ZoomboxSub { get; set; }
     }
 
     public interface IEditorTool
@@ -50,7 +44,6 @@ namespace ColorVision.UI
     public static class ToolBarLocalExtensions
     {
 
-
         public static ToolBar? GetRegionToolBar(this ImageView imageView, ToolBarLocal loc)
         {
             return loc switch
@@ -69,6 +62,10 @@ namespace ColorVision.UI
     {
         public ObservableCollection<IEditorTool> IEditorTools { get; set; } = new ObservableCollection<IEditorTool>();
         public ObservableCollection<IIEditorToolContextMenu> IIEditorToolContextMenus { get; set; } = new ObservableCollection<IIEditorToolContextMenu>();
+
+        public ObservableCollection<IImageComponent> IImageComponents { get; set; } = new ObservableCollection<IImageComponent>();
+        public Dictionary<string, IImageOpen> IImageOpens { get; set; } = new Dictionary<string, IImageOpen>();
+
 
         public IEditorToolFactory(ImageView imageView, EditorContext context)
         {
@@ -115,6 +112,37 @@ namespace ColorVision.UI
                     toolBar.Items.Add(btn);
                 }
             }
+
+
+            foreach (var item in AssemblyService.Instance.LoadImplementations<IImageComponent>())
+            {
+                IImageComponents.Add(item);
+            }
+
+            foreach (var assembly in AssemblyService.Instance.GetAssemblies())
+            {
+                foreach (var type in assembly.GetTypes())
+                {
+                    if (typeof(IImageOpen).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
+                    {
+                        var attr = type.GetCustomAttributes(typeof(FileExtensionAttribute), false)
+                            .Cast<FileExtensionAttribute>().FirstOrDefault();
+                        if (attr != null)
+                        {
+                            foreach (var ext in attr.Extensions)
+                            {
+                                var extLower = ext.ToLowerInvariant();
+
+                                if (Activator.CreateInstance(type, context) is IImageOpen instance)
+                                {
+                                    IImageOpens.Add(extLower, instance);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
         }
 
         public static Button GenIEditorTool(IEditorTool  editorTool)
