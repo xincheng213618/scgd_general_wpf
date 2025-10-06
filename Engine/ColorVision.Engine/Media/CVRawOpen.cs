@@ -3,7 +3,6 @@ using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw.Special;
-using ColorVision.UI;
 using ColorVision.UI.Menus;
 using cvColorVision;
 using log4net;

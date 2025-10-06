@@ -1,5 +1,4 @@
-﻿using ColorVision.UI;
-using ColorVision.UI.Menus;
+﻿using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Windows.Input;
 

@@ -1,5 +1,4 @@
 using ColorVision.Common.MVVM;
-using ColorVision.UI;
 using System.Windows.Input;
 
 namespace ColorVision.ImageEditor.EditorTools.WindowTools

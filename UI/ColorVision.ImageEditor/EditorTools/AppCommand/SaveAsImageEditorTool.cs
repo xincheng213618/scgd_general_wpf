@@ -1,5 +1,4 @@
-﻿using ColorVision.UI;
-using ColorVision.UI.Menus;
+﻿using ColorVision.UI.Menus;
 using System.Windows.Input;
 
 namespace ColorVision.ImageEditor.EditorTools.AppCommand

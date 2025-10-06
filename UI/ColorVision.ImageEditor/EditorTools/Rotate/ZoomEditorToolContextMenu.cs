@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.EditorTools.Rotate;
-using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
 

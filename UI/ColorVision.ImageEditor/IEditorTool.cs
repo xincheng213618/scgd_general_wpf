@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.ImageEditor;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
@@ -12,7 +12,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 
-namespace ColorVision.UI
+namespace ColorVision.ImageEditor
 {
     public enum ToolBarLocal
     {
