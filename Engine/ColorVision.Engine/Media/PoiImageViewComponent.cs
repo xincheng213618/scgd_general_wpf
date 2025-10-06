@@ -371,7 +371,7 @@ namespace ColorVision.Engine.Media
                     windowCIE.Closed += (s, e) =>
                     {
                         imageView.ImageViewModel.MouseMagnifier.MouseMoveColorHandler -= mouseMoveColorHandler;
-                        imageView.ImageViewModel.MouseMagnifier.IsShow = false;
+                        imageView.ImageViewModel.MouseMagnifier.IsChecked = false;
                         windowCIE = null;
                     };
                 }

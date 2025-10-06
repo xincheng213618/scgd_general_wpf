@@ -38,23 +38,16 @@ namespace ColorVision.ImageEditor
         #region Components
         public Zoombox ZoomboxSub { get; set; }
         public DrawCanvas Image { get; set; }
-        public BezierCurveManager BezierCurveManager { get; set; }
-        public CircleManager CircleManager { get; set; }
-        public RectangleManager RectangleManager { get; set; }
-        public EraseManager EraseManager { get; set; }
-        public PolygonManager PolygonManager { get; set; }
-        public MouseMagnifier MouseMagnifier { get; set; }
-        public MeasureManager MeasureManager { get; set; }
-        public LineManager LineManager { get; set; }
+
         public Crosshair Crosshair { get; set; }
-        public Gridline Gridline { get; set; }
         public ToolBarScaleRuler ToolBarScaleRuler { get; set; }
-        public ToolReferenceLine ToolConcentricCircle { get; set; }
-        public TextManager TextManager { get; set; } // 新增
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
         public SelectEditorVisual SelectEditorVisual { get; set; }
         public StackPanel SlectStackPanel { get; set; } = new StackPanel();
         public ImageFullScreenMode ImageFullScreenMode { get; set; }
+
+        public MouseMagnifierManager MouseMagnifier { get; set; }
+
 
         #endregion
 
@@ -89,6 +82,7 @@ namespace ColorVision.ImageEditor
 
             IEditorToolFactory = new IEditorToolFactory(imageView, context);
 
+            MouseMagnifier = IEditorToolFactory.IEditorTools.OfType<MouseMagnifierManager>().FirstOrDefault();
 
             this.ImageView = imageView;
             ZoomboxSub = zoombox;
@@ -123,21 +117,8 @@ namespace ColorVision.ImageEditor
 
             drawCanvas.PreviewKeyDown += _keyboardHandler.HandleKeyDown;
 
-
-            MouseMagnifier = new MouseMagnifier(zoombox, drawCanvas);
             Crosshair = new Crosshair(zoombox, drawCanvas);
-            Gridline = new Gridline(zoombox, drawCanvas);
             ToolBarScaleRuler = new ToolBarScaleRuler(ImageView, zoombox, drawCanvas);
-            ToolConcentricCircle = new ToolReferenceLine(context);
-
-            MeasureManager = new MeasureManager(context);
-            PolygonManager = new PolygonManager(context);
-            BezierCurveManager = new BezierCurveManager(context);
-            LineManager = new LineManager(context);
-            CircleManager = new CircleManager(context);
-            RectangleManager = new RectangleManager(context);
-            EraseManager = new EraseManager(context);
-            TextManager = new TextManager(context); // 初始化 TextManager
 
             Image.ContextMenuOpening += HandleContextMenuOpening;
             Image.ContextMenu = ContextMenu;
@@ -386,15 +367,12 @@ namespace ColorVision.ImageEditor
 
         public void Dispose()
         {
-            LineManager?.Dispose();
-            SelectEditorVisual?.Dispose();
-            CircleManager?.Dispose();
-            EraseManager?.Dispose();
-            RectangleManager?.Dispose();
-            PolygonManager?.Dispose();
-            BezierCurveManager?.Dispose();
-            TextManager?.Dispose();
-            
+            foreach (var item in IEditorToolFactory.IEditorTools.Cast<IDisposable>())
+            {
+                item.Dispose();
+            }
+
+
             if (DrawingVisualLists != null)
             {
                 DrawingVisualLists.Clear();

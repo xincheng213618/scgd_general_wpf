@@ -224,17 +224,6 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private void Button7_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is ToggleButton toggleButton)
-            {
-                if (ImageViewModel.EraseManager.IsChecked)
-                {
-                    Zoombox1.ActivateOn = toggleButton.IsChecked == true ? ModifierKeys.Control : ModifierKeys.None;
-                }
-            }
-        }
-
         public void Clear()
         {
 

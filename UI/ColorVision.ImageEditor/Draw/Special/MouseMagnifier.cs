@@ -33,28 +33,31 @@ namespace ColorVision.ImageEditor.Draw.Special
     /// <summary>
     /// 后续优化调整，成为不同的图像格式显示不同的参数
     /// </summary>
-    public class MouseMagnifier
+    public class MouseMagnifierManager:IEditorToggleToolBase
     {
-        private Zoombox ZoomboxSub { get; set; }
-        private DrawCanvas Image { get; set; }
-
-        public DrawingVisual DrawVisualImage { get; set; }
-
-        public event MouseMoveColorHandler MouseMoveColorHandler;
-        public MouseMagnifier(Zoombox zombox, DrawCanvas drawCanvas)
+        public EditorContext EditorContext { get; set; }
+        public MouseMagnifierManager(EditorContext editorContext)
         {
-            ZoomboxSub = zombox;
-            Image = drawCanvas;
-            DrawVisualImage = new DrawingVisual();
+            EditorContext = editorContext;
+            ToolBarLocal = ToolBarLocal.Top;
+            Order = 0;
+            Icon = IEditorToolFactory.TryFindResource("DrawingImageMouse");
         }
 
-        public bool IsShow
+        private Zoombox ZoomboxSub => EditorContext.Zoombox;
+        private DrawCanvas Image => EditorContext.DrawCanvas;
+
+        public DrawingVisual DrawVisualImage { get; set; } = new DrawingVisual();
+
+        public event MouseMoveColorHandler MouseMoveColorHandler;
+
+        public override bool IsChecked
         {
-            get => _IsShow; set
+            get => _IsChecked; set
             {
-                if (_IsShow == value) return;
-                _IsShow = value;
-                DrawVisualImageControl(_IsShow);
+                if (_IsChecked == value) return;
+                _IsChecked = value;
+                DrawVisualImageControl(_IsChecked);
                 if (value)
                 {
                     Image.MouseMove += MouseMove;
@@ -69,7 +72,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                 }
             }
         }
-        private bool _IsShow;
+        private bool _IsChecked;
 
         public double Radius { get; set; } = 100;
         public double RectWidth { get; set; } = 120;
@@ -199,7 +202,7 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         public void MouseMove(object sender, MouseEventArgs e)
         {
-            if (IsShow && Image.Source is BitmapSource bitmap)
+            if (IsChecked && Image.Source is BitmapSource bitmap)
             {
                 var point = e.GetPosition(Image);
 

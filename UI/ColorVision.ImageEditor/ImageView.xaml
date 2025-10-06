@@ -93,12 +93,6 @@
                         <ToggleButton IsChecked="{Binding ImageEditMode}"  Margin="1,0">
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
                         </ToggleButton>
-                        <ToggleButton  IsChecked="{Binding MouseMagnifier.IsShow}" Margin="1,0"  Height="27" Width="27" Padding="3">
-                            <Image  Source="{DynamicResource DrawingImageMouse}"/>
-                        </ToggleButton>
-                        <ToggleButton IsChecked="{Binding Gridline.IsShow}">
-                            <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIGridlines}"  Margin="-5"/>
-                        </ToggleButton>
                         <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}"/>
                     </ToolBar>
                 </ToolBarTray>
