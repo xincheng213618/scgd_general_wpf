@@ -92,10 +92,13 @@ namespace ColorVision.ImageEditor
         {
             List<MenuItemMetadata> MenuItemMetadatas = new List<MenuItemMetadata>();
             if (_viewModel.IImageOpen is IIEditorToolContextMenu contentMenuProvider)
+            {
                 MenuItemMetadatas.AddRange(contentMenuProvider.GetContextMenuItems());
+            }
 
             foreach (var item in _viewModel.IEditorToolFactory.IIEditorToolContextMenus)
             {
+                if (item is IImageOpen) continue;
                 MenuItemMetadatas.AddRange(item.GetContextMenuItems());
             }
 
