@@ -6,15 +6,6 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    /// <summary>
-    /// 绘图可视化接口 - 定义可绘制元素的基本行为
-    /// </summary>
-    public interface IDrawingVisual
-    {
-        BaseProperties BaseAttribute { get; }
-        Pen Pen { get; set; }
-        void Render();
-    }
 
     /// <summary>
     /// 绘图数据可视化接口 - 用于数据驱动的绘图元素
@@ -62,12 +53,12 @@ namespace ColorVision.ImageEditor
     /// </summary>
     public class IDrawingVisualDVContextMenu : IDVContextMenu
     {
-        public Type ContextType => typeof(Draw.IDrawingVisual);
+        public Type ContextType => typeof(IDrawingVisual);
 
         public IEnumerable<MenuItem> GetContextMenuItems(ImageViewModel imageViewModel, object obj)
         {
             List<MenuItem> MenuItems = new List<MenuItem>();
-            if (obj is Draw.IDrawingVisual drawingVisual)
+            if (obj is IDrawingVisual drawingVisual)
             {
                 // 可以在此添加通用菜单项
             }
