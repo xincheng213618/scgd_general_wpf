@@ -10,18 +10,17 @@ namespace ColorVision.ImageEditor.Draw
 {
     public class EraseManager : ViewModelBase, IDisposable, IDrawEditor
     {
-        private Zoombox Zoombox1 { get; set; }
-        private DrawCanvas DrawCanvas { get; set; }
-        public ImageViewModel ImageViewModel { get; set; }
+        private Zoombox Zoombox1 => EditorContext.Zoombox;
+        private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
+        public ImageViewModel ImageViewModel => EditorContext.ImageViewModel;
 
-        DrawingVisual EraseVisual { get; set; }
+        public EditorContext EditorContext { get; set; }
 
-        public EraseManager(ImageViewModel imageEditViewMode, Zoombox zombox, DrawCanvas drawCanvas)
+        public EraseManager(EditorContext context)
         {
-            Zoombox1 = zombox;
-            DrawCanvas = drawCanvas;
-            ImageViewModel = imageEditViewMode;
+            EditorContext = context;
         }
+        DrawingVisual EraseVisual { get; set; }
 
         public bool IsShow
         {

@@ -5,19 +5,19 @@ namespace ColorVision.ImageEditor.Draw.Ruler
 {
     public class MeasureManager:ViewModelBase,IDrawEditor
     {
-        private Zoombox Zoombox1 { get; set; }
-        private DrawCanvas DrawCanvas { get; set; }
+        private Zoombox Zoombox1 => EditorContext.Zoombox;
+        private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
+        private ImageViewModel ImageViewModel => EditorContext.ImageViewModel;
 
-        private ImageViewModel ImageViewModel { get; set; }
+        public EditorContext EditorContext { get; set; }
+
+        public MeasureManager(EditorContext context)
+        {
+            EditorContext = context;
+        }
 
         private DrawingVisualRuler? RulerCache;
 
-        public MeasureManager(ImageViewModel imageViewModel, Zoombox zombox, DrawCanvas drawCanvas)
-        {
-            ImageViewModel = imageViewModel;
-            Zoombox1 = zombox;
-            DrawCanvas = drawCanvas;
-        }
 
         private bool _IsShow;
         public bool IsShow

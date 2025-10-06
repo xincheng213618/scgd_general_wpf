@@ -107,19 +107,10 @@
                         <ToggleButton IsChecked="{Binding BezierCurveManager.IsShow}" Padding="5" Margin="0,0,2,0">
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}" />
                         </ToggleButton>
-
-                        <Button x:Name="reference"  Click="reference_Click" Padding="5"   >
+                        <ToggleButton IsChecked="{Binding ToolConcentricCircle.IsShow}" Padding="5" Margin="0,0,2,0">
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource ConcentricCirclesDrawImg}" />
-                        </Button>
-                        <Popup x:Name="menuPop1" StaysOpen="False" Margin="0" PlacementTarget="{Binding ElementName=reference}"  AllowsTransparency="True">
-                            <StackPanel Margin="0">
-                                <Button Content="无" Command="{Binding ToolConcentricCircle.SelectNoneCommand}" Click="reference1_Click" Width="80" Tag="-1"/>
-                                <Button Content="十字准线" Command="{Binding ToolConcentricCircle.Select2Command}" Click="reference1_Click" Width="80" Tag="2"/>
-                                <Button Content="同心圆" Command="{Binding ToolConcentricCircle.Select0Command}" Click="reference1_Click" Width="80" Tag="0"/>
-                                <Button Content="单十字准线" Command="{Binding ToolConcentricCircle.Select1Command}" Click="reference1_Click" Width="80"  Tag="1"/>
-                                <Button Content="锁定" Command="{Binding ToolConcentricCircle.LockCommand}" Click="reference1_Click" Width="80"  Tag="1"/>
-                            </StackPanel>
-                        </Popup>
+                        </ToggleButton>
+  
                         <Button Click="EditDIExpand_Click" Padding="5"   >
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DIExpand}" />
                         </Button>

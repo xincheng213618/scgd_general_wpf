@@ -509,25 +509,6 @@ namespace ColorVision.ImageEditor
 
         public void AddVisual(Visual visual) => ImageShow.AddVisualCommand(visual);
 
-
-        private void reference_Click(object sender, RoutedEventArgs e)
-        {
-            menuPop1.IsOpen = true;
-        }
-
-        private void reference1_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && button.Tag is string tag)
-            {
-                menuPop1.IsOpen = false;
-
-
-
-
-            }
-        }
-
-
         private void HistogramButton_Click(object sender, RoutedEventArgs e)
         {
             if (ImageShow.Source is not BitmapSource bitmapSource) return;

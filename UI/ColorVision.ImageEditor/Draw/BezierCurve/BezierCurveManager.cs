@@ -7,20 +7,14 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class BezierCurveManager:  ViewModelBase, IDisposable, IDrawEditor
+    public  class BezierCurveManager:  ViewModelBase, IDisposable, IDrawEditor
     {
-        private Zoombox ZoomboxSub { get; set; }
-        private DrawCanvas DrawCanvas { get; set; }
+        private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
+        public EditorContext EditorContext { get; set; }
 
-        public DrawingVisual BezierCurveImpCache { get; set; }
-
-        public ImageViewModel ImageViewModel { get; set; }
-
-        public BezierCurveManager(ImageViewModel imageViewModel, Zoombox zombox, DrawCanvas drawCanvas)
+        public BezierCurveManager(EditorContext context)
         {
-            ZoomboxSub = zombox;
-            DrawCanvas = drawCanvas;
-            ImageViewModel = imageViewModel;
+            EditorContext = context;
         }
 
         private bool _IsShow;
@@ -32,13 +26,13 @@ namespace ColorVision.ImageEditor.Draw
                 _IsShow = value;
                 if (value)
                 {
-                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
+                    EditorContext.ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
 
                     Load();
                 }
                 else
                 {
-                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(null);
+                    EditorContext.ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(null);
                     UnLoad();
                 }
                 OnPropertyChanged();
@@ -117,7 +111,7 @@ namespace ColorVision.ImageEditor.Draw
                 DVBezierCurveCache.Points.Add(MouseDownP);
                 DVBezierCurveCache.Points.Add(MouseDownP);
 
-                DVBezierCurveCache.Attribute.Pen = new Pen(Brushes.Red, 1 / ZoomboxSub.ContentMatrix.M11);
+                DVBezierCurveCache.Attribute.Pen = new Pen(Brushes.Red, 1 / EditorContext.Zoombox.ContentMatrix.M11);
                 DVBezierCurveCache.Render();
                 DrawCanvas.AddVisualCommand(DVBezierCurveCache);
             }

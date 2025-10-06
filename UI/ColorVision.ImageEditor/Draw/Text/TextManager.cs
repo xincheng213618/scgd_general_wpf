@@ -26,20 +26,20 @@ namespace ColorVision.ImageEditor.Draw
     public class TextManager : ViewModelBase, IDisposable, IDrawEditor
     {
         public TextManagerConfig Config { get; set; } = new TextManagerConfig();
-        private Zoombox Zoombox { get; set; }
-        private DrawCanvas DrawCanvas { get; set; }
+        private Zoombox Zoombox => EditorContext.Zoombox;
+        private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
         public ImageViewModel ImageViewModel { get; set; }
+        public EditorContext EditorContext { get; set; }
+
+        public TextManager(EditorContext context)
+        {
+            EditorContext = context;
+        }
+
 
         private DVText? TextCache;
         private Point MouseDownP;
         private bool IsMouseDown;
-
-        public TextManager(ImageViewModel imageViewModel, Zoombox zoombox, DrawCanvas drawCanvas)
-        {
-            Zoombox = zoombox;
-            DrawCanvas = drawCanvas;
-            ImageViewModel = imageViewModel;
-        }
 
         private bool _IsShow;
         public bool IsShow

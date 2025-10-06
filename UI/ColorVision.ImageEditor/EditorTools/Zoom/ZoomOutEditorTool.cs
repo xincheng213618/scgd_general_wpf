@@ -15,7 +15,7 @@ namespace ColorVision.ImageEditor.EditorTools.Zoom
 
         public ICommand? Command { get; set; } = new RelayCommand((o) =>
         {
-            EditorContext.ZoomboxSub.Zoom(0.8);
+            EditorContext.Zoombox.Zoom(0.8);
         });
     }
 

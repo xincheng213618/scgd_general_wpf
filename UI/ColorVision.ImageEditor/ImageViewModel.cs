@@ -82,7 +82,7 @@ namespace ColorVision.ImageEditor
             {
                 ImageViewModel = this,
                 DrawCanvas = drawCanvas,
-                ZoomboxSub = zoombox,
+                Zoombox = zoombox,
                 Config = Config
             };
 
@@ -123,7 +123,20 @@ namespace ColorVision.ImageEditor
             drawCanvas.PreviewKeyDown += _keyboardHandler.HandleKeyDown;
 
 
-            InitializeTools(zoombox, drawCanvas);
+            MouseMagnifier = new MouseMagnifier(zoombox, drawCanvas);
+            Crosshair = new Crosshair(zoombox, drawCanvas);
+            Gridline = new Gridline(zoombox, drawCanvas);
+            ToolBarScaleRuler = new ToolBarScaleRuler(ImageView, zoombox, drawCanvas);
+            ToolConcentricCircle = new ToolReferenceLine(this, zoombox, drawCanvas);
+
+            MeasureManager = new MeasureManager(context);
+            PolygonManager = new PolygonManager(context);
+            BezierCurveManager = new BezierCurveManager(context);
+            LineManager = new LineManager(context);
+            CircleManager = new CircleManager(context);
+            RectangleManager = new RectangleManager(context);
+            EraseManager = new EraseManager(context);
+            TextManager = new TextManager(context); // 初始化 TextManager
 
             Image.ContextMenuOpening += HandleContextMenuOpening;
             Image.ContextMenu = ContextMenu;
@@ -318,24 +331,6 @@ namespace ColorVision.ImageEditor
                     }
                 }
             }
-        }
-
-        private void InitializeTools(Zoombox zoombox, DrawCanvas drawCanvas)
-        {
-            MouseMagnifier = new MouseMagnifier(zoombox, drawCanvas);
-            Crosshair = new Crosshair(zoombox, drawCanvas);
-            Gridline = new Gridline(zoombox, drawCanvas);
-            ToolBarScaleRuler = new ToolBarScaleRuler(ImageView, zoombox, drawCanvas);
-            ToolConcentricCircle = new ToolReferenceLine(this, zoombox, drawCanvas);
-
-            MeasureManager = new MeasureManager(this, zoombox, drawCanvas);
-            PolygonManager = new PolygonManager(this, zoombox, drawCanvas);
-            BezierCurveManager = new BezierCurveManager(this, zoombox, drawCanvas);
-            LineManager = new LineManager(this, zoombox, drawCanvas);
-            CircleManager = new CircleManager(this, zoombox, drawCanvas);
-            RectangleManager = new RectangleManager(this, zoombox, drawCanvas);
-            EraseManager = new EraseManager(this, zoombox, drawCanvas);
-            TextManager = new TextManager(this, zoombox, drawCanvas); // 初始化 TextManager
         }
 
         #region Public Methods
