@@ -1,37 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Windows.Controls;
+// æ­¤æ–‡ä»¶å·²åºŸå¼ƒï¼Œæ¥å£å·²ç§»è‡³ Abstractions/Draw/IDrawing.cs
+// This file is deprecated. Interfaces have been moved to Abstractions/Draw/IDrawing.cs
+
+#pragma warning disable CS1587 // XML æ³¨é‡Šæœªæ”¾ç½®åœ¨æœ‰æ•ˆçš„è¯­è¨€å…ƒç´ ä¸Š
 
 namespace ColorVision.ImageEditor
 {
-    /// <summary>
-    /// »æÍ¼ÔªËØÉÏÏÂÎÄ²Ëµ¥½Ó¿Ú
-    /// </summary>
-    public interface IDVContextMenu
-    {
-        Type ContextType { get; }
-        IEnumerable<MenuItem> GetContextMenuItems(ImageViewModel imageViewModel, object obj);
-    }
-
-
-    /// <summary>
-    /// »æÍ¼±à¼­Æ÷¹ÜÀíÀà
-    /// </summary>
-    public class DrawEditorManager
-    {
-        public IEditorToggleTool? Current { get; set; }
-
-        public void SetCurrentDrawEditor(IEditorToggleTool? drawEditor)
-        {
-            if(Current != null)
-            {
-                Current.IsChecked = false;
-            }
-            Current = drawEditor;
-            if (Current != null)
-            {
-                Current.IsChecked = true;
-            }
-        }
-    }
 }

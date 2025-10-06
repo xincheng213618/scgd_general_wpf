@@ -1,33 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Windows.Controls;
-using System.Windows.Media;
+﻿// 此文件已废弃，接口已移至 Abstractions/Draw/IDrawing.cs
+// This file is deprecated. Interfaces have been moved to Abstractions/Draw/IDrawing.cs
+
+// 保留此文件是为了向后兼容，但所有定义已移至新位置
+// This file is kept for backward compatibility, but all definitions have been moved to the new location
+
+#pragma warning disable CS1587 // XML 注释未放置在有效的语言元素上
+
+// 重新导出接口以保持向后兼容
+// Re-export interfaces for backward compatibility
+namespace ColorVision.ImageEditor.Draw
+{
+}
 
 namespace ColorVision.ImageEditor
 {
-    public interface IDrawingVisual
-    {
-        public abstract BaseProperties BaseAttribute { get; }
-
-        public Pen Pen { get; set; }
-
-        public abstract void Render();
-
-    }
-    public class IDrawingVisualDVContextMenu : IDVContextMenu
-    {
-        public Type ContextType => typeof(IDrawingVisual);
-
-        public IEnumerable<MenuItem> GetContextMenuItems(ImageViewModel imageViewModel, object obj)
-        {
-            List<MenuItem> MenuItems = new List<MenuItem>();
-            if (obj is IDrawingVisual drawingVisual)
-            {
-
-            }
-            return MenuItems;
-        }
-    }
-
-
 }
