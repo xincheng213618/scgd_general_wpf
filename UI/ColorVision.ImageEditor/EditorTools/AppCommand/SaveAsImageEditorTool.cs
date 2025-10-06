@@ -1,15 +1,11 @@
-﻿using ColorVision.UI;
-using ColorVision.UI.Menus;
-using System.Windows;
-using System.Windows.Controls;
+﻿using ColorVision.UI.Menus;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.EditorTools.AppCommand
 {
     public record class SaveAsImageEditorTool(EditorContext EditorContext) : IEditorTool
     {
-        public ToolBarLocal ToolBarLocal => ToolBarLocal.Right;
+        public ToolBarLocal ToolBarLocal => ToolBarLocal.Left;
         public string? GuidId => "SaveAs";
 
         public int Order { get; set; } = 2;

@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CS8603,CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.UI;
 using Newtonsoft.Json;
 using SqlSugar;
 using System.ComponentModel;

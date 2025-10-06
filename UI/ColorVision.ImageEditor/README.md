@@ -1,12 +1,14 @@
 # ColorVision.ImageEditor
 
+> 版本: 1.3.8.5 | 目标框架: .NET 8.0 / .NET 6.0 Windows | UI框架: WPF
+
 ## 🎯 功能定位
 
-专业图像编辑和标注控件库，提供完整的图像显示、编辑、标注和保存功能。
+专业图像编辑和标注控件库，提供完整的图像显示、编辑、标注和保存功能。支持RGB48高位深图像、矢量绘图、3D可视化和CIE色彩空间分析。
 
 ## 作用范围
 
-图像处理UI层，为应用程序提供强大的图像查看和编辑能力。
+图像处理UI层，为应用程序提供强大的图像查看和编辑能力，是ColorVision平台的核心可视化组件。
 
 ## 主要功能点
 
@@ -116,18 +118,26 @@ imageView.AdjustHue(30); // 色调偏移30度
 ## 主要组件
 
 ### ImageView
-主图像视图控件，提供图像显示和基础操作。
+主图像视图控件，提供图像显示和基础操作。支持缩放、平移、全屏等功能。
 
-### DrawingVisual系统
-基于WPF的DrawingVisual实现的高性能图形渲染系统。
+### DrawCanvas
+基于WPF的DrawingVisual实现的高性能图形渲染系统，支持撤销/重做、图层管理等。
 
 ### 图形元素类
-- `DrawingRectangle` - 矩形图形
-- `DrawingCircle` - 圆形图形
-- `DrawingLine` - 直线图形
-- `DrawingText` - 文本标注
+- `DrawingRectangle` - 矩形图形绘制
+- `DrawingCircle` - 圆形和椭圆图形
+- `DrawingLine` - 直线和折线
+- `DrawingText` - 文本标注和说明
 - `DrawingBezier` - 贝塞尔曲线
-- `DrawingPolygon` - 多边形
+- `DrawingPolygon` - 多边形区域
+- `DrawingRuler` - 标尺和测量工具
+- `DrawingSpecial` - 特殊标注（POI点、十字线等）
+
+### 编辑工具
+- `Zoom` - 缩放工具（放大、缩小、适配窗口）
+- `FullScreen` - 全屏显示模式
+- `Rotate` - 图像旋转功能
+- `AppCommand` - 应用程序命令集成
 
 ## 开发调试
 
@@ -137,10 +147,25 @@ dotnet build UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj
 
 ## 目录说明
 
-- `Controls/` - 图像编辑控件实现
-- `Draw/` - 绘图工具和图形元素
-- `Adorners/` - WPF装饰器实现
-- `Converters/` - 图像转换器
+- `Draw/` - 绘图工具和图形元素核心实现
+  - `Rectangle/` - 矩形绘制组件
+  - `Circle/` - 圆形绘制组件
+  - `Line/` - 线条绘制组件
+  - `Text/` - 文本标注组件
+  - `Polygon/` - 多边形组件
+  - `BezierCurve/` - 贝塞尔曲线组件
+  - `Ruler/` - 标尺和测量工具
+  - `Special/` - 特殊标注组件
+- `EditorTools/` - 编辑工具集
+  - `Zoom/` - 缩放工具
+  - `FullScreen/` - 全屏模式
+  - `Rotate/` - 旋转工具
+  - `AppCommand/` - 命令集成
+- `Assets/` - 资源文件
+  - `Colormaps/` - 伪彩色映射图
+  - `Image/` - 图标和图像资源
+- `Interfaces/` - 接口定义
+- `Tif/` - TIFF图像处理
 
 ## 性能优化
 

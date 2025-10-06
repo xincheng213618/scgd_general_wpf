@@ -242,7 +242,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             if (FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
             {
-                ErrorSign();
+                MarkColorProperty.SetValue(LastNode, System.Drawing.Color.Red);
             }
             string msg = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}节点:{Msg1}{Environment.NewLine}{FlowControlData.Params}{Environment.NewLine}{stopwatch.ElapsedMilliseconds}ms";
             View.logTextBox.Text = msg;
@@ -284,6 +284,8 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
 
+        public CVCommonNode LastNode { get; set; }
+
         PropertyInfo MarkColorProperty { get; set; }
         private void nodeEndEvent(object sender, FlowEngineNodeEndEventArgs e)
         {
@@ -292,47 +294,16 @@ namespace ColorVision.Engine.Templates.Flow
                 if (e != null)
                 {
                     algorithmNode.IsSelected = false;
-                    if (MarkColorProperty == null)
-                    {
-                        Type type = typeof(STNode);
-                        MarkColorProperty = type.GetProperty("TitleColor", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
-                    }
-                    // 设置值
-                    if (MarkColorProperty != null)
-                    {
-                        MarkColorProperty.SetValue(algorithmNode, System.Drawing.Color.Green);
-                    }
+                    MarkColorProperty.SetValue(algorithmNode, System.Drawing.Color.Green);
                 }
             }
         }
-
-        public void ErrorSign()
-        {
-            foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
-            {
-                if (item.IsSelected == true)
-                {
-                    if (MarkColorProperty == null)
-                    {
-                        Type type = typeof(STNode);
-                        MarkColorProperty = type.GetProperty("TitleColor", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
-                    }
-                    // 设置值
-                    if (MarkColorProperty != null)
-                    {
-                        MarkColorProperty.SetValue(item, System.Drawing.Color.Red);
-                    }
-                }
-
-            }
-        }
-
-
 
         private void UpdateMsg(object sender, FlowEngineNodeRunEventArgs e)
         {
             if (sender is CVCommonNode algorithmNode)
             {
+                LastNode = algorithmNode;
                 algorithmNode.IsSelected = true;
                 Msg1 = algorithmNode.Title;
                 UpdateMsg(sender);
@@ -349,6 +320,12 @@ namespace ColorVision.Engine.Templates.Flow
         string FlowName;
         public async void RunFlow()
         {
+            if (MarkColorProperty == null)
+            {
+                Type type = typeof(STNode);
+                MarkColorProperty = type.GetProperty("TitleColor", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+            }
+
             if (!MqttRCService.GetInstance().IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(),"注册中心没有连接");

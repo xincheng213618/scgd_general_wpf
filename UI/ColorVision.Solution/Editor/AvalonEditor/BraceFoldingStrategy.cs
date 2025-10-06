@@ -1,9 +1,5 @@
-﻿using ColorVision.UI;
-using ICSharpCode.AvalonEdit.Document;
+﻿using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Folding;
-using System.ComponentModel;
-using System.Reflection;
-using System.Windows.Controls;
 
 namespace ColorVision.Solution.Editor.AvalonEditor
 {

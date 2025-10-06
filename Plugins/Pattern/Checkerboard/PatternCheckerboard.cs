@@ -2,7 +2,6 @@
 using ColorVision.UI;
 using OpenCvSharp;
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Windows.Controls;
 using System.Windows.Media;
 

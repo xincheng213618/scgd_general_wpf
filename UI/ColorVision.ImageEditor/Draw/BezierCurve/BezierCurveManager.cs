@@ -7,38 +7,35 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class BezierCurveManager:  ViewModelBase, IDisposable, IDrawEditor
+    public  class BezierCurveManager: IEditorToggleToolBase, IDisposable
     {
-        private Zoombox ZoomboxSub { get; set; }
-        private DrawCanvas DrawCanvas { get; set; }
+        private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
+        public EditorContext EditorContext { get; set; }
 
-        public DrawingVisual BezierCurveImpCache { get; set; }
-
-        public ImageViewModel ImageViewModel { get; set; }
-
-        public BezierCurveManager(ImageViewModel imageViewModel, Zoombox zombox, DrawCanvas drawCanvas)
+        public BezierCurveManager(EditorContext context)
         {
-            ZoomboxSub = zombox;
-            DrawCanvas = drawCanvas;
-            ImageViewModel = imageViewModel;
+            EditorContext = context;
+            ToolBarLocal = ToolBarLocal.Draw;
+            Order = 9;
+            Icon = IEditorToolFactory.TryFindResource("DrawingImagePolygon");
         }
 
-        private bool _IsShow;
-        public bool IsShow
+        private bool _IsChecked;
+        public override bool IsChecked
         {
-            get => _IsShow; set
+            get => _IsChecked; set
             {
-                if (_IsShow == value) return;
-                _IsShow = value;
+                if (_IsChecked == value) return;
+                _IsChecked = value;
                 if (value)
                 {
-                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
+                    EditorContext.ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
 
                     Load();
                 }
                 else
                 {
-                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(null);
+                    EditorContext.ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(null);
                     UnLoad();
                 }
                 OnPropertyChanged();
@@ -80,7 +77,7 @@ namespace ColorVision.ImageEditor.Draw
                 {
                     DrawCanvas.RemoveVisualCommand(DVBezierCurveCache);
                     DVBezierCurveCache = null;
-                    IsShow = false;
+                    _IsChecked = false;
                 }
             }
             else if (realKey == Key.End || realKey == Key.Space || realKey == Key.Enter || realKey == Key.Tab)
@@ -90,7 +87,7 @@ namespace ColorVision.ImageEditor.Draw
                     DVBezierCurveCache.Points.RemoveAt(DVBezierCurveCache.Points.Count - 1);
                     DVBezierCurveCache.Render();
                     DVBezierCurveCache = null;
-                    IsShow = false;
+                    _IsChecked = false;
                 }
                 e.Handled = true;
             }
@@ -117,7 +114,7 @@ namespace ColorVision.ImageEditor.Draw
                 DVBezierCurveCache.Points.Add(MouseDownP);
                 DVBezierCurveCache.Points.Add(MouseDownP);
 
-                DVBezierCurveCache.Attribute.Pen = new Pen(Brushes.Red, 1 / ZoomboxSub.ContentMatrix.M11);
+                DVBezierCurveCache.Attribute.Pen = new Pen(Brushes.Red, 1 / EditorContext.Zoombox.ContentMatrix.M11);
                 DVBezierCurveCache.Render();
                 DrawCanvas.AddVisualCommand(DVBezierCurveCache);
             }

@@ -144,7 +144,7 @@ namespace ColorVision.ImageEditor
         /// <returns>相邻文件的路径</returns>
         private string? GetAdjacentImageFile(string currentFilePath, bool moveNext)
         {
-            var supportedExtensions = ComponentManager.GetInstance().IImageOpens.Keys.ToList();
+            var supportedExtensions = _viewModel.IEditorToolFactory.IImageOpens.Keys.ToList();
             try
             {
                 // 获取当前文件所在的目录

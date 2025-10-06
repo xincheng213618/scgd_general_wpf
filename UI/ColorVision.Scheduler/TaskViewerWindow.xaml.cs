@@ -6,7 +6,6 @@ using Quartz.Impl.Matchers;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.UI;
 
 namespace ColorVision.Scheduler
 {

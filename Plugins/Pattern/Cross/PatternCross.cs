@@ -5,7 +5,6 @@ using OpenCvSharp;
 using System.ComponentModel;
 using System.Windows.Controls;
 using System.Windows.Media;
-using static SkiaSharp.HarfBuzz.SKShaper;
 
 namespace Pattern.Cross
 {

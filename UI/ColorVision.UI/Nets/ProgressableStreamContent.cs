@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1835
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;

@@ -24,29 +24,33 @@ namespace ColorVision.ImageEditor.Draw
         private double _DefalutHeight = 30;
     }
 
-    public class RectangleManager :ViewModelBase, IDisposable, IDrawEditor
+    public class RectangleManager :IEditorToggleToolBase, IDisposable
     {
         public RectangleManagerConfig Config { get; set; } = new RectangleManagerConfig();
-        private Zoombox Zoombox1 { get; set; }
-        private DrawCanvas DrawCanvas { get; set; }
-        public ImageViewModel ImageViewModel { get; set; }
+        private Zoombox Zoombox1 => EditorContext.Zoombox;
+        private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
+        public ImageViewModel ImageViewModel => EditorContext.ImageViewModel;
+
+        public EditorContext EditorContext { get; set; }
+
+        public RectangleManager(EditorContext context)
+        {
+            EditorContext = context;
+            ToolBarLocal = ToolBarLocal.Draw;
+            Order = 4;
+            Icon = IEditorToolFactory.TryFindResource("DrawingImageRect");
+        }
 
         private DVRectangleText DrawingRectangleCache;
 
-        public RectangleManager(ImageViewModel imageEditViewMode, Zoombox zombox, DrawCanvas drawCanvas)
-        {
-            Zoombox1 = zombox;
-            DrawCanvas = drawCanvas;
-            ImageViewModel = imageEditViewMode;
-        }
 
-        private bool _IsShow;
-        public bool IsShow
+        private bool _IsChecked;
+        public override bool IsChecked
         {
-            get => _IsShow; set
+            get => _IsChecked; set
             {
-                if (_IsShow == value) return;
-                _IsShow = value;
+                if (_IsChecked == value) return;
+                _IsChecked = value;
                 if (value)
                 {
                     ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);

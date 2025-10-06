@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8601,CS8603
-using ColorVision.Database;
+﻿using ColorVision.Database;
 using SqlSugar;
 using System;
 

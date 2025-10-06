@@ -1,12 +1,8 @@
-﻿#pragma warning disable CA1720,CS8620,CA1822,CS8602
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.Authorizations;
 using log4net;
 using System.Windows;
 using System.Windows.Controls;
-using System; // added for Activator / Func
-using System.Collections.Generic; // explicit for clarity
-using System.Linq; // ensure LINQ
 using System.Reflection; // added for ReflectionTypeLoadException
 
 namespace ColorVision.UI.Menus

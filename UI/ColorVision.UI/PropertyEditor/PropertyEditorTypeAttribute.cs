@@ -1,7 +1,4 @@
-﻿using ColorVision.UI;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using System.Windows.Controls;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Windows.Data;
 
 ///这里划到xi

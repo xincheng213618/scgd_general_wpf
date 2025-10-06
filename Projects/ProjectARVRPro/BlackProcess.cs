@@ -1,7 +1,5 @@
-using System;
 using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using System.Collections.Generic;
 using ColorVision.Database;
 
 namespace ProjectARVRPro

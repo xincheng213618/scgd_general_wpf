@@ -330,8 +330,6 @@ namespace ColorVision.Themes
         [DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, DWMWINDOWATTRIBUTE attribute, IntPtr pvAttribute, uint cbAttribute);
 
-
-#pragma warning disable CA1707
         [Flags]
         public enum DWMWINDOWATTRIBUTE : uint
         {
@@ -347,7 +345,5 @@ namespace ColorVision.Themes
             //设置窗口标题栏文本颜色。
             DWMWA_TEXT_COLOR = 36,
         }
-#pragma warning restore CA1707
-
     }
 }

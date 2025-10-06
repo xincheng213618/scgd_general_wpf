@@ -1,5 +1,4 @@
-﻿#pragma warning disable SYSLIB0014
-using ColorVision.Themes.Controls;
+﻿using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using log4net;

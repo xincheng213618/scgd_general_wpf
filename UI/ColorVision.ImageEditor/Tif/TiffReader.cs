@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8625
-using System.IO;
+﻿using System.IO;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Tif

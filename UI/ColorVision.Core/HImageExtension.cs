@@ -1,6 +1,4 @@
-﻿#pragma warning disable CA1401,CA1051,CA2101,CA1707
-using ColorVision.Core;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -90,10 +88,10 @@ namespace ColorVision.Core
             return true;
         }
 
-        public static WriteableBitmap ToWriteableBitmap(this HImage hImage)
+        public static WriteableBitmap ToWriteableBitmap(this HImage hImage,double DpiX = 96, double DpiY =96)
         {
             PixelFormat format = hImage.ToPixelFormat();
-            WriteableBitmap writeableBitmap = new(hImage.cols, hImage.rows, 96.0, 96.0, format, null);
+            WriteableBitmap writeableBitmap = new WriteableBitmap(hImage.cols, hImage.rows, DpiX, DpiY, format, null);
 
             writeableBitmap.Lock();
 

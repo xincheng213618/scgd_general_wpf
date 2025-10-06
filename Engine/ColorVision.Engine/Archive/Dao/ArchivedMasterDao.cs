@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8603
-using SqlSugar;
+﻿using SqlSugar;
 using System;
 using System.ComponentModel;
 

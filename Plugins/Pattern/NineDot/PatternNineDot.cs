@@ -1,8 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.ImageEditor;
-using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
-using ColorVision.Util.Draw.Rectangle;
 using OpenCvSharp;
 using System.ComponentModel;
 using System.Windows.Controls;

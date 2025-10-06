@@ -1,9 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI;
-using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.EditorTools.Zoom
 {
@@ -18,7 +14,7 @@ namespace ColorVision.ImageEditor.EditorTools.Zoom
 
         public ICommand? Command { get; set; } = new RelayCommand((o) =>
         {
-            EditorContext.ZoomboxSub.ZoomNone();
+            EditorContext.Zoombox.ZoomNone();
         });
     }
 

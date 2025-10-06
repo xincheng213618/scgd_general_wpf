@@ -18,28 +18,33 @@ namespace ColorVision.ImageEditor.Draw
         private double _DefalutRadius = 30;
     }
 
-    public class CircleManager: ViewModelBase, IDisposable, IDrawEditor
+    public class CircleManager: IEditorToggleToolBase, IDisposable
     {
         public CircleManagerConfig Config { get; set; } = new CircleManagerConfig();
-        private Zoombox Zoombox1 { get; set; }
-        private DrawCanvas DrawCanvas { get; set; }
-        public ImageViewModel ImageViewModel { get; set; }
+        private Zoombox Zoombox1 => EditorContext.Zoombox;
+        private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
+        public ImageViewModel ImageViewModel => EditorContext.ImageViewModel;
+
+        public EditorContext EditorContext { get; set; }
+
+        public CircleManager(EditorContext context)
+        {
+            EditorContext = context;
+            Order = 3;
+            ToolBarLocal = ToolBarLocal.Draw;
+            Icon = IEditorToolFactory.TryFindResource("DrawingImageCircle");
+        }
+
+
 
         private DVCircleText DrawCircleCache;
 
-        public CircleManager(ImageViewModel imageEditViewMode, Zoombox zombox, DrawCanvas drawCanvas)
+        public override bool IsChecked
         {
-            Zoombox1 = zombox;
-            DrawCanvas = drawCanvas;
-            ImageViewModel = imageEditViewMode;
-        }
-
-        public bool IsShow
-        {
-            get => _IsShow; set
+            get => _IsChecked; set
             {
-                if (_IsShow == value) return;
-                _IsShow = value;
+                if (_IsChecked == value) return;
+                _IsChecked = value;
                 if (value)
                 {
                     ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
@@ -180,7 +185,7 @@ namespace ColorVision.ImageEditor.Draw
 
 
 
-        private bool _IsShow;
+        private bool _IsChecked;
 
 
 

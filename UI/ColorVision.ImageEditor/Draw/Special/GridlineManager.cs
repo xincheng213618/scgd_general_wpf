@@ -8,32 +8,35 @@ using ColorVision.Common.Utilities;
 
 namespace ColorVision.ImageEditor.Draw.Special
 {
-    public class Gridline
+    public class GridlineManager:IEditorToggleToolBase
     {
-        private Zoombox ZoomboxSub { get; set; }
-        private DrawCanvas DrawCanvas { get; set; }
-
-        public DrawingVisual DrawVisualImage { get; set; }
-        public Gridline(Zoombox zombox, DrawCanvas drawCanvas)
+        public EditorContext EditorContext { get; set; }
+        public GridlineManager(EditorContext editorContext)
         {
-            ZoomboxSub = zombox;
-            DrawCanvas = drawCanvas;
-            DrawVisualImage = new DrawingVisual();
+            EditorContext = editorContext;
+            ToolBarLocal = ToolBarLocal.Top;
+            Order = 600;
+            Icon = IEditorToolFactory.TryFindResource("DIGridlines");
         }
 
-        public bool IsShow
+        private Zoombox Zoombox => EditorContext.Zoombox;
+        private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
+        public DrawingVisual DrawVisualImage { get; set; } = new DrawingVisual();
+
+
+        public override bool IsChecked
         {
-            get => _IsShow; set
+            get => _IsChecked; set
             {
-                if (_IsShow == value) return;
-                _IsShow = value;
-                DrawVisualImageControl(_IsShow);
+                if (_IsChecked == value) return;
+                _IsChecked = value;
+                DrawVisualImageControl(_IsChecked);
                 if (value)
                 {
                     DrawCanvas.MouseMove += MouseMove;
                     DrawCanvas.MouseEnter += MouseEnter;
                     DrawCanvas.MouseLeave += MouseLeave;
-                    ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
+                    Zoombox.LayoutUpdated += ZoomboxSub_LayoutUpdated;
                     DefalutTextAttribute.Defalut.PropertyChanged += Defalut_PropertyChanged;
                 }
                 else
@@ -41,7 +44,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                     DrawCanvas.MouseMove -= MouseMove;
                     DrawCanvas.MouseEnter -= MouseEnter;
                     DrawCanvas.MouseLeave -= MouseLeave;
-                    ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
+                    Zoombox.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
                     DefalutTextAttribute.Defalut.PropertyChanged -= Defalut_PropertyChanged;
 
                 }
@@ -50,7 +53,7 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         private void Defalut_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            Radio = ZoomboxSub.ContentMatrix.M11;
+            Radio = Zoombox.ContentMatrix.M11;
             DrawImage();
         }
 
@@ -61,7 +64,7 @@ namespace ColorVision.ImageEditor.Draw.Special
         Matrix MatrixBackup;
         public void LayoutUpdated()
         {
-            var currentMatrix = ZoomboxSub.ContentMatrix;
+            var currentMatrix = Zoombox.ContentMatrix;
 
             if (MatrixBackup != currentMatrix)
             {
@@ -74,7 +77,7 @@ namespace ColorVision.ImageEditor.Draw.Special
         public static double ActualLength { get => DefalutTextAttribute.Defalut.IsUsePhysicalUnit ? DefalutTextAttribute.Defalut.ActualLength : 1; set { DefalutTextAttribute.Defalut.ActualLength = value; } }
         public static string PhysicalUnit { get => DefalutTextAttribute.Defalut.IsUsePhysicalUnit ? DefalutTextAttribute.Defalut.PhysicalUnit : "Px"; set { DefalutTextAttribute.Defalut.PhysicalUnit = value; } }
 
-        private bool _IsShow;
+        private bool _IsChecked;
 
         double Radio;
         public void DrawImage()
@@ -84,21 +87,21 @@ namespace ColorVision.ImageEditor.Draw.Special
 
                 Brush brush = Brushes.Red;
                 FontFamily fontFamily = new("Arial");
-                double ratio = 1 / ZoomboxSub.ContentMatrix.M11;
+                double ratio = 1 / Zoombox.ContentMatrix.M11;
                 Pen pen = new(brush, ratio);
 
                 double lenindex = 40 * ratio;
                 if (lenindex > 1) lenindex = (int)lenindex;
-                double fontSize = 15 / ZoomboxSub.ContentMatrix.M11; 
+                double fontSize = 15 / Zoombox.ContentMatrix.M11; 
                 using DrawingContext dc = DrawVisualImage.RenderOpen();
 
-                double OffsetX = ZoomboxSub.ContentMatrix.OffsetX;
-                double OffsetY = ZoomboxSub.ContentMatrix.OffsetY;
+                double OffsetX = Zoombox.ContentMatrix.OffsetX;
+                double OffsetY = Zoombox.ContentMatrix.OffsetY;
 
                 double visibleX =  -OffsetX / Radio;
                 double visibleY = - OffsetY / Radio;
-                double visibleWidth = ZoomboxSub.ActualWidth / Radio;
-                double visibleHeight = ZoomboxSub.ActualHeight / Radio;
+                double visibleWidth = Zoombox.ActualWidth / Radio;
+                double visibleHeight = Zoombox.ActualHeight / Radio;
                 visibleWidth = visibleWidth + visibleX > bitmapSource.Width ? bitmapSource.Width : visibleWidth + visibleX;
                 visibleHeight = visibleHeight + visibleY > bitmapSource.Height ? bitmapSource.Height : visibleHeight + visibleY;
                 visibleX = visibleX < 0 ? 0 : visibleX;
@@ -115,12 +118,12 @@ namespace ColorVision.ImageEditor.Draw.Special
                     if (DrawCanvas.RenderTransform is TransformGroup transformGroup && transformGroup.Children.OfType<ScaleTransform>().FirstOrDefault() is ScaleTransform scaleTransform)
                     {
                         dc.PushTransform(scaleTransform);
-                        dc.DrawText(formattedText, new Point(-40 / ZoomboxSub.ContentMatrix.M11, i - 10 / ZoomboxSub.ContentMatrix.M11));
+                        dc.DrawText(formattedText, new Point(-40 / Zoombox.ContentMatrix.M11, i - 10 / Zoombox.ContentMatrix.M11));
                         dc.Pop();
                     }
                     else
                     {
-                        dc.DrawText(formattedText, new Point(-40 / ZoomboxSub.ContentMatrix.M11, i - 10 / ZoomboxSub.ContentMatrix.M11));
+                        dc.DrawText(formattedText, new Point(-40 / Zoombox.ContentMatrix.M11, i - 10 / Zoombox.ContentMatrix.M11));
                     }
                     dc.DrawLine(pen, new Point(0, i), new Point(bitmapSource.Width, i));
                 }
@@ -133,12 +136,12 @@ namespace ColorVision.ImageEditor.Draw.Special
                     if (DrawCanvas.RenderTransform is TransformGroup transformGroup && transformGroup.Children.OfType<ScaleTransform>().FirstOrDefault() is ScaleTransform scaleTransform)
                     {
                         dc.PushTransform(scaleTransform);
-                        dc.DrawText(formattedText, new Point(i -10 / ZoomboxSub.ContentMatrix.M11,- 20 / ZoomboxSub.ContentMatrix.M11));
+                        dc.DrawText(formattedText, new Point(i -10 / Zoombox.ContentMatrix.M11,- 20 / Zoombox.ContentMatrix.M11));
                         dc.Pop();
                     }
                     else
                     {
-                        dc.DrawText(formattedText, new Point(i -10 / ZoomboxSub.ContentMatrix.M11,  -20 / ZoomboxSub.ContentMatrix.M11));
+                        dc.DrawText(formattedText, new Point(i -10 / Zoombox.ContentMatrix.M11,  -20 / Zoombox.ContentMatrix.M11));
                     }
                     dc.DrawLine(pen, new Point(i, 0), new Point(i, bitmapSource.Height));
                 }

@@ -1,5 +1,4 @@
-﻿#pragma warning disable SYSLIB0014
-using ColorVision.Database;
+﻿using ColorVision.Database;
 using ColorVision.UI;
 using System.IO;
 using System.Windows;

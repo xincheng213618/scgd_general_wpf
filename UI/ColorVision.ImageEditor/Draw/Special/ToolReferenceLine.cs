@@ -1,17 +1,13 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI;
-using HandyControl.Controls;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Media3D;
 
 namespace ColorVision.ImageEditor.Draw.Special
 {
@@ -322,57 +318,50 @@ namespace ColorVision.ImageEditor.Draw.Special
     }
 
 
-    public class ToolReferenceLine: ViewModelBase, IDrawEditor
+    public class ToolReferenceLine: IEditorToggleToolBase
     {
-        private Zoombox ZoomboxSub { get; set; }
-        private DrawCanvas Image { get; set; }
+        private Zoombox ZoomboxSub => EditorContext.Zoombox;
+        private DrawCanvas Image => EditorContext.DrawCanvas;
 
-        public ReferenceLine ReferenceLine { get; set; }
-        public RelayCommand SelectNoneCommand { get; set; }
-        public RelayCommand Select0Command { get; set; }
-        public RelayCommand Select1Command { get; set; }
-        public RelayCommand Select2Command { get; set; }
-        public RelayCommand LockCommand { get; set; }
+        public ImageViewModel ImageViewModel => EditorContext.ImageViewModel;
 
-        public ImageViewModel ImageViewModel { get; set; }
+        public EditorContext EditorContext { get; set; }
 
-        public ToolReferenceLine(ImageViewModel imageEditViewMode, Zoombox zombox, DrawCanvas drawCanvas)
+        public ToolReferenceLine(EditorContext editorContext)
         {
-            ZoomboxSub = zombox;
-            Image = drawCanvas;
-            ImageViewModel = imageEditViewMode;
-            ReferenceLine = new ReferenceLine();
+            EditorContext = editorContext;
+            ToolBarLocal = ToolBarLocal.Draw;
+            Order = 10;
+            Icon = IEditorToolFactory.TryFindResource("ConcentricCirclesDrawImg");
 
-            SelectNoneCommand = new RelayCommand(a => SetMode(-1));
-            Select0Command = new RelayCommand(a => SetMode(0));
-            Select1Command = new RelayCommand(a => SetMode(1));
-            Select2Command = new RelayCommand(a => SetMode(2));
-            LockCommand = new RelayCommand(a => { ReferenceLine.IsLocked = !ReferenceLine.IsLocked; ReferenceLine.Render(); });
         }
+             
+        public ReferenceLine ReferenceLine { get; set; } = new ReferenceLine();
 
 
         private void SetMode(int i)
         {
             if (i == -1)
             {
-                IsShow = false;
+                IsChecked = false;
             }
             else
             {
-                IsShow = true;
+                IsChecked = true;
                 ReferenceLine.Mode = i;
                 ReferenceLine.Render();
             }
         }
 
 
-        public bool IsShow
+        public override bool IsChecked
         {
-            get => _IsShow; set
+            get => _IsChecked; set
             {
-                if (_IsShow == value) return;
-                _IsShow = value;
-                DrawVisualImageControl(_IsShow);
+                if (_IsChecked == value) return;
+                _IsChecked = value;
+                DrawVisualImageControl(_IsChecked);
+
                 if (value)
                 {
                     ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
@@ -469,7 +458,7 @@ namespace ColorVision.ImageEditor.Draw.Special
         // 2. 修改 MouseMove 方法
         private void MouseMove(object sender, MouseEventArgs e)
         {
-            if (IsShow && !ReferenceLine.IsLocked && (ReferenceLine.IsRMouseDown || ReferenceLine.IsLMouseDown))
+            if (IsChecked && !ReferenceLine.IsLocked && (ReferenceLine.IsRMouseDown || ReferenceLine.IsLMouseDown))
             {
                 if (ReferenceLine.IsRMouseDown)
                 {
@@ -486,7 +475,7 @@ namespace ColorVision.ImageEditor.Draw.Special
         }
 
 
-        private bool _IsShow;
+        private bool _IsChecked;
 
         public void DrawVisualImageControl(bool Control)
         {

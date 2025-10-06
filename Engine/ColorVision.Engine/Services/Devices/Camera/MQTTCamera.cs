@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8602,CA1707
-using ColorVision.Engine.Messages;
+﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;

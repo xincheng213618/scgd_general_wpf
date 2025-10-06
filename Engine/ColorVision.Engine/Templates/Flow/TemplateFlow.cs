@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1822
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.UI.Extension;
 using Newtonsoft.Json;

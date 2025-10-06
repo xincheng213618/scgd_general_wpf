@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1711,CA2211
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System.Windows;

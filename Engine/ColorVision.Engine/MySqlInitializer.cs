@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.UI;
-using ColorVision.UI.CUDA;
 using log4net;
 using System;
 using System.IO;

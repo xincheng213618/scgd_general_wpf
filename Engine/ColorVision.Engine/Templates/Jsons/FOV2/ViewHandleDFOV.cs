@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8602
-
+﻿
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using log4net;

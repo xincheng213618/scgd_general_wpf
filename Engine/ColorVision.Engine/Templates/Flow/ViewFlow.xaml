@@ -20,7 +20,7 @@
             <WindowsFormsHost x:Name="winf1" Visibility="Visible" VerticalAlignment="Stretch" >
                 <st:STNodeEditor  x:Name="STNodeEditorMain" x:FieldModifier="public"  MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel" />
             </WindowsFormsHost>
-            <WindowsFormsHost x:Name="winf2" Height="250"  Width="250" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="0,0,0,5">
+            <WindowsFormsHost x:Name="winf2" Height="250"  Width="250" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="0,0,0,5" Visibility="Collapsed">
                 <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
             </WindowsFormsHost>
         </Grid>
@@ -34,7 +34,7 @@
             </Grid.RowDefinitions>
             <Border Grid.Row="0"    Margin="0,5,0,5" >
                 <StackPanel Margin="0">
-                    <UniformGrid  Columns="8" Margin="0,0,0,5">
+                    <UniformGrid  Columns="6" Margin="0,0,0,5">
 
                         <Button Command="{Binding SaveCommand}" Height="25" Width="25"  Margin="0,0,5,0" Padding="2">
                             <Image Source="{DynamicResource DrawingImageSave}" Height="15" />
@@ -79,22 +79,6 @@
                         </Button>
                         <Button Command="{Binding OpenFlowTemplateCommand}"  Margin="0,0,5,0"  Padding="2" Height="25" Width="25"  >
                             <Image  Source="{DynamicResource DIExpand}"/>
-                        </Button>
-                        <Button Command="{Binding EditCommand}"  Padding="2" Height="25" Width="25"  >
-                            <Button.Triggers>
-                                <EventTrigger RoutedEvent="Button.Click">
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </EventTrigger>
-                            </Button.Triggers>
-                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
-                                <TextBlock.RenderTransform>
-                                    <RotateTransform x:Name="rotateTransform2" CenterX="8" CenterY="8"/>
-                                </TextBlock.RenderTransform>
-                            </TextBlock>
                         </Button>
                     </UniformGrid>
                     <StackPanel Margin="0,0,0,5" Orientation="Horizontal">

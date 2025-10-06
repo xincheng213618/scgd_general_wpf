@@ -1,4 +1,3 @@
-using System;
 using ColorVision.Engine; // AlgResultMasterDao, MeasureImgResultDao
 using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.Jsons; // DetailCommonModel

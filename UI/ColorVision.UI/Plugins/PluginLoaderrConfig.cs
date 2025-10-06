@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using System.IO;
 
 namespace ColorVision.UI.Plugins
 {

@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8625
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
@@ -50,7 +49,7 @@ namespace ColorVision.Engine.Media
     }
 
     [FileExtension(".cvraw|.cvcie")]
-    public class CVRawOpen : IImageOpen
+    public record class CVRawOpen(EditorContext EditorContext) : IImageOpen, IIEditorToolContextMenu
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CVRawOpen));
 
@@ -199,7 +198,7 @@ namespace ColorVision.Engine.Media
 
             imageView.ImageViewModel.MouseMagnifier.ClearEventInvocations("MouseMoveColorHandler");
 
-            imageView.ImageViewModel.ClearImageEventHandler += (s, e) =>
+            imageView.ClearImageEventHandler += (s, e) =>
             {
                 int result = ConvertXYZ.CM_ReleaseBuffer(imageView.Config.ConvertXYZhandle);
                 imageView.Config.AddProperties("IsBufferSet", false);
@@ -324,7 +323,7 @@ namespace ColorVision.Engine.Media
         }
         public float[] exp { get; set; }
 
-        public List<MenuItemMetadata> GetContextMenuItems(ImageViewConfig imageView)
+        public List<MenuItemMetadata> GetContextMenuItems()
         {
             return new List<MenuItemMetadata>()
             {
@@ -335,7 +334,7 @@ namespace ColorVision.Engine.Media
                     Order = 301,
                     Command = new RelayCommand(a =>
                     {
-                        if (imageView.GetProperties<string>("FilePath") is string FilePath && File.Exists(FilePath))
+                        if (EditorContext.Config.GetProperties<string>("FilePath") is string FilePath && File.Exists(FilePath))
                         {
                             new ExportCVCIE(FilePath).ShowDialog();
                         }

@@ -35,8 +35,6 @@ namespace WindowsServicePlugin.CVWinSMS
 
         public static string LatestReleaseUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/CVWindowsService/LATEST_RELEASE";
 
-        private string url;
-
         public string DownloadPath { get => _downloadPath; set { _downloadPath = value; OnPropertyChanged(); } }
 
         private string _downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\";

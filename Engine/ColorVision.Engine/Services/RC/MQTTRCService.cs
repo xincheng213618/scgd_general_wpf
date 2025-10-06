@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8603
-using ColorVision.Engine.MQTT;
+﻿using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
@@ -95,8 +94,13 @@ namespace ColorVision.Engine.Services.RC
         private string ArchivedTopic;
         private string SysConfigTopic;
         private string SysConfigRespTopic;
+        
+        // 使用锁保护Token访问
+        private readonly object _tokenLock = new object();
         private NodeToken? Token;
-        private bool TryTestRegist;
+        
+        // 使用volatile确保可见性
+        private volatile bool TryTestRegist;
 
         public bool IsConnect { get => _IsConnect; set { if (_IsConnect == value) return;  _IsConnect = value; if (value) initialized = false; OnPropertyChanged(); } }
         private bool _IsConnect ;
@@ -166,19 +170,50 @@ namespace ColorVision.Engine.Services.RC
                             //MQTTNodeServiceRegistResponse resp = JsonConvert.DeserializeObject<MQTTNodeServiceRegistResponse>(Msg);
                             break;
                         case MQTTNodeServiceEventEnum.Event_Startup:
-
-                            MQTTNodeServiceStartupRequest req = JsonConvert.DeserializeObject<MQTTNodeServiceStartupRequest>(Msg);
-                            if (req != null)
+                            try
                             {
-                                IsConnect = true;
-                                Token = req.Data.Token;
-
-                                if (!TryTestRegist)
+                                if (!string.IsNullOrWhiteSpace(Msg))
                                 {
-                                    QueryServices();
+                                    var settings = new JsonSerializerSettings
+                                    {
+                                        NullValueHandling = NullValueHandling.Ignore,
+                                        MissingMemberHandling = MissingMemberHandling.Ignore,
+                                        Error = (sender, args) => args.ErrorContext.Handled = true
+                                    };
+                                    MQTTNodeServiceStartupRequest req = JsonConvert.DeserializeObject<MQTTNodeServiceStartupRequest>(Msg, settings);
+                                    if (req?.Data?.Token != null)
+                                    {
+                                        // 线程安全地更新Token
+                                        lock (_tokenLock)
+                                        {
+                                            Token = req.Data.Token;
+                                        }
+
+                                        // 在UI线程上更新IsConnect属性(如果需要触发UI更新)
+                                        Application.Current?.Dispatcher.BeginInvoke(() =>
+                                        {
+                                            IsConnect = true;
+                                        });
+
+                                        // 读取TryTestRegist是线程安全的(volatile)
+                                        if (!TryTestRegist)
+                                        {
+                                            QueryServices();
+                                        }
+                                    }
                                 }
                             }
-                            break;
+                            catch (JsonException ex)
+                            {
+                                log.Error($"JSON deserialization failed: {ex.Message}");
+                                return Task.CompletedTask;
+                            }
+                            catch (Exception ex)
+                            {
+                                log.Error(ex);
+                                return Task.CompletedTask;
+                            }
+                           break;
                         case MQTTNodeServiceEventEnum.Event_QueryServices:
                             MQTTRCServicesQueryResponse respQurey = JsonConvert.DeserializeObject<MQTTRCServicesQueryResponse>(Msg);
                             if (respQurey != null)
@@ -193,7 +228,11 @@ namespace ColorVision.Engine.Services.RC
                             MQTTRCServiceStatusQueryResponse respStatus = JsonConvert.DeserializeObject<MQTTRCServiceStatusQueryResponse>(Msg);
                             if (respStatus != null)
                             {
-                                UpdateServiceStatus(respStatus.Data);
+                                // UpdateServiceStatus可能访问UI对象,建议在UI线程执行
+                                Application.Current?.Dispatcher.BeginInvoke(() =>
+                                {
+                                    UpdateServiceStatus(respStatus.Data);
+                                });
                             }
                             break;
                         case MQTTNodeServiceEventEnum.Event_NotRegist:
@@ -315,8 +354,17 @@ namespace ColorVision.Engine.Services.RC
 
         public bool Regist()
         {
-            Token = null;
-            IsConnect = false;
+            lock (_tokenLock)
+            {
+                Token = null;
+            }
+            
+            // 在UI线程更新IsConnect
+            Application.Current?.Dispatcher.BeginInvoke(() =>
+            {
+                IsConnect = false;
+            });
+            
             ServiceTokens.Clear();
 
             MQTTNodeServiceRegist reg = new(NodeName, AppId, AppSecret, SubscribeTopic, NodeType);
@@ -337,22 +385,33 @@ namespace ColorVision.Engine.Services.RC
 
         public void QueryServices()
         {
-            if (Token != null)
+            NodeToken? token;
+            lock (_tokenLock)
             {
-                MQTTRCServicesQueryRequest reg = new(NodeName, null, Token.AccessToken);
+                token = Token;
+            }
+            
+            if (token != null)
+            {
+                MQTTRCServicesQueryRequest reg = new(NodeName, null, token.AccessToken);
                 PublishAsyncClient(RCPublicTopic, JsonConvert.SerializeObject(reg));
             }
         }
 
         public void QueryServiceStatus()
         {
-            if (Token != null)
+            NodeToken? token;
+            lock (_tokenLock)
             {
-                MQTTRCServiceStatusQueryRequest reg = new(NodeName, null, Token.AccessToken);
+                token = Token;
+            }
+            
+            if (token != null)
+            {
+                MQTTRCServiceStatusQueryRequest reg = new(NodeName, null, token.AccessToken);
                 PublishAsyncClient(RCPublicTopic, JsonConvert.SerializeObject(reg));
             }
         }
-
 
         public void KeepLive()
         {
@@ -365,9 +424,18 @@ namespace ColorVision.Engine.Services.RC
             if (!IsConnect)
                 return;
 
+            NodeToken? token;
+            lock (_tokenLock)
+            {
+                token = Token;
+            }
+            
+            if (token == null)
+                return;
+
             List<DeviceHeartbeat> deviceStatues = new();
             deviceStatues.Add(new DeviceHeartbeat(DevcieName, DeviceStatusType.Opened.ToString()));
-            string serviceHeartbeat = JsonConvert.SerializeObject(new MQTTServiceHeartbeat(NodeName, "", "", NodeType, ServiceName, deviceStatues, Token.AccessToken, (int)(2000 * 1.5f)));
+            string serviceHeartbeat = JsonConvert.SerializeObject(new MQTTServiceHeartbeat(NodeName, "", "", NodeType, ServiceName, deviceStatues, token.AccessToken, (int)(2000 * 1.5f)));
             PublishAsyncClient(RCHeartbeatTopic, serviceHeartbeat);
             QueryServiceStatus();
         }
@@ -375,19 +443,34 @@ namespace ColorVision.Engine.Services.RC
         public void RestartServices(string? nodeType = null, string? svrCode =null)
         {
             log.Info($"RestartServices {nodeType} {svrCode}");
-            if (Token != null)
+            
+            NodeToken? token;
+            lock (_tokenLock)
+            {
+                token = Token;
+            }
+            
+            if (token != null)
             {
                 nodeType ??= string.Empty;
-                MQTTRCServicesRestartRequest reg = svrCode == null ? new(AppId, NodeName, nodeType, Token.AccessToken) : new(AppId, NodeName, nodeType, Token.AccessToken, svrCode);
+                MQTTRCServicesRestartRequest reg = svrCode == null ? new(AppId, NodeName, nodeType, token.AccessToken) : new(AppId, NodeName, nodeType, token.AccessToken, svrCode);
                 PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(reg));
             }
         }
+        
         public void RestartServices(string nodeType, string svrCode, string devCode)
         {
             log.Info($"RestartServices {nodeType} {svrCode} {devCode}");
-            if (Token != null)
+            
+            NodeToken? token;
+            lock (_tokenLock)
             {
-                MQTTRCServicesRestartRequest reg = new(AppId, NodeName, nodeType, Token.AccessToken, svrCode, devCode);
+                token = Token;
+            }
+            
+            if (token != null)
+            {
+                MQTTRCServicesRestartRequest reg = new(AppId, NodeName, nodeType, token.AccessToken, svrCode, devCode);
                 PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(reg));
             }
             Task.Factory.StartNew(async () => {
@@ -402,9 +485,16 @@ namespace ColorVision.Engine.Services.RC
             string RegTopic = MQTTRCServiceTypeConst.BuildRegTopic(cfg.RCName);
             string appId = cfg.AppId;
             string appSecret = cfg.AppSecret;
-            IsConnect = false;
+            
+            // 在UI线程更新IsConnect
+            await Application.Current?.Dispatcher.InvokeAsync(() =>
+            {
+                IsConnect = false;
+            });
+            
             MQTTNodeServiceRegist reg = new(NodeName, appId, appSecret, SubscribeTopic, NodeType);
             await PublishAsyncClient(RegTopic, JsonConvert.SerializeObject(reg));
+            
             for (int i = 0; i < 30; i++)
             {
                 await Task.Delay(10);

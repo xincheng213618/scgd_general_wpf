@@ -28,10 +28,13 @@ namespace ColorVision.ImageEditor
     public partial class ImageView : UserControl, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
+        public Guid Id { get; set; } = Guid.NewGuid();
+
         public ImageViewModel ImageViewModel { get; set; }
         public ImageViewConfig Config => ImageViewModel.Config;
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.DrawingVisualLists;
+        public event EventHandler ClearImageEventHandler;
 
         public ImageView()
         {
@@ -55,7 +58,6 @@ namespace ColorVision.ImageEditor
             DebounceTimer.AddOrResetTimer("AdjustWhiteBalance", 30, AdjustWhiteBalance);
         }
 
-
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow);
@@ -65,11 +67,8 @@ namespace ColorVision.ImageEditor
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
             Config.BalanceChanged += ImageViewConfig_BalanceChanged;
 
-            foreach (var item in ComponentManager.GetInstance().IImageComponents)
+            foreach (var item in ImageViewModel.IEditorToolFactory.IImageComponents)
                 item.Execute(this);
-
-
-            ImageViewModel.ClearImageEventHandler += Clear;
 
             ImageShow.VisualsAdd += ImageShow_VisualsAdd;
             ImageShow.VisualsRemove += ImageShow_VisualsRemove;
@@ -223,20 +222,9 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private void Button7_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is ToggleButton toggleButton)
-            {
-                if (ImageViewModel.EraseManager.IsShow)
-                {
-                    Zoombox1.ActivateOn = toggleButton.IsChecked == true ? ModifierKeys.Control : ModifierKeys.None;
-                }
-            }
-        }
-
         public void Clear()
         {
-
+            ClearImageEventHandler?.Invoke(this, new EventArgs());
             Config.Properties.Clear();
             Config.FilePath = string.Empty;
             FunctionImage = null;
@@ -292,7 +280,7 @@ namespace ColorVision.ImageEditor
                     Config.AddProperties("FileSize", fileSize);
 
                     string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
-                    if (ComponentManager.GetInstance().IImageOpens.TryGetValue(ext, out var imageOpen))
+                    if (ImageViewModel.IEditorToolFactory.IImageOpens.TryGetValue(ext, out var imageOpen))
                     {
                         ImageViewModel.IImageOpen = imageOpen;
                         Config.AddProperties("ImageViewOpen", ImageViewModel.IImageOpen);
@@ -329,11 +317,22 @@ namespace ColorVision.ImageEditor
                     }
 
                 }
+                DebounceTimer.AddOrResetTimer("HImageCacheDispose" + Id.ToString(), 1000, HImageCacheDispose);
                 return _hImageCache;
             }
             set { _hImageCache = value; }
         }
         private HImage? _hImageCache;
+
+
+        public void HImageCacheDispose()
+        {
+            if (HImageCache != null)
+            {
+                HImageCache?.Dispose();
+                _hImageCache = null;
+            }
+        }
 
 
         public void SetImageSource(ImageSource imageSource)
@@ -400,6 +399,8 @@ namespace ColorVision.ImageEditor
                 Config.AddProperties("Channel", channels);
                 Config.AddProperties("Depth", depth);
                 Config.AddProperties("Stride", stride);
+                Config.AddProperties("DpiX", writeableBitmap.DpiX);
+                Config.AddProperties("DpiY", writeableBitmap.DpiY);
 
                 Config.Channel = channels;
                 Config.Ochannel = channels;
@@ -428,9 +429,9 @@ namespace ColorVision.ImageEditor
 
             ImageShow.RaiseImageInitialized();
             ImageViewModel.ToolBarScaleRuler.IsShow = true;
+            CommandManager.InvalidateRequerySuggested();
 
         }
-
 
         public ImageSource FunctionImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
@@ -473,7 +474,9 @@ namespace ColorVision.ImageEditor
                             {
                                 if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                                 {
-                                    var image = hImageProcessed.ToWriteableBitmap();
+                                    double DpiX = Config.GetProperties<double>("DpiX");
+                                    double DpiY = Config.GetProperties<double>("DpiY");
+                                    var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
                                     hImageProcessed.Dispose();
 
                                     FunctionImage = image;
@@ -492,25 +495,6 @@ namespace ColorVision.ImageEditor
 
 
         public void AddVisual(Visual visual) => ImageShow.AddVisualCommand(visual);
-
-
-        private void reference_Click(object sender, RoutedEventArgs e)
-        {
-            menuPop1.IsOpen = true;
-        }
-
-        private void reference1_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && button.Tag is string tag)
-            {
-                menuPop1.IsOpen = false;
-
-
-
-
-            }
-        }
-
 
         private void HistogramButton_Click(object sender, RoutedEventArgs e)
         {
@@ -565,8 +549,9 @@ namespace ColorVision.ImageEditor
                     {
                         if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                         {
-                            var image = hImageProcessed.ToWriteableBitmap();
-
+                            double DpiX = Config.GetProperties<double>("DpiX");
+                            double DpiY = Config.GetProperties<double>("DpiY");
+                            var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
                             hImageProcessed.Dispose();
                             FunctionImage = image;
                         }
@@ -602,7 +587,9 @@ namespace ColorVision.ImageEditor
                 {
                     if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                     {
-                        var image = hImageProcessed.ToWriteableBitmap();
+                        double DpiX = Config.GetProperties<double>("DpiX");
+                        double DpiY = Config.GetProperties<double>("DpiY");
+                        var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
 
                         hImageProcessed.Dispose();
                         FunctionImage = image;
@@ -628,8 +615,9 @@ namespace ColorVision.ImageEditor
                         {
                             if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                             {
-                                var image = hImageProcessed.ToWriteableBitmap();
-
+                                double DpiX = Config.GetProperties<double>("DpiX");
+                                double DpiY = Config.GetProperties<double>("DpiY");
+                                var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
                                 hImageProcessed.Dispose();
 
                                 FunctionImage = image;
@@ -647,7 +635,9 @@ namespace ColorVision.ImageEditor
                         {
                             if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                             {
-                                var image = hImageProcessed.ToWriteableBitmap();
+                                double DpiX = Config.GetProperties<double>("DpiX");
+                                double DpiY = Config.GetProperties<double>("DpiY");
+                                var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
                                 hImageProcessed.Dispose();
 
                                 FunctionImage = image;
@@ -678,7 +668,9 @@ namespace ColorVision.ImageEditor
                 {
                     if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                     {
-                        var image = hImageProcessed.ToWriteableBitmap();
+                        double DpiX = Config.GetProperties<double>("DpiX");
+                        double DpiY = Config.GetProperties<double>("DpiY");
+                        var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
 
                         hImageProcessed.Dispose();
 
@@ -719,7 +711,9 @@ namespace ColorVision.ImageEditor
                 {
                     if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                     {
-                        var image = hImageProcessed.ToWriteableBitmap();
+                        double DpiX = Config.GetProperties<double>("DpiX");
+                        double DpiY = Config.GetProperties<double>("DpiY");
+                        var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
                         hImageProcessed.Dispose();
 
                         FunctionImage = image;
@@ -789,7 +783,10 @@ namespace ColorVision.ImageEditor
                 {
                     if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                     {
-                        var image = hImageProcessed.ToWriteableBitmap();
+                        double DpiX = Config.GetProperties<double>("DpiX");
+                        double DpiY = Config.GetProperties<double>("DpiY");
+                        var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
+                        
                         hImageProcessed.Dispose();
 
                         FunctionImage = image;
@@ -819,7 +816,9 @@ namespace ColorVision.ImageEditor
                         {
                             if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                             {
-                                var image = hImageProcessed.ToWriteableBitmap();
+                                double DpiX = Config.GetProperties<double>("DpiX");
+                                double DpiY = Config.GetProperties<double>("DpiY");
+                                var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
                                 hImageProcessed.Dispose();
 
                                 FunctionImage = image;
@@ -861,7 +860,10 @@ namespace ColorVision.ImageEditor
                         {
                             if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                             {
-                                var image = hImageProcessed.ToWriteableBitmap();
+                                double DpiX = Config.GetProperties<double>("DpiX");
+                                double DpiY = Config.GetProperties<double>("DpiY");
+                                var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
+                                
                                 hImageProcessed.Dispose();
 
                                 FunctionImage = image;
@@ -896,7 +898,10 @@ namespace ColorVision.ImageEditor
                         {
                             if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                             {
-                                var image = hImageProcessed.ToWriteableBitmap();
+                                double DpiX = Config.GetProperties<double>("DpiX");
+                                double DpiY = Config.GetProperties<double>("DpiY");
+                                var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
+
                                 hImageProcessed.Dispose();
 
                                 FunctionImage = image;
@@ -930,33 +935,10 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private void EditDIExpand_Click(object sender, RoutedEventArgs e)
-        {
-            GraphicEditingWindow graphicEditingWindow = new GraphicEditingWindow(this) { Owner = Application.Current.GetActiveWindow()};
-
-            // 屏幕坐标
-            var point = this.PointToScreen(new Point(this.ActualWidth, this.ActualHeight));
-
-            // 转换为WPF坐标
-            var source = PresentationSource.FromVisual(this);
-            if (source != null)
-            {
-                var targetPoint = source.CompositionTarget.TransformFromDevice.Transform(point);
-
-                // 设置弹窗的位置
-                graphicEditingWindow.WindowStartupLocation = WindowStartupLocation.Manual;
-                graphicEditingWindow.Left = targetPoint.X - graphicEditingWindow.Width;
-                graphicEditingWindow.Top = targetPoint.Y - graphicEditingWindow.Height;
-            }
-
-
-            graphicEditingWindow.Show();
-        }
 
         public void Dispose()
         {
             Clear();
-            ImageViewModel.ClearImageEventHandler -= Clear;
             ImageViewModel.Dispose();
 
             ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
@@ -969,6 +951,7 @@ namespace ColorVision.ImageEditor
             Zoombox1.Child = null;
             ZoomGrid.Children.Clear();
             GC.Collect();
+            GC.SuppressFinalize(this);
         }
     }
 }

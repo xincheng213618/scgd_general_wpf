@@ -1,7 +1,5 @@
 ﻿using ColorVision.Database;
 using ColorVision.UI;
-
-#pragma warning disable CS8602
 using ColorVision.UI.Sorts;
 using SqlSugar;
 using NPOI.SS.Formula.Functions;

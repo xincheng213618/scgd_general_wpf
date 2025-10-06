@@ -2,7 +2,6 @@
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.UI;
 using CVCommCore;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;

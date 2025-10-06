@@ -1,19 +1,9 @@
-using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
-using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.ImageEditor
 {
-    /// <summary>
-    /// 提供图像上下文菜单项的接口
-    /// </summary>
-    public interface IImageContentMenuProvider
-    {
-        public List<MenuItemMetadata> GetContextMenuItems(ImageViewConfig config);
-    }
-
     /// <summary>
     /// 绘图元素上下文菜单接口
     /// </summary>
@@ -23,31 +13,24 @@ namespace ColorVision.ImageEditor
         IEnumerable<MenuItem> GetContextMenuItems(ImageViewModel imageViewModel, object obj);
     }
 
-    /// <summary>
-    /// 绘图编辑器接口
-    /// </summary>
-    public interface IDrawEditor
-    {
-        public bool IsShow { get; set; }
-    }
 
     /// <summary>
     /// 绘图编辑器管理类
     /// </summary>
     public class DrawEditorManager
     {
-        public IDrawEditor? Current { get; set; }
+        public IEditorToggleTool? Current { get; set; }
 
-        public void SetCurrentDrawEditor(IDrawEditor? drawEditor)
+        public void SetCurrentDrawEditor(IEditorToggleTool? drawEditor)
         {
             if(Current != null)
             {
-                Current.IsShow = false;
+                Current.IsChecked = false;
             }
             Current = drawEditor;
             if (Current != null)
             {
-                Current.IsShow = true;
+                Current.IsChecked = true;
             }
         }
     }

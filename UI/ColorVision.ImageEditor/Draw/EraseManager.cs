@@ -8,27 +8,29 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class EraseManager : ViewModelBase, IDisposable, IDrawEditor
+    public class EraseManager : IEditorToggleToolBase, IDisposable
     {
-        private Zoombox Zoombox1 { get; set; }
-        private DrawCanvas DrawCanvas { get; set; }
-        public ImageViewModel ImageViewModel { get; set; }
+        private Zoombox Zoombox1 => EditorContext.Zoombox;
+        private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
+        public ImageViewModel ImageViewModel => EditorContext.ImageViewModel;
 
+        public EditorContext EditorContext { get; set; }
+
+        public EraseManager(EditorContext context)
+        {
+            EditorContext = context;
+            Order = 2;
+            ToolBarLocal = ToolBarLocal.Draw;
+            Icon = IEditorToolFactory.TryFindResource("DrawingImageeraser");
+        }
         DrawingVisual EraseVisual { get; set; }
 
-        public EraseManager(ImageViewModel imageEditViewMode, Zoombox zombox, DrawCanvas drawCanvas)
+        public override bool IsChecked
         {
-            Zoombox1 = zombox;
-            DrawCanvas = drawCanvas;
-            ImageViewModel = imageEditViewMode;
-        }
-
-        public bool IsShow
-        {
-            get => _IsShow; set
+            get => _IsChecked; set
             {
-                if (_IsShow == value) return;
-                _IsShow = value;
+                if (_IsChecked == value) return;
+                _IsChecked = value;
                 if (value)
                 {
                     ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
@@ -149,7 +151,7 @@ namespace ColorVision.ImageEditor.Draw
 
 
 
-        private bool _IsShow;
+        private bool _IsChecked;
 
 
         public void Dispose()

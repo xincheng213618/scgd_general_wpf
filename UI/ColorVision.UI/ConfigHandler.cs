@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8604
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.Authorizations;
 using log4net;
 using Newtonsoft.Json;

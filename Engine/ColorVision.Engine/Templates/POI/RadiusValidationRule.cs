@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8602,CS8604
-using System.Globalization;
+﻿using System.Globalization;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.POI

@@ -1,10 +1,7 @@
-using System;
-using System.Collections.Generic;
 using ColorVision.Engine; // AlgResultMasterDao, MeasureImgResultDao, DeatilCommonDao
 using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis; // PoiAnalysisDetailViewReslut
 using ColorVision.Engine.Templates.POI.AlgorithmImp; // PoiPointResultModel
-using ColorVision.Engine.Templates.POI.Image;
 using ColorVision.Database;
 
 namespace ProjectARVRPro

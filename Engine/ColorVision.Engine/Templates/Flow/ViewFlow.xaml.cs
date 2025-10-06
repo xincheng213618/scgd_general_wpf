@@ -1,9 +1,7 @@
 ﻿#pragma warning disable CA1720,CS8602
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.ImageEditor;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
@@ -11,14 +9,10 @@ using FlowEngineLib;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Drawing;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Interop;
-using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Services.Flow
 {
@@ -167,7 +161,6 @@ namespace ColorVision.Engine.Services.Flow
             if (!STNodeEditorHelper.CheckFlow()) return;
             FlowParam.DataBase64 = Convert.ToBase64String(STNodeEditorMain.GetCanvasData());
             TemplateFlow.Save2DB(FlowParam);
-            MessageBox.Show(Application.Current.GetActiveWindow(),"保存成功","Flow");
         }
 
 
@@ -184,16 +177,19 @@ namespace ColorVision.Engine.Services.Flow
 
         public FlowParam FlowParam { get; set; }
 
-        public float CanvasScale { get => STNodeEditorHelper.CanvasScale; set { STNodeEditorMain.ScaleCanvas(value, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2); } }
-
-
         STNodeTreeView STNodeTreeView1 = new STNodeTreeView();
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = this;
             STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
-            STNodeEditorMain.ActiveChanged +=(s,e) => SignStackBorder.Visibility = STNodeEditorMain.ActiveNode != null ? Visibility.Visible : Visibility.Collapsed;
+            STNodeEditorMain.ActiveChanged += (s, e) =>
+            {
+                SignStackBorder.Visibility = STNodeEditorMain.ActiveNode != null ? Visibility.Visible : Visibility.Collapsed;
+                winf2.Visibility = STNodeEditorMain.ActiveNode != null ? Visibility.Visible : Visibility.Collapsed;
+            };
+
+            
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {
                 if (e.KeyCode == System.Windows.Forms.Keys.Delete)
@@ -241,36 +237,6 @@ namespace ColorVision.Engine.Services.Flow
                 }
             };
             STNodeEditorHelper = new STNodeEditorHelper(this,STNodeEditorMain, STNodeTreeView1, STNodePropertyGrid1, SignStackPannel);
-        }
-
-
-
-        // 渲染 STNodeEditorMain 到 BitmapSource
-        public BitmapSource RenderMiniMap()
-        {
-            // 获取 WinForms 控件的句柄并生成 Bitmap
-            var bmp = new System.Drawing.Bitmap(STNodeEditorMain.Width, STNodeEditorMain.Height);
-            STNodeEditorMain.DrawToBitmap(bmp, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height));
-
-            // 转换为 WPF BitmapSource 并缩放
-            var hBitmap = bmp.GetHbitmap();
-            var bitmapSource = Imaging.CreateBitmapSourceFromHBitmap(
-                hBitmap,
-                IntPtr.Zero,
-                Int32Rect.Empty,
-                BitmapSizeOptions.FromWidthAndHeight(STNodeEditorMain.Width, STNodeEditorMain.Height)
-            );
-            // 释放 GDI 资源
-            NativeMethods.DeleteObject(hBitmap);
-            bmp.Dispose();
-            return bitmapSource;
-        }
-
-        // Win32 资源释放
-        internal static class NativeMethods
-        {
-            [System.Runtime.InteropServices.DllImport("gdi32.dll")]
-            public static extern bool DeleteObject(IntPtr hObject);
         }
 
 
@@ -458,7 +424,8 @@ namespace ColorVision.Engine.Services.Flow
         {
             if (sender is Grid grid)
             {
-                winf2.Visibility = grid.ActualHeight < 500 || grid.ActualWidth < 300 ? Visibility.Collapsed : Visibility.Visible;
+                if (winf2.Visibility ==Visibility.Visible)
+                    winf2.Visibility = grid.ActualHeight < 500 || grid.ActualWidth < 300 ? Visibility.Collapsed : Visibility.Visible;
 
                 winf1.Visibility = grid.ActualHeight < 200 || grid.ActualWidth < 100 ? Visibility.Collapsed : Visibility.Visible;
             }

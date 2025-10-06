@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
 using ColorVision.UI;
 using System;

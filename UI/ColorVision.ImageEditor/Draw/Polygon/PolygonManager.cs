@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS0414,CS8625
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using System;
 using System.Windows;
 using System.Windows.Input;
@@ -7,28 +6,36 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class PolygonManager : ViewModelBase, IDisposable, IDrawEditor
+    public class PolygonManager : IEditorToggleToolBase, IDisposable
     {
-        private Zoombox ZoomboxSub { get; set; }
-        private DrawCanvas DrawCanvas { get; set; }
+        private Zoombox ZoomboxSub => EditorContext.Zoombox;
+        private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
+
+
+        public ImageViewModel ImageViewModel => EditorContext.ImageViewModel;
+        public EditorContext EditorContext { get; set; }
+
+        public PolygonManager(EditorContext context)
+        {
+            EditorContext = context;
+            ToolBarLocal = ToolBarLocal.Draw;
+            Order = 5;
+
+            Icon = IEditorToolFactory.TryFindResource("DrawingImagePolygon");
+        }
+
+
+
 
         public DVPolygon? DrawingVisualPolygonCache { get; set; }
 
-        public ImageViewModel ImageViewModel { get; set; }
-
-        public PolygonManager(ImageViewModel imageViewModel, Zoombox zombox, DrawCanvas drawCanvas)
+        private bool _IsChecked;
+        public override bool IsChecked
         {
-            ZoomboxSub = zombox;
-            DrawCanvas = drawCanvas;
-            ImageViewModel = imageViewModel;
-        }
-        private bool _IsShow;
-        public bool IsShow
-        {
-            get => _IsShow; set
+            get => _IsChecked; set
             {
-                if (_IsShow == value) return;
-                _IsShow = value;
+                if (_IsChecked == value) return;
+                _IsChecked = value;
                 if (value)
                 {
                     ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
@@ -78,7 +85,7 @@ namespace ColorVision.ImageEditor.Draw
                 {
                     DrawCanvas.RemoveVisualCommand(DrawingVisualPolygonCache);
                     DrawingVisualPolygonCache = null;
-                    IsShow = false;
+                    IsChecked = false;
                 }
             }
             else if (realKey == Key.End || realKey == Key.Space || realKey == Key.Enter || realKey == Key.Tab)
@@ -88,7 +95,7 @@ namespace ColorVision.ImageEditor.Draw
                     DrawingVisualPolygonCache.Points.RemoveAt(DrawingVisualPolygonCache.Points.Count - 1);
                     DrawingVisualPolygonCache.Render();
                     DrawingVisualPolygonCache = null;
-                    IsShow = false;
+                    IsChecked = false;
                 }
                 e.Handled = true;
             }

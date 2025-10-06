@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1401,CA1708,CA1707,CA2101,CA1711,SYSLIB1054
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 
 namespace cvColorVision

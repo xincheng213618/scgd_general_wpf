@@ -1,17 +1,11 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.UI;
-using ColorVision.UI.Menus;
-using System.Collections.Generic;
-using System.Windows;
-using System.Windows.Controls;
+﻿using ColorVision.UI.Menus;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.EditorTools.AppCommand
 {
     public record class OpenImageEditorTool(EditorContext EditorContext) : IEditorTool
     {
-        public ToolBarLocal ToolBarLocal => ToolBarLocal.Right;
+        public ToolBarLocal ToolBarLocal => ToolBarLocal.Left;
         public string? GuidId => "OpenImage";
 
         public int Order { get; set; } = 1;

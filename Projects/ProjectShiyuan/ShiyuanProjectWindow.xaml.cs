@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8602,CA1707
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine;
 using ColorVision.Engine.MQTT;
 using ColorVision.Database;

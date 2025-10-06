@@ -118,7 +118,6 @@
     <Compile Include="CyclingGradient.xaml.cs">
       <DependentUpon>CyclingGradient.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Utils.cs" />
     <Compile Include="VideoPlayer.cs" />
     <Compile Include="ViewModelBase.cs" />
     <Compile Include="WindowUpdate.xaml.cs">

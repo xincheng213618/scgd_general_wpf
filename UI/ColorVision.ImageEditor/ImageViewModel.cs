@@ -4,53 +4,42 @@ using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
-using ColorVision.ImageEditor.EditorTools.Rotate;
 using ColorVision.ImageEditor.EditorTools.FullScreen;
+using ColorVision.ImageEditor.EditorTools.Rotate;
 using ColorVision.UI;
+using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision.ImageEditor
 {
     public class ImageViewModel : ViewModelBase, IDisposable
     {
         public DrawEditorManager DrawEditorManager { get; set; } = new DrawEditorManager();
-        private readonly Guid _guid = Guid.NewGuid();
 
-        #region Commands
+        public Guid Id { get; set; } = Guid.NewGuid();
 
-        public RelayCommand ClearImageCommand { get; set; }
-        public RelayCommand PrintImageCommand { get; set; }
-        #endregion
 
-        #region Events
-        public event EventHandler ClearImageEventHandler;
-        #endregion
 
         #region Components
         public Zoombox ZoomboxSub { get; set; }
         public DrawCanvas Image { get; set; }
-        public BezierCurveManager BezierCurveManager { get; set; }
-        public CircleManager CircleManager { get; set; }
-        public RectangleManager RectangleManager { get; set; }
-        public EraseManager EraseManager { get; set; }
-        public PolygonManager PolygonManager { get; set; }
-        public MouseMagnifier MouseMagnifier { get; set; }
-        public MeasureManager MeasureManager { get; set; }
-        public LineManager LineManager { get; set; }
+
         public Crosshair Crosshair { get; set; }
-        public Gridline Gridline { get; set; }
         public ToolBarScaleRuler ToolBarScaleRuler { get; set; }
-        public ToolReferenceLine ToolConcentricCircle { get; set; }
-        public TextManager TextManager { get; set; } // 新增
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
         public SelectEditorVisual SelectEditorVisual { get; set; }
         public StackPanel SlectStackPanel { get; set; } = new StackPanel();
         public ImageFullScreenMode ImageFullScreenMode { get; set; }
+
+        public MouseMagnifierManager MouseMagnifier { get; set; }
+
 
         #endregion
 
@@ -65,7 +54,6 @@ namespace ColorVision.ImageEditor
 
         #region Helper Classes
         private ImageTransformOperations _transformOperations;
-        private ImageContextMenuManager _contextMenuManager;
         private ImageKeyboardHandler _keyboardHandler;
         #endregion
 
@@ -73,20 +61,25 @@ namespace ColorVision.ImageEditor
 
         public ImageViewModel(ImageView imageView, Zoombox zoombox, DrawCanvas drawCanvas)
         {
+            Config = new ImageViewConfig();
 
             var context = new EditorContext()
             {
+                ImageView = imageView,
                 ImageViewModel = this,
                 DrawCanvas = drawCanvas,
-                ZoomboxSub = zoombox
+                Zoombox = zoombox,
+                Config = Config
             };
+
             IEditorToolFactory = new IEditorToolFactory(imageView, context);
 
+            MouseMagnifier = IEditorToolFactory.IEditorTools.OfType<MouseMagnifierManager>().FirstOrDefault();
 
             this.ImageView = imageView;
             ZoomboxSub = zoombox;
             Image = drawCanvas;
-            Config = new ImageViewConfig();
+
             ContextMenu = new ContextMenu();
 
             _transformOperations = new ImageTransformOperations(drawCanvas);
@@ -116,16 +109,153 @@ namespace ColorVision.ImageEditor
 
             drawCanvas.PreviewKeyDown += _keyboardHandler.HandleKeyDown;
 
+            Crosshair = new Crosshair(zoombox, drawCanvas);
+            ToolBarScaleRuler = new ToolBarScaleRuler(ImageView, zoombox, drawCanvas);
 
-            InitializeTools(zoombox, drawCanvas);
-
-
-            _contextMenuManager = new ImageContextMenuManager(this, drawCanvas, ContextMenu, ContextMenuProviders);
-            Image.ContextMenuOpening += _contextMenuManager.HandleContextMenuOpening;
+            Image.ContextMenuOpening += HandleContextMenuOpening;
             Image.ContextMenu = ContextMenu;
             ZoomboxSub.ContextMenu = ContextMenu;
             ZoomboxSub.LayoutUpdated += Zoombox1_LayoutUpdated;
         }
+
+
+        /// <summary>
+        /// 处理上下文菜单打开事件
+        /// </summary>
+        public void HandleContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            ContextMenu.Items.Clear();
+
+            if (ImageEditMode)
+            {
+                Point MouseDownP = Mouse.GetPosition(Image);
+                var MouseVisual = Image.GetVisual<Visual>(MouseDownP);
+                Type type = MouseVisual.GetType();
+
+                if (MouseVisual is SelectEditorVisual selectEditorVisual && selectEditorVisual.GetVisual(MouseDownP) is ISelectVisual selectVisual)
+                {
+                    foreach (var provider in ContextMenuProviders)
+                    {
+                        if (provider.ContextType.IsAssignableFrom(selectVisual.GetType()))
+                        {
+                            var items = provider.GetContextMenuItems(this, selectVisual);
+                            foreach (var item in items)
+                                ContextMenu.Items.Add(item);
+                        }
+                    }
+                    foreach (var provider in ContextMenuProviders)
+                    {
+                        if (provider.ContextType.IsAssignableFrom(selectEditorVisual.GetType()))
+                        {
+                            var items = provider.GetContextMenuItems(this, selectEditorVisual);
+                            foreach (var item in items)
+                                ContextMenu.Items.Add(item);
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var provider in ContextMenuProviders)
+                    {
+                        if (provider.ContextType.IsAssignableFrom(type))
+                        {
+                            var items = provider.GetContextMenuItems(this, MouseVisual);
+                            foreach (var item in items)
+                                ContextMenu.Items.Add(item);
+                        }
+                    }
+                }
+
+                if (ContextMenu.Items.Count == 0)
+                    CreateStandardContextMenu();
+            }
+            else
+            {
+                CreateStandardContextMenu();
+            }
+        }
+
+        /// <summary>
+        /// 创建标准上下文菜单
+        /// </summary>
+        public void CreateStandardContextMenu()
+        {
+            List<MenuItemMetadata> MenuItemMetadatas = new List<MenuItemMetadata>();
+            if (IImageOpen is IIEditorToolContextMenu contentMenuProvider)
+            {
+                MenuItemMetadatas.AddRange(contentMenuProvider.GetContextMenuItems());
+            }
+
+            foreach (var item in IEditorToolFactory.IIEditorToolContextMenus)
+            {
+                if (item is IImageOpen) continue;
+                MenuItemMetadatas.AddRange(item.GetContextMenuItems());
+            }
+
+
+            var iMenuItems = MenuItemMetadatas.OrderBy(item => item.Order).ToList();
+
+            // 递归创建菜单结构
+            void CreateMenu(MenuItem parentMenuItem, string OwnerGuid)
+            {
+                var iMenuItems1 = iMenuItems.FindAll(a => a.OwnerGuid == OwnerGuid).OrderBy(a => a.Order).ToList();
+                for (int i = 0; i < iMenuItems1.Count; i++)
+                {
+                    var iMenuItem = iMenuItems1[i];
+                    string GuidId = iMenuItem.GuidId ?? Guid.NewGuid().ToString();
+                    MenuItem menuItem = new()
+                    {
+                        Header = iMenuItem.Header,
+                        Icon = iMenuItem.Icon,
+                        InputGestureText = iMenuItem.InputGestureText,
+                        Command = iMenuItem.Command,
+                        Tag = iMenuItem,
+                        IsChecked = iMenuItem.IsChecked ?? false,
+                        Visibility = iMenuItem.Visibility,
+                    };
+
+                    CreateMenu(menuItem, GuidId);
+                    if (i > 0 && iMenuItem.Order - iMenuItems1[i - 1].Order > 4 && iMenuItem.Visibility == Visibility.Visible)
+                    {
+                        parentMenuItem.Items.Add(new Separator());
+                    }
+                    parentMenuItem.Items.Add(menuItem);
+                }
+                foreach (var item in iMenuItems1)
+                {
+                    iMenuItems.Remove(item);
+                }
+            }
+
+            // 创建顶级菜单
+            var iMenuItemMetas = MenuItemMetadatas
+                .Where(item => item.OwnerGuid == MenuItemConstants.Menu && item.Visibility == Visibility.Visible)
+                .OrderBy(item => item.Order)
+                .ToList();
+
+            for (int i = 0; i < iMenuItemMetas.Count; i++)
+            {
+                MenuItemMetadata menuItemMeta = iMenuItemMetas[i];
+                MenuItem menuItem = new()
+                {
+                    Header = menuItemMeta.Header,
+                    Command = menuItemMeta.Command,
+                    Icon = menuItemMeta.Icon,
+                    InputGestureText = menuItemMeta.InputGestureText,
+                    IsChecked = menuItemMeta.IsChecked ?? false,
+                };
+                if (menuItemMeta.GuidId != null)
+                    CreateMenu(menuItem, menuItemMeta.GuidId);
+                if (i > 0 && menuItemMeta.Order - iMenuItemMetas[i - 1].Order > 4)
+                    ContextMenu.Items.Add(new Separator());
+
+                ContextMenu.Items.Add(menuItem);
+            }
+        }
+
+
+
+
 
         double oldMax;
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
@@ -136,7 +266,7 @@ namespace ColorVision.ImageEditor
                 {
                     oldMax = ZoomboxSub.ContentMatrix.M11;
                     double scale = 1 / ZoomboxSub.ContentMatrix.M11;
-                    DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + _guid.ToString(), 20, () => ImageLayoutUpdatedRender(scale, DrawingVisualLists));
+                    DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + Id.ToString(), 20, () => ImageLayoutUpdatedRender(scale, DrawingVisualLists));
                 }
             }
 
@@ -177,24 +307,6 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private void InitializeTools(Zoombox zoombox, DrawCanvas drawCanvas)
-        {
-            MouseMagnifier = new MouseMagnifier(zoombox, drawCanvas);
-            Crosshair = new Crosshair(zoombox, drawCanvas);
-            Gridline = new Gridline(zoombox, drawCanvas);
-            ToolBarScaleRuler = new ToolBarScaleRuler(ImageView, zoombox, drawCanvas);
-            ToolConcentricCircle = new ToolReferenceLine(this, zoombox, drawCanvas);
-
-            MeasureManager = new MeasureManager(this, zoombox, drawCanvas);
-            PolygonManager = new PolygonManager(this, zoombox, drawCanvas);
-            BezierCurveManager = new BezierCurveManager(this, zoombox, drawCanvas);
-            LineManager = new LineManager(this, zoombox, drawCanvas);
-            CircleManager = new CircleManager(this, zoombox, drawCanvas);
-            RectangleManager = new RectangleManager(this, zoombox, drawCanvas);
-            EraseManager = new EraseManager(this, zoombox, drawCanvas);
-            TextManager = new TextManager(this, zoombox, drawCanvas); // 初始化 TextManager
-        }
-
         #region Public Methods
                 
         public void Save(string file) => ImageView.Save(file);
@@ -204,10 +316,8 @@ namespace ColorVision.ImageEditor
         #endregion
 
         #region Properties with change notification
-      
-        /// <summary>
-        /// ?????????????
-        /// </summary>
+
+
         public double ZoomRatio
         {
             get => ZoomboxSub.ContentMatrix.M11;
@@ -247,15 +357,11 @@ namespace ColorVision.ImageEditor
 
         public void Dispose()
         {
-            LineManager?.Dispose();
-            SelectEditorVisual?.Dispose();
-            CircleManager?.Dispose();
-            EraseManager?.Dispose();
-            RectangleManager?.Dispose();
-            PolygonManager?.Dispose();
-            BezierCurveManager?.Dispose();
-            TextManager?.Dispose();
-            
+            foreach (var item in IEditorToolFactory.IEditorTools.Cast<IDisposable>())
+            {
+                item.Dispose();
+            }
+
             if (DrawingVisualLists != null)
             {
                 DrawingVisualLists.Clear();
@@ -270,7 +376,6 @@ namespace ColorVision.ImageEditor
 
             if (Image != null)
             {
-                Image.ContextMenuOpening -= _contextMenuManager.HandleContextMenuOpening;
                 Image.PreviewKeyDown -= _keyboardHandler.HandleKeyDown;
             }
 

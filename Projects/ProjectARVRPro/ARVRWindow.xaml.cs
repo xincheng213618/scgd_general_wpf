@@ -5,15 +5,12 @@ using ColorVision.Engine;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.FindCross;
-using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.Engine.Templates.POI.Image;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Scheduler;
 using ColorVision.SocketProtocol;
@@ -38,7 +35,6 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Linq;
 
 namespace ProjectARVRPro
 {

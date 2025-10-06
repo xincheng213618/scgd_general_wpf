@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1707,CA1401 // 标识符不应包含下划线
-
+﻿
 using System;
 using System.Runtime.InteropServices;
 

@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
-using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services
 {

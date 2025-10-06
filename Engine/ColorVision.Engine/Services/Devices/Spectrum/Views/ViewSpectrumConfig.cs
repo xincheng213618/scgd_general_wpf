@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8604
-
+﻿
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System.Collections.ObjectModel;

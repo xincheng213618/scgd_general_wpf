@@ -1,6 +1,4 @@
-﻿#pragma warning disable CA1707 // Identifiers should not contain underscores
-#pragma warning disable CA1711 // Identifiers should not have incorrect suffix
-
+﻿
 using System.ComponentModel;
 
 namespace cvColorVision

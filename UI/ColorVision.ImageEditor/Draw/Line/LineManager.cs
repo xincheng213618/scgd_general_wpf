@@ -1,7 +1,7 @@
-﻿#pragma warning disable CS0414,CS8625
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using System;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -9,29 +9,31 @@ namespace ColorVision.ImageEditor.Draw
 {
 
 
-    public class LineManager : ViewModelBase, IDisposable,IDrawEditor
+    public class LineManager : IEditorToggleToolBase, IDisposable
     {
-        private Zoombox ZoomboxSub { get; set; }
-        private DrawCanvas DrawCanvas { get; set; }
+        private Zoombox ZoomboxSub => EditorContext.Zoombox;
+        private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
+        public ImageViewModel ImageViewModel => EditorContext.ImageViewModel;
+        public EditorContext EditorContext { get; set; }
+
+        public LineManager(EditorContext context)
+        {
+            EditorContext = context;
+            ToolBarLocal = ToolBarLocal.Draw;
+            Order = 7;
+            Icon =  new TextBlock() { Text = "L"};
+        }
 
         public DVLine? DVLineCache { get; set; }
 
-        public ImageViewModel ImageViewModel { get; set; }
 
-        public LineManager(ImageViewModel imageViewModel, Zoombox zombox, DrawCanvas drawCanvas)
+        private bool _IsChecked;
+        public override bool IsChecked
         {
-            ZoomboxSub = zombox;
-            DrawCanvas = drawCanvas;
-            ImageViewModel = imageViewModel;
-        }
-
-        private bool _IsShow;
-        public bool IsShow
-        {
-            get => _IsShow; set
+            get => _IsChecked; set
             {
-                if (_IsShow == value) return;
-                _IsShow = value;
+                if (_IsChecked == value) return;
+                _IsChecked = value;
                 if (value)
                 {
                     ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
@@ -102,7 +104,7 @@ namespace ColorVision.ImageEditor.Draw
                 DVLineCache.Points.Add(MouseUpP);
                 DVLineCache.Render();
                 ImageViewModel.SelectEditorVisual.SetRender(DVLineCache);
-                IsShow = false;
+                IsChecked = false;
                 DVLineCache = null;
             }
             e.Handled = true;

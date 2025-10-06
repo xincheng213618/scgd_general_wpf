@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
-using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
 using System.Reflection;
@@ -8,7 +7,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace ColorVision.UI.Plugins
 {

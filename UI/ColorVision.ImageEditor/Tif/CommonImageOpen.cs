@@ -1,6 +1,4 @@
-﻿#pragma warning disable CS8625
-using ColorVision.Core;
-using ColorVision.UI.Menus;
+﻿using ColorVision.Core;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -10,7 +8,7 @@ using System.Windows.Media.Imaging;
 namespace ColorVision.ImageEditor.Tif
 {
     [FileExtension(".bmp|.jpg|.jpeg|.png|.webp|.ico|gif")]
-    public class CommonImageOpen : IImageOpen
+    public record class CommonImageOpen(EditorContext EditorContext) : IImageOpen
     {
         public async void OpenImage(ImageView imageView, string? filePath)
         {
@@ -34,10 +32,6 @@ namespace ColorVision.ImageEditor.Tif
             imageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src", "R", "G", "B" };
             imageView.AddSelectionChangedHandler(imageView.ComboBoxLayersSelectionChanged);
             imageView.UpdateZoomAndScale();
-        }
-        public List<MenuItemMetadata> GetContextMenuItems(ImageViewConfig imageView)
-        {
-            return new List<MenuItemMetadata>();
         }
     }
 

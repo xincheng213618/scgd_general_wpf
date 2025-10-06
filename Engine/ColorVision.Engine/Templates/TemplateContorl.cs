@@ -1,12 +1,10 @@
 ﻿#pragma warning disable CS1998
 using ColorVision.Database;
-using ColorVision.Solution;
 using ColorVision.UI;
 using log4net;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 

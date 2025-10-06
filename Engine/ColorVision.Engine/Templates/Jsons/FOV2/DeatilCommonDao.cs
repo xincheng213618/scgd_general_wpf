@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1707
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System.IO;
 
 namespace ColorVision.Engine.Templates.Jsons.FOV2

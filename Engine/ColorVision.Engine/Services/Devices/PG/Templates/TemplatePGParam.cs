@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8603  
-
+﻿
 using ColorVision.Engine.Templates;
 using System.Collections.ObjectModel;
 

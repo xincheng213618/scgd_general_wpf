@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8602,CS8604
-using System;
+﻿using System;
 using System.Globalization;
 using System.Windows.Data;
 

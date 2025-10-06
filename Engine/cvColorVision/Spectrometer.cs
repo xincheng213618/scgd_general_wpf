@@ -1,5 +1,4 @@
-﻿#pragma warning disable  CA1051,CA1707,CA1711,CA1401,CA2101,CA1838
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 using System.Text;
 

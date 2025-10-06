@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA2201,CA2101,CA1707,CA1711
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;

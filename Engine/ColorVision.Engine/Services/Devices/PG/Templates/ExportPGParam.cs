@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8603  
-
+﻿
 using ColorVision.Database;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Menus;

@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1401,CA1051,CA2101,CA1707
-namespace ColorVision.Core
+﻿namespace ColorVision.Core
 {
     public enum ColormapTypes
     {
