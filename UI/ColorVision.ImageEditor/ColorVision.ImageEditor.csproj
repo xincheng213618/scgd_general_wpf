@@ -162,7 +162,7 @@
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>Resources.resx</DependentUpon>
 		</Compile>
-		<Compile Update="Window3D.xaml.cs">
+		<Compile Update="EditorTools\ThreeD\Window3D.xaml.cs">
 			<SubType>Code</SubType>
 		</Compile>
 	</ItemGroup>

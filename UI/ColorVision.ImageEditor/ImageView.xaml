@@ -97,12 +97,12 @@
                     </ToolBar>
                 </ToolBarTray>
 
-                <ToolBarTray x:Name="ToolBarRight" HorizontalAlignment="Left" Orientation="Vertical" Margin="2,50,0,0"  VerticalAlignment="Top">
+                <ToolBarTray x:Name="ToolBarLeft" HorizontalAlignment="Left" Orientation="Vertical" Margin="2,50,0,0"  VerticalAlignment="Top">
                     <ToolBar ToolBarTray.IsLocked="True" Padding="2,3"  >
                     </ToolBar>
                 </ToolBarTray>
 
-                <ToolBarTray x:Name="ToolBarLeft" x:FieldModifier="public"  Orientation="Vertical" Margin="2,50,2,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top">
+                <ToolBarTray x:Name="ToolBarRight" x:FieldModifier="public"  Orientation="Vertical" Margin="2,50,2,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top">
                     <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
                         <ToggleButton x:Name="AdvancedButton" Margin="0,0,0,2"  Padding="5">
                             <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIExpand}" />
@@ -113,7 +113,6 @@
                         <Button x:Name="Button1931" x:FieldModifier="public" Margin="0,0,0,2" Padding="5" Visibility="Collapsed">
                             <Image Style="{StaticResource ToolBarImage}"  Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png"/>
                         </Button>
-                        <Button  Content="3D" Click="Button_3D_Click" Padding="5" Margin="0,0,0,2"/>
                         <StackPanel>
                             <ToggleButton x:Name="Pseudo"  Click="ToggleButton_Click"  IsChecked="{Binding Config.IsPseudo}" Margin="0,0,0,2" >
                                 <Image  Style="{StaticResource ToolBarImage}"   Source="/ColorVision.ImageEditor;component/Assets/png/PowerToy.png" Margin="-5"/>
@@ -236,7 +235,7 @@
                             <DockPanel Margin="0,0,0,5">
                                 <TextBlock  Text="对比度" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
                                 <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=ContrastSlider,Path=Value}" Style="{StaticResource TextBox.Small}" Width="50"/>
-                                <hc:PreviewSlider x:Name="ContrastSlider" TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="10"  Value="0" Minimum="-50" Maximum="100" ValueChanged="ContrastSlider_ValueChanged"/>
+                                <hc:PreviewSlider x:Name="ContrastSlider" TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="0.1"  Value="0" Minimum="-50" Maximum="100" ValueChanged="ContrastSlider_ValueChanged"/>
                             </DockPanel>
                             <Button DockPanel.Dock="Right" Content="反相" Click="Button_Click_InvertImage" Margin="0,0,0,5"/>
                             <StackPanel>

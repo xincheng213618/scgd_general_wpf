@@ -4,7 +4,7 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
 {
     public record class CloseImageEditorTool(EditorContext EditorContext) : IEditorTool
     {
-        public ToolBarLocal ToolBarLocal => ToolBarLocal.Right;
+        public ToolBarLocal ToolBarLocal => ToolBarLocal.Left;
         public string? GuidId => "CloseImageEditorTool";
 
         public int Order { get; set; } = 3;
