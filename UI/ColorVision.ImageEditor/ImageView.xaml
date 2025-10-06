@@ -107,9 +107,6 @@
                         <ToggleButton x:Name="AdvancedButton" Margin="0,0,0,2"  Padding="5">
                             <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIExpand}" />
                         </ToggleButton>
-                        <Button x:Name="HistogramButton" Click="HistogramButton_Click" Margin="0,0,0,2" Padding="5">
-                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIHistogram}" />
-                        </Button>
                         <Button x:Name="Button1931" x:FieldModifier="public" Margin="0,0,0,2" Padding="5" Visibility="Collapsed">
                             <Image Style="{StaticResource ToolBarImage}"  Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png"/>
                         </Button>
