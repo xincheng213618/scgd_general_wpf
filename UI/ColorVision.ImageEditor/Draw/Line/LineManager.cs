@@ -21,6 +21,7 @@ namespace ColorVision.ImageEditor.Draw
         {
             EditorContext = context;
             ToolBarLocal = ToolBarLocal.Draw;
+            Order = 7;
             Icon =  new TextBlock() { Text = "L"};
         }
 

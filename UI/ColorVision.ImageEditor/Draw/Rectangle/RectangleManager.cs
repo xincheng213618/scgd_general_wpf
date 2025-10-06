@@ -35,7 +35,9 @@ namespace ColorVision.ImageEditor.Draw
 
         public RectangleManager(EditorContext context)
         {
-            EditorContext = context;   
+            EditorContext = context;
+            ToolBarLocal = ToolBarLocal.Draw;
+            Order = 4;
             Icon = IEditorToolFactory.TryFindResource("DrawingImageRect");
         }
 

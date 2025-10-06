@@ -30,6 +30,7 @@ namespace ColorVision.ImageEditor.Draw
         public CircleManager(EditorContext context)
         {
             EditorContext = context;
+            Order = 3;
             ToolBarLocal = ToolBarLocal.Draw;
             Icon = IEditorToolFactory.TryFindResource("DrawingImageCircle");
         }

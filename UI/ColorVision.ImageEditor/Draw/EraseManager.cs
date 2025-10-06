@@ -20,6 +20,7 @@ namespace ColorVision.ImageEditor.Draw
         public EraseManager(EditorContext context)
         {
             EditorContext = context;
+            Order = 2;
             ToolBarLocal = ToolBarLocal.Draw;
             Icon = IEditorToolFactory.TryFindResource("DrawingImageeraser");
         }

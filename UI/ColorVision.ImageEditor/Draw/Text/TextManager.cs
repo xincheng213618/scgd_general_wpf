@@ -29,13 +29,14 @@ namespace ColorVision.ImageEditor.Draw
         public TextManagerConfig Config { get; set; } = new TextManagerConfig();
         private Zoombox Zoombox => EditorContext.Zoombox;
         private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
-        public ImageViewModel ImageViewModel { get; set; }
+        public ImageViewModel ImageViewModel => EditorContext.ImageViewModel;
         public EditorContext EditorContext { get; set; }
 
         public TextManager(EditorContext context)
         {
             EditorContext = context;
             ToolBarLocal = ToolBarLocal.Draw;
+            Order = 8;
             Icon = new TextBlock() { Text = "T" };
         }
 

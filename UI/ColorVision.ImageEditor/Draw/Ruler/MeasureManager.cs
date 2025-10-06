@@ -15,6 +15,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
         public MeasureManager(EditorContext context)
         {
             EditorContext = context;
+            Order = 1;
             ToolBarLocal = ToolBarLocal.Draw;
             Icon = IEditorToolFactory.TryFindResource("DrawingImageruler");
         }

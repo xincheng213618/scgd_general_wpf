@@ -332,6 +332,7 @@ namespace ColorVision.ImageEditor.Draw.Special
         {
             EditorContext = editorContext;
             ToolBarLocal = ToolBarLocal.Draw;
+            Order = 10;
             Icon = IEditorToolFactory.TryFindResource("ConcentricCirclesDrawImg");
 
         }

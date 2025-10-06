@@ -20,6 +20,8 @@ namespace ColorVision.ImageEditor.Draw
         {
             EditorContext = context;
             ToolBarLocal = ToolBarLocal.Draw;
+            Order = 5;
+
             Icon = IEditorToolFactory.TryFindResource("DrawingImagePolygon");
         }
 
