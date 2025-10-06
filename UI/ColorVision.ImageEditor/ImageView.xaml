@@ -84,9 +84,6 @@
 
                 <ToolBarTray x:Name="ToolBarDraw" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}" HorizontalAlignment="Center" VerticalAlignment="Bottom" >
                     <ToolBar ToolBarTray.IsLocked="True"  >
-                        <Button Click="EditDIExpand_Click" Padding="5"   >
-                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DIExpand}" />
-                        </Button>
                     </ToolBar>
 
                 </ToolBarTray>

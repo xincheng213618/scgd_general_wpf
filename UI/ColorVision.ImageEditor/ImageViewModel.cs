@@ -80,6 +80,7 @@ namespace ColorVision.ImageEditor
 
             var context = new EditorContext()
             {
+                ImageView = imageView,
                 ImageViewModel = this,
                 DrawCanvas = drawCanvas,
                 Zoombox = zoombox,
