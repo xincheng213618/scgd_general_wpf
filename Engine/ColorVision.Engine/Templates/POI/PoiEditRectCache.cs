@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8625,CS8604,CS8602
-using ColorVision.UI;
+﻿using ColorVision.UI;
 
 namespace ColorVision.Engine.Templates.POI
 {

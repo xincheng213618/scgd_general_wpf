@@ -1,9 +1,7 @@
 ﻿using ColorVision.Rbac.Dtos;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
-using System;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Rbac
 {

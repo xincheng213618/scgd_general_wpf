@@ -9,7 +9,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Reflection;
 using System.Windows;
-using System.Threading.Tasks;
 using System.Windows.Threading;
 
 namespace Pattern

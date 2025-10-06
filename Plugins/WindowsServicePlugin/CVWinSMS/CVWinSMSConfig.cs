@@ -1,5 +1,4 @@
-﻿#pragma warning disable SYSLIB0014
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System.IO;

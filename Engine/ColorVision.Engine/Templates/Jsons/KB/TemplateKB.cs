@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8603
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Templates.POI;
 using log4net;

@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1707,IDE1006
-
+﻿
 using System.Collections.Generic;
 using System.ComponentModel;
 

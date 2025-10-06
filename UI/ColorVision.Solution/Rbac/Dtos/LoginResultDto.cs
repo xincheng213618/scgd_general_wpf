@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.Authorizations;
-using System;
-using System.Collections.Generic;
 
 namespace ColorVision.Rbac.Dtos
 {

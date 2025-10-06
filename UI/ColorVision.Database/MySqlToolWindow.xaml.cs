@@ -1,8 +1,5 @@
 ﻿using ColorVision.Themes;
 using ColorVision.UI.Menus;
-using Microsoft.Data.SqlClient;
-using MySql.Data.MySqlClient;
-using System;
 using System.Collections.Specialized;
 using System.IO;
 using System.Windows;

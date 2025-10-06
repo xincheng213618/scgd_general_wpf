@@ -1,4 +1,3 @@
-#pragma warning disable CA1512 
 
 using System.Windows;
 using System.Windows.Controls;

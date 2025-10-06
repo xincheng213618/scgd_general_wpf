@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1707
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel;
 
 namespace ColorVision.Engine.Templates.Ghost

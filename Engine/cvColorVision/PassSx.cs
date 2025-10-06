@@ -1,5 +1,4 @@
-﻿#pragma warning disable  CA2101
-
+﻿
 using System.Runtime.InteropServices;
 
 namespace cvColorVision

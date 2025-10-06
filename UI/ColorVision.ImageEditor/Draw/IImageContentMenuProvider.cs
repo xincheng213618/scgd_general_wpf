@@ -1,7 +1,5 @@
-using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
-using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.ImageEditor

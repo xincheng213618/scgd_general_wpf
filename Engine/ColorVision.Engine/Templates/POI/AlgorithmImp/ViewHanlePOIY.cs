@@ -1,5 +1,4 @@
-﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using CVCommCore.CVAlgorithm;
 using log4net;

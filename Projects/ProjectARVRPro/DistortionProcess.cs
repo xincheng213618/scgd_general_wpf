@@ -1,4 +1,3 @@
-using System;
 using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Templates.Jsons.Distortion2;
 using ColorVision.Database;

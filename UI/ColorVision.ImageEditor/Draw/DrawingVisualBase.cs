@@ -1,6 +1,4 @@
-﻿#pragma warning disable CA1711,CA2211
-using ColorVision.ImageEditor.Draw.Special;
-using ColorVision.UI;
+﻿using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

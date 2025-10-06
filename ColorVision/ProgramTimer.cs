@@ -1,7 +1,6 @@
 ﻿// // Copyright (c) Microsoft. All rights reserved.
 // // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using ColorVision.UI;
 using log4net;
 using log4net.Appender;
 using log4net.Core;
@@ -10,7 +9,6 @@ using log4net.Repository.Hierarchy;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.Text;
-using System.Windows.Controls;
 
 namespace ColorVision
 {

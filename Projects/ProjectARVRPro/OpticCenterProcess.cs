@@ -1,7 +1,5 @@
-using System;
 using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Templates.Jsons.FindCross; // FindCrossDetailViewReslut
-using ColorVision.Engine.Templates.Jsons.FOV2; // DeatilCommonDao
 using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
 using ColorVision.Database;
 

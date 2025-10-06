@@ -1,5 +1,4 @@
-﻿#pragma warning disable SYSLIB0014,CA1822
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes.Controls;
 using log4net;
 using System.Diagnostics;

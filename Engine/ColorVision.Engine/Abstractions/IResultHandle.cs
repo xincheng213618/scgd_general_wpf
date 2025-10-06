@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1707,CA1711
-using ColorVision.Engine.Services;
+﻿using ColorVision.Engine.Services;
 using ColorVision.ImageEditor;
 using ColorVision.UI.Sorts;
 using CVCommCore.CVAlgorithm;

@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Database;

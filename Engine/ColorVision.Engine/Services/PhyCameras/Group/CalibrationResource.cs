@@ -2,7 +2,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Solution.Editor.AvalonEditor;
-using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using cvColorVision;
 using log4net;

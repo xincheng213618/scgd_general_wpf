@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using Newtonsoft.Json;
 using System.ComponentModel;
 
 namespace ColorVision.Scheduler

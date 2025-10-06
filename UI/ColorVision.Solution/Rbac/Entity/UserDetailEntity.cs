@@ -1,7 +1,6 @@
 ﻿using ColorVision.Database;
 using ColorVision.UI.Authorizations;
 using SqlSugar;
-using System;
 
 namespace ColorVision.Rbac
 {

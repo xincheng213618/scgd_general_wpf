@@ -1,6 +1,4 @@
-﻿#pragma warning disable CS8625
-using ColorVision.Engine.Media;
-using ColorVision.Database;
+﻿using ColorVision.Database;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
@@ -16,8 +14,10 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.POI;
 
-namespace ColorVision.Engine.Templates.POI.Image
+namespace ColorVision.Engine.Media
 {
     public class PoiImageViewComponent : IImageComponent
     {

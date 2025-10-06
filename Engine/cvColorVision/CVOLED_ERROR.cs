@@ -1,5 +1,4 @@
-﻿#pragma warning disable  CA2101,CA1707,CA1401,CA1051,CA1838,CA1711,CS0649,CA2211,CA1708,CA1720
-namespace cvColorVision
+﻿namespace cvColorVision
 {
     public enum CVOLED_ERROR
     {

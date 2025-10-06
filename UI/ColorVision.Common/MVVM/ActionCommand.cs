@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8604
-using System;
+﻿using System;
 
 namespace ColorVision.Common.MVVM
 {

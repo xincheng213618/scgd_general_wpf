@@ -1,4 +1,3 @@
-#pragma warning disable CS0414,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using System;

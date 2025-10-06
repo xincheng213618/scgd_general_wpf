@@ -1,6 +1,5 @@
 ﻿using ColorVision.UI;
 using ColorVision.UI.Menus;
-using Microsoft.VisualBasic.Logging;
 using System.Windows;
 
 namespace ColorVision.Scheduler

@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1711
-using System.Net.Sockets;
+﻿using System.Net.Sockets;
 
 namespace ColorVision.SocketProtocol
 {

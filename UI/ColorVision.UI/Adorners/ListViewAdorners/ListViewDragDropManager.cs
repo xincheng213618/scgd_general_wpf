@@ -373,11 +373,8 @@ namespace ColorVision.Common.Adorners.ListViewAdorners
             // Get the ObservableCollection<T> which contains the dropped data object.
             ObservableCollection<T> itemsSource = this.listView.ItemsSource as ObservableCollection<T>;
             if (itemsSource == null)
-#pragma warning disable CA2201 // 不要引发保留的异常类型
                 throw new Exception(
                     "A ListView managed by ListViewDragManager must have its ItemsSource set to an ObservableCollection<ItemType>.");
-#pragma warning restore CA2201 // 不要引发保留的异常类型
-
             int oldIndex = indexToSelect;
 
             EventHandler.Invoke(this, new List<T> { data, itemsSource[indexToSelect] });

@@ -6,7 +6,6 @@ using System.ComponentModel;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using static System.Windows.Forms.AxHost;
 
 namespace Pattern.LinePairMTF
 {

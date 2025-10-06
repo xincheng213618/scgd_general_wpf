@@ -40,9 +40,7 @@ namespace ColorVision.Engine.Media
                 if (src == null)
                 {
                     return false;
-#pragma warning disable CA2201 // 不要引发保留的异常类型
                     throw new Exception("Unsupported file format.");
-#pragma warning restore CA2201 // 不要引发保留的异常类型
                 }
 
                 if (dst == null)
@@ -146,9 +144,7 @@ namespace ColorVision.Engine.Media
 
                 if (src == null)
                 {
-#pragma warning disable CA2201 // 不要引发保留的异常类型
                     throw new Exception("Unsupported file format.");
-#pragma warning restore CA2201 // 不要引发保留的异常类型
                 }
 
                 if (dst == null)

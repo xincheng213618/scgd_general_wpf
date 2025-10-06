@@ -1,8 +1,6 @@
 ﻿using ColorVision.UI;
 using ColorVision.UI.Plugins;
 using log4net;
-using System;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Plugins

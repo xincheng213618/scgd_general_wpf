@@ -1,8 +1,4 @@
-﻿#pragma warning disable CS8625
-using ColorVision.Common.Utilities;
-using ColorVision.Core;
-using ColorVision.UI;
-using ColorVision.UI.Menus;
+﻿using ColorVision.Core;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

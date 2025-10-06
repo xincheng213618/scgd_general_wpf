@@ -260,9 +260,9 @@ namespace ColorVision.ImageEditor
                 if (menuItemMeta.GuidId != null)
                     CreateMenu(menuItem, menuItemMeta.GuidId);
                 if (i > 0 && menuItemMeta.Order - iMenuItemMetas[i - 1].Order > 4)
-                    _contextMenu.Items.Add(new Separator());
+                    ContextMenu.Items.Add(new Separator());
 
-                _contextMenu.Items.Add(menuItem);
+                ContextMenu.Items.Add(menuItem);
             }
         }
 
@@ -413,7 +413,6 @@ namespace ColorVision.ImageEditor
 
             if (Image != null)
             {
-                Image.ContextMenuOpening -= _contextMenuManager.HandleContextMenuOpening;
                 Image.PreviewKeyDown -= _keyboardHandler.HandleKeyDown;
             }
 

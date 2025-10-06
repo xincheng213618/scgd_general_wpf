@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1708
-
+﻿
 using ColorVision.Common.Utilities;
 using System;
 using System.Collections.Generic;

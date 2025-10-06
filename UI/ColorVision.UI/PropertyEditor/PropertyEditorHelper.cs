@@ -1,10 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.UI.Extension;
 using System.Collections.Concurrent;
 using System.ComponentModel;
-using System.Globalization;
-using System.IO;
 using System.Reflection;
 using System.Resources;
 using System.Windows;
@@ -12,7 +9,6 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
-using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 

@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS8603,CS0649,CS8604,CS8601
-using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates;

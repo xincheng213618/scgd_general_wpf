@@ -110,9 +110,7 @@ namespace ColorVision.Common.Utilities
                                 continue;
                             }
 
-#pragma warning disable CA1861 // 不要将常量数组作为参数
                             var hostParts = line.Split(new [] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-#pragma warning restore CA1861 // 不要将常量数组作为参数
                             if (hostParts.Length >= 2)
                             {
                                 var ipAddress = hostParts[0];
@@ -235,9 +233,7 @@ namespace ColorVision.Common.Utilities
             if (string.IsNullOrWhiteSpace(filename) || !File.Exists(filename)) return string.Empty;
             try
             {
-#pragma warning disable CA5351
                 using var md5 = MD5.Create();
-#pragma warning restore CA5351
                 using var stream = File.OpenRead(filename);
                 var hash = md5.ComputeHash(stream);
                 var sb = new StringBuilder();
@@ -612,9 +608,7 @@ namespace ColorVision.Common.Utilities
         public static string GetMD5(string str)
         {
             byte[] byteOld = Encoding.UTF8.GetBytes(str);
-#pragma warning disable CA5351
             byte[] byteNew = MD5.HashData(byteOld);
-#pragma warning restore CA5351
             StringBuilder sb = new(32);
             foreach (byte b in byteNew)
             {

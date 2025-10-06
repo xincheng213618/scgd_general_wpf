@@ -1,17 +1,13 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI;
-using HandyControl.Controls;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Media3D;
 
 namespace ColorVision.ImageEditor.Draw.Special
 {

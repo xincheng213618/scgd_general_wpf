@@ -1,6 +1,4 @@
-﻿using ColorVision.Engine.Media;
-using ColorVision.ImageEditor;
-using ColorVision.FileIO;
+﻿using ColorVision.ImageEditor;
 using ColorVision.UI;
 using log4net;
 using MQTTMessageLib.FileServer;

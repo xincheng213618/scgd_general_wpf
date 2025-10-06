@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8604
-using ColorVision.Database;
+﻿using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;

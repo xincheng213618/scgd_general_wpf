@@ -1,6 +1,4 @@
-﻿using ColorVision.Solution.FileMeta;
-using ColorVision.Solution.FolderMeta;
-using ColorVision.Solution.Properties;
+﻿using ColorVision.Solution.Properties;
 using log4net;
 using System.Diagnostics;
 using System.IO;

@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8625
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.ImageEditor.EditorTools.FullScreen

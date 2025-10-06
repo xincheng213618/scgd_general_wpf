@@ -1,5 +1,4 @@
-﻿#pragma warning disable SYSLIB0014
-using ColorVision.UI.Menus;
+﻿using ColorVision.UI.Menus;
 using log4net;
 using System.Diagnostics;
 using System.IO;

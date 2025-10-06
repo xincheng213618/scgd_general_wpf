@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8604,CA1822
-using ColorVision.UI;
+﻿using ColorVision.UI;
 using System.Collections.Generic;
 
 namespace ColorVision.Update

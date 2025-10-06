@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Templates.Jsons.MTF2; // MTFDetailViewReslut
 using ColorVision.Database;

@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1806
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using log4net;
 
 namespace ColorVision.UI.CUDA

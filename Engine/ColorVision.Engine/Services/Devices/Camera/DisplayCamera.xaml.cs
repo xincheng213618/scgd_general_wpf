@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1707
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
