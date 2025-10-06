@@ -5,7 +5,7 @@ namespace ColorVision.ImageEditor
     {
         public ImageViewModel ImageViewModel { get; set; }
 
-        public ImageViewConfig ImageViewConfig { get; set; }
+        public ImageViewConfig Config { get; set; }
 
         public DrawCanvas DrawCanvas { get; set; }
         public Zoombox ZoomboxSub { get; set; }

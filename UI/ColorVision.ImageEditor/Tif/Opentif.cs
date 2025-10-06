@@ -116,10 +116,6 @@ namespace ColorVision.ImageEditor.Tif
             imageView.AddSelectionChangedHandler(imageView.ComboBoxLayersSelectionChanged);
             imageView.UpdateZoomAndScale();
         }
-        public List<MenuItemMetadata> GetContextMenuItems(ImageViewConfig imageView)
-        {
-            return new List<MenuItemMetadata>();
-        }
     }
 
 }

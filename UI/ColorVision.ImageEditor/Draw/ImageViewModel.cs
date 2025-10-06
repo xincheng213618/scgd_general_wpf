@@ -80,7 +80,7 @@ namespace ColorVision.ImageEditor
                 ImageViewModel = this,
                 DrawCanvas = drawCanvas,
                 ZoomboxSub = zoombox,
-                ImageViewConfig = Config
+                Config = Config
             };
 
             IEditorToolFactory = new IEditorToolFactory(imageView, context);

@@ -62,25 +62,27 @@ namespace WindowsServicePlugin.Tools
 
 
 
-    public class ImageViewExTension: IImageContentMenuProvider
+    public record class ImageViewExTension(EditorContext EditorContext) : IIEditorToolContextMenu
     {
 
-
-        public List<MenuItemMetadata> GetContextMenuItems(ImageViewConfig config)
+        public List<MenuItemMetadata> GetContextMenuItems()
         {
-            if (!File.Exists(ImageJConfig.Instance.ImageJPath)) return new List<MenuItemMetadata>();
+            List<MenuItemMetadata> values = new List<MenuItemMetadata>();
+
+            if (!File.Exists(ImageJConfig.Instance.ImageJPath)) return values;
+
             RelayCommand relayCommand = new RelayCommand(a =>
             {
                 string shortFilePath = string.Empty;
-                if (CVFileUtil.IsCIEFile(config.FilePath))
+                if (CVFileUtil.IsCIEFile(EditorContext.Config.FilePath))
                 {
-                    VExportCIE vExportCIE = new VExportCIE(config.FilePath);
+                    VExportCIE vExportCIE = new VExportCIE(EditorContext.Config.FilePath);
                     VExportCIE.SaveToTif(vExportCIE);
                     shortFilePath = PathHelper.GetShortPath(vExportCIE.CoverFilePath);
                 }
                 else
                 {
-                    shortFilePath = PathHelper.GetShortPath(config.FilePath);
+                    shortFilePath = PathHelper.GetShortPath(EditorContext.Config.FilePath);
                 }
 
                 ProcessStartInfo startInfo = new ProcessStartInfo
@@ -92,8 +94,13 @@ namespace WindowsServicePlugin.Tools
                 };
                 Process.Start(startInfo);
             });
-            MenuItemMetadata menuItemMetadata = new MenuItemMetadata() { GuidId = "ImageJ", Order = 500, Header = "通过ImageJ打开", Command = relayCommand };
-            return new List<MenuItemMetadata>() { menuItemMetadata };
+
+            if (File.Exists(EditorContext.Config.FilePath))
+            {
+                MenuItemMetadata menuItemMetadata = new MenuItemMetadata() { GuidId = "ImageJ", Order = 500, Header = "通过ImageJ打开", Command = relayCommand };
+                values.Add(menuItemMetadata);
+            }
+            return values;
         }
     }
 

@@ -91,15 +91,9 @@ namespace ColorVision.ImageEditor
         public void CreateStandardContextMenu()
         {
             List<MenuItemMetadata> MenuItemMetadatas = new List<MenuItemMetadata>();
-            if (_viewModel.IImageOpen != null)
-                MenuItemMetadatas.AddRange(_viewModel.IImageOpen.GetContextMenuItems(_viewModel.Config));
+            if (_viewModel.IImageOpen is IIEditorToolContextMenu contentMenuProvider)
+                MenuItemMetadatas.AddRange(contentMenuProvider.GetContextMenuItems());
 
-            foreach (var item in AssemblyService.Instance.LoadImplementations<IImageContentMenuProvider>())
-            {
-                MenuItemMetadatas.AddRange(item.GetContextMenuItems(_viewModel.Config));
-            }
-
-            // Ëõ·Å²Ëµ¥
             foreach (var item in _viewModel.IEditorToolFactory.IIEditorToolContextMenus)
             {
                 MenuItemMetadatas.AddRange(item.GetContextMenuItems());
@@ -172,7 +166,7 @@ namespace ColorVision.ImageEditor
         /// </summary>
         private void AddBitmapScalingModeMenu()
         {
-            MenuItem menuItemBitmapScalingMode = new() { Header = ColorVision.ImageEditor.Properties.Resources.BitmapScalingMode };
+            MenuItem menuItemBitmapScalingMode = new() { Header = Properties.Resources.BitmapScalingMode };
             
             void UpdateBitmapScalingMode()
             {
