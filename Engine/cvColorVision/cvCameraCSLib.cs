@@ -192,40 +192,9 @@ namespace cvColorVision
         public string title;
         //自动曝光标识
         public bool autoExpFlag;
-        //亮度校正
-        public CalibrationItem lumChromaCheck;
-        //滤色片通道
-        public List<ChannelParam> channels;
-
-        public GetFrameParam()
-        {
-            channels = new List<ChannelParam>();
-        }
-
-        public void BuildChannelsFileName(string path, string ext)
-        {
-            foreach (ChannelParam item in channels)
-            {
-                item.fileName = path + "\\" + title + ext;
-            }
-        }
+        //亮度校正        //滤色片通道
     }
 
-    public class CalibrationItem
-    {
-        public CalibrationType type { set; get; }
-        public bool enable { set; get; }
-        public string title { set; get; }
-        public string doc { set; get; }
-
-        public CalibrationItem(CalibrationType type, bool enable, string title, string fileName)
-        {
-            this.type = type;
-            this.enable = enable;
-            this.title = title;
-            doc = fileName;
-        }
-    }
 
     public struct SIZE
     {
@@ -469,45 +438,6 @@ namespace cvColorVision
         }
     }
 
-    public class ProjectSysCfg
-    {
-        public List<CalibrationItem> calibrationLibCfg;
-        public List<ChannelCfg> channelCfg;
-
-        public ProjectSysCfg()
-        {
-            calibrationLibCfg = new List<CalibrationItem>();
-            channelCfg = new List<ChannelCfg>();
-        }
-    }
-
-    public class ChannelCalibration
-    {
-        //暗噪声校正参数
-        public CalibrationItem dsnuCheck;
-        //均匀场校正文件
-        public CalibrationItem uniformityCheck;
-        //白点校正文件
-        public CalibrationItem defectCheck;
-        //白点校正文件
-        public CalibrationItem distortionCheck;
-    }
-
-    public class ChannelParam
-    {
-        //曝光时间，单位毫秒
-        public float exp;
-        //滤色轮端口
-        public int cfwport;
-        //通道类型
-        public int channelType;
-        //滤色片类型
-        public int imageFilterType;//
-        //校正
-        public ChannelCalibration check;
-        //文件名
-        public string fileName;
-    }
     public enum ImageFilterType 
     {
         Color_Filter = 0,//滤色片
@@ -724,29 +654,7 @@ namespace cvColorVision
         public unsafe static extern bool CM_MergeDataEx(uint w, uint h, uint bpp, byte[] imgdata, byte[] srcX, byte[] srcY, byte[] srcZ);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetBGRBuffer", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool CM_GetBGRBuffer(IntPtr handle, ref int w, ref int h, ref int bpp, ref int channels, byte[] imgdata);
-        public static void CM_GetFrame_TIFF(IntPtr handle, GetFrameParam param, bool isburst)
-        {
-            string json1 = JsonConvert.SerializeObject(param);
-            Thread thread = new Thread(() => workTiffThread(handle, json1, isburst));
-            thread.Start();
-        }
 
-        private static void workTiffThread(IntPtr handle, object json1, bool isburst)
-        {
-            StringBuilder json = new StringBuilder();
-            json.Append(json1);
-            string tifjson = json.ToString();
-            if (isburst)
-            {
-                CM_GetFrameEx_TIFF(handle, json);
-            }
-            else
-            {
-                CM_GetFrame_TIFF(handle, json);
-            }
-
-            event_ShowTiff?.Invoke(json.ToString(),true);
-        }
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetFrameMemLength",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern uint CM_GetFrameMemLength(IntPtr handle);
