@@ -195,6 +195,15 @@
   <data name="SetupWizard" xml:space="preserve">
     <value>配置向导</value>
   </data>
+  <data name="Previous" xml:space="preserve">
+    <value>上一步</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>下一步</value>
+  </data>
+  <data name="Finish" xml:space="preserve">
+    <value>完成</value>
+  </data>
   <data name="Upgrade" xml:space="preserve">
     <value>升级</value>
   </data>

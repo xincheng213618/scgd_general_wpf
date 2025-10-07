@@ -38,12 +38,25 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+        
+        <!-- Step indicator and progress bar -->
+        <Grid Grid.Row="0" Margin="10,10,10,5">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <TextBlock x:Name="StepIndicator" Grid.Row="0" Text="步骤 1 / 1" HorizontalAlignment="Center" FontSize="14" Margin="0,0,0,5"/>
+            <ProgressBar x:Name="WizardProgress" Grid.Row="1" Height="5" Minimum="0" Maximum="100" Value="0"/>
+        </Grid>
+        
         <Grid Grid.Row="1" Visibility="{Binding IsList,Converter={StaticResource bool2VisibilityConverter}}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="200"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <ListView x:Name="ListWizard" Background="Transparent"  BorderThickness="0" Grid.Column="0" Padding="5,0,5,5">
+            
+            <!-- Step list on the left (for overview) -->
+            <ListView x:Name="ListWizard" Background="Transparent" BorderThickness="0" Grid.Column="0" Padding="5,0,5,5" IsEnabled="False">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
                     </Style>
@@ -57,20 +70,18 @@
                                 <Setter Property="BorderThickness" Value="0"/>
                             </Style>
                         </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn  Width="250">
+                        <GridViewColumn Width="180">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type ui:IWizardStep}">
                                     <Grid>
                                         <StackPanel Orientation="Horizontal">
                                             <Grid DockPanel.Dock="Right" Margin="0,0,5,0">
-                                                <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="{Binding  ConfigurationStatus,Mode=OneWay}" IsEnabled="False" />
+                                                <ToggleButton Style="{StaticResource ButtonMQTTConnect}" Height="10" Width="10" HorizontalAlignment="Center" IsChecked="{Binding ConfigurationStatus,Mode=OneWay}" IsEnabled="False" />
                                                 <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
                                             </Grid>
                                             <TextBlock Text="{Binding Header}"/>
                                         </StackPanel>
-
                                     </Grid>
-
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
@@ -78,25 +89,36 @@
                 </ListView.View>
             </ListView>
 
+            <!-- Current step content on the right -->
             <Border x:Name="BorderContent" Style="{DynamicResource BorderModuleArea}" CornerRadius="5" Margin="0,5,5,5" d:DataContext="{d:DesignInstance ui:IWizardStep}" Grid.Column="1">
                 <Grid Margin="5">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="40"/>
+                        <RowDefinition Height="50"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="60"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Text="{Binding Header}" Grid.Row="0" HorizontalAlignment="Center"/>
-                    <TextBox x:Name="TextBoxMsg" Grid.Row="1" TextWrapping="Wrap" VerticalAlignment="Top" AllowDrop="True" Text="{Binding Description,Mode=OneWay}" VerticalContentAlignment="Top"  Background="Transparent" BorderThickness="0"/>
-
-                    <Button Grid.Row="2" Content="配置" Width="120" Height="40"  Command="{Binding Command}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="10"/>
-
+                    <TextBlock Text="{Binding Header}" Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" FontWeight="Bold"/>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBox x:Name="TextBoxMsg" TextWrapping="Wrap" VerticalAlignment="Top" AllowDrop="True" Text="{Binding Description,Mode=OneWay}" VerticalContentAlignment="Top" Background="Transparent" BorderThickness="0" IsReadOnly="True" Margin="5"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                    <Button Grid.Row="2" Content="配置" Width="120" Height="40" Command="{Binding Command}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="10"/>
                 </Grid>
             </Border>
         </Grid>
 
-
+        <!-- Navigation buttons -->
         <Grid Grid.Row="2" Margin="5,0,5,5">
-            <Button  Content="{x:Static properties:Resources.ConfigurationComplete}" Height="30" Foreground="White" Background="{StaticResource PrimaryBrush}"  Click="ConfigurationComplete_Click"/>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="BtnPrevious" Grid.Column="1" Content="{x:Static properties:Resources.Previous}" Width="100" Height="30" Margin="5,0" Click="Previous_Click"/>
+            <Button x:Name="BtnNext" Grid.Column="2" Content="{x:Static properties:Resources.Next}" Width="100" Height="30" Margin="5,0" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Next_Click"/>
+            <Button x:Name="BtnFinish" Grid.Column="3" Content="{x:Static properties:Resources.Finish}" Width="100" Height="30" Margin="5,0" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="ConfigurationComplete_Click" Visibility="Collapsed"/>
         </Grid>
     </Grid>
 </Window>
