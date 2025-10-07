@@ -154,7 +154,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Compile Update="HistogramChartWindow.xaml.cs">
+		<Compile Update="EditorTools\Histogram\HistogramChartWindow.xaml.cs">
 			<SubType>Code</SubType>
 		</Compile>
 		<Compile Update="Properties\Resources.Designer.cs">

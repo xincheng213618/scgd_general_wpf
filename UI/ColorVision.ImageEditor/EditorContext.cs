@@ -1,10 +1,13 @@
 ﻿
 using ColorVision.Core;
+using System;
 
 namespace ColorVision.ImageEditor
 {
     public class EditorContext
     {
+        public Guid Id { get; init; } = Guid.NewGuid();
+
         public ImageView? ImageView { get; set; }
 
         public ImageViewModel ImageViewModel { get; set; }

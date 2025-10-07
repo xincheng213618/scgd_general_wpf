@@ -23,10 +23,6 @@ namespace ColorVision.ImageEditor
     {
         public DrawEditorManager DrawEditorManager { get; set; } = new DrawEditorManager();
 
-        public Guid Id { get; set; } = Guid.NewGuid();
-
-
-
         #region Components
         public Zoombox ZoomboxSub { get; set; }
         public DrawCanvas Image { get; set; }
@@ -49,7 +45,6 @@ namespace ColorVision.ImageEditor
         public ContextMenu ContextMenu { get; set; }
         public IImageOpen? IImageOpen { get; set; }
         public List<IDVContextMenu> ContextMenuProviders { get; set; } = new List<IDVContextMenu>();
-        public bool IsMax { get; set; }
         #endregion
 
         #region Helper Classes
@@ -59,11 +54,13 @@ namespace ColorVision.ImageEditor
 
         public IEditorToolFactory IEditorToolFactory { get; set; }
 
+        public EditorContext EditorContext { get; set; }
+
         public ImageViewModel(ImageView imageView, Zoombox zoombox, DrawCanvas drawCanvas)
         {
             Config = new ImageViewConfig();
 
-            var context = new EditorContext()
+            EditorContext = new EditorContext()
             {
                 ImageView = imageView,
                 ImageViewModel = this,
@@ -72,7 +69,7 @@ namespace ColorVision.ImageEditor
                 Config = Config
             };
 
-            IEditorToolFactory = new IEditorToolFactory(imageView, context);
+            IEditorToolFactory = new IEditorToolFactory(imageView, EditorContext);
 
             MouseMagnifier = IEditorToolFactory.IEditorTools.OfType<MouseMagnifierManager>().FirstOrDefault();
 
@@ -266,12 +263,13 @@ namespace ColorVision.ImageEditor
                 {
                     oldMax = ZoomboxSub.ContentMatrix.M11;
                     double scale = 1 / ZoomboxSub.ContentMatrix.M11;
-                    DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + Id.ToString(), 20, () => ImageLayoutUpdatedRender(scale, DrawingVisualLists));
+                    DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + EditorContext.Id.ToString(), 20, () => ImageLayoutUpdatedRender(scale, DrawingVisualLists));
                 }
             }
 
         }
-        bool IsUpdatedRender;
+
+        bool IsUpdatedRender;  
         public void ImageLayoutUpdatedRender(double scale, ObservableCollection<IDrawingVisual> DrawingVisualLists)
         {
             if (IsUpdatedRender) return;

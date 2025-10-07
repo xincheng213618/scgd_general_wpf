@@ -93,6 +93,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                 {
                     dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), new Point(actPoint.X, actPoint.Y), Radius, Radius);
                     dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11), new Point(actPoint.X, actPoint.Y), Radius, Radius);
+
                 }else if (MagnigifierType == MagnigifierType.Rect)
                 {
                     dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), new Rect(actPoint.X - Radius / 2, actPoint.Y - Radius / 2, Radius, Radius));
@@ -146,7 +147,6 @@ namespace ColorVision.ImageEditor.Draw.Special
         {
             Point actPoint = imageInfo.ActPoint;
             Point disPoint =imageInfo.BitmapPoint;
-
 
 
             if (Image.Source is BitmapSource bitmapImage && disPoint.X > 60 && disPoint.X < bitmapImage.PixelWidth - 60 && disPoint.Y > 45 && disPoint.Y < bitmapImage.PixelHeight - 45)
