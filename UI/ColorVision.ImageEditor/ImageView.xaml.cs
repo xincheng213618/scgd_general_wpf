@@ -391,8 +391,6 @@ namespace ColorVision.ImageEditor
                 Config.AddProperties("DpiX", writeableBitmap.DpiX);
                 Config.AddProperties("DpiY", writeableBitmap.DpiY);
 
-                Config.Channel = channels;
-                Config.Ochannel = channels;
 
                 if (depth == 16)
                 {
@@ -525,7 +523,6 @@ namespace ColorVision.ImageEditor
             if (channel == -1)
             {
                 ImageShow.Source = ViewBitmapSource;
-                Config.Channel = Config.Ochannel;
                 return;
             }
             if (HImageCache == null) return;
@@ -545,7 +542,6 @@ namespace ColorVision.ImageEditor
                             FunctionImage = image;
                         }
                         ImageShow.Source = FunctionImage;
-                        Config.Channel = 1;
                     }
                 });
             });
@@ -710,7 +706,6 @@ namespace ColorVision.ImageEditor
                 ViewBitmapSource = writeableBitmap;
                 ImageShow.Source = ViewBitmapSource; ;
                 HImageCache = writeableBitmap.ToHImage();
-                Config.Channel = HImageCache.Value.channels;
                 FunctionImage = null;
                 GammaSlider.Value = 1;
                 Config.RedBalance = 1;

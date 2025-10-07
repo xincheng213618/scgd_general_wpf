@@ -103,12 +103,12 @@
                     </ToolBar>
                 </ToolBarTray>
 
-                <ToolBarTray x:Name="ToolBarRight" x:FieldModifier="public"  Orientation="Vertical" Margin="0,50,2,0" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top" Grid.Column="1">
+                <ToolBarTray x:Name="ToolBarRight" Orientation="Vertical" Margin="0,50,2,0" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top" Grid.Column="1">
                     <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
                         <ToggleButton x:Name="AdvancedButton" Margin="0,0,0,2"  Padding="5">
                             <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIExpand}" />
                         </ToggleButton>
-                        <Button x:Name="Button1931" x:FieldModifier="public" Margin="0,0,0,2" Padding="5" Visibility="Collapsed">
+                        <Button x:Name="Button1931" x:FieldModifier="public" Margin="0,0,0,2" Padding="5" >
                             <Image Style="{StaticResource ToolBarImage}"  Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png"/>
                         </Button>
                         <StackPanel>

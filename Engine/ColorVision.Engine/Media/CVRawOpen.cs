@@ -253,8 +253,6 @@ namespace ColorVision.Engine.Media
                 if (index <= 0) return;
                 if (meta.FileExtType == CVType.CIE)
                 {
-                    imageView.Button1931.Visibility = Visibility.Visible;
-
                     log.Debug(JsonConvert.SerializeObject(meta));
                     imageView.Config.AddProperties("IsCVCIE", true);
 
