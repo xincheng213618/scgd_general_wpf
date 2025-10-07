@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Solution;
 using ColorVision.Themes;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
