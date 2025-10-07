@@ -364,7 +364,7 @@ namespace ColorVision.ImageEditor.Draw.Special
 
                 if (value)
                 {
-                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
+                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(this);
 
      
 
@@ -386,7 +386,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                 }
                 else
                 {
-                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(null);
+                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
 
 
                     Image.MouseMove -= MouseMove;

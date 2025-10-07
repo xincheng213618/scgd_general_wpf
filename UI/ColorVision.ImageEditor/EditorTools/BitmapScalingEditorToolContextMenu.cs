@@ -4,10 +4,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ColorVision.ImageEditor.EditorTools.AppCommand
+namespace ColorVision.ImageEditor.EditorTools
 {
+
+
     public record class BitmapScalingEditorToolContextMenu(EditorContext context) : IIEditorToolContextMenu
     {
         public List<MenuItemMetadata> GetContextMenuItems()

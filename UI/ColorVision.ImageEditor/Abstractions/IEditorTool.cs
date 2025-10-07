@@ -3,6 +3,7 @@ using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 
 namespace ColorVision.ImageEditor
@@ -41,6 +42,10 @@ namespace ColorVision.ImageEditor
         /// 可绑定的切换状态。如果状态可以通过编程方式改变，实现应使用 INotifyPropertyChanged
         /// </summary>
         bool IsChecked { get; set; }
+    }
+    public interface IEditorTextTool : IEditorTool
+    {
+        public Binding Binding { get; set; }
     }
 
     /// <summary>

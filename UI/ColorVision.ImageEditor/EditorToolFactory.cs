@@ -8,9 +8,15 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision.ImageEditor
 {
+
+
+
+
     /// <summary>
     /// 编辑器工具工厂 - 负责发现、创建和初始化编辑器工具
     /// </summary>
@@ -20,9 +26,25 @@ namespace ColorVision.ImageEditor
         public ObservableCollection<IIEditorToolContextMenu> IIEditorToolContextMenus { get; set; } = new ObservableCollection<IIEditorToolContextMenu>();
         public ObservableCollection<IImageComponent> IImageComponents { get; set; } = new ObservableCollection<IImageComponent>();
         public Dictionary<string, IImageOpen> IImageOpens { get; set; } = new Dictionary<string, IImageOpen>();
+        public ObservableCollection<IDVContextMenu> ContextMenuProviders { get; set; } = new ObservableCollection<IDVContextMenu>();
 
         public IEditorToolFactory(ImageView imageView, EditorContext context)
         {
+
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            {
+                foreach (var type in assembly.GetTypes())
+                {
+                    if (typeof(IDVContextMenu).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
+                    {
+                        if (Activator.CreateInstance(type) is IDVContextMenu instance)
+                        {
+                            ContextMenuProviders.Add(instance);
+                        }
+                    }
+                }
+            }
+
             // 加载上下文菜单
             foreach (var assembly in Application.Current.GetAssemblies())
             {
@@ -128,6 +150,19 @@ namespace ColorVision.ImageEditor
                 };
                 tbtn.SetBinding(ToggleButton.IsCheckedProperty, binding);
                 return tbtn;
+            }
+            else if (editorTool is IEditorTextTool editorTextTool)
+            {
+                TextBox textBox = new TextBox()
+                {
+                    Background =Brushes.Transparent,
+                    BorderThickness= new Thickness(1),
+                    HorizontalContentAlignment = HorizontalAlignment.Center,
+                    DataContext = editorTextTool
+                };
+                textBox.SetBinding(TextBox.TextProperty, editorTextTool.Binding);
+                return textBox;
+
             }
             else
             {

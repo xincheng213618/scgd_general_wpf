@@ -11,6 +11,7 @@ using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -21,36 +22,25 @@ namespace ColorVision.ImageEditor
 {
     public class ImageViewModel : ViewModelBase, IDisposable
     {
-        public DrawEditorManager DrawEditorManager { get; set; } = new DrawEditorManager();
-
-        #region Components
         public Zoombox ZoomboxSub { get; set; }
         public DrawCanvas Image { get; set; }
-
         public Crosshair Crosshair { get; set; }
         public ToolBarScaleRuler ToolBarScaleRuler { get; set; }
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
         public SelectEditorVisual SelectEditorVisual { get; set; }
         public StackPanel SlectStackPanel { get; set; } = new StackPanel();
+        public ImageViewConfig Config => EditorContext.Config;
+
         public ImageFullScreenMode ImageFullScreenMode { get; set; }
 
         public MouseMagnifierManager MouseMagnifier { get; set; }
 
 
-        #endregion
-
-        #region Properties
         public ImageView ImageView { get; set; }
-        public ImageViewConfig Config { get; set; }
         public ContextMenu ContextMenu { get; set; }
         public IImageOpen? IImageOpen { get; set; }
-        public List<IDVContextMenu> ContextMenuProviders { get; set; } = new List<IDVContextMenu>();
-        #endregion
 
-        #region Helper Classes
         private ImageTransformOperations _transformOperations;
-        private ImageKeyboardHandler _keyboardHandler;
-        #endregion
 
         public IEditorToolFactory IEditorToolFactory { get; set; }
 
@@ -58,17 +48,14 @@ namespace ColorVision.ImageEditor
 
         public ImageViewModel(ImageView imageView, Zoombox zoombox, DrawCanvas drawCanvas)
         {
-            Config = new ImageViewConfig();
-
             EditorContext = new EditorContext()
             {
                 ImageView = imageView,
                 ImageViewModel = this,
                 DrawCanvas = drawCanvas,
                 Zoombox = zoombox,
-                Config = Config
             };
-
+            SelectEditorVisual = new SelectEditorVisual(EditorContext);
             IEditorToolFactory = new IEditorToolFactory(imageView, EditorContext);
 
             MouseMagnifier = IEditorToolFactory.IEditorTools.OfType<MouseMagnifierManager>().FirstOrDefault();
@@ -82,15 +69,8 @@ namespace ColorVision.ImageEditor
             _transformOperations = new ImageTransformOperations(drawCanvas);
             ImageFullScreenMode = new ImageFullScreenMode(imageView);
 
-            RegisterContextMenuProviders();
-
             imageView.AdvancedStackPanel.Children.Add(SlectStackPanel);
 
-
-            SelectEditorVisual = new SelectEditorVisual(this, drawCanvas, zoombox);
-
-
-            _keyboardHandler = new ImageKeyboardHandler(imageView, this, ZoomboxSub, Config);
 
             drawCanvas.PreviewMouseDown += (s, e) =>
             {
@@ -104,7 +84,7 @@ namespace ColorVision.ImageEditor
                 drawCanvas.Focus();
             };
 
-            drawCanvas.PreviewKeyDown += _keyboardHandler.HandleKeyDown;
+            drawCanvas.PreviewKeyDown += HandleKeyDown;
 
             Crosshair = new Crosshair(zoombox, drawCanvas);
             ToolBarScaleRuler = new ToolBarScaleRuler(ImageView, zoombox, drawCanvas);
@@ -113,7 +93,176 @@ namespace ColorVision.ImageEditor
             Image.ContextMenu = ContextMenu;
             ZoomboxSub.ContextMenu = ContextMenu;
             ZoomboxSub.LayoutUpdated += Zoombox1_LayoutUpdated;
+
         }
+
+        /// <summary>
+        /// 处理键盘事件
+        /// </summary>
+        /// <param name="sender">事件发送者</param>
+        /// <param name="e">键盘事件参数</param>
+        public void HandleKeyDown(object sender, KeyEventArgs e)
+        {
+            // F11全屏处理
+            //if (e.Key == Key.F11)
+            //{
+            //    if (!_viewModel.IsMax)
+            //        _viewModel.FullCommand.Execute(null);
+            //    e.Handled = true;
+            //    return;
+            //}
+
+            // 编辑模式下的键盘操作
+            if (ImageEditMode)
+            {
+                HandleEditModeKeyDown(e);
+            }
+            // 浏览模式下的键盘操作
+            else
+            {
+                HandleBrowseModeKeyDown(e);
+            }
+        }
+
+        /// <summary>
+        /// 处理编辑模式下的键盘操作
+        /// </summary>
+        private void HandleEditModeKeyDown(KeyEventArgs e)
+        {
+            if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Left || e.Key == Key.A))
+            {
+                MoveView(-10, 0);
+                e.Handled = true;
+            }
+            else if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Right || e.Key == Key.D))
+            {
+                MoveView(10, 0);
+                e.Handled = true;
+            }
+            else if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Up || e.Key == Key.W))
+            {
+                MoveView(0, -10);
+                e.Handled = true;
+            }
+            else if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Down || e.Key == Key.S))
+            {
+                MoveView(0, 10);
+                e.Handled = true;
+            }
+        }
+
+        /// <summary>
+        /// 处理浏览模式下的键盘操作
+        /// </summary>
+        private void HandleBrowseModeKeyDown(KeyEventArgs e)
+        {
+            if (e.Key == Key.Left)
+            {
+                MoveView(-10, 0);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Right)
+            {
+                MoveView(10, 0);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Up)
+            {
+                // 切换到上一个文件
+                string? previousFile = GetAdjacentImageFile(EditorContext.Config.FilePath, false);
+                if (!string.IsNullOrEmpty(previousFile))
+                {
+                    EditorContext.ImageView.OpenImage(previousFile);
+                }
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Down)
+            {
+                // 切换到下一个文件
+                string? nextFile = GetAdjacentImageFile(EditorContext.Config.FilePath, true);
+                if (!string.IsNullOrEmpty(nextFile))
+                {
+                    EditorContext.ImageView.OpenImage(nextFile);
+                }
+                e.Handled = true;
+            }
+        }
+
+        /// <summary>
+        /// 移动视图位置
+        /// </summary>
+        /// <param name="x">X方向移动量</param>
+        /// <param name="y">Y方向移动量</param>
+        private void MoveView(double x, double y)
+        {
+            TranslateTransform translateTransform = new();
+            Vector vector = new(x, y);
+            translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
+            translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
+            ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty,
+                Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
+        }
+
+        /// <summary>
+        /// 获取相邻的图像文件
+        /// </summary>
+        /// <param name="currentFilePath">当前文件路径</param>
+        /// <param name="moveNext">是否获取下一个文件</param>
+        /// <returns>相邻文件的路径</returns>
+        private string? GetAdjacentImageFile(string currentFilePath, bool moveNext)
+        {
+            var supportedExtensions = IEditorToolFactory.IImageOpens.Keys.ToList();
+            try
+            {
+                // 获取当前文件所在的目录
+                string? directory = Path.GetDirectoryName(currentFilePath);
+                if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
+                {
+                    return null;
+                }
+
+                // 获取目录中所有支持的图片文件，并按名称排序
+                var imageFiles = Directory.GetFiles(directory)
+                    .Where(f => supportedExtensions.Contains(Path.GetExtension(f)))
+                    .OrderBy(f => f)
+                    .ToList();
+
+                if (imageFiles.Count <= 1)
+                {
+                    return null; // 文件夹中没有其他图片
+                }
+
+                // 在列表中找到当前文件的索引
+                int currentIndex = imageFiles.FindIndex(
+                    f => string.Equals(f, currentFilePath, StringComparison.OrdinalIgnoreCase));
+
+                if (currentIndex == -1)
+                {
+                    return null; // 当前文件不在列表中（可能已重命名或删除）
+                }
+
+                // 计算上一个或下一个文件的索引
+                int newIndex;
+                if (moveNext) // 获取下一个
+                {
+                    newIndex = (currentIndex + 1) % imageFiles.Count;
+                }
+                else // 获取上一个
+                {
+                    newIndex = (currentIndex - 1 + imageFiles.Count) % imageFiles.Count;
+                }
+
+                // 返回新的文件路径
+                return imageFiles[newIndex];
+            }
+            catch (Exception ex)
+            {
+                // 可以添加日志记录
+                Console.WriteLine($"Error finding adjacent image file: {ex.Message}");
+                return null;
+            }
+        }
+
 
 
         /// <summary>
@@ -131,7 +280,7 @@ namespace ColorVision.ImageEditor
 
                 if (MouseVisual is SelectEditorVisual selectEditorVisual && selectEditorVisual.GetVisual(MouseDownP) is ISelectVisual selectVisual)
                 {
-                    foreach (var provider in ContextMenuProviders)
+                    foreach (var provider in IEditorToolFactory.ContextMenuProviders)
                     {
                         if (provider.ContextType.IsAssignableFrom(selectVisual.GetType()))
                         {
@@ -140,7 +289,7 @@ namespace ColorVision.ImageEditor
                                 ContextMenu.Items.Add(item);
                         }
                     }
-                    foreach (var provider in ContextMenuProviders)
+                    foreach (var provider in IEditorToolFactory.ContextMenuProviders)
                     {
                         if (provider.ContextType.IsAssignableFrom(selectEditorVisual.GetType()))
                         {
@@ -152,7 +301,7 @@ namespace ColorVision.ImageEditor
                 }
                 else
                 {
-                    foreach (var provider in ContextMenuProviders)
+                    foreach (var provider in IEditorToolFactory.ContextMenuProviders)
                     {
                         if (provider.ContextType.IsAssignableFrom(type))
                         {
@@ -259,7 +408,7 @@ namespace ColorVision.ImageEditor
         {
             if (oldMax != ZoomboxSub.ContentMatrix.M11)
             {
-                if (Config.IsLayoutUpdated)
+                if (EditorContext.Config.IsLayoutUpdated)
                 {
                     oldMax = ZoomboxSub.ContentMatrix.M11;
                     double scale = 1 / ZoomboxSub.ContentMatrix.M11;
@@ -288,42 +437,18 @@ namespace ColorVision.ImageEditor
             }
             IsUpdatedRender = false;
         }
-        private void RegisterContextMenuProviders()
-        {
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-            {
-                foreach (var type in assembly.GetTypes())
-                {
-                    if (typeof(IDVContextMenu).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
-                    {
-                        if (Activator.CreateInstance(type) is IDVContextMenu instance)
-                        {
-                            ContextMenuProviders.Add(instance);
-                        }
-                    }
-                }
-            }
-        }
 
-        #region Public Methods
-                
+     
         public void Save(string file) => ImageView.Save(file);
         public void ClearImage() => ImageView.Clear();
 
         
-        #endregion
-
-        #region Properties with change notification
-
-
         public double ZoomRatio
         {
             get => ZoomboxSub.ContentMatrix.M11;
             set => ZoomboxSub.Zoom(value);
         }
 
-
-        public EventHandler<bool> EditModeChanged { get; set; }
 
         private bool _ImageEditMode;
         public bool ImageEditMode
@@ -333,8 +458,6 @@ namespace ColorVision.ImageEditor
             {
                 if (_ImageEditMode == value) return;
                 _ImageEditMode = value;
-
-                EditModeChanged?.Invoke(this, _ImageEditMode);
 
                 if (_ImageEditMode)
                 {
@@ -346,12 +469,11 @@ namespace ColorVision.ImageEditor
                     ZoomboxSub.ActivateOn = ModifierKeys.None;
                     ZoomboxSub.Cursor = Cursors.Arrow;
                 }
-                DrawEditorManager.SetCurrentDrawEditor(null); 
+                EditorContext.DrawEditorManager.SetCurrentDrawEditor(null); 
                 OnPropertyChanged();
             }
         }
         
-        #endregion
 
         public void Dispose()
         {
@@ -374,7 +496,7 @@ namespace ColorVision.ImageEditor
 
             if (Image != null)
             {
-                Image.PreviewKeyDown -= _keyboardHandler.HandleKeyDown;
+                Image.PreviewKeyDown -= HandleKeyDown;
             }
 
             ImageView = null;

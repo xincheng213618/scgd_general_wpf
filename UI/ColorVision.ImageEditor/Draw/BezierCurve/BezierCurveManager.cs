@@ -29,13 +29,13 @@ namespace ColorVision.ImageEditor.Draw
                 _IsChecked = value;
                 if (value)
                 {
-                    EditorContext.ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
+                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(this);
 
                     Load();
                 }
                 else
                 {
-                    EditorContext.ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(null);
+                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
                     UnLoad();
                 }
                 OnPropertyChanged();
