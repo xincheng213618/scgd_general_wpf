@@ -1,6 +1,5 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
-  
   <xs:schema id="root">
     <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xs:element name="root" ns1:IsDataSet="true">
@@ -254,4 +253,205 @@
   <data name="Options" xml:space="preserve">
     <value>Options</value>
   </data>
-<data name="NoLocalLog4Output" xml:space="preserve"><value>Aucune sortie log4 locale configurée</value></data><data name="UpdateLog4NetLevel" xml:space="preserve"><value>Mise à jour du niveau de journal Log4Net : </value></data><data name="ViewMode1" xml:space="preserve"><value>Mode Vue 1</value></data><data name="ViewMode2" xml:space="preserve"><value>Mode Vue 2</value></data><data name="ViewMode4" xml:space="preserve"><value>Mode Vue 4</value></data><data name="ViewMode9" xml:space="preserve"><value>Mode Vue 9</value></data><data name="CheckPluginUpdates" xml:space="preserve"><value>Vérifier les mises à jour des plugins</value></data><data name="CheckingForAdditionalProjects" xml:space="preserve"><value>Vérification des projets supplémentaires</value></data><data name="Download" xml:space="preserve"><value>Télécharger</value></data><data name="ProjectNotFound" xml:space="preserve"><value>Projet {0} introuvable</value></data><data name="FoundProjectDownloadConfirm" xml:space="preserve"><value>Projet trouvé {0}, {1}, télécharger?</value></data><data name="AllFiles" xml:space="preserve"><value>Tous les fichiers (*.*)|*.*</value></data><data name="UnsupportedFileFormat" xml:space="preserve"><value>Format de fichier non pris en charge</value></data><data name="SortOptions" xml:space="preserve"><value>Options de tri</value></data><data name="SmartSortAscending" xml:space="preserve"><value>Tri intelligent (croissant)</value></data><data name="SmartSortDescending" xml:space="preserve"><value>Tri intelligent (décroissant)</value></data><data name="SortByColumn" xml:space="preserve"><value>Trier par {0}</value></data><data name="Ascending" xml:space="preserve"><value>Croissant</value></data><data name="Descending" xml:space="preserve"><value>Décroissant</value></data><data name="ConfirmUpdate" xml:space="preserve"><value>Mettre à jour</value></data><data name="ConfirmDeletePlugin" xml:space="preserve"><value>Confirmer la suppression du plugin {0}?</value></data><data name="EnableCUDA" xml:space="preserve"><value>Activer CUDA</value></data><data name="CheckingCUDASupport" xml:space="preserve"><value>Vérification du support CUDA</value></data><data name="ConfigurationParameters" xml:space="preserve"><value>Paramètres de configuration</value></data><data name="EnableScheduledBackup" xml:space="preserve"><value>Activer la sauvegarde programmée</value></data><data name="MaxBackupCount" xml:space="preserve"><value>Nombre maximum de sauvegardes</value></data><data name="AutoCleanOldBackups" xml:space="preserve"><value>Nettoyer automatiquement les anciennes sauvegardes si dépassé</value></data><data name="ConfigFileResetDueToError" xml:space="preserve"><value>Erreur du fichier de configuration, réinitialisé</value></data><data name="ConfigFileRestored" xml:space="preserve"><value>Fichier de configuration restauré depuis la sauvegarde récente</value></data><data name="RestoreConfigFileFailed" xml:space="preserve"><value>Échec de la restauration du fichier de configuration</value></data><data name="BackupConfigFileFailed" xml:space="preserve"><value>Échec de la sauvegarde du fichier de configuration</value></data><data name="CleanupBackupFailed" xml:space="preserve"><value>Échec du nettoyage des fichiers de sauvegarde</value></data><data name="SaveSingleConfigFailed" xml:space="preserve"><value>Échec de l'enregistrement de la configuration unique {0}</value></data><data name="WriteConfigFileFailed" xml:space="preserve"><value>Échec de l'écriture du fichier de configuration {0}</value></data><data name="Execute" xml:space="preserve"><value>Exécuter</value></data><data name="OpenContainingFolder" xml:space="preserve"><value>Ouvrir le dossier contenant</value></data><data name="OpenFolder" xml:space="preserve"><value>Ouvrir le dossier</value></data><data name="OnlineCronGenerator" xml:space="preserve"><value>Générateur d'expressions Cron en ligne</value></data><data name="PluginMissingId" xml:space="preserve"><value>Plugin {0} ID unique manquant, ignoré</value></data><data name="DependencyDllNotFound" xml:space="preserve"><value>DLL de dépendance {0} introuvable : {1}</value></data><data name="DependencyVersionInsufficient" xml:space="preserve"><value>Version de dépendance {0} insuffisante, requise : {1}, actuelle : {2}</value></data><data name="DependencyCheckException" xml:space="preserve"><value>Exception lors de la vérification de la version de dépendance {0} : {1}</value></data><data name="LoadingPlugin" xml:space="preserve"><value>Chargement du plugin : {0}</value></data><data name="PluginDllNotFound" xml:space="preserve"><value>DLL du plugin introuvable : {0}</value></data><data name="LoadedPluginWithoutManifest" xml:space="preserve"><value>Plugin chargé sans manifeste : {0}</value></data><data name="PluginLoadError" xml:space="preserve"><value>Erreur de chargement du plugin ou du manifeste : {0}</value></data><data name="BatchFilePathCannotBeEmpty" xml:space="preserve"><value>batchFilePath ne peut pas être vide</value></data><data name="BaseDirCannotBeEmpty" xml:space="preserve"><value>baseDir ne peut pas être vide</value></data><data name="ExeNameCannotBeEmpty" xml:space="preserve"><value>exeName ne peut pas être vide</value></data><data name="EchoTerminatingProcess" xml:space="preserve"><value>echo Arrêt du processus : {0}</value></data><data name="EchoStartCopyingFiles" xml:space="preserve"><value>echo Début de la copie des nouveaux fichiers de version...</value></data><data name="RemStagePointsToTemp" xml:space="preserve"><value>rem STAGE pointe vers la racine du contenu ColorVision dans le répertoire temporaire</value></data><data name="EchoBackingUpCurrentVersion" xml:space="preserve"><value>echo Sauvegarde de la version actuelle...</value></data><data name="EchoTargetDirNotExist" xml:space="preserve"><value>  echo Le répertoire cible n'existe pas, sauvegarde ignorée.</value></data><data name="EchoBackupTo" xml:space="preserve"><value>  echo Sauvegarde vers : %BKDIR%</value></data><data name="EchoBackupComplete" xml:space="preserve"><value>  echo Sauvegarde terminée.</value></data><data name="RemRobocopySuccess" xml:space="preserve"><value>  rem Robocopy 0-7 considéré comme succès</value></data><data name="EchoRobocopyFailed" xml:space="preserve"><value>     echo Échec de Robocopy, code d'erreur !RC!, tentative de repli XCOPY...</value></data><data name="EchoRobocopyNotFound" xml:space="preserve"><value>  echo Robocopy introuvable, repli vers XCOPY...</value></data><data name="EchoUsingXCOPY" xml:space="preserve"><value>echo Utilisation du repli XCOPY...</value></data><data name="EchoXCOPYFailed" xml:space="preserve"><value>  echo Échec de la copie XCOPY, mise à jour annulée.</value></data><data name="EchoCopyComplete" xml:space="preserve"><value>echo Copie terminée.</value></data><data name="EchoRestartingProgram" xml:space="preserve"><value>echo Redémarrage du programme...</value></data><data name="EchoSchedulingCleanup" xml:space="preserve"><value>echo Planification du nettoyage différé du répertoire temporaire et du script...</value></data><data name="EchoUpdateComplete" xml:space="preserve"><value>echo Mise à jour terminée. (Nettoyage en cours en arrière-plan)</value></data><data name="ApplicationCurrentNotInitialized" xml:space="preserve"><value>Application.Current non initialisé</value></data><data name="Bool2VisibilityConverterNotFound" xml:space="preserve"><value>Ressource bool2VisibilityConverter introuvable</value></data></root>
+  <data name="NoLocalLog4Output" xml:space="preserve">
+    <value>Aucune sortie log4 locale configurée</value>
+  </data>
+  <data name="UpdateLog4NetLevel" xml:space="preserve">
+    <value>Mise à jour du niveau de journal Log4Net</value>
+  </data>
+  <data name="ViewMode1" xml:space="preserve">
+    <value>Mode Vue 1</value>
+  </data>
+  <data name="ViewMode2" xml:space="preserve">
+    <value>Mode Vue 2</value>
+  </data>
+  <data name="ViewMode4" xml:space="preserve">
+    <value>Mode Vue 4</value>
+  </data>
+  <data name="ViewMode9" xml:space="preserve">
+    <value>Mode Vue 9</value>
+  </data>
+  <data name="CheckPluginUpdates" xml:space="preserve">
+    <value>Vérifier les mises à jour des plugins</value>
+  </data>
+  <data name="CheckingForAdditionalProjects" xml:space="preserve">
+    <value>Vérification des projets supplémentaires</value>
+  </data>
+  <data name="Download" xml:space="preserve">
+    <value>Télécharger</value>
+  </data>
+  <data name="ProjectNotFound" xml:space="preserve">
+    <value>Projet {0} introuvable</value>
+  </data>
+  <data name="FoundProjectDownloadConfirm" xml:space="preserve">
+    <value>Projet trouvé {0}, {1}, télécharger?</value>
+  </data>
+  <data name="AllFiles" xml:space="preserve">
+    <value>Tous les fichiers (*.*)|*.*</value>
+  </data>
+  <data name="UnsupportedFileFormat" xml:space="preserve">
+    <value>Format de fichier non pris en charge</value>
+  </data>
+  <data name="SortOptions" xml:space="preserve">
+    <value>Options de tri</value>
+  </data>
+  <data name="SmartSortAscending" xml:space="preserve">
+    <value>Tri intelligent (croissant)</value>
+  </data>
+  <data name="SmartSortDescending" xml:space="preserve">
+    <value>Tri intelligent (décroissant)</value>
+  </data>
+  <data name="SortByColumn" xml:space="preserve">
+    <value>Trier par {0}</value>
+  </data>
+  <data name="Ascending" xml:space="preserve">
+    <value>Croissant</value>
+  </data>
+  <data name="Descending" xml:space="preserve">
+    <value>Décroissant</value>
+  </data>
+  <data name="ConfirmUpdate" xml:space="preserve">
+    <value>Mettre à jour</value>
+  </data>
+  <data name="ConfirmDeletePlugin" xml:space="preserve">
+    <value>Confirmer la suppression du plugin {0}?</value>
+  </data>
+  <data name="EnableCUDA" xml:space="preserve">
+    <value>Activer CUDA</value>
+  </data>
+  <data name="CheckingCUDASupport" xml:space="preserve">
+    <value>Vérification du support CUDA</value>
+  </data>
+  <data name="ConfigurationParameters" xml:space="preserve">
+    <value>Paramètres de configuration</value>
+  </data>
+  <data name="EnableScheduledBackup" xml:space="preserve">
+    <value>Activer la sauvegarde programmée</value>
+  </data>
+  <data name="MaxBackupCount" xml:space="preserve">
+    <value>Nombre maximum de sauvegardes</value>
+  </data>
+  <data name="AutoCleanOldBackups" xml:space="preserve">
+    <value>Nettoyer automatiquement les anciennes sauvegardes si dépassé</value>
+  </data>
+  <data name="ConfigFileResetDueToError" xml:space="preserve">
+    <value>Erreur du fichier de configuration, réinitialisé</value>
+  </data>
+  <data name="ConfigFileRestored" xml:space="preserve">
+    <value>Fichier de configuration restauré depuis la sauvegarde récente</value>
+  </data>
+  <data name="RestoreConfigFileFailed" xml:space="preserve">
+    <value>Échec de la restauration du fichier de configuration</value>
+  </data>
+  <data name="BackupConfigFileFailed" xml:space="preserve">
+    <value>Échec de la sauvegarde du fichier de configuration</value>
+  </data>
+  <data name="CleanupBackupFailed" xml:space="preserve">
+    <value>Échec du nettoyage des fichiers de sauvegarde</value>
+  </data>
+  <data name="SaveSingleConfigFailed" xml:space="preserve">
+    <value>Échec de l'enregistrement de la configuration unique {0}</value>
+  </data>
+  <data name="WriteConfigFileFailed" xml:space="preserve">
+    <value>Échec de l'écriture du fichier de configuration {0}</value>
+  </data>
+  <data name="Execute" xml:space="preserve">
+    <value>Exécuter</value>
+  </data>
+  <data name="OpenContainingFolder" xml:space="preserve">
+    <value>Ouvrir le dossier contenant</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>Ouvrir le dossier</value>
+  </data>
+  <data name="OnlineCronGenerator" xml:space="preserve">
+    <value>Générateur d'expressions Cron en ligne</value>
+  </data>
+  <data name="PluginMissingId" xml:space="preserve">
+    <value>Plugin {0} ID unique manquant, ignoré</value>
+  </data>
+  <data name="DependencyDllNotFound" xml:space="preserve">
+    <value>DLL de dépendance {0} introuvable : {1}</value>
+  </data>
+  <data name="DependencyVersionInsufficient" xml:space="preserve">
+    <value>Version de dépendance {0} insuffisante, requise : {1}, actuelle : {2}</value>
+  </data>
+  <data name="DependencyCheckException" xml:space="preserve">
+    <value>Exception lors de la vérification de la version de dépendance {0} : {1}</value>
+  </data>
+  <data name="LoadingPlugin" xml:space="preserve">
+    <value>Chargement du plugin : {0}</value>
+  </data>
+  <data name="PluginDllNotFound" xml:space="preserve">
+    <value>DLL du plugin introuvable : {0}</value>
+  </data>
+  <data name="LoadedPluginWithoutManifest" xml:space="preserve">
+    <value>Plugin chargé sans manifeste : {0}</value>
+  </data>
+  <data name="PluginLoadError" xml:space="preserve">
+    <value>Erreur de chargement du plugin ou du manifeste : {0}</value>
+  </data>
+  <data name="BatchFilePathCannotBeEmpty" xml:space="preserve">
+    <value>batchFilePath ne peut pas être vide</value>
+  </data>
+  <data name="BaseDirCannotBeEmpty" xml:space="preserve">
+    <value>baseDir ne peut pas être vide</value>
+  </data>
+  <data name="ExeNameCannotBeEmpty" xml:space="preserve">
+    <value>exeName ne peut pas être vide</value>
+  </data>
+  <data name="EchoTerminatingProcess" xml:space="preserve">
+    <value>echo Arrêt du processus : {0}</value>
+  </data>
+  <data name="EchoStartCopyingFiles" xml:space="preserve">
+    <value>echo Début de la copie des nouveaux fichiers de version...</value>
+  </data>
+  <data name="RemStagePointsToTemp" xml:space="preserve">
+    <value>rem STAGE pointe vers la racine du contenu ColorVision dans le répertoire temporaire</value>
+  </data>
+  <data name="EchoBackingUpCurrentVersion" xml:space="preserve">
+    <value>echo Sauvegarde de la version actuelle...</value>
+  </data>
+  <data name="EchoTargetDirNotExist" xml:space="preserve">
+    <value>  echo Le répertoire cible n'existe pas, sauvegarde ignorée.</value>
+  </data>
+  <data name="EchoBackupTo" xml:space="preserve">
+    <value>  echo Sauvegarde vers : %BKDIR%</value>
+  </data>
+  <data name="EchoBackupComplete" xml:space="preserve">
+    <value>  echo Sauvegarde terminée.</value>
+  </data>
+  <data name="RemRobocopySuccess" xml:space="preserve">
+    <value>  rem Robocopy 0-7 considéré comme succès</value>
+  </data>
+  <data name="EchoRobocopyFailed" xml:space="preserve">
+    <value>     echo Échec de Robocopy, code d'erreur !RC!, tentative de repli XCOPY...</value>
+  </data>
+  <data name="EchoRobocopyNotFound" xml:space="preserve">
+    <value>  echo Robocopy introuvable, repli vers XCOPY...</value>
+  </data>
+  <data name="EchoUsingXCOPY" xml:space="preserve">
+    <value>echo Utilisation du repli XCOPY...</value>
+  </data>
+  <data name="EchoXCOPYFailed" xml:space="preserve">
+    <value>  echo Échec de la copie XCOPY, mise à jour annulée.</value>
+  </data>
+  <data name="EchoCopyComplete" xml:space="preserve">
+    <value>echo Copie terminée.</value>
+  </data>
+  <data name="EchoRestartingProgram" xml:space="preserve">
+    <value>echo Redémarrage du programme...</value>
+  </data>
+  <data name="EchoSchedulingCleanup" xml:space="preserve">
+    <value>echo Planification du nettoyage différé du répertoire temporaire et du script...</value>
+  </data>
+  <data name="EchoUpdateComplete" xml:space="preserve">
+    <value>echo Mise à jour terminée. (Nettoyage en cours en arrière-plan)</value>
+  </data>
+  <data name="ApplicationCurrentNotInitialized" xml:space="preserve">
+    <value>Application.Current non initialisé</value>
+  </data>
+  <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
+    <value>Ressource bool2VisibilityConverter introuvable</value>
+  </data>
+</root>

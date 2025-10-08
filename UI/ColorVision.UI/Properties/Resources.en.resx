@@ -1,6 +1,5 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
-  
   <xs:schema id="root">
     <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xs:element name="root" ns1:IsDataSet="true">
@@ -254,4 +253,205 @@
   <data name="Options" xml:space="preserve">
     <value>Options</value>
   </data>
-<data name="NoLocalLog4Output" xml:space="preserve"><value>No local log4 output configured</value></data><data name="UpdateLog4NetLevel" xml:space="preserve"><value>Updating Log4Net log level: </value></data><data name="ViewMode1" xml:space="preserve"><value>View Mode 1</value></data><data name="ViewMode2" xml:space="preserve"><value>View Mode 2</value></data><data name="ViewMode4" xml:space="preserve"><value>View Mode 4</value></data><data name="ViewMode9" xml:space="preserve"><value>View Mode 9</value></data><data name="CheckPluginUpdates" xml:space="preserve"><value>Check for plugin updates</value></data><data name="CheckingForAdditionalProjects" xml:space="preserve"><value>Checking for additional projects</value></data><data name="Download" xml:space="preserve"><value>Download</value></data><data name="ProjectNotFound" xml:space="preserve"><value>Project {0} not found</value></data><data name="FoundProjectDownloadConfirm" xml:space="preserve"><value>Found project {0}, {1}, download?</value></data><data name="AllFiles" xml:space="preserve"><value>All Files (*.*)|*.*</value></data><data name="UnsupportedFileFormat" xml:space="preserve"><value>Unsupported file format</value></data><data name="SortOptions" xml:space="preserve"><value>Sort Options</value></data><data name="SmartSortAscending" xml:space="preserve"><value>Smart Sort (Ascending)</value></data><data name="SmartSortDescending" xml:space="preserve"><value>Smart Sort (Descending)</value></data><data name="SortByColumn" xml:space="preserve"><value>Sort by {0}</value></data><data name="Ascending" xml:space="preserve"><value>Ascending</value></data><data name="Descending" xml:space="preserve"><value>Descending</value></data><data name="ConfirmUpdate" xml:space="preserve"><value>Update</value></data><data name="ConfirmDeletePlugin" xml:space="preserve"><value>Confirm delete plugin {0}?</value></data><data name="EnableCUDA" xml:space="preserve"><value>Enable CUDA</value></data><data name="CheckingCUDASupport" xml:space="preserve"><value>Checking CUDA support</value></data><data name="ConfigurationParameters" xml:space="preserve"><value>Configuration Parameters</value></data><data name="EnableScheduledBackup" xml:space="preserve"><value>Enable Scheduled Backup</value></data><data name="MaxBackupCount" xml:space="preserve"><value>Maximum Backup Count</value></data><data name="AutoCleanOldBackups" xml:space="preserve"><value>Automatically clean old backups when exceeded</value></data><data name="ConfigFileResetDueToError" xml:space="preserve"><value>Configuration file error, has been reset</value></data><data name="ConfigFileRestored" xml:space="preserve"><value>Configuration file restored from recent backup</value></data><data name="RestoreConfigFileFailed" xml:space="preserve"><value>Failed to restore configuration file</value></data><data name="BackupConfigFileFailed" xml:space="preserve"><value>Failed to backup configuration file</value></data><data name="CleanupBackupFailed" xml:space="preserve"><value>Failed to cleanup backup files</value></data><data name="SaveSingleConfigFailed" xml:space="preserve"><value>Failed to save single configuration {0}</value></data><data name="WriteConfigFileFailed" xml:space="preserve"><value>Failed to write configuration file {0}</value></data><data name="Execute" xml:space="preserve"><value>Execute</value></data><data name="OpenContainingFolder" xml:space="preserve"><value>Open Containing Folder</value></data><data name="OpenFolder" xml:space="preserve"><value>Open Folder</value></data><data name="OnlineCronGenerator" xml:space="preserve"><value>Online Cron Expression Generator</value></data><data name="PluginMissingId" xml:space="preserve"><value>Plugin {0} missing unique ID, skipped</value></data><data name="DependencyDllNotFound" xml:space="preserve"><value>Dependency {0} DLL not found: {1}</value></data><data name="DependencyVersionInsufficient" xml:space="preserve"><value>Dependency {0} version insufficient, required: {1}, actual: {2}</value></data><data name="DependencyCheckException" xml:space="preserve"><value>Exception checking dependency {0} version: {1}</value></data><data name="LoadingPlugin" xml:space="preserve"><value>Loading plugin: {0}</value></data><data name="PluginDllNotFound" xml:space="preserve"><value>Plugin DLL not found: {0}</value></data><data name="LoadedPluginWithoutManifest" xml:space="preserve"><value>Loaded plugin without manifest: {0}</value></data><data name="PluginLoadError" xml:space="preserve"><value>Plugin or manifest load error: {0}</value></data><data name="BatchFilePathCannotBeEmpty" xml:space="preserve"><value>batchFilePath cannot be empty</value></data><data name="BaseDirCannotBeEmpty" xml:space="preserve"><value>baseDir cannot be empty</value></data><data name="ExeNameCannotBeEmpty" xml:space="preserve"><value>exeName cannot be empty</value></data><data name="EchoTerminatingProcess" xml:space="preserve"><value>echo Terminating process: {0}</value></data><data name="EchoStartCopyingFiles" xml:space="preserve"><value>echo Starting to copy new version files...</value></data><data name="RemStagePointsToTemp" xml:space="preserve"><value>rem STAGE points to the ColorVision content root in the temporary directory</value></data><data name="EchoBackingUpCurrentVersion" xml:space="preserve"><value>echo Backing up current version...</value></data><data name="EchoTargetDirNotExist" xml:space="preserve"><value>  echo Target directory does not exist, skipping backup.</value></data><data name="EchoBackupTo" xml:space="preserve"><value>  echo Backup to: %BKDIR%</value></data><data name="EchoBackupComplete" xml:space="preserve"><value>  echo Backup complete.</value></data><data name="RemRobocopySuccess" xml:space="preserve"><value>  rem Robocopy 0-7 considered success</value></data><data name="EchoRobocopyFailed" xml:space="preserve"><value>     echo Robocopy failed, error code !RC!, trying XCOPY fallback...</value></data><data name="EchoRobocopyNotFound" xml:space="preserve"><value>  echo Robocopy not found, falling back to XCOPY...</value></data><data name="EchoUsingXCOPY" xml:space="preserve"><value>echo Using XCOPY fallback copy...</value></data><data name="EchoXCOPYFailed" xml:space="preserve"><value>  echo XCOPY copy failed, update aborted.</value></data><data name="EchoCopyComplete" xml:space="preserve"><value>echo Copy complete.</value></data><data name="EchoRestartingProgram" xml:space="preserve"><value>echo Restarting program...</value></data><data name="EchoSchedulingCleanup" xml:space="preserve"><value>echo Scheduling delayed cleanup of temporary directory and script...</value></data><data name="EchoUpdateComplete" xml:space="preserve"><value>echo Update complete. (Cleanup running in background)</value></data><data name="ApplicationCurrentNotInitialized" xml:space="preserve"><value>Application.Current not initialized</value></data><data name="Bool2VisibilityConverterNotFound" xml:space="preserve"><value>bool2VisibilityConverter resource not found</value></data></root>
+  <data name="NoLocalLog4Output" xml:space="preserve">
+    <value>No local log4 output configured</value>
+  </data>
+  <data name="UpdateLog4NetLevel" xml:space="preserve">
+    <value>Updating Log4Net log level:</value>
+  </data>
+  <data name="ViewMode1" xml:space="preserve">
+    <value>View Mode 1</value>
+  </data>
+  <data name="ViewMode2" xml:space="preserve">
+    <value>View Mode 2</value>
+  </data>
+  <data name="ViewMode4" xml:space="preserve">
+    <value>View Mode 4</value>
+  </data>
+  <data name="ViewMode9" xml:space="preserve">
+    <value>View Mode 9</value>
+  </data>
+  <data name="CheckPluginUpdates" xml:space="preserve">
+    <value>Check for plugin updates</value>
+  </data>
+  <data name="CheckingForAdditionalProjects" xml:space="preserve">
+    <value>Checking for additional projects</value>
+  </data>
+  <data name="Download" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="ProjectNotFound" xml:space="preserve">
+    <value>Project {0} not found</value>
+  </data>
+  <data name="FoundProjectDownloadConfirm" xml:space="preserve">
+    <value>Found project {0}, {1}, download?</value>
+  </data>
+  <data name="AllFiles" xml:space="preserve">
+    <value>All Files (*.*)|*.*</value>
+  </data>
+  <data name="UnsupportedFileFormat" xml:space="preserve">
+    <value>Unsupported file format</value>
+  </data>
+  <data name="SortOptions" xml:space="preserve">
+    <value>Sort Options</value>
+  </data>
+  <data name="SmartSortAscending" xml:space="preserve">
+    <value>Smart Sort (Ascending)</value>
+  </data>
+  <data name="SmartSortDescending" xml:space="preserve">
+    <value>Smart Sort (Descending)</value>
+  </data>
+  <data name="SortByColumn" xml:space="preserve">
+    <value>Sort by {0}</value>
+  </data>
+  <data name="Ascending" xml:space="preserve">
+    <value>Ascending</value>
+  </data>
+  <data name="Descending" xml:space="preserve">
+    <value>Descending</value>
+  </data>
+  <data name="ConfirmUpdate" xml:space="preserve">
+    <value>Update</value>
+  </data>
+  <data name="ConfirmDeletePlugin" xml:space="preserve">
+    <value>Confirm delete plugin {0}?</value>
+  </data>
+  <data name="EnableCUDA" xml:space="preserve">
+    <value>Enable CUDA</value>
+  </data>
+  <data name="CheckingCUDASupport" xml:space="preserve">
+    <value>Checking CUDA support</value>
+  </data>
+  <data name="ConfigurationParameters" xml:space="preserve">
+    <value>Configuration Parameters</value>
+  </data>
+  <data name="EnableScheduledBackup" xml:space="preserve">
+    <value>Enable Scheduled Backup</value>
+  </data>
+  <data name="MaxBackupCount" xml:space="preserve">
+    <value>Maximum Backup Count</value>
+  </data>
+  <data name="AutoCleanOldBackups" xml:space="preserve">
+    <value>Automatically clean old backups when exceeded</value>
+  </data>
+  <data name="ConfigFileResetDueToError" xml:space="preserve">
+    <value>Configuration file error, has been reset</value>
+  </data>
+  <data name="ConfigFileRestored" xml:space="preserve">
+    <value>Configuration file restored from recent backup</value>
+  </data>
+  <data name="RestoreConfigFileFailed" xml:space="preserve">
+    <value>Failed to restore configuration file</value>
+  </data>
+  <data name="BackupConfigFileFailed" xml:space="preserve">
+    <value>Failed to backup configuration file</value>
+  </data>
+  <data name="CleanupBackupFailed" xml:space="preserve">
+    <value>Failed to cleanup backup files</value>
+  </data>
+  <data name="SaveSingleConfigFailed" xml:space="preserve">
+    <value>Failed to save single configuration {0}</value>
+  </data>
+  <data name="WriteConfigFileFailed" xml:space="preserve">
+    <value>Failed to write configuration file {0}</value>
+  </data>
+  <data name="Execute" xml:space="preserve">
+    <value>Execute</value>
+  </data>
+  <data name="OpenContainingFolder" xml:space="preserve">
+    <value>Open Containing Folder</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>Open Folder</value>
+  </data>
+  <data name="OnlineCronGenerator" xml:space="preserve">
+    <value>Online Cron Expression Generator</value>
+  </data>
+  <data name="PluginMissingId" xml:space="preserve">
+    <value>Plugin {0} missing unique ID, skipped</value>
+  </data>
+  <data name="DependencyDllNotFound" xml:space="preserve">
+    <value>Dependency {0} DLL not found: {1}</value>
+  </data>
+  <data name="DependencyVersionInsufficient" xml:space="preserve">
+    <value>Dependency {0} version insufficient, required: {1}, actual: {2}</value>
+  </data>
+  <data name="DependencyCheckException" xml:space="preserve">
+    <value>Exception checking dependency {0} version: {1}</value>
+  </data>
+  <data name="LoadingPlugin" xml:space="preserve">
+    <value>Loading plugin: {0}</value>
+  </data>
+  <data name="PluginDllNotFound" xml:space="preserve">
+    <value>Plugin DLL not found: {0}</value>
+  </data>
+  <data name="LoadedPluginWithoutManifest" xml:space="preserve">
+    <value>Loaded plugin without manifest: {0}</value>
+  </data>
+  <data name="PluginLoadError" xml:space="preserve">
+    <value>Plugin or manifest load error: {0}</value>
+  </data>
+  <data name="BatchFilePathCannotBeEmpty" xml:space="preserve">
+    <value>batchFilePath cannot be empty</value>
+  </data>
+  <data name="BaseDirCannotBeEmpty" xml:space="preserve">
+    <value>baseDir cannot be empty</value>
+  </data>
+  <data name="ExeNameCannotBeEmpty" xml:space="preserve">
+    <value>exeName cannot be empty</value>
+  </data>
+  <data name="EchoTerminatingProcess" xml:space="preserve">
+    <value>echo Terminating process: {0}</value>
+  </data>
+  <data name="EchoStartCopyingFiles" xml:space="preserve">
+    <value>echo Starting to copy new version files...</value>
+  </data>
+  <data name="RemStagePointsToTemp" xml:space="preserve">
+    <value>rem STAGE points to the ColorVision content root in the temporary directory</value>
+  </data>
+  <data name="EchoBackingUpCurrentVersion" xml:space="preserve">
+    <value>echo Backing up current version...</value>
+  </data>
+  <data name="EchoTargetDirNotExist" xml:space="preserve">
+    <value>  echo Target directory does not exist, skipping backup.</value>
+  </data>
+  <data name="EchoBackupTo" xml:space="preserve">
+    <value>  echo Backup to: %BKDIR%</value>
+  </data>
+  <data name="EchoBackupComplete" xml:space="preserve">
+    <value>  echo Backup complete.</value>
+  </data>
+  <data name="RemRobocopySuccess" xml:space="preserve">
+    <value>  rem Robocopy 0-7 considered success</value>
+  </data>
+  <data name="EchoRobocopyFailed" xml:space="preserve">
+    <value>     echo Robocopy failed, error code !RC!, trying XCOPY fallback...</value>
+  </data>
+  <data name="EchoRobocopyNotFound" xml:space="preserve">
+    <value>  echo Robocopy not found, falling back to XCOPY...</value>
+  </data>
+  <data name="EchoUsingXCOPY" xml:space="preserve">
+    <value>echo Using XCOPY fallback copy...</value>
+  </data>
+  <data name="EchoXCOPYFailed" xml:space="preserve">
+    <value>  echo XCOPY copy failed, update aborted.</value>
+  </data>
+  <data name="EchoCopyComplete" xml:space="preserve">
+    <value>echo Copy complete.</value>
+  </data>
+  <data name="EchoRestartingProgram" xml:space="preserve">
+    <value>echo Restarting program...</value>
+  </data>
+  <data name="EchoSchedulingCleanup" xml:space="preserve">
+    <value>echo Scheduling delayed cleanup of temporary directory and script...</value>
+  </data>
+  <data name="EchoUpdateComplete" xml:space="preserve">
+    <value>echo Update complete. (Cleanup running in background)</value>
+  </data>
+  <data name="ApplicationCurrentNotInitialized" xml:space="preserve">
+    <value>Application.Current not initialized</value>
+  </data>
+  <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
+    <value>bool2VisibilityConverter resource not found</value>
+  </data>
+</root>
