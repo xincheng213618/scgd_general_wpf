@@ -1,4 +1,4 @@
-# CHANGELOAG
+# CHANGELOG
 
 ## [1.0.1.11] 2025.09.25
 
