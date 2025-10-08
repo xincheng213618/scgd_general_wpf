@@ -6,89 +6,119 @@
         xmlns:local="clr-namespace:ColorVision.SocketProtocol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:SocketManager}"
-        Title="SocketManagerWindow" Height="450" Width="900" Initialized="Window_Initialized">
+        Title="Socket 连接管理器" Height="450" Width="900" Initialized="Window_Initialized">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <StackPanel Grid.Row="0">
-            <Button Grid.Column="1" Margin="5,1,5,5" HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="25" Width="25" >
+        
+        <!-- 顶部工具栏 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal">
+            <Button Grid.Column="1" Margin="5,1,5,5" HorizontalAlignment="Left" 
+                    Command="{Binding EditCommand}" 
+                    Padding="2" Height="25" Width="25" 
+                    ToolTip="配置Socket设置">
                 <Button.Triggers>
                     <EventTrigger RoutedEvent="Button.Click">
                         <BeginStoryboard>
                             <Storyboard>
-                                <DoubleAnimation Storyboard.TargetName="rotateTransform99" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                <DoubleAnimation Storyboard.TargetName="rotateTransform99" 
+                                               Storyboard.TargetProperty="Angle" 
+                                               From="0" To="360" Duration="0:0:0.5" 
+                                               FillBehavior="Stop"/>
                             </Storyboard>
                         </BeginStoryboard>
                     </EventTrigger>
                 </Button.Triggers>
-                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                <TextBlock Text="&#xE713;" HorizontalAlignment="Center" 
+                          FontFamily="Segoe MDL2 Assets" FontSize="16" 
+                          Foreground="{DynamicResource GlobalTextBrush}">
                     <TextBlock.RenderTransform>
                         <RotateTransform x:Name="rotateTransform99" CenterX="8" CenterY="8"/>
                     </TextBlock.RenderTransform>
                 </TextBlock>
             </Button>
         </StackPanel>
+        
+        <!-- 主内容区域 -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="410"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <ListView x:Name="ListViewPlugins" Background="Transparent"  ItemsSource="{Binding TcpClients}" Margin="5,0,5,5"  SelectionChanged="ListViewPlugins_SelectionChanged" Grid.Row="1" Padding="2">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
-                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.View>
-                    <GridView>
-                        <GridView.ColumnHeaderContainerStyle>
-                            <Style TargetType="{x:Type GridViewColumnHeader}"  BasedOn="{StaticResource  GridViewColumnHeaderBase}">
-                                <Setter Property="Visibility" Value="Visible"/>
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="BorderThickness" Value="0"/>
-                            </Style>
-                        </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn Header="Tcp" >
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock  Text="{Binding  Client.LocalEndPoint,Mode=OneWay}"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
-            <ListView x:Name="ListViewMsg" Grid.Column="1" Background="Transparent"  ItemsSource="{Binding SocketMessageBases}" Margin="5,0,5,5"  SelectionChanged="ListViewPlugins_SelectionChanged" Grid.Row="1" Padding="2">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
-                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.View>
-                    <GridView>
-                        <GridView.ColumnHeaderContainerStyle>
-                            <Style TargetType="{x:Type GridViewColumnHeader}"  BasedOn="{StaticResource  GridViewColumnHeaderBase}">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="BorderThickness" Value="0"/>
-                            </Style>
-                        </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn Header="Tcp" >
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock  Text="{Binding .,Mode=OneWay}"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
+            
+            <!-- TCP客户端列表 -->
+            <GroupBox Grid.Column="0" Header="连接的客户端" Margin="5,0,5,5">
+                <ListView x:Name="ListViewPlugins" 
+                         Background="Transparent" 
+                         ItemsSource="{Binding TcpClients}" 
+                         SelectionChanged="ListViewPlugins_SelectionChanged" 
+                         Padding="2">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
+                            <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View>
+                        <GridView>
+                            <GridView.ColumnHeaderContainerStyle>
+                                <Style TargetType="{x:Type GridViewColumnHeader}" 
+                                      BasedOn="{StaticResource GridViewColumnHeaderBase}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                </Style>
+                            </GridView.ColumnHeaderContainerStyle>
+                            <GridViewColumn Header="TCP客户端地址">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Client.LocalEndPoint, Mode=OneWay}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </GroupBox>
+            
+            <!-- 消息日志列表 -->
+            <GroupBox Grid.Column="1" Header="消息日志" Margin="5,0,5,5">
+                <ListView x:Name="ListViewMsg" 
+                         Background="Transparent" 
+                         ItemsSource="{Binding SocketMessageBases}" 
+                         SelectionChanged="ListViewPlugins_SelectionChanged" 
+                         Padding="2">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
+                            <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View>
+                        <GridView>
+                            <GridView.ColumnHeaderContainerStyle>
+                                <Style TargetType="{x:Type GridViewColumnHeader}" 
+                                      BasedOn="{StaticResource GridViewColumnHeaderBase}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                </Style>
+                            </GridView.ColumnHeaderContainerStyle>
+                            <GridViewColumn Header="消息内容">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding ., Mode=OneWay}" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </GroupBox>
         </Grid>
     </Grid>
 
