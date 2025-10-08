@@ -7,6 +7,9 @@ This section contains comprehensive architectural documentation for the ColorVis
 - [Architecture Runtime](architecture-runtime.md) - 系统运行时架构，包括启动序列和组件交互
 - [Component Interactions](component-interactions.md) - 模块交互矩阵和依赖关系
 - [Component Map](component-map.json) - 组件映射的 JSON 结构
+- [FlowEngineLib Architecture](FlowEngineLib-Architecture.md) - 流程引擎库架构设计
+- [ColorVision.Engine Refactoring Plan](ColorVision.Engine-Refactoring-Plan.md) - Engine DLL 拆分和优化完整方案
+- [ColorVision.Engine Refactoring Summary](ColorVision.Engine-Refactoring-Summary.md) - Engine 重构执行摘要
 
 ## 概述
 
@@ -26,4 +29,4 @@ ColorVision 系统采用模块化设计，由以下主要层次组成：
 
 ---
 
-*最后更新: 2024-09-28*
+*最后更新: 2025-01-08*
