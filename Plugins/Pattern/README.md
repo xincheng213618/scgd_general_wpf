@@ -1,7 +1,7 @@
 # Pattern Plugin (图卡生成工具)
 
 [![Version](https://img.shields.io/badge/version-1.0-blue.svg)](manifest.json)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](../../LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](../../docs/license.md)
 [![ColorVision](https://img.shields.io/badge/ColorVision-Plugin-orange.svg)](../../README.md)
 
 Pattern Plugin（图卡生成工具）是 ColorVision 的综合测试图案生成插件，为显示器校准、测量和质量评估提供多种类型的测试图案。
