@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 namespace ColorVision.Solution.NativeMethods
@@ -41,7 +42,7 @@ namespace ColorVision.Solution.NativeMethods
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool CreateProcess(
             string lpApplicationName,
-            string lpCommandLine,
+            StringBuilder lpCommandLine,
             IntPtr lpProcessAttributes,
             IntPtr lpThreadAttributes,
             bool bInheritHandles,

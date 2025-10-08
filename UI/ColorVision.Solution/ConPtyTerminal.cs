@@ -57,6 +57,7 @@ namespace ColorVision.Solution
             inputPipeRead.Dispose();
             outputPipeWrite.Dispose();
 
+
             // Start the process attached to the pseudo console
             StartProcess(command);
 
@@ -74,15 +75,19 @@ namespace ColorVision.Solution
 
         private void StartProcess(string command)
         {
+
+
+            // Create and properly initialize the STARTUPINFOEX structure
             var startupInfo = new STARTUPINFOEX();
+            startupInfo.StartupInfo = new STARTUPINFO(); // Ensure STARTUPINFO is also initialized
             startupInfo.StartupInfo.cb = Marshal.SizeOf<STARTUPINFOEX>();
 
             // Set up attribute list
             IntPtr lpSize = IntPtr.Zero;
             InitializeProcThreadAttributeList(IntPtr.Zero, 1, 0, ref lpSize);
-            
+
             startupInfo.lpAttributeList = Marshal.AllocHGlobal(lpSize);
-            
+
             if (!InitializeProcThreadAttributeList(startupInfo.lpAttributeList, 1, 0, ref lpSize))
             {
                 throw new InvalidOperationException("Failed to initialize proc thread attribute list");
@@ -104,18 +109,26 @@ namespace ColorVision.Solution
                 throw new InvalidOperationException("Failed to update proc thread attribute");
             }
 
+           // Create the process
+            const int EXTENDED_STARTUPINFO_PRESENT = 0x00080000;
+            const int CREATE_NO_WINDOW = 0x08000000;
+            const int CREATE_UNICODE_ENVIRONMENT = 0x00000400;
+            // Create a copy of the command string in writable memory
+            // This is important because CreateProcess may modify the string
+            StringBuilder cmdBuilder = new StringBuilder(command);
+
             // Create the process
             bool success = CreateProcess(
-                null,
-                command,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                false,
-                EXTENDED_STARTUPINFO_PRESENT,
-                IntPtr.Zero,
-                null,
-                ref startupInfo,
-                out PROCESS_INFORMATION processInfo);
+                null,                               // No module name (use command line)
+                cmdBuilder,                         // Command line - using StringBuilder instead of string
+                IntPtr.Zero,                        // Process security attributes
+                IntPtr.Zero,                        // Thread security attributes
+                false,                              // Don't inherit handles
+                EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT,  // Creation flags
+                IntPtr.Zero,                        // Use parent's environment block
+                null,                               // Use parent's starting directory
+                ref startupInfo,        // Pointer to STARTUPINFO
+                out PROCESS_INFORMATION processInfo); // Receives process information
 
             // Clean up
             Marshal.FreeHGlobal(hPCPtr);
@@ -124,7 +137,8 @@ namespace ColorVision.Solution
 
             if (!success)
             {
-                throw new InvalidOperationException($"Failed to create process. Error: {Marshal.GetLastWin32Error()}");
+                var errorCode = Marshal.GetLastWin32Error();
+                throw new InvalidOperationException($"Failed to create process. Error: 0x{errorCode:X} ({errorCode})");
             }
 
             // Close process and thread handles (we don't need them)
