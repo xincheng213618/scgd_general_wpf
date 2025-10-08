@@ -210,7 +210,7 @@ namespace ColorVision.UI
                 }catch(Exception ex)
                 {
                     log.Error(ex);
-                    MessageBox.Show("配置文件异常,已经重置");
+                    MessageBox.Show(Properties.Resources.ConfigFileResetDueToError);
                 }
             }
             foreach (var configPair in Configs)
@@ -291,7 +291,7 @@ namespace ColorVision.UI
                 {
                     LoadConfigs(files.First());
                     File.Copy(files.First(), ConfigFilePath, true);
-                    MessageBox.Show("配置文件已从最近备份恢复", "恢复成功");
+                    MessageBox.Show(Properties.Resources.ConfigFileRestored, Properties.Resources.ConfirmUpdate);
                 }
                 else
                 {
@@ -316,8 +316,8 @@ namespace ColorVision.UI
             }
             catch (Exception ex)
             {
-                log.Error("恢复配置文件失败", ex);
-                MessageBox.Show("恢复配置文件失败");
+                log.Error(Properties.Resources.RestoreConfigFileFailed, ex);
+                MessageBox.Show(Properties.Resources.RestoreConfigFileFailed);
             }
 
 
@@ -334,7 +334,7 @@ namespace ColorVision.UI
             }
             catch (Exception ex)
             {
-                log.Error("备份配置文件失败", ex);
+                log.Error(Properties.Resources.BackupConfigFileFailed, ex);
             }
         }
 
@@ -356,7 +356,7 @@ namespace ColorVision.UI
             }
             catch (Exception ex)
             {
-                log.Warn("清理备份文件失败", ex);
+                log.Warn(Properties.Resources.CleanupBackupFailed, ex);
             }
         }
 
@@ -447,7 +447,7 @@ namespace ColorVision.UI
             }
             catch (Exception ex)
             {
-                log.Error($"保存单个配置 {configName} 失败", ex);
+                log.Error(string.Format(Properties.Resources.SaveSingleConfigFailed, configName), ex);
                 return;
             }
 
@@ -461,7 +461,7 @@ namespace ColorVision.UI
             }
             catch (Exception ex)
             {
-                log.Error($"写入配置文件 {ConfigFilePath} 失败", ex);
+                log.Error(string.Format(Properties.Resources.WriteConfigFileFailed, ConfigFilePath), ex);
             }
         }
     }

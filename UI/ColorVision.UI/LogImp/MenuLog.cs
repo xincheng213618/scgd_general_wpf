@@ -58,7 +58,7 @@ namespace ColorVision.UI.LogImp
             }
             else
             {
-                MessageBox.Show("没有配置本地的log4输出");
+                MessageBox.Show(Properties.Resources.NoLocalLog4Output);
             }
         }
     }

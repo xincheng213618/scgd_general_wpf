@@ -79,7 +79,7 @@ namespace ColorVision.UI.Plugins
                         manifest = JsonConvert.DeserializeObject<PluginManifest>(manifestContent);
                         if (string.IsNullOrWhiteSpace(manifest.Id))
                         {
-                            log.Warn($"插件 {directory} 缺少唯一Id，已跳过");
+                            log.Warn(string.Format(Properties.Resources.PluginMissingId, directory));
                             continue;
                         }
 
@@ -119,7 +119,7 @@ namespace ColorVision.UI.Plugins
                                             string expectedDll = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, dep.Key + ".dll");
                                             if (!File.Exists(expectedDll))
                                             {
-                                                log.Warn($"依赖 {dep.Key} 未找到对应的dll: {expectedDll}");
+                                                log.Warn(string.Format(Properties.Resources.DependencyDllNotFound, dep.Key, expectedDll));
                                                 continue;
                                             }
 
@@ -133,16 +133,16 @@ namespace ColorVision.UI.Plugins
                                                 if (actualVersion == null || actualVersion < requiredVersion)
                                                 {
                                                     depsOk = false;
-                                                    log.ErrorExt($"依赖 {dep.Key} 版本不足，要求: {requiredVersion}，实际: {actualVersion}");
-                                                    MessageBox.Show($"依赖 {dep.Key} 版本不足，要求: {requiredVersion}，实际: {actualVersion}");
+                                                    log.ErrorExt(string.Format(Properties.Resources.DependencyVersionInsufficient, dep.Key, requiredVersion, actualVersion));
+                                                    MessageBox.Show(string.Format(Properties.Resources.DependencyVersionInsufficient, dep.Key, requiredVersion, actualVersion));
                                                     break;
                                                 }
                                             }
                                             catch (Exception ex)
                                             {
                                                 depsOk = false;
-                                                log.Warn($"检查依赖 {dep.Key} 版本时发生异常: {ex.Message}");
-                                                MessageBox.Show($"检查依赖 {dep.Key} 版本时发生异常: {ex.Message}");
+                                                log.Warn(string.Format(Properties.Resources.DependencyCheckException, dep.Key, ex.Message));
+                                                MessageBox.Show(string.Format(Properties.Resources.DependencyCheckException, dep.Key, ex.Message));
                                                 break;
                                             }
                                         }
@@ -173,7 +173,7 @@ namespace ColorVision.UI.Plugins
 
                         if (File.Exists(dllPath))
                         {
-                            log.Info($"加载插件: {manifest.Name}");
+                            log.Info(string.Format(Properties.Resources.LoadingPlugin, manifest.Name));
 
                             pluginInfo.Assembly = Assembly.LoadFrom(dllPath);
 
@@ -192,7 +192,7 @@ namespace ColorVision.UI.Plugins
                         }
                         else
                         {
-                            log.Warn($"插件DLL不存在: {dllPath}");
+                            log.Warn(string.Format(Properties.Resources.PluginDllNotFound, dllPath));
                         }
                     }
                     else
@@ -203,17 +203,17 @@ namespace ColorVision.UI.Plugins
                         if (File.Exists(dllPath))
                         {
                             Assembly.LoadFrom(dllPath);
-                            log.Info($"加载了没有manifest的插件: {dllPath}");
+                            log.Info(string.Format(Properties.Resources.LoadedPluginWithoutManifest, dllPath));
                         }
                         else
                         {
-                            log.Warn($"插件DLL不存在: {dllPath}");
+                            log.Warn(string.Format(Properties.Resources.PluginDllNotFound, dllPath));
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"加载插件或manifest错误：{ex.Message}", "ColorVision");
+                    MessageBox.Show(string.Format(Properties.Resources.PluginLoadError, ex.Message), "ColorVision");
                     log.Error(ex);
                 }
             }

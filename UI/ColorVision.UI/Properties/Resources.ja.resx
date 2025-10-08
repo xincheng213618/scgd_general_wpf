@@ -1,110 +1,52 @@
-<?xml version="1.0" encoding="utf-8"?>
-<root>
-  <!-- 
-    Microsoft ResX Schema 
-    
-    Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-    
-    Example:
-    
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">2.0</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-        <value>[base64 mime encoded serialized .NET Framework object]</value>
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
-        <comment>This is a comment</comment>
-    </data>
-                
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-    
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            : and then encoded with base64 encoding.
-    
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-            : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-            : using a System.ComponentModel.TypeConverter
-            : and then encoded with base64 encoding.
-    -->
-  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
-    <xsd:element name="root" msdata:IsDataSet="true">
-      <xsd:complexType>
-        <xsd:choice maxOccurs="unbounded">
-          <xsd:element name="metadata">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" />
-              </xsd:sequence>
-              <xsd:attribute name="name" use="required" type="xsd:string" />
-              <xsd:attribute name="type" type="xsd:string" />
-              <xsd:attribute name="mimetype" type="xsd:string" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="assembly">
-            <xsd:complexType>
-              <xsd:attribute name="alias" type="xsd:string" />
-              <xsd:attribute name="name" type="xsd:string" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="data">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="resheader">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
-            </xsd:complexType>
-          </xsd:element>
-        </xsd:choice>
-      </xsd:complexType>
-    </xsd:element>
-  </xsd:schema>
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" ns1:Ordinal="1" />
+              <xs:attribute name="type" type="xsd:string" ns1:Ordinal="3" />
+              <xs:attribute name="mimetype" type="xsd:string" ns1:Ordinal="4" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
@@ -312,4 +254,4 @@
   <data name="Options" xml:space="preserve">
     <value>オプション</value>
   </data>
-</root>
+<data name="NoLocalLog4Output" xml:space="preserve"><value>ローカルlog4出力が設定されていません</value></data><data name="UpdateLog4NetLevel" xml:space="preserve"><value>Log4Netログレベルの更新: </value></data><data name="ViewMode1" xml:space="preserve"><value>表示モード1</value></data><data name="ViewMode2" xml:space="preserve"><value>表示モード2</value></data><data name="ViewMode4" xml:space="preserve"><value>表示モード4</value></data><data name="ViewMode9" xml:space="preserve"><value>表示モード9</value></data><data name="CheckPluginUpdates" xml:space="preserve"><value>プラグインの更新を確認</value></data><data name="CheckingForAdditionalProjects" xml:space="preserve"><value>追加プロジェクトを確認中</value></data><data name="Download" xml:space="preserve"><value>ダウンロード</value></data><data name="ProjectNotFound" xml:space="preserve"><value>プロジェクト{0}が見つかりません</value></data><data name="FoundProjectDownloadConfirm" xml:space="preserve"><value>プロジェクト{0}、{1}が見つかりました。ダウンロードしますか？</value></data><data name="AllFiles" xml:space="preserve"><value>すべてのファイル (*.*)|*.*</value></data><data name="UnsupportedFileFormat" xml:space="preserve"><value>サポートされていないファイル形式</value></data><data name="SortOptions" xml:space="preserve"><value>並び替えオプション</value></data><data name="SmartSortAscending" xml:space="preserve"><value>スマートソート（昇順）</value></data><data name="SmartSortDescending" xml:space="preserve"><value>スマートソート（降順）</value></data><data name="SortByColumn" xml:space="preserve"><value>{0}で並べ替え</value></data><data name="Ascending" xml:space="preserve"><value>昇順</value></data><data name="Descending" xml:space="preserve"><value>降順</value></data><data name="ConfirmUpdate" xml:space="preserve"><value>更新</value></data><data name="ConfirmDeletePlugin" xml:space="preserve"><value>プラグイン{0}を削除しますか？</value></data><data name="EnableCUDA" xml:space="preserve"><value>CUDAを有効にする</value></data><data name="CheckingCUDASupport" xml:space="preserve"><value>CUDAサポートを確認中</value></data><data name="ConfigurationParameters" xml:space="preserve"><value>構成パラメータ</value></data><data name="EnableScheduledBackup" xml:space="preserve"><value>スケジュールバックアップを有効にする</value></data><data name="MaxBackupCount" xml:space="preserve"><value>最大バックアップ数</value></data><data name="AutoCleanOldBackups" xml:space="preserve"><value>超過時に古いバックアップを自動的にクリーンアップ</value></data><data name="ConfigFileResetDueToError" xml:space="preserve"><value>構成ファイルエラー、リセットされました</value></data><data name="ConfigFileRestored" xml:space="preserve"><value>最近のバックアップから構成ファイルを復元しました</value></data><data name="RestoreConfigFileFailed" xml:space="preserve"><value>構成ファイルの復元に失敗しました</value></data><data name="BackupConfigFileFailed" xml:space="preserve"><value>構成ファイルのバックアップに失敗しました</value></data><data name="CleanupBackupFailed" xml:space="preserve"><value>バックアップファイルのクリーンアップに失敗しました</value></data><data name="SaveSingleConfigFailed" xml:space="preserve"><value>単一構成{0}の保存に失敗しました</value></data><data name="WriteConfigFileFailed" xml:space="preserve"><value>構成ファイル{0}の書き込みに失敗しました</value></data><data name="Execute" xml:space="preserve"><value>実行</value></data><data name="OpenContainingFolder" xml:space="preserve"><value>格納フォルダーを開く</value></data><data name="OpenFolder" xml:space="preserve"><value>フォルダーを開く</value></data><data name="OnlineCronGenerator" xml:space="preserve"><value>オンラインCron式ジェネレータ</value></data><data name="PluginMissingId" xml:space="preserve"><value>プラグイン{0}に一意のIDがありません、スキップされました</value></data><data name="DependencyDllNotFound" xml:space="preserve"><value>依存関係{0}のDLLが見つかりません: {1}</value></data><data name="DependencyVersionInsufficient" xml:space="preserve"><value>依存関係{0}のバージョンが不足しています、必要: {1}、実際: {2}</value></data><data name="DependencyCheckException" xml:space="preserve"><value>依存関係{0}のバージョンチェック時に例外が発生しました: {1}</value></data><data name="LoadingPlugin" xml:space="preserve"><value>プラグインを読み込み中: {0}</value></data><data name="PluginDllNotFound" xml:space="preserve"><value>プラグインDLLが見つかりません: {0}</value></data><data name="LoadedPluginWithoutManifest" xml:space="preserve"><value>マニフェストなしでプラグインを読み込みました: {0}</value></data><data name="PluginLoadError" xml:space="preserve"><value>プラグインまたはマニフェストの読み込みエラー: {0}</value></data><data name="BatchFilePathCannotBeEmpty" xml:space="preserve"><value>batchFilePathを空にすることはできません</value></data><data name="BaseDirCannotBeEmpty" xml:space="preserve"><value>baseDirを空にすることはできません</value></data><data name="ExeNameCannotBeEmpty" xml:space="preserve"><value>exeNameを空にすることはできません</value></data><data name="EchoTerminatingProcess" xml:space="preserve"><value>echo プロセスを終了中: {0}</value></data><data name="EchoStartCopyingFiles" xml:space="preserve"><value>echo 新しいバージョンファイルのコピーを開始しています...</value></data><data name="RemStagePointsToTemp" xml:space="preserve"><value>rem STAGEは一時ディレクトリ内のColorVisionコンテンツルートを指します</value></data><data name="EchoBackingUpCurrentVersion" xml:space="preserve"><value>echo 現在のバージョンをバックアップ中...</value></data><data name="EchoTargetDirNotExist" xml:space="preserve"><value>  echo ターゲットディレクトリが存在しません、バックアップをスキップします。</value></data><data name="EchoBackupTo" xml:space="preserve"><value>  echo バックアップ先: %BKDIR%</value></data><data name="EchoBackupComplete" xml:space="preserve"><value>  echo バックアップ完了。</value></data><data name="RemRobocopySuccess" xml:space="preserve"><value>  rem Robocopy 0-7は成功とみなされます</value></data><data name="EchoRobocopyFailed" xml:space="preserve"><value>     echo Robocopyが失敗しました、エラーコード!RC!、XCOPYフォールバックを試行中...</value></data><data name="EchoRobocopyNotFound" xml:space="preserve"><value>  echo Robocopyが見つかりません、XCOPYにフォールバック...</value></data><data name="EchoUsingXCOPY" xml:space="preserve"><value>echo XCOPYフォールバックコピーを使用中...</value></data><data name="EchoXCOPYFailed" xml:space="preserve"><value>  echo XCOPYコピーが失敗しました、更新が中止されました。</value></data><data name="EchoCopyComplete" xml:space="preserve"><value>echo コピー完了。</value></data><data name="EchoRestartingProgram" xml:space="preserve"><value>echo プログラムを再起動中...</value></data><data name="EchoSchedulingCleanup" xml:space="preserve"><value>echo 一時ディレクトリとスクリプトの遅延クリーンアップをスケジュール中...</value></data><data name="EchoUpdateComplete" xml:space="preserve"><value>echo 更新完了。（クリーンアップはバックグラウンドで実行中）</value></data><data name="ApplicationCurrentNotInitialized" xml:space="preserve"><value>Application.Currentが初期化されていません</value></data><data name="Bool2VisibilityConverterNotFound" xml:space="preserve"><value>bool2VisibilityConverterリソースが見つかりません</value></data></root>
