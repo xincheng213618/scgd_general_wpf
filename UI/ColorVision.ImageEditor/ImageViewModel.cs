@@ -477,7 +477,7 @@ namespace ColorVision.ImageEditor
 
         public void Dispose()
         {
-            foreach (var item in IEditorToolFactory.IEditorTools.Cast<IDisposable>())
+            foreach (var item in IEditorToolFactory.IEditorTools.OfType<IDisposable>())
             {
                 item.Dispose();
             }

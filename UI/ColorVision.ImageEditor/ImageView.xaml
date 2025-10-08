@@ -69,10 +69,6 @@
             <Grid Background="{StaticResource SmallGridLinesDrawingBrush}"  Visibility="Collapsed"/>
 
             <Grid x:Name="ZoomGrid" Background="{StaticResource TransparentGridBrush}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="199*"/>
-                    <ColumnDefinition Width="801*"/>
-                </Grid.ColumnDefinitions>
                 <local:Zoombox x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}" Grid.ColumnSpan="2">
                     <local:DrawCanvas x:Name="ImageShow"  x:FieldModifier="public" FocusVisualStyle="{x:Null}"   RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto">
                     </local:DrawCanvas>
@@ -84,13 +80,13 @@
                     <ComboBox x:Name="ComboxPOITemplate"  x:FieldModifier="public" Width="100" HorizontalAlignment="Left" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
                 </ToolBar>
 
-                <ToolBarTray x:Name="ToolBarDraw" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}" HorizontalAlignment="Left" VerticalAlignment="Bottom" Grid.Column="1" Margin="288,0,0,0" >
+                <ToolBarTray x:Name="ToolBarDraw" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Grid.Column="1"  >
                     <ToolBar ToolBarTray.IsLocked="True"  >
                     </ToolBar>
 
                 </ToolBarTray>
 
-                <ToolBarTray x:Name="ToolBarTop" VerticalAlignment="Top" Grid.Row="0"  HorizontalAlignment="Left" Grid.Column="1" Margin="271,0,0,0">
+                <ToolBarTray x:Name="ToolBarTop" VerticalAlignment="Top" Grid.Row="0"  HorizontalAlignment="Center" Grid.Column="1">
                     <ToolBar  ToolBarTray.IsLocked="True" Margin="0,2,4,0" >
                         <ToggleButton IsChecked="{Binding ImageEditMode}"  Margin="1,0">
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
