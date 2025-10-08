@@ -57,8 +57,5 @@
 		  <PackagePath>\</PackagePath>
 	  </None>
 	</ItemGroup>
-	<ItemGroup>
-	  <ProjectReference Include="..\..\Core\opencv_helper\opencv_helper.vcxproj" />
-	</ItemGroup>
 
 </Project>
