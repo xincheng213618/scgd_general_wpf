@@ -12,6 +12,7 @@
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<SignAssembly>False</SignAssembly>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -55,6 +56,9 @@
 		  <Pack>true</Pack>
 		  <PackagePath>\</PackagePath>
 	  </None>
+	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\..\Core\opencv_helper\opencv_helper.vcxproj" />
 	</ItemGroup>
 
 </Project>

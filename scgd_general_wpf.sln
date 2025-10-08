@@ -39,9 +39,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Solution", "UI\ColorVision.Solution\ColorVision.Solution.csproj", "{7736CE9C-0059-420C-A841-5B71293C1A88}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UI", "UI", "{E24919A5-7981-44FF-82A9-E7259C5492CE}"
-	ProjectSection(SolutionItems) = preProject
-		UI\Directory.Build.props = UI\Directory.Build.props
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{17024679-C50D-4948-A0F7-4A67B6EFBEA8}"
 EndProject
@@ -669,7 +666,7 @@ Global
 		{F23FB3E2-39AD-B3E8-6806-E8D511F3B1E6} = {7D74447C-5191-4C1D-BEB2-B537366B980D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_AutoCreateNewLanguageFiles = True
 		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
+		RESX_AutoCreateNewLanguageFiles = True
 	EndGlobalSection
 EndGlobal

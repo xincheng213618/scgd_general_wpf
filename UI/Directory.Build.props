@@ -1,7 +1,5 @@
 <Project>
 	<PropertyGroup>
-		<AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)ColorVision.snk</AssemblyOriginatorKeyFile>
-		<SignAssembly>True</SignAssembly>
 		<Platforms>x64;ARM64</Platforms>
 		<PackageTags>ColorVision</PackageTags>
 		<EnableNETAnalyzers>true</EnableNETAnalyzers>
