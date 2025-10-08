@@ -1,13 +1,13 @@
 # Pattern Plugin - 图卡生成工具
 
 ---
-**Metadata:**
-- Title: Pattern Plugin - Test Pattern Generation Tool
-- Status: published
-- Updated: 2024-12-19
-- Author: ColorVision Development Team
-- Plugin Version: 1.0
-- Minimum ColorVision Version: 1.3.12.21
+**元数据:**
+- 标题: Pattern Plugin - 图卡生成工具
+- 状态: 已发布
+- 更新时间: 2024-12-19
+- 作者: ColorVision 开发团队
+- 插件版本: 1.0
+- 最低 ColorVision 版本: 1.3.12.21
 ---
 
 ## 简介
