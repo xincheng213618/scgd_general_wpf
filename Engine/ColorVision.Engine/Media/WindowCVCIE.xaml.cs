@@ -38,12 +38,17 @@ namespace ColorVision.Engine.Media
     public partial class WindowCVCIE : Window
     {
         public ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
+        public CIExyuvStatistics CIExyuvStats { get; set; }
 
         bool IsPoiResultCIExyuvDatas = true;
         public WindowCVCIE(ObservableCollection<PoiResultCIExyuvData> poiResultCIExyuvDatas)
         {
             IsPoiResultCIExyuvDatas = true;
             PoiResultCIExyuvDatas = poiResultCIExyuvDatas;  
+            
+            // Calculate statistics when window is created
+            CIExyuvStats = CIExyuvStatistics.Calculate(poiResultCIExyuvDatas);
+            
             InitializeComponent();
             this.ApplyCaption();
 
@@ -60,11 +65,16 @@ namespace ColorVision.Engine.Media
             listViewSide.ItemsSource = PoiResultCIExyuvDatas;
         }
         public ObservableCollection<PoiResultCIEYData> PoiResultCIEYDatas { get; set; }
+        public CIEYStatistics CIEYStats { get; set; }
 
         public WindowCVCIE(ObservableCollection<PoiResultCIEYData> poiResultCIEYDatas)
         {
             IsPoiResultCIExyuvDatas = false;
             PoiResultCIEYDatas = poiResultCIEYDatas;
+            
+            // Calculate statistics when window is created
+            CIEYStats = CIEYStatistics.Calculate(poiResultCIEYDatas);
+            
             InitializeComponent();
             this.ApplyCaption();
               
@@ -86,6 +96,114 @@ namespace ColorVision.Engine.Media
 
             listViewSide.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listViewSide.SelectAll(), (s, e) => e.CanExecute = true));
             listViewSide.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
+
+            // Populate statistics panel
+            PopulateStatisticsPanel();
+        }
+
+        private void PopulateStatisticsPanel()
+        {
+            StatisticsPanel.Children.Clear();
+
+            if (IsPoiResultCIExyuvDatas && CIExyuvStats != null)
+            {
+                // Create WrapPanel for better layout
+                var wrapPanel = new WrapPanel { Orientation = Orientation.Horizontal };
+
+                // Luminance statistics
+                AddStatisticItem(wrapPanel, "Center Luminance:", $"{CIExyuvStats.CenterLuminance:F2} cd/m²");
+                AddStatisticItem(wrapPanel, "Average Luminance:", $"{CIExyuvStats.AverageLuminance:F2} cd/m²");
+                AddStatisticItem(wrapPanel, "Max Luminance:", $"{CIExyuvStats.MaxLuminance:F2} cd/m²");
+                AddStatisticItem(wrapPanel, "Min Luminance:", $"{CIExyuvStats.MinLuminance:F2} cd/m²");
+                
+                // Uniformity
+                AddStatisticItem(wrapPanel, "Uniformity (Min/Max):", $"{CIExyuvStats.UniformityMinDivMax:F2}%");
+                AddStatisticItem(wrapPanel, "Uniformity ((Max-Min)/Avg):", $"{CIExyuvStats.UniformityDiffDivAvg:F2}%");
+                AddStatisticItem(wrapPanel, "Uniformity ((Max-Min)/Max):", $"{CIExyuvStats.UniformityDiffDivMax:F2}%");
+                
+                // Standard Deviation
+                if (!double.IsNaN(CIExyuvStats.StandardDeviation))
+                {
+                    AddStatisticItem(wrapPanel, "Standard Deviation:", $"{CIExyuvStats.StandardDeviation:F4}");
+                    if (!double.IsNaN(CIExyuvStats.StandardDeviationPercent))
+                        AddStatisticItem(wrapPanel, "Standard Deviation (%):", $"{CIExyuvStats.StandardDeviationPercent:F2}%");
+                }
+
+                // Color uniformity
+                AddStatisticItem(wrapPanel, "Color Uniformity (Δuv):", $"{CIExyuvStats.ColorUniformityDeltaUv:F6}");
+                AddStatisticItem(wrapPanel, "Color Uniformity (Δx):", $"{CIExyuvStats.ColorUniformityDeltaX:F6}");
+                AddStatisticItem(wrapPanel, "Color Uniformity (Δy):", $"{CIExyuvStats.ColorUniformityDeltaY:F6}");
+
+                // Center color coordinates
+                if (CIExyuvStats.CenterLuminance > 0)
+                {
+                    AddStatisticItem(wrapPanel, "Center x:", $"{CIExyuvStats.CenterX:F4}");
+                    AddStatisticItem(wrapPanel, "Center y:", $"{CIExyuvStats.CenterY:F4}");
+                    AddStatisticItem(wrapPanel, "Center u':", $"{CIExyuvStats.CenterU:F4}");
+                    AddStatisticItem(wrapPanel, "Center v':", $"{CIExyuvStats.CenterV:F4}");
+                    AddStatisticItem(wrapPanel, "Center CCT:", $"{CIExyuvStats.CenterCCT:F1} K");
+                    AddStatisticItem(wrapPanel, "Center Wave:", $"{CIExyuvStats.CenterWave:F1} nm");
+                }
+
+                AddStatisticItem(wrapPanel, "Delta Wave:", $"{CIExyuvStats.DeltaWave:F1} nm");
+
+                StatisticsPanel.Children.Add(wrapPanel);
+            }
+            else if (!IsPoiResultCIExyuvDatas && CIEYStats != null)
+            {
+                // Create WrapPanel for better layout
+                var wrapPanel = new WrapPanel { Orientation = Orientation.Horizontal };
+
+                // Luminance statistics
+                AddStatisticItem(wrapPanel, "Center Luminance:", $"{CIEYStats.CenterLuminance:F2} cd/m²");
+                AddStatisticItem(wrapPanel, "Average Luminance:", $"{CIEYStats.AverageLuminance:F2} cd/m²");
+                AddStatisticItem(wrapPanel, "Max Luminance:", $"{CIEYStats.MaxLuminance:F2} cd/m²");
+                AddStatisticItem(wrapPanel, "Min Luminance:", $"{CIEYStats.MinLuminance:F2} cd/m²");
+                
+                // Uniformity
+                AddStatisticItem(wrapPanel, "Uniformity (Min/Max):", $"{CIEYStats.UniformityMinDivMax:F2}%");
+                AddStatisticItem(wrapPanel, "Uniformity ((Max-Min)/Avg):", $"{CIEYStats.UniformityDiffDivAvg:F2}%");
+                AddStatisticItem(wrapPanel, "Uniformity ((Max-Min)/Max):", $"{CIEYStats.UniformityDiffDivMax:F2}%");
+                
+                // Standard Deviation
+                AddStatisticItem(wrapPanel, "Standard Deviation:", $"{CIEYStats.StandardDeviation:F4}");
+                AddStatisticItem(wrapPanel, "Standard Deviation (%):", $"{CIEYStats.StandardDeviationPercent:F2}%");
+
+                StatisticsPanel.Children.Add(wrapPanel);
+            }
+        }
+
+        private void AddStatisticItem(WrapPanel parent, string label, string value)
+        {
+            var border = new Border
+            {
+                Margin = new Thickness(0, 2, 10, 2),
+                Padding = new Thickness(5, 2, 5, 2)
+            };
+
+            var stackPanel = new StackPanel
+            {
+                Orientation = Orientation.Horizontal
+            };
+
+            var labelText = new TextBlock
+            {
+                Text = label,
+                FontWeight = FontWeights.SemiBold,
+                Margin = new Thickness(0, 0, 5, 0),
+                Foreground = System.Windows.Media.Brushes.Gray
+            };
+
+            var valueText = new TextBlock
+            {
+                Text = value,
+                FontWeight = FontWeights.Normal
+            };
+
+            stackPanel.Children.Add(labelText);
+            stackPanel.Children.Add(valueText);
+            border.Child = stackPanel;
+            parent.Children.Add(border);
         }
 
 

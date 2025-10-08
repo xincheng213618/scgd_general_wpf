@@ -9,6 +9,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
@@ -32,8 +33,15 @@
                 </TextBlock>
             </Button>
         </StackPanel>
+
+        <!-- Statistics Panel -->
+        <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,1" Padding="5" Margin="2">
+            <StackPanel x:Name="StatisticsPanel" Orientation="Vertical">
+                <!-- Statistics content will be added here programmatically -->
+            </StackPanel>
+        </Border>
       
-        <ListView x:Name="listViewSide" BorderThickness="0" Padding="0" Grid.Row="1">
+        <ListView x:Name="listViewSide" BorderThickness="0" Padding="0" Grid.Row="2">
             <ListView.Resources >
                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" />
             </ListView.Resources>
