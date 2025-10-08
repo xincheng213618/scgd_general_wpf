@@ -1,110 +1,52 @@
-<?xml version="1.0" encoding="utf-8"?>
-<root>
-  <!-- 
-    Microsoft ResX Schema 
-    
-    Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-    
-    Example:
-    
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">2.0</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-        <value>[base64 mime encoded serialized .NET Framework object]</value>
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
-        <comment>This is a comment</comment>
-    </data>
-                
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-    
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            : and then encoded with base64 encoding.
-    
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-            : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-            : using a System.ComponentModel.TypeConverter
-            : and then encoded with base64 encoding.
-    -->
-  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
-    <xsd:element name="root" msdata:IsDataSet="true">
-      <xsd:complexType>
-        <xsd:choice maxOccurs="unbounded">
-          <xsd:element name="metadata">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" />
-              </xsd:sequence>
-              <xsd:attribute name="name" use="required" type="xsd:string" />
-              <xsd:attribute name="type" type="xsd:string" />
-              <xsd:attribute name="mimetype" type="xsd:string" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="assembly">
-            <xsd:complexType>
-              <xsd:attribute name="alias" type="xsd:string" />
-              <xsd:attribute name="name" type="xsd:string" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="data">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="resheader">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
-            </xsd:complexType>
-          </xsd:element>
-        </xsd:choice>
-      </xsd:complexType>
-    </xsd:element>
-  </xsd:schema>
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" ns1:Ordinal="1" />
+              <xs:attribute name="type" type="xsd:string" ns1:Ordinal="3" />
+              <xs:attribute name="mimetype" type="xsd:string" ns1:Ordinal="4" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
@@ -312,4 +254,4 @@
   <data name="Options" xml:space="preserve">
     <value>Параметры</value>
   </data>
-</root>
+<data name="NoLocalLog4Output" xml:space="preserve"><value>Локальный вывод log4 не настроен</value></data><data name="UpdateLog4NetLevel" xml:space="preserve"><value>Обновление уровня журнала Log4Net: </value></data><data name="ViewMode1" xml:space="preserve"><value>Режим просмотра 1</value></data><data name="ViewMode2" xml:space="preserve"><value>Режим просмотра 2</value></data><data name="ViewMode4" xml:space="preserve"><value>Режим просмотра 4</value></data><data name="ViewMode9" xml:space="preserve"><value>Режим просмотра 9</value></data><data name="CheckPluginUpdates" xml:space="preserve"><value>Проверить обновления плагинов</value></data><data name="CheckingForAdditionalProjects" xml:space="preserve"><value>Проверка дополнительных проектов</value></data><data name="Download" xml:space="preserve"><value>Скачать</value></data><data name="ProjectNotFound" xml:space="preserve"><value>Проект {0} не найден</value></data><data name="FoundProjectDownloadConfirm" xml:space="preserve"><value>Найден проект {0}, {1}, скачать?</value></data><data name="AllFiles" xml:space="preserve"><value>Все файлы (*.*)|*.*</value></data><data name="UnsupportedFileFormat" xml:space="preserve"><value>Неподдерживаемый формат файла</value></data><data name="SortOptions" xml:space="preserve"><value>Параметры сортировки</value></data><data name="SmartSortAscending" xml:space="preserve"><value>Умная сортировка (по возрастанию)</value></data><data name="SmartSortDescending" xml:space="preserve"><value>Умная сортировка (по убыванию)</value></data><data name="SortByColumn" xml:space="preserve"><value>Сортировать по {0}</value></data><data name="Ascending" xml:space="preserve"><value>По возрастанию</value></data><data name="Descending" xml:space="preserve"><value>По убыванию</value></data><data name="ConfirmUpdate" xml:space="preserve"><value>Обновить</value></data><data name="ConfirmDeletePlugin" xml:space="preserve"><value>Подтвердить удаление плагина {0}?</value></data><data name="EnableCUDA" xml:space="preserve"><value>Включить CUDA</value></data><data name="CheckingCUDASupport" xml:space="preserve"><value>Проверка поддержки CUDA</value></data><data name="ConfigurationParameters" xml:space="preserve"><value>Параметры конфигурации</value></data><data name="EnableScheduledBackup" xml:space="preserve"><value>Включить запланированное резервное копирование</value></data><data name="MaxBackupCount" xml:space="preserve"><value>Максимальное количество резервных копий</value></data><data name="AutoCleanOldBackups" xml:space="preserve"><value>Автоматически очищать старые резервные копии при превышении</value></data><data name="ConfigFileResetDueToError" xml:space="preserve"><value>Ошибка файла конфигурации, сброшен</value></data><data name="ConfigFileRestored" xml:space="preserve"><value>Файл конфигурации восстановлен из недавней резервной копии</value></data><data name="RestoreConfigFileFailed" xml:space="preserve"><value>Не удалось восстановить файл конфигурации</value></data><data name="BackupConfigFileFailed" xml:space="preserve"><value>Не удалось создать резервную копию файла конфигурации</value></data><data name="CleanupBackupFailed" xml:space="preserve"><value>Не удалось очистить файлы резервных копий</value></data><data name="SaveSingleConfigFailed" xml:space="preserve"><value>Не удалось сохранить единую конфигурацию {0}</value></data><data name="WriteConfigFileFailed" xml:space="preserve"><value>Не удалось записать файл конфигурации {0}</value></data><data name="Execute" xml:space="preserve"><value>Выполнить</value></data><data name="OpenContainingFolder" xml:space="preserve"><value>Открыть содержащую папку</value></data><data name="OpenFolder" xml:space="preserve"><value>Открыть папку</value></data><data name="OnlineCronGenerator" xml:space="preserve"><value>Онлайн-генератор выражений Cron</value></data><data name="PluginMissingId" xml:space="preserve"><value>У плагина {0} отсутствует уникальный ID, пропущен</value></data><data name="DependencyDllNotFound" xml:space="preserve"><value>DLL зависимости {0} не найдена: {1}</value></data><data name="DependencyVersionInsufficient" xml:space="preserve"><value>Версия зависимости {0} недостаточна, требуется: {1}, фактическая: {2}</value></data><data name="DependencyCheckException" xml:space="preserve"><value>Исключение при проверке версии зависимости {0}: {1}</value></data><data name="LoadingPlugin" xml:space="preserve"><value>Загрузка плагина: {0}</value></data><data name="PluginDllNotFound" xml:space="preserve"><value>DLL плагина не найдена: {0}</value></data><data name="LoadedPluginWithoutManifest" xml:space="preserve"><value>Загружен плагин без манифеста: {0}</value></data><data name="PluginLoadError" xml:space="preserve"><value>Ошибка загрузки плагина или манифеста: {0}</value></data><data name="BatchFilePathCannotBeEmpty" xml:space="preserve"><value>batchFilePath не может быть пустым</value></data><data name="BaseDirCannotBeEmpty" xml:space="preserve"><value>baseDir не может быть пустым</value></data><data name="ExeNameCannotBeEmpty" xml:space="preserve"><value>exeName не может быть пустым</value></data><data name="EchoTerminatingProcess" xml:space="preserve"><value>echo Завершение процесса: {0}</value></data><data name="EchoStartCopyingFiles" xml:space="preserve"><value>echo Начало копирования новых файлов версии...</value></data><data name="RemStagePointsToTemp" xml:space="preserve"><value>rem STAGE указывает на корень содержимого ColorVision во временном каталоге</value></data><data name="EchoBackingUpCurrentVersion" xml:space="preserve"><value>echo Резервное копирование текущей версии...</value></data><data name="EchoTargetDirNotExist" xml:space="preserve"><value>  echo Целевой каталог не существует, резервное копирование пропущено.</value></data><data name="EchoBackupTo" xml:space="preserve"><value>  echo Резервное копирование в: %BKDIR%</value></data><data name="EchoBackupComplete" xml:space="preserve"><value>  echo Резервное копирование завершено.</value></data><data name="RemRobocopySuccess" xml:space="preserve"><value>  rem Robocopy 0-7 считается успехом</value></data><data name="EchoRobocopyFailed" xml:space="preserve"><value>     echo Robocopy не удалось, код ошибки !RC!, попытка использовать XCOPY...</value></data><data name="EchoRobocopyNotFound" xml:space="preserve"><value>  echo Robocopy не найден, переход к XCOPY...</value></data><data name="EchoUsingXCOPY" xml:space="preserve"><value>echo Использование резервного копирования XCOPY...</value></data><data name="EchoXCOPYFailed" xml:space="preserve"><value>  echo Копирование XCOPY не удалось, обновление прервано.</value></data><data name="EchoCopyComplete" xml:space="preserve"><value>echo Копирование завершено.</value></data><data name="EchoRestartingProgram" xml:space="preserve"><value>echo Перезапуск программы...</value></data><data name="EchoSchedulingCleanup" xml:space="preserve"><value>echo Планирование отложенной очистки временного каталога и скрипта...</value></data><data name="EchoUpdateComplete" xml:space="preserve"><value>echo Обновление завершено. (Очистка выполняется в фоновом режиме)</value></data><data name="ApplicationCurrentNotInitialized" xml:space="preserve"><value>Application.Current не инициализирован</value></data><data name="Bool2VisibilityConverterNotFound" xml:space="preserve"><value>Ресурс bool2VisibilityConverter не найден</value></data></root>
