@@ -1,7 +1,9 @@
 ﻿using ColorVision.UI.Menus;
-using System.Diagnostics;
+using System;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Documents;
+using System.Windows.Media;
 
 namespace ColorVision.Solution
 {
@@ -22,14 +24,16 @@ namespace ColorVision.Solution
 
     /// <summary>
     /// TerminalManagerWindow.xaml 的交互逻辑
+    /// ConPTY-based terminal with full ANSI/VT100 support
     /// </summary>
     public partial class TerminalManagerWindow : Window
     {
+        private ConPtyTerminal? _terminal;
+
         public TerminalManagerWindow()
         {
             InitializeComponent();
         }
-        private Process _process;
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -38,54 +42,64 @@ namespace ColorVision.Solution
 
         private void StartTerminal()
         {
-            _process = new Process();
-            _process.StartInfo.FileName = "cmd.exe";
-            _process.StartInfo.UseShellExecute = false;
-            _process.StartInfo.RedirectStandardInput = true;
-            _process.StartInfo.RedirectStandardOutput = true;
-            _process.StartInfo.RedirectStandardError = true;
+            try
+            {
+                _terminal = new ConPtyTerminal();
+                _terminal.OutputReceived += OnTerminalOutput;
 
-            _process.StartInfo.CreateNoWindow = true;
+                // Calculate terminal size based on window size
+                // Using approximate character dimensions (will be refined)
+                short cols = 80;
+                short rows = 25;
 
-            _process.OutputDataReceived += (s, e) => AppendText(e.Data);
-            _process.ErrorDataReceived += (s, e) => AppendText(e.Data);
-
-            _process.Start();
-            _process.BeginOutputReadLine();
-            _process.BeginErrorReadLine();
+                _terminal.Start(cols, rows, "cmd.exe");
+            }
+            catch (Exception ex)
+            {
+                AppendText($"Failed to start terminal: {ex.Message}\n", Brushes.Red);
+            }
         }
 
-        private void AppendText(string text)
+        private void OnTerminalOutput(object? sender, string output)
         {
-            if (string.IsNullOrWhiteSpace(text)) return;
             Dispatcher.Invoke(() =>
             {
-                rtbOutput.AppendText(text + "\n");
-                rtbOutput.ScrollToEnd();
+                AppendText(output, Brushes.White);
             });
+        }
+
+        private void AppendText(string text, Brush? foreground = null)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+
+            var paragraph = new Paragraph(new Run(text))
+            {
+                Margin = new Thickness(0),
+                Foreground = foreground ?? Brushes.White
+            };
+
+            rtbOutput.Document.Blocks.Add(paragraph);
+            rtbOutput.ScrollToEnd();
         }
 
         private void tbInput_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
-                string command = tbInput.Text;
-                if (_process != null && !_process.HasExited)
+                string input = tbInput.Text;
+                if (_terminal != null)
                 {
-                    _process.StandardInput.WriteLine(command);
+                    _terminal.SendInput(input + "\r\n");
                 }
                 tbInput.Clear();
+                e.Handled = true;
             }
         }
 
         protected override void OnClosed(EventArgs e)
         {
             base.OnClosed(e);
-            if (_process != null && !_process.HasExited)
-            {
-                _process.Kill();
-            }
+            _terminal?.Dispose();
         }
-
     }
 }
