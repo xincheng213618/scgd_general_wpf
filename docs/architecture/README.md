@@ -11,9 +11,10 @@ This section contains comprehensive architectural documentation for the ColorVis
 - [FlowEngineLib Architecture](FlowEngineLib-Architecture.md) - 流程引擎库架构设计
 
 ### ColorVision.Engine 重构计划 🚀
+- **[重构项目README](ColorVision.Engine-Refactoring-README.md)** - 📖 项目总览和文档导航（推荐首先阅读）
 - [完整重构方案](ColorVision.Engine-Refactoring-Plan.md) - Engine DLL 拆分和优化完整技术方案（32KB，1315行）
 - [执行摘要](ColorVision.Engine-Refactoring-Summary.md) - 快速参考和核心要点（5.5KB，219行）
-- [架构图表](ColorVision.Engine-Refactoring-Diagrams.md) - 可视化架构设计和流程图（11KB，包含Mermaid图表）
+- [架构图表](ColorVision.Engine-Refactoring-Diagrams.md) - 可视化架构设计和流程图（13KB，包含Mermaid图表）
 - [实施检查清单](ColorVision.Engine-Refactoring-Checklist.md) - 详细的任务列表和进度跟踪（13KB，516行）
 
 ## 概述
