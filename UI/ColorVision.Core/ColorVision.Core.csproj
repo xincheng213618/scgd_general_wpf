@@ -19,6 +19,14 @@
 		<None Remove="ColorVision.Core.props" />
 		<None Remove="ColorVision.Core.targets" />
 	</ItemGroup>
+	<PropertyGroup>
+		<UseProjectReference Condition="!Exists('..\..\x64\Release\opencv_helper.dll')">true</UseProjectReference>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(UseProjectReference)'=='true'">
+		<ProjectReference Include="..\..\Core\opencv_helper\opencv_helper.vcxproj" />
+	</ItemGroup>
+	
 	<ItemGroup>
 		<Content Include="..\..\x64\Release\opencv_helper.dll" Link="runtimes\win-x64\native\opencv_helper.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -57,5 +65,6 @@
 		  <PackagePath>\</PackagePath>
 	  </None>
 	</ItemGroup>
+
 
 </Project>
