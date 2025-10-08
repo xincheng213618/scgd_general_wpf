@@ -14,6 +14,9 @@ using System.Windows;
 
 namespace ColorVision.SocketProtocol
 {
+    /// <summary>
+    /// Socket消息基类
+    /// </summary>
     public class SocketMessageBase
     {
         public string Version { get; set; }
@@ -24,11 +27,17 @@ namespace ColorVision.SocketProtocol
         public override string ToString() => JsonConvert.SerializeObject(this);
     }
 
+    /// <summary>
+    /// Socket请求消息
+    /// </summary>
     public class SocketRequest : SocketMessageBase
     {
         public string Params { get; set; }
     }
 
+    /// <summary>
+    /// Socket响应消息
+    /// </summary>
     public class SocketResponse : SocketMessageBase
     {
         public int Code { get; set; }
@@ -37,6 +46,10 @@ namespace ColorVision.SocketProtocol
     }
 
 
+    /// <summary>
+    /// JSON消息分发器
+    /// 自动扫描并注册所有实现ISocketJsonHandler接口的处理器
+    /// </summary>
     public class SocketJsonDispatcher
     {
         private readonly Dictionary<string, ISocketJsonHandler> _handlers = new();
@@ -56,6 +69,12 @@ namespace ColorVision.SocketProtocol
             }
         }
 
+        /// <summary>
+        /// 分发Socket请求到对应的处理器
+        /// </summary>
+        /// <param name="stream">网络流</param>
+        /// <param name="request">请求消息</param>
+        /// <returns>响应消息</returns>
         public SocketResponse Dispatch(NetworkStream stream, SocketRequest request)
         {
             if (request == null || string.IsNullOrEmpty(request.EventName))
@@ -67,11 +86,19 @@ namespace ColorVision.SocketProtocol
             return new SocketResponse { Code = 404, Msg = "Handler not found for event: " + request.EventName };
         }
     }
+    
+    /// <summary>
+    /// 文本消息分发器接口
+    /// </summary>
     public interface ISocketTextDispatcher
     {
         string  Handle(NetworkStream stream, string request);
     }
 
+    /// <summary>
+    /// 文本消息分发器
+    /// 自动扫描并注册所有实现ISocketTextDispatcher接口的处理器
+    /// </summary>
     public class SocketTextDispatcher
     {
         private readonly List<ISocketTextDispatcher> _handlers = new List<ISocketTextDispatcher>();
@@ -93,6 +120,13 @@ namespace ColorVision.SocketProtocol
                 }
             }
         }
+        
+        /// <summary>
+        /// 分发文本请求到对应的处理器
+        /// </summary>
+        /// <param name="stream">网络流</param>
+        /// <param name="request">请求文本</param>
+        /// <returns>响应文本</returns>
         public string Dispatch(NetworkStream stream, string request)
         {
             if(_handlers.Count > 0)
@@ -109,21 +143,44 @@ namespace ColorVision.SocketProtocol
     }
 
 
+    /// <summary>
+    /// Socket连接管理器
+    /// 负责管理TCP服务器、客户端连接和消息分发
+    /// </summary>
     public class SocketManager:ViewModelBase
     {
         private static ILog log = LogManager.GetLogger(typeof(SocketManager));
         private static SocketManager _instance;
         private static readonly object _locker = new();
+        
+        /// <summary>
+        /// 获取SocketManager单例实例
+        /// </summary>
+        /// <returns>SocketManager实例</returns>
         public static SocketManager GetInstance() { lock (_locker) { return _instance ??= new SocketManager(); } }
 
         private static TcpListener tcpListener;
+        
+        /// <summary>
+        /// Socket配置信息
+        /// </summary>
         public SocketConfig Config { get; set; } = SocketConfig.Instance;
 
+        /// <summary>
+        /// 编辑配置命令
+        /// </summary>
         public RelayCommand EditCommand { get; set; } 
 
+        /// <summary>
+        /// JSON消息分发器
+        /// </summary>
         public SocketJsonDispatcher JsonDispatcher { get; set; }
 
+        /// <summary>
+        /// 文本消息分发器
+        /// </summary>
         public SocketTextDispatcher TextDispatcher { get;set; }
+        
         public SocketManager()
         {
             JsonDispatcher = new SocketJsonDispatcher();
@@ -131,18 +188,28 @@ namespace ColorVision.SocketProtocol
             EditCommand = new RelayCommand(a =>  new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
 
-
+        /// <summary>
+        /// Socket连接状态改变事件
+        /// </summary>
         public event EventHandler<bool> SocketConnectChanged;
 
+        /// <summary>
+        /// 获取或设置当前连接状态
+        /// </summary>
         public bool IsConnect { get => _IsConnect; private set { if (_IsConnect == value) return;  _IsConnect = value; OnPropertyChanged(); SocketConnectChanged?.Invoke(this, _IsConnect); } }
         private bool _IsConnect;
 
-
+        /// <summary>
+        /// 启动Socket服务器
+        /// </summary>
         public void StartServer()
         {
             Task.Run(() => CheckUpdate());
         }
 
+        /// <summary>
+        /// 停止Socket服务器
+        /// </summary>
         public void StopServer()
         {
             if (tcpListener != null)
@@ -169,7 +236,14 @@ namespace ColorVision.SocketProtocol
             }
         }
 
+        /// <summary>
+        /// 已连接的TCP客户端集合
+        /// </summary>
         public ObservableCollection<TcpClient> TcpClients { get; set; } = new ObservableCollection<TcpClient>();
+        
+        /// <summary>
+        /// Socket消息基础信息集合
+        /// </summary>
         public ObservableCollection<string> SocketMessageBases { get; set; } = new ObservableCollection<string>();
 
         public void CheckUpdate()
