@@ -13,7 +13,7 @@ namespace ColorVision.UI
     {
         public override int Order => 1;
 
-        public override string Header => "文件(_F)...";
+        public override string Header => Properties.Resources.MenuFile + "...";
 
         public override string OwnerGuid => nameof(MenuOpen);
 
@@ -35,7 +35,7 @@ namespace ColorVision.UI
         public override void Execute()
         {
             System.Windows.Forms.OpenFileDialog openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "所有文件 (*.*)|*.*";
+            openFileDialog.Filter = Properties.Resources.AllFiles;
             openFileDialog.FilterIndex = openFileDialog.Filter.Split('|').Length / 2; ;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
@@ -47,7 +47,7 @@ namespace ColorVision.UI
                 IFileProcessor fileProcessor = FileProcessorFactory.GetInstance().GetFileProcessor(selectedFilePath);
                 if (fileProcessor == null)
                 {
-                    MessageBox.Show("不支持的文件格式");
+                    MessageBox.Show(Properties.Resources.UnsupportedFileFormat);
                     return;
                 }
                 fileProcessor.Process(selectedFilePath);

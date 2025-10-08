@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.UI;
+using ColorVision.UI.Properties;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -82,7 +83,7 @@ namespace System.ComponentModel
                 }
             };
 
-            var openFolderBtn = new Button { Content = "🗁", Margin = new Thickness(5, 0, 0, 0), ToolTip = "打开所在文件夹" };
+            var openFolderBtn = new Button { Content = "🗁", Margin = new Thickness(5, 0, 0, 0), ToolTip = ColorVision.UI.Properties.Resources.OpenContainingFolder };
             openFolderBtn.Click += (_, __) =>
             {
                 var path = property.GetValue(obj) as string;
@@ -118,7 +119,7 @@ namespace System.ComponentModel
                     property.SetValue(obj, folderDialog.SelectedPath);
             };
 
-            var openFolderBtn = new Button { Content = "🗁", Margin = new Thickness(5, 0, 0, 0), ToolTip = "打开文件夹" };
+            var openFolderBtn = new Button { Content = "🗁", Margin = new Thickness(5, 0, 0, 0), ToolTip = ColorVision.UI.Properties.Resources.OpenFolder };
             openFolderBtn.Click += (_, __) =>
             {
                 var path = property.GetValue(obj) as string;
@@ -143,7 +144,7 @@ namespace System.ComponentModel
             var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
             dockPanel.Children.Add(textBlock);
 
-            var cronBtn = new Button { Content = "在线Cron表达式生成器", Margin = new Thickness(5, 0, 0, 0), ToolTip = "打开在线Cron表达式生成器" };
+            var cronBtn = new Button { Content = ColorVision.UI.Properties.Resources.OnlineCronGenerator, Margin = new Thickness(5, 0, 0, 0), ToolTip = ColorVision.UI.Properties.Resources.OnlineCronGenerator };
             cronBtn.Click += (_, __) => PlatformHelper.Open("https://cron.qqe2.com/");
             DockPanel.SetDock(cronBtn, Dock.Right);
 

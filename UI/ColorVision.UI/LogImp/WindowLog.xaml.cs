@@ -251,7 +251,7 @@ namespace ColorVision.UI
             {
                 hierarchy.Root.Level = selectedLevel.Key;
                 log4net.Config.BasicConfigurator.Configure(hierarchy);
-                log.Info("更新Log4Net 日志级别：" + selectedLevel.Value);
+                log.Info(Properties.Resources.UpdateLog4NetLevel + selectedLevel.Value);
             }
         }
 

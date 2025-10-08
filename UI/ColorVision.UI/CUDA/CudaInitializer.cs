@@ -37,7 +37,7 @@ namespace ColorVision.UI.CUDA
             Config.IsCudaSupported = CheckCudaSupport();
             if (Config.IsCudaSupported)
             {
-                log.Info("正在检测是否支持CUDA");
+                log.Info(Properties.Resources.CheckingCUDASupport);
 
                 Config.DeviceNames = new string[Config.DeviceCount];
                 Config.ComputeCapabilities = new (int Major, int Minor)[Config.DeviceCount];
