@@ -85,7 +85,8 @@ namespace ColorVision.Solution
             }
             catch (Exception ex)
             {
-                AppendText($"Failed to start terminal: {ex.Message}\n", Brushes.Red);
+                // Display error in red using ANSI color code
+                AppendText($"\x1b[31mFailed to start terminal: {ex.Message}\x1b[0m\n");
             }
         }
 
@@ -93,19 +94,28 @@ namespace ColorVision.Solution
         {
             Dispatcher.Invoke(() =>
             {
-                AppendText(output, Brushes.White);
+                AppendText(output);
             });
         }
 
-        private void AppendText(string text, Brush? foreground = null)
+        private void AppendText(string text)
         {
             if (string.IsNullOrEmpty(text)) return;
 
-            var paragraph = new Paragraph(new Run(text))
+            // Parse ANSI escape sequences and create formatted text
+            var defaultForeground = Colors.White;
+            var defaultBackground = Colors.Black;
+            var inlines = AnsiEscapeSequenceParser.Parse(text, defaultForeground, defaultBackground);
+
+            var paragraph = new Paragraph
             {
-                Margin = new Thickness(0),
-                Foreground = foreground ?? Brushes.White
+                Margin = new Thickness(0)
             };
+
+            foreach (var inline in inlines)
+            {
+                paragraph.Inlines.Add(inline);
+            }
 
             rtbOutput.Document.Blocks.Add(paragraph);
             rtbOutput.ScrollToEnd();
