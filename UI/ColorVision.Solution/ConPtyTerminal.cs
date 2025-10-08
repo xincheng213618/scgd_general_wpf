@@ -134,6 +134,8 @@ namespace ColorVision.Solution
 
         private async Task ReadOutput(CancellationToken cancellationToken)
         {
+            if (_outputReader == null) return;
+            
             try
             {
                 char[] buffer = new char[4096];
