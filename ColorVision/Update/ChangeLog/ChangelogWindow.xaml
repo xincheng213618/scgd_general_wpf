@@ -126,15 +126,17 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type local:ChangeLogEntry}">
                         <StackPanel Margin="0,0,0,20">
-                            <TextBlock Text="{Binding Version, StringFormat='## {0}'}" 
+                            <TextBox Text="{Binding Version, StringFormat='## {0}'}" 
                                        FontSize="18" 
-                                       FontWeight="Bold" 
+                                       FontWeight="Bold"
+                                       BorderThickness="0" IsReadOnly="True" Padding="0"
                                        Margin="0,10,0,5"/>
-                            <TextBlock Text="{Binding ReleaseDate, StringFormat='yyyy/MM/dd'}" 
+                            <TextBox Text="{Binding ReleaseDate, StringFormat='yyyy/MM/dd'}" 
                                        FontSize="12" 
                                        Foreground="Gray" 
+                                       BorderThickness="0" IsReadOnly="True" Padding="0"
                                        Margin="0,0,0,10"/>
-                            <TextBlock Text="{Binding ChangeLog}" 
+                            <TextBox Text="{Binding ChangeLog}" BorderThickness="0" IsReadOnly="True" Padding="0"
                                        TextWrapping="Wrap"/>
                         </StackPanel>
                     </DataTemplate>
