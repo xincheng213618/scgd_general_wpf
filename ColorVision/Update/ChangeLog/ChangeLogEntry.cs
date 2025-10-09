@@ -43,7 +43,7 @@ namespace ColorVision.Update
             set
             {
                 _isSelected = value;
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 

@@ -19,7 +19,7 @@ namespace ColorVision.Update
             set
             {
                 _isExpanded = value;
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -30,7 +30,7 @@ namespace ColorVision.Update
             set
             {
                 _isSelected = value;
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
     }
