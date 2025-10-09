@@ -109,59 +109,40 @@
                     </GridView>
                 </ListView.View>      
             </ListView>
-            
-            <ListView x:Name="ChangeLogDetailsPanel" Grid.Column="1" Margin="5,0,5,5" 
-                      Background="Transparent" BorderThickness="0"
-                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+
+            <ListView x:Name="ChangeLogDetailsPanel" Background="Transparent" Grid.Column="1" Margin="5,0,5,5" 
+                      BorderThickness="1"
                       SelectionChanged="ChangeLogDetailsPanel_SelectionChanged">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="ListViewItem">
-                                    <Border Background="{TemplateBinding Background}"
-                                            BorderBrush="{TemplateBinding BorderBrush}"
-                                            BorderThickness="{TemplateBinding BorderThickness}"
-                                            Padding="{TemplateBinding Padding}">
-                                        <ContentPresenter />
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsSelected" Value="True">
-                                            <Setter Property="Background" Value="Transparent"/>
-                                        </Trigger>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter Property="Background" Value="Transparent"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <VirtualizingStackPanel Margin="10" IsVirtualizing="True" VirtualizationMode="Recycling"/>
-                    </ItemsPanelTemplate>
-                </ListView.ItemsPanel>
-                <ListView.ItemTemplate>
-                    <DataTemplate DataType="{x:Type local:ChangeLogEntry}">
-                        <StackPanel Margin="0,0,0,20" Background="Transparent">
-                            <TextBox Text="{Binding Version, StringFormat='## {0}'}" 
+                <ListView.View>
+                    <GridView>
+                        <GridView.ColumnHeaderContainerStyle>
+                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                            </Style>
+                        </GridView.ColumnHeaderContainerStyle>
+                        <GridViewColumn>
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate DataType="{x:Type local:ChangeLogEntry}">
+                                    <StackPanel Background="Transparent" Margin="0,0,0,20" >
+                                        <TextBox Background="Transparent" Text="{Binding Version, StringFormat='## {0}'}" 
                                        FontSize="18" 
                                        FontWeight="Bold"
                                        BorderThickness="0" IsReadOnly="True" Padding="0"
                                        Margin="0,10,0,5"/>
-                            <TextBox Text="{Binding ReleaseDate, StringFormat='yyyy/MM/dd',Mode=OneWay}" 
+                                        <TextBox Background="Transparent" Text="{Binding ReleaseDate, StringFormat='yyyy/MM/dd',Mode=OneWay}" 
                                        FontSize="12" 
                                        Foreground="Gray" 
                                        BorderThickness="0" IsReadOnly="True" Padding="0"
                                        Margin="0,0,0,10"/>
-                            <TextBox Text="{Binding ChangeLog ,Mode=OneWay}" BorderThickness="0" IsReadOnly="True" Padding="0"
+                                        <TextBox Background="Transparent" Text="{Binding ChangeLog ,Mode=OneWay}" BorderThickness="0" IsReadOnly="True" Padding="0"
                                        TextWrapping="Wrap"/>
-                        </StackPanel>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
             </ListView>
         </Grid>
     </Grid>

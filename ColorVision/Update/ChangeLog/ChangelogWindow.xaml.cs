@@ -113,31 +113,17 @@ namespace ColorVision.Update
 
         private void ChangeLogListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_isUpdatingSelection) return;
-
             if (sender is ListView listView && listView.SelectedIndex > -1 && listView.SelectedItem is ChangeLogEntry selectedEntry)
             {
-                _isUpdatingSelection = true;
-                try
-                {
-                    // Synchronize selection in details panel
-                    ChangeLogDetailsPanel.SelectedItem = selectedEntry;
-                    ChangeLogDetailsPanel.ScrollIntoView(selectedEntry);
-                }
-                finally
-                {
-                    _isUpdatingSelection = false;
-                }
+                ChangeLogDetailsPanel.SelectedItem = selectedEntry;
+                ChangeLogDetailsPanel.ScrollIntoView(selectedEntry);
             }
         }
 
         private void ChangeLogDetailsPanel_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_isUpdatingSelection) return;
-
             if (sender is ListView listView && listView.SelectedIndex > -1 && listView.SelectedItem is ChangeLogEntry selectedEntry)
             {
-                _isUpdatingSelection = true;
                 try
                 {
                     // Synchronize selection in list view
