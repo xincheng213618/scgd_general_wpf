@@ -378,7 +378,6 @@ namespace ColorVision.ImageEditor.Draw.Special
                     ReferenceLine.Attribute.Pen = new Pen(ReferenceLine.Attribute.Brush, 1 / ReferenceLine.Ratio);
                     Image.MouseMove += MouseMove;
                     Image.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
-                    Image.PreviewMouseRightButtonDown += Image_PreviewMouseRightButtonDown;
                     Image.PreviewMouseUp += PreviewMouseUp;
                     Image.MouseDoubleClick += Image_MouseDoubleClick;
                     ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
@@ -391,7 +390,6 @@ namespace ColorVision.ImageEditor.Draw.Special
 
                     Image.MouseMove -= MouseMove;
                     Image.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
-                    Image.PreviewMouseRightButtonDown -= Image_PreviewMouseRightButtonDown;
                     Image.PreviewMouseUp -= PreviewMouseUp;
                     ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
                 }
@@ -419,28 +417,36 @@ namespace ColorVision.ImageEditor.Draw.Special
         }
 
 
+        /// <summary>
+        /// Handles mouse left button down event.
+        /// - Left-click: Sets the center point of the reference line
+        /// - Ctrl+Left-click: Sets rotation angle (drag to rotate)
+        /// </summary>
         private void PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (ReferenceLine.IsLocked) return;
 
-            ReferenceLine.RMouseDownP = Mouse.GetPosition(Image);
-            ReferenceLine.IsRMouseDown = true;
-            ReferenceLine.Render();
+            // Check if Ctrl key is pressed for rotation mode
+            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+            {
+                // Ctrl+Left-click for rotation
+                ReferenceLine.LMouseDownP = Mouse.GetPosition(Image);
+                ReferenceLine.IsLMouseDown = true;
+                ReferenceLine.PointLen = ReferenceLine.LMouseDownP - ReferenceLine.RMouseDownP;
+                ReferenceLine.Attribute.Angle = ReferenceLine.CalculateAngle(ReferenceLine.RMouseDownP, ReferenceLine.RMouseDownP + ReferenceLine.PointLen);
+                ReferenceLine.Render();
+            }
+            else
+            {
+                // Normal left-click for setting center point
+                ReferenceLine.RMouseDownP = Mouse.GetPosition(Image);
+                ReferenceLine.IsRMouseDown = true;
+                ReferenceLine.Render();
+            }
         }
 
 
-        private void Image_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            if (ReferenceLine.IsLocked) return;
 
-
-            ReferenceLine.LMouseDownP = Mouse.GetPosition(Image);
-            ReferenceLine.IsLMouseDown = true;
-            ReferenceLine.PointLen = ReferenceLine.LMouseDownP - ReferenceLine.RMouseDownP;
-            ReferenceLine.Attribute.Angle = ReferenceLine.CalculateAngle(ReferenceLine.RMouseDownP, ReferenceLine.RMouseDownP + ReferenceLine.PointLen);
-            ReferenceLine.Render();
-            e.Handled = true;
-        }
 
         private void PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
@@ -455,7 +461,11 @@ namespace ColorVision.ImageEditor.Draw.Special
 
 
 
-        // 2. 修改 MouseMove 方法
+        /// <summary>
+        /// Handles mouse move event to update reference line position/rotation while dragging
+        /// - During normal left-click drag: Updates center point
+        /// - During Ctrl+Left-click drag: Updates rotation angle
+        /// </summary>
         private void MouseMove(object sender, MouseEventArgs e)
         {
             if (IsChecked && !ReferenceLine.IsLocked && (ReferenceLine.IsRMouseDown || ReferenceLine.IsLMouseDown))
