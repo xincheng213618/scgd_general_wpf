@@ -117,3 +117,4 @@
 - [更新日志](changelog/)
 
 - [自动更新](update/)
+  - [更新日志窗口](update/changelog-window)

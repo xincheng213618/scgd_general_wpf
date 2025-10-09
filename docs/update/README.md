@@ -7,6 +7,7 @@
 - [Auto Update Flow](auto-update-flow.md) - 自动更新流程和机制
 - [Version Management](version-management.md) - 版本控制和发布策略
 - [Update Rollback](update-rollback.md) - 更新失败回滚机制
+- [Changelog Window](changelog-window.md) - 更新日志窗口详细文档
 
 ## 概述
 
