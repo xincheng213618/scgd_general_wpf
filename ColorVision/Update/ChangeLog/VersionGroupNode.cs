@@ -1,6 +1,7 @@
 using ColorVision.Common.MVVM;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Windows.Controls;
 
 namespace ColorVision.Update
 {
@@ -40,6 +41,7 @@ namespace ColorVision.Update
     /// </summary>
     public class MajorVersionNode : VersionTreeNode
     {
+        public ContextMenu ContextMenu { get; set; }
         public int MajorVersion { get; set; }
         public ObservableCollection<MinorVersionNode> MinorVersions { get; set; } = new ObservableCollection<MinorVersionNode>();
     }
@@ -49,6 +51,7 @@ namespace ColorVision.Update
     /// </summary>
     public class MinorVersionNode : VersionTreeNode
     {
+        public ContextMenu ContextMenu { get; set; }
         public int MajorVersion { get; set; }
         public int MinorVersion { get; set; }
         public ObservableCollection<ChangeLogEntry> Entries { get; set; } = new ObservableCollection<ChangeLogEntry>();

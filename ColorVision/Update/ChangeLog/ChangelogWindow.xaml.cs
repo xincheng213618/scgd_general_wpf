@@ -110,10 +110,13 @@ namespace ColorVision.Update
 
         private void ChangeLogListView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            if (sender is ListView listView && listView.SelectedIndex > -1 && listView.SelectedItem is ChangeLogEntry selectedEntry)
+            if (sender is TreeView treeView && treeView.SelectedItem is ChangeLogEntry selectedEntry)
             {
-                ChangeLogDetailsPanel.SelectedItem = selectedEntry;
-                ChangeLogDetailsPanel.ScrollIntoView(selectedEntry);
+                if (ChangeLogDetailsPanel.SelectedItem != selectedEntry)
+                {
+                    ChangeLogDetailsPanel.SelectedItem = selectedEntry;
+                    ChangeLogDetailsPanel.ScrollIntoView(selectedEntry);
+                }
             }
         }
 
@@ -123,7 +126,6 @@ namespace ColorVision.Update
             {
                 try
                 {
-                    // Find and select the entry in TreeView
                     SelectEntryInTreeView(selectedEntry);
                 }
                 finally
@@ -347,6 +349,17 @@ namespace ColorVision.Update
                 catch (TaskCanceledException)
                 {
                     // Search was cancelled, ignore
+                }
+            }
+        }
+
+        private void TextBox_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (sender is TextBox textBox && textBox.Tag is ChangeLogEntry selectedEntry)
+            {
+                if (ChangeLogDetailsPanel.SelectedItem != selectedEntry)
+                {
+                    ChangeLogDetailsPanel.SelectedItem = selectedEntry;
                 }
             }
         }
