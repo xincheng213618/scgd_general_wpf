@@ -15,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ColorVision.Update
 {
@@ -62,6 +63,7 @@ namespace ColorVision.Update
 
         public static ChangelogWindowConfig WindowConfig => ConfigService.Instance.GetRequiredService<ChangelogWindowConfig>();
 
+        private bool _isUpdatingSelection = false;
 
         public ChangelogWindow()
         {
@@ -96,6 +98,9 @@ namespace ColorVision.Update
                     ChangeLogEntrys = Parse(changelogContent);
                     ChangeLogListView.ItemsSource = ChangeLogEntrys;
                     ChangeLogDetailsPanel.ItemsSource = ChangeLogEntrys;
+                    
+                    // Attach scroll event after items are loaded
+                    ChangeLogDetailsPanel.Loaded += ChangeLogDetailsPanel_Loaded;
                 }
                 else
                 {
@@ -110,15 +115,117 @@ namespace ColorVision.Update
             }
         }
 
+        private ScrollViewer _detailScrollViewer;
+
+        private void ChangeLogDetailsPanel_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (_detailScrollViewer == null)
+            {
+                _detailScrollViewer = FindScrollViewer(ChangeLogDetailsPanel);
+                if (_detailScrollViewer != null)
+                {
+                    _detailScrollViewer.ScrollChanged += DetailScrollViewer_ScrollChanged;
+                }
+            }
+        }
+
+        private ScrollViewer FindScrollViewer(DependencyObject obj)
+        {
+            if (obj is ScrollViewer scrollViewer)
+                return scrollViewer;
+
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(obj); i++)
+            {
+                var child = VisualTreeHelper.GetChild(obj, i);
+                var result = FindScrollViewer(child);
+                if (result != null)
+                    return result;
+            }
+            return null;
+        }
+
+        private void DetailScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            if (_isUpdatingSelection) return;
+
+            // Find the first visible item in the detail panel
+            if (ChangeLogDetailsPanel.ItemsSource is IEnumerable<ChangeLogEntry> items)
+            {
+                ChangeLogEntry firstVisibleItem = null;
+                double minDistance = double.MaxValue;
+
+                foreach (var item in items)
+                {
+                    var container = ChangeLogDetailsPanel.ItemContainerGenerator.ContainerFromItem(item);
+                    if (container is FrameworkElement element)
+                    {
+                        var transform = element.TransformToAncestor(_detailScrollViewer);
+                        var position = transform.Transform(new Point(0, 0));
+                        
+                        // Check if item is visible in viewport
+                        if (position.Y >= 0 && position.Y < _detailScrollViewer.ViewportHeight)
+                        {
+                            if (position.Y < minDistance)
+                            {
+                                minDistance = position.Y;
+                                firstVisibleItem = item;
+                            }
+                        }
+                    }
+                }
+
+                if (firstVisibleItem != null && ChangeLogListView.SelectedItem != firstVisibleItem)
+                {
+                    _isUpdatingSelection = true;
+                    try
+                    {
+                        ChangeLogListView.SelectedItem = firstVisibleItem;
+                        ChangeLogListView.ScrollIntoView(firstVisibleItem);
+                    }
+                    finally
+                    {
+                        _isUpdatingSelection = false;
+                    }
+                }
+            }
+        }
+
+        private void DetailItem_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement element && element.DataContext is ChangeLogEntry entry)
+            {
+                _isUpdatingSelection = true;
+                try
+                {
+                    ChangeLogListView.SelectedItem = entry;
+                    ChangeLogListView.ScrollIntoView(entry);
+                }
+                finally
+                {
+                    _isUpdatingSelection = false;
+                }
+            }
+        }
+
         private void ChangeLogListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (_isUpdatingSelection) return;
+
             if (sender is ListView listView && listView.SelectedIndex > -1 && listView.SelectedItem is ChangeLogEntry selectedEntry)
             {
-                // Scroll the details panel to the selected entry
-                var container = ChangeLogDetailsPanel.ItemContainerGenerator.ContainerFromItem(selectedEntry);
-                if (container is FrameworkElement element)
+                _isUpdatingSelection = true;
+                try
                 {
-                    element.BringIntoView();
+                    // Scroll the details panel to the selected entry
+                    var container = ChangeLogDetailsPanel.ItemContainerGenerator.ContainerFromItem(selectedEntry);
+                    if (container is FrameworkElement element)
+                    {
+                        element.BringIntoView();
+                    }
+                }
+                finally
+                {
+                    _isUpdatingSelection = false;
                 }
             }
         }
