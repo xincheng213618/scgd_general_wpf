@@ -115,30 +115,39 @@ namespace ColorVision.Update
             
             foreach (var entry in ChangeLogEntrys)
             {
-                var versionBlock = new TextBlock
+                var versionBlock = new TextBox
                 {
                     Text = $"## {entry.Version}",
                     FontSize = 18,
                     FontWeight = FontWeights.Bold,
                     Margin = new Thickness(0, 10, 0, 5),
-                    Tag = entry
+                    Tag = entry,
+                    Padding = new Thickness(0),
+                    BorderThickness = new Thickness(0),
+                    IsReadOnly = true
                 };
                 ChangeLogDetailsPanel.Children.Add(versionBlock);
 
-                var dateBlock = new TextBlock
+                var dateBlock = new TextBox
                 {
                     Text = entry.ReleaseDate.ToString("yyyy/MM/dd"),
                     FontSize = 12,
                     Foreground = System.Windows.Media.Brushes.Gray,
-                    Margin = new Thickness(0, 0, 0, 10)
+                    Margin = new Thickness(0, 0, 0, 10),
+                    Padding = new Thickness(0),
+                    BorderThickness = new Thickness(0),
+                    IsReadOnly = true
                 };
                 ChangeLogDetailsPanel.Children.Add(dateBlock);
 
-                var changesBlock = new TextBlock
+                var changesBlock = new TextBox
                 {
                     Text = entry.ChangeLog,
                     TextWrapping = TextWrapping.Wrap,
-                    Margin = new Thickness(0, 0, 0, 20)
+                    Margin = new Thickness(0, 0, 0, 20),
+                    Padding = new Thickness(0),
+                    BorderThickness = new Thickness(0),
+                    IsReadOnly = true
                 };
                 ChangeLogDetailsPanel.Children.Add(changesBlock);
             }
@@ -150,7 +159,7 @@ namespace ColorVision.Update
             {
                 foreach (var child in ChangeLogDetailsPanel.Children)
                 {
-                    if (child is TextBlock textBlock && textBlock.Tag is ChangeLogEntry entry && entry == selectedEntry)
+                    if (child is TextBox textBlock && textBlock.Tag is ChangeLogEntry entry && entry == selectedEntry)
                     {
                         textBlock.BringIntoView();
                         break;
@@ -275,30 +284,39 @@ namespace ColorVision.Update
             
             foreach (var entry in filteredEntries)
             {
-                var versionBlock = new TextBlock
+                var versionBlock = new TextBox
                 {
                     Text = $"## {entry.Version}",
                     FontSize = 18,
                     FontWeight = FontWeights.Bold,
                     Margin = new Thickness(0, 10, 0, 5),
-                    Tag = entry
+                    Tag = entry,
+                    Padding = new Thickness(0),
+                    BorderThickness = new Thickness(0),
+                    IsReadOnly =true
                 };
                 ChangeLogDetailsPanel.Children.Add(versionBlock);
 
-                var dateBlock = new TextBlock
+                var dateBlock = new TextBox
                 {
                     Text = entry.ReleaseDate.ToString("yyyy/MM/dd"),
                     FontSize = 12,
                     Foreground = System.Windows.Media.Brushes.Gray,
-                    Margin = new Thickness(0, 0, 0, 10)
+                    Margin = new Thickness(0, 0, 0, 10),
+                    Padding = new Thickness(0),
+                    BorderThickness = new Thickness(0),
+                    IsReadOnly = true
                 };
                 ChangeLogDetailsPanel.Children.Add(dateBlock);
 
-                var changesBlock = new TextBlock
+                var changesBlock = new TextBox
                 {
                     Text = entry.ChangeLog,
                     TextWrapping = TextWrapping.Wrap,
-                    Margin = new Thickness(0, 0, 0, 20)
+                    Margin = new Thickness(0, 0, 0, 20),
+                    Padding = new Thickness(0),
+                    BorderThickness = new Thickness(0),
+                    IsReadOnly = true
                 };
                 ChangeLogDetailsPanel.Children.Add(changesBlock);
             }
