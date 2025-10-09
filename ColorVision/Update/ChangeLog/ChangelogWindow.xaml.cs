@@ -12,6 +12,7 @@ using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -94,7 +95,7 @@ namespace ColorVision.Update
                     string changelogContent = File.ReadAllText(changelogPath);
                     ChangeLogEntrys = Parse(changelogContent);
                     ChangeLogListView.ItemsSource = ChangeLogEntrys;
-                    PopulateChangeLogDetails();
+                    ChangeLogDetailsPanel.ItemsSource = ChangeLogEntrys;
                 }
                 else
                 {
@@ -109,52 +110,15 @@ namespace ColorVision.Update
             }
         }
 
-        private void PopulateChangeLogDetails()
-        {
-            ChangeLogDetailsPanel.Children.Clear();
-            
-            foreach (var entry in ChangeLogEntrys)
-            {
-                var versionBlock = new TextBlock
-                {
-                    Text = $"## {entry.Version}",
-                    FontSize = 18,
-                    FontWeight = FontWeights.Bold,
-                    Margin = new Thickness(0, 10, 0, 5),
-                    Tag = entry
-                };
-                ChangeLogDetailsPanel.Children.Add(versionBlock);
-
-                var dateBlock = new TextBlock
-                {
-                    Text = entry.ReleaseDate.ToString("yyyy/MM/dd"),
-                    FontSize = 12,
-                    Foreground = System.Windows.Media.Brushes.Gray,
-                    Margin = new Thickness(0, 0, 0, 10)
-                };
-                ChangeLogDetailsPanel.Children.Add(dateBlock);
-
-                var changesBlock = new TextBlock
-                {
-                    Text = entry.ChangeLog,
-                    TextWrapping = TextWrapping.Wrap,
-                    Margin = new Thickness(0, 0, 0, 20)
-                };
-                ChangeLogDetailsPanel.Children.Add(changesBlock);
-            }
-        }
-
         private void ChangeLogListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (sender is ListView listView && listView.SelectedIndex > -1 && listView.SelectedItem is ChangeLogEntry selectedEntry)
             {
-                foreach (var child in ChangeLogDetailsPanel.Children)
+                // Scroll the details panel to the selected entry
+                var container = ChangeLogDetailsPanel.ItemContainerGenerator.ContainerFromItem(selectedEntry);
+                if (container is FrameworkElement element)
                 {
-                    if (child is TextBlock textBlock && textBlock.Tag is ChangeLogEntry entry && entry == selectedEntry)
-                    {
-                        textBlock.BringIntoView();
-                        break;
-                    }
+                    element.BringIntoView();
                 }
             }
         }
@@ -241,66 +205,49 @@ namespace ColorVision.Update
         private readonly char[] Chars1 = new[] { ' ' };
 
         public List<ChangeLogEntry> filteredResults { get; set; } = new List<ChangeLogEntry>();
+        
+        private CancellationTokenSource _searchCts;
+        private const int SearchDebounceMs = 300;
 
-        private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
+        private async void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (sender is TextBox textBox)
             {
-                if (string.IsNullOrWhiteSpace(textBox.Text))
+                // Cancel any pending search
+                _searchCts?.Cancel();
+                _searchCts = new CancellationTokenSource();
+                var token = _searchCts.Token;
+
+                try
                 {
-                    ChangeLogListView.ItemsSource = ChangeLogEntrys;
-                    PopulateChangeLogDetails();
+                    // Debounce: wait for user to stop typing
+                    await Task.Delay(SearchDebounceMs, token);
+
+                    if (string.IsNullOrWhiteSpace(textBox.Text))
+                    {
+                        ChangeLogListView.ItemsSource = ChangeLogEntrys;
+                        ChangeLogDetailsPanel.ItemsSource = ChangeLogEntrys;
+                    }
+                    else if (ChangeLogEntrys != null)
+                    {
+                        var keywords = textBox.Text.Split(Chars1, StringSplitOptions.RemoveEmptyEntries);
+
+                        filteredResults = ChangeLogEntrys
+                            .Where(entry => keywords.All(keyword =>
+                                (!string.IsNullOrEmpty(entry.Version) && entry.Version.Contains(keyword, StringComparison.OrdinalIgnoreCase)) ||
+                                entry.ReleaseDate.ToString("yyyy-MM-dd").Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                                entry.ChangeLog.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                            ))
+                            .ToList();
+
+                        ChangeLogListView.ItemsSource = filteredResults;
+                        ChangeLogDetailsPanel.ItemsSource = filteredResults;
+                    }
                 }
-                else if (ChangeLogEntrys != null)
+                catch (TaskCanceledException)
                 {
-                    var keywords = textBox.Text.Split(Chars1, StringSplitOptions.RemoveEmptyEntries);
-
-                    filteredResults = ChangeLogEntrys
-                        .Where(entry => keywords.All(keyword =>
-                            (!string.IsNullOrEmpty(entry.Version) && entry.Version.Contains(keyword, StringComparison.OrdinalIgnoreCase)) ||
-                            entry.ReleaseDate.ToString("yyyy-MM-dd").Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
-                            entry.ChangeLog.Contains(keyword, StringComparison.OrdinalIgnoreCase)
-                        ))
-                        .ToList();
-
-                    ChangeLogListView.ItemsSource = filteredResults;
-                    PopulateFilteredChangeLogDetails(filteredResults);
+                    // Search was cancelled, ignore
                 }
-            }
-        }
-
-        private void PopulateFilteredChangeLogDetails(List<ChangeLogEntry> filteredEntries)
-        {
-            ChangeLogDetailsPanel.Children.Clear();
-            
-            foreach (var entry in filteredEntries)
-            {
-                var versionBlock = new TextBlock
-                {
-                    Text = $"## {entry.Version}",
-                    FontSize = 18,
-                    FontWeight = FontWeights.Bold,
-                    Margin = new Thickness(0, 10, 0, 5),
-                    Tag = entry
-                };
-                ChangeLogDetailsPanel.Children.Add(versionBlock);
-
-                var dateBlock = new TextBlock
-                {
-                    Text = entry.ReleaseDate.ToString("yyyy/MM/dd"),
-                    FontSize = 12,
-                    Foreground = System.Windows.Media.Brushes.Gray,
-                    Margin = new Thickness(0, 0, 0, 10)
-                };
-                ChangeLogDetailsPanel.Children.Add(dateBlock);
-
-                var changesBlock = new TextBlock
-                {
-                    Text = entry.ChangeLog,
-                    TextWrapping = TextWrapping.Wrap,
-                    Margin = new Thickness(0, 0, 0, 20)
-                };
-                ChangeLogDetailsPanel.Children.Add(changesBlock);
             }
         }
     }
