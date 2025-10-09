@@ -417,6 +417,11 @@ namespace ColorVision.ImageEditor.Draw.Special
         }
 
 
+        /// <summary>
+        /// Handles mouse left button down event.
+        /// - Left-click: Sets the center point of the reference line
+        /// - Ctrl+Left-click: Sets rotation angle (drag to rotate)
+        /// </summary>
         private void PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (ReferenceLine.IsLocked) return;
@@ -456,7 +461,11 @@ namespace ColorVision.ImageEditor.Draw.Special
 
 
 
-        // 2. 修改 MouseMove 方法
+        /// <summary>
+        /// Handles mouse move event to update reference line position/rotation while dragging
+        /// - During normal left-click drag: Updates center point
+        /// - During Ctrl+Left-click drag: Updates rotation angle
+        /// </summary>
         private void MouseMove(object sender, MouseEventArgs e)
         {
             if (IsChecked && !ReferenceLine.IsLocked && (ReferenceLine.IsRMouseDown || ReferenceLine.IsLMouseDown))
