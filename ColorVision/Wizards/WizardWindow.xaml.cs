@@ -59,6 +59,8 @@ namespace ColorVision.Wizards
         public partial class WizardWindow : Window
     {
         public static WizardWindowConfig WindowConfig => WizardWindowConfig.Instance;
+        private int _currentStepIndex = 0;
+        private List<IWizardStep> _wizardSteps;
 
         public WizardWindow()
         {
@@ -71,15 +73,66 @@ namespace ColorVision.Wizards
         {
             WizardManager.GetInstance().Initialized();
             this.DataContext = WindowConfig;
-            List<IWizardStep> IWizardSteps = WizardManager.GetInstance().IWizardSteps;
+            _wizardSteps = WizardManager.GetInstance().IWizardSteps;
 
-            ListWizard.ItemsSource = IWizardSteps;
-            ListWizard.SelectionChanged += (s, e) =>
+            ListWizard.ItemsSource = _wizardSteps;
+            
+            if (_wizardSteps.Count > 0)
             {
-                if (ListWizard.SelectedIndex == -1) return;
-                BorderContent.DataContext = IWizardSteps[ListWizard.SelectedIndex];
-            };
-            if (IWizardSteps.Count > 0) ListWizard.SelectedIndex = 0;
+                _currentStepIndex = 0;
+                ShowCurrentStep();
+            }
+        }
+
+        private void ShowCurrentStep()
+        {
+            if (_wizardSteps == null || _wizardSteps.Count == 0) return;
+
+            // Update step indicator
+            StepIndicator.Text = $"步骤 {_currentStepIndex + 1} / {_wizardSteps.Count}";
+            
+            // Update progress bar
+            WizardProgress.Value = (_currentStepIndex + 1) * 100.0 / _wizardSteps.Count;
+
+            // Show current step content
+            BorderContent.DataContext = _wizardSteps[_currentStepIndex];
+            
+            // Update ListView selection to show which step we're on
+            ListWizard.SelectedIndex = _currentStepIndex;
+
+            // Update button states
+            BtnPrevious.IsEnabled = _currentStepIndex > 0;
+            
+            if (_currentStepIndex < _wizardSteps.Count - 1)
+            {
+                // Not on last step - show Next button
+                BtnNext.Visibility = Visibility.Visible;
+                BtnFinish.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                // On last step - show Finish button
+                BtnNext.Visibility = Visibility.Collapsed;
+                BtnFinish.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void Previous_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentStepIndex > 0)
+            {
+                _currentStepIndex--;
+                ShowCurrentStep();
+            }
+        }
+
+        private void Next_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentStepIndex < _wizardSteps.Count - 1)
+            {
+                _currentStepIndex++;
+                ShowCurrentStep();
+            }
         }
 
         private void ConfigurationComplete_Click(object sender, RoutedEventArgs e)

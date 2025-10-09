@@ -3,8 +3,6 @@
 	<PropertyGroup>
 		<UseWPF>true</UseWPF>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-		<SignAssembly>True</SignAssembly>
-		<AssemblyOriginatorKeyFile>$(SolutionDir)ColorVision.snk</AssemblyOriginatorKeyFile>
 		<VersionPrefix>1.3.11.3</VersionPrefix>
 		<TargetFrameworks>net8.0-windows;net6.0-windows;net48</TargetFrameworks>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>

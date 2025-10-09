@@ -4,10 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.ImageEditor"
-             xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
              xmlns:converter="clr-namespace:ColorVision.ImageEditor.Draw.Converter"
              xmlns:hc="https://handyorg.github.io/handycontrol"
-             xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:ImageViewModel}"
@@ -71,29 +69,28 @@
             <Grid Background="{StaticResource SmallGridLinesDrawingBrush}"  Visibility="Collapsed"/>
 
             <Grid x:Name="ZoomGrid" Background="{StaticResource TransparentGridBrush}">
-                <local:Zoombox x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}" Grid.Row="1" Grid.RowSpan="2">
+                <local:Zoombox x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}" Grid.ColumnSpan="2">
                     <local:DrawCanvas x:Name="ImageShow"  x:FieldModifier="public" FocusVisualStyle="{x:Null}"   RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto">
                     </local:DrawCanvas>
 
                 </local:Zoombox>
-                
-                <ComboBox x:Name="ComboBoxLayers" HorizontalAlignment="Right" VerticalAlignment="Top"  Style="{StaticResource ComboBox.Small}" x:FieldModifier="public"  SelectedIndex="0" Margin="5"/>
-                <ToolBar x:Name="ToolBarAl"  x:FieldModifier="public" Style="{StaticResource ToolBarBaseStyle}" Background="Transparent" ToolBarTray.IsLocked="True"  VerticalAlignment="Bottom" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Left" Visibility="Visible">
+
+                <ComboBox x:Name="ComboBoxLayers" HorizontalAlignment="Right" VerticalAlignment="Top"  Style="{StaticResource ComboBox.Small}" x:FieldModifier="public"  SelectedIndex="0" Margin="0,5,5,0" Grid.Column="1"/>
+                <ToolBar x:Name="ToolBarAl"  x:FieldModifier="public" Style="{StaticResource ToolBarBaseStyle}" Background="Transparent" ToolBarTray.IsLocked="True"  VerticalAlignment="Bottom" Grid.Row="0"  HorizontalAlignment="Left" Visibility="Visible">
                     <ComboBox x:Name="ComboxPOITemplate"  x:FieldModifier="public" Width="100" HorizontalAlignment="Left" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
                 </ToolBar>
 
-                <ToolBarTray x:Name="ToolBarDraw" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}" HorizontalAlignment="Center" VerticalAlignment="Bottom" >
+                <ToolBarTray x:Name="ToolBarDraw" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Grid.Column="1"  >
                     <ToolBar ToolBarTray.IsLocked="True"  >
                     </ToolBar>
 
                 </ToolBarTray>
 
-                <ToolBarTray x:Name="ToolBarTop" VerticalAlignment="Top" Grid.Row="0"  HorizontalAlignment="Center">
+                <ToolBarTray x:Name="ToolBarTop" VerticalAlignment="Top" Grid.Row="0"  HorizontalAlignment="Center" Grid.Column="1">
                     <ToolBar  ToolBarTray.IsLocked="True" Margin="0,2,4,0" >
                         <ToggleButton IsChecked="{Binding ImageEditMode}"  Margin="1,0">
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
                         </ToggleButton>
-                        <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}"/>
                     </ToolBar>
                 </ToolBarTray>
 
@@ -102,12 +99,12 @@
                     </ToolBar>
                 </ToolBarTray>
 
-                <ToolBarTray x:Name="ToolBarRight" x:FieldModifier="public"  Orientation="Vertical" Margin="2,50,2,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top">
+                <ToolBarTray x:Name="ToolBarRight" Orientation="Vertical" Margin="0,50,2,0" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top" Grid.Column="1">
                     <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
                         <ToggleButton x:Name="AdvancedButton" Margin="0,0,0,2"  Padding="5">
                             <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIExpand}" />
                         </ToggleButton>
-                        <Button x:Name="Button1931" x:FieldModifier="public" Margin="0,0,0,2" Padding="5" Visibility="Collapsed">
+                        <Button x:Name="Button1931" x:FieldModifier="public" Margin="0,0,0,2" Padding="5" >
                             <Image Style="{StaticResource ToolBarImage}"  Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png"/>
                         </Button>
                         <StackPanel>
@@ -139,13 +136,6 @@
                         </StackPanel>
                     </ToolBar>
                 </ToolBarTray>
-
-
-                <Border x:Name="BorderPropertieslayers" Background="#55000000" Visibility="Collapsed" Grid.Row="1" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="20" CornerRadius="10" >
-                    <StackPanel Margin="10">
-                        <TextBlock x:Name="InfoText" Text="" Foreground="White"  HorizontalAlignment="Center" />
-                    </StackPanel>
-                </Border>
             </Grid>
         </Grid>
 

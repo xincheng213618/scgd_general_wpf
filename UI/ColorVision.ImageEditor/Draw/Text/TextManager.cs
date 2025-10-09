@@ -48,13 +48,13 @@ namespace ColorVision.ImageEditor.Draw
                 _IsChecked = value;
                 if (value)
                 {
-                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
+                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(this);
                     ImageViewModel.SlectStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(Config));
                     Load();
                 }
                 else
                 {
-                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(null);
+                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
                     ImageViewModel.SlectStackPanel.Children.Clear();
                     UnLoad();
                 }

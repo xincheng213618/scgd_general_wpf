@@ -32,7 +32,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
                 _IsChecked = value;
                 if (value)
                 {
-                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
+                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(this);
 
                     DrawCanvas.PreviewKeyDown += PreviewKeyDown;
                     DrawCanvas.PreviewMouseLeftButtonDown += MouseDown;
@@ -42,7 +42,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
                 }
                 else
                 {
-                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(null);
+                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
 
                     DrawCanvas.PreviewKeyDown -= PreviewKeyDown;
                     DrawCanvas.PreviewMouseLeftButtonDown -= MouseDown;

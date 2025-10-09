@@ -28,7 +28,7 @@ namespace ColorVision.Rbac
     /// </summary>
     public partial class RbacManagerWindow : Window, INotifyPropertyChanged
     {
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
         
         private void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string propertyName = null)
         {

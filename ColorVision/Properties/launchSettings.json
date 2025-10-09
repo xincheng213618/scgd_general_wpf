@@ -2,6 +2,7 @@
   "profiles": {
     "ColorVision": {
       "commandName": "Project",
+      "commandLineArgs": "-r",
       "nativeDebugging": false,
       "hotReloadEnabled": true
     }

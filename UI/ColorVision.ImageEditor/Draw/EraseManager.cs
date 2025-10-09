@@ -33,13 +33,13 @@ namespace ColorVision.ImageEditor.Draw
                 _IsChecked = value;
                 if (value)
                 {
-                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
+                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(this);
                     Zoombox1.Cursor = Input.Cursors.Eraser;
                     Load();
                 }
                 else
                 {
-                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(null);
+                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
                     Zoombox1.Cursor = Cursors.Cross;
                     UnLoad();
                 }

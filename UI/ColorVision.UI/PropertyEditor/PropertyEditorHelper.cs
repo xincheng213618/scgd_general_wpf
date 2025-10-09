@@ -55,7 +55,7 @@ namespace ColorVision.UI
 
             public ResourceCache()
             {
-                var app = Application.Current ?? throw new InvalidOperationException("Application.Current 未初始化");
+                var app = Application.Current ?? throw new InvalidOperationException(Properties.Resources.ApplicationCurrentNotInitialized);
 
                 GlobalTextBrush = (Brush)app.FindResource("GlobalTextBrush");
                 GlobalBorderBrush = (Brush)app.FindResource("GlobalBorderBrush");
@@ -64,7 +64,7 @@ namespace ColorVision.UI
                 ComboBoxSmallStyle = (Style)app.FindResource("ComboBox.Small");
                 TextBoxSmallStyle = (Style)app.FindResource("TextBox.Small");
                 Bool2VisibilityConverter = app.TryFindResource("bool2VisibilityConverter") as IValueConverter
-                    ?? throw new InvalidOperationException("bool2VisibilityConverter 资源未找到");
+                    ?? throw new InvalidOperationException(Properties.Resources.Bool2VisibilityConverterNotFound);
             }
         }
         // Cached resource lookups per app lifetime (lookups are cheap but repeated hundreds of times in dynamic editors)
@@ -304,7 +304,7 @@ namespace ColorVision.UI
             var button = new Button
             {
                 Margin = new Thickness(5, 0, 0, 0),
-                Content = "执行",
+                Content = Properties.Resources.Execute,
                 Command = command
             };
 

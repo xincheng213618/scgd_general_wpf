@@ -98,7 +98,7 @@ namespace ColorVision.UI.Plugins
             Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
             Application.Current.Dispatcher.Invoke(() =>
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), "是否更新", Name, MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.ConfirmUpdate, Name, MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{PackageName}-{version}.zip";
                     string url = $"{PluginLoaderrConfig.Instance.PluginUpdatePath}{PackageName}/{PackageName}-{version}.zip";
@@ -141,7 +141,7 @@ namespace ColorVision.UI.Plugins
 
         public void Delete()
         {
-            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否确认删除插件{Name}", Resources.PluginManagerWindow, MessageBoxButton.YesNo) == MessageBoxResult.No) return;
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.ConfirmDeletePlugin, Name), Resources.PluginManagerWindow, MessageBoxButton.YesNo) == MessageBoxResult.No) return;
 
             PluginUpdater.DeletePlugin(PackageName);
         }

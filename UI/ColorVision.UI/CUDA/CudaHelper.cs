@@ -34,7 +34,7 @@ namespace ColorVision.UI.CUDA
                     Type = ConfigSettingType.Bool,
                     Order = 1,
                     Name = "CUDA",
-                    Description = "是否启用CUDA",
+                    Description = Properties.Resources.EnableCUDA,
                     BindingName = nameof(IsEnabled),
                     Source = Instance
                 };

@@ -292,4 +292,205 @@
   <data name="Options" xml:space="preserve">
     <value>选项</value>
   </data>
+  <data name="NoLocalLog4Output" xml:space="preserve">
+    <value>没有配置本地的log4输出</value>
+  </data>
+  <data name="UpdateLog4NetLevel" xml:space="preserve">
+    <value>更新Log4Net 日志级别：</value>
+  </data>
+  <data name="ViewMode1" xml:space="preserve">
+    <value>视图模式1</value>
+  </data>
+  <data name="ViewMode2" xml:space="preserve">
+    <value>视图模式2</value>
+  </data>
+  <data name="ViewMode4" xml:space="preserve">
+    <value>视图模式4</value>
+  </data>
+  <data name="ViewMode9" xml:space="preserve">
+    <value>视图模式9</value>
+  </data>
+  <data name="CheckPluginUpdates" xml:space="preserve">
+    <value>检测插件更新</value>
+  </data>
+  <data name="CheckingForAdditionalProjects" xml:space="preserve">
+    <value>正在检索是否存在附加项目</value>
+  </data>
+  <data name="Download" xml:space="preserve">
+    <value>下载</value>
+  </data>
+  <data name="ProjectNotFound" xml:space="preserve">
+    <value>找不到项目{0}</value>
+  </data>
+  <data name="FoundProjectDownloadConfirm" xml:space="preserve">
+    <value>找到项目{0}，{1}，是否下载</value>
+  </data>
+  <data name="AllFiles" xml:space="preserve">
+    <value>所有文件 (*.*)|*.*</value>
+  </data>
+  <data name="UnsupportedFileFormat" xml:space="preserve">
+    <value>不支持的文件格式</value>
+  </data>
+  <data name="SortOptions" xml:space="preserve">
+    <value>排序选项</value>
+  </data>
+  <data name="SmartSortAscending" xml:space="preserve">
+    <value>智能排序 (升序)</value>
+  </data>
+  <data name="SmartSortDescending" xml:space="preserve">
+    <value>智能排序 (降序)</value>
+  </data>
+  <data name="SortByColumn" xml:space="preserve">
+    <value>按 {0} 排序</value>
+  </data>
+  <data name="Ascending" xml:space="preserve">
+    <value>升序</value>
+  </data>
+  <data name="Descending" xml:space="preserve">
+    <value>降序</value>
+  </data>
+  <data name="ConfirmUpdate" xml:space="preserve">
+    <value>是否更新</value>
+  </data>
+  <data name="ConfirmDeletePlugin" xml:space="preserve">
+    <value>是否确认删除插件{0}</value>
+  </data>
+  <data name="EnableCUDA" xml:space="preserve">
+    <value>是否启用CUDA</value>
+  </data>
+  <data name="CheckingCUDASupport" xml:space="preserve">
+    <value>正在检测是否支持CUDA</value>
+  </data>
+  <data name="ConfigurationParameters" xml:space="preserve">
+    <value>配置相关参数</value>
+  </data>
+  <data name="EnableScheduledBackup" xml:space="preserve">
+    <value>是否启用定时备份</value>
+  </data>
+  <data name="MaxBackupCount" xml:space="preserve">
+    <value>最大备份数量</value>
+  </data>
+  <data name="AutoCleanOldBackups" xml:space="preserve">
+    <value>超过则自动清理旧备份</value>
+  </data>
+  <data name="ConfigFileResetDueToError" xml:space="preserve">
+    <value>配置文件异常,已经重置</value>
+  </data>
+  <data name="ConfigFileRestored" xml:space="preserve">
+    <value>配置文件已从最近备份恢复</value>
+  </data>
+  <data name="RestoreConfigFileFailed" xml:space="preserve">
+    <value>恢复配置文件失败</value>
+  </data>
+  <data name="BackupConfigFileFailed" xml:space="preserve">
+    <value>备份配置文件失败</value>
+  </data>
+  <data name="CleanupBackupFailed" xml:space="preserve">
+    <value>清理备份文件失败</value>
+  </data>
+  <data name="SaveSingleConfigFailed" xml:space="preserve">
+    <value>保存单个配置 {0} 失败</value>
+  </data>
+  <data name="WriteConfigFileFailed" xml:space="preserve">
+    <value>写入配置文件 {0} 失败</value>
+  </data>
+  <data name="Execute" xml:space="preserve">
+    <value>执行</value>
+  </data>
+  <data name="OpenContainingFolder" xml:space="preserve">
+    <value>打开所在文件夹</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>打开文件夹</value>
+  </data>
+  <data name="OnlineCronGenerator" xml:space="preserve">
+    <value>在线Cron表达式生成器</value>
+  </data>
+  <data name="PluginMissingId" xml:space="preserve">
+    <value>插件 {0} 缺少唯一Id，已跳过</value>
+  </data>
+  <data name="DependencyDllNotFound" xml:space="preserve">
+    <value>依赖 {0} 未找到对应的dll: {1}</value>
+  </data>
+  <data name="DependencyVersionInsufficient" xml:space="preserve">
+    <value>依赖 {0} 版本不足，要求: {1}，实际: {2}</value>
+  </data>
+  <data name="DependencyCheckException" xml:space="preserve">
+    <value>检查依赖 {0} 版本时发生异常: {1}</value>
+  </data>
+  <data name="LoadingPlugin" xml:space="preserve">
+    <value>加载插件: {0}</value>
+  </data>
+  <data name="PluginDllNotFound" xml:space="preserve">
+    <value>插件DLL不存在: {0}</value>
+  </data>
+  <data name="LoadedPluginWithoutManifest" xml:space="preserve">
+    <value>加载了没有manifest的插件: {0}</value>
+  </data>
+  <data name="PluginLoadError" xml:space="preserve">
+    <value>加载插件或manifest错误：{0}</value>
+  </data>
+  <data name="BatchFilePathCannotBeEmpty" xml:space="preserve">
+    <value>batchFilePath 不能为空</value>
+  </data>
+  <data name="BaseDirCannotBeEmpty" xml:space="preserve">
+    <value>baseDir 不能为空</value>
+  </data>
+  <data name="ExeNameCannotBeEmpty" xml:space="preserve">
+    <value>exeName 不能为空</value>
+  </data>
+  <data name="EchoTerminatingProcess" xml:space="preserve">
+    <value>echo 正在结束进程: {0}</value>
+  </data>
+  <data name="EchoStartCopyingFiles" xml:space="preserve">
+    <value>echo 开始复制新版本文件...</value>
+  </data>
+  <data name="RemStagePointsToTemp" xml:space="preserve">
+    <value>rem STAGE 指向临时目录中解压出的 ColorVision 内容根</value>
+  </data>
+  <data name="EchoBackingUpCurrentVersion" xml:space="preserve">
+    <value>echo 正在备份当前版本...</value>
+  </data>
+  <data name="EchoTargetDirNotExist" xml:space="preserve">
+    <value>  echo 目标目录不存在，跳过备份。</value>
+  </data>
+  <data name="EchoBackupTo" xml:space="preserve">
+    <value>  echo 备份到：%BKDIR%</value>
+  </data>
+  <data name="EchoBackupComplete" xml:space="preserve">
+    <value>  echo 备份完成。</value>
+  </data>
+  <data name="RemRobocopySuccess" xml:space="preserve">
+    <value>  rem Robocopy 0-7 视为成功</value>
+  </data>
+  <data name="EchoRobocopyFailed" xml:space="preserve">
+    <value>     echo Robocopy 失败，错误码 !RC! ，尝试使用 XCOPY 回退...</value>
+  </data>
+  <data name="EchoRobocopyNotFound" xml:space="preserve">
+    <value>  echo 未找到 Robocopy，回退到 XCOPY...</value>
+  </data>
+  <data name="EchoUsingXCOPY" xml:space="preserve">
+    <value>echo 使用 XCOPY 回退复制...</value>
+  </data>
+  <data name="EchoXCOPYFailed" xml:space="preserve">
+    <value>  echo XCOPY 复制失败，更新中止。</value>
+  </data>
+  <data name="EchoCopyComplete" xml:space="preserve">
+    <value>echo 复制完成。</value>
+  </data>
+  <data name="EchoRestartingProgram" xml:space="preserve">
+    <value>echo 正在重新启动程序...</value>
+  </data>
+  <data name="EchoSchedulingCleanup" xml:space="preserve">
+    <value>echo 安排延迟清理临时目录与脚本...</value>
+  </data>
+  <data name="EchoUpdateComplete" xml:space="preserve">
+    <value>echo 更新完成。（清理在后台进行）</value>
+  </data>
+  <data name="ApplicationCurrentNotInitialized" xml:space="preserve">
+    <value>Application.Current 未初始化</value>
+  </data>
+  <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
+    <value>bool2VisibilityConverter 资源未找到</value>
+  </data>
 </root>

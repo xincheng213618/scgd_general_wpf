@@ -42,12 +42,13 @@ namespace ColorVision.ImageEditor.Draw
 
         private DrawingVisual SelectRect = new DrawingVisual();
 
-        Guid Guid { get; set; }
-        public SelectEditorVisual(ImageViewModel imageViewModel, DrawCanvas drawCanvas, Zoombox zoomboxSub)
+        public EditorContext EditorContext { get; set; }
+        public SelectEditorVisual(EditorContext editorContext)
         {
-            ImageViewModel = imageViewModel;
-            DrawCanvas = drawCanvas;
-            ZoomboxSub = zoomboxSub;
+            EditorContext = editorContext;
+            ImageViewModel = EditorContext.ImageViewModel;
+            DrawCanvas = EditorContext.DrawCanvas;
+            ZoomboxSub = EditorContext.Zoombox;
             DrawCanvas.AddVisual(this);
             DrawCanvas.PreviewMouseLeftButtonDown += DrawCanvas_PreviewMouseLeftButtonDown;
             DrawCanvas.MouseMove += DrawCanvas_MouseMove;
@@ -55,12 +56,10 @@ namespace ColorVision.ImageEditor.Draw
         }
 
 
-
         private void ZoomboxSub_LayoutUpdated(object? sender, System.EventArgs e)
         {
-            DebounceTimer.AddOrResetTimerDispatcher("SelectEditorVisualRender" + Guid.ToString(), 20, () => Render());
+            DebounceTimer.AddOrResetTimerDispatcher("SelectEditorVisualRender" + EditorContext.Id.ToString(), 20, () => Render());
         }
-
 
         public List<ISelectVisual> SelectVisuals { get; set; } = new List<ISelectVisual>();
 
@@ -526,7 +525,7 @@ namespace ColorVision.ImageEditor.Draw
             MouseDownP = e.GetPosition(DrawCanvas);
             IsMouseDown = true;
 
-            if (!ImageViewModel.ImageEditMode || ImageViewModel.DrawEditorManager.Current !=null)
+            if (!ImageViewModel.ImageEditMode || EditorContext.DrawEditorManager.Current !=null)
                 return;
 
             var MouseVisual = DrawCanvas.GetVisual<Visual>(MouseDownP);

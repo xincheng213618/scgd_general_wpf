@@ -197,9 +197,6 @@
     <Page Update="MQTT\MQTTConnect.xaml">
       <SubType>Designer</SubType>
     </Page>
-    <Page Update="MQTT\MQTTToolWindow.xaml">
-      <SubType>Designer</SubType>
-    </Page>
     <Page Update="Services\PhyCameras\CreateWindow.xaml">
       <SubType>Designer</SubType>
     </Page>

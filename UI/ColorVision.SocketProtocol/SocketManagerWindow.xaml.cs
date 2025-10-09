@@ -33,8 +33,8 @@ namespace ColorVision.SocketProtocol
 
         public SocketManagerWindow()
         {
-            InitializeComponent();
             _socketManager = SocketManager.GetInstance();
+            InitializeComponent();
         }
 
         private void Window_Initialized(object sender, EventArgs e)

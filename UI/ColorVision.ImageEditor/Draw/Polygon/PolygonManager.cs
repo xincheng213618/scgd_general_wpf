@@ -38,12 +38,12 @@ namespace ColorVision.ImageEditor.Draw
                 _IsChecked = value;
                 if (value)
                 {
-                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(this);
+                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(this);
                     Load();
                 }
                 else
                 {
-                    ImageViewModel.DrawEditorManager.SetCurrentDrawEditor(null);
+                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
                     UnLoad();
                 }
                 OnPropertyChanged();

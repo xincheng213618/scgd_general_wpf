@@ -1,3 +1,4 @@
+using ColorVision.Solution;
 using ColorVision.Themes;
 using System.Windows;
 

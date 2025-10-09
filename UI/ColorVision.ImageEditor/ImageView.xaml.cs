@@ -28,10 +28,8 @@ namespace ColorVision.ImageEditor
     public partial class ImageView : UserControl, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
-        public Guid Id { get; set; } = Guid.NewGuid();
-
         public ImageViewModel ImageViewModel { get; set; }
-        public ImageViewConfig Config => ImageViewModel.Config;
+        public ImageViewConfig Config => ImageViewModel.EditorContext.Config;
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.DrawingVisualLists;
         public event EventHandler ClearImageEventHandler;
@@ -72,7 +70,6 @@ namespace ColorVision.ImageEditor
 
             ImageShow.VisualsAdd += ImageShow_VisualsAdd;
             ImageShow.VisualsRemove += ImageShow_VisualsRemove;
-            PreviewKeyDown += ImageView_PreviewKeyDown;
             Drop += ImageView_Drop;
             Config.ShowTextChanged += (s, e) =>
             {
@@ -195,18 +192,7 @@ namespace ColorVision.ImageEditor
         }
 
 
-        private void ImageView_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Tab)
-            {
-                BorderPropertieslayers.Visibility = BorderPropertieslayers.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
-                InfoText.Text = Config.GetPropertyString();
-            }
-            else if (e.Key == Key.E)
-            {
-                ImageViewModel.ImageEditMode = !ImageViewModel.ImageEditMode;
-            }
-        }
+
 
         private void ImageView_Drop(object sender, DragEventArgs e)
         {
@@ -268,7 +254,6 @@ namespace ColorVision.ImageEditor
         {
             //如果文件已经打开，不会重复打开
             if (filePath == null || filePath.Equals(Config.FilePath, StringComparison.Ordinal)) return;
-            Button1931.Visibility = Visibility.Collapsed;
             Config.AddProperties("FilePath", filePath);
             ClearSelectionChangedHandlers();
             Config.FilePath = filePath;
@@ -315,9 +300,12 @@ namespace ColorVision.ImageEditor
                     {
                         _hImageCache = writeableBitmap.Dispatcher.Invoke(() => writeableBitmap.ToHImage());
                     }
+                }
+                if (_hImageCache !=null)
+                {
+                    DebounceTimer.AddOrResetTimer("HImageCacheDispose" + ImageViewModel.EditorContext.Id.ToString(), 1000, HImageCacheDispose);
 
                 }
-                DebounceTimer.AddOrResetTimer("HImageCacheDispose" + Id.ToString(), 1000, HImageCacheDispose);
                 return _hImageCache;
             }
             set { _hImageCache = value; }
@@ -402,8 +390,6 @@ namespace ColorVision.ImageEditor
                 Config.AddProperties("DpiX", writeableBitmap.DpiX);
                 Config.AddProperties("DpiY", writeableBitmap.DpiY);
 
-                Config.Channel = channels;
-                Config.Ochannel = channels;
 
                 if (depth == 16)
                 {
@@ -536,7 +522,6 @@ namespace ColorVision.ImageEditor
             if (channel == -1)
             {
                 ImageShow.Source = ViewBitmapSource;
-                Config.Channel = Config.Ochannel;
                 return;
             }
             if (HImageCache == null) return;
@@ -556,7 +541,6 @@ namespace ColorVision.ImageEditor
                             FunctionImage = image;
                         }
                         ImageShow.Source = FunctionImage;
-                        Config.Channel = 1;
                     }
                 });
             });
@@ -682,17 +666,6 @@ namespace ColorVision.ImageEditor
             ;
         }
 
-        private void Button_3D_Click(object sender, RoutedEventArgs e)
-        {
-            if (ImageShow.Source is WriteableBitmap writeableBitmap)
-            {
-                Window3D window3D = new Window3D(writeableBitmap);
-                window3D.Show();
-            }
-        }
-
-
-
         private void PreviewSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             DebounceTimer.AddOrResetTimer("ApplyGammaCorrection", 50, a => ApplyGammaCorrection(a), GammaSlider.Value);
@@ -732,7 +705,6 @@ namespace ColorVision.ImageEditor
                 ViewBitmapSource = writeableBitmap;
                 ImageShow.Source = ViewBitmapSource; ;
                 HImageCache = writeableBitmap.ToHImage();
-                Config.Channel = HImageCache.Value.channels;
                 FunctionImage = null;
                 GammaSlider.Value = 1;
                 Config.RedBalance = 1;
@@ -945,7 +917,6 @@ namespace ColorVision.ImageEditor
             ImageShow.VisualsRemove -= ImageShow_VisualsRemove;
 
             ImageShow.Dispose();
-            PreviewKeyDown -= ImageView_PreviewKeyDown;
             Drop -= ImageView_Drop;
 
             Zoombox1.Child = null;

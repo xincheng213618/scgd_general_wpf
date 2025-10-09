@@ -237,15 +237,6 @@ namespace ColorVision.Engine.Templates.POI
 
             ListView1.ItemsSource = DrawingVisualLists;
 
-            ImageViewModel.EditModeChanged += (s, e) =>
-            {
-                if (e)
-                {
-                    PoiConfig.IsShowDatum = false;
-                    PoiConfig.IsShowPoiConfig = false;
-                    RenderPoiConfig();
-                }
-            };
 
             ImageShow.VisualsAdd += (s, e) =>
             {

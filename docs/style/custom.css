@@ -233,6 +233,74 @@
   font-weight: 500;
 }
 
+/* Sidebar Collapse Enhancements */
+.sidebar-nav > ul > li {
+  position: relative;
+}
+
+.sidebar-nav .sidebar-nav-item::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: var(--text-color-secondary);
+  transition: transform 0.2s ease;
+}
+
+.sidebar-nav .sidebar-nav-item.open::before {
+  transform: rotate(90deg);
+}
+
+.sidebar-nav .sidebar-nav-item.collapse {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Improve sidebar section spacing */
+.sidebar-nav > ul > li > p,
+.sidebar-nav > ul > li > h2,
+.sidebar-nav > ul > li > h3 {
+  margin-top: 1.2rem;
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+  color: var(--text-color-primary);
+}
+
+.sidebar-nav > ul > li > h2 {
+  font-size: 0.95rem;
+  padding-left: 0;
+}
+
+.sidebar-nav > ul > li > ul {
+  padding-left: 1rem;
+}
+
+/* Add visual hierarchy to nested items */
+.sidebar-nav li ul li a {
+  padding-left: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.sidebar-nav li ul li ul li a {
+  padding-left: 2.5rem;
+  font-size: 0.85rem;
+  color: var(--text-color-secondary);
+}
+
+/* Improve section dividers */
+.sidebar-nav > ul > li + li {
+  margin-top: 0.5rem;
+}
+
+/* Better hover states for collapsible items */
+.sidebar-nav .sidebar-nav-item.collapse:hover {
+  background-color: rgba(9, 105, 218, 0.08);
+  border-radius: 4px;
+}
+
+.dark .sidebar-nav .sidebar-nav-item.collapse:hover {
+  background-color: rgba(9, 105, 218, 0.15);
+}
+
 /* Table Styling */
 .markdown-section table {
   border-collapse: collapse;

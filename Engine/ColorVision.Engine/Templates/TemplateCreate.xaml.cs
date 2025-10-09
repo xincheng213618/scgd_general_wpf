@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 
 namespace ColorVision.Engine.Templates
@@ -28,6 +29,105 @@ namespace ColorVision.Engine.Templates
  
         }
         private string TemplateFile { get; set;  }
+
+        private RadioButton CreateTemplateCard(string title, string description, bool isChecked)
+        {
+            RadioButton radioButton = new RadioButton()
+            {
+                IsChecked = isChecked,
+                Margin = new Thickness(3)
+            };
+
+            // Try to find and apply the RadioButtonBaseStyle if it exists
+            try
+            {
+                if (Application.Current.TryFindResource("RadioButtonBaseStyle") is Style style)
+                {
+                    radioButton.Style = style;
+                }
+            }
+            catch
+            {
+                // Ignore if style not found
+            }
+
+            // Create a border for the card
+            Border card = new Border()
+            {
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(4),
+                Padding = new Thickness(10, 8, 10, 8),
+                MinWidth = 120,
+                Background = (System.Windows.Media.Brush)Application.Current.Resources["RegionBrush"],
+                BorderBrush = (System.Windows.Media.Brush)Application.Current.Resources["BorderBrush"]
+            };
+
+            // Create content stack
+            StackPanel contentStack = new StackPanel();
+
+            // Template icon
+            TextBlock iconBlock = new TextBlock()
+            {
+                Text = "\uE8A5", // Document icon from Segoe MDL2 Assets
+                FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
+                FontSize = 24,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Foreground = (System.Windows.Media.Brush)Application.Current.Resources["PrimaryBrush"],
+                Margin = new Thickness(0, 0, 0, 5)
+            };
+
+            // Template title
+            TextBlock titleBlock = new TextBlock()
+            {
+                Text = title,
+                FontWeight = FontWeights.Bold,
+                FontSize = 13,
+                TextAlignment = TextAlignment.Center,
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = (System.Windows.Media.Brush)Application.Current.Resources["GlobalTextBrush"]
+            };
+
+            // Template description
+            TextBlock descBlock = new TextBlock()
+            {
+                Text = description,
+                FontSize = 10,
+                TextAlignment = TextAlignment.Center,
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = (System.Windows.Media.Brush)Application.Current.Resources["ThirdlyTextBrush"],
+                Margin = new Thickness(0, 3, 0, 0)
+            };
+
+            contentStack.Children.Add(iconBlock);
+            contentStack.Children.Add(titleBlock);
+            contentStack.Children.Add(descBlock);
+
+            card.Child = contentStack;
+            radioButton.Content = card;
+
+            // Add visual feedback for selection
+            radioButton.Checked += (s, e) =>
+            {
+                card.BorderBrush = (System.Windows.Media.Brush)Application.Current.Resources["PrimaryBrush"];
+                card.BorderThickness = new Thickness(2);
+            };
+
+            radioButton.Unchecked += (s, e) =>
+            {
+                card.BorderBrush = (System.Windows.Media.Brush)Application.Current.Resources["BorderBrush"];
+                card.BorderThickness = new Thickness(1);
+            };
+
+            // Set initial state
+            if (isChecked)
+            {
+                card.BorderBrush = (System.Windows.Media.Brush)Application.Current.Resources["PrimaryBrush"];
+                card.BorderThickness = new Thickness(2);
+            }
+
+            return radioButton;
+        }
+
         private void Window_Initialized(object sender, EventArgs e)
         {
             string AssemblyCompanyFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), Environments.AssemblyCompany);
@@ -41,15 +141,21 @@ namespace ColorVision.Engine.Templates
             if (!Directory.Exists(TemplateFolder))
                 Directory.CreateDirectory(TemplateFolder);
 
-            RadioButton radioButton = new RadioButton() { Content = "默认模板", IsChecked = true, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(3) };
-            radioButton.Checked += (s, e) => TemplateFile = string.Empty;
-            TemplateStackPanels.Children.Add(radioButton);
+            // Create default template card
+            var defaultTemplateCard = CreateTemplateCard("默认模板", "使用系统默认模板", true);
+            defaultTemplateCard.Checked += (s, e) => TemplateFile = string.Empty;
+            TemplateStackPanels.Children.Add(defaultTemplateCard);
 
+            // Create cards for each template file
             foreach (var item in Directory.GetFiles(TemplateFolder))
             {
-                RadioButton radioButton1 = new RadioButton() { Content = Path.GetFileNameWithoutExtension(item) ,HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(3) };
-                radioButton1.Checked += (s, e) => TemplateFile = Path.GetFullPath(item);
-                TemplateStackPanels.Children.Add(radioButton1);
+                string fileName = Path.GetFileNameWithoutExtension(item);
+                FileInfo fileInfo = new FileInfo(item);
+                string fileDescription = $"创建时间: {fileInfo.CreationTime:yyyy-MM-dd}";
+                
+                var templateCard = CreateTemplateCard(fileName, fileDescription, false);
+                templateCard.Checked += (s, e) => TemplateFile = Path.GetFullPath(item);
+                TemplateStackPanels.Children.Add(templateCard);
             }
             if (IsImport)
             {

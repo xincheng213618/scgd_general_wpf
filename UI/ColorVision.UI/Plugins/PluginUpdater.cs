@@ -270,11 +270,11 @@ del ""%~f0"" & exit
         )
         {
             if (string.IsNullOrWhiteSpace(batchFilePath))
-                throw new ArgumentException("batchFilePath 不能为空", nameof(batchFilePath));
+                throw new ArgumentException(Properties.Resources.BatchFilePathCannotBeEmpty, nameof(batchFilePath));
             if (string.IsNullOrWhiteSpace(baseDir))
-                throw new ArgumentException("baseDir 不能为空", nameof(baseDir));
+                throw new ArgumentException(Properties.Resources.BaseDirCannotBeEmpty, nameof(baseDir));
             if (string.IsNullOrWhiteSpace(exeName))
-                throw new ArgumentException("exeName 不能为空", nameof(exeName));
+                throw new ArgumentException(Properties.Resources.ExeNameCannotBeEmpty, nameof(exeName));
 
             // 统一去掉 baseDir 尾部反斜杠，避免双反斜杠、美观问题
             baseDir = baseDir.TrimEnd('\\');
@@ -297,27 +297,27 @@ del ""%~f0"" & exit
             sb.AppendLine("setlocal enabledelayedexpansion");
             sb.AppendLine("title ColorVision Updater");
             sb.AppendLine();
-            sb.AppendLine($"echo 正在结束进程: {exeName}");
+            sb.AppendLine(string.Format(Properties.Resources.EchoTerminatingProcess, exeName));
             sb.AppendLine($"taskkill /f /im \"{exeName}\" >nul 2>nul");
             sb.AppendLine("timeout /t 1 /nobreak >nul");
             sb.AppendLine();
-            sb.AppendLine("echo 开始复制新版本文件...");
-            sb.AppendLine("rem STAGE 指向临时目录中解压出的 ColorVision 内容根");
+            sb.AppendLine(Properties.Resources.EchoStartCopyingFiles);
+            sb.AppendLine(Properties.Resources.RemStagePointsToTemp);
             sb.AppendLine("set \"STAGE=%~dp0ColorVision\"");
             sb.AppendLine($"set \"TARGET={escapedBaseDir}\"");
             sb.AppendLine();
 
             if (enableBackup)
             {
-                sb.AppendLine("echo 正在备份当前版本...");
+                sb.AppendLine(Properties.Resources.EchoBackingUpCurrentVersion);
                 sb.AppendLine("if not exist \"%TARGET%\" (");
-                sb.AppendLine("  echo 目标目录不存在，跳过备份。");
+                sb.AppendLine(Properties.Resources.EchoTargetDirNotExist);
                 sb.AppendLine(") else (");
                 sb.AppendLine("  for /f \"tokens=1-5 delims=/-: .\" %%a in (\"%date% %time%\") do (");
                 sb.AppendLine("     set \"BKSTAMP=%%a%%b%%c_%%d%%e\"");
                 sb.AppendLine("  )");
                 sb.AppendLine($"  set \"BKDIR={EscapeForBatch(backupParentDir).TrimEnd('\\')}\\ColorVisionBackup_%BKSTAMP%\"");
-                sb.AppendLine("  echo 备份到：%BKDIR%");
+                sb.AppendLine(Properties.Resources.EchoBackupTo);
                 sb.AppendLine("  mkdir \"%BKDIR%\" >nul 2>nul");
                 sb.AppendLine("  where robocopy >nul 2>nul");
                 sb.AppendLine("  if %ERRORLEVEL% EQU 0 (");
@@ -325,7 +325,7 @@ del ""%~f0"" & exit
                 sb.AppendLine("  ) else (");
                 sb.AppendLine("     xcopy /y /e /i \"%TARGET%\\*\" \"%BKDIR%\\\" >nul");
                 sb.AppendLine("  )");
-                sb.AppendLine("  echo 备份完成。");
+                sb.AppendLine(Properties.Resources.EchoBackupComplete);
                 sb.AppendLine(")");
                 sb.AppendLine();
             }
@@ -334,24 +334,24 @@ del ""%~f0"" & exit
             sb.AppendLine("if %ERRORLEVEL% EQU 0 (");
             sb.AppendLine($"  robocopy \"%STAGE%\" \"%TARGET%\" *.* {copySwitch} /NFL /NDL /NP /NJH /NJS /R:2 /W:1");
             sb.AppendLine("  set RC=%ERRORLEVEL%");
-            sb.AppendLine("  rem Robocopy 0-7 视为成功");
+            sb.AppendLine(Properties.Resources.RemRobocopySuccess);
             sb.AppendLine("  if !RC! GEQ 8 (");
-            sb.AppendLine("     echo Robocopy 失败，错误码 !RC! ，尝试使用 XCOPY 回退...");
+            sb.AppendLine(Properties.Resources.EchoRobocopyFailed);
             sb.AppendLine("     goto fallback_copy");
             sb.AppendLine("  ) else (");
             sb.AppendLine("     goto copy_done");
             sb.AppendLine("  )");
             sb.AppendLine(") else (");
-            sb.AppendLine("  echo 未找到 Robocopy，回退到 XCOPY...");
+            sb.AppendLine(Properties.Resources.EchoRobocopyNotFound);
             sb.AppendLine("  goto fallback_copy");
             sb.AppendLine(")");
             sb.AppendLine();
 
             sb.AppendLine(":fallback_copy");
-            sb.AppendLine("echo 使用 XCOPY 回退复制...");
+            sb.AppendLine(Properties.Resources.EchoUsingXCOPY);
             sb.AppendLine("xcopy /y /e /i \"%STAGE%\\*\" \"%TARGET%\\\" >nul");
             sb.AppendLine("if %ERRORLEVEL% NEQ 0 (");
-            sb.AppendLine("  echo XCOPY 复制失败，更新中止。");
+            sb.AppendLine(Properties.Resources.EchoXCOPYFailed);
             sb.AppendLine("  pause");
             sb.AppendLine("  exit /b 1");
             sb.AppendLine(")");
@@ -359,20 +359,20 @@ del ""%~f0"" & exit
             sb.AppendLine();
 
             sb.AppendLine(":copy_done");
-            sb.AppendLine("echo 复制完成。");
+            sb.AppendLine(Properties.Resources.EchoCopyComplete);
             sb.AppendLine();
 
-            sb.AppendLine("echo 正在重新启动程序...");
+            sb.AppendLine(Properties.Resources.EchoRestartingProgram);
             sb.AppendLine($"start \"\" \"{escapedExePath}\" -c MenuPluginManager");
             sb.AppendLine();
 
-            sb.AppendLine("echo 安排延迟清理临时目录与脚本...");
+            sb.AppendLine(Properties.Resources.EchoSchedulingCleanup);
             sb.AppendLine("set \"SELF=%~f0\"");
             sb.AppendLine("set \"SELF_DIR=%~dp0\"");
             sb.AppendLine("start \"\" cmd /c \"ping -n 4 127.0.0.1 >nul & rd /s /q \\\"%SELF_DIR%\\\" 2>nul & del /q \\\"%SELF%\\\" 2>nul\"");
             sb.AppendLine();
 
-            sb.AppendLine("echo 更新完成。（清理在后台进行）");
+            sb.AppendLine(Properties.Resources.EchoUpdateComplete);
             sb.AppendLine("endlocal");
             sb.AppendLine("exit /b 0");
 

@@ -189,52 +189,17 @@ namespace ColorVision
 
             //代码先进入启动窗口
 
-            bool IsReStart = parser.GetFlag("restart");
             if (!WizardWindowConfig.Instance.WizardCompletionKey)
             {
                 WizardWindow wizardWindow = new WizardWindow();
                 wizardWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 wizardWindow.Show();
             }
-            else if (!IsReStart)
+            else 
             {
                 ///正常进入窗口
                 StartWindow StartWindow = new StartWindow();
                 StartWindow.Show();
-            }
-            else
-            {
-                var _IComponentInitializers = new List<UI.IInitializer>();
-                foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-                {
-                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitializer).IsAssignableFrom(t) && !t.IsAbstract))
-                    {
-                        if (Activator.CreateInstance(type) is IInitializer componentInitialize)
-                        {
-                            _IComponentInitializers.Add(componentInitialize);
-                        }
-                    }
-                }
-                _IComponentInitializers = _IComponentInitializers.OrderBy(handler => handler.Order).ToList();
-
-                Task.Run(async () =>
-                {
-                    foreach (var initializer in _IComponentInitializers)
-                    {
-                        //防止搞崩程序
-                        try
-                        {
-                            await initializer.InitializeAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Error(ex);
-                        }
-                    }  
-                });
-
-                MainWindow MainWindow = new MainWindow();
-                MainWindow.Show();
             }
         }
 

@@ -1,4 +1,5 @@
 
+using Newtonsoft.Json.Linq;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -157,13 +158,18 @@ namespace ColorVision.ImageEditor
             set => this.SetValue(MaxZoomProperty, value);
         }
 
+        public event EventHandler ContentMatrixChanged;
+
         /// <summary>
         /// Gets or sets the transform applied to the contents.
         /// </summary>
         public Matrix ContentMatrix
         {
             get => (Matrix)this.GetValue(ContentMatrixProperty);
-            set => this.SetValue(ContentMatrixProperty, value);
+            set
+            {
+                 this.SetValue(ContentMatrixProperty, value);
+            }
         }
 
         /// <inheritdoc />
@@ -251,6 +257,7 @@ namespace ColorVision.ImageEditor
         public void Zoom(double scale)
         {
             this.Zoom(new Vector(scale, scale));
+            ContentMatrixChanged?.Invoke(this, new EventArgs());
         }
 
         /// <summary>
@@ -261,6 +268,7 @@ namespace ColorVision.ImageEditor
         {
             var point = LayoutInformation.GetLayoutClip(this)?.Bounds.CenterPoint();
             this.Zoom(point ?? new Point(0, 0), scale);
+            ContentMatrixChanged?.Invoke(this, new EventArgs());
         }
 
         /// <summary>
@@ -276,6 +284,7 @@ namespace ColorVision.ImageEditor
             ScaleTransform.SetCurrentValue(ScaleTransform.ScaleXProperty, scale.X);
             ScaleTransform.SetCurrentValue(ScaleTransform.ScaleYProperty, scale.Y);
             this.SetCurrentValue(ContentMatrixProperty, Matrix.Multiply(this.ContentMatrix, ScaleTransform.Value));
+            ContentMatrixChanged?.Invoke(this, new EventArgs());
         }
 
         /// <summary>
@@ -311,6 +320,7 @@ namespace ColorVision.ImageEditor
             TranslateTransform.SetCurrentValue(TranslateTransform.XProperty, (this.ActualWidth - (scale * size.Width)) / 2);
             TranslateTransform.SetCurrentValue(TranslateTransform.YProperty, (this.ActualHeight - (scale * size.Height)) / 2);
             this.SetCurrentValue(ContentMatrixProperty, Matrix.Multiply(ScaleTransform.Value, TranslateTransform.Value));
+            ContentMatrixChanged?.Invoke(this, new EventArgs());
         }
 
         /// <summary>
@@ -347,6 +357,7 @@ namespace ColorVision.ImageEditor
             TranslateTransform.SetCurrentValue(TranslateTransform.XProperty, (this.ActualWidth - (scale * size.Width)) / 2);
             TranslateTransform.SetCurrentValue(TranslateTransform.YProperty, (this.ActualHeight - (scale * size.Height)) / 2);
             this.SetCurrentValue(ContentMatrixProperty, Matrix.Multiply(ScaleTransform.Value, TranslateTransform.Value));
+            ContentMatrixChanged?.Invoke(this, new EventArgs());
         }
 
         /// <summary>
@@ -355,6 +366,7 @@ namespace ColorVision.ImageEditor
         public void ZoomNone()
         {
             this.SetCurrentValue(ContentMatrixProperty, Matrix.Identity);
+            ContentMatrixChanged?.Invoke(this, new EventArgs());
         }
 
         /// <inheritdoc />

@@ -18,8 +18,8 @@ namespace ColorVision.UI.Plugins
             {
                  new ConfigSettingMetadata
                 {
-                    Name ="检测插件更新",
-                    Description =  "检测插件更新",
+                    Name = Properties.Resources.CheckPluginUpdates,
+                    Description = Properties.Resources.CheckPluginUpdates,
                     Order = 999,
                     Type = ConfigSettingType.Bool,
                     BindingName =nameof(PluginWindowConfig.IsAutoUpdate),
@@ -63,7 +63,7 @@ namespace ColorVision.UI.Plugins
 
         public PluginManager()
         {
-            log.Info("正在检索是否存在附加项目");
+            log.Info(Properties.Resources.CheckingForAdditionalProjects);
 
             foreach (var item in UI.Plugins.PluginLoader.Config.Plugins)
             {
@@ -119,17 +119,17 @@ namespace ColorVision.UI.Plugins
         public async void DownloadPackage()
         {
             string LatestReleaseUrl = PluginLoaderrConfig.Instance.PluginUpdatePath + SearchName + "/LATEST_RELEASE";
-            DownloadFile.DownloadTile = "下载" + SearchName;
+            DownloadFile.DownloadTile = Properties.Resources.Download + SearchName;
             Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
             if (version == new Version())
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"找到不到项目{SearchName}");
+                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.ProjectNotFound, SearchName));
                 return;
             }
             
             Application.Current.Dispatcher.Invoke(() =>
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), $"找到项目{SearchName}，{ColorVision.UI.Properties.Resources.Version}{version}，是否下载", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.FoundProjectDownloadConfirm, SearchName, $"{ColorVision.UI.Properties.Resources.Version}{version}"), "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{SearchName}-{version}.zip";
                     string url = $"{PluginLoaderrConfig.Instance.PluginUpdatePath}{SearchName}/{SearchName}-{version}.zip";

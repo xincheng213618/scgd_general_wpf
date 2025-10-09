@@ -196,14 +196,14 @@ namespace ColorVision.UI.Sorts
             // 添加通用排序选项
             if (associatedListView != null)
             {
-                MenuItem sortMenu = new() { Header = "排序选项" };
+                MenuItem sortMenu = new() { Header = Properties.Resources.SortOptions };
                 
                 // 智能排序
-                MenuItem smartSortAsc = new() { Header = "智能排序 (升序)" };
+                MenuItem smartSortAsc = new() { Header = Properties.Resources.SmartSortAscending };
                 smartSortAsc.Click += (s, e) => gridViewColumnVisibilitys.SmartSort(associatedListView, false);
                 sortMenu.Items.Add(smartSortAsc);
                 
-                MenuItem smartSortDesc = new() { Header = "智能排序 (降序)" };
+                MenuItem smartSortDesc = new() { Header = Properties.Resources.SmartSortDescending };
                 smartSortDesc.Click += (s, e) => gridViewColumnVisibilitys.SmartSort(associatedListView, true);
                 sortMenu.Items.Add(smartSortDesc);
                 
@@ -215,12 +215,12 @@ namespace ColorVision.UI.Sorts
                     var columnName = column.ColumnName?.ToString();
                     if (string.IsNullOrEmpty(columnName)) continue;
                     
-                    MenuItem columnSortMenu = new() { Header = $"按 {columnName} 排序" };
+                    MenuItem columnSortMenu = new() { Header = string.Format(Properties.Resources.SortByColumn, columnName) };
                     
-                    MenuItem sortAsc = new() { Header = "升序" };
+                    MenuItem sortAsc = new() { Header = Properties.Resources.Ascending };
                     sortAsc.Click += (s, e) => gridViewColumnVisibilitys.SortListViewData(associatedListView, columnName, false);
                     
-                    MenuItem sortDesc = new() { Header = "降序" };
+                    MenuItem sortDesc = new() { Header = Properties.Resources.Descending };
                     sortDesc.Click += (s, e) => gridViewColumnVisibilitys.SortListViewData(associatedListView, columnName, true);
                     
                     columnSortMenu.Items.Add(sortAsc);

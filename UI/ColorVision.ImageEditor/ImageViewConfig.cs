@@ -67,15 +67,6 @@ namespace ColorVision.ImageEditor
         [JsonIgnore]
         public IntPtr ConvertXYZhandle { get; set; } = Tool.GenerateRandomIntPtr();
 
-        [JsonIgnore]
-        public int Channel { get => _Channel; set { _Channel = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsChannel1));} }
-        private int _Channel;
-
-        [JsonIgnore]
-        public bool IsChannel1 => Channel == 1;
-
-        public int Ochannel { get; set; }
-
         public event EventHandler ColormapTypesChanged;
 
         public ColormapTypes ColormapTypes { get => _ColormapTypes; set { _ColormapTypes = value; OnPropertyChanged(); ColormapTypesChanged?.Invoke(this, new EventArgs()); } }

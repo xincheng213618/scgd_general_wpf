@@ -342,8 +342,6 @@ namespace ColorVision.Engine.Media
 
             void ButtonCIE1931_Click(object sender, RoutedEventArgs e)
             {
-                imageView.ImageViewModel.ImageEditMode = true;
-
                 if (windowCIE == null)
                 {
                     windowCIE = new WindowCIE() { Owner = Application.Current.GetActiveWindow() };

@@ -1,11 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
-using System.ComponentModel;
-using cvColorVision.Util;
 
 namespace cvColorVision
 {
@@ -192,40 +188,9 @@ namespace cvColorVision
         public string title;
         //自动曝光标识
         public bool autoExpFlag;
-        //亮度校正
-        public CalibrationItem lumChromaCheck;
-        //滤色片通道
-        public List<ChannelParam> channels;
-
-        public GetFrameParam()
-        {
-            channels = new List<ChannelParam>();
-        }
-
-        public void BuildChannelsFileName(string path, string ext)
-        {
-            foreach (ChannelParam item in channels)
-            {
-                item.fileName = path + "\\" + title + ext;
-            }
-        }
+        //亮度校正        //滤色片通道
     }
 
-    public class CalibrationItem
-    {
-        public CalibrationType type { set; get; }
-        public bool enable { set; get; }
-        public string title { set; get; }
-        public string doc { set; get; }
-
-        public CalibrationItem(CalibrationType type, bool enable, string title, string fileName)
-        {
-            this.type = type;
-            this.enable = enable;
-            this.title = title;
-            doc = fileName;
-        }
-    }
 
     public struct SIZE
     {
@@ -274,152 +239,6 @@ namespace cvColorVision
         /// </summary>
         SlopeOUT = 1,   //不采用斜率布点
     };
-    public struct ST_BlobThreParams
-    {
-        public bool filterByColor; //是否使用颜色过滤
-                                   //unsigned char blobColor; //亮斑255暗斑0
-        public int blobColor; //亮斑255暗斑0
-        public float minThreshold; //阈值每次间隔值
-        public float thresholdStep; //斑点最小灰度
-        public float maxThreshold; //斑点最大灰度
-        public float minDistBetweenBlobs; //斑点间隔距离
-        public bool filterByArea; //是否使用面积过滤
-        public float minArea; //斑点最小面积值
-        public float maxArea;  //斑点最大面积值
-        public int minRepeatability;  //重复次数认定
-        public bool filterByCircularity;  //形状控制（圆，方）
-        public float minCircularity;
-        public float maxCircularity;
-        public bool filterByConvexity;  //形状控制（豁口）
-        public float minConvexity;
-        public float maxConvexity;
-        public bool filterByInertia;  //形状控制（椭圆度）
-        public float minInertiaRatio;
-        public float maxInertiaRatio;
-    }
-
-    public class BlobThreParams
-    {
-        [Category("\t\t\t全局"), Description("是否使用颜色过滤")]
-        public bool filterByColor { set; get; } //是否使用颜色过滤
-                                                //unsigned char blobColor; //亮斑255暗斑0
-        [Category("\t\t\t全局"), Description("筛选亮斑写255暗斑写0")]
-        public int blobColor { set; get; } //亮斑255暗斑0
-        [Category("\t\t\t全局"), Description("重复次数认定次数(达到筛选出是斑点的次数几次后认定是斑点，结合扫描图像的阈值步进值理解这条)")]
-        public int minRepeatability { set; get; }  //重复次数认定
-        [Category("\t\t\t全局"), Description("角点提取类型[Circlepoint/圆点,Checkerboard/棋盘格]")]
-        public CornerType cornerType { set; get; }
-
-        [Category("\t阈值"), Description("斑点最小灰度阈值")]
-        public float minThreshold { set; get; } //阈值每次间隔值
-        [Category("\t阈值"), Description("每次扫描图像时阈值的步进值")]
-        public float thresholdStep { set; get; } //斑点最小灰度
-        [Category("\t阈值"), Description("斑点最大灰度阈值")]
-        public float maxThreshold { set; get; }//斑点最大灰度
-        [Category("\t阈值"), Description("斑点间隔距离")]
-        public float minDistBetweenBlobs { set; get; } //斑点间隔距离
-        [Category("面积"), Description("是否使用面积过滤")]
-        public bool filterByArea { set; get; } //是否使用面积过滤
-        [Category("面积"), Description("最小面积阈值")]
-        public float minArea { set; get; }//斑点最小面积值
-        [Category("面积"), Description("最大面积阈值")]
-        public float maxArea { set; get; }  //斑点最大面积值
-        [Category("形状圆控制"), Description("形状控制（圆，方）是否调用")]
-        public bool filterByCircularity { set; get; } //形状控制（圆，方）
-        [Category("形状圆控制"), Description("离1越近越接近圆")]
-        public float minCircularity { set; get; }
-        [Category("形状圆控制"), Description("越大越圆")]
-        public float maxCircularity { set; get; }
-        [Category("形状豁口控制"), Description("豁口是否调用")]
-        public bool filterByConvexity { set; get; }  //形状控制（豁口）
-        [Category("形状豁口控制"), Description("离1越近越没豁口")]
-        public float minConvexity { set; get; }
-        [Category("形状豁口控制"), Description("越大越圆")]
-        public float maxConvexity { set; get; }
-        [Category("形状椭圆控制"), Description("椭圆度是否调用")]
-        public bool filterByInertia { set; get; }  //形状控制（椭圆度）
-        [Category("形状椭圆控制"), Description("0的话可以近似认为是直线，1的话基本是圆")]
-        public float minInertiaRatio { set; get; }
-        [Category("形状椭圆控制"), Description("越大越圆")]
-        public float maxInertiaRatio { set; get; }
-        [Category("\t\t大小"), Description("宽度")]
-        public int cx { set; get; }
-        [Category("\t\t大小"), Description("高度")]
-        public int cy { set; get; }
-
-        public static BlobThreParams cfg;
-        [JsonIgnore]
-        public ST_BlobThreParams st_cfg;
-        private static string DistoParamCfg = "cfg\\DistoParamSetup.cfg";
-
-        public static BlobThreParams Load()
-        {
-            BlobThreParams blobThreParams = CfgFile.Load<BlobThreParams>(DistoParamCfg);
-            if (blobThreParams == null)
-            {
-                blobThreParams = new BlobThreParams();
-                blobThreParams.filterByColor = true;
-                blobThreParams.blobColor = 0;
-                blobThreParams.minThreshold = 10;
-                blobThreParams.thresholdStep = 10;
-                blobThreParams.maxThreshold = 220;
-                blobThreParams.minDistBetweenBlobs = 50;
-                blobThreParams.filterByArea = true;
-                blobThreParams.minArea = 200;
-                blobThreParams.maxArea = 10000;
-                blobThreParams.minRepeatability = 2;
-                blobThreParams.filterByCircularity = false;
-                blobThreParams.minCircularity = 0.9f;
-                blobThreParams.maxCircularity = (float)1e37;
-                blobThreParams.filterByConvexity = false;
-                blobThreParams.minConvexity = 0.9f;
-                blobThreParams.maxConvexity = (float)1e37;
-                blobThreParams.filterByInertia = false;
-                blobThreParams.minInertiaRatio = 0.1f;
-                blobThreParams.maxInertiaRatio = (float)1e37;
-                blobThreParams.cx = 11;
-                blobThreParams.cy = 8;
-                blobThreParams.cornerType = CornerType.Checkerboard;
-
-                blobThreParams.st_cfg = new ST_BlobThreParams();
-
-                CfgFile.Save(DistoParamCfg, blobThreParams);
-            }
-            cfg = blobThreParams;
-            blobThreParams.setValue();
-            return cfg;
-        }
-
-        private void setValue()
-        {
-            st_cfg.filterByColor = filterByColor;
-            st_cfg.blobColor = blobColor;
-            st_cfg.minThreshold = minThreshold;
-            st_cfg.thresholdStep = thresholdStep;
-            st_cfg.maxThreshold = maxThreshold;
-            st_cfg.minDistBetweenBlobs = minDistBetweenBlobs;
-            st_cfg.filterByArea = filterByArea;
-            st_cfg.minArea = minArea;
-            st_cfg.maxArea = maxArea;
-            st_cfg.minRepeatability = minRepeatability;
-            st_cfg.filterByCircularity = filterByCircularity;
-            st_cfg.minCircularity = minCircularity;
-            st_cfg.maxCircularity = maxCircularity;
-            st_cfg.filterByConvexity = filterByConvexity;
-            st_cfg.minConvexity = minConvexity;
-            st_cfg.maxConvexity = maxConvexity;
-            st_cfg.filterByInertia = filterByInertia;
-            st_cfg.minInertiaRatio = minInertiaRatio;
-            st_cfg.maxInertiaRatio = maxInertiaRatio;
-        }
-
-        internal static void Save(BlobThreParams blobThreParams)
-        {
-            blobThreParams.setValue();
-            CfgFile.Save(DistoParamCfg, blobThreParams);
-        }
-    }
-
     public struct CRECT
     {
         public int x;
@@ -469,45 +288,6 @@ namespace cvColorVision
         }
     }
 
-    public class ProjectSysCfg
-    {
-        public List<CalibrationItem> calibrationLibCfg;
-        public List<ChannelCfg> channelCfg;
-
-        public ProjectSysCfg()
-        {
-            calibrationLibCfg = new List<CalibrationItem>();
-            channelCfg = new List<ChannelCfg>();
-        }
-    }
-
-    public class ChannelCalibration
-    {
-        //暗噪声校正参数
-        public CalibrationItem dsnuCheck;
-        //均匀场校正文件
-        public CalibrationItem uniformityCheck;
-        //白点校正文件
-        public CalibrationItem defectCheck;
-        //白点校正文件
-        public CalibrationItem distortionCheck;
-    }
-
-    public class ChannelParam
-    {
-        //曝光时间，单位毫秒
-        public float exp;
-        //滤色轮端口
-        public int cfwport;
-        //通道类型
-        public int channelType;
-        //滤色片类型
-        public int imageFilterType;//
-        //校正
-        public ChannelCalibration check;
-        //文件名
-        public string fileName;
-    }
     public enum ImageFilterType 
     {
         Color_Filter = 0,//滤色片
@@ -724,29 +504,7 @@ namespace cvColorVision
         public unsafe static extern bool CM_MergeDataEx(uint w, uint h, uint bpp, byte[] imgdata, byte[] srcX, byte[] srcY, byte[] srcZ);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetBGRBuffer", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool CM_GetBGRBuffer(IntPtr handle, ref int w, ref int h, ref int bpp, ref int channels, byte[] imgdata);
-        public static void CM_GetFrame_TIFF(IntPtr handle, GetFrameParam param, bool isburst)
-        {
-            string json1 = JsonConvert.SerializeObject(param);
-            Thread thread = new Thread(() => workTiffThread(handle, json1, isburst));
-            thread.Start();
-        }
 
-        private static void workTiffThread(IntPtr handle, object json1, bool isburst)
-        {
-            StringBuilder json = new StringBuilder();
-            json.Append(json1);
-            string tifjson = json.ToString();
-            if (isburst)
-            {
-                CM_GetFrameEx_TIFF(handle, json);
-            }
-            else
-            {
-                CM_GetFrame_TIFF(handle, json);
-            }
-
-            event_ShowTiff?.Invoke(json.ToString(),true);
-        }
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetFrameMemLength",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern uint CM_GetFrameMemLength(IntPtr handle);
@@ -998,8 +756,6 @@ namespace cvColorVision
         //[DllImport(LIBRARY_CVCAMERA, EntryPoint = "DistortionCheck",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         //public unsafe static extern int DistortionCheck(CVImage tImg, SIZE iSize, BlobThreParams tBlobThreParams, float[] finalPointsX, float[] finalPointsY, ref double pointx, ref double pointy, ref double maxErrorRatio, ref double t, CornerType type /*= Circlepoint*/, SlopeType sType /*= CenterPoint*/, LayoutType lType /*= SlopeIN*/);
 
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "DistortionCheck", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int DistortionCheck(CVImage tImg, SIZE iSize, ST_BlobThreParams tBlobThreParams, float[] finalPointsX, float[] finalPointsY, ref double pointx, ref double pointy, ref double maxErrorRatio, ref double t, CornerType type /*= Circlepoint*/, SlopeType sType /*= CenterPoint*/, LayoutType lType /*= SlopeIN*/, DistortionType dType);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "FovImgCentreEX",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool FovImgCentreEX(CVImage tImg, float x_c, float y_c, float x_p, float y_p, double Radio, double cameraDegrees, ref double fovDegrees, int thresholdValus, double dFovDist, FovPattern pattern, FovType type);
