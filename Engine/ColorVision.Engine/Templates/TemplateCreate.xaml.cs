@@ -35,9 +35,21 @@ namespace ColorVision.Engine.Templates
             RadioButton radioButton = new RadioButton()
             {
                 IsChecked = isChecked,
-                Margin = new Thickness(3),
-                Style = (Style)Application.Current.FindResource("RadioButtonBaseStyle")
+                Margin = new Thickness(3)
             };
+
+            // Try to find and apply the RadioButtonBaseStyle if it exists
+            try
+            {
+                if (Application.Current.TryFindResource("RadioButtonBaseStyle") is Style style)
+                {
+                    radioButton.Style = style;
+                }
+            }
+            catch
+            {
+                // Ignore if style not found
+            }
 
             // Create a border for the card
             Border card = new Border()
@@ -138,7 +150,10 @@ namespace ColorVision.Engine.Templates
             foreach (var item in Directory.GetFiles(TemplateFolder))
             {
                 string fileName = Path.GetFileNameWithoutExtension(item);
-                var templateCard = CreateTemplateCard(fileName, $"模板文件: {fileName}", false);
+                FileInfo fileInfo = new FileInfo(item);
+                string fileDescription = $"创建时间: {fileInfo.CreationTime:yyyy-MM-dd}";
+                
+                var templateCard = CreateTemplateCard(fileName, fileDescription, false);
                 templateCard.Checked += (s, e) => TemplateFile = Path.GetFullPath(item);
                 TemplateStackPanels.Children.Add(templateCard);
             }
