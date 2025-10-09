@@ -427,7 +427,7 @@ namespace ColorVision.ImageEditor.Draw.Special
             if (ReferenceLine.IsLocked) return;
 
             // Check if Ctrl key is pressed for rotation mode
-            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Alt))
             {
                 // Ctrl+Left-click for rotation
                 ReferenceLine.LMouseDownP = Mouse.GetPosition(Image);
