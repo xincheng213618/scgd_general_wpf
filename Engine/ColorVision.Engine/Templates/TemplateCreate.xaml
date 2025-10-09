@@ -39,8 +39,6 @@
                 </DockPanel>
 
                 <Grid Grid.Row="2" x:Name="GridProperty" Margin="3,5">
-                    <!--<hc:PropertyGrid x:Name="PropertyGrid1"   hc:TipElement.Visibility="Visible"  />-->
-                    <!--<xctk:PropertyGrid   x:Name="PropertyGrid1" />-->
                     <WindowsFormsHost>
                         <winf:PropertyGrid x:Name="PropertyGrid1" />
                     </WindowsFormsHost>
