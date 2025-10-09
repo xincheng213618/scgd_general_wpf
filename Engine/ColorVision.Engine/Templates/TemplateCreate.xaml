@@ -32,8 +32,10 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <UniformGrid x:Name="TemplateStackPanels" Grid.Row="0" Margin="2"  Columns="3">
-                </UniformGrid>
+                <ScrollViewer Grid.Row="0" Margin="2" VerticalScrollBarVisibility="Auto" MaxHeight="150">
+                    <WrapPanel x:Name="TemplateStackPanels" Orientation="Horizontal">
+                    </WrapPanel>
+                </ScrollViewer>
                 <DockPanel Grid.Row="1"  Margin="2" >
                     <hc:ComboBox x:Name="CreateCode" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"   />
                 </DockPanel>
