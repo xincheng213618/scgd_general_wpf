@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using log4net;
+using NetTaste;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
@@ -159,20 +160,22 @@ namespace ColorVision.Database
             PropertyInfos.Remove(PropertyInfos.First(a => a.Value == property));
             QueryCondition queryCondition = new QueryCondition() { Property =property };
             DockPanel dockPanel = new DockPanel();
-            if (property.PropertyType == typeof(bool))
+            if (property.PropertyType.IsEnum)
             {
-                dockPanel = PropertyEditorHelper.GenBoolProperties(property, QueryValue);
+                dockPanel = PropertyEditorHelper.GetOrCreateEditor<EnumPropertiesEditor>().GenProperties(property, QueryValue);
             }
-            else if (property.PropertyType == typeof(int) || property.PropertyType == (typeof(float)) || property.PropertyType == (typeof(Rect)) || property.PropertyType == typeof(uint) || property.PropertyType == typeof(long) || property.PropertyType == typeof(ulong) || property.PropertyType == typeof(sbyte) || property.PropertyType == typeof(double) || property.PropertyType == typeof(string))
+            else if (property.PropertyType == typeof(bool))
+            {
+                dockPanel = PropertyEditorHelper.GetOrCreateEditor<BoolPropertiesEditor>().GenProperties(property, QueryValue);
+            }
+            else
             {
                 dockPanel = PropertyEditorHelper.GenTextboxProperties(property, QueryValue);
             }
-            else if (property.PropertyType.IsEnum)
-            {
-                dockPanel = PropertyEditorHelper.GenEnumProperties(property, QueryValue);
-            }
             PropertyInfo propertyInfo = typeof(QueryCondition).GetProperty("Operator");
-            dockPanel.Children.Insert(0,PropertyEditorHelper.GenEnumPropertiesComboBox(propertyInfo, queryCondition));
+            var com = PropertyEditorHelper.GenEnumPropertiesComboBox(propertyInfo, queryCondition);
+            com.Margin = new Thickness(5, 0, 5, 0);
+            dockPanel.Children.Insert(0, com);
             dockPanel.Margin = new Thickness(0, 0, 0, 5);
             QueryStackPanel.Children.Add(dockPanel);
             QueryConditions.Add(queryCondition);
@@ -313,20 +316,22 @@ namespace ColorVision.Database
             PropertyInfos.Remove(PropertyInfos.First(a => a.Value == property));
             QueryCondition queryCondition = new QueryCondition() { Property = property };
             DockPanel dockPanel = new DockPanel();
-            if (property.PropertyType == typeof(bool))
+            if (property.PropertyType.IsEnum)
             {
-                dockPanel = PropertyEditorHelper.GenBoolProperties(property, QueryValue);
+                dockPanel = PropertyEditorHelper.GetOrCreateEditor<EnumPropertiesEditor>().GenProperties(property, QueryValue);
             }
-            else if (property.PropertyType == typeof(int) || property.PropertyType == (typeof(float)) || property.PropertyType == (typeof(Rect)) || property.PropertyType == typeof(uint) || property.PropertyType == typeof(long) || property.PropertyType == typeof(ulong) || property.PropertyType == typeof(sbyte) || property.PropertyType == typeof(double) || property.PropertyType == typeof(string))
+            else if (property.PropertyType == typeof(bool))
+            {
+                dockPanel = PropertyEditorHelper.GetOrCreateEditor<BoolPropertiesEditor>().GenProperties(property, QueryValue);
+            }
+            else
             {
                 dockPanel = PropertyEditorHelper.GenTextboxProperties(property, QueryValue);
             }
-            else if (property.PropertyType.IsEnum)
-            {
-                dockPanel = PropertyEditorHelper.GenEnumProperties(property, QueryValue);
-            }
             PropertyInfo propertyInfo = typeof(QueryCondition).GetProperty("Operator");
-            dockPanel.Children.Insert(0, PropertyEditorHelper.GenEnumPropertiesComboBox(propertyInfo, queryCondition));
+            var com = PropertyEditorHelper.GenEnumPropertiesComboBox(propertyInfo, queryCondition);
+            com.Margin = new Thickness(5, 0, 5, 0);
+            dockPanel.Children.Insert(0, com);
             dockPanel.Margin = new Thickness(0, 0, 0, 5);
             QueryStackPanel.Children.Add(dockPanel);
             QueryConditions.Add(queryCondition);

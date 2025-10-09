@@ -8,7 +8,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:properties ="clr-namespace:ColorVision.UI.Properties"
         mc:Ignorable="d"
-        Title="配置"  Height="450" Width="600" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="配置"  Height="450" Width="650" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>

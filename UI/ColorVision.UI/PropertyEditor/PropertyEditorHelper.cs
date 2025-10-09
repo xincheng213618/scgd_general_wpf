@@ -152,24 +152,6 @@ namespace ColorVision.UI
             }
         }
 
-        public static DockPanel GenBoolProperties(PropertyInfo property, object obj)
-        {
-            var rm = GetResourceManager(obj);
-            var dockPanel = new DockPanel();
-
-            var textBlock = CreateLabel(property, rm);
-            var toggleSwitch = new Wpf.Ui.Controls.ToggleSwitch
-            {
-                Margin = new Thickness(5, 0, 0, 0),
-            };
-            var binding = CreateTwoWayBinding(obj, property.Name);
-            toggleSwitch.SetBinding(ToggleButton.IsCheckedProperty, binding);
-            DockPanel.SetDock(toggleSwitch, Dock.Right);
-
-            dockPanel.Children.Add(toggleSwitch);
-            dockPanel.Children.Add(textBlock);
-            return dockPanel;
-        }
         public static ComboBox GenEnumPropertiesComboBox(PropertyInfo property, object obj)
         {
             var rm = GetResourceManager(obj);
@@ -185,32 +167,6 @@ namespace ColorVision.UI
             comboBox.SetBinding(Selector.SelectedItemProperty, binding);
             return comboBox;
         }
-
-
-        public static DockPanel GenEnumProperties(PropertyInfo property, object obj)
-        {
-            var rm = GetResourceManager(obj);
-            var dockPanel = new DockPanel();
-
-            var textBlock = CreateLabel(property, rm);
-            var comboBox = new ComboBox
-            {
-                Margin = new Thickness(5, 0, 0, 0),
-                MinWidth = ControlMinWidth,
-                Style = ComboBoxSmallStyle,
-                ItemsSource = Enum.GetValues(property.PropertyType)
-            };
-
-            var binding = CreateTwoWayBinding(obj, property.Name);
-            comboBox.SetBinding(Selector.SelectedItemProperty, binding);
-            DockPanel.SetDock(comboBox, Dock.Right);
-
-            dockPanel.Children.Add(comboBox);
-            dockPanel.Children.Add(textBlock);
-            return dockPanel;
-        }
-
-
 
         public static DockPanel GenTextboxProperties(PropertyInfo property, object obj)
         {
@@ -235,84 +191,7 @@ namespace ColorVision.UI
             return new TextboxPropertiesEditor().GenProperties(property, obj);
         }
 
-        public static DockPanel GenBrushProperties(PropertyInfo property, object obj)
-        {
-            var rm = GetResourceManager(obj);
-            var dockPanel = new DockPanel();
 
-            var textBlock = CreateLabel(property, rm);
-
-            var button = new Button
-            {
-                Margin = new Thickness(5, 0, 0, 0),
-                Height = 20,
-                Width = 22
-            };
-
-            // Only attach color picker for SolidColorBrush (can be extended)
-
-            button.Click += (_, __) =>
-            {
-                var colorPicker = new HandyControl.Controls.ColorPicker();
-                if (property.GetValue(obj) is SolidColorBrush scb)
-                {
-                    colorPicker.SelectedBrush = scb;
-                }
-
-                colorPicker.SelectedColorChanged += (_, __) =>
-                {
-                    property.SetValue(obj, colorPicker.SelectedBrush);
-                    button.Background = colorPicker.SelectedBrush;
-                };
-
-                var window = new Window
-                {
-                    Owner = Application.Current.GetActiveWindow(),
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                    Content = colorPicker,
-                    Width = 250,
-                    Height = 400
-                };
-
-                colorPicker.Confirmed += (_, __) =>
-                {
-                    property.SetValue(obj, colorPicker.SelectedBrush);
-                    button.Background = colorPicker.SelectedBrush;
-                    window.Close();
-                };
-                window.Closed += (_, __) => colorPicker.Dispose();
-                window.Show();
-            };
-
-            var binding = CreateTwoWayBinding(obj, property.Name);
-            button.SetBinding(Control.BackgroundProperty, binding);
-
-            DockPanel.SetDock(button, Dock.Right);
-            dockPanel.Children.Add(button);
-            dockPanel.Children.Add(textBlock);
-            return dockPanel;
-        }
-
-        public static DockPanel GenCommandProperties(PropertyInfo property, object obj)
-        {
-            var rm = GetResourceManager(obj);
-            var dockPanel = new DockPanel();
-
-            var textBlock = CreateLabel(property, rm);
-            var command = property.GetValue(obj) as ICommand;
-
-            var button = new Button
-            {
-                Margin = new Thickness(5, 0, 0, 0),
-                Content = Properties.Resources.Execute,
-                Command = command
-            };
-
-            DockPanel.SetDock(button, Dock.Right);
-            dockPanel.Children.Add(button);
-            dockPanel.Children.Add(textBlock);
-            return dockPanel;
-        }
 
         public static StackPanel GenPropertyEditorControl(object obj)
         {
@@ -385,20 +264,18 @@ namespace ColorVision.UI
                     Margin = new Thickness(0, 0, 0, 5)
                 };
                 var stackPanel = new StackPanel { Margin = new Thickness(5, 5, 5, 0) };
-                
-                // Add category header if not "default"
-                if (categoryGroup.Key != "default")
+
+
+                var categoryHeader = new TextBlock
                 {
-                    var categoryHeader = new TextBlock
-                    {
-                        Text = categoryGroup.Key,
-                        FontWeight = FontWeights.Bold,
-                        Foreground = GlobalTextBrush,
-                        Margin = new Thickness(0, 0, 0, 5)
-                    };
-                    stackPanel.Children.Add(categoryHeader);
-                }
-                
+                    Text = categoryGroup.Key,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = GlobalTextBrush,
+                    Margin = new Thickness(0, 0, 0, 5)
+                };
+                stackPanel.Children.Add(categoryHeader);
+
+
                 border.Child = stackPanel;
                 propertyPanel.Children.Add(border);
 
@@ -413,11 +290,11 @@ namespace ColorVision.UI
 
                     if (property.PropertyType.IsEnum)
                     {
-                        dockPanel = GenEnumProperties(property, obj);
+                        dockPanel = PropertyEditorHelper.GetOrCreateEditor<EnumPropertiesEditor>().GenProperties(property, obj);
                     }
                     else if (property.PropertyType == typeof(bool))
                     {
-                        dockPanel = GenBoolProperties(property, obj);
+                        dockPanel = PropertyEditorHelper.GetOrCreateEditor<BoolPropertiesEditor>().GenProperties(property, obj);
                     }
                     else if (IsTextEditableType(property.PropertyType))
                     {
@@ -425,7 +302,7 @@ namespace ColorVision.UI
                     }
                     else if (typeof(Brush).IsAssignableFrom(property.PropertyType))
                     {
-                        dockPanel = GenBrushProperties(property, obj);
+                        dockPanel = GetOrCreateEditor<BrushesPropertiesEditor>().GenProperties(property, obj);
                     }
                     else if (property.PropertyType == typeof(FontFamily))
                         dockPanel = GetOrCreateEditor<FontFamilyPropertiesEditor>().GenProperties(property, obj);
@@ -437,15 +314,23 @@ namespace ColorVision.UI
                         dockPanel = GetOrCreateEditor<FontStretchPropertiesEditor>().GenProperties(property, obj);
                     else if (typeof(ICommand).IsAssignableFrom(property.PropertyType))
                     {
-                        dockPanel = GenCommandProperties(property, obj);
+                        dockPanel = GetOrCreateEditor<CommandPropertiesEditor>().GenProperties(property, obj);
                     }
                     else if (typeof(ViewModelBase).IsAssignableFrom(property.PropertyType))
                     {
-                        if (property.GetValue(obj) is ViewModelBase nested)
+                        try
                         {
-                            stackPanel.Children.Add(GenPropertyEditorControl(nested));
+                            if (property.GetValue(obj) is ViewModelBase nested)
+                            {
+                                stackPanel.Children.Add(GenPropertyEditorControl(nested));
+                            }
+                            continue;
                         }
-                        continue;
+                        catch
+                        {
+                            continue;
+                        }
+
                     }
                     else
                     {

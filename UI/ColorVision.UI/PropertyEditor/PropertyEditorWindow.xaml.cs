@@ -33,33 +33,10 @@ namespace ColorVision.UI
 
         public Dictionary<string, List<PropertyInfo>> categoryGroups { get; set; } = new Dictionary<string, List<PropertyInfo>>();
 
-        ResourceManager? resourceManager;
 
         public PropertyEditorWindow(object config ,bool isEdit = true)
         {
             Type type = config.GetType();
-            var lazyResourceManager = PropertyEditorHelper.ResourceManagerCache.GetOrAdd(type, t => new Lazy<ResourceManager?>(() =>
-            {
-                string namespaceName = t.Assembly.GetName().Name;
-                string resourceClassName = $"{namespaceName}.Properties.Resources";
-                Type resourceType = t.Assembly.GetType(resourceClassName);
-
-                if (resourceType != null)
-                {
-                    var resourceManagerProperty = resourceType.GetProperty("ResourceManager", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-                    if (resourceManagerProperty != null)
-                    {
-                        return (ResourceManager)resourceManagerProperty.GetValue(null);
-                    }
-                }
-
-                return null;
-            })
-            {
-
-            });
-            resourceManager = lazyResourceManager.Value;
-
             IsEdit = isEdit;
             Config = config;
             InitializeComponent();
@@ -172,11 +149,21 @@ namespace ColorVision.UI
                 };
                 var stackPanel = new StackPanel { Margin = new Thickness(10,5,10,0) };
                 border.Child = stackPanel;
-                
+
+
+                var categoryHeader = new TextBlock
+                {
+                    Text = categoryGroup.Key,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = PropertyEditorHelper.GlobalTextBrush,
+                    Margin = new Thickness(0, 0, 0, 5)
+                };
+                stackPanel.Children.Add(categoryHeader);
+
                 // Sort properties: first by PropertyOrderAttribute, then by name
                 var sortedProperties = categoryGroup.Value
                     .OrderBy(p => p.GetCustomAttribute<PropertyOrderAttribute>()?.Order ?? int.MaxValue)
-                    .ThenBy(p => PropertyEditorHelper.GetDisplayName(resourceManager, p));
+                    .ThenBy(p => PropertyEditorHelper.GetDisplayName(PropertyEditorHelper.GetResourceManager(obj) , p));
 
                 foreach (var property in sortedProperties)
                 {
@@ -187,11 +174,11 @@ namespace ColorVision.UI
                         DockPanel dockPanel = new DockPanel();
                         if (property.PropertyType.IsEnum)
                         {
-                            dockPanel = PropertyEditorHelper.GenEnumProperties(property, obj);
+                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<EnumPropertiesEditor>().GenProperties(property, obj);
                         }
                         else if (property.PropertyType == typeof(bool))
                         {
-                            dockPanel = PropertyEditorHelper.GenBoolProperties(property, obj);
+                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<BoolPropertiesEditor>().GenProperties(property, obj);
                         }
                         else if (property.PropertyType == typeof(int?) || property.PropertyType == typeof(int) || property.PropertyType == typeof(float) || property.PropertyType == typeof(float?) || property.PropertyType == typeof(uint) || property.PropertyType == typeof(long) || property.PropertyType == typeof(ulong) || property.PropertyType == typeof(sbyte) || property.PropertyType == typeof(double) || property.PropertyType == typeof(double?) || property.PropertyType == typeof(string))
                         {
@@ -203,11 +190,11 @@ namespace ColorVision.UI
                         }
                         else if (typeof(Brush).IsAssignableFrom(property.PropertyType))
                         {
-                            dockPanel = PropertyEditorHelper.GenBrushProperties(property, obj);
+                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<BrushesPropertiesEditor>().GenProperties(property, obj);
                         }
                         else if (typeof(ICommand).IsAssignableFrom(property.PropertyType))
                         {
-                            dockPanel = PropertyEditorHelper.GenCommandProperties(property, obj);
+                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<CommandPropertiesEditor>().GenProperties(property, obj);
                         }
                         else if (property.PropertyType == typeof(FontFamily))
                             dockPanel = PropertyEditorHelper.GetOrCreateEditor<FontFamilyPropertiesEditor>().GenProperties(property, obj);
@@ -224,15 +211,23 @@ namespace ColorVision.UI
                             var nestedObj = (INotifyPropertyChanged)property.GetValue(obj);
                             if (nestedObj != null)
                             {
-                                stackPanel.Margin = new Thickness(0);
-                                stackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(nestedObj));
+                                stackPanel.Margin = new Thickness(5);
+                                StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(nestedObj);
+                                if (stackPanel1.Children.Count ==1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count !=0)
+                                {
+                                    stackPanel.Children.Add(stackPanel1);
+                                }
                                 continue;
                             }
                         }
                         else if (property.PropertyType ==typeof(object) && property.GetValue(obj) is INotifyPropertyChanged nestedObj)
                         {
-                            stackPanel.Margin = new Thickness(0);
-                            stackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(nestedObj));
+                            stackPanel.Margin = new Thickness(5);
+                            StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(nestedObj);
+                            if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count != 0)
+                            {
+                                stackPanel.Children.Add(stackPanel1);
+                            }
                             continue;
                         }
                         else

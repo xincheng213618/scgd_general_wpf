@@ -80,13 +80,9 @@ namespace ColorVision.Settings
                     TabItem tabItem = new TabItem() { Header = configSetting.Name, Background = Brushes.Transparent };
                     Grid grid = new Grid();
                     grid.SetResourceReference(Panel.BackgroundProperty, "GlobalBorderBrush");
-
-                    StackPanel stackPanel = new StackPanel() { Margin = new Thickness(10) };
-
                     if (configSetting.Source is ViewModelBase obj)
                     {
-                        stackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(obj));
-                        grid.Children.Add(stackPanel) ;
+                        grid.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(obj)) ;
                     }
                     tabItem.Content = grid;
                     TabControlSetting.Items.Add(tabItem);
