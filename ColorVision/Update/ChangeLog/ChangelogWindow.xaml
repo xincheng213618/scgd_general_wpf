@@ -68,42 +68,47 @@
         </Grid>
 
 
-        <ListView x:Name="ChangeLogListView"  Background="Transparent" Grid.Row="1" Padding="2" Margin="5,0,5,5">
-            <ListView.Resources >
-                <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
-            </ListView.Resources>
-            <ListView.ItemContainerStyle>
-                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
-                    <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
-                </Style>
-            </ListView.ItemContainerStyle>
-            <ListView.View>
-                <GridView>
-                    <GridView.ColumnHeaderContainerStyle>
-                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
-                            <Setter Property="Visibility" Value="Visible"/>
-                            <Setter Property="Background" Value="Transparent"/>
-                            <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
-                            <EventSetter Event="Click" Handler="GridViewColumnSort"/>
-                        </Style>
-                    </GridView.ColumnHeaderContainerStyle>
-                    <GridViewColumn Header="{x:Static properties:Resources.Version}" DisplayMemberBinding="{Binding Version}"  Width="80" />
-                    <GridViewColumn Header="{x:Static properties:Resources.ReleaseDate}" Width="100">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:ChangeLogEntry}">
-                                <TextBlock Text="{Binding ReleaseDate,StringFormat=yyyy/MM/dd}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="{x:Static properties:Resources.ChangeLog}">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:ChangeLogEntry}">
-                                <TextBlock Text="{Binding ChangeLog}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                </GridView>
-            </ListView.View>
-        </ListView>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
+            <ListView x:Name="ChangeLogListView" Background="Transparent" Grid.Column="0" Padding="2" Margin="5,0,5,5" SelectionChanged="ChangeLogListView_SelectionChanged">
+                <ListView.Resources >
+                    <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
+                </ListView.Resources>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
+                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.View>
+                    <GridView>
+                        <GridView.ColumnHeaderContainerStyle>
+                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                                <EventSetter Event="Click" Handler="GridViewColumnSort"/>
+                            </Style>
+                        </GridView.ColumnHeaderContainerStyle>
+                        <GridViewColumn Header="{x:Static properties:Resources.Version}" DisplayMemberBinding="{Binding Version}"  Width="80" />
+                        <GridViewColumn Header="{x:Static properties:Resources.ReleaseDate}" Width="100">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:ChangeLogEntry}">
+                                    <TextBlock Text="{Binding ReleaseDate,StringFormat=yyyy/MM/dd}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+            
+            <ScrollViewer x:Name="ChangeLogScrollViewer" Grid.Column="1" Margin="5,0,5,5" VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="ChangeLogDetailsPanel" Margin="10">
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
     </Grid>
 </Window>

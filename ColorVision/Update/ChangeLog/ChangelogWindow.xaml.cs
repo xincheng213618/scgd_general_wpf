@@ -94,6 +94,7 @@ namespace ColorVision.Update
                     string changelogContent = File.ReadAllText(changelogPath);
                     ChangeLogEntrys = Parse(changelogContent);
                     ChangeLogListView.ItemsSource = ChangeLogEntrys;
+                    PopulateChangeLogDetails();
                 }
                 else
                 {
@@ -105,6 +106,56 @@ namespace ColorVision.Update
             {
                 MessageBox.Show("读取更新记录失败: " + ex.Message);
                 ChangeLogEntrys = new ObservableCollection<ChangeLogEntry>();
+            }
+        }
+
+        private void PopulateChangeLogDetails()
+        {
+            ChangeLogDetailsPanel.Children.Clear();
+            
+            foreach (var entry in ChangeLogEntrys)
+            {
+                var versionBlock = new TextBlock
+                {
+                    Text = $"## {entry.Version}",
+                    FontSize = 18,
+                    FontWeight = FontWeights.Bold,
+                    Margin = new Thickness(0, 10, 0, 5),
+                    Tag = entry
+                };
+                ChangeLogDetailsPanel.Children.Add(versionBlock);
+
+                var dateBlock = new TextBlock
+                {
+                    Text = entry.ReleaseDate.ToString("yyyy/MM/dd"),
+                    FontSize = 12,
+                    Foreground = System.Windows.Media.Brushes.Gray,
+                    Margin = new Thickness(0, 0, 0, 10)
+                };
+                ChangeLogDetailsPanel.Children.Add(dateBlock);
+
+                var changesBlock = new TextBlock
+                {
+                    Text = entry.ChangeLog,
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(0, 0, 0, 20)
+                };
+                ChangeLogDetailsPanel.Children.Add(changesBlock);
+            }
+        }
+
+        private void ChangeLogListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ListView listView && listView.SelectedIndex > -1 && listView.SelectedItem is ChangeLogEntry selectedEntry)
+            {
+                foreach (var child in ChangeLogDetailsPanel.Children)
+                {
+                    if (child is TextBlock textBlock && textBlock.Tag is ChangeLogEntry entry && entry == selectedEntry)
+                    {
+                        textBlock.BringIntoView();
+                        break;
+                    }
+                }
             }
         }
 
@@ -198,6 +249,7 @@ namespace ColorVision.Update
                 if (string.IsNullOrWhiteSpace(textBox.Text))
                 {
                     ChangeLogListView.ItemsSource = ChangeLogEntrys;
+                    PopulateChangeLogDetails();
                 }
                 else if (ChangeLogEntrys != null)
                 {
@@ -212,7 +264,43 @@ namespace ColorVision.Update
                         .ToList();
 
                     ChangeLogListView.ItemsSource = filteredResults;
+                    PopulateFilteredChangeLogDetails(filteredResults);
                 }
+            }
+        }
+
+        private void PopulateFilteredChangeLogDetails(List<ChangeLogEntry> filteredEntries)
+        {
+            ChangeLogDetailsPanel.Children.Clear();
+            
+            foreach (var entry in filteredEntries)
+            {
+                var versionBlock = new TextBlock
+                {
+                    Text = $"## {entry.Version}",
+                    FontSize = 18,
+                    FontWeight = FontWeights.Bold,
+                    Margin = new Thickness(0, 10, 0, 5),
+                    Tag = entry
+                };
+                ChangeLogDetailsPanel.Children.Add(versionBlock);
+
+                var dateBlock = new TextBlock
+                {
+                    Text = entry.ReleaseDate.ToString("yyyy/MM/dd"),
+                    FontSize = 12,
+                    Foreground = System.Windows.Media.Brushes.Gray,
+                    Margin = new Thickness(0, 0, 0, 10)
+                };
+                ChangeLogDetailsPanel.Children.Add(dateBlock);
+
+                var changesBlock = new TextBlock
+                {
+                    Text = entry.ChangeLog,
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(0, 0, 0, 20)
+                };
+                ChangeLogDetailsPanel.Children.Add(changesBlock);
             }
         }
     }
