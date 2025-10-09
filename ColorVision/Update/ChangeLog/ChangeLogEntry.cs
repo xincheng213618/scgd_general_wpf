@@ -35,6 +35,18 @@ namespace ColorVision.Update
 
         public string UpdateString => new Version(Version) > AutoUpdater.CurrentVersion ? Properties.Resources.Update : Properties.Resources.Rollback;
         public ContextMenu ContextMenu { get; set; }
+
+        private bool _isSelected;
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set
+            {
+                _isSelected = value;
+                NotifyPropertyChanged();
+            }
+        }
+
         public ChangeLogEntry()
         {
             Changes = new List<string>();

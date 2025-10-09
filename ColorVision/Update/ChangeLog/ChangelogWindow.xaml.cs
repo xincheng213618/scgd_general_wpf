@@ -59,6 +59,7 @@ namespace ColorVision.Update
     public partial class ChangelogWindow : Window
     {
         public ObservableCollection<ChangeLogEntry> ChangeLogEntrys { get; set; }
+        public ObservableCollection<MajorVersionNode> VersionTree { get; set; } = new ObservableCollection<MajorVersionNode>();
 
         public static ChangelogWindowConfig WindowConfig => ConfigService.Instance.GetRequiredService<ChangelogWindowConfig>();
 
@@ -76,14 +77,6 @@ namespace ColorVision.Update
             this.DataContext = WindowConfig;
 
             LoadChangeLog();
-
-            if (ChangeLogListView.View is GridView gridView)
-            {
-                GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-                WindowConfig.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
-                WindowConfig.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
-                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
-            }
         }
 
         private void LoadChangeLog()
@@ -95,7 +88,11 @@ namespace ColorVision.Update
                 {
                     string changelogContent = File.ReadAllText(changelogPath);
                     ChangeLogEntrys = Parse(changelogContent);
-                    ChangeLogListView.ItemsSource = ChangeLogEntrys;
+                    
+                    // Build hierarchical tree structure
+                    BuildVersionTree();
+                    
+                    ChangeLogListView.ItemsSource = VersionTree;
                     ChangeLogDetailsPanel.ItemsSource = ChangeLogEntrys;
                 }
                 else
@@ -111,11 +108,11 @@ namespace ColorVision.Update
             }
         }
 
-        private void ChangeLogListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ChangeLogListView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             if (_isUpdatingSelection) return;
 
-            if (sender is ListView listView && listView.SelectedIndex > -1 && listView.SelectedItem is ChangeLogEntry selectedEntry)
+            if (sender is TreeView treeView && treeView.SelectedItem is ChangeLogEntry selectedEntry)
             {
                 _isUpdatingSelection = true;
                 try
@@ -140,9 +137,8 @@ namespace ColorVision.Update
                 _isUpdatingSelection = true;
                 try
                 {
-                    // Synchronize selection in list view
-                    ChangeLogListView.SelectedItem = selectedEntry;
-                    ChangeLogListView.ScrollIntoView(selectedEntry);
+                    // Find and select the entry in TreeView
+                    SelectEntryInTreeView(selectedEntry);
                 }
                 finally
                 {
@@ -151,39 +147,54 @@ namespace ColorVision.Update
             }
         }
 
+        /// <summary>
+        /// Recursively find and select an entry in the TreeView
+        /// </summary>
+        private void SelectEntryInTreeView(ChangeLogEntry entry)
+        {
+            foreach (var majorNode in VersionTree)
+            {
+                foreach (var minorNode in majorNode.MinorVersions)
+                {
+                    var foundEntry = minorNode.Entries.FirstOrDefault(e => e.Version == entry.Version);
+                    if (foundEntry != null)
+                    {
+                        // Expand parent nodes
+                        majorNode.IsExpanded = true;
+                        minorNode.IsExpanded = true;
+                        
+                        // Select the entry
+                        foundEntry.IsSelected = true;
+                        
+                        // Scroll into view
+                        ScrollTreeViewItemIntoView(foundEntry);
+                        return;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Scroll TreeView item into view
+        /// </summary>
+        private void ScrollTreeViewItemIntoView(object item)
+        {
+            if (ChangeLogListView.ItemContainerGenerator.ContainerFromItem(item) is TreeViewItem treeViewItem)
+            {
+                treeViewItem.BringIntoView();
+            }
+        }
+
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
-            if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && ChangeLogListView.View is GridView gridView)
-                GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
+            // Context menu for TreeView - can be extended in future if needed
         }
+
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
-            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
-            {
-                Type type = typeof(ChangeLogEntry);
-
-                var properties = type.GetProperties();
-                foreach (var property in properties)
-                {
-                    var attribute = property.GetCustomAttribute<DisplayNameAttribute>();
-                    if (attribute != null)
-                    {
-                        string displayName = attribute.DisplayName;
-                        displayName = Properties.Resources.ResourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
-                        if (displayName == gridViewColumnHeader.Content.ToString())
-                        {
-                            var item = GridViewColumnVisibilitys.FirstOrDefault(x => x.ColumnName.ToString() == displayName);
-                            if (item != null)
-                            {
-                                item.IsSortD = !item.IsSortD;
-                                ChangeLogEntrys.SortByProperty(property.Name, item.IsSortD);
-                            }
-                        }
-                    }
-                }
-            }
+            // Sorting is now handled by tree structure grouping
         }
 
 
@@ -226,6 +237,65 @@ namespace ColorVision.Update
             return entries;
         }
 
+        /// <summary>
+        /// Build hierarchical tree structure from flat changelog entries
+        /// </summary>
+        private void BuildVersionTree()
+        {
+            VersionTree.Clear();
+
+            // Group by major version
+            var majorGroups = ChangeLogEntrys
+                .GroupBy(entry =>
+                {
+                    var versionParts = entry.Version.Split('.');
+                    return int.TryParse(versionParts[0], out int major) ? major : 0;
+                })
+                .OrderByDescending(g => g.Key);
+
+            int latestMajor = majorGroups.FirstOrDefault()?.Key ?? 0;
+
+            foreach (var majorGroup in majorGroups)
+            {
+                var majorNode = new MajorVersionNode
+                {
+                    MajorVersion = majorGroup.Key,
+                    DisplayName = $"{majorGroup.Key}.x.x.x ({majorGroup.Count()} versions)",
+                    IsExpanded = majorGroup.Key == latestMajor // Expand latest major version
+                };
+
+                // Group by minor version within major
+                var minorGroups = majorGroup
+                    .GroupBy(entry =>
+                    {
+                        var versionParts = entry.Version.Split('.');
+                        return versionParts.Length > 1 && int.TryParse(versionParts[1], out int minor) ? minor : 0;
+                    })
+                    .OrderByDescending(g => g.Key);
+
+                foreach (var minorGroup in minorGroups)
+                {
+                    var minorNode = new MinorVersionNode
+                    {
+                        MajorVersion = majorGroup.Key,
+                        MinorVersion = minorGroup.Key,
+                        DisplayName = $"{majorGroup.Key}.{minorGroup.Key}.x.x ({minorGroup.Count()} versions)",
+                        IsExpanded = false // Collapse minor versions by default
+                    };
+
+                    // Add individual entries
+                    foreach (var entry in minorGroup.OrderByDescending(e => e.Version))
+                    {
+                        minorNode.Entries.Add(entry);
+                    }
+
+                    majorNode.MinorVersions.Add(minorNode);
+                }
+
+                VersionTree.Add(majorNode);
+            }
+        }
+
         private void Searchbox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
 
@@ -253,7 +323,8 @@ namespace ColorVision.Update
 
                     if (string.IsNullOrWhiteSpace(textBox.Text))
                     {
-                        ChangeLogListView.ItemsSource = ChangeLogEntrys;
+                        // Reset to full tree
+                        BuildVersionTree();
                         ChangeLogDetailsPanel.ItemsSource = ChangeLogEntrys;
                     }
                     else if (ChangeLogEntrys != null)
@@ -268,8 +339,23 @@ namespace ColorVision.Update
                             ))
                             .ToList();
 
-                        ChangeLogListView.ItemsSource = filteredResults;
+                        // Rebuild tree with filtered results
+                        var tempEntries = ChangeLogEntrys;
+                        ChangeLogEntrys = new ObservableCollection<ChangeLogEntry>(filteredResults);
+                        BuildVersionTree();
+                        ChangeLogEntrys = tempEntries;
+                        
                         ChangeLogDetailsPanel.ItemsSource = filteredResults;
+                        
+                        // Expand all nodes in search results
+                        foreach (var majorNode in VersionTree)
+                        {
+                            majorNode.IsExpanded = true;
+                            foreach (var minorNode in majorNode.MinorVersions)
+                            {
+                                minorNode.IsExpanded = true;
+                            }
+                        }
                     }
                 }
                 catch (TaskCanceledException)

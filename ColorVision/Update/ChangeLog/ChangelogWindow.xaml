@@ -79,36 +79,30 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             
-            <ListView x:Name="ChangeLogListView" Background="Transparent" Grid.Column="0" Padding="2" Margin="5,0,5,5" SelectionChanged="ChangeLogListView_SelectionChanged">
-                <ListView.Resources >
+            <TreeView x:Name="ChangeLogListView" Background="Transparent" Grid.Column="0" Padding="2" Margin="5,0,5,5" SelectedItemChanged="ChangeLogListView_SelectedItemChanged">
+                <TreeView.Resources>
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
-                </ListView.Resources>
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
+                    <HierarchicalDataTemplate DataType="{x:Type local:MajorVersionNode}" ItemsSource="{Binding MinorVersions}">
+                        <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" Foreground="{DynamicResource GlobalTextBrush}"/>
+                    </HierarchicalDataTemplate>
+                    <HierarchicalDataTemplate DataType="{x:Type local:MinorVersionNode}" ItemsSource="{Binding Entries}">
+                        <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}"/>
+                    </HierarchicalDataTemplate>
+                    <DataTemplate DataType="{x:Type local:ChangeLogEntry}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Version}" Width="80" Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <TextBlock Text="{Binding ReleaseDate, StringFormat='yyyy/MM/dd'}" Width="100" Foreground="{DynamicResource GlobalTextBrush}"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </TreeView.Resources>
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="{x:Type TreeViewItem}" BasedOn="{StaticResource TreeViewItemBaseStyle}">
+                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
                         <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
                     </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.View>
-                    <GridView>
-                        <GridView.ColumnHeaderContainerStyle>
-                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
-                                <Setter Property="Visibility" Value="Visible"/>
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
-                                <EventSetter Event="Click" Handler="GridViewColumnSort"/>
-                            </Style>
-                        </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn Header="{x:Static properties:Resources.Version}" DisplayMemberBinding="{Binding Version}"  Width="80" />
-                        <GridViewColumn Header="{x:Static properties:Resources.ReleaseDate}" Width="100">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:ChangeLogEntry}">
-                                    <TextBlock Text="{Binding ReleaseDate,StringFormat=yyyy/MM/dd}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>      
-            </ListView>
+                </TreeView.ItemContainerStyle>
+            </TreeView>
             
             <ListView x:Name="ChangeLogDetailsPanel" Grid.Column="1" Margin="5,0,5,5" 
                       Background="Transparent" BorderThickness="0"
