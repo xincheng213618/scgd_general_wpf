@@ -9,6 +9,11 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ChangelogWindowConfig}"
         Title="{x:Static properties:Resources.ChangeLog}" Background="{StaticResource GlobalBackground}" Height="450" Width="800" Initialized="Window_Initialized">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        </Style>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -102,7 +107,7 @@
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                     </GridView>
-                </ListView.View>
+                </ListView.View>      
             </ListView>
             
             <ItemsControl x:Name="ChangeLogDetailsPanel" Grid.Column="1" Margin="5,0,5,5">
