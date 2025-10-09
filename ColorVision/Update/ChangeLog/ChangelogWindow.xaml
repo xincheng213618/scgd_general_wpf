@@ -110,22 +110,43 @@
                 </ListView.View>      
             </ListView>
             
-            <ItemsControl x:Name="ChangeLogDetailsPanel" Grid.Column="1" Margin="5,0,5,5">
-                <ItemsControl.Template>
-                    <ControlTemplate>
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="True">
-                            <ItemsPresenter/>
-                        </ScrollViewer>
-                    </ControlTemplate>
-                </ItemsControl.Template>
-                <ItemsControl.ItemsPanel>
+            <ListView x:Name="ChangeLogDetailsPanel" Grid.Column="1" Margin="5,0,5,5" 
+                      Background="Transparent" BorderThickness="0"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                      SelectionChanged="ChangeLogDetailsPanel_SelectionChanged">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListViewItem">
+                                    <Border Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                            Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="Transparent"/>
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="Transparent"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemsPanel>
                     <ItemsPanelTemplate>
                         <VirtualizingStackPanel Margin="10" IsVirtualizing="True" VirtualizationMode="Recycling"/>
                     </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
+                </ListView.ItemsPanel>
+                <ListView.ItemTemplate>
                     <DataTemplate DataType="{x:Type local:ChangeLogEntry}">
-                        <StackPanel Margin="0,0,0,20" MouseDown="DetailItem_MouseDown" Background="Transparent">
+                        <StackPanel Margin="0,0,0,20" Background="Transparent">
                             <TextBox Text="{Binding Version, StringFormat='## {0}'}" 
                                        FontSize="18" 
                                        FontWeight="Bold"
@@ -140,8 +161,8 @@
                                        TextWrapping="Wrap"/>
                         </StackPanel>
                     </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                </ListView.ItemTemplate>
+            </ListView>
         </Grid>
     </Grid>
 </Window>
