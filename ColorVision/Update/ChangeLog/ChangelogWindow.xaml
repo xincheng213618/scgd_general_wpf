@@ -125,8 +125,8 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type local:ChangeLogEntry}">
-                        <StackPanel Margin="0,0,0,20">
-                            <TextBox Text="{Binding Version, StringFormat='## {0}',Mode=OneWay}" 
+                        <StackPanel Margin="0,0,0,20" MouseDown="DetailItem_MouseDown" Background="Transparent">
+                            <TextBox Text="{Binding Version, StringFormat='## {0}'}" 
                                        FontSize="18" 
                                        FontWeight="Bold"
                                        BorderThickness="0" IsReadOnly="True" Padding="0"
