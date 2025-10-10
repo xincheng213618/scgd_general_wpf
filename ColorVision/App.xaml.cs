@@ -146,8 +146,19 @@ namespace ColorVision
             log.Info(UI.ACE.License.GetMachineCode());
             if (!UI.ACE.License.Check())
             {
-                log.Info("检测不到许可证，正在创建许可证");
-                UI.ACE.License.Create();
+#if DEBUG
+                log.Info("开发模式：检测不到许可证，但允许继续运行");
+                // 在开发环境中允许无许可证运行
+#else
+                log.Warn("未找到有效许可证");
+                // 生产环境中提示用户获取许可证
+                // 注意：出于安全考虑，自动许可证生成功能已移除
+                // 请使用专门的许可证生成工具创建许可证
+#endif
+            }
+            else
+            {
+                log.Info("许可证验证通过");
             }
             bool shouldLoadPlugins = false;
 
