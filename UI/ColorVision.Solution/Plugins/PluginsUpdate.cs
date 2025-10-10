@@ -21,7 +21,7 @@ namespace ColorVision.Plugins
                 {
                     if (item.LastVersion > item.AssemblyVersion)
                     {
-                        if (MessageBox.Show(Application.Current.GetActiveWindow(), "检测到存在可以更新的插件，是否更新?", item.AssemblyName, MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                        if (MessageBox.Show("检测到存在可以更新的插件，是否更新?", item.AssemblyName, MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                         {
                             new PluginManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         }

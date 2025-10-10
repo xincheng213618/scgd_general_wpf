@@ -68,8 +68,8 @@ namespace ColorVision.Database
 
                 log.Info($"数据库连接成功:{connStr}");
 
-                DB?.Dispose();
-                DB = new SqlSugarClient(new ConnectionConfig
+                _DB?.Dispose();
+                _DB = new SqlSugarClient(new ConnectionConfig
                 {
                     ConnectionString = GetConnectionString(Config),
                     DbType = Config.DbType,
@@ -80,12 +80,12 @@ namespace ColorVision.Database
                 
                 // 检查数据库名是否为空
                 // 检查当前 local_infile 的值
-                int localInfile = DB.Ado.GetInt("SELECT @@global.local_infile;");
+                int localInfile = _DB.Ado.GetInt("SELECT @@global.local_infile;");
 
                 if (localInfile == 0)
                 {
                     // 不支持则设置为 1
-                    DB.Ado.ExecuteCommand("SET GLOBAL local_infile = 1;");
+                    _DB.Ado.ExecuteCommand("SET GLOBAL local_infile = 1;");
                     log.Info("local_infile 已设置为 1");
                 }
                 else
