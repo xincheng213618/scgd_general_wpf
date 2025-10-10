@@ -180,21 +180,19 @@ namespace ColorVision.Engine.Templates
             {
                 GridProperty.Children.Clear();
                 GridProperty.Margin = new Thickness(5, 5, 5, 5);
-                this.Height = 250;
-
             }
             else if (ITemplate.IsUserControl)
             {
                 GridProperty.Children.Clear();
                 GridProperty.Margin = new Thickness(5, 5, 5, 5);
-                this.Height = 250;
                 UserControl userControl = ITemplate.CreateUserControl();
+                userControl.Height = double.NaN;
+                userControl.Width = double.NaN;
+
                 if (userControl is ITemplateUserControl templateUserControl)
                 {
                     GridProperty.Children.Add(userControl);
                     templateUserControl.SetParam(ITemplate.CreateDefault());
-                    this.Height = userControl.Height +250;
-                    this.Width = userControl.Width + 40;
                 }
             }
             else
