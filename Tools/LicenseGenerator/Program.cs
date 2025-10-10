@@ -188,7 +188,7 @@ namespace LicenseGenerator
                 
                 foreach (string machineCode in machineCodes)
                 {
-                    if (string.IsNullOrWhiteSpace(machineCode))
+                    if (string.IsNullOrWhiteSpace(machineCode) || machineCode.TrimStart().StartsWith("#"))
                         continue;
 
                     try
@@ -320,7 +320,7 @@ namespace LicenseGenerator
 
             foreach (string line in machineCodes)
             {
-                if (string.IsNullOrWhiteSpace(line))
+                if (string.IsNullOrWhiteSpace(line) || line.TrimStart().StartsWith("#"))
                     continue;
 
                 try

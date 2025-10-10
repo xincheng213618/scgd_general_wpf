@@ -10,6 +10,23 @@
 - 支持命令行和交互式两种模式
 - 自动验证生成的许可证
 
+## 快速开始
+
+### Windows
+```bash
+run.bat
+```
+
+### Linux/Mac
+```bash
+./run.sh
+```
+
+### 使用 .NET CLI
+```bash
+dotnet run --project LicenseGenerator.csproj
+```
+
 ## 使用方法
 
 ### 交互式模式
