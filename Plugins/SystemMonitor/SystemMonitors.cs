@@ -9,22 +9,62 @@ using System.Windows;
 
 namespace ColorVision.UI.Configs
 {
+    /// <summary>
+    /// Configuration settings for system monitoring
+    /// </summary>
     public class SystemMonitorSetting : ViewModelBase, IConfig
     {
-        public int UpdateSpeed { get => _UpdateSpeed; set { _UpdateSpeed = value; OnPropertyChanged(); } }
         private int _UpdateSpeed = 1000;
-
-        public string DefaultTimeFormat { get => _DefaultTimeFormat; set { _DefaultTimeFormat = value; OnPropertyChanged(); } }
         private string _DefaultTimeFormat = "yyyy/MM/dd HH:mm:ss";
-
-        public bool IsShowTime { get => _ShowTime; set { _ShowTime = value; OnPropertyChanged(); } }
         private bool _ShowTime;
-
-        public bool IsShowRAM { get => _IsShowRAM; set { _IsShowRAM = value; OnPropertyChanged(); } }
         private bool _IsShowRAM;
 
+        /// <summary>
+        /// Update interval in milliseconds (must be >= 100)
+        /// </summary>
+        public int UpdateSpeed 
+        { 
+            get => _UpdateSpeed; 
+            set 
+            { 
+                if (value >= 100) // Minimum 100ms to prevent excessive CPU usage
+                {
+                    SetProperty(ref _UpdateSpeed, value);
+                }
+            } 
+        }
+
+        /// <summary>
+        /// Time format string for status bar display
+        /// </summary>
+        public string DefaultTimeFormat 
+        { 
+            get => _DefaultTimeFormat; 
+            set => SetProperty(ref _DefaultTimeFormat, value); 
+        }
+
+        /// <summary>
+        /// Whether to show time in status bar
+        /// </summary>
+        public bool IsShowTime 
+        { 
+            get => _ShowTime; 
+            set => SetProperty(ref _ShowTime, value); 
+        }
+
+        /// <summary>
+        /// Whether to show RAM usage in status bar
+        /// </summary>
+        public bool IsShowRAM 
+        { 
+            get => _IsShowRAM; 
+            set => SetProperty(ref _IsShowRAM, value); 
+        }
     }
 
+    /// <summary>
+    /// System monitor for tracking CPU, RAM, disk usage and system time
+    /// </summary>
     public class SystemMonitors : ViewModelBase, IDisposable
     {
         private static SystemMonitors _instance;
@@ -35,59 +75,83 @@ namespace ColorVision.UI.Configs
         public RelayCommand ClearCacheCommand { get; set; }
 
 
+        /// <summary>
+        /// Clears application cache and log files
+        /// </summary>
         public static void ClearCache()
         {
-            DirectoryInfo directoryInfo = new DirectoryInfo(Environments.DirAppData);
-            foreach (var item in directoryInfo.GetFiles())
+            int deletedCount = 0;
+            try
             {
-                try
-                {
-                    item.Delete();
-                }
-                catch
-                {
-
-                }
-            }
-
-            if (Environments.DirLog != null)
-            {
-                DirectoryInfo logDir = new DirectoryInfo(Environments.DirLog);
-                foreach (var item in logDir.GetFiles())
+                DirectoryInfo directoryInfo = new DirectoryInfo(Environments.DirAppData);
+                foreach (var item in directoryInfo.GetFiles())
                 {
                     try
                     {
                         item.Delete();
+                        deletedCount++;
                     }
-                    catch
+                    catch (Exception ex)
                     {
-
+                        // Log error but continue with other files
+                        System.Diagnostics.Debug.WriteLine($"Failed to delete {item.Name}: {ex.Message}");
                     }
                 }
+
+                if (Environments.DirLog != null)
+                {
+                    DirectoryInfo logDir = new DirectoryInfo(Environments.DirLog);
+                    foreach (var item in logDir.GetFiles())
+                    {
+                        try
+                        {
+                            item.Delete();
+                            deletedCount++;
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Failed to delete log {item.Name}: {ex.Message}");
+                        }
+                    }
+                }
+                MessageBox.Show($"清除成功，删除了 {deletedCount} 个文件");
             }
-            MessageBox.Show("清除成功");
+            catch (Exception ex)
+            {
+                MessageBox.Show($"清除失败: {ex.Message}");
+            }
         }
 
 
 
 
+        private bool _isDisposed;
+        private readonly object _perfCounterLock = new object();
+        
         private bool PerformanceCounterIsOpen;
-        private PerformanceCounter PCCPU;
-        private PerformanceCounter PCCPUThis;
+        private PerformanceCounter? PCCPU;
+        private PerformanceCounter? PCCPUThis;
 
-        private double RAMAL = (double)Common.NativeMethods.PerformanceInfo.GetTotalMemoryInMiB() / 1024;
-        private PerformanceCounter PCRAM;
-        private PerformanceCounter PCRAMThis;
+        private readonly double RAMAL = (double)Common.NativeMethods.PerformanceInfo.GetTotalMemoryInMiB() / 1024;
+        private PerformanceCounter? PCRAM;
+        private PerformanceCounter? PCRAMThis;
 
-        private Timer timer;
+        private Timer? timer;
 
+        /// <summary>
+        /// Gets or sets the update speed in milliseconds
+        /// </summary>
         public int UpdateSpeed
         {
-            get => Config.UpdateSpeed; set
+            get => Config.UpdateSpeed; 
+            set
             {
-                if (value != Config.UpdateSpeed)
+                if (value != Config.UpdateSpeed && value > 0)
                 {
-                    Config.UpdateSpeed = value; OnPropertyChanged();
+                    Config.UpdateSpeed = value; 
+                    OnPropertyChanged();
+                    
+                    // Restart timer with new interval
                     timer?.Dispose();
                     timer = new Timer(TimeRun, null, 0, value);
                 }
@@ -100,64 +164,100 @@ namespace ColorVision.UI.Configs
         public SystemMonitors()
         {
             Config = ConfigService.Instance.GetRequiredService<SystemMonitorSetting>();
+            
+            // Initialize performance counters asynchronously
             Task.Run(() =>
             {
                 try
                 {
-                    PCCPU = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-                    PCCPUThis = new PerformanceCounter("Process", "% Processor Time", Process.GetCurrentProcess().ProcessName);
-                    PCRAM = new PerformanceCounter("Memory", "Available MBytes");
-                    PCRAMThis = new PerformanceCounter("Process", "Working Set - Private", Process.GetCurrentProcess().ProcessName);
-                    PerformanceCounterIsOpen = true;
+                    lock (_perfCounterLock)
+                    {
+                        PCCPU = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+                        PCCPUThis = new PerformanceCounter("Process", "% Processor Time", Process.GetCurrentProcess().ProcessName);
+                        PCRAM = new PerformanceCounter("Memory", "Available MBytes");
+                        PCRAMThis = new PerformanceCounter("Process", "Working Set - Private", Process.GetCurrentProcess().ProcessName);
+                        
+                        // First call to initialize counters
+                        PCCPU.NextValue();
+                        PCCPUThis.NextValue();
+                        PCRAM.NextValue();
+                        PCRAMThis.NextValue();
+                        
+                        PerformanceCounterIsOpen = true;
+                    }
                 }
-                catch
+                catch (Exception ex)
                 {
                     PerformanceCounterIsOpen = false;
+                    System.Diagnostics.Debug.WriteLine($"Failed to initialize performance counters: {ex.Message}");
                 }
             });
+            
             timer = new Timer(TimeRun, null, 0, UpdateSpeed);
             ClearCacheCommand = new RelayCommand(a => ClearCache());
 
+            // Load drive information
             DriveInfo[] allDrives = DriveInfo.GetDrives();
             foreach (var item in allDrives)
             {
-                DriveInfos.Add(item);
+                if (item.IsReady)
+                {
+                    DriveInfos.Add(item);
+                }
             }
         }
 
 
         public ObservableCollection<DriveInfo> DriveInfos { get; set; } = new ObservableCollection<DriveInfo>();
 
+        /// <summary>
+        /// Timer callback to update monitoring data
+        /// </summary>
         private void TimeRun(object? state)
         {
+            if (_isDisposed) return;
+            
             if (PerformanceCounterIsOpen)
             {
                 try
                 {
-                    //RAMPercent = 100 - PCRAM.NextValue() / 1024 / RAMAL * 100;
-                    //RAMThisPercent = PCRAMThis.NextValue() / 1024 / 1024 / 1024 / RAMAL * 100;
-
-                    //CPUThisPercent = PCCPUThis.NextValue();
-                    //CPUPercent = PCCPU.NextValue();
-
-                    //float curRAM = PCRAMThis.NextValue() / 1024 / 1024;
-                    //RAMThis = curRAM.ToString("f1") + "MB";
-                    //MemoryThis = curRAM.ToString("f1") + "MB" + "/" + RAMAL.ToString("f1") + "GB";
-                    //ProcessorTotal = PCCPU.NextValue().ToString("f1") + "%";
+                    lock (_perfCounterLock)
+                    {
+                        if (PCCPU != null && PCRAM != null && PCCPUThis != null && PCRAMThis != null)
+                        {
+                            // Update performance metrics
+                            float availableRAM = PCRAM.NextValue();
+                            float totalRAMGB = (float)RAMAL;
+                            float usedRAMGB = totalRAMGB - (availableRAM / 1024);
+                            
+                            RAMPercent = (usedRAMGB / totalRAMGB) * 100;
+                            
+                            float curRAM = PCRAMThis.NextValue() / 1024 / 1024;
+                            RAMThisPercent = (curRAM / 1024 / totalRAMGB) * 100;
+                            RAMThis = curRAM.ToString("f1") + " MB";
+                            MemoryThis = curRAM.ToString("f1") + " MB / " + totalRAMGB.ToString("f1") + " GB";
+                            
+                            CPUPercent = PCCPU.NextValue();
+                            CPUThisPercent = PCCPUThis.NextValue();
+                            ProcessorTotal = CPUPercent.ToString("f1") + "%";
+                        }
+                    }
                 }
-                catch
+                catch (Exception ex)
                 {
-
+                    System.Diagnostics.Debug.WriteLine($"Error updating performance counters: {ex.Message}");
                 }
 
                 try
                 {
                     if (Config.IsShowTime)
+                    {
                         Time = DateTime.Now.ToString(Config.DefaultTimeFormat);
+                    }
                 }
-                catch
+                catch (Exception ex)
                 {
-
+                    System.Diagnostics.Debug.WriteLine($"Error updating time: {ex.Message}");
                 }
             }
         }
@@ -207,8 +307,33 @@ namespace ColorVision.UI.Configs
         private double _CPUThisPercent;
 
 
+        /// <summary>
+        /// Disposes resources used by the system monitor
+        /// </summary>
         public void Dispose()
         {
+            if (_isDisposed) return;
+            
+            _isDisposed = true;
+            
+            // Dispose timer
+            timer?.Dispose();
+            timer = null;
+            
+            // Dispose performance counters
+            lock (_perfCounterLock)
+            {
+                PCCPU?.Dispose();
+                PCCPUThis?.Dispose();
+                PCRAM?.Dispose();
+                PCRAMThis?.Dispose();
+                
+                PCCPU = null;
+                PCCPUThis = null;
+                PCRAM = null;
+                PCRAMThis = null;
+            }
+            
             GC.SuppressFinalize(this);
         }
     }
