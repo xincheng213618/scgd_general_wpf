@@ -17,7 +17,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services
 {
-    public class ViewResultImage : ViewModelBase, ISortID
+    public class ViewResultImage : ViewModelBase
     {
         public ContextMenu ContextMenu { get; set; }
         public RelayCommand ExportCVCIECommand { get; set; }

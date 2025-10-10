@@ -42,13 +42,13 @@ namespace ColorVision.Engine
             ViewResultImages.Clear();
             foreach (var item in MeasureImgResultDao.Instance.GetAllByBatchId(MeasureBatchModel.Id))
             {
-                ViewResultImages.AddUnique(new ViewResultImage(item));
+                ViewResultImages.Add(new ViewResultImage(item));
             }
 
             ViewResultAlgs.Clear();
             foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(MeasureBatchModel.Id))
             {
-                ViewResultAlgs.AddUnique(new ViewResultAlg(item));
+                ViewResultAlgs.Add(new ViewResultAlg(item));
             }
 
         }

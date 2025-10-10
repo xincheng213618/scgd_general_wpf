@@ -22,7 +22,7 @@ namespace ColorVision.Engine.Services
 
 
 
-    public class ViewResultAlg : ViewModelBase, ISortID
+    public class ViewResultAlg : ViewModelBase
     {
         public ObservableCollection<IViewResult> ViewResults { get; set; }
 
