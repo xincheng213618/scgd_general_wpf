@@ -858,4 +858,7 @@
   <data name="DeviceOffline" xml:space="preserve">
     <value>기기 오프라인</value>
   </data>
+  <data name="PointOfInterestTemplete" xml:space="preserve">
+    <value>우려 사항 템플릿</value>
+  </data>
 </root>

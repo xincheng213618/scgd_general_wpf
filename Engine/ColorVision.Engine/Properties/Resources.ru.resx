@@ -858,4 +858,7 @@
   <data name="DeviceOffline" xml:space="preserve">
     <value>Устройство отключено</value>
   </data>
+  <data name="PointOfInterestTemplete" xml:space="preserve">
+    <value>Шаблон сообщения о проблемах</value>
+  </data>
 </root>

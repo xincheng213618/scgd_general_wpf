@@ -858,4 +858,7 @@
   <data name="DeviceOffline" xml:space="preserve">
     <value>Offline</value>
   </data>
+  <data name="PointOfInterestTemplete" xml:space="preserve">
+    <value>Point Of Interest Templete</value>
+  </data>
 </root>

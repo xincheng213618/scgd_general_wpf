@@ -858,4 +858,7 @@
   <data name="DeviceOffline" xml:space="preserve">
     <value>デバイスがオフラインです</value>
   </data>
+  <data name="PointOfInterestTemplete" xml:space="preserve">
+    <value>懸念事項テンプレート</value>
+  </data>
 </root>

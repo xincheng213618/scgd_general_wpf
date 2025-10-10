@@ -858,4 +858,7 @@
   <data name="DeviceOffline" xml:space="preserve">
     <value>Appareil hors ligne</value>
   </data>
+  <data name="PointOfInterestTemplete" xml:space="preserve">
+    <value>Modèle de mise au point</value>
+  </data>
 </root>

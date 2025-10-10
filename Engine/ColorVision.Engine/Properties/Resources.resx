@@ -838,4 +838,7 @@
   <data name="DeviceOffline" xml:space="preserve">
     <value>设备离线</value>
   </data>
+  <data name="PointOfInterestTemplete" xml:space="preserve">
+    <value>关注点模板</value>
+  </data>
 </root>
