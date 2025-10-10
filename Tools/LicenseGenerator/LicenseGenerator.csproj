@@ -1,12 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
     <!-- Override the global TargetFrameworks to use pure .NET instead of Windows -->
     <TargetFrameworks></TargetFrameworks>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Exclude console version from build -->
+    <Compile Remove="ProgramConsole.cs" />
+    <None Include="ProgramConsole.cs" />
+  </ItemGroup>
 
 </Project>
