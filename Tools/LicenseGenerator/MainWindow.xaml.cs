@@ -206,8 +206,13 @@ namespace LicenseGenerator
         /// </summary>
         private void TxtEnhancedInput_TextChanged(object sender, System.Windows.RoutedEventArgs e)
         {
-            txtEnhancedLicense.Text = string.Empty;
-            UpdateRemainingDays();
+            if(txtEnhancedLicense != null)
+            {
+                txtEnhancedLicense.Text = string.Empty;
+                UpdateRemainingDays();
+            }
+
+
         }
 
         /// <summary>
