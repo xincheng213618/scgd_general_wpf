@@ -7,6 +7,7 @@ namespace LicenseGenerator
     /// <summary>
     /// 许可证助手类 - 包含许可证生成和验证的核心逻辑
     /// 这是从 ColorVision.UI.ACE.License 类中提取的核心功能
+    /// 注意: 简单许可证方法已弃用，请使用增强型许可证方法
     /// </summary>
     public static class LicenseHelper
     {
@@ -39,9 +40,11 @@ namespace LicenseGenerator
 
         /// <summary>
         /// 为指定的机器码创建许可证签名
+        /// 注意: 简单许可证方法已弃用，请使用 CreateEnhancedLicense
         /// </summary>
         /// <param name="machineCode">机器码</param>
         /// <returns>Base64 编码的许可证签名字符串</returns>
+        [Obsolete("简单许可证方法已弃用，请使用 CreateEnhancedLicense 方法创建增强型许可证。", false)]
         public static string CreateLicense(string machineCode)
         {
             if (string.IsNullOrWhiteSpace(machineCode))
@@ -54,10 +57,12 @@ namespace LicenseGenerator
 
         /// <summary>
         /// 验证许可证字符串是否有效
+        /// 注意: 简单许可证方法已弃用，请使用 VerifyEnhancedLicense
         /// </summary>
         /// <param name="license">Base64 编码的许可证签名字符串</param>
         /// <param name="machineCode">要验证的机器码</param>
         /// <returns>如果许可证有效返回 true，否则返回 false</returns>
+        [Obsolete("简单许可证方法已弃用，请使用 VerifyEnhancedLicense 方法验证增强型许可证。", false)]
         public static bool VerifyLicense(string license, string machineCode)
         {
             if (string.IsNullOrWhiteSpace(license) || string.IsNullOrWhiteSpace(machineCode))

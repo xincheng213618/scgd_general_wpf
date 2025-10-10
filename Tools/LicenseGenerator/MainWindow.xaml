@@ -21,165 +21,115 @@
                    FontSize="24" FontWeight="Bold" 
                    HorizontalAlignment="Center"/>
 
-        <!-- 标签页控制 -->
-        <TabControl Grid.Row="2">
-            <!-- 简单许可证标签页 -->
-            <TabItem Header="简单许可证">
-                <Grid Margin="10">
+        <!-- 主内容区域 - 增强许可证 -->
+        <Grid Grid.Row="2" Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="20"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="20"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- 当前机器信息 -->
+            <GroupBox Grid.Row="0" Header="当前机器信息" Padding="10">
+                <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="20"/>
+                        <RowDefinition Height="10"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                    <!-- 当前机器信息 -->
-                    <GroupBox Grid.Row="0" Header="当前机器信息" Padding="10">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="10"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="10"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="10"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="机器名称:" VerticalAlignment="Center"/>
-                            <TextBox Grid.Row="0" Grid.Column="2" x:Name="txtMachineName" IsReadOnly="True" Background="#F0F0F0"/>
-                            
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="机器码:" VerticalAlignment="Center"/>
-                            <TextBox Grid.Row="2" Grid.Column="2" x:Name="txtCurrentMachineCode" IsReadOnly="True" Background="#F0F0F0"/>
-                            <Button Grid.Row="2" Grid.Column="4" Content="复制" Width="60" Click="CopyCurrentMachineCode_Click"/>
-                        </Grid>
-                    </GroupBox>
-
-                    <!-- 许可证生成 -->
-                    <GroupBox Grid.Row="2" Header="简单许可证生成" Padding="10">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="10"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="10"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="10"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="10"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="机器码:" VerticalAlignment="Center"/>
-                            <TextBox Grid.Row="0" Grid.Column="2" x:Name="txtInputMachineCode" 
-                                     ToolTip="输入要生成许可证的机器码" TextChanged="TxtInputMachineCode_TextChanged"/>
-                            <Button Grid.Row="0" Grid.Column="4" Content="使用当前" Width="80" Click="UseCurrentMachineCode_Click"/>
-
-                            <Button Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="3" Content="生成简单许可证" 
-                                    Height="35" FontSize="14" FontWeight="Bold" Click="GenerateLicense_Click"/>
-
-                            <TextBlock Grid.Row="4" Grid.Column="0" Text="许可证:" VerticalAlignment="Center"/>
-                            <TextBox Grid.Row="4" Grid.Column="2" x:Name="txtLicense" IsReadOnly="True" 
-                                     Background="#F0F0F0" ToolTip="生成的许可证"/>
-                            <StackPanel Grid.Row="4" Grid.Column="4" Orientation="Horizontal">
-                                <Button Content="复制" Width="60" Margin="0,0,5,0" Click="CopyLicense_Click"/>
-                                <Button Content="保存" Width="60" Click="SaveLicense_Click"/>
-                            </StackPanel>
-                        </Grid>
-                    </GroupBox>
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="机器名称:" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="0" Grid.Column="2" x:Name="txtMachineName" IsReadOnly="True" Background="#F0F0F0"/>
+                    
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="机器码:" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="2" Grid.Column="2" x:Name="txtCurrentMachineCode" IsReadOnly="True" Background="#F0F0F0"/>
+                    <Button Grid.Row="2" Grid.Column="4" Content="复制" Width="60" Click="CopyCurrentMachineCode_Click"/>
                 </Grid>
-            </TabItem>
+            </GroupBox>
 
-            <!-- 增强许可证标签页 -->
-            <TabItem Header="增强许可证">
-                <Grid Margin="10">
+            <!-- 许可证信息输入 -->
+            <GroupBox Grid.Row="2" Header="许可证信息" Padding="10">
+                <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="20"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                    <!-- 许可证信息输入 -->
-                    <GroupBox Grid.Row="0" Header="许可证信息" Padding="10">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="10"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="10"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="10"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="10"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="10"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="10"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="机器码:" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="0" Grid.Column="2" x:Name="txtEnhancedMachineCode" 
+                             ToolTip="输入要生成许可证的机器码" TextChanged="TxtEnhancedInput_TextChanged"/>
+                    <Button Grid.Row="0" Grid.Column="4" Content="使用当前" Width="80" Click="UseCurrentMachineCodeEnhanced_Click"/>
 
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="机器码:" VerticalAlignment="Center"/>
-                            <TextBox Grid.Row="0" Grid.Column="2" x:Name="txtEnhancedMachineCode" 
-                                     ToolTip="输入要生成许可证的机器码" TextChanged="TxtEnhancedInput_TextChanged"/>
-                            <Button Grid.Row="0" Grid.Column="4" Content="使用当前" Width="80" Click="UseCurrentMachineCodeEnhanced_Click"/>
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="客户名称:" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="3" x:Name="txtLicensee" 
+                             ToolTip="被许可人/客户名称" TextChanged="TxtEnhancedInput_TextChanged"/>
 
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="客户名称:" VerticalAlignment="Center"/>
-                            <TextBox Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="3" x:Name="txtLicensee" 
-                                     ToolTip="被许可人/客户名称" TextChanged="TxtEnhancedInput_TextChanged"/>
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="设备型号:" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="3" x:Name="txtDeviceMode" 
+                             ToolTip="设备型号" TextChanged="TxtEnhancedInput_TextChanged"/>
 
-                            <TextBlock Grid.Row="4" Grid.Column="0" Text="设备型号:" VerticalAlignment="Center"/>
-                            <TextBox Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="3" x:Name="txtDeviceMode" 
-                                     ToolTip="设备型号" TextChanged="TxtEnhancedInput_TextChanged"/>
+                    <TextBlock Grid.Row="6" Grid.Column="0" Text="有效期至:" VerticalAlignment="Center"/>
+                    <DatePicker Grid.Row="6" Grid.Column="2" x:Name="dpExpiryDate" 
+                                ToolTip="许可证过期日期" SelectedDateChanged="TxtEnhancedInput_TextChanged"/>
+                    <TextBlock Grid.Row="6" Grid.Column="4" x:Name="txtRemainingDays" Text="剩余天数: --" 
+                               VerticalAlignment="Center" Width="120"/>
 
-                            <TextBlock Grid.Row="6" Grid.Column="0" Text="有效期至:" VerticalAlignment="Center"/>
-                            <DatePicker Grid.Row="6" Grid.Column="2" x:Name="dpExpiryDate" 
-                                        ToolTip="许可证过期日期" SelectedDateChanged="TxtEnhancedInput_TextChanged"/>
-                            <TextBlock Grid.Row="6" Grid.Column="4" x:Name="txtRemainingDays" Text="剩余天数: --" 
-                                       VerticalAlignment="Center" Width="120"/>
-
-                            <TextBlock Grid.Row="8" Grid.Column="0" Text="签发机构:" VerticalAlignment="Center"/>
-                            <TextBox Grid.Row="8" Grid.Column="2" Grid.ColumnSpan="3" x:Name="txtIssuingAuthority" 
-                                     Text="ColorVision" ToolTip="签发机构" TextChanged="TxtEnhancedInput_TextChanged"/>
-                        </Grid>
-                    </GroupBox>
-
-                    <!-- 增强许可证生成 -->
-                    <GroupBox Grid.Row="2" Header="增强许可证生成" Padding="10">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="10"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="10"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="5"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <Button Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Content="生成增强许可证" 
-                                    Height="35" FontSize="14" FontWeight="Bold" Click="GenerateEnhancedLicense_Click"/>
-
-                            <TextBox Grid.Row="2" Grid.Column="0" x:Name="txtEnhancedLicense" IsReadOnly="True" 
-                                     Background="#F0F0F0" ToolTip="生成的增强许可证（Base64 + JSON）" 
-                                     TextWrapping="Wrap" Height="80" VerticalScrollBarVisibility="Auto"/>
-                            <Button Grid.Row="2" Grid.Column="2" Content="复制" Width="60" Click="CopyEnhancedLicense_Click"/>
-                            <Button Grid.Row="2" Grid.Column="4" Content="保存" Width="60" Click="SaveEnhancedLicense_Click"/>
-                        </Grid>
-                    </GroupBox>
+                    <TextBlock Grid.Row="8" Grid.Column="0" Text="签发机构:" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="8" Grid.Column="2" Grid.ColumnSpan="3" x:Name="txtIssuingAuthority" 
+                             Text="ColorVision" ToolTip="签发机构" TextChanged="TxtEnhancedInput_TextChanged"/>
                 </Grid>
-            </TabItem>
-        </TabControl>
+            </GroupBox>
+
+            <!-- 许可证生成 -->
+            <GroupBox Grid.Row="4" Header="许可证生成" Padding="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="5"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Button Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Content="生成许可证" 
+                            Height="35" FontSize="14" FontWeight="Bold" Click="GenerateEnhancedLicense_Click"/>
+
+                    <TextBox Grid.Row="2" Grid.Column="0" x:Name="txtEnhancedLicense" IsReadOnly="True" 
+                             Background="#F0F0F0" ToolTip="生成的许可证（Base64 + JSON）" 
+                             TextWrapping="Wrap" Height="80" VerticalScrollBarVisibility="Auto"/>
+                    <Button Grid.Row="2" Grid.Column="2" Content="复制" Width="60" Click="CopyEnhancedLicense_Click"/>
+                    <Button Grid.Row="2" Grid.Column="4" Content="保存" Width="60" Click="SaveEnhancedLicense_Click"/>
+                </Grid>
+            </GroupBox>
+        </Grid>
 
         <!-- 状态信息 -->
         <GroupBox Grid.Row="4" Header="状态信息" Padding="10">
