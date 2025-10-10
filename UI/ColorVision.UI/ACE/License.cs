@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using Newtonsoft.Json;
 
@@ -10,9 +11,11 @@ namespace ColorVision.UI.ACE
     /// <summary>
     /// License 验证和管理类
     /// 提供基于 RSA 签名的许可证验证功能
+    /// 注意: 简单许可证模式已弃用，请使用增强型许可证
     /// </summary>
     public class License
     {
+        [Obsolete("简单许可证模式已弃用，不再使用。请使用增强型许可证。", false)]
         private static readonly string privateKeyXml = "<RSAKeyValue><Modulus>5sf/agoe+/hryIfvt7v6o9aNldWSkUoPkW6se8VbEo7B4JBT0vIUQqku635RU+0vhaF/IJ7TQw6pYerHacA83XYBy90KEN4twOBs1Gy3XfEBcjYheQO919Hif1gENzqzQEg47G36VdmWzmhjreq2YQQQN+p/ezIbYtrPXGNU4fE=</Modulus><Exponent>AQAB</Exponent><P>/OfgYc6H7sSiFUrwkTVtQEyuSm309+Whwuvuul/3zLkNJlvorGC2D5ksTz3Q0XFehHWgWNc0jQ3MRyKp2EHxgw==</P><Q>6ZrTQbe25FVr92pxAlBeO1iONdbLRM+/VmuwrZVgeHvu++8ChAidQT13rcVfqvLDuGq5/q2bgQgmraqdgRNIew==</Q><DP>0sEQ1bDcyncGcyQOMZQKRSkhnVjgaaztDpi6Sooq4GndsXep/+xgC8Ojjy1+VOtazpuPUjmUy28SKr2SOGtLrQ==</DP><DQ>b7mMsDGdVzdDm+Fciy7E4r1HxpgkP5TcfgijR2HZ8cXUVsnI+jzkeP9c7c8oIipZUSo6KoP9i4jKduTSz5jZYQ==</DQ><InverseQ>2kXWXpMpHplGwG/eHR17tVNyfaxjl2Hu2QWnlg5Jf/vLDMcA9MspGS5mS5uCNTTPh34T9PEtmCdA5L5i8kakwg==</InverseQ><D>EmVOzr0PyzX6IXn0ecjaKcUodBEaJcqpgwY3aYZJxCjs+2GFzQLO6qFhxBPFl9MIPrao04jVfjrk9ZEpZByWvUmq79tlzpBjeZW2wcjeUrZYK0/b0D7NRelf6InSJaOb9QKw/hhSPsl3x+nXPyhUFfz6q8bThGDSriC/eb3aSyE=</D></RSAKeyValue>";
 
         /// <summary>
@@ -41,8 +44,10 @@ namespace ColorVision.UI.ACE
         /// <summary>
         /// 检测许可证是否存在且有效
         /// 按优先级检查多个可能的许可证文件位置
+        /// 注意: 简单许可证模式已弃用，此方法仅用于向后兼容
         /// </summary>
         /// <returns>如果找到有效许可证返回 true，否则返回 false</returns>
+        [Obsolete("简单许可证模式已弃用，请使用增强型许可证。此方法仅用于向后兼容。", false)]
         public static bool Check()
         {
             string[] paths = {
@@ -66,9 +71,11 @@ namespace ColorVision.UI.ACE
 
         /// <summary>
         /// 验证许可证字符串是否有效
+        /// 注意: 简单许可证模式已弃用，此方法仅用于向后兼容
         /// </summary>
         /// <param name="license">Base64 编码的许可证签名字符串</param>
         /// <returns>如果许可证有效返回 true，否则返回 false</returns>
+        [Obsolete("简单许可证模式已弃用，请使用增强型许可证。此方法仅用于向后兼容。", false)]
         public static bool Check(string license)
         {
             if (string.IsNullOrWhiteSpace(license))
@@ -97,9 +104,6 @@ namespace ColorVision.UI.ACE
             }
         }
 
-            return false;
-        }
-
         /// <summary>
         /// 获取机器码（基于机器名的十六进制编码）
         /// </summary>
@@ -120,10 +124,12 @@ namespace ColorVision.UI.ACE
         /// <summary>
         /// 创建并保存许可证文件到默认位置
         /// 注意：此方法需要私钥，仅供许可证生成工具使用
+        /// 注意: 简单许可证模式已弃用，此方法仅用于向后兼容
         /// </summary>
         /// <param name="privateKeyXml">RSA 私钥（XML 格式）</param>
         /// <exception cref="ArgumentNullException">当私钥为空时抛出</exception>
         /// <exception cref="UnauthorizedAccessException">当无法创建目录或写入文件时抛出</exception>
+        [Obsolete("简单许可证模式已弃用，请使用增强型许可证生成工具。此方法仅用于向后兼容。", false)]
         public static void Create(string privateKeyXml)
         {
             if (string.IsNullOrWhiteSpace(privateKeyXml))
@@ -147,11 +153,13 @@ namespace ColorVision.UI.ACE
 
         /// <summary>
         /// 为指定的机器码创建许可证签名
+        /// 注意: 简单许可证模式已弃用，此方法仅用于向后兼容
         /// </summary>
         /// <param name="machineCode">机器码</param>
         /// <param name="privateKeyXml">RSA 私钥（XML 格式）</param>
         /// <returns>Base64 编码的许可证签名字符串</returns>
         /// <exception cref="ArgumentNullException">当参数为空时抛出</exception>
+        [Obsolete("简单许可证模式已弃用，请使用增强型许可证生成工具。此方法仅用于向后兼容。", false)]
         public static string Create(string machineCode, string privateKeyXml)
         {
             if (string.IsNullOrWhiteSpace(machineCode))
