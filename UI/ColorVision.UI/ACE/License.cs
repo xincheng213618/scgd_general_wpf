@@ -2,8 +2,8 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Security.Cryptography;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace ColorVision.UI.ACE
 {
@@ -95,6 +95,9 @@ namespace ColorVision.UI.ACE
                 // 验证失败（格式错误、签名无效等）
                 return false;
             }
+        }
+
+            return false;
         }
 
         /// <summary>
