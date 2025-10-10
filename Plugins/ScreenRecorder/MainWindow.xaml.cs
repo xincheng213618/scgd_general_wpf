@@ -16,7 +16,7 @@ using System.Windows.Threading;
 namespace ScreenRecorder
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// 屏幕录像机主窗口，提供录制控制和配置界面
     /// </summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
@@ -27,15 +27,54 @@ namespace ScreenRecorder
         private DateTimeOffset? _recordingPauseTime;
         private Stream _outputStream;
 
+        /// <summary>
+        /// 是否正在录制
+        /// </summary>
         public bool IsRecording { get; set; }
+
+        /// <summary>
+        /// 录制器选项配置
+        /// </summary>
         public RecorderOptions RecorderOptions { get; } = RecorderOptions.Default;
+
+        /// <summary>
+        /// 当前选择的录制源
+        /// </summary>
         public ICheckableRecordingSource SelectedRecordingSource { get; set; }
+
+        /// <summary>
+        /// 可用的录制源集合（显示器、窗口、摄像头等）
+        /// </summary>
         public ObservableCollection<ICheckableRecordingSource> RecordingSources { get; } = new ObservableCollection<ICheckableRecordingSource>();
+
+        /// <summary>
+        /// 覆盖层集合
+        /// </summary>
         public List<OverlayModel> Overlays { get; } = new List<OverlayModel>();
+
+        /// <summary>
+        /// 音频输入设备列表（麦克风）
+        /// </summary>
         public ObservableCollection<AudioDevice> AudioInputsList { get; set; } = new ObservableCollection<AudioDevice>();
+
+        /// <summary>
+        /// 音频输出设备列表（扬声器）
+        /// </summary>
         public ObservableCollection<AudioDevice> AudioOutputsList { get; set; } = new ObservableCollection<AudioDevice>();
+
+        /// <summary>
+        /// 视频捕获设备列表（摄像头）
+        /// </summary>
         public ObservableCollection<RecordableCamera> VideoCaptureDevices { get; set; } = new ObservableCollection<RecordableCamera>();
+
+        /// <summary>
+        /// 是否启用日志记录到文件
+        /// </summary>
         public bool IsLogToFileEnabled { get; set; }
+
+        /// <summary>
+        /// 日志文件路径
+        /// </summary>
         public string LogFilePath { get; set; } = "Log.txt";
 
         public bool RecordToStream { get => _RecordToStream; set { if (_RecordToStream == value) return; _RecordToStream = value; NotifyPropertyChanged(); } }
@@ -75,6 +114,9 @@ namespace ScreenRecorder
         public H264Profile CurrentH264Profile { get; set; } = H264Profile.High;
         public H265Profile CurrentH265Profile { get; set; } = H265Profile.Main;
 
+        /// <summary>
+        /// 初始化主窗口
+        /// </summary>
         public MainWindow()
         {
             InitializeComponent();
@@ -255,6 +297,9 @@ namespace ScreenRecorder
             }
         }
 
+        /// <summary>
+        /// 初始化默认录制选项（帧率60fps，启用音频）
+        /// </summary>
         private void InitializeDefaultRecorderOptions()
         {
             RecorderOptions.AudioOptions.IsAudioEnabled = true;
@@ -434,6 +479,10 @@ namespace ScreenRecorder
             }));
         }
 
+        /// <summary>
+        /// 创建选定的录制源列表
+        /// </summary>
+        /// <returns>录制源配置列表</returns>
         private List<RecordingSourceBase> CreateSelectedRecordingSources()
         {
             var sourcesToRecord = RecordingSources.Where(x => x.IsSelected).ToList();
@@ -501,6 +550,10 @@ namespace ScreenRecorder
             }).ToList();
         }
 
+        /// <summary>
+        /// 获取图片格式对应的文件扩展名
+        /// </summary>
+        /// <returns>文件扩展名（包含点）</returns>
         private string GetImageExtension()
         {
             switch (RecorderOptions.SnapshotOptions.SnapshotFormat)
@@ -517,6 +570,9 @@ namespace ScreenRecorder
             }
         }
 
+        /// <summary>
+        /// 录制失败事件处理
+        /// </summary>
         private void Rec_OnRecordingFailed(object sender, RecordingFailedEventArgs e)
         {
             Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (Action)(() =>
@@ -538,6 +594,9 @@ namespace ScreenRecorder
                 CleanupResources();
             }));
         }
+        /// <summary>
+        /// 录制完成事件处理
+        /// </summary>
         private void Rec_OnRecordingComplete(object sender, RecordingCompleteEventArgs e)
         {
             Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (Action)(() =>
@@ -558,10 +617,16 @@ namespace ScreenRecorder
                 CleanupResources();
             }));
         }
+        /// <summary>
+        /// 快照保存事件处理
+        /// </summary>
         private void Rec_OnSnapshotSaved(object sender, SnapshotSavedEventArgs e)
         {
             //string filepath = e.SnapshotPath;
         }
+        /// <summary>
+        /// 清理录制资源（流、定时器、录制器）
+        /// </summary>
         private void CleanupResources()
         {
             _outputStream?.Flush();
@@ -575,6 +640,9 @@ namespace ScreenRecorder
             _rec = null;
         }
 
+        /// <summary>
+        /// 录制状态变更事件处理
+        /// </summary>
         private void Rec_OnStatusChanged(object sender, RecordingStatusEventArgs e)
         {
             Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (Action)(() =>
@@ -626,6 +694,9 @@ namespace ScreenRecorder
             }));
         }
 
+        /// <summary>
+        /// 进度定时器触发事件，更新帧率统计
+        /// </summary>
         private void ProgressTimer_Tick(object sender, EventArgs e)
         {
             UpdateProgress();
@@ -637,6 +708,9 @@ namespace ScreenRecorder
                 CurrentFrameRate = (_recordedFrameTimes.Count - 1) / (double)intervalMillis * 1000;
             }
         }
+        /// <summary>
+        /// 更新录制进度显示
+        /// </summary>
         private void UpdateProgress()
         {
             if (_recordingStartTime != null)
@@ -644,6 +718,9 @@ namespace ScreenRecorder
                 TimeStampTextBlock.Text = DateTimeOffset.Now.Subtract(_recordingStartTime.Value).ToString("hh\\:mm\\:ss");
             }
         }
+        /// <summary>
+        /// 暂停/恢复按钮点击事件处理
+        /// </summary>
         private void PauseButton_Click(object sender, RoutedEventArgs e)
         {
             if (_rec.Status == RecorderStatus.Paused)
