@@ -162,16 +162,17 @@ namespace ColorVision.Engine.Templates
 
                         var collection = ITemplate.GetValue();
                         var itemType = collection.GetType().GetGenericArguments().FirstOrDefault();
-
+ 
                         if (itemType != null)
                         {
-                            if (columnName == Properties.Resources.SerialNumber1 && typeof(ISortID).IsAssignableFrom(itemType))
+                            if (columnName == Properties.Resources.SerialNumber1)
                             {
-                                SortableExtension.InvokeSortMethod("SortByID", itemType, collection, item.IsSortD);
+                                SortableExtension.SortByProperty(collection,"Id", item.IsSortD);
+
                             }
-                            else if (columnName == Properties.Resources.Name && typeof(ISortKey).IsAssignableFrom(itemType))
+                            else if (columnName == Properties.Resources.Name)
                             {
-                                SortableExtension.InvokeSortMethod("SortByKey", itemType, collection, item.IsSortD);
+                                SortableExtension.SortByProperty(collection, "Key", item.IsSortD);
                             }
                             else if (columnName == Properties.Resources.Choice)
                             {
@@ -187,6 +188,8 @@ namespace ColorVision.Engine.Templates
             }
             e.Handled = true;
         }
+
+
 
         private void WindowTemplate_Closed(object? sender, EventArgs e)
         {

@@ -79,7 +79,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             
-            <TreeView x:Name="ChangeLogListView" Background="Transparent" Grid.Column="0" Padding="2" Margin="5,0,5,5" SelectedItemChanged="ChangeLogListView_SelectedItemChanged">
+            <TreeView x:Name="ChangeLogTreeView" Background="Transparent" Grid.Column="0" Padding="2" Margin="5,0,5,5" SelectedItemChanged="ChangeLogListView_SelectedItemChanged">
                 <TreeView.Resources>
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                     <HierarchicalDataTemplate DataType="{x:Type local:MajorVersionNode}" ItemsSource="{Binding MinorVersions}">

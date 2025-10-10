@@ -21,10 +21,9 @@ namespace ColorVision.Engine.Archive.Dao
     /// <summary>
     /// ArchivePage.xaml 的交互逻辑
     /// </summary>
-    public partial class ArchivePage : Page, ISolutionPage
+    [Page(nameof(ArchivePage))]
+    public partial class ArchivePage : Page, IPage
     {
-        public string PageTitle => nameof(ArchivePage);
-
         public Frame Frame { get; set; }
 
         public ArchivePage() { }

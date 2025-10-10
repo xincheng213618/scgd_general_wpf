@@ -28,7 +28,7 @@ namespace ColorVision.Engine.Templates.BuzProduct
 
         public override int Count => TemplateParams.Count;
 
-        public override object GetValue() => TemplateParams;
+        public override IEnumerable GetValue() => TemplateParams;
 
         public override object GetParamValue(int index) => TemplateParams[index].Value;
         public override object GetValue(int index) => TemplateParams[index];

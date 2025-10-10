@@ -154,7 +154,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(ViewResultAlg));
                     ResultHandle?.Load(this,ViewResultAlg);
 
-                ViewResults.AddUnique(ViewResultAlg, Config.InsertAtBeginning);
+                if (Config.InsertAtBeginning)
+                    ViewResults.Insert(0, ViewResultAlg);
+                else
+                    ViewResults.Add(ViewResultAlg);
+
                 if (Config.AutoRefreshView)
                     RefreshResultListView();
                 if (Config.AutoSaveSideData)
@@ -452,7 +456,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             foreach (var item in dbList)
             {
                 ViewResultAlg ViewResultAlg = new ViewResultAlg(item);
-                ViewResults.AddUnique(ViewResultAlg);
+                ViewResults.Add(ViewResultAlg);
             }
         }
 

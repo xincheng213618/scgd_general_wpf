@@ -1,8 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI.LogImp;
 using log4net;
 using log4net.Core;
 using log4net.Repository.Hierarchy;
 using Newtonsoft.Json;
+using System.ComponentModel;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -77,6 +79,7 @@ namespace ColorVision.UI
         private Level _LogLevel = Level.Info;
 
         [JsonIgnore]
+        [PropertyEditorTypeAttribute(typeof(LevelPropertiesEditor))]
         public Level LogLevel
         {
             get => _LogLevel; set

@@ -66,7 +66,6 @@ namespace ColorVision.Solution.V
 
             InitializeSolution();
             InitializeFileSystemWatcher();
-            DriveMonitor();
 
             var stopwatch = Stopwatch.StartNew();
             VMUtil.Instance.GeneralChild(this, DirectoryInfo);
@@ -223,34 +222,5 @@ namespace ColorVision.Solution.V
             Common.NativeMethods.FileProperties.ShowFolderProperties(DirectoryInfo.FullName);
         }
 
-        /// <summary>
-        /// 监控驱动器空间，报警低空间
-        /// </summary>
-        public void DriveMonitor()
-        {
-            Task.Run(async () =>
-            {
-                bool isMonitoring = true;
-                while (isMonitoring)
-                {
-                    await Task.Delay(60000);
-                    if (Setting.IsLackWarning)
-                    {
-                        if (DriveInfo.IsReady)
-                        {
-                            if (DriveInfo.AvailableFreeSpace < 1024 * 1024 * 1024)
-                            {
-                                Setting.IsMemoryLackWarning = false;
-                                MessageBox.Show("磁盘空间不足");
-                            }
-                        }
-                        else
-                        {
-                            isMonitoring = false;
-                        }
-                    }
-                }
-            });
-        }
     }
 }

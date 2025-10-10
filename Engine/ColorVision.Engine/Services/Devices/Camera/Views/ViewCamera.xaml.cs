@@ -263,8 +263,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public void ShowResult(MeasureResultImgModel model)
         {
             ViewResultImage result = new(model);
+            if (Config.InsertAtBeginning)
+                ViewResults.Insert(0, result);
+            else
+                ViewResults.Add(result);
 
-            ViewResults.AddUnique(result, Config.InsertAtBeginning);
+
             if (Config.AutoRefreshView)
             {
                 if (listView1.Items.Count > 0) listView1.SelectedIndex = Config.InsertAtBeginning ? 0 : listView1.Items.Count - 1;
@@ -285,7 +289,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             foreach (var item in dbList)
             {
                 ViewResultImage ViewResultAlg = new(item);
-                ViewResults.AddUnique(ViewResultAlg);
+                ViewResults.Add(ViewResultAlg);
             }
         }
 

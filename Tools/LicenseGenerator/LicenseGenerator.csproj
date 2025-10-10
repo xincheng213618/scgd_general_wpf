@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <!-- Override the global TargetFrameworks to use pure .NET instead of Windows -->
+    <TargetFrameworks></TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Exclude console version from build -->
+    <Compile Remove="ProgramConsole.cs" />
+    <None Include="ProgramConsole.cs" />
+    
+    <!-- Exclude test files from build -->
+    <Compile Remove="TestProgram.cs" />
+    <Compile Remove="EnhancedLicenseTests.cs" />
+    <None Include="TestProgram.cs" />
+    <None Include="EnhancedLicenseTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+</Project>

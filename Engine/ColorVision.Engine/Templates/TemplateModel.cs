@@ -6,7 +6,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates
 {
-    public class TemplateBase : ViewModelBase, ISortID, ISortKey
+    public class TemplateBase : ViewModelBase
     {
         [JsonIgnore]
         public ContextMenu ContextMenu { get; set; }

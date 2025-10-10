@@ -3,7 +3,7 @@ using ColorVision.UI.Sorts;
 
 namespace ColorVision.Engine.Templates.POI
 {
-    public class PoiPoint : ISortID
+    public class PoiPoint
     {
         public PoiPoint(PoiDetailModel dbModel)
         {

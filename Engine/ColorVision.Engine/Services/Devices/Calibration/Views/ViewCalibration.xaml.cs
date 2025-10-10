@@ -110,7 +110,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         public void ShowResult(MeasureResultImgModel model)
         {
             ViewResultImage result = new(model);
-            ViewResults.AddUnique(result);
+            ViewResults.Add(result);
             if (Config.AutoRefreshView)
             {
                 if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
@@ -204,7 +204,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             foreach (var item in dbList)
             {
                 ViewResultImage ViewResultAlg = new(item);
-                ViewResults.AddUnique(ViewResultAlg);
+                ViewResults.Add(ViewResultAlg);
             }
         }
 

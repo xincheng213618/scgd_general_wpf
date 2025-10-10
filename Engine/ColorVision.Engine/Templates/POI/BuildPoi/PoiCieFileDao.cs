@@ -7,7 +7,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
 {
 
     [SugarTable("t_scgd_algorithm_result_detail_poi_cie_file")]
-    public class PoiCieFileModel : ViewModelBase,IEntity, ISortID, IViewResult
+    public class PoiCieFileModel : ViewModelBase,IEntity, IViewResult
     {
         [SugarColumn(ColumnName ="id")]
         public int Id { get; set; }

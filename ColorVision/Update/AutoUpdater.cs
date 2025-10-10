@@ -129,13 +129,11 @@ namespace ColorVision.Update
                 if (LatestVersion > Version)
                 {
                     bool IsIncrement = false;
-                    if (LatestVersion.Major == Version.Major)
+                    if (LatestVersion.Minor == Version.Minor)
                         IsIncrement = true;
                     if (IsIncrement)
                     {
-                        if (LatestVersion.Minor != Version.Minor)
-                            LatestVersion = new Version(Version.Major, Version.Minor +1, 1, 1);
-                        else if (LatestVersion.Build != Version.Build)
+                        if (LatestVersion.Build != Version.Build)
                             LatestVersion = new Version(Version.Major, Version.Minor, Version.Build + 1, 1);
                     }
 
