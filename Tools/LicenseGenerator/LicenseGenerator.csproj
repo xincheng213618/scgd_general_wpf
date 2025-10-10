@@ -14,6 +14,12 @@
     <!-- Exclude console version from build -->
     <Compile Remove="ProgramConsole.cs" />
     <None Include="ProgramConsole.cs" />
+    
+    <!-- Exclude test files from build -->
+    <Compile Remove="TestProgram.cs" />
+    <Compile Remove="EnhancedLicenseTests.cs" />
+    <None Include="TestProgram.cs" />
+    <None Include="EnhancedLicenseTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
