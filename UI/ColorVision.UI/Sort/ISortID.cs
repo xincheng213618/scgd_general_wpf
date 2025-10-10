@@ -13,6 +13,10 @@ namespace ColorVision.UI.Sorts
             SortByProperty1(collection, propertyName, descending);
         }
 
+
+
+
+
         public static void SortByProperty1(System.Collections.IEnumerable collection, string propertyName, bool descending = false)
         {
             var collectionType = (Type)collection.GetType();
