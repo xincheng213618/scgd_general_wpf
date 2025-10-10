@@ -112,7 +112,7 @@
                     <Button Content="刷新设备列表" Command="{Binding  RefreshDeviceIdCommand}" Margin="0,0,3,0"/>
                     <Button Content="请先配置相机ID" Command="{Binding EditCommand}"/>
                 </DockPanel>
-                <Button x:Name="ButtonOffline" Margin="0,0,0,3" Visibility="Collapsed" Content="设备离线" Foreground="White" Background="Red" Click="CameraOffline_Click"/>
+                <Button x:Name="ButtonOffline" Margin="0,0,0,3" Visibility="Collapsed" Content="{x:Static properties:Resources.DeviceOffline}" Foreground="White" Background="Red" Click="CameraOffline_Click"/>
                 <DockPanel x:Name="ButtonOpen"  Margin="0,0,0,3">
                     <Button  DockPanel.Dock="Right" Grid.Column="1" Margin="5,0,0,0" Content="{x:Static properties:Resources.Video}"  Click="Video_Click"/>
                     <Grid>

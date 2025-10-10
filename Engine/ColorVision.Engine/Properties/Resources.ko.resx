@@ -855,4 +855,7 @@
   <data name="Workflow" xml:space="preserve">
     <value>워크플로</value>
   </data>
+  <data name="DeviceOffline" xml:space="preserve">
+    <value>기기 오프라인</value>
+  </data>
 </root>
