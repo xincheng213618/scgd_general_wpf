@@ -1,14 +1,13 @@
 ﻿using ColorVision.UI;
-using log4net;
 using log4net.Core;
+using System.ComponentModel;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace System.ComponentModel
+namespace ColorVision.UI.LogImp
 {
-
-    public class FontStylePropertiesEditor : IPropertyEditor
+    public class LevelPropertiesEditor : IPropertyEditor
     {
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
@@ -23,8 +22,8 @@ namespace System.ComponentModel
                 Style = PropertyEditorHelper.ComboBoxSmallStyle,
                 DisplayMemberPath = "Value",
                 SelectedValuePath = "Key",
-                ItemsSource = typeof(FontStyles).GetProperties()
-                    .Select(p => new KeyValuePair<FontStyle, string>((FontStyle)p.GetValue(null), p.Name)).ToList()
+                ItemsSource = TypeLevelCacheHelper.GetAllLevels<Level>(typeof(Level))
+                    .Select(p => new KeyValuePair<Level, string>(p, p.Name)).ToList()
             };
 
             var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);

@@ -2,6 +2,8 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
+using ColorVision.UI.LogImp;
+using log4net.Core;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
@@ -195,6 +197,10 @@ namespace ColorVision.UI
                         else if (typeof(ICommand).IsAssignableFrom(property.PropertyType))
                         {
                             dockPanel = PropertyEditorHelper.GetOrCreateEditor<CommandPropertiesEditor>().GenProperties(property, obj);
+                        }
+                        else if (typeof(Level).IsAssignableFrom(property.PropertyType))
+                        {
+                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<LevelPropertiesEditor>().GenProperties(property, obj);
                         }
                         else if (property.PropertyType == typeof(FontFamily))
                             dockPanel = PropertyEditorHelper.GetOrCreateEditor<FontFamilyPropertiesEditor>().GenProperties(property, obj);
