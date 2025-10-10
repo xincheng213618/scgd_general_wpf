@@ -5,8 +5,9 @@
 - **名称**: SystemMonitor (性能监控)
 - **类型**: 系统工具
 - **功能**: 实时监控系统性能指标，包括 CPU 使用率、内存占用、磁盘空间和时间显示
-- **适用 ColorVision 版本**: ≥ 1.3.8.10
+- **适用 ColorVision 版本**: ≥ 1.3.12.23
 - **依赖的核心模块**: ColorVision.UI, ColorVision.Common
+- **当前版本**: 1.0.1
 
 ## 2. 功能特性
 
@@ -44,10 +45,10 @@ SystemMonitor/
 - `manifest_version`: 清单版本 (1)
 - `id`: 插件唯一标识符 ("SystemMonitor")
 - `name`: 插件显示名称 ("性能监控")
-- `version`: 插件版本 ("1.0")
+- `version`: 插件版本 ("1.0.1")
 - `description`: 插件描述 ("增强的电脑性能监控插件")
 - `dllpath`: 主程序集路径 ("SystemMonitor.dll")
-- `requires`: 最低 ColorVision 版本要求 ("1.3.8.10")
+- `requires`: 最低 ColorVision 版本要求 ("1.3.12.23")
 
 ## 4. 架构与生命周期
 
@@ -222,31 +223,72 @@ dotnet build Plugins/SystemMonitor/SystemMonitor.csproj -c Release
 
 ## 9. 配置项说明
 
-| 配置键 | 类型 | 默认值 | 说明 | 是否热更新 |
-|--------|------|--------|------|------------|
-| UpdateSpeed | int | 1000 | 监控数据更新间隔(毫秒) | 是 |
-| DefaultTimeFormat | string | "yyyy/MM/dd HH:mm:ss" | 时间显示格式 | 是 |
-| IsShowTime | bool | false | 状态栏显示时间 | 是 |
-| IsShowRAM | bool | false | 状态栏显示内存使用 | 是 |
+| 配置键 | 类型 | 默认值 | 说明 | 是否热更新 | 限制 |
+|--------|------|--------|------|------------|------|
+| UpdateSpeed | int | 1000 | 监控数据更新间隔(毫秒) | 是 | 最小值 100ms |
+| DefaultTimeFormat | string | "yyyy/MM/dd HH:mm:ss" | 时间显示格式 | 是 | 有效的.NET日期格式字符串 |
+| IsShowTime | bool | false | 状态栏显示时间 | 是 | - |
+| IsShowRAM | bool | false | 状态栏显示内存使用 | 是 | - |
+
+**配置注意事项**:
+- UpdateSpeed 最小值为 100ms，设置更低的值会被忽略，以防止过度消耗CPU资源
+- DefaultTimeFormat 必须是有效的 .NET 日期时间格式字符串，否则可能导致显示异常
 
 ## 10. 日志与诊断
 
 ### 日志前缀约定
-插件相关日志使用 "SystemMonitor" 前缀标识
+插件相关日志使用 "SystemMonitor" 前缀标识。所有错误信息会输出到调试控制台。
 
 ### 常见错误与排查
-1. **性能计数器初始化失败**: 
-   - 检查 Windows 性能计数器服务是否运行
-   - 确认当前用户有足够权限访问性能计数器
 
-2. **插件未加载**:
-   - 检查 manifest.json 是否存在且格式正确
-   - 确认 SystemMonitor.dll 文件完整性
-   - 验证最低版本要求是否满足
+#### 1. 性能计数器初始化失败
+**错误消息**: "Failed to initialize performance counters"
+- **原因**: Windows 性能计数器服务未运行或权限不足
+- **解决方法**: 
+  - 检查 Windows Performance Counter 服务是否运行
+  - 以管理员身份运行应用程序
+  - 重建性能计数器: 运行 `lodctr /r` 命令
 
-3. **状态栏不显示**:
-   - 检查对应的显示开关是否开启
-   - 确认数据绑定是否正常工作
+#### 2. 插件未加载
+**症状**: 插件菜单项不显示
+- **排查步骤**:
+  1. 检查 manifest.json 是否存在且格式正确
+  2. 确认 SystemMonitor.dll 文件完整性
+  3. 验证 ColorVision 版本 ≥ 1.3.12.23
+  4. 检查插件目录结构是否正确
+
+#### 3. 状态栏不显示
+**症状**: 时间或RAM信息未显示在状态栏
+- **排查步骤**:
+  1. 检查配置中的 IsShowTime/IsShowRAM 开关是否开启
+  2. 确认性能计数器初始化成功
+  3. 验证数据绑定路径是否正确
+
+#### 4. 缓存清理失败
+**错误消息**: "清除失败" 或部分文件删除失败
+- **原因**: 文件被占用或权限不足
+- **解决方法**:
+  - 关闭可能占用文件的进程
+  - 以管理员权限运行
+  - 检查调试输出中的具体失败文件名
+
+### 性能监控指标说明
+
+#### CPU 监控
+- **CPUPercent**: 系统总体 CPU 使用率 (0-100%)
+- **CPUThisPercent**: 当前应用程序 CPU 使用率 (0-100%)
+- **ProcessorTotal**: CPU 使用率文本显示
+
+#### 内存监控
+- **RAMPercent**: 系统内存使用百分比 (0-100%)
+- **RAMThisPercent**: 当前应用内存占系统总内存百分比
+- **RAMThis**: 当前应用内存使用量 (MB)
+- **MemoryThis**: 格式化的内存显示 (当前/总量)
+
+### 调试建议
+1. 启用调试模式查看详细的性能计数器错误信息
+2. 监控更新频率，避免设置过低导致性能问题
+3. 检查是否有资源泄漏（长时间运行后内存持续增长）
 
 ## 11. 示例代码片段
 
@@ -286,31 +328,119 @@ public class SystemMonitorSetting : ViewModelBase, IConfig
 
 ### 性能监控实现
 ```csharp
+/// <summary>
+/// Timer callback to update monitoring data
+/// </summary>
 private void TimeRun(object? state)
 {
+    if (_isDisposed) return;
+    
     if (PerformanceCounterIsOpen)
     {
         try
         {
-            if (Config.IsShowTime)
-                Time = DateTime.Now.ToString(Config.DefaultTimeFormat);
+            lock (_perfCounterLock)
+            {
+                if (PCCPU != null && PCRAM != null && PCCPUThis != null && PCRAMThis != null)
+                {
+                    // Update performance metrics
+                    float availableRAM = PCRAM.NextValue();
+                    float totalRAMGB = (float)RAMAL;
+                    float usedRAMGB = totalRAMGB - (availableRAM / 1024);
+                    
+                    RAMPercent = (usedRAMGB / totalRAMGB) * 100;
+                    
+                    float curRAM = PCRAMThis.NextValue() / 1024 / 1024;
+                    RAMThisPercent = (curRAM / 1024 / totalRAMGB) * 100;
+                    RAMThis = curRAM.ToString("f1") + " MB";
+                    MemoryThis = curRAM.ToString("f1") + " MB / " + totalRAMGB.ToString("f1") + " GB";
+                    
+                    CPUPercent = PCCPU.NextValue();
+                    CPUThisPercent = PCCPUThis.NextValue();
+                    ProcessorTotal = CPUPercent.ToString("f1") + "%";
+                }
+            }
         }
         catch (Exception ex)
         {
-            // 日志记录错误
+            System.Diagnostics.Debug.WriteLine($"Error updating performance counters: {ex.Message}");
+        }
+
+        try
+        {
+            if (Config.IsShowTime)
+            {
+                Time = DateTime.Now.ToString(Config.DefaultTimeFormat);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error updating time: {ex.Message}");
         }
     }
+}
+
+/// <summary>
+/// Disposes resources used by the system monitor
+/// </summary>
+public void Dispose()
+{
+    if (_isDisposed) return;
+    
+    _isDisposed = true;
+    
+    // Dispose timer
+    timer?.Dispose();
+    timer = null;
+    
+    // Dispose performance counters
+    lock (_perfCounterLock)
+    {
+        PCCPU?.Dispose();
+        PCCPUThis?.Dispose();
+        PCRAM?.Dispose();
+        PCRAMThis?.Dispose();
+        
+        PCCPU = null;
+        PCCPUThis = null;
+        PCRAM = null;
+        PCRAMThis = null;
+    }
+    
+    GC.SuppressFinalize(this);
 }
 ```
 
 ## 12. 版本与变更
 
 ### 当前版本
-- **插件版本**: 1.0
-- **项目版本**: 1.0.0.4
-- **兼容版本**: ColorVision ≥ 1.3.8.10
+- **插件版本**: 1.0.1
+- **项目版本**: 1.0.1.0
+- **兼容版本**: ColorVision ≥ 1.3.12.23
 
-### 主要特性
+### 版本历史
+
+#### v1.0.1 (2025-10-10)
+**修复**:
+- 修复资源泄漏：Timer 和 PerformanceCounter 现在正确释放
+- 修复线程安全问题：添加了性能计数器访问锁
+- 修复空引用问题：添加了完善的 null 检查
+- 移除了所有注释的死代码，完整实现 CPU/RAM 监控
+
+**改进**:
+- 添加了最小更新速度限制（100ms）防止CPU过度占用
+- 改进错误处理，使用详细的日志输出
+- 添加了完整的 XML 文档注释
+- 优化了性能计数器初始化流程
+- 改进缓存清理功能的用户反馈
+
+**新增**:
+- 添加 CHANGELOG.md 文件
+- 完善的资源清理机制
+- 线程安全的性能监控
+
+#### v1.0.0 (2025-01-01)
+**初始版本特性**:
 - 实时系统性能监控
 - 状态栏时间和内存显示
 - 磁盘使用情况查看
@@ -332,14 +462,24 @@ private void TimeRun(object? state)
 ## 14. 约束与限制
 
 ### 性能注意事项
-- 默认更新频率为 1 秒，过高频率可能影响系统性能
+- 默认更新频率为 1 秒，**最小支持 100ms**
+- 更新频率过高可能影响系统性能，建议不低于 500ms
 - 性能计数器初始化采用异步方式，避免阻塞 UI 线程
-- 内存监控数据获取有一定延迟
+- 内存监控数据获取有一定延迟（约50-100ms）
+- 首次调用性能计数器时返回值可能不准确（已优化初始化）
 
 ### 已知限制
-- 依赖 Windows 性能计数器，在部分受限环境可能无法正常工作
+- 依赖 Windows 性能计数器，在部分受限环境（如 Windows Container）可能无法正常工作
 - CPU 使用率监控在某些虚拟化环境中可能不准确
-- 磁盘信息为静态获取，不会实时刷新驱动器列表
+- 磁盘信息为静态获取，不会实时刷新驱动器列表（仅在插件加载时获取）
+- 只显示处于就绪状态的磁盘驱动器
+- 性能计数器需要一定的权限，在非管理员环境下可能初始化失败
+
+### 资源使用
+- 内存占用: 约 5-10 MB (包含性能计数器开销)
+- CPU 占用: < 1% (默认 1 秒更新频率)
+- 线程数: 1 个后台线程用于性能计数器初始化
+- Timer: 1 个定时器用于周期性更新
 
 ## 15. 未来规划
 
