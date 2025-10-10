@@ -601,6 +601,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 设备离线 的本地化字符串。
+        /// </summary>
+        public static string DeviceOffline {
+            get {
+                return ResourceManager.GetString("DeviceOffline", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 CIE图像数据区 的本地化字符串。
         /// </summary>
         public static string DisplayAlgorithmControl_CIE图像数据区 {
@@ -1596,6 +1605,15 @@ namespace ColorVision.Engine.Properties {
         public static string Pin {
             get {
                 return ResourceManager.GetString("Pin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关注点模板 的本地化字符串。
+        /// </summary>
+        public static string PointOfInterestTemplete {
+            get {
+                return ResourceManager.GetString("PointOfInterestTemplete", resourceCulture);
             }
         }
         
