@@ -1,6 +1,7 @@
 ﻿using ColorVision.Engine.Archive.Dao;
-using ColorVision.Solution.Searches;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
+using ColorVision.UI.Pages;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -30,10 +31,9 @@ namespace ColorVision.Engine.Archive
     /// <summary>
     /// HomePage.xaml 的交互逻辑
     /// </summary>
-    public partial class HomePage : Page, ISolutionPage
+    [Page(nameof(HomePage))]
+    public partial class HomePage : Page, IPage
     {
-        public string PageTitle => nameof(HomePage);
-
         public Frame Frame { get; set; }
 
         public HomePage() { }
@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Archive
         {
             if (sender is UserControl userControl)
             {
-                Frame.Navigate(SolutionPageManager.Instance.GetPage(userControl.Tag.ToString(), Frame));
+                Frame.Navigate(PageManager.Instance.GetPage(userControl.Tag.ToString(), Frame));
             }
         }
     }

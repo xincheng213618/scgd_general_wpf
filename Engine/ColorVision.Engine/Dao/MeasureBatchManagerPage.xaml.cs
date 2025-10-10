@@ -80,7 +80,7 @@ namespace ColorVision.Engine
         /// <summary>
         /// MeasureBatchManagerPage.xaml 的交互逻辑
         /// </summary>
-    public partial class MeasureBatchManagerPage : Page,ISolutionPage
+    public partial class MeasureBatchManagerPage : Page,IPage
     {
         public string PageTitle => nameof(MeasureBatchManagerPage);
 

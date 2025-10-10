@@ -14,10 +14,12 @@ using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ColorVision.Engine.Archive.Dao
-{ 
+{
     /// <summary>
     /// ArchiveDetailPage.xaml 的交互逻辑
     /// </summary>
+    
+    [Page(nameof(ArchiveDetailPage))]
     public partial class ArchiveDetailPage : Page
     {
         public Frame Frame { get; set; }
