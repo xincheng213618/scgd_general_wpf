@@ -167,12 +167,12 @@ namespace ColorVision.Engine.Templates
                         {
                             if (columnName == Properties.Resources.SerialNumber1)
                             {
-                                SortableExtension.SortByProperty1(collection,"Id", item.IsSortD);
+                                SortableExtension.SortByProperty(collection,"Id", item.IsSortD);
 
                             }
                             else if (columnName == Properties.Resources.Name)
                             {
-                                SortableExtension.SortByProperty1(collection, "Key", item.IsSortD);
+                                SortableExtension.SortByProperty(collection, "Key", item.IsSortD);
                             }
                             else if (columnName == Properties.Resources.Choice)
                             {
