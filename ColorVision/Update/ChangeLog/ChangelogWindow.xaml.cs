@@ -15,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 
 namespace ColorVision.Update
 {
@@ -92,7 +93,7 @@ namespace ColorVision.Update
                     // Build hierarchical tree structure
                     BuildVersionTree();
                     
-                    ChangeLogListView.ItemsSource = VersionTree;
+                    ChangeLogTreeView.ItemsSource = VersionTree;
                     ChangeLogDetailsPanel.ItemsSource = ChangeLogEntrys;
                 }
                 else
@@ -153,24 +154,42 @@ namespace ColorVision.Update
                         
                         // Select the entry
                         foundEntry.IsSelected = true;
-                        
-                        // Scroll into view
-                        ScrollTreeViewItemIntoView(foundEntry);
+
+                        Dispatcher.BeginInvoke(new Action(() =>
+                        {
+                            var treeViewItem = GetTreeViewItem(ChangeLogTreeView, foundEntry);
+                            if (treeViewItem != null)
+                            {
+                                treeViewItem.BringIntoView();
+                            }
+                        }), DispatcherPriority.Loaded);
                         return;
                     }
                 }
             }
         }
 
-        /// <summary>
-        /// Scroll TreeView item into view
-        /// </summary>
-        private void ScrollTreeViewItemIntoView(object item)
+        public static TreeViewItem GetTreeViewItem(TreeView treeView, object item)
         {
-            if (ChangeLogListView.ItemContainerGenerator.ContainerFromItem(item) is TreeViewItem treeViewItem)
+            return (TreeViewItem)treeView.ItemContainerGenerator.ContainerFromItem(item)
+                ?? GetTreeViewItemRecursive(treeView, item);
+        }
+
+        private static TreeViewItem GetTreeViewItemRecursive(ItemsControl parent, object item)
+        {
+            foreach (object child in parent.Items)
             {
-                treeViewItem.BringIntoView();
+                TreeViewItem childItem = parent.ItemContainerGenerator.ContainerFromItem(child) as TreeViewItem;
+                if (childItem != null)
+                {
+                    if (child == item)
+                        return childItem;
+                    TreeViewItem result = GetTreeViewItemRecursive(childItem, item);
+                    if (result != null)
+                        return result;
+                }
             }
+            return null;
         }
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
@@ -300,6 +319,7 @@ namespace ColorVision.Update
 
                     majorNode.MinorVersions.Add(minorNode);
                 }
+                majorNode.MinorVersions[0].Entries[0].IsSelected = true;
 
                 VersionTree.Add(majorNode);
             }
