@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace LicenseGenerator
 {
@@ -108,6 +109,129 @@ namespace LicenseGenerator
                 // 使用 SHA256 替代已弃用的 MD5
                 byte[] signatureBytes = rsa.SignData(dataBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
                 return Convert.ToBase64String(signatureBytes);
+            }
+        }
+
+        /// <summary>
+        /// 创建增强型许可证
+        /// </summary>
+        /// <param name="machineCode">机器码</param>
+        /// <param name="licensee">被许可人（客户名称）</param>
+        /// <param name="deviceMode">设备型号</param>
+        /// <param name="expiryDate">过期日期</param>
+        /// <param name="issuingAuthority">签发机构</param>
+        /// <returns>Base64 编码的 JSON 许可证字符串</returns>
+        public static string CreateEnhancedLicense(
+            string machineCode, 
+            string licensee, 
+            string deviceMode,
+            DateTime expiryDate,
+            string issuingAuthority = "ColorVision")
+        {
+            if (string.IsNullOrWhiteSpace(machineCode))
+            {
+                throw new ArgumentNullException(nameof(machineCode), "机器码不能为空");
+            }
+
+            if (string.IsNullOrWhiteSpace(licensee))
+            {
+                throw new ArgumentNullException(nameof(licensee), "被许可人不能为空");
+            }
+
+            // 创建增强许可证对象
+            var enhancedLicense = new EnhancedLicenseModel
+            {
+                LicenseeSignature = machineCode,
+                Licensee = licensee,
+                DeviceMode = deviceMode,
+                IssuingAuthority = issuingAuthority,
+                IssueDateDateTime = DateTime.Now,
+                ExpiryDateTime = expiryDate
+            };
+
+            // 生成授权签名（对机器码+过期时间戳进行签名）
+            string dataToSign = $"{machineCode}:{enhancedLicense.ExpiryDate}";
+            enhancedLicense.AuthoritySignature = SignData(dataToSign, PrivateKeyXml);
+
+            // 序列化为JSON
+            string jsonLicense = JsonConvert.SerializeObject(enhancedLicense, Formatting.None);
+
+            // Base64 编码
+            byte[] jsonBytes = Encoding.UTF8.GetBytes(jsonLicense);
+            return Convert.ToBase64String(jsonBytes);
+        }
+
+        /// <summary>
+        /// 验证增强型许可证
+        /// </summary>
+        /// <param name="base64License">Base64 编码的许可证</param>
+        /// <param name="machineCode">要验证的机器码</param>
+        /// <returns>如果许可证有效返回 true，否则返回 false</returns>
+        public static bool VerifyEnhancedLicense(string base64License, string machineCode)
+        {
+            if (string.IsNullOrWhiteSpace(base64License) || string.IsNullOrWhiteSpace(machineCode))
+            {
+                return false;
+            }
+
+            try
+            {
+                // Base64 解码
+                byte[] jsonBytes = Convert.FromBase64String(base64License);
+                string jsonLicense = Encoding.UTF8.GetString(jsonBytes);
+
+                // 反序列化
+                var license = JsonConvert.DeserializeObject<EnhancedLicenseModel>(jsonLicense);
+                if (license == null)
+                {
+                    return false;
+                }
+
+                // 验证机器码
+                if (license.LicenseeSignature != machineCode)
+                {
+                    return false;
+                }
+
+                // 验证是否过期
+                if (license.IsExpired())
+                {
+                    return false;
+                }
+
+                // 验证授权签名
+                string dataToVerify = $"{machineCode}:{license.ExpiryDate}";
+                byte[] dataBytes = Encoding.UTF8.GetBytes(dataToVerify);
+                byte[] signatureBytes = Convert.FromBase64String(license.AuthoritySignature);
+
+                using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider())
+                {
+                    rsa.FromXmlString(PublicKeyXml);
+                    return rsa.VerifyData(dataBytes, signatureBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 解析增强型许可证（不验证）
+        /// </summary>
+        /// <param name="base64License">Base64 编码的许可证</param>
+        /// <returns>许可证对象，如果解析失败返回 null</returns>
+        public static EnhancedLicenseModel? ParseEnhancedLicense(string base64License)
+        {
+            try
+            {
+                byte[] jsonBytes = Convert.FromBase64String(base64License);
+                string jsonLicense = Encoding.UTF8.GetString(jsonBytes);
+                return JsonConvert.DeserializeObject<EnhancedLicenseModel>(jsonLicense);
+            }
+            catch
+            {
+                return null;
             }
         }
     }
