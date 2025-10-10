@@ -1,16 +1,41 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using System.Linq;
 using System.Reflection;
-using System.Security.Cryptography;
 using System.Text;
+using Newtonsoft.Json;
 
 
 namespace ColorVision.UI.ACE
 {
+    public class ColorVisionLicense
+    {
+        [JsonProperty("authority_signature")]
+        public string AuthoritySignature { get; set; }
+
+        [JsonProperty("device_mode")]
+        public string DeviceMode { get; set; }
+
+        [JsonProperty("expiry_date")]
+        public string ExpiryDate { get; set; }
+
+        public DateTime ExpiryDateTime { get => ExpiryDate == null ? DateTime.Now : TimeZone.CurrentTimeZone.ToLocalTime(new System.DateTime(1970, 1, 1)).AddSeconds(int.Parse(ExpiryDate)); }
+
+        [JsonProperty("issue_date")]
+        public string IssueDate { get; set; }
+
+        [JsonProperty("issuing_authority")]
+        public string IssuingAuthority { get; set; }
+
+        [JsonProperty("licensee")]
+        public string Licensee { get; set; }
+
+        [JsonProperty("licensee_signature")]
+        public string LicenseeSignature { get; set; }
+    }
+
     public class License
     {
-        private static readonly string publicKeyXml = "<RSAKeyValue><Modulus>5sf/agoe+/hryIfvt7v6o9aNldWSkUoPkW6se8VbEo7B4JBT0vIUQqku635RU+0vhaF/IJ7TQw6pYerHacA83XYBy90KEN4twOBs1Gy3XfEBcjYheQO919Hif1gENzqzQEg47G36VdmWzmhjreq2YQQQN+p/ezIbYtrPXGNU4fE=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
-        private static readonly string privateKeyXml = "<RSAKeyValue><Modulus>5sf/agoe+/hryIfvt7v6o9aNldWSkUoPkW6se8VbEo7B4JBT0vIUQqku635RU+0vhaF/IJ7TQw6pYerHacA83XYBy90KEN4twOBs1Gy3XfEBcjYheQO919Hif1gENzqzQEg47G36VdmWzmhjreq2YQQQN+p/ezIbYtrPXGNU4fE=</Modulus><Exponent>AQAB</Exponent><P>/OfgYc6H7sSiFUrwkTVtQEyuSm309+Whwuvuul/3zLkNJlvorGC2D5ksTz3Q0XFehHWgWNc0jQ3MRyKp2EHxgw==</P><Q>6ZrTQbe25FVr92pxAlBeO1iONdbLRM+/VmuwrZVgeHvu++8ChAidQT13rcVfqvLDuGq5/q2bgQgmraqdgRNIew==</Q><DP>0sEQ1bDcyncGcyQOMZQKRSkhnVjgaaztDpi6Sooq4GndsXep/+xgC8Ojjy1+VOtazpuPUjmUy28SKr2SOGtLrQ==</DP><DQ>b7mMsDGdVzdDm+Fciy7E4r1HxpgkP5TcfgijR2HZ8cXUVsnI+jzkeP9c7c8oIipZUSo6KoP9i4jKduTSz5jZYQ==</DQ><InverseQ>2kXWXpMpHplGwG/eHR17tVNyfaxjl2Hu2QWnlg5Jf/vLDMcA9MspGS5mS5uCNTTPh34T9PEtmCdA5L5i8kakwg==</InverseQ><D>EmVOzr0PyzX6IXn0ecjaKcUodBEaJcqpgwY3aYZJxCjs+2GFzQLO6qFhxBPFl9MIPrao04jVfjrk9ZEpZByWvUmq79tlzpBjeZW2wcjeUrZYK0/b0D7NRelf6InSJaOb9QKw/hhSPsl3x+nXPyhUFfz6q8bThGDSriC/eb3aSyE=</D></RSAKeyValue>";
-
         private static string GetCompanyName()
         {
             var assembly = Assembly.GetExecutingAssembly();
@@ -33,12 +58,30 @@ namespace ColorVision.UI.ACE
             return paths.Any(path => File.Exists(path) && Check(File.ReadAllText(path)));
         }
 
-        public static bool Check(string lisense)
+        public static bool Check(string license)
         {
-            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
-            //导入公钥，准备验证签名
-            rsa.FromXmlString(publicKeyXml);
-            return lisense.Length==172 && rsa.VerifyData(Encoding.UTF8.GetBytes(GetMachineCode()), "MD5", Convert.FromBase64String(lisense));
+            if (string.IsNullOrWhiteSpace(license))
+                return false;
+
+            try
+            {
+                // Try to parse as enhanced license (Base64-encoded JSON)
+                string licenseContent = Base64Decode(license);
+                var enhancedLicense = JsonConvert.DeserializeObject<ColorVisionLicense>(licenseContent);
+                
+                if (enhancedLicense != null && !string.IsNullOrWhiteSpace(enhancedLicense.Licensee))
+                {
+                    // Check if license is expired
+                    return enhancedLicense.ExpiryDateTime > DateTime.Now;
+                }
+            }
+            catch
+            {
+                // If parsing fails, it's not a valid enhanced license
+                return false;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -56,31 +99,11 @@ namespace ColorVision.UI.ACE
             }
             return Reg;
         }
-        public static void Create() {
 
-            string ActivationCode =  Create(GetMachineCode());
-            string LicensePath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\{GetCompanyName()}";
-            if (!Directory.Exists(LicensePath))
-            {
-                Directory.CreateDirectory(LicensePath);
-            }
-            File.WriteAllText(LicensePath + "\\license", ActivationCode);
-        } 
-        public static string Create(string MachineCode)
+        private static string Base64Decode(string base64EncodedData)
         {
-            return Sign(MachineCode, privateKeyXml);
-        }
-        /// <summary>
-        /// 加密
-        /// </summary>
-        /// <param name="Text"></param>
-        /// <param name="PrivateKey"></param>
-        /// <returns></returns>
-        public static string Sign(string Text, string PrivateKey)
-        {
-            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
-            rsa.FromXmlString(PrivateKey);
-            return Convert.ToBase64String(rsa.SignData(Encoding.UTF8.GetBytes(Text), "MD5"));
+            var base64EncodedBytes = Convert.FromBase64String(base64EncodedData);
+            return Encoding.UTF8.GetString(base64EncodedBytes);
         }
     }
    
