@@ -156,8 +156,7 @@ namespace ColorVision
             log.Info(UI.ACE.License.GetMachineCode());
             if (!UI.ACE.License.Check())
             {
-                log.Info("检测不到许可证，正在创建许可证");
-                UI.ACE.License.Create();
+                log.Info("检测不到许可证");
             }
             bool shouldLoadPlugins = false;
 
