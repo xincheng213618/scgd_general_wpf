@@ -28,7 +28,7 @@ public class MyItem : ISortID
     public string Name { get; set; }
 }
 
-var collection = new ObservableCollection<MyItem>();
+var collection = new ObservableCollection\<MyItem\>();
 collection.SortByID(descending: false);  // 升序
 collection.SortByID(descending: true);   // 降序
 ```
@@ -46,7 +46,7 @@ public class MyItem : ISortKey
     public string Key { get; set; }
 }
 
-var collection = new ObservableCollection<MyItem>();
+var collection = new ObservableCollection\<MyItem\>();
 collection.SortByKey(descending: false);  // 使用逻辑比较
 ```
 
@@ -58,7 +58,7 @@ public interface ISortBatch
 }
 
 // 使用示例
-var collection = new ObservableCollection<MyItem>();
+var collection = new ObservableCollection\<MyItem\>();
 collection.SortByBatch(descending: false);
 ```
 
@@ -70,7 +70,7 @@ public interface ISortBatchID
 }
 
 // 使用示例
-var collection = new ObservableCollection<MyItem>();
+var collection = new ObservableCollection\<MyItem\>();
 collection.SortByBatchID(descending: false);
 ```
 
@@ -92,7 +92,7 @@ public class Product
     public DateTime CreatedDate { get; set; }
 }
 
-var products = new ObservableCollection<Product>();
+var products = new ObservableCollection\<Product\>();
 
 // 1. 按属性名排序
 products.SortBy("Id", descending: false);
@@ -145,8 +145,8 @@ products.AddUniqueBy(newProduct, x => x.Id, insertAtBeginning: true);
 SortManager 提供了高级排序管理功能，包括保存、加载和切换排序配置。
 
 ```csharp
-var collection = new ObservableCollection<Product>();
-var manager = new SortManager<Product>(collection);
+var collection = new ObservableCollection\<Product\>();
+var manager = new SortManager\<Product\>(collection);
 
 // 应用排序
 manager.ApplySort("Price", descending: false);
@@ -200,7 +200,7 @@ collection.SortBy(x => x.ModifiedDate, descending: true);
 ```
 
 ### 自定义类型排序 (Custom Type Sorting)
-任何实现 IComparable 或 IComparable<T> 的类型都可以排序
+任何实现 IComparable 或 IComparable\<T\> 的类型都可以排序
 
 ## 🔄 迁移指南 (Migration Guide)
 
@@ -264,7 +264,7 @@ private void GridViewColumnHeader_Click(object sender, RoutedEventArgs e)
             bool descending = !_isAscending;
             
             // 方法 1: 直接排序
-            if (listView.ItemsSource is ObservableCollection<MyItem> collection)
+            if (listView.ItemsSource is ObservableCollection\<MyItem\> collection)
             {
                 collection.SortBy(propertyName, descending);
             }
@@ -363,7 +363,7 @@ catch (InvalidOperationException ex)
 3. **使用 SortManager 管理复杂排序**
    ```csharp
    // ✅ 好 - 可保存和恢复
-   var manager = new SortManager<T>(collection);
+   var manager = new SortManager\<T\>(collection);
    manager.ApplySort("Price");
    manager.SaveSort("PriceSort");
    

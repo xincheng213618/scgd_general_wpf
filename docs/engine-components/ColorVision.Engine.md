@@ -58,7 +58,7 @@ graph TB
         A[FlowEngine<br/>流程引擎] --> B[NodeManager<br/>节点管理器]
         A --> C[ExecutionEngine<br/>执行引擎]
         
-        D[DeviceManager<br/>设备管理器] --> E[DeviceService<br/>设备服务]
+        D[DeviceManager<br/>设备管理器] --> E[DeviceService\<br/>设备服务]
         D --> F[CommunicationLayer<br/>通信层]
         
         G[TemplateManager<br/>模板管理器] --> H[TemplateLoader<br/>模板加载器]
@@ -96,13 +96,13 @@ graph TB
 public class FlowEngineManager
 {
     // 加载流程模板
-    public async Task<FlowTemplate> LoadFlowTemplateAsync(string templateName)
+    public async Task\<FlowTemplate\> LoadFlowTemplateAsync(string templateName)
     
     // 执行流程
-    public async Task<FlowResult> ExecuteFlowAsync(FlowTemplate template, Dictionary<string, object> parameters)
+    public async Task\<FlowResult\> ExecuteFlowAsync(FlowTemplate template, Dictionary\\<string, object\> parameters)
     
     // 监控流程状态
-    public event EventHandler<FlowStatusChangedEventArgs> FlowStatusChanged;
+    public event EventHandler\<FlowStatusChangedEventArgs\> FlowStatusChanged;
 }
 ```
 
@@ -114,13 +114,13 @@ public class FlowEngineManager
 public class DeviceServiceManager
 {
     // 注册设备服务
-    public void RegisterService<T>() where T : IDeviceService
+    public void RegisterService\<T\>() where T : IDeviceService
     
     // 获取设备服务
-    public T GetService<T>() where T : IDeviceService
+    public T GetService\<T\>() where T : IDeviceService
     
     // 设备状态变更事件
-    public event EventHandler<DeviceStatusChangedEventArgs> DeviceStatusChanged;
+    public event EventHandler\<DeviceStatusChangedEventArgs\> DeviceStatusChanged;
 }
 ```
 
@@ -132,13 +132,13 @@ public class DeviceServiceManager
 public class TemplateManager
 {
     // 创建新模板
-    public async Task<Template> CreateTemplateAsync(string name, TemplateType type)
+    public async Task\<Template\> CreateTemplateAsync(string name, TemplateType type)
     
     // 保存模板
     public async Task SaveTemplateAsync(Template template)
     
     // 加载模板参数
-    public async Task<Dictionary<string, object>> LoadTemplateParametersAsync(int templateId)
+    public async Task<Dictionary\\<string, object>\> LoadTemplateParametersAsync(int templateId)
 }
 ```
 
@@ -192,7 +192,7 @@ var result = await flowEngine.ExecuteAsync(flow);
 // 处理结果
 if (result.Success)
 {
-    var outputData = result.GetOutput<ProcessingResult>();
+    var outputData = result.GetOutput\<ProcessingResult\>();
     Console.WriteLine($"处理完成：{outputData.Message}");
 }
 ```
@@ -209,11 +209,11 @@ public interface IDeviceService
     string ServiceType { get; }
     DeviceStatus Status { get; }
     
-    Task<bool> ConnectAsync();
-    Task<bool> DisconnectAsync();
-    Task<object> ExecuteCommandAsync(string command, object parameters);
+    Task\<bool\> ConnectAsync();
+    Task\<bool\> DisconnectAsync();
+    Task\<object\> ExecuteCommandAsync(string command, object parameters);
     
-    event EventHandler<DeviceStatusChangedEventArgs> StatusChanged;
+    event EventHandler\<DeviceStatusChangedEventArgs\> StatusChanged;
 }
 ```
 
@@ -251,12 +251,12 @@ public class CameraServiceConfig
     public string Username { get; set; }
     public string Password { get; set; }
     public CameraType Type { get; set; }
-    public Dictionary<string, object> Parameters { get; set; }
+    public Dictionary\\<string, object\> Parameters { get; set; }
 }
 
 // 注册和配置设备服务
-var deviceManager = ServiceContainer.GetService<DeviceServiceManager>();
-var cameraService = deviceManager.GetService<CameraService>();
+var deviceManager = ServiceContainer.GetService\<DeviceServiceManager\>();
+var cameraService = deviceManager.GetService\<CameraService\>();
 await cameraService.ConfigureAsync(config);
 ```
 
@@ -338,22 +338,22 @@ public class ModFlowDetail
 ### DAO 数据访问层
 
 ```csharp
-public class ModMasterDao : BaseDao<ModMaster>
+public class ModMasterDao : BaseDao\<ModMaster\>
 {
     // 按类型查询模板
-    public async Task<List<ModMaster>> GetByTypeAsync(int type)
+    public async Task<List\\<ModMaster>\> GetByTypeAsync(int type)
     
     // 按名称搜索
-    public async Task<List<ModMaster>> SearchByNameAsync(string keyword)
+    public async Task<List\\<ModMaster>\> SearchByNameAsync(string keyword)
     
     // 获取模板树结构
-    public async Task<List<ModMaster>> GetTreeStructureAsync(int parentId)
+    public async Task<List\\<ModMaster>\> GetTreeStructureAsync(int parentId)
 }
 
-public class ModFlowDetailDao : BaseDao<ModFlowDetail>
+public class ModFlowDetailDao : BaseDao\<ModFlowDetail\>
 {
     // 获取流程详情
-    public async Task<ModFlowDetail> GetFlowDetailAsync(int masterId)
+    public async Task\<ModFlowDetail\> GetFlowDetailAsync(int masterId)
     
     // 保存流程数据
     public async Task SaveFlowDataAsync(int masterId, string flowData)
@@ -371,7 +371,7 @@ public class QualityCheckFlow
     private readonly DeviceServiceManager _deviceManager;
     private readonly TemplateManager _templateManager;
     
-    public async Task<QualityCheckResult> ExecuteQualityCheckAsync(string productId)
+    public async Task\<QualityCheckResult\> ExecuteQualityCheckAsync(string productId)
     {
         try
         {
@@ -379,11 +379,11 @@ public class QualityCheckFlow
             var flowTemplate = await _templateManager.LoadTemplateAsync("quality_check_flow");
             
             // 2. 获取相机服务
-            var cameraService = _deviceManager.GetService<CameraService>();
+            var cameraService = _deviceManager.GetService\<CameraService\>();
             await cameraService.ConnectAsync();
             
             // 3. 设置流程参数
-            var parameters = new Dictionary<string, object>
+            var parameters = new Dictionary\\<string, object\>
             {
                 ["product_id"] = productId,
                 ["camera_service"] = cameraService,
@@ -397,7 +397,7 @@ public class QualityCheckFlow
             // 5. 处理结果
             if (result.Success)
             {
-                var qualityResult = result.GetOutput<QualityCheckResult>();
+                var qualityResult = result.GetOutput\<QualityCheckResult\>();
                 await SaveResultAsync(qualityResult);
                 return qualityResult;
             }
@@ -428,9 +428,9 @@ public class ImageEnhanceNode : BaseFlowNode
     [NodeParameter("对比度", 1.0, 0.1, 3.0)]
     public double Contrast { get; set; } = 1.0;
     
-    public override async Task<NodeResult> ExecuteAsync(NodeContext context)
+    public override async Task\<NodeResult\> ExecuteAsync(NodeContext context)
     {
-        var inputImage = context.GetInput<Mat>("image");
+        var inputImage = context.GetInput\<Mat\>("image");
         if (inputImage == null)
             return NodeResult.Error("输入图像为空");
             
@@ -450,10 +450,10 @@ public class ImageEnhanceNode : BaseFlowNode
 ```csharp
 public interface IFlowEngine
 {
-    Task<FlowResult> ExecuteAsync(FlowDefinition flow);
-    Task<FlowDefinition> LoadFlowAsync(string flowName);
+    Task\<FlowResult\> ExecuteAsync(FlowDefinition flow);
+    Task\<FlowDefinition\> LoadFlowAsync(string flowName);
     Task SaveFlowAsync(FlowDefinition flow);
-    event EventHandler<FlowExecutionEventArgs> FlowExecutionChanged;
+    event EventHandler\<FlowExecutionEventArgs\> FlowExecutionChanged;
 }
 ```
 
@@ -463,9 +463,9 @@ public interface IDeviceService
 {
     string ServiceType { get; }
     DeviceStatus Status { get; }
-    Task<bool> ConnectAsync();
-    Task<object> ExecuteCommandAsync(string command, object parameters);
-    event EventHandler<DeviceStatusChangedEventArgs> StatusChanged;
+    Task\<bool\> ConnectAsync();
+    Task\<object\> ExecuteCommandAsync(string command, object parameters);
+    event EventHandler\<DeviceStatusChangedEventArgs\> StatusChanged;
 }
 ```
 
@@ -475,9 +475,9 @@ public interface ITemplate
 {
     string Name { get; }
     TemplateType Type { get; }
-    Dictionary<string, TemplateParameter> Parameters { get; }
-    Task ApplyAsync(Dictionary<string, object> parameters);
-    Task<object> ExecuteAsync();
+    Dictionary\\<string, TemplateParameter\> Parameters { get; }
+    Task ApplyAsync(Dictionary\\<string, object\> parameters);
+    Task\<object\> ExecuteAsync();
 }
 ```
 
@@ -487,15 +487,15 @@ public interface ITemplate
 // 服务容器配置
 public void ConfigureServices(IServiceCollection services)
 {
-    services.AddSingleton<FlowEngineManager>();
-    services.AddSingleton<DeviceServiceManager>();
-    services.AddSingleton<TemplateManager>();
-    services.AddSingleton<DatabaseManager>();
+    services.AddSingleton\<FlowEngineManager\>();
+    services.AddSingleton\<DeviceServiceManager\>();
+    services.AddSingleton\<TemplateManager\>();
+    services.AddSingleton\<DatabaseManager\>();
     
     // 注册设备服务
-    services.AddTransient<CameraService>();
-    services.AddTransient<SpectrometerService>();
-    services.AddTransient<MotorService>();
+    services.AddTransient\<CameraService\>();
+    services.AddTransient\<SpectrometerService\>();
+    services.AddTransient\<MotorService\>();
 }
 
 // 初始化引擎
@@ -503,13 +503,13 @@ public async Task InitializeEngineAsync()
 {
     var serviceProvider = BuildServiceProvider();
     
-    var deviceManager = serviceProvider.GetService<DeviceServiceManager>();
+    var deviceManager = serviceProvider.GetService\<DeviceServiceManager\>();
     await deviceManager.InitializeAsync();
     
-    var templateManager = serviceProvider.GetService<TemplateManager>();
+    var templateManager = serviceProvider.GetService\<TemplateManager\>();
     await templateManager.LoadTemplatesAsync();
     
-    var flowEngine = serviceProvider.GetService<FlowEngineManager>();
+    var flowEngine = serviceProvider.GetService\<FlowEngineManager\>();
     await flowEngine.InitializeAsync();
 }
 ```

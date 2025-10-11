@@ -154,7 +154,7 @@ public interface IMenuItem
     string Header { get; }
     object Icon { get; }
     ICommand Command { get; }
-    IList<IMenuItem> Children { get; }
+    IList\\<IMenuItem\> Children { get; }
 }
 ```
 
@@ -166,7 +166,7 @@ public interface IMenuItem
 ### 权限设置
 ```csharp
 //设置权限
-Authorization.Instance = ConfigService.Instance.GetRequiredService<Authorization>();
+Authorization.Instance = ConfigService.Instance.GetRequiredService\<Authorization\>();
 ```
 
 ### 日志配置
@@ -294,7 +294,7 @@ public partial class App : Application
         ConfigHandler.GetInstance();
         
         //设置权限
-        Authorization.Instance = ConfigService.Instance.GetRequiredService<Authorization>();
+        Authorization.Instance = ConfigService.Instance.GetRequiredService\<Authorization\>();
         
         //设置日志级别
         LogConfig.Instance.SetLog();
@@ -317,7 +317,7 @@ public class PluginMenuItem : IMenuItem
     public string Header => "My Plugin";
     public object Icon => new BitmapImage(new Uri("pack://application:,,,/Resources/plugin.png"));
     public ICommand Command { get; }
-    public IList<IMenuItem> Children { get; }
+    public IList\\<IMenuItem\> Children { get; }
 }
 ```
 

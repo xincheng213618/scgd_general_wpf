@@ -167,9 +167,9 @@ NotificationWindow.Show("操作完成", NotificationType.Success);
 <Application x:Class="MyApp.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Application.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
+    \<Application.Resources\>
+        \<ResourceDictionary\>
+            \<ResourceDictionary.MergedDictionaries\>
                 <!-- 引入主题资源 -->
                 <ResourceDictionary Source="pack://application:,,,/ColorVision.Themes;component/Themes/Dark.xaml"/>
             </ResourceDictionary.MergedDictionaries>
@@ -249,7 +249,7 @@ public partial class SettingsWindow : Window
 
 ### 画刷资源
 ```xml
-<ResourceDictionary>
+\<ResourceDictionary\>
     <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}"/>
     <SolidColorBrush x:Key="WindowBackgroundBrush" Color="{StaticResource WindowBackgroundColor}"/>
     <SolidColorBrush x:Key="PanelBackgroundBrush" Color="{StaticResource PanelBackgroundColor}"/>

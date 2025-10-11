@@ -51,7 +51,7 @@ public class ProductModel : ISortID
 }
 
 // 使用
-var products = new ObservableCollection<ProductModel>();
+var products = new ObservableCollection\<ProductModel\>();
 products.SortByID(descending: false);
 ```
 
@@ -66,7 +66,7 @@ public class ProductModel  // ← 移除 : ISortID
 }
 
 // 2. 更新排序调用
-var products = new ObservableCollection<ProductModel>();
+var products = new ObservableCollection\<ProductModel\>();
 
 // 方式 A: 使用属性名
 products.SortBy("Id", descending: false);
@@ -207,7 +207,7 @@ collection.SortByMultiple(
 
 ```csharp
 // 创建排序管理器
-var manager = new SortManager<ProductModel>(products);
+var manager = new SortManager\<ProductModel\>(products);
 
 // 应用排序
 manager.ApplySort("Price", descending: false);
@@ -271,7 +271,7 @@ private void ColumnHeader_Click(object sender, RoutedEventArgs e)
     if (sender is GridViewColumnHeader header)
     {
         var sortBy = header.Tag?.ToString();
-        if (sortBy == "Id" && listView.ItemsSource is ObservableCollection<MyItem> items)
+        if (sortBy == "Id" && listView.ItemsSource is ObservableCollection\<MyItem\> items)
         {
             items.SortByID(_isDescending);
             _isDescending = !_isDescending;
@@ -289,7 +289,7 @@ private void ColumnHeader_Click(object sender, RoutedEventArgs e)
     {
         var propertyName = header.Tag?.ToString();
         if (!string.IsNullOrEmpty(propertyName) && 
-            listView.ItemsSource is ObservableCollection<MyItem> items)
+            listView.ItemsSource is ObservableCollection\<MyItem\> items)
         {
             // 方法 1: 直接排序
             items.SortBy(propertyName, _isDescending);
@@ -387,7 +387,7 @@ collection.SortBy("Idd", descending);  // 运行时错误
 [Test]
 public void TestSortById()
 {
-    var collection = new ObservableCollection<MyItem>
+    var collection = new ObservableCollection\<MyItem\>
     {
         new MyItem { Id = 3 },
         new MyItem { Id = 1 },
@@ -405,7 +405,7 @@ public void TestSortById()
 [Test]
 public void TestSortById()
 {
-    var collection = new ObservableCollection<MyItem>
+    var collection = new ObservableCollection\<MyItem\>
     {
         new MyItem { Id = 3 },
         new MyItem { Id = 1 },

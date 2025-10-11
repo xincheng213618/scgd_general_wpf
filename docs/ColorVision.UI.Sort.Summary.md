@@ -135,7 +135,7 @@ public class Product  // 无需实现接口
     public string Name { get; set; }
 }
 
-var products = new ObservableCollection<Product>();
+var products = new ObservableCollection\<Product\>();
 products.SortBy("Id", descending: false);        // 属性名
 products.SortBy(x => x.Name, descending: false); // Lambda
 products.SmartSort(descending: false);           // 智能排序
@@ -222,7 +222,7 @@ collection.SmartSort(descending: false);
 
 ### 4. 排序管理
 ```csharp
-var manager = new SortManager<T>(collection);
+var manager = new SortManager\<T\>(collection);
 manager.ApplySort("Price");
 manager.SaveSort("MySort");
 manager.LoadSort("MySort");

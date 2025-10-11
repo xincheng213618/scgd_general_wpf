@@ -113,7 +113,7 @@ public class MyServiceNode : CVBaseServerNode
         try
         {
             // 获取输入数据
-            var inputValue = GetInputData<double>("CustomInput");
+            var inputValue = GetInputData\<double\>("CustomInput");
             
             // 处理数据
             var result = ProcessData(inputValue);
@@ -183,7 +183,7 @@ public string Mode
 
 ```csharp
 [STNode("/Custom/MyLoopNode")]
-public class MyLoopNode : CVBaseLoopServerNode<MyLoopProperty>
+public class MyLoopNode : CVBaseLoopServerNode\<MyLoopProperty\>
 {
     public MyLoopNode()
         : base("MyLoopNode", "LoopNode", "LN1", "DEV01")
@@ -330,7 +330,7 @@ public class MyMQTTSubscribeNode : CVBaseServerNode
         if (WaitForMessage(timeout: 5000))
         {
             // 解析消息
-            var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(_receivedMessage);
+            var data = JsonConvert.DeserializeObject<Dictionary\\<string, object>\>(_receivedMessage);
             
             // 设置到输出
             SetOutputData("ReceivedData", data);
@@ -436,7 +436,7 @@ public class MyCameraNode : CVBaseServerNode
 public class MyAlgorithmNode : CVBaseServerNode
 {
     private string _algorithmType;
-    private Dictionary<string, object> _parameters;
+    private Dictionary\\<string, object\> _parameters;
     
     [STNodeProperty("算法类型", "算法类型", false, false)]
     public string AlgorithmType
@@ -460,7 +460,7 @@ public class MyAlgorithmNode : CVBaseServerNode
     protected override void DoServerWork(CVStartCFC cfc)
     {
         // 1. 获取输入数据
-        var imageData = GetInputData<CameraDataModel>("ImageData");
+        var imageData = GetInputData\<CameraDataModel\>("ImageData");
         var roi = GetInputData<Rectangle?>("ROI");
         
         // 2. 加载图像
@@ -546,7 +546,7 @@ protected override void DoServerWork(CVStartCFC cfc)
         ValidateInputs();
         
         // 2. 获取数据
-        var input = GetInputData<double>("Input1");
+        var input = GetInputData\<double\>("Input1");
         
         // 3. 处理数据
         var output = ProcessData(input);
@@ -588,7 +588,7 @@ public class MyNodeTests
         node.DoServerWork(cfc);
         
         // Assert
-        var output = node.GetOutputData<double>("Output1");
+        var output = node.GetOutputData\<double\>("Output1");
         Assert.AreEqual(expected, output);
     }
 }
@@ -683,7 +683,7 @@ protected override void DoServerWork(CVStartCFC cfc)
     DoTransferData(m_op_data_out, cfc);
 }
 
-private async Task<object> ProcessDataAsync()
+private async Task\<object\> ProcessDataAsync()
 {
     await Task.Delay(100); // 模拟异步操作
     return ProcessData();
@@ -698,7 +698,7 @@ private void ValidateInputs()
     if (!InputOptions["Input1"].IsConnected)
         throw new InvalidOperationException("Input1 must be connected");
         
-    var value = GetInputData<double>("Input1");
+    var value = GetInputData\<double\>("Input1");
     if (value < 0 || value > 100)
         throw new ArgumentOutOfRangeException("Input1 must be between 0 and 100");
 }
@@ -809,7 +809,7 @@ protected override void DoServerWork(CVStartCFC cfc)
     var previousData = cfc.Params;
     
     // 或从输入连接获取
-    var inputData = GetInputData<MyDataType>("InputName");
+    var inputData = GetInputData\<MyDataType\>("InputName");
 }
 ```
 
@@ -826,7 +826,7 @@ protected override void OnCreate()
 protected override void DoServerWork(CVStartCFC cfc)
 {
     var optionalValue = InputOptions["OptionalInput"].IsConnected
-        ? GetInputData<string>("OptionalInput")
+        ? GetInputData\<string\>("OptionalInput")
         : "default_value";
 }
 ```

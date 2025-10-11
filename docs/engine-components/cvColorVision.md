@@ -1003,11 +1003,11 @@ class ColorMeasurement
         }
     }
     
-    public List<ColorData> BatchMeasure(byte[] imageData, int width, int height,
+    public List\\<ColorData\> BatchMeasure(byte[] imageData, int width, int height,
                                         int bpp, int channels, 
-                                        List<Point> points, double radius = 3)
+                                        List\\<Point\> points, double radius = 3)
     {
-        var results = new List<ColorData>();
+        var results = new List\\<ColorData\>();
         
         try
         {

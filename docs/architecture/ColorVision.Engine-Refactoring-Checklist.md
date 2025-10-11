@@ -158,7 +158,7 @@
 ### 数据层迁移
 - [ ] 迁移 Dao/ 目录文件
 - [ ] 迁移实体模型
-- [ ] 实现 IRepository<T> 接口
+- [ ] 实现 IRepository\<T\> 接口
 - [ ] 实现仓储类
 - [ ] 实现 EngineDbContext
 - [ ] 实现批量数据管理器

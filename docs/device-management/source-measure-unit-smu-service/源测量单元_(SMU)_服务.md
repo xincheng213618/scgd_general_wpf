@@ -5,13 +5,13 @@
 
 1. DeviceSMU.cs
 - 该文件定义了 DeviceSMU 类，是 SMU 设备服务的核心类。
-- 它继承自通用设备服务基类 DeviceService<ConfigSMU>，封装了 SMU 的配置、视图和 MQTT 服务。
+- 它继承自通用设备服务基类 DeviceService\<ConfigSMU\>，封装了 SMU 的配置、视图和 MQTT 服务。
 - 通过构造函数初始化 MQTT 服务（MQTTSMU）和视图（ViewSMU），并提供编辑命令。
 - 提供获取设备信息视图、显示控件和 MQTT 服务的重写方法。
 - 体现了 MVVM 模式和命令模式的使用，界面和业务逻辑分离。
 
 2. MQTTSMU.cs
-- 该文件定义了 MQTTSMU 类，继承自 MQTTDeviceService<ConfigSMU>，实现了基于 MQTT 通信的 SMU 设备控制与数据交互。
+- 该文件定义了 MQTTSMU 类，继承自 MQTTDeviceService\<ConfigSMU\>，实现了基于 MQTT 通信的 SMU 设备控制与数据交互。
 - 订阅和监听指定主题消息，处理包括初始化、设置参数、打开设备、获取数据、扫描、关闭设备等事件。
 - 提供了设置参数、打开设备、获取测量数据、扫描（IV扫描）、关闭输出等方法，封装了具体的 MQTT 消息发送逻辑。
 - 通过事件机制将扫描结果和测量结果传递给调用者，支持异步消息处理。

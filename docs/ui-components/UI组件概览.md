@@ -184,7 +184,7 @@ public partial class App : Application
         ConfigHandler.GetInstance();
         
         // 设置权限
-        Authorization.Instance = ConfigService.Instance.GetRequiredService<Authorization>();
+        Authorization.Instance = ConfigService.Instance.GetRequiredService\<Authorization\>();
         
         // 设置日志级别
         LogConfig.Instance.SetLog();
@@ -225,9 +225,9 @@ public partial class App : Application
 ### 4. 主题应用
 
 ```xml
-<Application.Resources>
-    <ResourceDictionary>
-        <ResourceDictionary.MergedDictionaries>
+\<Application.Resources\>
+    \<ResourceDictionary\>
+        \<ResourceDictionary.MergedDictionaries\>
             <ResourceDictionary Source="pack://application:,,,/ColorVision.Themes;component/Themes/Dark.xaml"/>
         </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>

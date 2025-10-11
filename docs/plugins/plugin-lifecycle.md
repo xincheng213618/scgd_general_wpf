@@ -68,36 +68,36 @@ graph TB
 ### 核心接口
 
 ```csharp
-/// <summary>
+/// \<summary\>
 /// 插件基础接口
 /// </summary>
 public interface IPlugin
 {
-    /// <summary>插件唯一标识符</summary>
+    /// \<summary\>插件唯一标识符</summary>
     string Id { get; }
     
-    /// <summary>插件名称</summary>
+    /// \<summary\>插件名称</summary>
     string Name { get; }
     
-    /// <summary>插件版本</summary>
+    /// \<summary\>插件版本</summary>
     Version Version { get; }
     
-    /// <summary>插件描述</summary>
+    /// \<summary\>插件描述</summary>
     string Description { get; }
     
-    /// <summary>插件作者</summary>
+    /// \<summary\>插件作者</summary>
     string Author { get; }
     
-    /// <summary>初始化插件</summary>
+    /// \<summary\>初始化插件</summary>
     Task InitializeAsync(IPluginContext context);
     
-    /// <summary>启动插件</summary>
+    /// \<summary\>启动插件</summary>
     Task StartAsync();
     
-    /// <summary>停止插件</summary>
+    /// \<summary\>停止插件</summary>
     Task StopAsync();
     
-    /// <summary>清理资源</summary>
+    /// \<summary\>清理资源</summary>
     Task ShutdownAsync();
 }
 ```
@@ -141,52 +141,52 @@ stateDiagram-v2
 ```csharp
 public enum PluginState
 {
-    /// <summary>未知状态</summary>
+    /// \<summary\>未知状态</summary>
     Unknown = 0,
     
-    /// <summary>已发现</summary>
+    /// \<summary\>已发现</summary>
     Discovered = 1,
     
-    /// <summary>装载中</summary>
+    /// \<summary\>装载中</summary>
     Loading = 2,
     
-    /// <summary>已装载</summary>
+    /// \<summary\>已装载</summary>
     Loaded = 3,
     
-    /// <summary>装载失败</summary>
+    /// \<summary\>装载失败</summary>
     LoadFailed = 4,
     
-    /// <summary>初始化中</summary>
+    /// \<summary\>初始化中</summary>
     Initializing = 5,
     
-    /// <summary>已初始化</summary>
+    /// \<summary\>已初始化</summary>
     Initialized = 6,
     
-    /// <summary>初始化失败</summary>
+    /// \<summary\>初始化失败</summary>
     InitFailed = 7,
     
-    /// <summary>启动中</summary>
+    /// \<summary\>启动中</summary>
     Starting = 8,
     
-    /// <summary>运行中</summary>
+    /// \<summary\>运行中</summary>
     Running = 9,
     
-    /// <summary>启动失败</summary>
+    /// \<summary\>启动失败</summary>
     StartFailed = 10,
     
-    /// <summary>停止中</summary>
+    /// \<summary\>停止中</summary>
     Stopping = 11,
     
-    /// <summary>已停止</summary>
+    /// \<summary\>已停止</summary>
     Stopped = 12,
     
-    /// <summary>运行异常</summary>
+    /// \<summary\>运行异常</summary>
     Error = 13,
     
-    /// <summary>卸载中</summary>
+    /// \<summary\>卸载中</summary>
     Unloading = 14,
     
-    /// <summary>已卸载</summary>
+    /// \<summary\>已卸载</summary>
     Unloaded = 15
 }
 ```
@@ -299,9 +299,9 @@ public class PluginDiscoveryService : IPluginDiscoveryService
     private readonly ILogger _logger;
     private readonly PluginDiscoveryOptions _options;
     
-    public async Task<IEnumerable<PluginDescriptor>> DiscoverPluginsAsync()
+    public async Task\<IEnumerable<PluginDescriptor>\> DiscoverPluginsAsync()
     {
-        var plugins = new List<PluginDescriptor>();
+        var plugins = new List\\<PluginDescriptor\>();
         
         // 扫描本地插件目录
         plugins.AddRange(await ScanLocalDirectoryAsync(_options.PluginDirectory));
@@ -313,9 +313,9 @@ public class PluginDiscoveryService : IPluginDiscoveryService
         return await ValidatePluginsAsync(plugins);
     }
     
-    private async Task<IEnumerable<PluginDescriptor>> ScanLocalDirectoryAsync(string directory)
+    private async Task\<IEnumerable<PluginDescriptor>\> ScanLocalDirectoryAsync(string directory)
     {
-        var plugins = new List<PluginDescriptor>();
+        var plugins = new List\\<PluginDescriptor\>();
         
         if (!Directory.Exists(directory))
         {
@@ -346,10 +346,10 @@ public class PluginDiscoveryService : IPluginDiscoveryService
         return plugins;
     }
     
-    private async Task<IEnumerable<PluginDescriptor>> ValidatePluginsAsync(
-        IEnumerable<PluginDescriptor> plugins)
+    private async Task\<IEnumerable<PluginDescriptor>\> ValidatePluginsAsync(
+        IEnumerable\<PluginDescriptor\> plugins)
     {
-        var validPlugins = new List<PluginDescriptor>();
+        var validPlugins = new List\\<PluginDescriptor\>();
         
         foreach (var plugin in plugins)
         {
@@ -410,10 +410,10 @@ sequenceDiagram
 ```csharp
 public class PluginLoader : IPluginLoader
 {
-    private readonly Dictionary<string, PluginLoadContext> _loadContexts = new();
+    private readonly Dictionary\\<string, PluginLoadContext\> _loadContexts = new();
     private readonly ILogger _logger;
     
-    public async Task<IPlugin> LoadPluginAsync(PluginDescriptor descriptor)
+    public async Task\<IPlugin\> LoadPluginAsync(PluginDescriptor descriptor)
     {
         try
         {
@@ -469,7 +469,7 @@ public class PluginLoader : IPluginLoader
         {
             // 多个实现时，优先选择带有PluginAttribute的类型
             var attributedType = pluginTypes
-                .FirstOrDefault(t => t.GetCustomAttribute<PluginAttribute>() != null);
+                .FirstOrDefault(t => t.GetCustomAttribute\<PluginAttribute\>() != null);
             
             return attributedType ?? pluginTypes[0];
         }
@@ -478,7 +478,7 @@ public class PluginLoader : IPluginLoader
     }
 }
 
-/// <summary>
+/// \<summary\>
 /// 插件专用程序集加载上下文
 /// 提供插件隔离和卸载能力
 /// </summary>
@@ -515,7 +515,7 @@ public class PluginInitializer
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger _logger;
     
-    public async Task<bool> InitializePluginAsync(IPlugin plugin, PluginDescriptor descriptor)
+    public async Task\<bool\> InitializePluginAsync(IPlugin plugin, PluginDescriptor descriptor)
     {
         try
         {
@@ -591,7 +591,7 @@ public class PluginInitializer
 ```csharp
 public class PluginHost : IPluginHost
 {
-    private readonly ConcurrentDictionary<string, PluginRuntime> _runningPlugins = new();
+    private readonly ConcurrentDictionary\\<string, PluginRuntime\> _runningPlugins = new();
     private readonly IEventBus _eventBus;
     private readonly ILogger _logger;
     
@@ -931,7 +931,7 @@ sequenceDiagram
 ```csharp
 public class PluginUnloader : IPluginUnloader
 {
-    public async Task<bool> UnloadPluginAsync(string pluginId)
+    public async Task\<bool\> UnloadPluginAsync(string pluginId)
     {
         try
         {
@@ -1023,7 +1023,7 @@ public class PluginManager : IPluginManager, IDisposable
     private readonly IPluginLoader _loader;
     private readonly IPluginHost _host;
     private readonly IPluginUnloader _unloader;
-    private readonly ConcurrentDictionary<string, PluginRuntime> _plugins = new();
+    private readonly ConcurrentDictionary\\<string, PluginRuntime\> _plugins = new();
     
     public async Task LoadAllPluginsAsync()
     {
@@ -1047,7 +1047,7 @@ public class PluginManager : IPluginManager, IDisposable
         }
     }
     
-    public async Task<bool> LoadPluginAsync(PluginDescriptor descriptor)
+    public async Task\<bool\> LoadPluginAsync(PluginDescriptor descriptor)
     {
         try
         {

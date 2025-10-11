@@ -1,6 +1,6 @@
 # HotKey System Design Document
 
-> **Note**: This is a brief English summary. For the complete Chinese documentation, see [HotKey系统设计文档.md](./HotKey系统设计文档.md)
+\\> **Note**: This is a brief English summary. For the complete Chinese documentation, see [HotKey系统设计文档.md](./HotKey系统设计文档.md)
 
 ## Overview
 
@@ -191,7 +191,7 @@ public class HotKeys : INotifyPropertyChanged
     public bool IsRegistered { get; internal set; }
     public HotKeyCallBackHanlder HotKeyHandler { get; set; }
     
-    public static ObservableCollection<HotKeys> HotKeysList;
+    public static ObservableCollection\<HotKeys\> HotKeysList;
     public static void SetDefault();
 }
 ```

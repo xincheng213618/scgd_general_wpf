@@ -159,7 +159,7 @@ PatternManager.ImportTemplateGroup("MyTemplates.json");
 
 ```csharp
 // 批量生成示例代码
-var patterns = new List<PatternConfig>
+var patterns = new List\\<PatternConfig\>
 {
     new SolidConfig { MainBrush = Brushes.White },
     new SolidConfig { MainBrush = Brushes.Black },
@@ -444,7 +444,7 @@ public interface IPattern
 }
 
 // 泛型基类
-public abstract class IPatternBase<T> : IPatternBase 
+public abstract class IPatternBase\<T\> : IPatternBase 
     where T : ViewModelBase, new()
 {
     public T Config { get; set; } = new T();
@@ -584,7 +584,7 @@ Console.WriteLine($"Memory used: {stats.MemoryUsed}MB");
 1. **继承基类**：
 ```csharp
 [DisplayName("自定义图案")]
-public class CustomPattern : IPatternBase<CustomPatternConfig>
+public class CustomPattern : IPatternBase\<CustomPatternConfig\>
 {
     public override UserControl GetPatternEditor() 
         => new CustomPatternEditor(Config);
@@ -612,7 +612,7 @@ public class CustomPatternConfig : ViewModelBase, IConfig
 3. **编辑器界面**：
 ```xml
 <UserControl x:Class="Pattern.Custom.CustomPatternEditor">
-    <Grid>
+    \<Grid\>
         <!-- 参数编辑控件 -->
     </Grid>
 </UserControl>

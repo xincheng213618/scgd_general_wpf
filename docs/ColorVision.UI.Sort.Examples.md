@@ -22,7 +22,7 @@ public class Product : ISortID, ISortKey
 }
 
 // 使用排序功能
-var products = new ObservableCollection<Product>
+var products = new ObservableCollection\<Product\>
 {
     new Product { Id = 3, Key = "PROD10", Name = "Product C", Price = 30m },
     new Product { Id = 1, Key = "PROD2", Name = "Product A", Price = 10m },
@@ -54,7 +54,7 @@ public class Product
     public string? Category { get; set; }
 }
 
-var products = new ObservableCollection<Product>
+var products = new ObservableCollection\<Product\>
 {
     new Product { Id = 3, Name = "Laptop", Price = 1200m, Category = "Electronics" },
     new Product { Id = 1, Name = "Mouse", Price = 20m, Category = "Accessories" },
@@ -86,7 +86,7 @@ using ColorVision.UI.Sorts;
 
 public partial class ProductListView : Window
 {
-    private ObservableCollection<Product> Products { get; set; }
+    private ObservableCollection\<Product\> Products { get; set; }
     private bool _isDescending = false;
     private string? _lastSortProperty = null;
 
@@ -94,7 +94,7 @@ public partial class ProductListView : Window
     {
         InitializeComponent();
         
-        Products = new ObservableCollection<Product>
+        Products = new ObservableCollection\<Product\>
         {
             new Product { Id = 1, Name = "Product A", Price = 10m },
             new Product { Id = 2, Name = "Product B", Price = 20m },
@@ -143,11 +143,11 @@ public partial class ProductListView : Window
 XAML:
 ```xml
 <ListView x:Name="ProductsListView">
-    <ListView.View>
-        <GridView>
+    \<ListView.View\>
+        \<GridView\>
             <GridViewColumn Header="ID" DisplayMemberBinding="{Binding Id}" Width="80">
-                <GridViewColumn.HeaderTemplate>
-                    <DataTemplate>
+                \<GridViewColumn.HeaderTemplate\>
+                    \<DataTemplate\>
                         <GridViewColumnHeader Content="ID" Tag="Id" 
                                             Click="GridViewColumnHeader_Click"/>
                     </DataTemplate>
@@ -155,8 +155,8 @@ XAML:
             </GridViewColumn>
             
             <GridViewColumn Header="名称" DisplayMemberBinding="{Binding Name}" Width="150">
-                <GridViewColumn.HeaderTemplate>
-                    <DataTemplate>
+                \<GridViewColumn.HeaderTemplate\>
+                    \<DataTemplate\>
                         <GridViewColumnHeader Content="名称" Tag="Name" 
                                             Click="GridViewColumnHeader_Click"/>
                     </DataTemplate>
@@ -164,8 +164,8 @@ XAML:
             </GridViewColumn>
             
             <GridViewColumn Header="价格" DisplayMemberBinding="{Binding Price}" Width="100">
-                <GridViewColumn.HeaderTemplate>
-                    <DataTemplate>
+                \<GridViewColumn.HeaderTemplate\>
+                    \<DataTemplate\>
                         <GridViewColumnHeader Content="价格" Tag="Price" 
                                             Click="GridViewColumnHeader_Click"/>
                     </DataTemplate>
@@ -186,13 +186,13 @@ using ColorVision.UI.Sorts;
 
 public class ProductViewModel
 {
-    private SortManager<Product> _sortManager;
-    public ObservableCollection<Product> Products { get; set; }
+    private SortManager\<Product\> _sortManager;
+    public ObservableCollection\<Product\> Products { get; set; }
 
     public ProductViewModel()
     {
-        Products = new ObservableCollection<Product>();
-        _sortManager = new SortManager<Product>(Products);
+        Products = new ObservableCollection\<Product\>();
+        _sortManager = new SortManager\<Product\>(Products);
         
         // 加载示例数据
         LoadSampleData();
@@ -255,7 +255,7 @@ public class OrderItem
     public DateTime OrderDate { get; set; }
 }
 
-var orders = new ObservableCollection<OrderItem>
+var orders = new ObservableCollection\<OrderItem\>
 {
     new OrderItem { Category = "Electronics", Supplier = "A", Price = 100m, OrderDate = new DateTime(2024, 1, 15) },
     new OrderItem { Category = "Electronics", Supplier = "B", Price = 80m, OrderDate = new DateTime(2024, 1, 10) },
@@ -286,7 +286,7 @@ using ColorVision.UI.Sorts;
 public class DynamicSortExample
 {
     public void SortByUserSelection(
-        ObservableCollection<Product> products,
+        ObservableCollection\<Product\> products,
         string selectedProperty,
         bool isDescending)
     {
@@ -308,7 +308,7 @@ public class DynamicSortExample
 
     public void Example()
     {
-        var products = new ObservableCollection<Product>();
+        var products = new ObservableCollection\<Product\>();
         
         // 用户从下拉框选择排序属性
         string userSelectedProperty = "Price";  // 或从 ComboBox 获取
@@ -329,7 +329,7 @@ public class UniqueCollectionExample
 {
     public void ManageProducts()
     {
-        var products = new ObservableCollection<Product>
+        var products = new ObservableCollection\<Product\>
         {
             new Product { Id = 1, Name = "Existing Product" }
         };
@@ -365,19 +365,19 @@ using ColorVision.UI.Sorts;
 public class PerformanceExample
 {
     // 小型集合 (< 100 items) - 任何方法都可以
-    public void SortSmallCollection(ObservableCollection<Product> products)
+    public void SortSmallCollection(ObservableCollection\<Product\> products)
     {
         products.SortBy("Price", descending: false);
     }
 
     // 中型集合 (100-1000 items) - 使用 Lambda 获得更好性能
-    public void SortMediumCollection(ObservableCollection<Product> products)
+    public void SortMediumCollection(ObservableCollection\<Product\> products)
     {
         products.SortBy(x => x.Price, descending: false);
     }
 
     // 大型集合 (> 1000 items) - 考虑使用 LINQ 或预排序
-    public void SortLargeCollection(ObservableCollection<Product> products)
+    public void SortLargeCollection(ObservableCollection\<Product\> products)
     {
         // 方式 1: 仍然使用扩展方法
         products.SortBy(x => x.Price, descending: false);
@@ -396,9 +396,9 @@ public class PerformanceExample
     }
 
     // 频繁排序 - 使用 SortManager 缓存配置
-    public void FrequentSorting(ObservableCollection<Product> products)
+    public void FrequentSorting(ObservableCollection\<Product\> products)
     {
-        var manager = new SortManager<Product>(products);
+        var manager = new SortManager\<Product\>(products);
         
         // 保存常用排序
         manager.ApplySort("Price", descending: false);
@@ -432,7 +432,7 @@ public class ProductSortTests
     public void SortByPrice_AscendingOrder_ReturnsCorrectOrder()
     {
         // Arrange
-        var products = new ObservableCollection<Product>
+        var products = new ObservableCollection\<Product\>
         {
             new Product { Id = 1, Price = 30m },
             new Product { Id = 2, Price = 10m },
@@ -452,7 +452,7 @@ public class ProductSortTests
     public void SortByMultiple_SortsCorrectly()
     {
         // Arrange
-        var products = new ObservableCollection<Product>
+        var products = new ObservableCollection\<Product\>
         {
             new Product { Category = "B", Price = 20m },
             new Product { Category = "A", Price = 30m },

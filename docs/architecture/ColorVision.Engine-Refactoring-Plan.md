@@ -175,8 +175,8 @@ namespace ColorVision.Engine.Core
     public interface IEngineService
     {
         string ServiceCode { get; }
-        Task<bool> InitializeAsync();
-        Task<bool> StartAsync();
+        Task\<bool\> InitializeAsync();
+        Task\<bool\> StartAsync();
         Task StopAsync();
     }
     
@@ -185,22 +185,22 @@ namespace ColorVision.Engine.Core
     {
         DeviceType Type { get; }
         DeviceStatus Status { get; }
-        Task<DeviceResponse> ExecuteCommandAsync(DeviceCommand command);
+        Task\<DeviceResponse\> ExecuteCommandAsync(DeviceCommand command);
     }
     
     // 模板接口
     public interface ITemplateEngine
     {
         string TemplateType { get; }
-        Task<TemplateResult> ExecuteAsync(TemplateParam param);
-        Task<bool> ValidateAsync(TemplateParam param);
+        Task\<TemplateResult\> ExecuteAsync(TemplateParam param);
+        Task\<bool\> ValidateAsync(TemplateParam param);
     }
     
     // 事件系统
     public interface IEventBus
     {
-        void Publish<TEvent>(TEvent eventData) where TEvent : class;
-        void Subscribe<TEvent>(Action<TEvent> handler) where TEvent : class;
+        void Publish\<TEvent\>(TEvent eventData) where TEvent : class;
+        void Subscribe\<TEvent\>(Action\<TEvent\> handler) where TEvent : class;
     }
 }
 ```
@@ -369,13 +369,13 @@ ColorVision.Engine.Devices/
 namespace ColorVision.Engine.Data
 {
     // 数据访问接口
-    public interface IRepository<T> where T : class
+    public interface IRepository\<T\> where T : class
     {
-        Task<T> GetByIdAsync(int id);
-        Task<IEnumerable<T>> GetAllAsync();
-        Task<int> AddAsync(T entity);
-        Task<bool> UpdateAsync(T entity);
-        Task<bool> DeleteAsync(int id);
+        Task\<T\> GetByIdAsync(int id);
+        Task<IEnumerable\<T\>> GetAllAsync();
+        Task\<int\> AddAsync(T entity);
+        Task\<bool\> UpdateAsync(T entity);
+        Task\<bool\> DeleteAsync(int id);
     }
     
     // 数据库上下文
@@ -971,7 +971,7 @@ public class ServiceBus : IServiceBus
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly IEventBus _eventBus;
-    private readonly Dictionary<string, IEngineService> _services = new();
+    private readonly Dictionary\\<string, IEngineService\> _services = new();
     
     public ServiceBus(IServiceProvider serviceProvider, IEventBus eventBus)
     {
@@ -979,10 +979,10 @@ public class ServiceBus : IServiceBus
         _eventBus = eventBus;
     }
     
-    public async Task<TService> GetServiceAsync<TService>() 
+    public async Task\<TService> GetServiceAsync<TService\>() 
         where TService : class, IEngineService
     {
-        var service = _serviceProvider.GetService<TService>();
+        var service = _serviceProvider.GetService\<TService\>();
         
         if (service != null && !_services.ContainsKey(service.ServiceCode))
         {
@@ -993,9 +993,9 @@ public class ServiceBus : IServiceBus
         return service;
     }
     
-    public async Task<TResult> ExecuteAsync<TResult>(
+    public async Task\<TResult> ExecuteAsync<TResult\>(
         string serviceCode, 
-        Func<IEngineService, Task<TResult>> action)
+        Func\<IEngineService, Task<TResult>\> action)
     {
         if (!_services.TryGetValue(serviceCode, out var service))
         {
@@ -1013,9 +1013,9 @@ public class ServiceBus : IServiceBus
 // ColorVision.Engine.Core/Services/EventBus.cs
 public class EventBus : IEventBus
 {
-    private readonly ConcurrentDictionary<Type, List<Delegate>> _handlers = new();
+    private readonly ConcurrentDictionary\<Type, List\\<Delegate>\> _handlers = new();
     
-    public void Publish<TEvent>(TEvent eventData) where TEvent : class
+    public void Publish\<TEvent\>(TEvent eventData) where TEvent : class
     {
         var eventType = typeof(TEvent);
         
@@ -1025,7 +1025,7 @@ public class EventBus : IEventBus
             {
                 try
                 {
-                    ((Action<TEvent>)handler)(eventData);
+                    ((Action\<TEvent\>)handler)(eventData);
                 }
                 catch (Exception ex)
                 {
@@ -1036,13 +1036,13 @@ public class EventBus : IEventBus
         }
     }
     
-    public void Subscribe<TEvent>(Action<TEvent> handler) where TEvent : class
+    public void Subscribe\<TEvent\>(Action\<TEvent\> handler) where TEvent : class
     {
         var eventType = typeof(TEvent);
         
         _handlers.AddOrUpdate(
             eventType,
-            new List<Delegate> { handler },
+            new List\\<Delegate\> { handler },
             (key, existing) =>
             {
                 existing.Add(handler);
@@ -1050,7 +1050,7 @@ public class EventBus : IEventBus
             });
     }
     
-    public void Unsubscribe<TEvent>(Action<TEvent> handler) where TEvent : class
+    public void Unsubscribe\<TEvent\>(Action\<TEvent\> handler) where TEvent : class
     {
         var eventType = typeof(TEvent);
         
@@ -1070,7 +1070,7 @@ public class CameraService : DeviceServiceBase
 {
     private readonly IEventBus _eventBus;
     
-    public async Task<CaptureResult> CaptureImageAsync()
+    public async Task\<CaptureResult\> CaptureImageAsync()
     {
         // 执行拍照
         var result = await PerformCaptureAsync();
@@ -1097,7 +1097,7 @@ public class POITemplateEngine : TemplateEngineBase
         _eventBus = eventBus;
         
         // 订阅图像捕获事件
-        _eventBus.Subscribe<ImageCapturedEvent>(OnImageCaptured);
+        _eventBus.Subscribe\<ImageCapturedEvent\>(OnImageCaptured);
     }
     
     private void OnImageCaptured(ImageCapturedEvent evt)
@@ -1124,7 +1124,7 @@ public interface IEnginePlugin
 // 插件加载器
 public class PluginLoader
 {
-    private readonly List<IEnginePlugin> _plugins = new();
+    private readonly List\\<IEnginePlugin\> _plugins = new();
     
     public void LoadPlugins(string pluginDirectory)
     {
@@ -1161,7 +1161,7 @@ public class CustomDevicePlugin : IEnginePlugin
     
     public void RegisterServices(IServiceCollection services)
     {
-        services.AddTransient<IDeviceService, CustomDeviceService>();
+        services.AddTransient\<IDeviceService, CustomDeviceService\>();
     }
     
     public void Initialize(IServiceProvider serviceProvider)

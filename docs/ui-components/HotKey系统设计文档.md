@@ -124,7 +124,7 @@ classDiagram
     }
     
     class IHotKey {
-        <<interface>>
+        <\<interface>\>
         +HotKeys HotKeys
     }
     
@@ -237,8 +237,8 @@ if (Hotkey.IsNullOrEmpty(hotkey))
 - `HotKeyCallBackHanlder HotKeyHandler`: 回调函数
 
 **静态成员**:
-- `ObservableCollection<HotKeys> HotKeysList`: 全局热键列表
-- `Dictionary<HotKeys,Hotkey> HotKeysDefaultHotkey`: 默认热键映射
+- `ObservableCollection\<HotKeys\> HotKeysList`: 全局热键列表
+- `Dictionary\<HotKeys,Hotkey\> HotKeysDefaultHotkey`: 默认热键映射
 
 **特性**:
 - 实现 `INotifyPropertyChanged` 接口，支持 WPF 数据绑定
@@ -424,7 +424,7 @@ this.AddHotKeys(new HotKeys("新建",
 **功能**: 热键配置的持久化管理。
 
 **核心属性**:
-- `ObservableCollection<HotKeys> Hotkeys`: 热键配置集合
+- `ObservableCollection\<HotKeys\> Hotkeys`: 热键配置集合
 
 **集成点**:
 - 实现 `IConfig` 接口，集成到配置系统
@@ -801,8 +801,8 @@ public HotKeyCallBackHanlder HotKeyHandler { get; set; }
 
 #### 静态成员
 ```csharp
-public static ObservableCollection<HotKeys> HotKeysList
-public static Dictionary<HotKeys, Hotkey> HotKeysDefaultHotkey
+public static ObservableCollection\<HotKeys\> HotKeysList
+public static Dictionary\\<HotKeys, Hotkey\> HotKeysDefaultHotkey
 public static void SetDefault()
 ```
 
@@ -1048,7 +1048,7 @@ public bool ModifiedHotkey(HotKeys hotkeys)
 ```csharp
 public static void UnRegister(IntPtr hWnd, HotKeyCallBackHanlder callBack)
 {
-    foreach (KeyValuePair<int, HotKeyCallBackHanlder> var in keymap)
+    foreach (KeyValuePair\<int, HotKeyCallBackHanlder\> var in keymap)
     {
         if (var.Value == callBack)
         {
@@ -1186,10 +1186,10 @@ if (keymap.TryGetValue(id, out var callback))
 
 ```csharp
 // 替换
-static Dictionary<int, HotKeyCallBackHanlder> keymap = new();
+static Dictionary\\<int, HotKeyCallBackHanlder\> keymap = new();
 
 // 为
-static ConcurrentDictionary<int, HotKeyCallBackHanlder> keymap = new();
+static ConcurrentDictionary\\<int, HotKeyCallBackHanlder\> keymap = new();
 ```
 
 ---
@@ -1254,7 +1254,7 @@ public enum HotKeyConflictResolution
 public class HotKeyGroup
 {
     public string Name { get; set; }
-    public ObservableCollection<HotKeys> HotKeys { get; set; }
+    public ObservableCollection\<HotKeys\> HotKeys { get; set; }
     public bool IsEnabled { get; set; }
 }
 ```
@@ -1267,7 +1267,7 @@ public class HotKeyGroup
 public class HotKeyHistory
 {
     public void Record(HotKeys hotKey, DateTime triggeredAt);
-    public IEnumerable<HotKeyHistoryEntry> GetHistory(TimeSpan timeRange);
+    public IEnumerable\<HotKeyHistoryEntry\> GetHistory(TimeSpan timeRange);
 }
 ```
 

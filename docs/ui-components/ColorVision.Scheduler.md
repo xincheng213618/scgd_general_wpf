@@ -112,7 +112,7 @@ public class SimpleJob : IJob
 }
 
 // 创建任务
-var job = JobBuilder.Create<SimpleJob>()
+var job = JobBuilder.Create\<SimpleJob\>()
     .WithIdentity("simpleJob", "group1")
     .Build();
 
@@ -204,7 +204,7 @@ public class DataJob : IJob
 }
 
 // 创建带数据的任务
-var job = JobBuilder.Create<DataJob>()
+var job = JobBuilder.Create\<DataJob\>()
     .WithIdentity("dataJob", "group1")
     .UsingJobData("FilePath", @"C:\data\input.csv")
     .UsingJobData("BatchSize", 1000)
@@ -219,15 +219,15 @@ var job = JobBuilder.Create<DataJob>()
 <DataGrid x:Name="JobsDataGrid" 
           ItemsSource="{Binding Jobs}"
           AutoGenerateColumns="False">
-    <DataGrid.Columns>
+    \<DataGrid.Columns\>
         <DataGridTextColumn Header="任务名称" Binding="{Binding Name}"/>
         <DataGridTextColumn Header="组" Binding="{Binding Group}"/>
         <DataGridTextColumn Header="状态" Binding="{Binding State}"/>
         <DataGridTextColumn Header="下次执行" Binding="{Binding NextFireTime}"/>
         <DataGridTextColumn Header="上次执行" Binding="{Binding PreviousFireTime}"/>
         <DataGridTemplateColumn Header="操作">
-            <DataGridTemplateColumn.CellTemplate>
-                <DataTemplate>
+            \<DataGridTemplateColumn.CellTemplate\>
+                \<DataTemplate\>
                     <StackPanel Orientation="Horizontal">
                         <Button Content="启动" Command="{Binding StartCommand}"/>
                         <Button Content="暂停" Command="{Binding PauseCommand}"/>
@@ -245,8 +245,8 @@ var job = JobBuilder.Create<DataJob>()
 
 ```xml
 <Window x:Class="JobEditorWindow">
-    <Grid>
-        <Grid.RowDefinitions>
+    \<Grid\>
+        \<Grid.RowDefinitions\>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -256,8 +256,8 @@ var job = JobBuilder.Create<DataJob>()
         
         <!-- 基本信息 -->
         <GroupBox Header="基本信息" Grid.Row="0">
-            <Grid>
-                <Grid.ColumnDefinitions>
+            \<Grid\>
+                \<Grid.ColumnDefinitions\>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
@@ -269,7 +269,7 @@ var job = JobBuilder.Create<DataJob>()
         
         <!-- 调度设置 -->
         <GroupBox Header="调度设置" Grid.Row="1">
-            <Grid>
+            \<Grid\>
                 <Label Content="Cron表达式:"/>
                 <TextBox Text="{Binding CronExpression}"/>
             </Grid>
@@ -293,8 +293,8 @@ var job = JobBuilder.Create<DataJob>()
 
 ```xml
 <UserControl x:Class="SchedulerMonitorPanel">
-    <Grid>
-        <Grid.RowDefinitions>
+    \<Grid\>
+        \<Grid.RowDefinitions\>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>

@@ -81,7 +81,7 @@ public class ImageFileProcessor : IFileProcessor
 {
     public string[] SupportedExtensions => new[] { ".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp" };
     
-    public async Task<FileData> ReadAsync(string filePath)
+    public async Task\<FileData\> ReadAsync(string filePath)
     {
         var imageData = new ImageFileData
         {
@@ -106,7 +106,7 @@ public class ImageFileProcessor : IFileProcessor
         }
     }
     
-    private async Task<Mat> LoadImageAsync(string filePath)
+    private async Task\<Mat\> LoadImageAsync(string filePath)
     {
         return await Task.Run(() => 
         {
@@ -117,12 +117,12 @@ public class ImageFileProcessor : IFileProcessor
         });
     }
     
-    private async Task<Dictionary<string, object>> ExtractMetadataAsync(string filePath)
+    private async Task<Dictionary\\<string, object>\> ExtractMetadataAsync(string filePath)
     {
         return await Task.Run(() =>
         {
             // 使用ExifLib或类似库提取EXIF数据
-            var metadata = new Dictionary<string, object>();
+            var metadata = new Dictionary\\<string, object\>();
             
             using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
@@ -151,7 +151,7 @@ public class JsonFileProcessor : IFileProcessor
         Converters = { new JsonStringEnumConverter() }
     };
     
-    public async Task<FileData> ReadAsync(string filePath)
+    public async Task\<FileData\> ReadAsync(string filePath)
     {
         var json = await File.ReadAllTextAsync(filePath, Encoding.UTF8);
         
@@ -159,7 +159,7 @@ public class JsonFileProcessor : IFileProcessor
         {
             FilePath = filePath,
             RawJson = json,
-            Data = JsonSerializer.Deserialize<Dictionary<string, object>>(json, _options)
+            Data = JsonSerializer.Deserialize<Dictionary\\<string, object>\>(json, _options)
         };
         
         return data;
@@ -174,13 +174,13 @@ public class JsonFileProcessor : IFileProcessor
         }
     }
     
-    public async Task<T> ReadAsAsync<T>(string filePath)
+    public async Task\<T\> ReadAsAsync\<T\>(string filePath)
     {
         var json = await File.ReadAllTextAsync(filePath, Encoding.UTF8);
-        return JsonSerializer.Deserialize<T>(json, _options);
+        return JsonSerializer.Deserialize\<T\>(json, _options);
     }
     
-    public async Task WriteAsAsync<T>(string filePath, T data)
+    public async Task WriteAsAsync\<T\>(string filePath, T data)
     {
         var json = JsonSerializer.Serialize(data, _options);
         await File.WriteAllTextAsync(filePath, json, Encoding.UTF8);
@@ -195,7 +195,7 @@ public class ConfigFileProcessor : IFileProcessor
 {
     public string[] SupportedExtensions => new[] { ".ini", ".cfg", ".conf", ".yaml", ".yml" };
     
-    public async Task<FileData> ReadAsync(string filePath)
+    public async Task\<FileData\> ReadAsync(string filePath)
     {
         var extension = Path.GetExtension(filePath).ToLower();
         
@@ -207,13 +207,13 @@ public class ConfigFileProcessor : IFileProcessor
         };
     }
     
-    private async Task<ConfigFileData> ReadIniConfigAsync(string filePath)
+    private async Task\<ConfigFileData\> ReadIniConfigAsync(string filePath)
     {
         var lines = await File.ReadAllLinesAsync(filePath, Encoding.UTF8);
-        var config = new Dictionary<string, Dictionary<string, string>>();
+        var config = new Dictionary\<string, Dictionary\\<string, string>\>();
         
         string currentSection = "General";
-        config[currentSection] = new Dictionary<string, string>();
+        config[currentSection] = new Dictionary\\<string, string\>();
         
         foreach (var line in lines)
         {
@@ -225,7 +225,7 @@ public class ConfigFileProcessor : IFileProcessor
             if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
             {
                 currentSection = trimmedLine[1..^1];
-                config[currentSection] = new Dictionary<string, string>();
+                config[currentSection] = new Dictionary\\<string, string\>();
             }
             else if (trimmedLine.Contains('='))
             {
@@ -243,13 +243,13 @@ public class ConfigFileProcessor : IFileProcessor
         };
     }
     
-    private async Task<ConfigFileData> ReadYamlConfigAsync(string filePath)
+    private async Task\<ConfigFileData\> ReadYamlConfigAsync(string filePath)
     {
         var yaml = await File.ReadAllTextAsync(filePath, Encoding.UTF8);
         
         // 使用YamlDotNet库解析YAML
         var deserializer = new YamlDotNet.Serialization.Deserializer();
-        var data = deserializer.Deserialize<Dictionary<string, object>>(yaml);
+        var data = deserializer.Deserialize<Dictionary\\<string, object>\>(yaml);
         
         return new ConfigFileData
         {
@@ -268,23 +268,23 @@ public class ConfigFileProcessor : IFileProcessor
 public class AsyncIOManager
 {
     private readonly SemaphoreSlim _semaphore;
-    private readonly ConcurrentQueue<IOTask> _taskQueue;
+    private readonly ConcurrentQueue\<IOTask\> _taskQueue;
     private readonly CancellationTokenSource _cancellationTokenSource;
     
     public AsyncIOManager(int maxConcurrentTasks = 4)
     {
         _semaphore = new SemaphoreSlim(maxConcurrentTasks, maxConcurrentTasks);
-        _taskQueue = new ConcurrentQueue<IOTask>();
+        _taskQueue = new ConcurrentQueue\<IOTask\>();
         _cancellationTokenSource = new CancellationTokenSource();
     }
     
-    public async Task<T> ExecuteAsync<T>(Func<Task<T>> operation, IProgress<ProgressInfo> progress = null)
+    public async Task\<T\> ExecuteAsync\<T\>(Func<Task\<T\>> operation, IProgress\<ProgressInfo\> progress = null)
     {
         await _semaphore.WaitAsync(_cancellationTokenSource.Token);
         
         try
         {
-            var task = new IOTask<T>
+            var task = new IOTask\<T\>
             {
                 Operation = operation,
                 Progress = progress,
@@ -299,7 +299,7 @@ public class AsyncIOManager
         }
     }
     
-    private async Task<T> ExecuteTaskAsync<T>(IOTask<T> task)
+    private async Task\<T\> ExecuteTaskAsync\<T\>(IOTask\<T\> task)
     {
         var stopwatch = Stopwatch.StartNew();
         
@@ -325,12 +325,12 @@ public class AsyncIOManager
         }
     }
     
-    public async Task<List<T>> ExecuteBatchAsync<T>(
-        IEnumerable<Func<Task<T>>> operations, 
-        IProgress<BatchProgressInfo> progress = null)
+    public async Task<List\<T\>> ExecuteBatchAsync\<T\>(
+        IEnumerable<Func<Task\<T\>>> operations, 
+        IProgress\<BatchProgressInfo\> progress = null)
     {
         var operationList = operations.ToList();
-        var results = new List<T>(operationList.Count);
+        var results = new List\<T\>(operationList.Count);
         var completed = 0;
         
         var tasks = operationList.Select(async (operation, index) =>
@@ -371,13 +371,13 @@ public class BatchProgressInfo
     public int Completed { get; set; }
     public int Total { get; set; }
     public int Percentage { get; set; }
-    public List<string> FailedItems { get; set; } = new();
-    public Dictionary<string, object> AdditionalInfo { get; set; } = new();
+    public List\\<string\> FailedItems { get; set; } = new();
+    public Dictionary\\<string, object\> AdditionalInfo { get; set; } = new();
 }
 
-public class FileProgressTracker : IProgress<ProgressInfo>
+public class FileProgressTracker : IProgress\<ProgressInfo\>
 {
-    public event EventHandler<ProgressInfo> ProgressChanged;
+    public event EventHandler\<ProgressInfo\> ProgressChanged;
     
     public void Report(ProgressInfo value)
     {
@@ -393,11 +393,11 @@ public class FileProgressTracker : IProgress<ProgressInfo>
 ```csharp
 public class FileFormatValidator
 {
-    private readonly Dictionary<string, IFormatValidator> _validators;
+    private readonly Dictionary\\<string, IFormatValidator\> _validators;
     
     public FileFormatValidator()
     {
-        _validators = new Dictionary<string, IFormatValidator>
+        _validators = new Dictionary\\<string, IFormatValidator\>
         {
             [".jpg"] = new JpegValidator(),
             [".png"] = new PngValidator(),
@@ -407,7 +407,7 @@ public class FileFormatValidator
         };
     }
     
-    public async Task<ValidationResult> ValidateAsync(string filePath)
+    public async Task\<ValidationResult\> ValidateAsync(string filePath)
     {
         var extension = Path.GetExtension(filePath).ToLower();
         
@@ -426,7 +426,7 @@ public class FileFormatValidator
 
 public class JsonValidator : IFormatValidator
 {
-    public async Task<ValidationResult> ValidateAsync(string filePath)
+    public async Task\<ValidationResult\> ValidateAsync(string filePath)
     {
         try
         {
@@ -460,7 +460,7 @@ public class JsonValidator : IFormatValidator
 
 public class ImageValidator : IFormatValidator
 {
-    public async Task<ValidationResult> ValidateAsync(string filePath)
+    public async Task\<ValidationResult\> ValidateAsync(string filePath)
     {
         return await Task.Run(() =>
         {
@@ -478,7 +478,7 @@ public class ImageValidator : IFormatValidator
                 }
                 
                 // 检查图像基本属性
-                var info = new Dictionary<string, object>
+                var info = new Dictionary\\<string, object\>
                 {
                     ["Width"] = image.Width,
                     ["Height"] = image.Height,
@@ -513,22 +513,22 @@ public class ImageValidator : IFormatValidator
 ```csharp
 public class ConfigManager
 {
-    private readonly Dictionary<string, object> _config;
+    private readonly Dictionary\\<string, object\> _config;
     private readonly FileSystemWatcher _fileWatcher;
     private readonly string _configFilePath;
     
-    public event EventHandler<ConfigChangedEventArgs> ConfigChanged;
+    public event EventHandler\<ConfigChangedEventArgs\> ConfigChanged;
     
     public ConfigManager(string configFilePath)
     {
         _configFilePath = configFilePath;
-        _config = new Dictionary<string, object>();
+        _config = new Dictionary\\<string, object\>();
         
         LoadConfig();
         SetupFileWatcher();
     }
     
-    public T GetValue<T>(string key, T defaultValue = default)
+    public T GetValue\<T\>(string key, T defaultValue = default)
     {
         if (_config.TryGetValue(key, out var value))
         {
@@ -538,7 +538,7 @@ public class ConfigManager
         return defaultValue;
     }
     
-    public void SetValue<T>(string key, T value)
+    public void SetValue\<T\>(string key, T value)
     {
         _config[key] = value;
         SaveConfig();
@@ -628,15 +628,15 @@ public class FileIOExample
     // 图像文件处理示例
     public async Task ProcessImagesAsync(string[] imagePaths, string outputDir)
     {
-        var progress = new Progress<BatchProgressInfo>(info =>
+        var progress = new Progress\<BatchProgressInfo\>(info =>
         {
             Console.WriteLine($"处理进度: {info.Percentage}% ({info.Completed}/{info.Total})");
         });
         
-        var operations = imagePaths.Select<string, Func<Task<string>>>(imagePath => async () =>
+        var operations = imagePaths.Select\<string, Func<Task<string>>\>(imagePath => async () =>
         {
             // 读取图像
-            var imageData = await _fileIOManager.ReadAsync<ImageFileData>(imagePath);
+            var imageData = await _fileIOManager.ReadAsync\<ImageFileData\>(imagePath);
             
             // 处理图像 (例如调整大小)
             var resizedImage = imageData.Image.Resize(new Size(800, 600));
@@ -664,7 +664,7 @@ public class FileIOExample
         {
             DatabaseConnection = "Server=localhost;Database=colorvision;",
             LogLevel = "Information",
-            Features = new Dictionary<string, bool>
+            Features = new Dictionary\\<string, bool\>
             {
                 ["EnableCuda"] = true,
                 ["EnableMultiThreading"] = true
@@ -675,7 +675,7 @@ public class FileIOExample
         await _fileIOManager.WriteAsync(configPath, config);
         
         // 读取配置
-        var loadedConfig = await _fileIOManager.ReadAsync<AppSettings>(configPath);
+        var loadedConfig = await _fileIOManager.ReadAsync\<AppSettings\>(configPath);
         
         Console.WriteLine($"数据库连接: {loadedConfig.DatabaseConnection}");
         Console.WriteLine($"日志级别: {loadedConfig.LogLevel}");
@@ -686,7 +686,7 @@ public class FileIOExample
     {
         var files = Directory.GetFiles(sourceDir, pattern, SearchOption.AllDirectories);
         
-        var progress = new Progress<BatchProgressInfo>(info =>
+        var progress = new Progress\<BatchProgressInfo\>(info =>
         {
             Console.WriteLine($"批量处理进度: {info.Percentage}%");
             
@@ -696,7 +696,7 @@ public class FileIOExample
             }
         });
         
-        var operations = files.Select<string, Func<Task<string>>>(file => async () =>
+        var operations = files.Select\<string, Func<Task<string>>\>(file => async () =>
         {
             try
             {
@@ -762,7 +762,7 @@ public class AdvancedFileIOExample
         await fileIOManager.WriteAsync("sensitive_data.enc", sensitiveData, encryptedOptions);
         
         // 解密读取
-        var decryptedData = await fileIOManager.ReadAsync<dynamic>("sensitive_data.enc", new FileReadOptions
+        var decryptedData = await fileIOManager.ReadAsync\<dynamic\>("sensitive_data.enc", new FileReadOptions
         {
             Decryption = new DecryptionOptions
             {
@@ -909,15 +909,15 @@ public class AdvancedFileIOExample
 public interface IFileProcessor
 {
     string[] SupportedExtensions { get; }
-    Task<FileData> ReadAsync(string filePath);
+    Task\<FileData\> ReadAsync(string filePath);
     Task WriteAsync(string filePath, FileData data, FileWriteOptions options = null);
 }
 
 public interface IFileIOManager
 {
-    Task<T> ReadAsync<T>(string filePath, FileReadOptions options = null) where T : FileData;
-    Task WriteAsync<T>(string filePath, T data, FileWriteOptions options = null) where T : FileData;
-    Task<ValidationResult> ValidateAsync(string filePath);
+    Task\<T\> ReadAsync\<T\>(string filePath, FileReadOptions options = null) where T : FileData;
+    Task WriteAsync\<T\>(string filePath, T data, FileWriteOptions options = null) where T : FileData;
+    Task\<ValidationResult\> ValidateAsync(string filePath);
     Task CompressFilesAsync(string archivePath, string[] filePaths, CompressionOptions options = null);
     Task DecompressAsync(string archivePath, string extractPath);
 }
@@ -927,7 +927,7 @@ public abstract class FileData
     public string FilePath { get; set; }
     public DateTime LastModified { get; set; }
     public long FileSize { get; set; }
-    public Dictionary<string, object> Metadata { get; set; }
+    public Dictionary\\<string, object\> Metadata { get; set; }
 }
 
 public class FileWriteOptions
