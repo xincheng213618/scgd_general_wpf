@@ -33,6 +33,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using log4net.Util;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
@@ -50,6 +51,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         private static readonly ILog log = LogManager.GetLogger(typeof(PhyCamera));
 
         public ConfigPhyCamera Config { get; set; }
+
         [CommandDisplay("上传校正文件",Order =100)]
         public RelayCommand UploadCalibrationCommand { get; set; }
         [CommandDisplay("校正模板管理",Order =102)]
@@ -59,8 +61,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand UploadLicenseCommand { get; set; }
         [CommandDisplay("在线下载许可证")]
         public RelayCommand UploadLicenseNetCommand { get; set; }
-        [CommandDisplay("查看缓存许可证")]
-        public RelayCommand OpenLicenseCacheCommand { get; set; }
+
         public RelayCommand RefreshLicenseCommand { get; set; }
 
         [CommandDisplay("Reset", CommandType = CommandType.Highlighted,Order = 9999)]
@@ -74,11 +75,15 @@ namespace ColorVision.Engine.Services.PhyCameras
         [CommandDisplay("修改电机配置")]
         public RelayCommand UpdateMotorConfigCommand {get; set; }
 
-        [CommandDisplay("导出副本")]
-        public RelayCommand GenCopyCommand { get; set; }
-
         [CommandDisplay("校正生成工具")]
         public RelayCommand OepnCalibrationToolCommand { get; set; }
+
+        [CommandDisplay("创建还原点")]
+        public RelayCommand CreatResotreCommand { get; set; }
+
+        [CommandDisplay("加载还原点")]
+        public RelayCommand LoadResotreCommand { get; set; }
+
 
         public ImageSource? QRIcon { get => _QRIcon; set { _QRIcon = value; OnPropertyChanged(); } }
         private ImageSource? _QRIcon;
@@ -101,7 +106,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             DeleteCommand = new RelayCommand(a => Delete(), a => AccessControl.Check(PermissionMode.Administrator));
             EditCommand = new RelayCommand(a =>
             {
-                EditPhyCamera window = new(this);
+                EditPhyCamera window = new EditPhyCamera(this);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
@@ -135,22 +140,53 @@ namespace ColorVision.Engine.Services.PhyCameras
             UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()),a=> AccessControl.Check(PermissionMode.SuperAdministrator));
             OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code ?? string.Empty)));
             UpdateMotorConfigCommand = new RelayCommand(a => UpdateMotorConfig());
-            OpenLicenseCacheCommand = new RelayCommand(a => OpenLicenseCache());
-            GenCopyCommand = new RelayCommand(a => GenCopy());
-            //这里是为了加载对应的
-        }
-        public void GenCopy()
-        {
+            CreatResotreCommand = new RelayCommand(a => CreatResotre());
+            LoadResotreCommand = new RelayCommand(a => LoadResotre());
 
         }
 
-        public static void OpenLicenseCache()
+        public void CreatResotre()
         {
-            string DirLicense = $"{Environments.DirAppData}\\Licenses";
-            if (!Directory.Exists(DirLicense))
-                Directory.CreateDirectory(DirLicense);
-            Common.Utilities.PlatformHelper.OpenFolder(DirLicense);
+            string ResotrePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            ResotrePath = Path.Combine(ResotrePath, "Restore",Code);
+
+            if (!Directory.Exists(ResotrePath))
+            {
+                Directory.CreateDirectory(ResotrePath);
+            }
+            string CameraConfigPath = Path.Combine(ResotrePath, "Config");
+
+
+
+            Config.ToJsonNFile(CameraConfigPath);
+
         }
+
+        public void LoadResotre()
+        {
+            try
+            {
+                string ResotrePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                ResotrePath = Path.Combine(ResotrePath, "Restore", Code);
+
+                string CameraConfigPath = Path.Combine(ResotrePath, "Config");
+
+                ConfigPhyCamera configPhyCamera = JsonConvert.DeserializeObject<ConfigPhyCamera>(File.ReadAllText(CameraConfigPath));
+
+                configPhyCamera.CopyTo(Config);
+                SaveConfig();
+
+
+                MessageBox.Show(Application.Current.GetActiveWindow(),"还原成功");
+            }
+            catch(Exception ex)
+            {
+                log.Error(ex);
+            }
+
+
+        }
+
 
         public void UpdateMotorConfig()
         {
