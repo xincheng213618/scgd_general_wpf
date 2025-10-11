@@ -841,4 +841,7 @@
   <data name="PointOfInterestTemplete" xml:space="preserve">
     <value>关注点模板</value>
   </data>
+  <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
+    <value>关注点相关算法模板设置</value>
+  </data>
 </root>

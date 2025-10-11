@@ -1,0 +1,116 @@
+# Jekyll configuration for ColorVision GitHub Pages
+
+title: ColorVision
+description: 基于 Windows WPF 的光电技术解决方案
+url: "https://xincheng213618.github.io"
+baseurl: "/scgd_general_wpf"
+
+# Site settings
+lang: zh-CN
+author: 视彩（上海）光电技术有限公司
+email: support@colorvision.com
+
+# GitHub Pages settings
+github:
+  repository_name: scgd_general_wpf
+  repository_url: https://github.com/xincheng213618/scgd_general_wpf
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+theme: minima
+
+# Kramdown settings
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    css_class: 'highlight'
+    span:
+      line_numbers: false
+    block:
+      line_numbers: false
+
+# Plugin settings
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Navigation structure
+navigation:
+  - title: "入门指南"
+    url: "/getting-started/入门指南"
+    description: "快速开始使用 ColorVision"
+  
+  - title: "项目简介" 
+    url: "/introduction/简介"
+    description: "了解项目设计理念和核心功能"
+    
+  - title: "开发者指南"
+    url: "/developer-guide/开发者指南"
+    description: "面向开发者的详细指南"
+    
+  - title: "系统架构"
+    url: "/introduction/system-architecture/系统架构概览"
+    description: "系统架构和设计思路"
+    
+  - title: "UI组件"
+    url: "/ui-components/UI组件概览"
+    description: "用户界面组件详细说明"
+
+# Collections
+collections:
+  docs:
+    output: true
+    permalink: /:collection/:name/
+
+# Exclude files from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - "*.bat"
+  - "*.cmd"
+  - "*.ps1"
+  
+# Include files
+include:
+  - _pages
+  - assets
+
+# Default layouts for different content types
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+      
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "doc"
+      
+  - scope:
+      path: ""
+      type: "docs"
+    values:
+      layout: "doc"
+
+# SEO and social
+social:
+  name: ColorVision
+  links:
+    - https://github.com/xincheng213618/scgd_general_wpf
+
+# Google Analytics (if needed)
+# google_analytics: UA-NNNNNNNN-N
+
+# Timezone
+timezone: Asia/Shanghai

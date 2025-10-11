@@ -861,4 +861,7 @@
   <data name="PointOfInterestTemplete" xml:space="preserve">
     <value>Modèle de mise au point</value>
   </data>
+  <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
+    <value>Paramètres du modèle d'algorithme lié à la mise au point</value>
+  </data>
 </root>

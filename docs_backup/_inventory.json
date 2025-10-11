@@ -1,0 +1,1304 @@
+{
+  "scan_date": "2025-09-28T15:51:26.709821",
+  "docs_path": "/home/runner/work/scgd_general_wpf/scgd_general_wpf/docs",
+  "structure": {
+    "files": [
+      {
+        "name": "Solution.md",
+        "path": "Solution.md",
+        "size": 328,
+        "lines": 27,
+        "has_h1": false,
+        "has_toc": false,
+        "has_title": false,
+        "h1_headers": [],
+        "modules_mentioned": [],
+        "issues": [
+          "missing_h1",
+          "missing_title"
+        ]
+      },
+      {
+        "name": "index.html",
+        "type": "config",
+        "size": 9568
+      },
+      {
+        "name": "ColorVision API V1.1.md",
+        "path": "ColorVision API V1.1.md",
+        "size": 1144,
+        "lines": 95,
+        "has_h1": true,
+        "has_toc": false,
+        "has_title": true,
+        "h1_headers": [
+          "ColorVision API V1.0"
+        ],
+        "modules_mentioned": [
+          "UI"
+        ],
+        "issues": [
+          "missing_toc"
+        ]
+      },
+      {
+        "name": "license.md",
+        "path": "license.md",
+        "size": 1197,
+        "lines": 59,
+        "has_h1": false,
+        "has_toc": false,
+        "has_title": false,
+        "h1_headers": [],
+        "modules_mentioned": [],
+        "issues": [
+          "missing_h1",
+          "missing_toc",
+          "missing_title"
+        ]
+      },
+      {
+        "name": "快捷方式的图标无法更改.md",
+        "path": "快捷方式的图标无法更改.md",
+        "size": 1322,
+        "lines": 57,
+        "has_h1": true,
+        "has_toc": false,
+        "has_title": true,
+        "h1_headers": [
+          "C# 更改快捷方式图标"
+        ],
+        "modules_mentioned": [],
+        "issues": [
+          "missing_toc"
+        ]
+      },
+      {
+        "name": "README.md",
+        "path": "README.md",
+        "size": 5263,
+        "lines": 275,
+        "has_h1": true,
+        "has_toc": false,
+        "has_title": true,
+        "h1_headers": [
+          "概述",
+          "ColorVision Windows WPF 应用项目概述"
+        ],
+        "modules_mentioned": [
+          "Engine",
+          "Plugins",
+          "性能",
+          "UI",
+          "Database"
+        ],
+        "issues": [
+          "missing_toc"
+        ]
+      },
+      {
+        "name": "CNAME.example",
+        "type": "config",
+        "size": 155
+      },
+      {
+        "name": "sitemap.xml",
+        "type": "config",
+        "size": 1205
+      },
+      {
+        "name": "_config.yml",
+        "type": "config",
+        "size": 2317
+      },
+      {
+        "name": "Software License Agreement.md",
+        "path": "Software License Agreement.md",
+        "size": 9092,
+        "lines": 288,
+        "has_h1": false,
+        "has_toc": false,
+        "has_title": false,
+        "h1_headers": [],
+        "modules_mentioned": [
+          "Engine",
+          "性能"
+        ],
+        "issues": [
+          "missing_h1",
+          "missing_toc",
+          "missing_title"
+        ]
+      }
+    ],
+    "developer-guide": {
+      "files": [],
+      "subdirectories": {
+        "api-reference": {
+          "files": [
+            {
+              "name": "API_参考.md",
+              "path": "developer-guide/api-reference/API_参考.md",
+              "size": 1390,
+              "lines": 56,
+              "has_h1": true,
+              "has_toc": false,
+              "has_title": true,
+              "h1_headers": [
+                "API 参考"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "Plugins",
+                "RBAC",
+                "UI"
+              ],
+              "issues": [
+                "missing_toc"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        }
+      }
+    },
+    "device-management": {
+      "files": [],
+      "subdirectories": {
+        "device-services-overview": {
+          "files": [
+            {
+              "name": "设备服务概览.md",
+              "path": "device-management/device-services-overview/设备服务概览.md",
+              "size": 8481,
+              "lines": 324,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "设备服务概览",
+                "设备服务概览"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "Plugins",
+                "性能",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        },
+        "calibration-service": {
+          "files": [
+            {
+              "name": "校准服务.md",
+              "path": "device-management/calibration-service/校准服务.md",
+              "size": 5658,
+              "lines": 191,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "校准服务",
+                "校准服务"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "安全",
+                "性能",
+                "UI",
+                "Database"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        },
+        "flow-device-service": {
+          "files": [
+            {
+              "name": "流程设备服务.md",
+              "path": "device-management/flow-device-service/流程设备服务.md",
+              "size": 5245,
+              "lines": 237,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "流程设备服务",
+                "流程设备服务"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "安全",
+                "性能",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        },
+        "motor-service": {
+          "files": [
+            {
+              "name": "电机服务.md",
+              "path": "device-management/motor-service/电机服务.md",
+              "size": 4203,
+              "lines": 170,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "电机服务",
+                "电机服务"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "安全",
+                "性能",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        },
+        "adding-configuring-devices": {
+          "files": [
+            {
+              "name": "添加与配置设备.md",
+              "path": "device-management/adding-configuring-devices/添加与配置设备.md",
+              "size": 4456,
+              "lines": 64,
+              "has_h1": true,
+              "has_toc": false,
+              "has_title": true,
+              "h1_headers": [
+                "添加与配置设备"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "Plugins",
+                "UI"
+              ],
+              "issues": [
+                "missing_toc"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        },
+        "source-measure-unit-smu-service": {
+          "files": [
+            {
+              "name": "源测量单元_(SMU)_服务.md",
+              "path": "device-management/source-measure-unit-smu-service/源测量单元_(SMU)_服务.md",
+              "size": 739,
+              "lines": 22,
+              "has_h1": true,
+              "has_toc": false,
+              "has_title": true,
+              "h1_headers": [
+                "源测量单元 (SMU) 服务"
+              ],
+              "modules_mentioned": []
+            }
+          ],
+          "subdirectories": {}
+        },
+        "file-server-service": {
+          "files": [
+            {
+              "name": "文件服务.md",
+              "path": "device-management/file-server-service/文件服务.md",
+              "size": 4613,
+              "lines": 181,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "文件服务",
+                "文件服务"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "性能",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        },
+        "camera-service": {
+          "files": [
+            {
+              "name": "相机服务.md",
+              "path": "device-management/camera-service/相机服务.md",
+              "size": 8436,
+              "lines": 306,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "相机服务",
+                "相机服务"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "安全",
+                "性能",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        }
+      }
+    },
+    "assets": {
+      "files": [],
+      "subdirectories": {
+        "css": {
+          "files": [],
+          "subdirectories": {}
+        }
+      }
+    },
+    "ui-components": {
+      "files": [
+        {
+          "name": "ColorVision.ImageEditor.md",
+          "path": "ui-components/ColorVision.ImageEditor.md",
+          "size": 4022,
+          "lines": 246,
+          "has_h1": true,
+          "has_toc": true,
+          "has_title": true,
+          "h1_headers": [
+            "ColorVision.ImageEditor"
+          ],
+          "modules_mentioned": [
+            "性能",
+            "UI"
+          ]
+        },
+        {
+          "name": "ColorVision.UI.md",
+          "path": "ui-components/ColorVision.UI.md",
+          "size": 5383,
+          "lines": 328,
+          "has_h1": true,
+          "has_toc": true,
+          "has_title": true,
+          "h1_headers": [
+            "ColorVision.UI"
+          ],
+          "modules_mentioned": [
+            "Plugins",
+            "UI"
+          ]
+        },
+        {
+          "name": "ColorVision.Core.md",
+          "path": "ui-components/ColorVision.Core.md",
+          "size": 6981,
+          "lines": 342,
+          "has_h1": true,
+          "has_toc": true,
+          "has_title": true,
+          "h1_headers": [
+            "ColorVision.Core"
+          ],
+          "modules_mentioned": [
+            "图像算法",
+            "安全",
+            "性能",
+            "UI"
+          ]
+        },
+        {
+          "name": "ColorVision.Solution.md",
+          "path": "ui-components/ColorVision.Solution.md",
+          "size": 27528,
+          "lines": 961,
+          "has_h1": true,
+          "has_toc": true,
+          "has_title": true,
+          "h1_headers": [
+            "ColorVision.Solution"
+          ],
+          "modules_mentioned": [
+            "性能",
+            "UI"
+          ]
+        },
+        {
+          "name": "ColorVision.SocketProtocol.md",
+          "path": "ui-components/ColorVision.SocketProtocol.md",
+          "size": 18921,
+          "lines": 748,
+          "has_h1": true,
+          "has_toc": true,
+          "has_title": true,
+          "h1_headers": [
+            "ColorVision.SocketProtocol"
+          ],
+          "modules_mentioned": [
+            "安全"
+          ]
+        },
+        {
+          "name": "ColorVision.Scheduler.md",
+          "path": "ui-components/ColorVision.Scheduler.md",
+          "size": 9435,
+          "lines": 375,
+          "has_h1": true,
+          "has_toc": true,
+          "has_title": true,
+          "h1_headers": [
+            "ColorVision.Scheduler"
+          ],
+          "modules_mentioned": [
+            "Scheduler",
+            "安全",
+            "性能",
+            "UI"
+          ]
+        },
+        {
+          "name": "ColorVision.Common.md",
+          "path": "ui-components/ColorVision.Common.md",
+          "size": 8071,
+          "lines": 427,
+          "has_h1": true,
+          "has_toc": true,
+          "has_title": true,
+          "h1_headers": [
+            "ColorVision.Common"
+          ],
+          "modules_mentioned": [
+            "UI"
+          ]
+        },
+        {
+          "name": "ColorVision.Themes.md",
+          "path": "ui-components/ColorVision.Themes.md",
+          "size": 6595,
+          "lines": 343,
+          "has_h1": true,
+          "has_toc": true,
+          "has_title": true,
+          "h1_headers": [
+            "ColorVision.Themes"
+          ],
+          "modules_mentioned": [
+            "性能",
+            "UI"
+          ]
+        },
+        {
+          "name": "UI组件概览.md",
+          "path": "ui-components/UI组件概览.md",
+          "size": 6000,
+          "lines": 306,
+          "has_h1": true,
+          "has_toc": true,
+          "has_title": true,
+          "h1_headers": [
+            "UI组件概览"
+          ],
+          "modules_mentioned": [
+            "Scheduler",
+            "性能",
+            "UI",
+            "Database"
+          ]
+        },
+        {
+          "name": "ColorVision.Database.md",
+          "path": "ui-components/ColorVision.Database.md",
+          "size": 23782,
+          "lines": 938,
+          "has_h1": true,
+          "has_toc": true,
+          "has_title": true,
+          "h1_headers": [
+            "ColorVision.Database"
+          ],
+          "modules_mentioned": [
+            "安全",
+            "性能",
+            "UI",
+            "Database"
+          ]
+        }
+      ],
+      "subdirectories": {}
+    },
+    "algorithm-engine-templates": {
+      "files": [
+        {
+          "name": "算法引擎与模板.md",
+          "path": "algorithm-engine-templates/算法引擎与模板.md",
+          "size": 6148,
+          "lines": 270,
+          "has_h1": true,
+          "has_toc": true,
+          "has_title": true,
+          "h1_headers": [
+            "算法引擎与模板",
+            "算法引擎与模板"
+          ],
+          "modules_mentioned": [
+            "Scheduler",
+            "Engine",
+            "Plugins",
+            "性能",
+            "模板系统",
+            "UI"
+          ]
+        }
+      ],
+      "subdirectories": {
+        "specialized-algorithms": {
+          "files": [
+            {
+              "name": "特定领域算法模板.md",
+              "path": "algorithm-engine-templates/specialized-algorithms/特定领域算法模板.md",
+              "size": 11193,
+              "lines": 201,
+              "has_h1": true,
+              "has_toc": false,
+              "has_title": true,
+              "h1_headers": [
+                "特定领域算法模板"
+              ],
+              "modules_mentioned": [
+                "Scheduler",
+                "Engine",
+                "Plugins",
+                "RBAC",
+                "UI",
+                "Database"
+              ],
+              "issues": [
+                "missing_toc"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        },
+        "common-algorithm-primitives": {
+          "files": [
+            {
+              "name": "通用算法模块.md",
+              "path": "algorithm-engine-templates/common-algorithm-primitives/通用算法模块.md",
+              "size": 6585,
+              "lines": 280,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "通用算法模块",
+                "通用算法模块"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "Plugins",
+                "性能",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        },
+        "flow-engine": {
+          "files": [
+            {
+              "name": "流程引擎.md",
+              "path": "algorithm-engine-templates/flow-engine/流程引擎.md",
+              "size": 7150,
+              "lines": 301,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "流程引擎",
+                "流程引擎"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "性能",
+                "UI",
+                "Database"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        },
+        "template-management": {
+          "files": [
+            {
+              "name": "模板管理.md",
+              "path": "algorithm-engine-templates/template-management/模板管理.md",
+              "size": 6352,
+              "lines": 216,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "模板管理",
+                "模板管理"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "性能",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        },
+        "json-based-templates": {
+          "files": [
+            {
+              "name": "基于JSON的通用模板.md",
+              "path": "algorithm-engine-templates/json-based-templates/基于JSON的通用模板.md",
+              "size": 4611,
+              "lines": 206,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "基于JSON的通用模板",
+                "基于JSON的通用模板"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "Plugins",
+                "性能",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        }
+      }
+    },
+    "engine-components": {
+      "files": [
+        {
+          "name": "cvColorVision.md",
+          "path": "engine-components/cvColorVision.md",
+          "size": 15949,
+          "lines": 682,
+          "has_h1": true,
+          "has_toc": true,
+          "has_title": true,
+          "h1_headers": [
+            "cvColorVision"
+          ],
+          "modules_mentioned": [
+            "性能",
+            "UI"
+          ]
+        },
+        {
+          "name": "ColorVision.FileIO.md",
+          "path": "engine-components/ColorVision.FileIO.md",
+          "size": 28267,
+          "lines": 983,
+          "has_h1": true,
+          "has_toc": true,
+          "has_title": true,
+          "h1_headers": [
+            "ColorVision.FileIO"
+          ],
+          "modules_mentioned": [
+            "Engine",
+            "安全",
+            "性能",
+            "UI",
+            "Database"
+          ]
+        },
+        {
+          "name": "ColorVision.Engine.md",
+          "path": "engine-components/ColorVision.Engine.md",
+          "size": 11737,
+          "lines": 523,
+          "has_h1": true,
+          "has_toc": true,
+          "has_title": true,
+          "h1_headers": [
+            "ColorVision.Engine"
+          ],
+          "modules_mentioned": [
+            "Engine",
+            "图像算法",
+            "模板系统",
+            "UI",
+            "Database"
+          ]
+        },
+        {
+          "name": "Engine组件概览.md",
+          "path": "engine-components/Engine组件概览.md",
+          "size": 4387,
+          "lines": 246,
+          "has_h1": true,
+          "has_toc": true,
+          "has_title": true,
+          "h1_headers": [
+            "Engine组件概览"
+          ],
+          "modules_mentioned": [
+            "Engine",
+            "图像算法",
+            "性能",
+            "模板系统",
+            "UI"
+          ]
+        }
+      ],
+      "subdirectories": {}
+    },
+    "common-algorithm-primitives": {
+      "files": [],
+      "subdirectories": {
+        "poi-point-of-interest": {
+          "files": [
+            {
+              "name": "POI_(关注点).md",
+              "path": "common-algorithm-primitives/poi-point-of-interest/POI_(关注点).md",
+              "size": 7595,
+              "lines": 278,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "POI (关注点)",
+                "POI (关注点)"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "性能",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        },
+        "roi-region-of-interest": {
+          "files": [
+            {
+              "name": "ROI_(感兴趣区域).md",
+              "path": "common-algorithm-primitives/roi-region-of-interest/ROI_(感兴趣区域).md",
+              "size": 5428,
+              "lines": 215,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "ROI (感兴趣区域)",
+                "ROI (感兴趣区域)"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "性能",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        }
+      }
+    },
+    "plugins": {
+      "files": [],
+      "subdirectories": {
+        "plugin-management": {
+          "files": [
+            {
+              "name": "插件管理.md",
+              "path": "plugins/plugin-management/插件管理.md",
+              "size": 6211,
+              "lines": 226,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "插件管理",
+                "插件管理"
+              ],
+              "modules_mentioned": [
+                "Plugins",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        },
+        "using-standard-plugins": {
+          "files": [
+            {
+              "name": "使用标准插件.md",
+              "path": "plugins/using-standard-plugins/使用标准插件.md",
+              "size": 4560,
+              "lines": 224,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "使用标准插件",
+                "使用标准插件"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "Plugins",
+                "性能",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        }
+      }
+    },
+    "introduction": {
+      "files": [
+        {
+          "name": "简介.md",
+          "path": "introduction/简介.md",
+          "size": 4873,
+          "lines": 244,
+          "has_h1": true,
+          "has_toc": true,
+          "has_title": true,
+          "h1_headers": [
+            "简介",
+            "简介"
+          ],
+          "modules_mentioned": [
+            "Scheduler",
+            "Engine",
+            "Plugins",
+            "性能",
+            "模板系统",
+            "UI"
+          ]
+        }
+      ],
+      "subdirectories": {
+        "key-features": {
+          "files": [
+            {
+              "name": "主要特性.md",
+              "path": "introduction/key-features/主要特性.md",
+              "size": 1260,
+              "lines": 30,
+              "has_h1": true,
+              "has_toc": false,
+              "has_title": true,
+              "h1_headers": [
+                "主要特性"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "Plugins",
+                "模板系统",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        },
+        "system-architecture": {
+          "files": [
+            {
+              "name": "系统架构概览.md",
+              "path": "introduction/system-architecture/系统架构概览.md",
+              "size": 2314,
+              "lines": 55,
+              "has_h1": true,
+              "has_toc": false,
+              "has_title": true,
+              "h1_headers": [
+                "系统架构概览"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "Plugins",
+                "RBAC",
+                "UI"
+              ],
+              "issues": [
+                "missing_toc"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        },
+        "what-is-colorvision": {
+          "files": [
+            {
+              "name": "什么是_ColorVision_.md",
+              "path": "introduction/what-is-colorvision/什么是_ColorVision_.md",
+              "size": 1964,
+              "lines": 74,
+              "has_h1": true,
+              "has_toc": false,
+              "has_title": true,
+              "h1_headers": [
+                "什么是 ColorVision?"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "图像算法",
+                "Plugins",
+                "性能",
+                "UI"
+              ],
+              "issues": [
+                "missing_toc"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        }
+      }
+    },
+    "troubleshooting": {
+      "files": [
+        {
+          "name": "故障排除.md",
+          "path": "troubleshooting/故障排除.md",
+          "size": 1397,
+          "lines": 41,
+          "has_h1": true,
+          "has_toc": false,
+          "has_title": true,
+          "h1_headers": [
+            "故障排除"
+          ],
+          "modules_mentioned": [
+            "Engine",
+            "Plugins",
+            "性能",
+            "UI"
+          ]
+        }
+      ],
+      "subdirectories": {
+        "common-issues": {
+          "files": [
+            {
+              "name": "常见问题与解决方案.md",
+              "path": "troubleshooting/common-issues/常见问题与解决方案.md",
+              "size": 3205,
+              "lines": 60,
+              "has_h1": true,
+              "has_toc": false,
+              "has_title": true,
+              "h1_headers": [
+                "常见问题与解决方案"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "Plugins",
+                "RBAC",
+                "UI"
+              ],
+              "issues": [
+                "missing_toc"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        }
+      }
+    },
+    "getting-started": {
+      "files": [
+        {
+          "name": "入门指南.md",
+          "path": "getting-started/入门指南.md",
+          "size": 4981,
+          "lines": 232,
+          "has_h1": true,
+          "has_toc": true,
+          "has_title": true,
+          "h1_headers": [
+            "入门指南",
+            "入门指南"
+          ],
+          "modules_mentioned": [
+            "Engine",
+            "Plugins",
+            "安全",
+            "性能",
+            "UI"
+          ]
+        }
+      ],
+      "subdirectories": {
+        "installation": {
+          "files": [
+            {
+              "name": "安装_ColorVision.md",
+              "path": "getting-started/installation/安装_ColorVision.md",
+              "size": 5348,
+              "lines": 200,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "安装 ColorVision",
+                "安装 ColorVision"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "Plugins",
+                "安全",
+                "性能",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        },
+        "quick-start": {
+          "files": [
+            {
+              "name": "快速上手.md",
+              "path": "getting-started/quick-start/快速上手.md",
+              "size": 6885,
+              "lines": 303,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "快速上手",
+                "快速上手"
+              ],
+              "modules_mentioned": [
+                "Scheduler",
+                "Engine",
+                "Plugins",
+                "性能",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        },
+        "prerequisites": {
+          "files": [
+            {
+              "name": "系统要求.md",
+              "path": "getting-started/prerequisites/系统要求.md",
+              "size": 3302,
+              "lines": 39,
+              "has_h1": true,
+              "has_toc": false,
+              "has_title": true,
+              "h1_headers": [
+                "系统要求"
+              ],
+              "modules_mentioned": [
+                "Scheduler",
+                "Engine",
+                "Plugins",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        }
+      }
+    },
+    "user-interface-guide": {
+      "files": [],
+      "subdirectories": {
+        "image-editor": {
+          "files": [
+            {
+              "name": "图像编辑器.md",
+              "path": "user-interface-guide/image-editor/图像编辑器.md",
+              "size": 4625,
+              "lines": 199,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "图像编辑器",
+                "图像编辑器"
+              ],
+              "modules_mentioned": [
+                "性能",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        },
+        "main-window": {
+          "files": [
+            {
+              "name": "主窗口导览.md",
+              "path": "user-interface-guide/main-window/主窗口导览.md",
+              "size": 7226,
+              "lines": 273,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "主窗口导览",
+                "主窗口导览"
+              ],
+              "modules_mentioned": [
+                "性能",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        },
+        "property-editor": {
+          "files": [
+            {
+              "name": "属性编辑器.md",
+              "path": "user-interface-guide/property-editor/属性编辑器.md",
+              "size": 608,
+              "lines": 14,
+              "has_h1": true,
+              "has_toc": false,
+              "has_title": true,
+              "h1_headers": [
+                "属性编辑器"
+              ],
+              "modules_mentioned": [
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        },
+        "log-viewer": {
+          "files": [
+            {
+              "name": "日志查看器.md",
+              "path": "user-interface-guide/log-viewer/日志查看器.md",
+              "size": 4958,
+              "lines": 205,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "日志查看器",
+                "日志查看器"
+              ],
+              "modules_mentioned": [
+                "安全",
+                "性能",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        }
+      }
+    },
+    "camera-service": {
+      "files": [],
+      "subdirectories": {
+        "physical-camera-management": {
+          "files": [
+            {
+              "name": "物理相机管理.md",
+              "path": "camera-service/physical-camera-management/物理相机管理.md",
+              "size": 7955,
+              "lines": 342,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "物理相机管理",
+                "物理相机管理"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "Plugins",
+                "安全",
+                "性能",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        },
+        "camera-configuration": {
+          "files": [
+            {
+              "name": "相机参数配置.md",
+              "path": "camera-service/camera-configuration/相机参数配置.md",
+              "size": 4268,
+              "lines": 152,
+              "has_h1": true,
+              "has_toc": true,
+              "has_title": true,
+              "h1_headers": [
+                "相机参数配置",
+                "相机参数配置"
+              ],
+              "modules_mentioned": [
+                "Engine",
+                "性能",
+                "UI"
+              ]
+            }
+          ],
+          "subdirectories": {}
+        }
+      }
+    },
+    "_layouts": {
+      "files": [],
+      "subdirectories": {}
+    }
+  },
+  "coverage_analysis": {
+    "covered_modules": [
+      "Scheduler",
+      "Engine",
+      "图像算法",
+      "Plugins",
+      "安全",
+      "性能",
+      "RBAC",
+      "模板系统",
+      "UI",
+      "Database"
+    ],
+    "missing_modules": [
+      "Flow引擎",
+      "设备集成"
+    ],
+    "coverage_percentage": 83.33333333333334
+  },
+  "issues_summary": {
+    "total_issues": 17,
+    "issues_by_type": {
+      "missing_h1": 3,
+      "missing_title": 3,
+      "missing_toc": 11
+    },
+    "files_with_issues": 12
+  },
+  "statistics": {
+    "total_markdown_files": 55,
+    "total_directories": 46,
+    "files_missing_h1": 3,
+    "files_missing_toc": 11,
+    "files_missing_title": 3
+  }
+}

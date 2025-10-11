@@ -1,13 +1,14 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Messages;
 using ColorVision.Database;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Services.Types;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.ToolPlugins;
 using ColorVision.Engine.Utilities;
@@ -18,6 +19,7 @@ using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;
 using cvColorVision;
 using log4net;
+using log4net.Util;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -50,6 +52,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         private static readonly ILog log = LogManager.GetLogger(typeof(PhyCamera));
 
         public ConfigPhyCamera Config { get; set; }
+
         [CommandDisplay("上传校正文件",Order =100)]
         public RelayCommand UploadCalibrationCommand { get; set; }
         [CommandDisplay("校正模板管理",Order =102)]
@@ -59,8 +62,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand UploadLicenseCommand { get; set; }
         [CommandDisplay("在线下载许可证")]
         public RelayCommand UploadLicenseNetCommand { get; set; }
-        [CommandDisplay("查看缓存许可证")]
-        public RelayCommand OpenLicenseCacheCommand { get; set; }
+
         public RelayCommand RefreshLicenseCommand { get; set; }
 
         [CommandDisplay("Reset", CommandType = CommandType.Highlighted,Order = 9999)]
@@ -71,14 +73,12 @@ namespace ColorVision.Engine.Services.PhyCameras
         [CommandDisplay("打开配置文件")]
         public RelayCommand OpenSettingDirectoryCommand { get; set; }
 
-        [CommandDisplay("修改电机配置")]
-        public RelayCommand UpdateMotorConfigCommand {get; set; }
+        [CommandDisplay("创建还原点", Order = 99999)]
+        public RelayCommand CreatResotreCommand { get; set; }
 
-        [CommandDisplay("导出副本")]
-        public RelayCommand GenCopyCommand { get; set; }
+        [CommandDisplay("加载还原点", Order = 99999)]
+        public RelayCommand LoadResotreCommand { get; set; }
 
-        [CommandDisplay("校正生成工具")]
-        public RelayCommand OepnCalibrationToolCommand { get; set; }
 
         public ImageSource? QRIcon { get => _QRIcon; set { _QRIcon = value; OnPropertyChanged(); } }
         private ImageSource? _QRIcon;
@@ -101,7 +101,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             DeleteCommand = new RelayCommand(a => Delete(), a => AccessControl.Check(PermissionMode.Administrator));
             EditCommand = new RelayCommand(a =>
             {
-                EditPhyCamera window = new(this);
+                EditPhyCamera window = new EditPhyCamera(this);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
@@ -115,7 +115,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             CalibrationParam.LoadResourceParams(CalibrationParams, SysResourceModel.Id);
 
             ResetCommand = new RelayCommand(a => Reset(), a => AccessControl.Check(PermissionMode.Administrator));
-            OepnCalibrationToolCommand = new RelayCommand(a=>new ExporCalibrationCorrection().Execute());
 
             CalibrationEditCommand = new RelayCommand(a =>
             {
@@ -134,42 +133,147 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()),a=> AccessControl.Check(PermissionMode.SuperAdministrator));
             OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code ?? string.Empty)));
-            UpdateMotorConfigCommand = new RelayCommand(a => UpdateMotorConfig());
-            OpenLicenseCacheCommand = new RelayCommand(a => OpenLicenseCache());
-            GenCopyCommand = new RelayCommand(a => GenCopy());
-            //这里是为了加载对应的
-        }
-        public void GenCopy()
-        {
+            CreatResotreCommand = new RelayCommand(a => CreatResotre());
+            LoadResotreCommand = new RelayCommand(a => LoadResotre());
 
         }
 
-        public static void OpenLicenseCache()
+        public void CreatResotre()
         {
-            string DirLicense = $"{Environments.DirAppData}\\Licenses";
-            if (!Directory.Exists(DirLicense))
-                Directory.CreateDirectory(DirLicense);
-            Common.Utilities.PlatformHelper.OpenFolder(DirLicense);
-        }
+            string ResotrePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            ResotrePath = Path.Combine(ResotrePath, "Restore",Code);
 
-        public void UpdateMotorConfig()
-        {
-            var oldvalue = Config.MotorConfig.Clone();
-
-            var window = new PropertyEditorWindow(Config.MotorConfig, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            window.Closed += (s, e) =>
+            if (!Directory.Exists(ResotrePath))
             {
-                if (!Config.MotorConfig.EqualMax(oldvalue))
+                Directory.CreateDirectory(ResotrePath);
+            }
+            string CameraConfigPath = Path.Combine(ResotrePath, "CameraConfig.cfg");
+
+            Config.ToJsonNFile(CameraConfigPath);
+            if (CameraLicenseModel != null)
+            {
+                string LicPath = Path.Combine(ResotrePath, $"{Code}.lic");
+                File.WriteAllText(LicPath, CameraLicenseModel.LicenseValue);
+            }
+
+
+            string CalibrationPath = Path.Combine(ResotrePath, "Calibration");
+            if (!Directory.Exists(CalibrationPath))
+            {
+                Directory.CreateDirectory(CalibrationPath);
+            }
+
+
+            Dictionary<string, List<ZipCalibrationItem>> keyValuePairs = new Dictionary<string, List<ZipCalibrationItem>>();
+            List<ZipCalibrationItem> calibrationItems = new List<ZipCalibrationItem>();
+            keyValuePairs.Add("Calibration", calibrationItems);
+            foreach (var item in VisualChildren)
+            {
+                if (item is CalibrationResource calibrationResource)
                 {
-                    Save();
+                    ZipCalibrationItem zipCalibrationItem = new ZipCalibrationItem();
+                    zipCalibrationItem.CalibrationType = ((ServiceTypes)calibrationResource.SysResourceModel.Type).ToCalibrationType();
+                    zipCalibrationItem.Title = calibrationResource.Config.Title;
+                    zipCalibrationItem.FileName = calibrationResource.Config.FileName;
+                    calibrationItems.Add(zipCalibrationItem);
+
+                    var serviceType = (ServiceTypes)calibrationResource.SysResourceModel.Type;
+                    if (calibrationResource.GetAncestor<PhyCamera>() is PhyCamera phyCamera)
+                    {
+                        if (Directory.Exists(phyCamera.Config.FileServerCfg.FileBasePath))
+                        {
+                            string path = calibrationResource.SysResourceModel.Value ?? string.Empty;
+                            string filepath = Path.Combine(phyCamera.Config.FileServerCfg.FileBasePath, phyCamera.Code, "cfg", path);
+
+                            // 确保文件存在
+                            if (File.Exists(filepath))
+                            {
+                                string sre = Path.Combine(CalibrationPath, serviceType.ToString());
+                                if (!Directory.Exists(sre))
+                                    Directory.CreateDirectory(sre); 
+
+                                string entryPath = Path.Combine(sre, calibrationResource.Config.FileName);
+                                File.Copy(filepath,entryPath,true);
+                            }
+                        }
+                    }
                 }
-            };
-            window.ShowDialog();
+
+                if (item is GroupResource groupResource)
+                {
+                    List<ZipCalibrationItem> zipCalibrationItems = new List<ZipCalibrationItem>();
+                    foreach (var cc in groupResource.VisualChildren)
+                    {
+                        if (cc is CalibrationResource caesource)
+                        {
+                            ZipCalibrationItem zipCalibrationItem = new ZipCalibrationItem();
+                            zipCalibrationItem.CalibrationType = ((ServiceTypes)caesource.SysResourceModel.Type).ToCalibrationType();
+                            zipCalibrationItem.Title = caesource.Config.Title;
+                            zipCalibrationItem.FileName = caesource.Config.FileName;
+                            zipCalibrationItems.Add(zipCalibrationItem);
+                        }
+                    }
+
+                    // 序列化为 JSON 使用 Newtonsoft.Json
+                    string json = JsonConvert.SerializeObject(zipCalibrationItems, Formatting.Indented);
+
+                    // 添加 JSON 到 ZIP
+                    string  groupPath = Path.Combine(CalibrationPath, $"{groupResource.Name}.cfg");
+                    File.WriteAllText(groupPath, json);
+
+                }
+            }
+
+            string json1 = JsonConvert.SerializeObject(keyValuePairs, Formatting.Indented);
+            string entryName1 = Path.Combine(ResotrePath, "Calibration.cfg");
+            File.WriteAllText(entryName1, json1);
+
+            MessageBox.Show(Application.Current.GetActiveWindow(), "还原点创建成功");
         }
 
+        public void LoadResotre()
+        {
+            try
+            {
+                string ResotrePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                ResotrePath = Path.Combine(ResotrePath, "Restore", Code);
+
+                string CameraConfigPath = Path.Combine(ResotrePath, "CameraConfig.cfg");
+
+                ConfigPhyCamera configPhyCamera = JsonConvert.DeserializeObject<ConfigPhyCamera>(File.ReadAllText(CameraConfigPath));
+
+                configPhyCamera.CopyTo(Config);
+                string LicPath = Path.Combine(ResotrePath, $"{Code}.lic");
+                if (File.Exists(LicPath))
+                {
+                    CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(Code);
+                    if (CameraLicenseModel == null)
+                        CameraLicenseModel = new LicenseModel();
+                    CameraLicenseModel.LiceType = 0;
+                    CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(LicPath);
+                    CameraLicenseModel.LicenseValue = File.ReadAllText(LicPath);
+                    CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLicense.Licensee;
+                    CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;
+                    CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
+                    int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                    if (ret == 1)
+                    {
+                        RefreshLicense();
+                    }
+                }
 
 
 
+                SaveConfig();
+                MessageBox.Show(Application.Current.GetActiveWindow(),"还原成功");
+            }
+            catch(Exception ex)
+            {
+                log.Error(ex);
+            }
+
+
+        }
 
         public void OpenSettingDirectory()
         {

@@ -861,4 +861,7 @@
   <data name="PointOfInterestTemplete" xml:space="preserve">
     <value>Шаблон сообщения о проблемах</value>
   </data>
+  <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
+    <value>Настройки шаблона алгоритма, связанные с фокусом</value>
+  </data>
 </root>

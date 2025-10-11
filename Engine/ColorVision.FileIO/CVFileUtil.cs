@@ -418,7 +418,47 @@ namespace ColorVision.FileIO
             int startIndex = CVFileUtil.ReadCIEFileHeader(fileName, out fileInfo);
             if (startIndex < 0) return false;
             fileInfo.FilePath = fileName;
+
+            if (!string.IsNullOrEmpty(fileInfo.srcFileName))
+            {
+                if (CVFileUtil.ReadCVCIESrc(fileName, out CVCIEFile fileInf))
+                {
+                    fileInfo = fileInf;
+                    fileInfo.FilePath = fileName;
+                    return true;
+                }
+            }
+
             return ReadCIEFileData(fileName, ref fileInfo, startIndex);
+        }
+
+
+        public static bool ReadCVCIESrc(string FileName, out CVCIEFile fileOut)
+        {
+            fileOut = new CVCIEFile();
+            int index = ReadCIEFileHeader(FileName, out CVCIEFile cvcie);
+            if (index < 0) return false;
+            if (!File.Exists(cvcie.srcFileName))
+                cvcie.srcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.srcFileName);
+
+            if (File.Exists(cvcie.srcFileName))
+            {
+                if (IsCIEFile(cvcie.srcFileName))
+                {
+                    fileOut.FileExtType = CVType.Raw;
+                    return Read(cvcie.srcFileName, out fileOut);
+                }
+                else
+                {
+                    if (cvcie.srcFileName != null)
+                    {
+                        fileOut.data = ReadFile(cvcie.srcFileName);
+                        fileOut.FileExtType = CVType.Tif;
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         /// <summary>

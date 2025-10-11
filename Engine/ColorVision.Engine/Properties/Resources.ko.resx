@@ -861,4 +861,7 @@
   <data name="PointOfInterestTemplete" xml:space="preserve">
     <value>우려 사항 템플릿</value>
   </data>
+  <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
+    <value>포커스 관련 알고리즘 템플릿 설정</value>
+  </data>
 </root>
