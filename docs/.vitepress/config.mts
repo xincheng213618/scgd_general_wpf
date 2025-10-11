@@ -36,6 +36,8 @@ export default withMermaid(
         { text: '首页', link: '/' },
         { text: '入门指南', link: '/getting-started/入门指南' },
         { text: '架构', link: '/introduction/system-architecture/系统架构概览' },
+        { text: 'README', link: '/项目README' },
+        { text: '更新日志', link: '/changelog/CHANGELOG' },
         { text: 'GitHub', link: 'https://github.com/xincheng213618/scgd_general_wpf' }
       ],
       
