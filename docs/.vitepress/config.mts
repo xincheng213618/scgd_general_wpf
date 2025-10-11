@@ -19,7 +19,6 @@ export default withMermaid(
     
     // Ignore specific files/patterns
     srcExclude: [
-      '**/README.md',
       '**/_*.md',
       '**/.*',
       'node_modules/**'
@@ -36,7 +35,7 @@ export default withMermaid(
         { text: '首页', link: '/' },
         { text: '入门指南', link: '/getting-started/入门指南' },
         { text: '架构', link: '/introduction/system-architecture/系统架构概览' },
-        { text: 'README', link: '/项目README' },
+        { text: 'README', link: '/根目录README' },
         { text: '更新日志', link: '/changelog/CHANGELOG' },
         { text: 'GitHub', link: 'https://github.com/xincheng213618/scgd_general_wpf' }
       ],
@@ -48,7 +47,7 @@ export default withMermaid(
           collapsed: false,
           items: [
             { text: '项目简介', link: '/introduction/简介' },
-            { text: '项目 README', link: '/项目README' },
+            { text: '根目录 README', link: '/根目录README' },
             { text: '什么是 ColorVision', link: '/introduction/what-is-colorvision/什么是_ColorVision_' },
             { text: '主要特性', link: '/introduction/key-features/主要特性' },
             { text: '入门指南', link: '/getting-started/入门指南' },
