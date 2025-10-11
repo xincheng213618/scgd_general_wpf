@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:GraphicEditingConfig}"
        
-        Title="GraphicEditingWindow" Height="500" Width="350" Initialized="Window_Initialized">
+        Title="GraphicEditingWindow" Background="{StaticResource GlobalBackground}" Height="500" Width="350" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}">
             <Setter Property="BorderThickness" Value="0,0,0,1" />

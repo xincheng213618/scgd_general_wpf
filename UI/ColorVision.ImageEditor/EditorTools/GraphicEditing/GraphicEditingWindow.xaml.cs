@@ -4,6 +4,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Rasterized;
+using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.Util.Draw.Rectangle;
@@ -349,6 +350,7 @@ namespace ColorVision.ImageEditor
         {
             EditorContext = context;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
