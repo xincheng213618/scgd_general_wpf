@@ -18,7 +18,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
     public class ViewHanlePOIXZY : IResultHandleBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleRealPOI));
-        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.POI_XYZ ,ViewResultAlgType.LEDStripDetection };
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.POI_XYZ};
         
         public override void SideSave(ViewResultAlg result, string selectedPath)
         {

@@ -861,4 +861,7 @@
   <data name="PointOfInterestTemplete" xml:space="preserve">
     <value>Point Of Interest Templete</value>
   </data>
+  <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
+    <value>Point of Interst Algorithm template settings</value>
+  </data>
 </root>

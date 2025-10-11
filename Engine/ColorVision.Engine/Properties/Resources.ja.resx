@@ -861,4 +861,7 @@
   <data name="PointOfInterestTemplete" xml:space="preserve">
     <value>懸念事項テンプレート</value>
   </data>
+  <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
+    <value>フォーカス関連のアルゴリズムテンプレート設定</value>
+  </data>
 </root>
