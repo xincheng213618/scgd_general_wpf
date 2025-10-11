@@ -36,6 +36,8 @@ export default withMermaid(
         { text: '首页', link: '/' },
         { text: '入门指南', link: '/getting-started/入门指南' },
         { text: '架构', link: '/introduction/system-architecture/系统架构概览' },
+        { text: 'README', link: '/项目README' },
+        { text: '更新日志', link: '/changelog/CHANGELOG' },
         { text: 'GitHub', link: 'https://github.com/xincheng213618/scgd_general_wpf' }
       ],
       
@@ -46,6 +48,7 @@ export default withMermaid(
           collapsed: false,
           items: [
             { text: '项目简介', link: '/introduction/简介' },
+            { text: '项目 README', link: '/项目README' },
             { text: '什么是 ColorVision', link: '/introduction/what-is-colorvision/什么是_ColorVision_' },
             { text: '主要特性', link: '/introduction/key-features/主要特性' },
             { text: '入门指南', link: '/getting-started/入门指南' },
@@ -62,11 +65,24 @@ export default withMermaid(
             { text: '架构运行时', link: '/architecture/architecture-runtime' },
             { text: '组件交互矩阵', link: '/architecture/component-interactions' },
             {
+              text: 'ColorVision.Engine 重构',
+              collapsed: true,
+              items: [
+                { text: '重构项目说明', link: '/architecture/ColorVision.Engine-Refactoring-README' },
+                { text: '执行摘要', link: '/architecture/ColorVision.Engine-Refactoring-Summary' },
+                { text: '架构图表', link: '/architecture/ColorVision.Engine-Refactoring-Diagrams' },
+                { text: '完整技术方案', link: '/architecture/ColorVision.Engine-Refactoring-Plan' },
+                { text: '实施检查清单', link: '/architecture/ColorVision.Engine-Refactoring-Checklist' }
+              ]
+            },
+            {
               text: 'UI组件',
               collapsed: true,
               items: [
                 { text: 'UI组件概览', link: '/ui-components/UI组件概览' },
                 { text: 'ColorVision.UI', link: '/ui-components/ColorVision.UI' },
+                { text: 'ColorVision.UI.Sort', link: '/ColorVision.UI.Sort' },
+                { text: 'Sort 迁移指南', link: '/Sort-Migration-Guide' },
                 { text: 'ColorVision.Common', link: '/ui-components/ColorVision.Common' },
                 { text: 'ColorVision.Core', link: '/ui-components/ColorVision.Core' },
                 { text: 'ColorVision.Themes', link: '/ui-components/ColorVision.Themes' },
@@ -74,7 +90,8 @@ export default withMermaid(
                 { text: 'ColorVision.Solution', link: '/ui-components/ColorVision.Solution' },
                 { text: 'ColorVision.Scheduler', link: '/ui-components/ColorVision.Scheduler' },
                 { text: 'ColorVision.Database', link: '/ui-components/ColorVision.Database' },
-                { text: 'ColorVision.SocketProtocol', link: '/ui-components/ColorVision.SocketProtocol' }
+                { text: 'ColorVision.SocketProtocol', link: '/ui-components/ColorVision.SocketProtocol' },
+                { text: '热键系统设计', link: '/ui-components/HotKey系统设计文档' }
               ]
             },
             {
@@ -84,7 +101,9 @@ export default withMermaid(
                 { text: 'Engine组件概览', link: '/engine-components/Engine组件概览' },
                 { text: 'ColorVision.Engine', link: '/engine-components/ColorVision.Engine' },
                 { text: 'ColorVision.FileIO', link: '/engine-components/ColorVision.FileIO' },
-                { text: 'cvColorVision', link: '/engine-components/cvColorVision' }
+                { text: 'cvColorVision', link: '/engine-components/cvColorVision' },
+                { text: 'FlowEngineLib', link: '/engine-components/FlowEngineLib' },
+                { text: 'ST.Library.UI', link: '/engine-components/ST.Library.UI' }
               ]
             }
           ]
@@ -95,6 +114,8 @@ export default withMermaid(
           items: [
             { text: '插件管理', link: '/plugins/plugin-management/插件管理' },
             { text: '使用标准插件', link: '/plugins/using-standard-plugins/使用标准插件' },
+            { text: 'Pattern 插件', link: '/plugins/using-standard-plugins/pattern' },
+            { text: '系统监控插件', link: '/plugins/system-monitor' },
             { text: '插件生命周期', link: '/plugins/plugin-lifecycle' },
             { text: '开发插件指南', link: '/plugins/developing-a-plugin' }
           ]
@@ -107,11 +128,29 @@ export default withMermaid(
             { text: '流程引擎概览', link: '/flow-engine/flow-engine-overview' },
             { text: '状态模型', link: '/flow-engine/state-model' },
             { text: '扩展点', link: '/flow-engine/extensibility-points' },
+            {
+              text: 'FlowEngineLib',
+              collapsed: true,
+              items: [
+                { text: '文档导航', link: '/FlowEngineLib-Documentation-Index' },
+                { text: '架构设计', link: '/architecture/FlowEngineLib-Architecture' },
+                { text: '节点开发指南', link: '/extensibility/FlowEngineLib-NodeDevelopment' },
+                { text: 'API 参考', link: '/api-reference/FlowEngineLib-API' }
+              ]
+            },
             { text: '算法引擎与模板', link: '/algorithm-engine-templates/算法引擎与模板' },
             { text: '模板管理', link: '/algorithm-engine-templates/template-management/模板管理' },
             { text: '基于JSON的通用模板', link: '/algorithm-engine-templates/json-based-templates/基于JSON的通用模板' },
             { text: '通用算法模块', link: '/algorithm-engine-templates/common-algorithm-primitives/通用算法模块' },
             { text: '特定领域算法模板', link: '/algorithm-engine-templates/specialized-algorithms/特定领域算法模板' },
+            {
+              text: '算法库',
+              collapsed: true,
+              items: [
+                { text: '算法概览', link: '/algorithms/overview' },
+                { text: 'Ghost 检测算法', link: '/algorithms/ghost-detection' }
+              ]
+            },
             {
               text: '通用算法原语',
               collapsed: true,
@@ -133,6 +172,8 @@ export default withMermaid(
               collapsed: true,
               items: [
                 { text: '相机服务', link: '/device-management/camera-service/相机服务' },
+                { text: '相机参数配置', link: '/camera-service/camera-configuration/相机参数配置' },
+                { text: '物理相机管理', link: '/camera-service/physical-camera-management/物理相机管理' },
                 { text: '校准服务', link: '/device-management/calibration-service/校准服务' },
                 { text: '电机服务', link: '/device-management/motor-service/电机服务' },
                 { text: '文件服务', link: '/device-management/file-server-service/文件服务' },
@@ -163,7 +204,9 @@ export default withMermaid(
             { text: '安全与权限控制', link: '/security/' },
             { text: 'RBAC 模型', link: '/rbac/rbac-model' },
             { text: 'API 参考', link: '/developer-guide/api-reference/API_参考' },
-            { text: 'ColorVision API V1.1', link: '/ColorVision API V1.1' }
+            { text: 'ColorVision API V1.1', link: '/ColorVision API V1.1' },
+            { text: '模板创建增强指南', link: '/template-create-enhancement' },
+            { text: '模板创建可视化指南', link: '/template-create-visual-guide' }
           ]
         },
         {
@@ -173,8 +216,19 @@ export default withMermaid(
             { text: '数据存储概览', link: '/data-storage/' },
             { text: '部署文档', link: '/deployment/' },
             { text: '更新日志', link: '/changelog/' },
+            { text: 'CHANGELOG', link: '/changelog/CHANGELOG' },
             { text: '自动更新', link: '/update/' },
-            { text: '更新日志窗口', link: '/update/changelog-window' }
+            { text: '更新日志窗口', link: '/update/changelog-window' },
+            { text: '更新日志窗口对比', link: '/update/changelog-window-comparison' }
+          ]
+        },
+        {
+          text: '📄 其他',
+          collapsed: true,
+          items: [
+            { text: '许可证', link: '/license' },
+            { text: '软件许可协议', link: '/Software License Agreement' },
+            { text: '解决方案文件说明', link: '/Solution' }
           ]
         }
       ],
