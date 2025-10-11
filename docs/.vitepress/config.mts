@@ -8,7 +8,7 @@ export default withMermaid(
     description: "ColorVision 是基于 Windows WPF 的专业光电技术解决方案，提供设备集成、流程自动化、色彩管理等功能",
     lang: 'zh-CN',
     
-    // Base path for GitHub Pages deployment
+    // Base path for GitHub Pages deployment  
     base: '/scgd_general_wpf/',
     
     // Clean URLs (removes .html extension)
@@ -16,6 +16,14 @@ export default withMermaid(
     
     // Ignore dead links during build
     ignoreDeadLinks: true,
+    
+    // Ignore specific files/patterns
+    srcExclude: [
+      '**/README.md',
+      '**/_*.md',
+      '**/.*',
+      'node_modules/**'
+    ],
     
     // Theme configuration
     themeConfig: {
