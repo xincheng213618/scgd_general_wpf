@@ -364,3 +364,15 @@ MigrationBackup/
 FodyWeavers.xsd
 /.bevel
 /.vscode
+
+# Node.js / npm
+node_modules/
+package-lock.json
+.npm
+.eslintcache
+
+# VitePress
+docs/.vitepress/cache
+docs/.vitepress/dist
+.temp
+*.local

@@ -1,0 +1,272 @@
+/* ColorVision Documentation Styles */
+
+:root {
+  --primary-color: #0969da;
+  --primary-hover: #0550ae;
+  --text-primary: #24292f;
+  --text-secondary: #656d76;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f6f8fa;
+  --border-color: #d0d7de;
+  --code-bg: #f6f8fa;
+  --success-color: #1a7f37;
+  --warning-color: #9a6700;
+  --danger-color: #cf222e;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* 链接样式优化 */
+a {
+  color: var(--primary-color);
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+/* 代码块样式 */
+code {
+  background-color: var(--code-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+pre {
+  background-color: var(--code-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 16px;
+  overflow-x: auto;
+  margin: 16px 0;
+}
+
+/* 表格样式 */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 16px 0;
+}
+
+th, td {
+  border: 1px solid var(--border-color);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+th {
+  background-color: var(--bg-secondary);
+  font-weight: 600;
+}
+
+tr:nth-child(even) {
+  background-color: var(--bg-secondary);
+}
+
+/* 提示框样式 */
+.note {
+  padding: 16px;
+  margin: 16px 0;
+  border-left: 4px solid var(--primary-color);
+  background-color: #dbeafe;
+  border-radius: 0 6px 6px 0;
+}
+
+.warning {
+  padding: 16px;
+  margin: 16px 0;
+  border-left: 4px solid var(--warning-color);
+  background-color: #fef3c7;
+  border-radius: 0 6px 6px 0;
+}
+
+.danger {
+  padding: 16px;
+  margin: 16px 0;
+  border-left: 4px solid var(--danger-color);
+  background-color: #fee2e2;
+  border-radius: 0 6px 6px 0;
+}
+
+/* 按钮样式 */
+.btn {
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: var(--primary-color);
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.btn:hover {
+  background-color: var(--primary-hover);
+  color: white;
+  text-decoration: none;
+}
+
+.btn-secondary {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+/* 徽章样式 */
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-success {
+  background-color: var(--success-color);
+}
+
+.badge-warning {
+  background-color: var(--warning-color);
+}
+
+.badge-danger {
+  background-color: var(--danger-color);
+}
+
+/* 图片样式 */
+img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 引用块样式 */
+blockquote {
+  border-left: 4px solid var(--border-color);
+  padding-left: 16px;
+  margin: 16px 0;
+  color: var(--text-secondary);
+  font-style: italic;
+  background-color: var(--bg-secondary);
+  padding: 16px;
+  border-radius: 0 6px 6px 0;
+}
+
+/* 列表样式 */
+ul, ol {
+  padding-left: 24px;
+}
+
+li {
+  margin: 4px 0;
+}
+
+/* 标题锚链接 */
+h1:hover .anchor,
+h2:hover .anchor,
+h3:hover .anchor,
+h4:hover .anchor,
+h5:hover .anchor,
+h6:hover .anchor {
+  visibility: visible;
+}
+
+.anchor {
+  visibility: hidden;
+  text-decoration: none;
+  margin-left: 8px;
+  color: var(--text-secondary);
+}
+
+/* Mermaid 图表样式优化 */
+.mermaid {
+  text-align: center;
+  margin: 24px 0;
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 16px;
+}
+
+/* 搜索高亮 */
+.search-highlight {
+  background-color: #fff3cd;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+/* 打印样式 */
+@media print {
+  .header,
+  .sidebar,
+  .footer {
+    display: none;
+  }
+  
+  .container {
+    grid-template-columns: 1fr;
+    max-width: none;
+  }
+  
+  .content {
+    margin: 0;
+  }
+  
+  a {
+    text-decoration: none;
+    color: var(--text-primary);
+  }
+  
+  a[href]:after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: var(--text-secondary);
+  }
+}
+
+/* 无障碍访问优化 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

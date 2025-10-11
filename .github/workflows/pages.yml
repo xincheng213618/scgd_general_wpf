@@ -1,4 +1,4 @@
-name: Deploy GitHub Pages
+name: Deploy VitePress to GitHub Pages
 
 on:
   # Trigger on pushes to main/master branch
@@ -7,6 +7,8 @@ on:
       - master
     paths:
       - 'docs/**'
+      - 'package.json'
+      - '.github/workflows/pages.yml'
   
   # Allow manual trigger
   workflow_dispatch:
@@ -30,68 +32,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.1'
-          bundler-cache: true
-          cache-version: 0
-          working-directory: docs
+          fetch-depth: 0 # Not needed if lastUpdated is not enabled
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
 
       - name: Setup Pages
-        id: pages
         uses: actions/configure-pages@v4
 
-      - name: Create Gemfile if not exists
-        run: |
-          cd docs
-          if [ ! -f Gemfile ]; then
-            cat > Gemfile << EOF
-          source "https://rubygems.org"
-          
-          gem "jekyll", "~> 4.3.2"
-          gem "minima", "~> 2.5"
-          gem "github-pages", group: :jekyll_plugins
-          
-          group :jekyll_plugins do
-            gem "jekyll-feed", "~> 0.12"
-            gem "jekyll-sitemap"
-            gem "jekyll-seo-tag"
-          end
-          
-          # Windows and JRuby does not include zoneinfo files, so bundle the tzinfo-data gem
-          # and associated library.
-          platforms :mingw, :x64_mingw, :mswin, :jruby do
-            gem "tzinfo", ">= 1", "< 3"
-            gem "tzinfo-data"
-          end
-          
-          # Performance-booster for watching directories on Windows
-          gem "wdm", "~> 0.1.1", :platforms => [:mingw, :x64_mingw, :mswin]
-          
-          # Lock `http_parser.rb` gem to `v0.6.x` on JRuby builds since newer versions of the gem
-          # do not have a Java counterpart.
-          gem "http_parser.rb", "~> 0.6.0", :platforms => [:jruby]
-          EOF
-          fi
-
       - name: Install dependencies
-        run: |
-          cd docs
-          bundle install
+        run: npm ci
 
-      - name: Build with Jekyll
-        run: |
-          cd docs
-          bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
-        env:
-          JEKYLL_ENV: production
+      - name: Build with VitePress
+        run: npm run docs:build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/_site
+          path: docs/.vitepress/dist
 
   # Deployment job
   deploy:

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <title>ColorVision - 光电技术与色彩管理平台</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="ColorVision 是基于 Windows WPF 的专业光电技术解决方案，提供设备集成、流程自动化、色彩管理等功能" />
+    <link rel="icon" href="favicon.ico" type="image/x-icon" />
+    
+    <!-- Docsify Theme -->
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css" />
+    
+    <!-- Dark/Light Theme Plugin -->
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify-darklight-theme@latest/dist/style.min.css" />
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="style/custom.css" />
+</head>
+<body>
+    <div id="app">Loading...</div>
+    
+    <script>
+        window.$docsify = {
+            name: 'ColorVision',
+            repo: 'xincheng213618/scgd_general_wpf',
+            loadSidebar: true,
+            subMaxLevel: 3,
+            coverpage: true,
+            notFoundPage: true,
+            
+            // Sidebar collapse configuration
+            sidebarDisplayLevel: 1, // 默认只展开一级标题
+            
+            // Search plugin configuration
+            search: {
+                depth: 3,
+                noData: '无结果',
+                placeholder: '搜索文档...',
+                pathNamespaces: /^(\/(zh-cn|en-us))?(\/(v1|v2))?/
+            },
+            
+            // Alias configuration for smooth migration
+            alias: {
+                '/': '/README.md',
+                '/index.md': '/README.md',
+                '/ui-components/overview': '/ui-components/UI组件概览.md',
+                '/getting-started/guide': '/getting-started/入门指南.md',
+                '/introduction/intro': '/introduction/简介.md'
+            },
+            
+            // Pagination
+            pagination: {
+                previousText: '上一章节',
+                nextText: '下一章节',
+                crossChapter: true,
+                crossChapterText: true
+            },
+            
+            // Copy code block
+            copyCode: {
+                buttonText: '复制代码',
+                errorText: '错误',
+                successText: '复制成功'
+            },
+            
+            // Mermaid configuration
+            mermaid: {
+                initialize: { startOnLoad: false }
+            }
+        };
+        
+        // Initialize mermaid
+        window.mermaid = {
+            initialize: { startOnLoad: false }
+        };
+    </script>
+    
+    <!-- Core Docsify -->
+    <script src="//cdn.jsdelivr.net/npm/docsify@4/lib/docsify.min.js"></script>
+    
+    <!-- Search Plugin -->
+    <script src="//cdn.jsdelivr.net/npm/docsify@4/lib/plugins/search.min.js"></script>
+    
+    <!-- Copy Code Plugin -->
+    <script src="//cdn.jsdelivr.net/npm/docsify-copy-code@2/dist/docsify-copy-code.min.js"></script>
+    
+    <!-- Pagination Plugin -->
+    <script src="//cdn.jsdelivr.net/npm/docsify-pagination@2/dist/docsify-pagination.min.js"></script>
+    
+    <!-- Dark/Light Theme Plugin -->
+    <script src="//cdn.jsdelivr.net/npm/docsify-darklight-theme@latest/dist/index.min.js"></script>
+    
+    <!-- Sidebar Collapse Plugin -->
+    <script src="//cdn.jsdelivr.net/npm/docsify-sidebar-collapse/dist/docsify-sidebar-collapse.min.js"></script>
+    
+    <!-- PrismJS Language Support -->
+    <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-csharp.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-json.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-xml-doc.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-powershell.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
+    
+    <!-- Mermaid Support -->
+    <script src="//cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/docsify-mermaid@2/dist/docsify-mermaid.js"></script>
+</body>
+</html>
