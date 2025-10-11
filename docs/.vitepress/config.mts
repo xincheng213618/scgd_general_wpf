@@ -27,7 +27,7 @@ export default withMermaid(
     // Theme configuration
     themeConfig: {
       // Site branding
-      logo: '/UI.png',
+      logo: '/ColorVision.png',
       siteTitle: 'ColorVision',
       
       // Navigation
@@ -35,8 +35,8 @@ export default withMermaid(
         { text: '首页', link: '/' },
         { text: '入门指南', link: '/getting-started/入门指南' },
         { text: '架构', link: '/introduction/system-architecture/系统架构概览' },
-        { text: 'README', link: '/根目录README' },
-        { text: '更新日志', link: '/changelog/CHANGELOG' },
+        { text: '更新日志', link: 'https://github.com/xincheng213618/scgd_general_wpf/blob/master/CHANGELOG.md' },
+        { text: 'xincheng', link: 'https://xincheng213618.cn/' },
         { text: 'GitHub', link: 'https://github.com/xincheng213618/scgd_general_wpf' }
       ],
       
@@ -46,8 +46,6 @@ export default withMermaid(
           text: '🚀 入门',
           collapsed: false,
           items: [
-            { text: '项目简介', link: '/introduction/简介' },
-            { text: '根目录 README', link: '/根目录README' },
             { text: '什么是 ColorVision', link: '/introduction/what-is-colorvision/什么是_ColorVision_' },
             { text: '主要特性', link: '/introduction/key-features/主要特性' },
             { text: '入门指南', link: '/getting-started/入门指南' },
@@ -141,7 +139,6 @@ export default withMermaid(
             { text: '模板管理', link: '/algorithm-engine-templates/template-management/模板管理' },
             { text: '基于JSON的通用模板', link: '/algorithm-engine-templates/json-based-templates/基于JSON的通用模板' },
             { text: '通用算法模块', link: '/algorithm-engine-templates/common-algorithm-primitives/通用算法模块' },
-            { text: '特定领域算法模板', link: '/algorithm-engine-templates/specialized-algorithms/特定领域算法模板' },
             {
               text: '算法库',
               collapsed: true,
@@ -197,26 +194,22 @@ export default withMermaid(
           collapsed: true,
           items: [
             { text: '故障排除', link: '/troubleshooting/故障排除' },
-            { text: '常见问题与解决方案', link: '/troubleshooting/common-issues/常见问题与解决方案' },
-            { text: '性能优化指南', link: '/performance/' },
-            { text: '扩展性开发', link: '/extensibility/' },
-            { text: '安全与权限控制', link: '/security/' },
+            { text: '性能优化指南', link: '/performance/README.md' },
+            { text: '扩展性开发', link: '/extensibility/README.md' },
+            { text: '安全与权限控制', link: '/security/README.md' },
             { text: 'RBAC 模型', link: '/rbac/rbac-model' },
             { text: 'API 参考', link: '/developer-guide/api-reference/API_参考' },
             { text: 'ColorVision API V1.1', link: '/ColorVision API V1.1' },
-            { text: '模板创建增强指南', link: '/template-create-enhancement' },
-            { text: '模板创建可视化指南', link: '/template-create-visual-guide' }
           ]
         },
         {
           text: '📦 部署与更新',
           collapsed: true,
           items: [
-            { text: '数据存储概览', link: '/data-storage/' },
-            { text: '部署文档', link: '/deployment/' },
-            { text: '更新日志', link: '/changelog/' },
-            { text: 'CHANGELOG', link: '/changelog/CHANGELOG' },
-            { text: '自动更新', link: '/update/' },
+            { text: '数据存储概览', link: '/data-storage/README.md' },
+            { text: '部署文档', link: '/deployment/README.md' },
+            { text: '更新日志', link: '/changelog/CHANGELOG' },
+            { text: '自动更新', link: '/update/README.md' },
             { text: '更新日志窗口', link: '/update/changelog-window' },
             { text: '更新日志窗口对比', link: '/update/changelog-window-comparison' }
           ]
@@ -271,7 +264,7 @@ export default withMermaid(
       // Footer
       footer: {
         message: 'Released under the MIT License.',
-        copyright: 'Copyright © 2024-present ColorVision'
+        copyright: 'Copyright © 2025-present ColorVision Development Team'
       },
       
       // Outline (table of contents) configuration

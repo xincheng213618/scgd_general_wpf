@@ -6,7 +6,7 @@ hero:
   text: "光电技术与色彩管理一体化平台"
   tagline: 基于 Windows WPF 技术的专业应用程序，专注于提供先进的色彩管理和光电技术解决方案。支持多设备集成、流程自动化、插件扩展，满足光电技术研发与工业自动化需求。
   image:
-    src: /UI.png
+    src: /ColorVision.png
     alt: ColorVision
   actions:
     - theme: brand
