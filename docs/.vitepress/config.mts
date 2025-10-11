@@ -312,7 +312,7 @@ export default withMermaid(
     
     // Head tags
     head: [
-      ['link', { rel: 'icon', href: '/scgd_general_wpf/favicon.ico' }],
+      ['link', { rel: 'icon', href: '/favicon.ico' }],
       ['meta', { name: 'theme-color', content: '#0969da' }],
       ['meta', { name: 'og:type', content: 'website' }],
       ['meta', { name: 'og:locale', content: 'zh_CN' }],
