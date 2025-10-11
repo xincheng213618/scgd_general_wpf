@@ -27,7 +27,7 @@ export default withMermaid(
     // Theme configuration
     themeConfig: {
       // Site branding
-      logo: '/ColorVision.png',
+      logo: '/images/ColorVision.png',
       siteTitle: 'ColorVision',
       
       // Navigation
