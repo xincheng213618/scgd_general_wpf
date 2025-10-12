@@ -419,9 +419,8 @@
                         </DataTemplate>
                     </ListView.Resources>
                     <ListView.ItemContainerStyle>
-                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                            <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
-                        </Style>
+                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}"/>
+
                     </ListView.ItemContainerStyle>
                     <ListView.View>
                         <GridView >

@@ -204,31 +204,11 @@ namespace ColorVision.Engine.Templates.POI
                 ListView1.SelectedItem = e;
                 ListView1.ScrollIntoView(e);
             };
-
+            ListView1.ContextMenu = new ContextMenu();
             MoveUpCommand = new RelayCommand(a => MoveUp(), a => ListView1?.SelectedIndex > 0); // 假设ListView1是ViewModel中的属性或可以通过绑定访问
             MoveDownCommand = new RelayCommand(a => MoveDown(), a => ListView1?.SelectedIndex < DrawingVisualLists.Count - 1);
             MoveToTopCommand = new RelayCommand(a => MoveToTop(), a => ListView1?.SelectedIndex > 0);
             MoveToBottomCommand = new RelayCommand(a => MoveToBottom(), a => ListView1?.SelectedIndex < DrawingVisualLists.Count - 1);
-
-            if (AlgorithmKBConfig.Instance.KBCanDrag)
-            {
-                ListViewDragDropManager<IDrawingVisual> listViewDragDropManager = new ListViewDragDropManager<IDrawingVisual>(ListView1);
-                listViewDragDropManager.ShowDragAdorner = true;
-                listViewDragDropManager.EventHandler += (s, e) =>
-                {
-                    if (!DBIndex.ContainsKey(e[0]))
-                        DBIndex.Add(e[0], -1);
-                    if (!DBIndex.ContainsKey(e[1]))
-                        DBIndex.Add(e[1], -1);
-
-                    int old = DBIndex[e[0]];
-                    DBIndex[e[0]] = DBIndex[e[1]];
-
-                    e[0].BaseAttribute.Name = DBIndex[e[1]].ToString();
-                    DBIndex[e[1]] = old;
-                    e[1].BaseAttribute.Name = old.ToString();
-                };
-            }
 
 
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(GraphicBorderType)).Cast<GraphicBorderType>()  select new KeyValuePair<GraphicBorderType, string>(e1, e1.ToDescription());
@@ -1752,7 +1732,7 @@ namespace ColorVision.Engine.Templates.POI
                 DrawingVisualLists.RemoveAt(index);
                 DrawingVisualLists.Insert(index - 1, item);
                 ListView1.SelectedIndex = index - 1;
-
+                UpdateDBIndex(item, index - 1);
             }
         }
 
@@ -1765,6 +1745,7 @@ namespace ColorVision.Engine.Templates.POI
                 DrawingVisualLists.RemoveAt(index);
                 DrawingVisualLists.Insert(index + 1, item);
                 ListView1.SelectedIndex = index + 1;
+                UpdateDBIndex(item, index + 1);
             }
         }
 
@@ -1777,6 +1758,7 @@ namespace ColorVision.Engine.Templates.POI
                 DrawingVisualLists.RemoveAt(index);
                 DrawingVisualLists.Insert(0, item);
                 ListView1.SelectedIndex = 0;
+                UpdateDBIndex(item, 0);
             }
         }
 
@@ -1789,7 +1771,27 @@ namespace ColorVision.Engine.Templates.POI
                 DrawingVisualLists.RemoveAt(index);
                 DrawingVisualLists.Add(item);
                 ListView1.SelectedIndex = DrawingVisualLists.Count - 1;
+                UpdateDBIndex(item, DrawingVisualLists.Count - 1);
             }
+        }
+
+
+        private void UpdateDBIndex(IDrawingVisual movedItem, int newIndex)
+        {
+            // 找到被替换的项（假设newIndex是移动后的位置）
+            var replacedItem = DrawingVisualLists[newIndex];
+            // 交换位置
+            if (!DBIndex.ContainsKey(movedItem))
+                DBIndex.Add(movedItem, -1);
+            if (!DBIndex.ContainsKey(replacedItem))
+                DBIndex.Add(replacedItem, -1);
+
+            int temp = DBIndex[movedItem];
+            DBIndex[movedItem] = DBIndex[replacedItem];
+            DBIndex[replacedItem] = temp;
+
+            movedItem.BaseAttribute.Name = DBIndex[movedItem].ToString();
+            replacedItem.BaseAttribute.Name = DBIndex[replacedItem].ToString();
         }
     }
 
