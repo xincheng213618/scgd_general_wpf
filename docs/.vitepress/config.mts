@@ -143,6 +143,7 @@ export default withMermaid(
               text: 'Templates 架构',
               collapsed: true,
               items: [
+                { text: 'Templates分析总结', link: '/algorithm-engine-templates/templates-architecture/Templates分析总结' },
                 { text: 'Templates架构设计', link: '/algorithm-engine-templates/templates-architecture/Templates架构设计' },
                 { text: 'Templates API参考', link: '/algorithm-engine-templates/templates-architecture/Templates-API参考' },
                 { text: 'ARVR模板详解', link: '/algorithm-engine-templates/templates-architecture/ARVR模板详解' },
