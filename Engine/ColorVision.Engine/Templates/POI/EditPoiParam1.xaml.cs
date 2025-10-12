@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS8625,CS8604,CS8602
-using ColorVision.Common.Adorners.ListViewAdorners;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
