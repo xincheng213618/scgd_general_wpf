@@ -262,45 +262,162 @@ await cameraService.ConfigureAsync(config);
 
 ## 模板系统
 
-### 模板类型
+模板系统是ColorVision.Engine的核心组成部分，负责算法参数的管理、存储和版本控制。包含约317个文件，分布在45个子模块中。
 
-#### 1. 算法模板
-- **图像处理算法**: 各种图像算法的参数模板
-- **测量算法**: 尺寸、角度、面积测量
-- **检测算法**: 缺陷检测、特征识别
+### 模板体系结构
 
-#### 2. 流程模板
-- **标准流程**: 预定义的标准检测流程
-- **自定义流程**: 用户创建的自定义流程
-- **组合流程**: 多个子流程的组合
+#### ARVR 算法模板组
+专门用于AR/VR显示设备的光学性能测试：
+- **MTF (调制传递函数)**: 光学系统成像质量评估
+- **SFR (空间频率响应)**: 基于ISO 12233标准的MTF测试
+- **FOV (视场角)**: 测量光学系统的有效视野范围
+- **Distortion (畸变)**: 几何畸变分析和校正
+- **Ghost (鬼影)**: 二次反射和杂散光检测
 
-#### 3. 设备模板
-- **设备配置**: 设备连接和参数配置
-- **校准模板**: 设备校准参数
-- **操作模板**: 常用操作的参数预设
+#### POI 模板组
+兴趣点检测、分析与校准的完整处理流程：
+- **AlgorithmImp**: POI检测算法实现（Harris、Shi-Tomasi、FAST等）
+- **BuildPoi**: POI点聚类和结构化
+- **POIFilters**: 多种过滤器（位置、质量、距离等）
+- **POIGenCali**: 相机标定和几何校准
+- **POIRevise**: 亚像素精化和异常点剔除
+- **POIOutput**: 多格式数据输出（JSON、CSV、XML等）
 
-### 模板参数管理
+#### 图像处理模板组
+基础图像处理与检测：
+- **LEDStripDetection**: LED灯带检测
+- **LedCheck**: LED质量检查
+- **ImageCropping**: 图像裁剪
+
+#### 分析模板组
+数据分析与合规性检测：
+- **JND (最小可察觉差异)**: 视觉差异阈值分析
+- **Compliance (合规性)**: 标准合规性检测
+- **Matching (匹配)**: 图像和数据匹配算法
+
+#### 流程与通用模板
+- **Flow**: 流程模板定义
+- **Jsons**: 基于JSON的通用配置模板（MTF2、FOV2、BinocularFusion等）
+
+### 核心架构
 
 ```csharp
-// 模板参数定义
-public class TemplateParameter
+// ITemplate 基类 - 所有模板的基础
+public class ITemplate
 {
-    public string Name { get; set; }
-    public Type ParameterType { get; set; }
-    public object DefaultValue { get; set; }
-    public object MinValue { get; set; }
-    public object MaxValue { get; set; }
-    public string Description { get; set; }
-    public bool Required { get; set; }
+    public string Name { get; set; }      // 模板名称
+    public string Code { get; set; }      // 模板代码
+    public string Title { get; set; }     // 显示标题
+    
+    public virtual void Load();           // 从数据库加载
+    public virtual void Save();           // 保存到数据库
+    public virtual bool Import();         // 导入模板
+    public virtual void Export(int index); // 导出模板
 }
 
-// 使用模板参数
-var template = await templateManager.LoadTemplateAsync("image_enhance");
-var parameters = template.GetParameters();
-parameters["brightness"].Value = 1.2;
-parameters["contrast"].Value = 0.8;
-await template.ApplyParametersAsync(parameters);
+// ITemplate<T> 泛型模板 - 类型安全的参数管理
+public class ITemplate<T> : ITemplate where T : ParamModBase, new()
+{
+    public ObservableCollection<T> Params { get; set; }
+}
+
+// ParamModBase - 参数模型基类
+public class ParamModBase : ModelBase
+{
+    public ModMasterModel ModMaster { get; set; }
+    public ObservableCollection<ModDetailModel> ModDetailModels { get; set; }
+}
 ```
+
+### 模板管理核心组件
+
+#### TemplateControl - 模板控制中心
+```csharp
+public class TemplateControl
+{
+    // 全局模板注册表
+    public static Dictionary<string, ITemplate> ITemplateNames { get; set; }
+    
+    // 添加模板实例
+    public static void AddITemplateInstance(string code, ITemplate template);
+    
+    // 检查模板名称是否存在
+    public static bool ExitsTemplateName(string templateName);
+}
+```
+
+#### UI组件
+- **TemplateManagerWindow**: 模板管理主界面，支持搜索和浏览
+- **TemplateEditorWindow**: 模板编辑窗口，支持CRUD操作
+- **TemplateCreate**: 模板创建/导入窗口
+
+### 使用示例
+
+#### 创建和使用模板
+
+```csharp
+// 1. 定义参数类
+public class MyAlgorithmParam : ParamModBase
+{
+    public double Threshold 
+    { 
+        get => GetValue(_Threshold); 
+        set => SetProperty(ref _Threshold, value); 
+    }
+    private double _Threshold = 0.5;
+}
+
+// 2. 创建模板类
+public class TemplateMyAlgorithm : ITemplate<MyAlgorithmParam>
+{
+    public override string Title => "我的算法";
+    public string Code => "MyAlg";
+    
+    public void Load()
+    {
+        // 从数据库加载参数
+        var items = Db.Queryable<ModMasterModel>()
+            .Where(a => a.Type == 123)
+            .ToList();
+        
+        Params = new ObservableCollection<MyAlgorithmParam>();
+        foreach (var item in items)
+        {
+            var details = Db.Queryable<ModDetailModel>()
+                .Where(d => d.ModMasterId == item.Id)
+                .ToList();
+            Params.Add(new MyAlgorithmParam(item, details));
+        }
+    }
+}
+
+// 3. 使用模板
+var template = new TemplateMyAlgorithm();
+template.Load();
+var param = template.Params[0];
+param.Threshold = 0.75;
+template.Save();
+```
+
+### 扩展机制
+
+模板系统支持多种扩展方式：
+
+| 扩展点 | 接口/基类 | 用途 |
+|--------|----------|------|
+| 新算法模板 | ITemplate<T> | 添加新的算法参数化模板 |
+| 自定义UI | UserControl | 为模板提供专用编辑界面 |
+| 搜索扩展 | ISearch | 扩展模板搜索功能 |
+| 结果处理 | IResultHandleBase | 处理算法执行结果的显示 |
+
+### 详细文档
+
+完整的Templates系统文档请参阅：
+- [Templates架构设计](../algorithm-engine-templates/templates-architecture/Templates架构设计.md) - 详细的架构设计和组件说明
+- [Templates API参考](../algorithm-engine-templates/templates-architecture/Templates-API参考.md) - 完整的API文档和使用示例
+- [ARVR模板详解](../algorithm-engine-templates/templates-architecture/ARVR模板详解.md) - ARVR算法模板的详细说明
+- [POI模板详解](../algorithm-engine-templates/templates-architecture/POI模板详解.md) - POI处理流程和使用指南
+- [模板管理](../algorithm-engine-templates/template-management/模板管理.md) - 模板管理界面和操作指南
 
 ## 数据库操作
 

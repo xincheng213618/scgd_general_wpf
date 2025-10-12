@@ -140,6 +140,16 @@ export default withMermaid(
             { text: '基于JSON的通用模板', link: '/algorithm-engine-templates/json-based-templates/基于JSON的通用模板' },
             { text: '通用算法模块', link: '/algorithm-engine-templates/common-algorithm-primitives/通用算法模块' },
             {
+              text: 'Templates 架构',
+              collapsed: true,
+              items: [
+                { text: 'Templates架构设计', link: '/algorithm-engine-templates/templates-architecture/Templates架构设计' },
+                { text: 'Templates API参考', link: '/algorithm-engine-templates/templates-architecture/Templates-API参考' },
+                { text: 'ARVR模板详解', link: '/algorithm-engine-templates/templates-architecture/ARVR模板详解' },
+                { text: 'POI模板详解', link: '/algorithm-engine-templates/templates-architecture/POI模板详解' }
+              ]
+            },
+            {
               text: '算法库',
               collapsed: true,
               items: [
