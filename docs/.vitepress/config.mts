@@ -140,6 +140,26 @@ export default withMermaid(
             { text: '基于JSON的通用模板', link: '/algorithm-engine-templates/json-based-templates/基于JSON的通用模板' },
             { text: '通用算法模块', link: '/algorithm-engine-templates/common-algorithm-primitives/通用算法模块' },
             {
+              text: 'Templates 架构',
+              collapsed: true,
+              items: [
+                { text: 'Templates分析总结', link: '/algorithm-engine-templates/templates-architecture/Templates分析总结' },
+                { text: 'Templates架构设计', link: '/algorithm-engine-templates/templates-architecture/Templates架构设计' },
+                { text: 'Templates API参考', link: '/algorithm-engine-templates/templates-architecture/Templates-API参考' },
+                { text: 'ARVR模板详解', link: '/algorithm-engine-templates/templates-architecture/ARVR模板详解' },
+                { text: 'POI模板详解', link: '/algorithm-engine-templates/templates-architecture/POI模板详解' }
+              ]
+            },
+            {
+              text: 'Templates 优化建议',
+              collapsed: true,
+              items: [
+                { text: '上篇：核心架构与设计模式', link: '/algorithm-engine-templates/templates-architecture/Templates优化建议-上篇' },
+                { text: '中篇：模板分类与组织', link: '/algorithm-engine-templates/templates-architecture/Templates优化建议-中篇' },
+                { text: '下篇：性能与扩展性', link: '/algorithm-engine-templates/templates-architecture/Templates优化建议-下篇' }
+              ]
+            },
+            {
               text: '算法库',
               collapsed: true,
               items: [
