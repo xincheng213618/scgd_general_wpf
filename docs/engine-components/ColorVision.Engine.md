@@ -262,44 +262,363 @@ await cameraService.ConfigureAsync(config);
 
 ## 模板系统
 
+模板系统是 ColorVision.Engine 的核心功能之一，提供了强大而灵活的参数化配置能力。通过模板系统，用户可以创建、管理和复用各种算法参数、流程配置和设备设置。
+
+### 核心架构
+
+模板系统采用分层设计，由以下核心组件构成：
+
+```mermaid
+graph TB
+    A[TemplateControl 模板控制中心] --> B[ITemplate 模板接口]
+    B --> C[ITemplate<T> 泛型模板]
+    C --> D[TemplateModel<T> 模板项]
+    D --> E[ParamModBase 参数模型基类]
+    E --> F[ModelBase 模型基类]
+    F --> G[ModDetailModel 详情模型]
+    
+    H[TemplateManagerWindow] --> A
+    I[TemplateEditorWindow] --> B
+    J[TemplateCreate] --> B
+    
+    K[SearchProvider] --> A
+```
+
+#### 核心类说明
+
+1. **ITemplate** - 模板基类
+   - 定义模板的基本操作接口
+   - 管理模板的生命周期（创建、加载、保存、删除）
+   - 提供导入导出功能
+   - 支持模板搜索和查找
+
+2. **ITemplate\<T\>** - 泛型模板类
+   - 继承自 ITemplate
+   - 提供类型安全的模板参数管理
+   - 管理 TemplateModel\<T\> 集合
+   - 实现具体的增删改查操作
+
+3. **TemplateModel\<T\>** - 模板项
+   - 封装单个模板实例
+   - 提供编辑模式支持
+   - 包含重命名、复制、删除命令
+   - 支持上下文菜单操作
+
+4. **ParamModBase** - 参数模型基类
+   - 所有参数类的基类
+   - 包含模板详情集合
+   - 支持参数创建命令
+
+5. **ModelBase** - 模型基类
+   - 管理参数字典
+   - 处理属性变更通知
+   - 支持参数值的序列化和反序列化
+
 ### 模板类型
 
-#### 1. 算法模板
-- **图像处理算法**: 各种图像算法的参数模板
-- **测量算法**: 尺寸、角度、面积测量
-- **检测算法**: 缺陷检测、特征识别
+模板系统支持多种类型的模板，覆盖了从图像处理到流程控制的各个方面：
 
-#### 2. 流程模板
-- **标准流程**: 预定义的标准检测流程
-- **自定义流程**: 用户创建的自定义流程
-- **组合流程**: 多个子流程的组合
+#### 1. ARVR 算法模板
+位于 `Templates/ARVR/` 目录，包含 AR/VR 相关的图像质量分析算法：
 
-#### 3. 设备模板
-- **设备配置**: 设备连接和参数配置
-- **校准模板**: 设备校准参数
-- **操作模板**: 常用操作的参数预设
+- **MTF 模板** (`MTF/`) - 调制传递函数分析
+- **SFR 模板** (`SFR/`) - 空间频率响应测试
+- **FOV 模板** (`FOV/`) - 视场角测量
+- **Distortion 模板** (`Distortion/`) - 畸变分析
+- **Ghost 模板** (`Ghost/`) - 鬼影检测
 
-### 模板参数管理
+#### 2. POI 模板
+位于 `Templates/POI/` 目录，兴趣点分析相关模板：
+
+- **BuildPoi** - POI 构建算法
+- **POIFilters** - POI 滤波器
+- **POIGenCali** - POI 生成和校准
+- **POIRevise** - POI 修正
+- **POIOutput** - POI 输出管理
+- **AlgorithmImp** - 算法实现
+
+#### 3. 图像处理模板
+- **LEDStripDetection** - LED 灯带检测
+- **LedCheck** - LED 检查
+- **ImageCropping** - 图像裁剪
+- **FindLightArea** - 光源区域查找
+
+#### 4. 分析模板
+- **JND** - 最小可察觉差异分析
+- **Compliance** - 合规性检查
+- **Matching** - 图像匹配
+- **Validate** - 验证算法
+
+#### 5. 流程模板
+位于 `Templates/Flow/` 目录：
+- **FlowParam** - 流程参数
+- **TemplateFlow** - 流程模板
+- **FlowEngineManager** - 流程引擎管理器
+
+#### 6. JSON 通用模板
+位于 `Templates/Jsons/` 目录，支持基于 JSON 配置的动态模板：
+
+包含 16 个子模块，如 MTF2, FOV2, Ghost2, HDR, BlackMura 等，提供灵活的参数配置方式。
+
+### 模板管理
+
+#### TemplateControl 模板控制中心
+
+全局单例，负责所有模板实例的注册和管理：
 
 ```csharp
-// 模板参数定义
-public class TemplateParameter
+public class TemplateControl
 {
-    public string Name { get; set; }
-    public Type ParameterType { get; set; }
-    public object DefaultValue { get; set; }
-    public object MinValue { get; set; }
-    public object MaxValue { get; set; }
-    public string Description { get; set; }
-    public bool Required { get; set; }
+    // 所有模板实例的字典，key 为模板代码
+    public static Dictionary<string, ITemplate> ITemplateNames { get; set; }
+    
+    // 注册模板实例
+    public static void AddITemplateInstance(string code, ITemplate template)
+    
+    // 检查模板名称是否存在
+    public static bool ExitsTemplateName(string templateName)
+    
+    // 查找包含指定名称的模板
+    public static ITemplate? FindDuplicateTemplate(string templateName)
+}
+```
+
+#### 模板生命周期
+
+1. **创建模板**
+```csharp
+// 打开创建窗口
+template.OpenCreate();
+
+// 或直接创建
+template.Create("模板名称");
+```
+
+2. **加载模板**
+```csharp
+// 模板初始化时自动加载
+template.Load();
+
+// 获取模板值
+var value = template.GetValue(index);
+var paramValue = template.GetParamValue(index);
+```
+
+3. **保存模板**
+```csharp
+// 保存单个模板
+template.Save();
+
+// 标记需要保存的索引
+template.SetSaveIndex(index);
+```
+
+4. **删除模板**
+```csharp
+template.Delete(index);
+```
+
+#### 导入导出
+
+模板支持导入导出功能，方便模板的备份和迁移：
+
+```csharp
+// 导出模板
+template.Export(index);
+
+// 导入模板
+bool success = template.Import();
+
+// 从文件导入
+bool success = template.ImportFile(filePath);
+
+// 复制模板
+bool success = template.CopyTo(index);
+```
+
+### 模板 UI 组件
+
+#### 1. TemplateManagerWindow - 模板管理器窗口
+
+全局模板管理界面，提供：
+- 模板列表展示
+- 全局搜索功能
+- 快速打开模板编辑器
+
+```csharp
+// 打开模板管理器
+var window = new TemplateManagerWindow();
+window.Show();
+```
+
+#### 2. TemplateEditorWindow - 模板编辑器窗口
+
+编辑特定类型模板的窗口，提供：
+- 模板项列表
+- 创建、删除、复制操作
+- 导入导出功能
+- 搜索和筛选
+- 自定义编辑控件
+
+```csharp
+// 打开模板编辑器
+var editor = new TemplateEditorWindow(template, selectedIndex);
+editor.Show();
+```
+
+#### 3. TemplateCreate - 模板创建窗口
+
+创建新模板或从文件导入，支持：
+- 选择默认模板
+- 从已保存的模板文件创建
+- 模板名称唯一性验证
+
+### 模板搜索
+
+通过 SearchProvider 集成到全局搜索系统：
+
+```csharp
+public class SearchProvider : ISearchProvider
+{
+    public IEnumerable<ISearch> GetSearchItems()
+    {
+        // 返回所有模板名称的搜索项
+        var templateNames = TemplateControl.ITemplateNames.Values
+            .SelectMany(item => item.GetTemplateNames())
+            .Distinct();
+        
+        foreach (var name in templateNames)
+        {
+            yield return new SearchMeta
+            {
+                Type = SearchType.File,
+                Header = name,
+                Command = // 打开模板命令
+            };
+        }
+    }
+}
+```
+
+### 参数管理
+
+#### ParamModBase 参数基类
+
+所有算法参数类继承此基类：
+
+```csharp
+public class ParamModBase : ModelBase
+{
+    public ObservableCollection<ModDetailModel> ModDetailModels { get; set; }
+    public ModMasterModel ModMaster { get; set; }
+    public RelayCommand CreateCommand { get; set; }
+}
+```
+
+#### ModelBase 模型基类
+
+提供参数字典管理和属性变更通知：
+
+```csharp
+public class ModelBase : ParamBase
+{
+    private Dictionary<string, ModDetailModel> parameters;
+    
+    // 支持通过属性名访问参数
+    protected override bool SetProperty<T>(ref T storage, T value, 
+        [CallerMemberName] string propertyName = "")
+    {
+        // 自动更新对应的 ModDetailModel
+        if (parameters.TryGetValue(propertyName, out var model))
+        {
+            model.ValueA = value?.ToString();
+        }
+    }
+}
+```
+
+### 数据持久化
+
+模板数据通过 SqlSugar ORM 存储在数据库中：
+
+- **ModMaster** - 模板主表，存储模板基本信息
+- **ModDetail** - 模板详情表，存储具体参数值
+- **SysDictionaryModDetai** - 系统字典，定义参数结构
+
+### 使用示例
+
+#### 创建自定义模板
+
+```csharp
+// 1. 定义参数类
+public class MyAlgorithmParam : ParamModBase
+{
+    public double Threshold { get; set; }
+    public int Iterations { get; set; }
+    
+    public MyAlgorithmParam(ModMasterModel master, List<ModDetailModel> details)
+        : base(master, details)
+    {
+    }
 }
 
-// 使用模板参数
-var template = await templateManager.LoadTemplateAsync("image_enhance");
-var parameters = template.GetParameters();
-parameters["brightness"].Value = 1.2;
-parameters["contrast"].Value = 0.8;
-await template.ApplyParametersAsync(parameters);
+// 2. 创建模板类
+public class TemplateMyAlgorithm : ITemplate<MyAlgorithmParam>
+{
+    public TemplateMyAlgorithm()
+    {
+        Title = "我的算法";
+        Code = "MyAlgorithm";
+        TemplateDicId = 123; // 对应的字典ID
+    }
+}
+
+// 3. 使用模板
+var template = new TemplateMyAlgorithm();
+template.Load();
+
+// 获取参数
+var param = (MyAlgorithmParam)template.GetParamValue(0);
+Console.WriteLine($"Threshold: {param.Threshold}");
+```
+
+### 扩展点
+
+模板系统提供了多个扩展点：
+
+1. **自定义用户控件**
+```csharp
+public override UserControl GetUserControl()
+{
+    return new MyCustomControl();
+}
+
+public override void SetUserControlDataContext(int index)
+{
+    var control = GetUserControl();
+    control.DataContext = GetParamValue(index);
+}
+```
+
+2. **自定义创建逻辑**
+```csharp
+public override void Create(string templateName)
+{
+    // 自定义创建逻辑
+}
+```
+
+3. **自定义导入导出**
+```csharp
+public override bool ImportFile(string filePath)
+{
+    // 自定义导入逻辑
+}
+
+public override void Export(int index)
+{
+    // 自定义导出逻辑
+}
 ```
 
 ## 数据库操作
