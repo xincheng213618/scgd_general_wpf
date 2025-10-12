@@ -137,6 +137,16 @@ export default withMermaid(
             },
             { text: '算法引擎与模板', link: '/algorithm-engine-templates/算法引擎与模板' },
             { text: '模板管理', link: '/algorithm-engine-templates/template-management/模板管理' },
+            {
+              text: 'Templates 模板系统',
+              collapsed: true,
+              items: [
+                { text: '模板系统架构', link: '/algorithm-engine-templates/template-architecture' },
+                { text: '优化建议(上)-核心架构', link: '/algorithm-engine-templates/template-optimization-top' },
+                { text: '优化建议(中)-模板实现', link: '/algorithm-engine-templates/template-optimization-middle' },
+                { text: '优化建议(下)-代码质量', link: '/algorithm-engine-templates/template-optimization-bottom' }
+              ]
+            },
             { text: '基于JSON的通用模板', link: '/algorithm-engine-templates/json-based-templates/基于JSON的通用模板' },
             { text: '通用算法模块', link: '/algorithm-engine-templates/common-algorithm-primitives/通用算法模块' },
             {
