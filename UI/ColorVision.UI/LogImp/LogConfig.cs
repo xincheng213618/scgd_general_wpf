@@ -12,7 +12,9 @@ using System.Windows.Data;
 
 namespace ColorVision.UI
 {
-
+    /// <summary>
+    /// 类型级别缓存辅助类，用于缓存反射扫描结果
+    /// </summary>
     public static class TypeLevelCacheHelper
     {
         // 类型全局缓存
@@ -21,6 +23,9 @@ namespace ColorVision.UI
         /// <summary>
         /// 获取指定类型的所有静态属性和字段（类型为 TLevel），并缓存结果
         /// </summary>
+        /// <typeparam name="TLevel">目标级别类型</typeparam>
+        /// <param name="type">要扫描的类型</param>
+        /// <returns>类型为 TLevel 的所有静态成员列表</returns>
         public static IReadOnlyList<TLevel> GetAllLevels<TLevel>(Type type)
         {
             if (_typeLevelCache.TryGetValue(type, out var cached))
@@ -63,21 +68,40 @@ namespace ColorVision.UI
         }
     }
 
+    /// <summary>
+    /// 日志配置管理类，管理日志系统的各项配置
+    /// </summary>
     public class LogConfig: ViewModelBase, IConfig, IConfigSettingProvider
     {
+        /// <summary>
+        /// 获取 LogConfig 单例实例
+        /// </summary>
         public static LogConfig Instance => ConfigService.Instance.GetRequiredService<LogConfig>();
 
         [JsonIgnore]
         public RelayCommand EditCommand { get; set; }
+        
         public LogConfig()
         {
             EditCommand = new RelayCommand(a => new PropertyEditorWindow(this) {  Owner =Application.Current.GetActiveWindow(), WindowStartupLocation =WindowStartupLocation.CenterOwner }.ShowDialog());
         }
+        
+        /// <summary>
+        /// 所有可用的日志级别名称列表
+        /// </summary>
         public static readonly List<string> LogLevels =  GetAllLevels().Select(l => l.Name).ToList();
+        
+        /// <summary>
+        /// 获取所有日志级别
+        /// </summary>
+        /// <returns>日志级别只读列表</returns>
         public static IReadOnlyList<Level> GetAllLevels() => TypeLevelCacheHelper.GetAllLevels<Level>(typeof(Level));
 
         private Level _LogLevel = Level.Info;
 
+        /// <summary>
+        /// 当前日志级别
+        /// </summary>
         [JsonIgnore]
         [PropertyEditorTypeAttribute(typeof(LevelPropertiesEditor))]
         public Level LogLevel
@@ -90,6 +114,9 @@ namespace ColorVision.UI
             }
         }
 
+        /// <summary>
+        /// 日志级别字符串表示（用于序列化）
+        /// </summary>
         public string LogLevelString { get => LogLevel.ToString();
             set 
             {
@@ -105,6 +132,9 @@ namespace ColorVision.UI
             }
         }
 
+        /// <summary>
+        /// 应用日志级别设置到 log4net
+        /// </summary>
         public void SetLog()
         {
             var hierarchy = (Hierarchy)LogManager.GetRepository();
@@ -112,25 +142,45 @@ namespace ColorVision.UI
             log4net.Config.BasicConfigurator.Configure(hierarchy);
         }
 
+        /// <summary>
+        /// 是否自动滚动到日志末尾
+        /// </summary>
         public bool AutoScrollToEnd { get => _AutoScrollToEnd; set { _AutoScrollToEnd = value; OnPropertyChanged(); } }
         private bool _AutoScrollToEnd = true;
 
+        /// <summary>
+        /// 是否自动刷新日志显示
+        /// </summary>
         public bool AutoRefresh { get => _AutoRefresh; set { _AutoRefresh = value; OnPropertyChanged(); } }
         private bool _AutoRefresh;
 
+        /// <summary>
+        /// 日志刷新间隔，单位：毫秒
+        /// </summary>
         public int LogFlushIntervalMs { get => _LogFlushIntervalMs; set { _LogFlushIntervalMs = value; OnPropertyChanged(); } }
         private int _LogFlushIntervalMs;
 
-
+        /// <summary>
+        /// 日志加载策略
+        /// </summary>
         public LogLoadState LogLoadState { get => _LogLoadState; set { _LogLoadState = value; OnPropertyChanged(); } }
         private LogLoadState _LogLoadState = LogLoadState.SinceStartup;
 
+        /// <summary>
+        /// 是否倒序显示日志（最新日志在顶部）
+        /// </summary>
         public bool LogReserve { get => _LogReserve; set { _LogReserve = value; OnPropertyChanged(); } }
         private bool _LogReserve;
 
+        /// <summary>
+        /// 文本换行模式
+        /// </summary>
         public TextWrapping TextWrapping { get => _TextWrapping; set { _TextWrapping = value; OnPropertyChanged(); } }
         private TextWrapping _TextWrapping = TextWrapping.NoWrap;
 
+        /// <summary>
+        /// 最大字符数限制，-1 表示无限制
+        /// </summary>
         public int MaxChars { get => _MaxChars; set { _MaxChars = value; OnPropertyChanged(); } }
         private int _MaxChars = -1;
 
