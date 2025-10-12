@@ -20,6 +20,7 @@ namespace ColorVision
     public partial class App
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(App));
+
         private static Mutex mutex;
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]

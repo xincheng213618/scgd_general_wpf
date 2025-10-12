@@ -471,7 +471,7 @@
             <im:ImageView x:Name="ImageView"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"   Background="{DynamicResource RegionBrush}"  BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" />
             <GridSplitter Grid.Row="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
             <Grid x:Name="FocusPointGrid" Visibility="Visible" Grid.Row="1" Height="300" >
-                <ListView  x:Name="ListView1"  Style="{StaticResource ListView.Small}" ScrollViewer.HorizontalScrollBarVisibility="Visible" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
+                <ListView  x:Name="ListView1"  Style="{StaticResource ListView.Small}" ScrollViewer.HorizontalScrollBarVisibility="Visible" ContextMenuOpening="ListView1_ContextMenuOpening" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
                     <ListView.Resources>
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
 
