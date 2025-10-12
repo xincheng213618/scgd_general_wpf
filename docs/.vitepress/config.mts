@@ -150,6 +150,15 @@ export default withMermaid(
               ]
             },
             {
+              text: 'Templates 优化建议',
+              collapsed: true,
+              items: [
+                { text: '上篇：核心架构与设计模式', link: '/algorithm-engine-templates/templates-architecture/Templates优化建议-上篇' },
+                { text: '中篇：模板分类与组织', link: '/algorithm-engine-templates/templates-architecture/Templates优化建议-中篇' },
+                { text: '下篇：性能与扩展性', link: '/algorithm-engine-templates/templates-architecture/Templates优化建议-下篇' }
+              ]
+            },
+            {
               text: '算法库',
               collapsed: true,
               items: [
