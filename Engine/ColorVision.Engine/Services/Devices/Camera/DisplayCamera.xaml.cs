@@ -70,7 +70,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
     /// <summary>
     /// 根据服务的MQTT相机
     /// </summary>
-    public partial class DisplayCamera : UserControl,IDisPlayControl
+    public partial class DisplayCamera : UserControl, IDisPlayControl, IControlStatusProvider
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayCamera));
         public DeviceCamera Device { get; set; }
@@ -724,6 +724,54 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void NDport_Click(object sender, RoutedEventArgs e)
         {
             ServicesHelper.SendCommandEx(sender, () => DService.SetNDPort());
+        }
+
+        /// <summary>
+        /// 实现 IControlStatusProvider 接口，提供控件状态信息
+        /// </summary>
+        public IEnumerable<KeyValuePair<string, string>> GetStatusInfo()
+        {
+            var statusInfo = new List<KeyValuePair<string, string>>();
+
+            // 相机名称
+            statusInfo.Add(new KeyValuePair<string, string>(Properties.Resources.Name, Device.Config.Name));
+
+            // 如果有图像，显示图像相关信息
+            if (View?.ImageView?.ViewBitmapSource != null)
+            {
+                var bitmap = View.ImageView.ViewBitmapSource;
+                if (bitmap is System.Windows.Media.Imaging.BitmapSource bitmapSource)
+                {
+                    // 图像尺寸
+                    statusInfo.Add(new KeyValuePair<string, string>(Properties.Resources.Size, $"{bitmapSource.PixelWidth}×{bitmapSource.PixelHeight}"));
+                    
+                    // 位深度（比特率）
+                    statusInfo.Add(new KeyValuePair<string, string>(Properties.Resources.BitDepth, $"{bitmapSource.Format.BitsPerPixel} bpp"));
+                    
+                    // 通道信息
+                    int channels = bitmapSource.Format.BitsPerPixel / 8;
+                    if (bitmapSource.Format == System.Windows.Media.PixelFormats.Rgb24 || 
+                        bitmapSource.Format == System.Windows.Media.PixelFormats.Bgr24)
+                        channels = 3;
+                    else if (bitmapSource.Format == System.Windows.Media.PixelFormats.Rgba64 || 
+                             bitmapSource.Format == System.Windows.Media.PixelFormats.Bgra32 ||
+                             bitmapSource.Format == System.Windows.Media.PixelFormats.Pbgra32)
+                        channels = 4;
+                    else if (bitmapSource.Format == System.Windows.Media.PixelFormats.Gray8 || 
+                             bitmapSource.Format == System.Windows.Media.PixelFormats.Gray16)
+                        channels = 1;
+                    
+                    statusInfo.Add(new KeyValuePair<string, string>(Properties.Resources.Channels, channels.ToString()));
+                }
+
+                // 文件路径
+                if (!string.IsNullOrEmpty(View.ImageView.Config.FilePath))
+                {
+                    statusInfo.Add(new KeyValuePair<string, string>(Properties.Resources.File, System.IO.Path.GetFileName(View.ImageView.Config.FilePath)));
+                }
+            }
+
+            return statusInfo;
         }
     }
 }
