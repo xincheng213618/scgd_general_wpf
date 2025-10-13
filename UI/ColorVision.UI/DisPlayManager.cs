@@ -107,7 +107,7 @@ namespace ColorVision.UI
                 UpdateDisPlayBorder();
                 if (disPlayControl.IsSelected)
                 {
-                    DisPlayManager.GetInstance().SelectedControlChanged?.Invoke(DisPlayManager.GetInstance(), disPlayControl);
+                    DisPlayManager.GetInstance().RaiseSelectedControlChanged(disPlayControl);
                 }
             };
             ThemeManager.Current.CurrentUIThemeChanged += (s) => UpdateDisPlayBorder();
@@ -157,6 +157,14 @@ namespace ColorVision.UI
         /// 当控件选中状态改变时触发，用于更新状态栏信息
         /// </summary>
         public event EventHandler<IDisPlayControl> SelectedControlChanged;
+
+        /// <summary>
+        /// 触发 SelectedControlChanged 事件
+        /// </summary>
+        internal void RaiseSelectedControlChanged(IDisPlayControl control)
+        {
+            SelectedControlChanged?.Invoke(this, control);
+        }
 
         private DisPlayManager()
         {
