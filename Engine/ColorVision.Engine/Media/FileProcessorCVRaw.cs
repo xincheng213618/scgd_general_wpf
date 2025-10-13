@@ -78,7 +78,7 @@ namespace ColorVision.Engine.Impl.SolutionImpl
 
             imageView.ImageShow.ImageInitialized += (s, e) =>
             {
-                window.Title = $"{filePath} - {imageView.ImageShow.Source.Width}x{imageView.ImageShow.Source.Height}";
+                window.Title = $"{imageView.Config.FilePath} - {imageView.ImageShow.Source.Width}x{imageView.ImageShow.Source.Height} {imageView.Config.GetProperties<int>("Channel")}";
             };
 
             if (Application.Current.MainWindow != window)

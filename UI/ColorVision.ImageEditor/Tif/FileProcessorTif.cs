@@ -26,7 +26,7 @@ namespace ColorVision.ImageEditor.Tif
 
             imageView.ImageShow.ImageInitialized += (s, e) =>
             {
-                window.Title = filePath;
+                window.Title = $"{imageView.Config.FilePath} - {imageView.ImageShow.Source.Width}x{imageView.ImageShow.Source.Height} {imageView.Config.GetProperties<int>("Channel")}";
             };
             window.ApplyCaption();
             if (Application.Current.MainWindow != window)
