@@ -120,6 +120,9 @@ namespace ColorVision
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) => ViewConfig.Instance.ViewMaxCount = e;
 
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);
+            
+            // 订阅控件选择事件以更新状态栏
+            InitializeStatusBarInfoUpdater();
 
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
             
@@ -208,6 +211,120 @@ namespace ColorVision
             }
         }
 
+
+        /// <summary>
+        /// 初始化状态栏信息更新器，订阅控件选择事件
+        /// </summary>
+        private void InitializeStatusBarInfoUpdater()
+        {
+            // 订阅DisPlayManager中的控件集合变化事件
+            DisPlayManager.GetInstance().IDisPlayControls.CollectionChanged += (s, e) =>
+            {
+                if (e.NewItems != null)
+                {
+                    foreach (IDisPlayControl control in e.NewItems)
+                    {
+                        // 订阅新控件的选择事件
+                        control.Selected += OnControlSelected;
+                        control.Unselected += OnControlUnselected;
+                    }
+                }
+                if (e.OldItems != null)
+                {
+                    foreach (IDisPlayControl control in e.OldItems)
+                    {
+                        // 取消订阅移除控件的选择事件
+                        control.Selected -= OnControlSelected;
+                        control.Unselected -= OnControlUnselected;
+                    }
+                }
+            };
+
+            // 订阅已存在的控件
+            foreach (var control in DisPlayManager.GetInstance().IDisPlayControls)
+            {
+                control.Selected += OnControlSelected;
+                control.Unselected += OnControlUnselected;
+            }
+        }
+
+        /// <summary>
+        /// 当控件被选中时更新状态栏信息
+        /// </summary>
+        private void OnControlSelected(object sender, RoutedEventArgs e)
+        {
+            if (sender is IStatusBarInfoProvider infoProvider)
+            {
+                UpdateStatusBarInfo(infoProvider);
+            }
+            else
+            {
+                // 如果控件不提供状态信息，清空状态栏
+                ClearStatusBarInfo();
+            }
+        }
+
+        /// <summary>
+        /// 当控件取消选中时清空状态栏信息
+        /// </summary>
+        private void OnControlUnselected(object sender, RoutedEventArgs e)
+        {
+            // 可选：在这里不清空，等待新控件选中时更新
+            // ClearStatusBarInfo();
+        }
+
+        /// <summary>
+        /// 更新状态栏显示的信息
+        /// </summary>
+        private void UpdateStatusBarInfo(IStatusBarInfoProvider infoProvider)
+        {
+            if (StatusBarInfoDocker == null) return;
+
+            StatusBarInfoDocker.Children.Clear();
+
+            var statusBarInfo = infoProvider.GetStatusBarInfo();
+            if (statusBarInfo == null) return;
+
+            // 按Order排序
+            var sortedInfo = statusBarInfo.OrderBy(item => item.Order).ToList();
+
+            foreach (var item in sortedInfo)
+            {
+                var textBlock = new TextBlock
+                {
+                    Margin = new Thickness(10, 0, 0, 0),
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+
+                // 绑定DisplayText属性
+                var binding = new Binding(nameof(StatusBarInfoItem.DisplayText))
+                {
+                    Source = item,
+                    Mode = BindingMode.OneWay
+                };
+                textBlock.SetBinding(TextBlock.TextProperty, binding);
+
+                // 绑定Visibility属性
+                var visibilityBinding = new Binding(nameof(StatusBarInfoItem.IsVisible))
+                {
+                    Source = item,
+                    Mode = BindingMode.OneWay,
+                    Converter = (IValueConverter)Application.Current.FindResource("bool2VisibilityConverter")
+                };
+                textBlock.SetBinding(UIElement.VisibilityProperty, visibilityBinding);
+
+                StatusBarInfoDocker.Children.Add(textBlock);
+            }
+        }
+
+        /// <summary>
+        /// 清空状态栏信息
+        /// </summary>
+        private void ClearStatusBarInfo()
+        {
+            if (StatusBarInfoDocker == null) return;
+            StatusBarInfoDocker.Children.Clear();
+        }
 
         private void ViewGrid_Click(object sender, RoutedEventArgs e)
         {

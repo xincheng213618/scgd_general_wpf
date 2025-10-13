@@ -124,7 +124,9 @@
                 </ItemsPanelTemplate>
             </StatusBar.ItemsPanel>
             <StatusBarItem Grid.Column="0">
-
+                <StackPanel x:Name="StatusBarInfoDocker" Orientation="Horizontal">
+                    <!-- Dynamic control-specific status info will be displayed here -->
+                </StackPanel>
             </StatusBarItem>
             <StatusBarItem Grid.Column="1">
                 <StackPanel x:Name="StatusBarTextDocker" Orientation="Horizontal">

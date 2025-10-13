@@ -3,6 +3,8 @@ using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.UI;
 using CVCommCore;
 using System;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -12,7 +14,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
     /// <summary>
     /// DisplaySpectrum.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplaySpectrum : UserControl, IDisPlayControl
+    public partial class DisplaySpectrum : UserControl, IDisPlayControl, IStatusBarInfoProvider
     {
         public DeviceSpectrum Device { get; set; }
         public MQTTSpectrum SpectrumService { get => Device.DService; }
@@ -182,5 +184,112 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             SpectrumService.ShutterDoclose();
         }
+
+        #region IStatusBarInfoProvider Implementation
+
+        private ObservableCollection<StatusBarInfoItem> _statusBarInfo;
+
+        /// <summary>
+        /// 获取状态栏信息
+        /// 示例实现：显示设备名称、状态和通道信息
+        /// </summary>
+        public ObservableCollection<StatusBarInfoItem> GetStatusBarInfo()
+        {
+            if (_statusBarInfo == null)
+            {
+                _statusBarInfo = new ObservableCollection<StatusBarInfoItem>
+                {
+                    new StatusBarInfoItem
+                    {
+                        Key = "DeviceName",
+                        Label = "设备:",
+                        Value = Device.Config.Name,
+                        Order = 0,
+                        IsVisible = true
+                    },
+                    new StatusBarInfoItem
+                    {
+                        Key = "DeviceStatus",
+                        Label = "状态:",
+                        Value = GetStatusText(SpectrumService.DeviceStatus),
+                        Order = 1,
+                        IsVisible = true
+                    },
+                    new StatusBarInfoItem
+                    {
+                        Key = "IntegrationTime",
+                        Label = "积分时间:",
+                        Value = $"{SpectrumSliderIntTime?.Value ?? 0:F2}ms",
+                        Order = 2,
+                        IsVisible = true
+                    },
+                    new StatusBarInfoItem
+                    {
+                        Key = "AverageNumber",
+                        Label = "平均次数:",
+                        Value = $"{SpectrumSliderAveNum?.Value ?? 0}",
+                        Order = 3,
+                        IsVisible = true
+                    }
+                };
+
+                // 订阅设备状态变化事件
+                SpectrumService.DeviceStatusChanged += (status) =>
+                {
+                    var statusItem = _statusBarInfo.FirstOrDefault(item => item.Key == "DeviceStatus");
+                    if (statusItem != null)
+                    {
+                        statusItem.Value = GetStatusText(status);
+                    }
+                };
+
+                // 订阅滑块值变化事件
+                if (SpectrumSliderIntTime != null)
+                {
+                    SpectrumSliderIntTime.ValueChanged += (s, e) =>
+                    {
+                        var item = _statusBarInfo.FirstOrDefault(i => i.Key == "IntegrationTime");
+                        if (item != null)
+                        {
+                            item.Value = $"{e.NewValue:F2}ms";
+                        }
+                    };
+                }
+
+                if (SpectrumSliderAveNum != null)
+                {
+                    SpectrumSliderAveNum.ValueChanged += (s, e) =>
+                    {
+                        var item = _statusBarInfo.FirstOrDefault(i => i.Key == "AverageNumber");
+                        if (item != null)
+                        {
+                            item.Value = $"{e.NewValue}";
+                        }
+                    };
+                }
+            }
+
+            return _statusBarInfo;
+        }
+
+        /// <summary>
+        /// 将设备状态转换为可读文本
+        /// </summary>
+        private string GetStatusText(DeviceStatusType status)
+        {
+            return status switch
+            {
+                DeviceStatusType.Unknown => "未知",
+                DeviceStatusType.Unauthorized => "未授权",
+                DeviceStatusType.OffLine => "离线",
+                DeviceStatusType.UnInit => "未初始化",
+                DeviceStatusType.Closed => "已关闭",
+                DeviceStatusType.Opened => "已打开",
+                DeviceStatusType.SP_Continuous_Mode => "连续模式",
+                _ => status.ToString()
+            };
+        }
+
+        #endregion
     }
 }
