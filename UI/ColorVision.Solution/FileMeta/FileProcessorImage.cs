@@ -2,6 +2,7 @@
 using ColorVision.UI;
 using System.ComponentModel;
 using System.Windows;
+using WpfHexaEditor.Core.MethodExtention;
 
 
 namespace ColorVision.Solution.FileMeta
@@ -11,30 +12,25 @@ namespace ColorVision.Solution.FileMeta
     {
         public int Order => 1;
 
-        public bool CanProcess(string filePath)
-        {
-            return true;
-        }
         public void Export(string filePath)
         {
 
-        }
-        public bool CanExport(string filePath)
-        {
-            return true;
         }
 
         public void Process(string filePath)
         {
             ImageView imageView = new();
-            Window window = new() { };
+            Window window = new() { Title =filePath };
             if (Application.Current.MainWindow != window)
             {
                 window.Owner = Application.Current.GetActiveWindow();
             }
             window.Content = imageView;
             imageView.OpenImage(filePath);
-
+            imageView.ImageShow.ImageInitialized += (s, e) =>
+            {
+                window.Title = $"{filePath} - {imageView.ImageShow.Source.Width}x{imageView.ImageShow.Source.Height}";
+            };
             window.Show();
         }
     }

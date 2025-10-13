@@ -32,6 +32,7 @@ namespace ColorVision.ImageEditor
         public ImageViewConfig Config => ImageViewModel.EditorContext.Config;
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.DrawingVisualLists;
+
         public event EventHandler ClearImageEventHandler;
 
         public ImageView()
