@@ -39,6 +39,10 @@ public interface IPlugin
 - 添加自定义算法
 - 扩展图像处理功能
 
+### 控件状态信息接口
+- [IControlStatusProvider](./IControlStatusProvider.md) - 控件状态信息提供接口
+- 在控件选中时显示状态信息到状态栏
+
 ## 自定义组件
 
 ### UI 组件扩展
