@@ -369,7 +369,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <ListView  x:Name="ListView1"  Style="{StaticResource ListView.Small}" ScrollViewer.HorizontalScrollBarVisibility="Visible" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
+                <ListView  x:Name="ListView1"  Style="{StaticResource ListView.Small}" ScrollViewer.HorizontalScrollBarVisibility="Visible" ContextMenuOpening="ListView1_ContextMenuOpening" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
                     <ListView.Resources>
                         <ContextMenu x:Key="ContextMenuItem">
                             <MenuItem Header="{x:Static properties:Resources.Delete}"  Click="MenuItem_DrawingVisual_Delete" Tag="{Binding .}"  />
@@ -419,9 +419,8 @@
                         </DataTemplate>
                     </ListView.Resources>
                     <ListView.ItemContainerStyle>
-                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                            <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
-                        </Style>
+                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}"/>
+
                     </ListView.ItemContainerStyle>
                     <ListView.View>
                         <GridView >

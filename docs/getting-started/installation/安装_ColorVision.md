@@ -118,14 +118,14 @@ ColorVision 的安装架构主要由以下部分组成：
   - `Utils.cs`、`VideoPlayer.cs`、`ViewModelBase.cs`：辅助功能和基础类
 
 ```xml
-<PropertyGroup>
-  <OutputType>WinExe</OutputType>
-  <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-  <AssemblyOriginatorKeyFile>$(SolutionDir)ColorVision.snk</AssemblyOriginatorKeyFile>
-  <PublishUrl>publish\</PublishUrl>
-  <Install>true</Install>
-  <InstallFrom>Disk</InstallFrom>
-  <BootstrapperEnabled>true</BootstrapperEnabled>
+\<PropertyGroup\>
+  \<OutputType\>WinExe</OutputType>
+  \<TargetFrameworkVersion\>v4.8</TargetFrameworkVersion>
+  \<AssemblyOriginatorKeyFile\>$(SolutionDir)ColorVision.snk</AssemblyOriginatorKeyFile>
+  \<PublishUrl\>publish\</PublishUrl>
+  \<Install\>true</Install>
+  \<InstallFrom\>Disk</InstallFrom>
+  \<BootstrapperEnabled\>true</BootstrapperEnabled>
 </PropertyGroup>
 ```
 

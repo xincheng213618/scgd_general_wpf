@@ -1,0 +1,360 @@
+/**
+ * Custom ColorVision VitePress Theme
+ * Adapted from Docsify custom styles
+ */
+
+/**
+ * Colors
+ * -------------------------------------------------------------------------- */
+
+:root {
+  /* Brand colors */
+  --vp-c-brand-1: #0969da;
+  --vp-c-brand-2: #0550ae;
+  --vp-c-brand-3: #033d8b;
+  --vp-c-brand-soft: #dbeafe;
+  
+  /* Custom colors */
+  --cv-text-primary: #24292f;
+  --cv-text-secondary: #656d76;
+  --cv-border: #d0d7de;
+  --cv-bg: #ffffff;
+  --cv-code-bg: #f6f8fa;
+}
+
+.dark {
+  --cv-text-primary: #e6edf3;
+  --cv-text-secondary: #8b949e;
+  --cv-border: #30363d;
+  --cv-bg: #0d1117;
+  --cv-code-bg: #161b22;
+}
+
+/**
+ * Component: Button
+ * -------------------------------------------------------------------------- */
+
+:root {
+  --vp-button-brand-border: transparent;
+  --vp-button-brand-text: var(--vp-c-white);
+  --vp-button-brand-bg: var(--vp-c-brand-1);
+  --vp-button-brand-hover-border: transparent;
+  --vp-button-brand-hover-text: var(--vp-c-white);
+  --vp-button-brand-hover-bg: var(--vp-c-brand-2);
+  --vp-button-brand-active-border: transparent;
+  --vp-button-brand-active-text: var(--vp-c-white);
+  --vp-button-brand-active-bg: var(--vp-c-brand-2);
+}
+
+/**
+ * Component: Home
+ * -------------------------------------------------------------------------- */
+
+:root {
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: -webkit-linear-gradient(
+    120deg,
+    #0969da 30%,
+    #0550ae
+  );
+
+  --vp-home-hero-image-background-image: linear-gradient(
+    -45deg,
+    #dbeafe 50%,
+    #bfdbfe 50%
+  );
+  --vp-home-hero-image-filter: blur(44px);
+}
+
+@media (min-width: 640px) {
+  :root {
+    --vp-home-hero-image-filter: blur(56px);
+  }
+}
+
+@media (min-width: 960px) {
+  :root {
+    --vp-home-hero-image-filter: blur(68px);
+  }
+}
+
+/**
+ * Component: Custom Block
+ * -------------------------------------------------------------------------- */
+
+:root {
+  --vp-custom-block-tip-border: transparent;
+  --vp-custom-block-tip-text: var(--cv-text-primary);
+  --vp-custom-block-tip-bg: var(--cv-code-bg);
+  --vp-custom-block-tip-code-bg: var(--cv-code-bg);
+}
+
+/**
+ * Component: Algolia
+ * -------------------------------------------------------------------------- */
+
+.DocSearch {
+  --docsearch-primary-color: var(--vp-c-brand-1) !important;
+}
+
+/**
+ * Custom Enhancements
+ * -------------------------------------------------------------------------- */
+
+/* Link styles */
+.vp-doc a {
+  color: var(--vp-c-brand-1);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.vp-doc a:hover {
+  color: var(--vp-c-brand-2);
+  text-decoration: underline;
+}
+
+/* Code block enhancements */
+.vp-doc div[class*='language-'] {
+  border-radius: 8px;
+  border: 1px solid var(--cv-border);
+}
+
+.vp-doc div[class*='language-'] code {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Mermaid diagram styling */
+.vp-doc .mermaid {
+  text-align: center;
+  margin: 1.5rem 0;
+}
+
+.vp-doc .mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Table styling */
+.vp-doc table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.vp-doc table th,
+.vp-doc table td {
+  border: 1px solid var(--cv-border);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.vp-doc table th {
+  background-color: var(--cv-code-bg);
+  font-weight: 600;
+}
+
+/* Blockquote styling */
+.vp-doc blockquote {
+  border-left: 4px solid var(--vp-c-brand-1);
+  margin: 1rem 0;
+  padding: 0.5rem 1rem;
+  background-color: var(--cv-code-bg);
+  border-radius: 0 4px 4px 0;
+}
+
+.vp-doc blockquote p {
+  margin: 0.5rem 0;
+  color: var(--cv-text-secondary);
+}
+
+/* Sidebar enhancements */
+.VPSidebar {
+  border-right: 1px solid var(--cv-border);
+}
+
+.dark .VPSidebar {
+  background-color: var(--cv-code-bg);
+}
+
+/* Sidebar navigation */
+.VPSidebarItem.level-0 .text {
+  font-weight: 600;
+}
+
+.VPSidebarItem.is-active > .item > .link > .text {
+  color: var(--vp-c-brand-1);
+  font-weight: 600;
+}
+
+.VPSidebarItem.has-active > .item > .link > .text {
+  color: var(--vp-c-brand-1);
+}
+
+/* Improve section spacing in sidebar */
+.VPSidebarItem + .VPSidebarItem {
+  margin-top: 0.5rem;
+}
+
+/* Search box enhancement */
+.VPNavBarSearch {
+  border-radius: 6px;
+}
+
+/* Badge styling for sidebar */
+.vp-doc .badge {
+  background-color: var(--vp-c-brand-1);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  margin-left: 6px;
+  font-weight: 500;
+}
+
+/* Mobile responsive adjustments */
+@media screen and (max-width: 768px) {
+  .vp-doc div[class*='language-'] {
+    padding: 0.75rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Custom hero section for home page */
+.VPHome .VPHero .name {
+  font-size: 3rem;
+  font-weight: 700;
+  background: var(--vp-home-hero-name-background);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: var(--vp-home-hero-name-color);
+}
+
+.VPHome .VPHero .text {
+  color: var(--cv-text-secondary);
+  font-size: 1.1rem;
+  margin: 1rem 0 2rem 0;
+}
+
+/* Copy code button enhancement */
+.vp-code-group .tabs {
+  border-radius: 8px 8px 0 0;
+}
+
+/* Better spacing for document content */
+.vp-doc h1,
+.vp-doc h2,
+.vp-doc h3 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.vp-doc h1:first-child,
+.vp-doc h2:first-child,
+.vp-doc h3:first-child {
+  margin-top: 0;
+}
+
+/* Improve outline (TOC) visibility */
+.VPDocAsideOutline .outline-marker {
+  background-color: var(--vp-c-brand-1);
+}
+
+/* Footer customization */
+.VPFooter {
+  border-top: 1px solid var(--cv-border);
+}
+
+/* Nav bar customization */
+.VPNavBar {
+  border-bottom: 1px solid var(--cv-border);
+}
+
+/* Enhance sidebar group titles */
+.VPSidebarItem.level-0.has-active > .item > .text,
+.VPSidebarItem.level-0.is-active > .item > .link > .text {
+  color: var(--vp-c-brand-1);
+}
+
+/* Better code inline styling */
+.vp-doc :not(pre) > code {
+  background-color: var(--cv-code-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  border: 1px solid var(--cv-border);
+}
+
+.vp-doc pre code {
+  background-color: transparent;
+  border: none;
+  padding: 0;
+}
+
+/* Improve warning/tip/danger blocks */
+.vp-doc .custom-block {
+  border-radius: 8px;
+  border-left-width: 4px;
+}
+
+.vp-doc .custom-block.tip {
+  border-left-color: var(--vp-c-brand-1);
+}
+
+/* Enhance external link icon */
+.vp-doc a.vp-external-link-icon {
+  color: var(--vp-c-brand-1);
+}
+
+/* Add hover effect to sidebar items */
+.VPSidebarItem .link:hover {
+  color: var(--vp-c-brand-1);
+}
+
+/* Improve image display in docs */
+.vp-doc img {
+  border-radius: 8px;
+  margin: 1rem 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dark .vp-doc img {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Add animation to buttons */
+.VPButton {
+  transition: all 0.2s ease;
+}
+
+.VPButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(9, 105, 218, 0.25);
+}
+
+/* Improve prev/next page navigation */
+.pager-link {
+  border: 1px solid var(--cv-border);
+  border-radius: 8px;
+  padding: 1rem;
+  transition: all 0.2s ease;
+}
+
+.pager-link:hover {
+  border-color: var(--vp-c-brand-1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(9, 105, 218, 0.15);
+}
+
+/* Badge in content */
+.vp-doc .badge.tip {
+  background-color: var(--vp-c-brand-1);
+}
+
+.vp-doc .badge.warning {
+  background-color: #d97706;
+}
+
+.vp-doc .badge.danger {
+  background-color: #dc2626;
+}

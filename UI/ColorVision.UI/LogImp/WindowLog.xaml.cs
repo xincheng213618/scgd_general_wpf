@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
+using ColorVision.UI.LogImp;
 using log4net;
 using log4net.Appender;
 using log4net.Core;
@@ -111,10 +112,10 @@ namespace ColorVision.UI
             this.ApplyCaption();
             this.SizeChanged += (s, e) =>
             {
-                ButtonAutoScrollToEnd.Visibility = this.ActualWidth > 600 ? Visibility.Visible : Visibility.Collapsed;
-                ButtonAutoRefresh.Visibility = this.ActualWidth > 500 ? Visibility.Visible : Visibility.Collapsed;
-                cmlog.Visibility = this.ActualWidth > 400 ? Visibility.Visible : Visibility.Collapsed;
-                SearchBar1.Visibility = this.ActualWidth > 200 ? Visibility.Visible : Visibility.Collapsed;
+                ButtonAutoScrollToEnd.Visibility = this.ActualWidth > LogConstants.MinWidthForAutoScrollButton ? Visibility.Visible : Visibility.Collapsed;
+                ButtonAutoRefresh.Visibility = this.ActualWidth > LogConstants.MinWidthForAutoRefreshButton ? Visibility.Visible : Visibility.Collapsed;
+                cmlog.Visibility = this.ActualWidth > LogConstants.MinWidthForLevelComboBox ? Visibility.Visible : Visibility.Collapsed;
+                SearchBar1.Visibility = this.ActualWidth > LogConstants.MinWidthForSearchBar ? Visibility.Visible : Visibility.Collapsed;
             };
         }
         TextBoxAppender TextBoxAppender { get; set; }
@@ -123,7 +124,7 @@ namespace ColorVision.UI
         {
             Hierarchy = (Hierarchy)LogManager.GetRepository();
             TextBoxAppender = new TextBoxAppender(logTextBox, logTextBoxSerch);
-            TextBoxAppender.Layout = new PatternLayout("%date [%thread] %-5level %logger %  %message%newline");
+            TextBoxAppender.Layout = new PatternLayout(LogConstants.DefaultLogPattern);
             Hierarchy.Root.AddAppender(TextBoxAppender);
             log4net.Config.BasicConfigurator.Configure(Hierarchy);
 
@@ -196,7 +197,9 @@ namespace ColorVision.UI
                 string timestampLine = line;
                 string logContentLine = reader.ReadLine(); // 读取日志内容行
 
-                if (timestampLine.Length > 23 && DateTime.TryParseExact(timestampLine.Substring(0, 23), "yyyy-MM-dd HH:mm:ss,fff", null, DateTimeStyles.None, out DateTime logTime))
+                if (timestampLine.Length > LogConstants.LogTimestampLength && 
+                    DateTime.TryParseExact(timestampLine.Substring(0, LogConstants.LogTimestampLength), 
+                        LogConstants.LogTimestampFormat, null, DateTimeStyles.None, out DateTime logTime))
                 {
                     if (logLoadState == LogLoadState.AllToday && logTime.Date != today)
                     {

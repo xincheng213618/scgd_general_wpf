@@ -27,25 +27,25 @@
 ```csharp
 public enum FlowStatus
 {
-    /// <summary>初始状态 - 流程已创建但未初始化</summary>
+    /// \<summary\>初始状态 - 流程已创建但未初始化</summary>
     Init = 0,
     
-    /// <summary>就绪状态 - 流程已初始化，等待执行</summary>
+    /// \<summary\>就绪状态 - 流程已初始化，等待执行</summary>
     Ready = 1,
     
-    /// <summary>运行状态 - 流程正在执行</summary>
+    /// \<summary\>运行状态 - 流程正在执行</summary>
     Running = 2,
     
-    /// <summary>暂停状态 - 流程被用户暂停</summary>
+    /// \<summary\>暂停状态 - 流程被用户暂停</summary>
     Paused = 3,
     
-    /// <summary>完成状态 - 流程正常执行完成</summary>
+    /// \<summary\>完成状态 - 流程正常执行完成</summary>
     Completed = 4,
     
-    /// <summary>错误状态 - 流程执行出现异常</summary>
+    /// \<summary\>错误状态 - 流程执行出现异常</summary>
     Error = 5,
     
-    /// <summary>停止状态 - 流程被强制终止</summary>
+    /// \<summary\>停止状态 - 流程被强制终止</summary>
     Stopped = 6
 }
 ```
@@ -55,22 +55,22 @@ public enum FlowStatus
 ```csharp
 public enum NodeStatus
 {
-    /// <summary>等待执行</summary>
+    /// \<summary\>等待执行</summary>
     Pending = 0,
     
-    /// <summary>正在执行</summary>
+    /// \<summary\>正在执行</summary>
     Running = 1,
     
-    /// <summary>执行成功</summary>
+    /// \<summary\>执行成功</summary>
     Completed = 2,
     
-    /// <summary>执行失败</summary>
+    /// \<summary\>执行失败</summary>
     Failed = 3,
     
-    /// <summary>被跳过</summary>
+    /// \<summary\>被跳过</summary>
     Skipped = 4,
     
-    /// <summary>重试中</summary>
+    /// \<summary\>重试中</summary>
     Retrying = 5
 }
 ```
@@ -96,8 +96,8 @@ public enum NodeStatus
 ```csharp
 public class FlowStateValidator
 {
-    private static readonly Dictionary<FlowStatus, FlowStatus[]> ValidTransitions = 
-        new Dictionary<FlowStatus, FlowStatus[]>
+    private static readonly Dictionary\<FlowStatus, FlowStatus[]> ValidTransitions = 
+        new Dictionary\<FlowStatus, FlowStatus[]>
         {
             { FlowStatus.Init, new[] { FlowStatus.Ready } },
             { FlowStatus.Ready, new[] { FlowStatus.Running } },
@@ -131,8 +131,8 @@ public class FlowStateSnapshot
     public string CurrentNodeId { get; set; }
     public int CompletedNodeCount { get; set; }
     public int TotalNodeCount { get; set; }
-    public Dictionary<string, object> GlobalVariables { get; set; }
-    public List<NodeStateSnapshot> NodeStates { get; set; }
+    public Dictionary\\<string, object\> GlobalVariables { get; set; }
+    public List\\<NodeStateSnapshot\> NodeStates { get; set; }
     public FlowExecutionMetrics Metrics { get; set; }
     public string ErrorMessage { get; set; }
     public int RetryCount { get; set; }
@@ -144,8 +144,8 @@ public class NodeStateSnapshot
     public NodeStatus Status { get; set; }
     public DateTime? StartTime { get; set; }
     public DateTime? EndTime { get; set; }
-    public Dictionary<string, object> InputData { get; set; }
-    public Dictionary<string, object> OutputData { get; set; }
+    public Dictionary\\<string, object\> InputData { get; set; }
+    public Dictionary\\<string, object\> OutputData { get; set; }
     public string ErrorMessage { get; set; }
     public int RetryCount { get; set; }
 }
@@ -209,17 +209,17 @@ public class FlowStateStore : IFlowStateStore
         }
     }
 
-    public async Task<FlowStateSnapshot> LoadStateAsync(string flowId)
+    public async Task\<FlowStateSnapshot\> LoadStateAsync(string flowId)
     {
         // 首先尝试从缓存读取
-        var cached = _cache.Get<FlowStateSnapshot>($"flow_state_{flowId}");
+        var cached = _cache.Get\<FlowStateSnapshot\>($"flow_state_{flowId}");
         if (cached != null)
         {
             return cached;
         }
 
         // 从数据库加载
-        var state = await _database.GetAsync<FlowStateSnapshot>("flow_states", flowId);
+        var state = await _database.GetAsync\<FlowStateSnapshot\>("flow_states", flowId);
         if (state != null)
         {
             _cache.Set($"flow_state_{flowId}", state, TimeSpan.FromHours(1));
@@ -266,7 +266,7 @@ public class FlowStateMetrics
     public double SuccessRate { get; set; }
     
     // 状态分布
-    public Dictionary<FlowStatus, int> StatusDistribution { get; set; }
+    public Dictionary\\<FlowStatus, int\> StatusDistribution { get; set; }
     
     // 性能指标
     public TimeSpan MaxExecutionTime { get; set; }
@@ -296,7 +296,7 @@ public class FlowStateChangedEvent
     public FlowStatus NewStatus { get; set; }
     public DateTime Timestamp { get; set; }
     public string Reason { get; set; }
-    public Dictionary<string, object> Metadata { get; set; }
+    public Dictionary\\<string, object\> Metadata { get; set; }
 }
 ```
 
@@ -392,7 +392,7 @@ public class FlowRecoveryService
 ```csharp
 public class FlowStateConsistencyChecker
 {
-    public async Task<ConsistencyReport> CheckConsistencyAsync(string flowId)
+    public async Task\<ConsistencyReport\> CheckConsistencyAsync(string flowId)
     {
         var state = await _stateStore.LoadStateAsync(flowId);
         var definition = await _definitionStore.LoadDefinitionAsync(state.FlowDefinitionId);

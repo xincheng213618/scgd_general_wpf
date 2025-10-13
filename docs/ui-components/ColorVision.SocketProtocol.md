@@ -70,11 +70,11 @@ graph TD
 ```csharp
 public class SocketManager
 {
-    private readonly Dictionary<string, ISocketConnection> _connections = new();
+    private readonly Dictionary\\<string, ISocketConnection\> _connections = new();
     private readonly object _lockObject = new object();
     
-    public event EventHandler<ConnectionEventArgs> ConnectionStateChanged;
-    public event EventHandler<DataReceivedEventArgs> DataReceived;
+    public event EventHandler\<ConnectionEventArgs\> ConnectionStateChanged;
+    public event EventHandler\<DataReceivedEventArgs\> DataReceived;
     
     public bool CreateConnection(string name, SocketConfig config)
     {
@@ -134,7 +134,7 @@ public class SocketManager
         }
     }
     
-    public bool SendJson<T>(string name, T data)
+    public bool SendJson\<T\>(string name, T data)
     {
         try
         {
@@ -159,7 +159,7 @@ public class SocketManager
         DataReceived?.Invoke(sender, e);
     }
     
-    public List<ConnectionInfo> GetConnections()
+    public List\\<ConnectionInfo\> GetConnections()
     {
         lock (_lockObject)
         {
@@ -244,8 +244,8 @@ public class TcpConnection : ISocketConnection
     public SocketConfig Config => _config;
     public ConnectionState State { get; private set; } = ConnectionState.Disconnected;
     
-    public event EventHandler<ConnectionEventArgs> StateChanged;
-    public event EventHandler<DataReceivedEventArgs> DataReceived;
+    public event EventHandler\<ConnectionEventArgs\> StateChanged;
+    public event EventHandler\<DataReceivedEventArgs\> DataReceived;
     
     public TcpConnection(SocketConfig config)
     {
@@ -410,8 +410,8 @@ public class SerialConnection : ISocketConnection
     public SocketConfig Config => _config;
     public ConnectionState State { get; private set; } = ConnectionState.Disconnected;
     
-    public event EventHandler<ConnectionEventArgs> StateChanged;
-    public event EventHandler<DataReceivedEventArgs> DataReceived;
+    public event EventHandler\<ConnectionEventArgs\> StateChanged;
+    public event EventHandler\<DataReceivedEventArgs\> DataReceived;
     
     public SerialConnection(SocketConfig config)
     {
@@ -516,7 +516,7 @@ public class SerialConnection : ISocketConnection
         }
     }
     
-    public static List<string> GetAvailablePorts()
+    public static List\\<string\> GetAvailablePorts()
     {
         return SerialPort.GetPortNames().ToList();
     }

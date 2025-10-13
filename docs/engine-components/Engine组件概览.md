@@ -163,8 +163,8 @@ var engineService = new ColorVisionEngineService();
 await engineService.InitializeAsync();
 
 // 注册设备服务
-engineService.RegisterDeviceService<CameraService>();
-engineService.RegisterDeviceService<SpectrometerService>();
+engineService.RegisterDeviceService\\<CameraService\>();
+engineService.RegisterDeviceService\\<SpectrometerService\>();
 
 // 加载流程模板
 var flowTemplate = await engineService.LoadFlowTemplateAsync("template_name");
@@ -181,10 +181,10 @@ public class CustomAlgorithmNode : IFlowNode
     public string Name => "Custom Algorithm";
     public string Description => "自定义算法处理节点";
     
-    public async Task<NodeResult> ExecuteAsync(NodeContext context)
+    public async Task\<NodeResult\> ExecuteAsync(NodeContext context)
     {
         // 实现自定义算法逻辑
-        var inputImage = context.GetInput<Mat>("image");
+        var inputImage = context.GetInput\<Mat\>("image");
         var result = ProcessImage(inputImage);
         return NodeResult.Success(result);
     }
@@ -198,13 +198,13 @@ public class CustomDeviceService : BaseDeviceService
 {
     public override string ServiceType => "CustomDevice";
     
-    public override async Task<bool> ConnectAsync()
+    public override async Task\<bool\> ConnectAsync()
     {
         // 实现设备连接逻辑
         return true;
     }
     
-    public override async Task<object> ExecuteCommandAsync(string command, object parameters)
+    public override async Task\<object\> ExecuteCommandAsync(string command, object parameters)
     {
         // 实现设备命令执行
         return await ProcessCommandAsync(command, parameters);

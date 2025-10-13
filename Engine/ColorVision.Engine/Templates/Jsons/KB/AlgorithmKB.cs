@@ -17,9 +17,6 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         public double KBLVSacle { get => _KBLVSacle; set { _KBLVSacle = value; OnPropertyChanged(); } }
         private double _KBLVSacle = 0.006583904;
 
-        public bool KBCanDrag { get => _KBCanDrag; set { _KBCanDrag = value; OnPropertyChanged(); } }
-        private bool _KBCanDrag;
-
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
             return new List<ConfigSettingMetadata> {
@@ -31,16 +28,6 @@ namespace ColorVision.Engine.Templates.Jsons.KB
                                 Group ="Engine",
                                 Type = ConfigSettingType.Text,
                                 BindingName =nameof(KBLVSacle),
-                                Source = Instance,
-                            },
-                             new ConfigSettingMetadata
-                            {
-                                Name = "KBCanDrag",
-                                Description = "KBCanDrag",
-                                Order = 2,
-                                Group ="Engine",
-                                Type = ConfigSettingType.Bool,
-                                BindingName =nameof(KBCanDrag),
                                 Source = Instance,
                             }
             };

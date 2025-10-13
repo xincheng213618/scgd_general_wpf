@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿using ColorVision.UI.LogImp;
+using log4net;
 using log4net.Core;
 using log4net.Layout;
 using log4net.Repository.Hierarchy;
@@ -19,28 +20,28 @@ namespace ColorVision.UI.LogImp
 
         public LogOutput()
         {
-            Pattern = "%date [%thread] %-5level %logger %  %message%newline";
+            Pattern = LogConstants.DefaultLogPattern;
             InitializeComponent();
             this.SizeChanged += (s, e) =>
             {
-                ButtonAutoScrollToEnd.Visibility = this.ActualWidth > 600 ? Visibility.Visible : Visibility.Collapsed;
-                ButtonAutoRefresh.Visibility = this.ActualWidth > 500 ? Visibility.Visible : Visibility.Collapsed;
-                cmlog.Visibility = this.ActualWidth > 400 ? Visibility.Visible : Visibility.Collapsed;
-                SearchBar1.Visibility = this.ActualWidth > 200 ? Visibility.Visible : Visibility.Collapsed;
+                ButtonAutoScrollToEnd.Visibility = this.ActualWidth > LogConstants.MinWidthForAutoScrollButton ? Visibility.Visible : Visibility.Collapsed;
+                ButtonAutoRefresh.Visibility = this.ActualWidth > LogConstants.MinWidthForAutoRefreshButton ? Visibility.Visible : Visibility.Collapsed;
+                cmlog.Visibility = this.ActualWidth > LogConstants.MinWidthForLevelComboBox ? Visibility.Visible : Visibility.Collapsed;
+                SearchBar1.Visibility = this.ActualWidth > LogConstants.MinWidthForSearchBar ? Visibility.Visible : Visibility.Collapsed;
             };
         }
 
 
-        public LogOutput(string? pattern = "%date [%thread] %-5level %logger %  %message%newline")
+        public LogOutput(string? pattern = null)
         {
-            Pattern = pattern;
+            Pattern = pattern ?? LogConstants.DefaultLogPattern;
             InitializeComponent();
             this.SizeChanged += (s, e) =>
             {
-                ButtonAutoScrollToEnd.Visibility = this.ActualWidth > 600 ? Visibility.Visible : Visibility.Collapsed;
-                ButtonAutoRefresh.Visibility = this.ActualWidth > 500 ? Visibility.Visible : Visibility.Collapsed;
-                cmlog.Visibility = this.ActualWidth > 400 ? Visibility.Visible : Visibility.Collapsed;
-                SearchBar1.Visibility = this.ActualWidth > 200 ? Visibility.Visible : Visibility.Collapsed;
+                ButtonAutoScrollToEnd.Visibility = this.ActualWidth > LogConstants.MinWidthForAutoScrollButton ? Visibility.Visible : Visibility.Collapsed;
+                ButtonAutoRefresh.Visibility = this.ActualWidth > LogConstants.MinWidthForAutoRefreshButton ? Visibility.Visible : Visibility.Collapsed;
+                cmlog.Visibility = this.ActualWidth > LogConstants.MinWidthForLevelComboBox ? Visibility.Visible : Visibility.Collapsed;
+                SearchBar1.Visibility = this.ActualWidth > LogConstants.MinWidthForSearchBar ? Visibility.Visible : Visibility.Collapsed;
             };
         }
         TextBoxAppender TextBoxAppender { get; set; }

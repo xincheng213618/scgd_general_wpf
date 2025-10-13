@@ -78,7 +78,7 @@ graph TD
     A --> E[权限控制层]
     
     B --> B1[SolutionManager<br/>解决方案管理器]
-    B --> B2[RecentFileList<br/>最近文件]
+    B --> B2[RecentFileList\<br/>最近文件]
     B --> B3[SolutionConfig<br/>配置管理]
     
     C --> C1[VObject<br/>可视化对象基类]
@@ -104,7 +104,7 @@ graph TD
 ```mermaid
 classDiagram
     class IObject {
-        <<interface>>
+        <\<interface>\>
         +VObject Parent
         +ObservableCollection~VObject~ VisualChildren
         +AddChild(VObject)
@@ -112,7 +112,7 @@ classDiagram
     }
     
     class VObject {
-        <<abstract>>
+        <\<abstract>\>
         +string Name
         +string FullPath
         +bool IsExpanded
@@ -182,7 +182,7 @@ public class SolutionManager : ViewModelBase
     public RecentFileList SolutionHistory { get; set; }
     
     // 当前打开的解决方案集合
-    public ObservableCollection<SolutionExplorer> SolutionExplorers { get; set; }
+    public ObservableCollection\<SolutionExplorer\> SolutionExplorers { get; set; }
     
     // 当前活动的解决方案
     public SolutionExplorer CurrentSolutionExplorer { get; set; }
@@ -265,11 +265,11 @@ public class VObject : INotifyPropertyChanged, IObject
     public virtual bool IsEditMode { get; set; }
     
     // 子节点
-    public virtual ObservableCollection<VObject> VisualChildren { get; set; }
+    public virtual ObservableCollection\<VObject\> VisualChildren { get; set; }
     
     // 上下文菜单
     public ContextMenu ContextMenu { get; set; }
-    public List<MenuItemMetadata> MenuItemMetadatas { get; set; }
+    public List\\<MenuItemMetadata\> MenuItemMetadatas { get; set; }
     
     // 命令
     public RelayCommand OpenCommand { get; set; }
@@ -418,7 +418,7 @@ public class VObjectFactory
 // 文件元数据注册表
 public class FileMetaRegistry
 {
-    private static Dictionary<string, Type> _registry = new();
+    private static Dictionary\\<string, Type\> _registry = new();
     
     public static void Register(string extension, Type fileMetaType)
     {
@@ -449,16 +449,16 @@ public class EditorManager
     public static EditorManager Instance { get; }
     
     // 扩展名 -> 编辑器类型列表
-    private readonly Dictionary<string, List<Type>> _editorMappings;
+    private readonly Dictionary\<string, List\\<Type>\> _editorMappings;
     
     // 扩展名 -> 默认编辑器类型
-    private readonly Dictionary<string, Type> _defaultEditors;
+    private readonly Dictionary\\<string, Type\> _defaultEditors;
     
     // 通用编辑器列表
-    private readonly List<Type> _genericEditorTypes;
+    private readonly List\\<Type\> _genericEditorTypes;
     
     // 获取文件的所有可用编辑器
-    public List<IEditor> GetEditorsForFile(string filePath);
+    public List\\<IEditor\> GetEditorsForFile(string filePath);
     
     // 获取文件的默认编辑器
     public IEditor GetDefaultEditor(string extension);
@@ -622,16 +622,16 @@ public class RbacManager
 // 认证服务接口
 public interface IAuthService
 {
-    Task<LoginResultDto> LoginAsync(string username, string password);
-    Task<bool> RegisterAsync(UserEntity user, string password);
+    Task\<LoginResultDto\> LoginAsync(string username, string password);
+    Task\<bool\> RegisterAsync(UserEntity user, string password);
     Task LogoutAsync();
-    Task<bool> ChangePasswordAsync(string oldPassword, string newPassword);
+    Task\<bool\> ChangePasswordAsync(string oldPassword, string newPassword);
 }
 
 // 权限服务
 public class PermissionService
 {
-    public List<PermissionEntity> GetUserPermissions(int userId);
+    public List\\<PermissionEntity\> GetUserPermissions(int userId);
     public bool HasPermission(int userId, string permissionCode);
     public void GrantPermission(int userId, string permissionCode);
     public void RevokePermission(int userId, string permissionCode);
@@ -641,8 +641,8 @@ public class PermissionService
 public class AuditLogService
 {
     public void LogAction(string action, string details);
-    public List<AuditLogEntity> GetUserLogs(int userId);
-    public List<AuditLogEntity> GetSystemLogs(DateTime from, DateTime to);
+    public List\\<AuditLogEntity\> GetUserLogs(int userId);
+    public List\\<AuditLogEntity\> GetSystemLogs(DateTime from, DateTime to);
 }
 ```
 
@@ -717,7 +717,7 @@ Console.WriteLine($"解决方案目录: {currentSolution.DirectoryInfo.FullName}
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:solution="clr-namespace:ColorVision.Solution;assembly=ColorVision.Solution">
-    <Grid>
+    \<Grid\>
         <solution:TreeViewControl x:Name="SolutionTreeView" />
     </Grid>
 </Window>
@@ -823,7 +823,7 @@ using ColorVision.Solution.Searches;
 public void SearchFiles(string searchPattern)
 {
     var solutionExplorer = SolutionManager.GetInstance().CurrentSolutionExplorer;
-    var results = new List<VFile>();
+    var results = new List\\<VFile\>();
     
     void SearchRecursive(VObject node)
     {
@@ -1002,7 +1002,7 @@ public async Task LoadSolutionAsync(string path)
 // ✅ 使用弱引用避免内存泄漏
 public class SolutionExplorer : VObject
 {
-    private WeakReference<FileSystemWatcher> _watcherRef;
+    private WeakReference\<FileSystemWatcher\> _watcherRef;
     
     // 及时清理事件订阅
     public void Cleanup()

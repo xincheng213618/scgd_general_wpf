@@ -210,7 +210,7 @@ public class DeviceController : IDisposable
         _hardware = new HardwareInterface();
     }
     
-    public async Task<bool> SendCommandAsync(byte[] command)
+    public async Task\<bool\> SendCommandAsync(byte[] command)
     {
         return await Task.Run(() => _hardware.Write(command));
     }
@@ -262,7 +262,7 @@ public class ManagedBuffer : IDisposable
 ```csharp
 public static class ParallelProcessor
 {
-    public static void ProcessInParallel<T>(T[] data, Action<T> processor)
+    public static void ProcessInParallel\<T\>(T[] data, Action\<T\> processor)
     {
         Parallel.ForEach(data, new ParallelOptions
         {
@@ -270,7 +270,7 @@ public static class ParallelProcessor
         }, processor);
     }
     
-    public static TResult[] ProcessInParallel<T, TResult>(T[] data, Func<T, TResult> processor)
+    public static TResult[] ProcessInParallel\<T, TResult\>(T[] data, Func\<T, TResult\> processor)
     {
         var results = new TResult[data.Length];
         
@@ -287,9 +287,9 @@ public static class ParallelProcessor
 ### 3. 缓存优化
 
 ```csharp
-public class ResultCache<TKey, TValue>
+public class ResultCache\<TKey, TValue\>
 {
-    private readonly ConcurrentDictionary<TKey, TValue> _cache = new();
+    private readonly ConcurrentDictionary\\<TKey, TValue\> _cache = new();
     private readonly int _maxSize;
     
     public ResultCache(int maxSize = 1000)
@@ -297,7 +297,7 @@ public class ResultCache<TKey, TValue>
         _maxSize = maxSize;
     }
     
-    public TValue GetOrCompute(TKey key, Func<TKey, TValue> factory)
+    public TValue GetOrCompute(TKey key, Func\<TKey, TValue\> factory)
     {
         return _cache.GetOrAdd(key, factory);
     }

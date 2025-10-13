@@ -88,7 +88,7 @@ graph TB
 ```mermaid
 classDiagram
     class IInitializerFlow {
-        <<interface>>
+        <\<interface>\>
         +string Name
         +IEnumerable~string~ Dependencies
         +int Order
@@ -125,7 +125,7 @@ classDiagram
     }
     
     class FlowNode {
-        <<abstract>>
+        <\<abstract>\>
         +string Id
         +string Type
         +Dictionary~string,object~ Parameters
@@ -184,8 +184,8 @@ public class FlowState
     public string FlowId { get; set; }
     public FlowStatus Status { get; set; }
     public string CurrentNodeId { get; set; }
-    public Dictionary<string, object> Variables { get; set; }
-    public List<FlowExecutionStep> ExecutionHistory { get; set; }
+    public Dictionary\\<string, object\> Variables { get; set; }
+    public List\\<FlowExecutionStep\> ExecutionHistory { get; set; }
     public DateTime LastUpdated { get; set; }
 }
 
@@ -284,7 +284,7 @@ Flow Engine 的核心初始化接口：
 public interface IInitializerFlow : IInitializer
 {
     string Name { get; }
-    IEnumerable<string> Dependencies { get; }
+    IEnumerable\<string\> Dependencies { get; }
     int Order { get; }
     Task InitializeAsync();
 }
@@ -295,7 +295,7 @@ public interface IInitializerFlow : IInitializer
 public class MQTTFlowInitializer : IInitializerFlow
 {
     public string Name => "MQTT Flow Integration";
-    public IEnumerable<string> Dependencies => new[] { "MQTT", "Database" };
+    public IEnumerable\<string\> Dependencies => new[] { "MQTT", "Database" };
     public int Order => 10;
 
     public Task InitializeAsync()
@@ -323,9 +323,9 @@ public interface IFlowNode
 {
     string NodeType { get; }
     string NodeId { get; set; }
-    Dictionary<string, object> Parameters { get; set; }
+    Dictionary\\<string, object\> Parameters { get; set; }
     
-    Task<FlowNodeResult> ExecuteAsync(FlowContext context);
+    Task\<FlowNodeResult\> ExecuteAsync(FlowContext context);
     bool ValidateParameters();
 }
 ```
@@ -336,9 +336,9 @@ public class ImageProcessingNode : IFlowNode
 {
     public string NodeType => "ImageProcessing";
     public string NodeId { get; set; }
-    public Dictionary<string, object> Parameters { get; set; }
+    public Dictionary\\<string, object\> Parameters { get; set; }
 
-    public async Task<FlowNodeResult> ExecuteAsync(FlowContext context)
+    public async Task\<FlowNodeResult\> ExecuteAsync(FlowContext context)
     {
         var imagePath = Parameters["ImagePath"].ToString();
         var algorithmId = Parameters["AlgorithmId"].ToString();
@@ -354,7 +354,7 @@ public class ImageProcessingNode : IFlowNode
         };
     }
     
-    private async Task<AlgorithmResult> ProcessImageAsync(string imagePath, string algorithmId)
+    private async Task\<AlgorithmResult\> ProcessImageAsync(string imagePath, string algorithmId)
     {
         // 算法处理逻辑
         return new AlgorithmResult();
@@ -395,7 +395,7 @@ graph TD
 ```csharp
 public class FlowErrorHandler
 {
-    public async Task<FlowNodeResult> HandleErrorAsync(
+    public async Task\<FlowNodeResult\> HandleErrorAsync(
         Exception exception, 
         FlowNode node, 
         FlowContext context)
@@ -444,7 +444,7 @@ public class FlowMetrics
     public long ActiveFlowCount { get; set; }
     public TimeSpan AverageExecutionTime { get; set; }
     public double SuccessRate { get; set; }
-    public Dictionary<string, long> NodeExecutionCounts { get; set; }
+    public Dictionary\\<string, long\> NodeExecutionCounts { get; set; }
 }
 ```
 

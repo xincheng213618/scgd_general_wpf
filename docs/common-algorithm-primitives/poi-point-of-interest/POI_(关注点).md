@@ -64,7 +64,7 @@ graph TD
 public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, PoiParam poiParam, PoiFilterParam filter, PoiReviseParam revise, PoiOutputParam output, string sn)
 {
     // 构造消息参数字典，包含图像文件名、设备信息、模板参数等
-    var Params = new Dictionary<string, object>() { ... };
+    var Params = new Dictionary\\<string, object\>() { ... };
 
     // 根据存储模型决定是否包含POI点文件名
     if (POIStorageModel == POIStorageModel.File) { ... }
@@ -82,7 +82,7 @@ public MsgRecord SendCommand(string deviceCode, string deviceType, string fileNa
   - `Id`、`Name`：模板标识及名称
   - `Width`、`Height`：模板尺寸
   - `Type`：模板类型
-  - `PoiPoints`：关注点集合，类型为 `ObservableCollection<PoiPoint>`
+  - `PoiPoints`：关注点集合，类型为 `ObservableCollection\<PoiPoint\>`
   - `PoiConfig`：POI配置，包含详细参数（如是否使用CIE文件）
 - **关键方法**：
   - `LoadPoiDetailFromDB()`：从数据库加载POI点明细
@@ -92,7 +92,7 @@ public MsgRecord SendCommand(string deviceCode, string deviceType, string fileNa
 public static void LoadPoiDetailFromDB(PoiParam poiParam)
 {
     poiParam.PoiPoints.Clear();
-    List<PoiDetailModel> poiDetails = PoiDetailDao.Instance.GetAllByPid(poiParam.Id);
+    List\\<PoiDetailModel\> poiDetails = PoiDetailDao.Instance.GetAllByPid(poiParam.Id);
     foreach (var dbModel in poiDetails)
     {
         poiParam.PoiPoints.Add(new PoiPoint(dbModel));
@@ -115,15 +115,15 @@ public static void LoadPoiDetailFromDB(PoiParam poiParam)
   - `SendCommand(...)`：构造并发送包含布点参数的消息，触发自动布点计算
 
 ```csharp
-public MsgRecord SendCommand(ParamBuildPoi buildPOIParam, POILayoutTypes POILayoutReq, Dictionary<string, object> @params, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
+public MsgRecord SendCommand(ParamBuildPoi buildPOIParam, POILayoutTypes POILayoutReq, Dictionary\\<string, object\> @params, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
 {
-    var Params = new Dictionary<string, object>() { ... };
+    var Params = new Dictionary\\<string, object\>() { ... };
     if (POIBuildType == POIBuildType.CADMapping)
     {
         // 将四个点坐标转换为整型点列表，添加到消息参数
-        List<PointInt> pointInts = new List<PointInt>() { ... };
+        List\\<PointInt\> pointInts = new List\\<PointInt\>() { ... };
         Params.Add("LayoutPolygon", pointInts);
-        Params.Add("CADMappingParam", new Dictionary<string, Object>() { ... });
+        Params.Add("CADMappingParam", new Dictionary\\<string, Object\>() { ... });
     }
     MsgSend msg = new() { EventName = MQTTAlgorithmEventEnum.Event_Build_POI, ... };
     return DService.PublishAsyncClient(msg);
@@ -206,7 +206,7 @@ public void OpenTemplate()
 public static void LoadPoiDetailFromDB(PoiParam poiParam)
 {
     poiParam.PoiPoints.Clear();
-    List<PoiDetailModel> poiDetails = PoiDetailDao.Instance.GetAllByPid(poiParam.Id);
+    List\\<PoiDetailModel\> poiDetails = PoiDetailDao.Instance.GetAllByPid(poiParam.Id);
     foreach (var dbModel in poiDetails)
     {
         poiParam.PoiPoints.Add(new PoiPoint(dbModel));
@@ -229,7 +229,7 @@ public static void LoadPoiDetailFromDB(PoiParam poiParam)
 ```csharp
 if (POIBuildType == POIBuildType.CADMapping)
 {
-    List<PointInt> pointInts = new List<PointInt>()
+    List\\<PointInt\> pointInts = new List\\<PointInt\>()
     {
         new PointInt() { X = (int)Point1.X, Y = (int)Point1.Y },
         new PointInt() { X = (int)Point2.X, Y = (int)Point2.Y },
@@ -237,7 +237,7 @@ if (POIBuildType == POIBuildType.CADMapping)
         new PointInt() { X = (int)Point4.X, Y = (int)Point4.Y }
     };
     Params.Add("LayoutPolygon", pointInts);
-    Params.Add("CADMappingParam", new Dictionary<string, Object>() { ... });
+    Params.Add("CADMappingParam", new Dictionary\\<string, Object\>() { ... });
 }
 ```
 

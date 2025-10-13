@@ -116,12 +116,12 @@ public abstract class CVBaseServerNode : CVCommonNode
 ```csharp
 public interface IAlgorithmStrategy
 {
-    AlgorithmResult Execute(ImageData image, Dictionary<string, object> parameters);
+    AlgorithmResult Execute(ImageData image, Dictionary\\<string, object\> parameters);
 }
 
 public class EdgeDetectionStrategy : IAlgorithmStrategy
 {
-    public AlgorithmResult Execute(ImageData image, Dictionary<string, object> parameters)
+    public AlgorithmResult Execute(ImageData image, Dictionary\\<string, object\> parameters)
     {
         // 边缘检测实现
     }
@@ -129,7 +129,7 @@ public class EdgeDetectionStrategy : IAlgorithmStrategy
 
 public class AlgorithmNode : CVBaseServerNode
 {
-    private Dictionary<string, IAlgorithmStrategy> _strategies;
+    private Dictionary\\<string, IAlgorithmStrategy\> _strategies;
     
     protected override void DoServerWork(CVStartCFC cfc)
     {
@@ -198,7 +198,7 @@ public class FlowNodeManager
 ```csharp
 public class NodeFactory
 {
-    private Dictionary<string, Type> _nodeTypes;
+    private Dictionary\\<string, Type\> _nodeTypes;
     
     public STNode CreateNode(string nodeTypeName)
     {
@@ -209,9 +209,9 @@ public class NodeFactory
         throw new NotSupportedException($"Node type {nodeTypeName} not found");
     }
     
-    public void RegisterNodeType<T>() where T : STNode
+    public void RegisterNodeType\<T\>() where T : STNode
     {
-        var attr = typeof(T).GetCustomAttribute<STNodeAttribute>();
+        var attr = typeof(T).GetCustomAttribute\<STNodeAttribute\>();
         if (attr != null)
         {
             _nodeTypes[attr.Path] = typeof(T);
@@ -379,7 +379,7 @@ public class CVLoopCFC
 1. **不可变性**: 关键数据对象采用不可变设计
 2. **序列化友好**: 支持JSON序列化
 3. **类型安全**: 强类型定义
-4. **扩展性**: 使用Dictionary<string, object>支持动态属性
+4. **扩展性**: 使用Dictionary\\<string, object\>支持动态属性
 
 ## 数据流设计
 
@@ -489,7 +489,7 @@ sequenceDiagram
 ```csharp
 public class FlowExecutor
 {
-    public async Task<FlowResult> ExecuteAsync(
+    public async Task\<FlowResult\> ExecuteAsync(
         string flowName,
         CVStartCFC startCFC,
         CancellationToken ct)
@@ -537,15 +537,15 @@ public class FlowExecutor
 public class ConcurrentFlowManager
 {
     private readonly SemaphoreSlim _semaphore;
-    private readonly ConcurrentDictionary<string, FlowContext> _runningFlows;
+    private readonly ConcurrentDictionary\\<string, FlowContext\> _runningFlows;
     
     public ConcurrentFlowManager(int maxConcurrent)
     {
         _semaphore = new SemaphoreSlim(maxConcurrent, maxConcurrent);
-        _runningFlows = new ConcurrentDictionary<string, FlowContext>();
+        _runningFlows = new ConcurrentDictionary\\<string, FlowContext\>();
     }
     
-    public async Task<FlowResult> RunFlowAsync(
+    public async Task\<FlowResult\> RunFlowAsync(
         string flowName,
         CancellationToken ct)
     {
@@ -589,7 +589,7 @@ stateDiagram-v2
 ```csharp
 public class NodeRegistry
 {
-    private readonly Dictionary<string, NodeDescriptor> _nodes;
+    private readonly Dictionary\\<string, NodeDescriptor\> _nodes;
     
     // 自动发现并注册节点
     public void ScanAndRegisterNodes(Assembly assembly)
@@ -599,7 +599,7 @@ public class NodeRegistry
             
         foreach (var type in nodeTypes)
         {
-            var attr = type.GetCustomAttribute<STNodeAttribute>();
+            var attr = type.GetCustomAttribute\<STNodeAttribute\>();
             if (attr != null)
             {
                 RegisterNode(new NodeDescriptor
@@ -613,7 +613,7 @@ public class NodeRegistry
     }
     
     // 手动注册节点
-    public void RegisterNode<T>() where T : STNode
+    public void RegisterNode\<T\>() where T : STNode
     {
         // 注册逻辑
     }
@@ -667,8 +667,8 @@ public class PluginLoader
 ```csharp
 public class ObjectPoolManager
 {
-    private static readonly ObjectPool<CVStartCFC> CFCPool = 
-        ObjectPool.Create<CVStartCFC>();
+    private static readonly ObjectPool\<CVStartCFC\> CFCPool = 
+        ObjectPool.Create\<CVStartCFC\>();
         
     private static readonly ObjectPool<byte[]> BufferPool = 
         ObjectPool.Create(() => new byte[8192]);
@@ -682,7 +682,7 @@ public class ObjectPoolManager
 ```csharp
 public class ImageProcessor
 {
-    public unsafe void ProcessImage(Span<byte> imageData)
+    public unsafe void ProcessImage(Span\<byte\> imageData)
     {
         // 使用Span避免数组复制
         fixed (byte* ptr = imageData)
@@ -703,7 +703,7 @@ public class TaskScheduler
     private readonly int _maxDegreeOfParallelism;
     
     public async Task ExecuteParallelAsync(
-        IEnumerable<Func<Task>> tasks)
+        IEnumerable\<Func<Task>\> tasks)
     {
         var options = new ParallelOptions
         {
@@ -727,7 +727,7 @@ public class CacheManager
     private readonly MemoryCache _cache;
     private readonly CacheOptions _options;
     
-    public T GetOrCreate<T>(string key, Func<T> factory)
+    public T GetOrCreate\<T\>(string key, Func\<T\> factory)
     {
         if (!_cache.TryGetValue(key, out T value))
         {

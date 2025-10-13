@@ -167,7 +167,7 @@ public void ConfigureServices(IServiceCollection services)
 _eventBus.Publish(new ImageCapturedEvent { ... });
 
 // 模板引擎订阅事件
-_eventBus.Subscribe<ImageCapturedEvent>(OnImageCaptured);
+_eventBus.Subscribe\<ImageCapturedEvent\>(OnImageCaptured);
 ```
 
 ### 插件化支持

@@ -76,51 +76,51 @@ graph TB
 ### User (用户实体)
 
 ```csharp
-/// <summary>
+/// \<summary\>
 /// 用户实体 - 系统使用者
 /// </summary>
 public class UserEntity
 {
     public int Id { get; set; }
     
-    /// <summary>用户名 - 唯一标识符</summary>
+    /// \<summary\>用户名 - 唯一标识符</summary>
     public string Username { get; set; }
     
-    /// <summary>密码哈希值</summary>
+    /// \<summary\>密码哈希值</summary>
     public string PasswordHash { get; set; }
     
-    /// <summary>盐值</summary>
+    /// \<summary\>盐值</summary>
     public string Salt { get; set; }
     
-    /// <summary>显示名称</summary>
+    /// \<summary\>显示名称</summary>
     public string DisplayName { get; set; }
     
-    /// <summary>邮箱地址</summary>
+    /// \<summary\>邮箱地址</summary>
     public string Email { get; set; }
     
-    /// <summary>是否启用</summary>
+    /// \<summary\>是否启用</summary>
     public bool IsEnabled { get; set; }
     
-    /// <summary>最后登录时间</summary>
+    /// \<summary\>最后登录时间</summary>
     public DateTime? LastLoginTime { get; set; }
     
-    /// <summary>账户锁定到期时间</summary>
+    /// \<summary\>账户锁定到期时间</summary>
     public DateTime? LockoutEnd { get; set; }
     
-    /// <summary>登录失败次数</summary>
+    /// \<summary\>登录失败次数</summary>
     public int AccessFailedCount { get; set; }
     
-    /// <summary>创建时间</summary>
+    /// \<summary\>创建时间</summary>
     public DateTime CreatedAt { get; set; }
     
-    /// <summary>更新时间</summary>
+    /// \<summary\>更新时间</summary>
     public DateTime UpdatedAt { get; set; }
     
-    /// <summary>备注信息</summary>
+    /// \<summary\>备注信息</summary>
     public string Remark { get; set; }
     
     // 导航属性
-    public virtual ICollection<UserRoleEntity> UserRoles { get; set; }
+    public virtual ICollection\<UserRoleEntity\> UserRoles { get; set; }
     public virtual UserDetailEntity UserDetail { get; set; }
 }
 ```
@@ -128,107 +128,107 @@ public class UserEntity
 ### Role (角色实体)
 
 ```csharp
-/// <summary>
+/// \<summary\>
 /// 角色实体 - 权限集合的逻辑分组
 /// </summary>
 public class RoleEntity
 {
     public int Id { get; set; }
     
-    /// <summary>角色名称 - 唯一标识符</summary>
+    /// \<summary\>角色名称 - 唯一标识符</summary>
     public string Name { get; set; }
     
-    /// <summary>角色代码 - 系统内部标识</summary>
+    /// \<summary\>角色代码 - 系统内部标识</summary>
     public string Code { get; set; }
     
-    /// <summary>角色描述</summary>
+    /// \<summary\>角色描述</summary>
     public string Description { get; set; }
     
-    /// <summary>是否系统内置角色</summary>
+    /// \<summary\>是否系统内置角色</summary>
     public bool IsSystemRole { get; set; }
     
-    /// <summary>是否启用</summary>
+    /// \<summary\>是否启用</summary>
     public bool IsEnabled { get; set; }
     
-    /// <summary>角色级别 - 用于层级控制</summary>
+    /// \<summary\>角色级别 - 用于层级控制</summary>
     public int Level { get; set; }
     
-    /// <summary>创建时间</summary>
+    /// \<summary\>创建时间</summary>
     public DateTime CreatedAt { get; set; }
     
-    /// <summary>更新时间</summary>
+    /// \<summary\>更新时间</summary>
     public DateTime UpdatedAt { get; set; }
     
-    /// <summary>备注信息</summary>
+    /// \<summary\>备注信息</summary>
     public string Remark { get; set; }
     
     // 导航属性
-    public virtual ICollection<UserRoleEntity> UserRoles { get; set; }
-    public virtual ICollection<RolePermissionEntity> RolePermissions { get; set; }
+    public virtual ICollection\<UserRoleEntity\> UserRoles { get; set; }
+    public virtual ICollection\<RolePermissionEntity\> RolePermissions { get; set; }
 }
 ```
 
 ### Permission (权限实体)
 
 ```csharp
-/// <summary>
+/// \<summary\>
 /// 权限实体 - 具体的操作授权
 /// </summary>
 public class PermissionEntity
 {
     public int Id { get; set; }
     
-    /// <summary>权限名称</summary>
+    /// \<summary\>权限名称</summary>
     public string Name { get; set; }
     
-    /// <summary>权限代码 - 系统内部标识</summary>
+    /// \<summary\>权限代码 - 系统内部标识</summary>
     public string Code { get; set; }
     
-    /// <summary>权限分类</summary>
+    /// \<summary\>权限分类</summary>
     public string Category { get; set; }
     
-    /// <summary>权限描述</summary>
+    /// \<summary\>权限描述</summary>
     public string Description { get; set; }
     
-    /// <summary>父权限ID - 支持权限层次结构</summary>
+    /// \<summary\>父权限ID - 支持权限层次结构</summary>
     public int? ParentId { get; set; }
     
-    /// <summary>权限类型</summary>
+    /// \<summary\>权限类型</summary>
     public PermissionType Type { get; set; }
     
-    /// <summary>资源标识符</summary>
+    /// \<summary\>资源标识符</summary>
     public string Resource { get; set; }
     
-    /// <summary>操作类型</summary>
+    /// \<summary\>操作类型</summary>
     public string Action { get; set; }
     
-    /// <summary>是否启用</summary>
+    /// \<summary\>是否启用</summary>
     public bool IsEnabled { get; set; }
     
-    /// <summary>创建时间</summary>
+    /// \<summary\>创建时间</summary>
     public DateTime CreatedAt { get; set; }
     
     // 导航属性
     public virtual PermissionEntity Parent { get; set; }
-    public virtual ICollection<PermissionEntity> Children { get; set; }
-    public virtual ICollection<RolePermissionEntity> RolePermissions { get; set; }
+    public virtual ICollection\<PermissionEntity\> Children { get; set; }
+    public virtual ICollection\<RolePermissionEntity\> RolePermissions { get; set; }
 }
 
-/// <summary>
+/// \<summary\>
 /// 权限类型枚举
 /// </summary>
 public enum PermissionType
 {
-    /// <summary>菜单权限</summary>
+    /// \<summary\>菜单权限</summary>
     Menu = 1,
     
-    /// <summary>功能权限</summary>
+    /// \<summary\>功能权限</summary>
     Function = 2,
     
-    /// <summary>数据权限</summary>
+    /// \<summary\>数据权限</summary>
     Data = 3,
     
-    /// <summary>接口权限</summary>
+    /// \<summary\>接口权限</summary>
     Api = 4
 }
 ```
@@ -236,41 +236,41 @@ public enum PermissionType
 ### AuditLog (审计日志实体)
 
 ```csharp
-/// <summary>
+/// \<summary\>
 /// 审计日志实体 - 记录系统操作
 /// </summary>
 public class AuditLogEntity
 {
     public long Id { get; set; }
     
-    /// <summary>用户ID</summary>
+    /// \<summary\>用户ID</summary>
     public int? UserId { get; set; }
     
-    /// <summary>用户名</summary>
+    /// \<summary\>用户名</summary>
     public string Username { get; set; }
     
-    /// <summary>操作类型</summary>
+    /// \<summary\>操作类型</summary>
     public string Action { get; set; }
     
-    /// <summary>资源标识</summary>
+    /// \<summary\>资源标识</summary>
     public string Resource { get; set; }
     
-    /// <summary>操作描述</summary>
+    /// \<summary\>操作描述</summary>
     public string Description { get; set; }
     
-    /// <summary>操作结果</summary>
+    /// \<summary\>操作结果</summary>
     public AuditResult Result { get; set; }
     
-    /// <summary>IP地址</summary>
+    /// \<summary\>IP地址</summary>
     public string IpAddress { get; set; }
     
-    /// <summary>用户代理</summary>
+    /// \<summary\>用户代理</summary>
     public string UserAgent { get; set; }
     
-    /// <summary>附加数据</summary>
+    /// \<summary\>附加数据</summary>
     public string AdditionalData { get; set; }
     
-    /// <summary>操作时间</summary>
+    /// \<summary\>操作时间</summary>
     public DateTime Timestamp { get; set; }
 }
 
@@ -494,7 +494,7 @@ graph TB
 #### UI 层权限拦截
 
 ```csharp
-/// <summary>
+/// \<summary\>
 /// UI 权限拦截器
 /// </summary>
 public class UIPermissionInterceptor
@@ -528,7 +528,7 @@ public class UIPermissionInterceptor
 #### 服务层权限拦截
 
 ```csharp
-/// <summary>
+/// \<summary\>
 /// 服务层权限拦截器
 /// </summary>
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
@@ -552,7 +552,7 @@ public class PermissionInterceptor : IInterceptor
     
     public void Intercept(IInvocation invocation)
     {
-        var attributes = invocation.Method.GetCustomAttributes<RequirePermissionAttribute>();
+        var attributes = invocation.Method.GetCustomAttributes\<RequirePermissionAttribute\>();
         
         foreach (var attr in attributes)
         {
@@ -655,7 +655,7 @@ public class AuditService : IAuditService
     private async Task CheckSecurityAlerts(AuditLogEntity auditLog)
     {
         // 检查是否触发安全告警
-        var recentFailures = await _database.QueryAsync<AuditLogEntity>(
+        var recentFailures = await _database.QueryAsync\<AuditLogEntity\>(
             "SELECT COUNT(*) FROM AuditLogs WHERE UserId = @UserId " +
             "AND Result = @Result AND Timestamp > @Since",
             new { auditLog.UserId, Result = AuditResult.Denied, 
@@ -730,11 +730,11 @@ public class RbacManager : IDisposable
     
     private void InitializeTables()
     {
-        _database.CodeFirst.InitTables<UserEntity, UserDetailEntity>();
-        _database.CodeFirst.InitTables<TenantEntity, UserTenantEntity>();
-        _database.CodeFirst.InitTables<RoleEntity, UserRoleEntity>();
-        _database.CodeFirst.InitTables<PermissionEntity, RolePermissionEntity>();
-        _database.CodeFirst.InitTables<AuditLogEntity>();
+        _database.CodeFirst.InitTables\<UserEntity, UserDetailEntity\>();
+        _database.CodeFirst.InitTables\<TenantEntity, UserTenantEntity\>();
+        _database.CodeFirst.InitTables\<RoleEntity, UserRoleEntity\>();
+        _database.CodeFirst.InitTables\<PermissionEntity, RolePermissionEntity\>();
+        _database.CodeFirst.InitTables\<AuditLogEntity\>();
     }
 }
 ```
@@ -747,12 +747,12 @@ public class PermissionService : IPermissionService
     private readonly SqlSugarClient _database;
     private readonly IMemoryCache _cache;
     
-    public async Task<bool> HasPermissionAsync(int userId, string permission)
+    public async Task\<bool\> HasPermissionAsync(int userId, string permission)
     {
         var cacheKey = $"user_permissions_{userId}";
         
         // 尝试从缓存获取
-        if (_cache.TryGetValue(cacheKey, out HashSet<string> permissions))
+        if (_cache.TryGetValue(cacheKey, out HashSet\<string\> permissions))
         {
             return permissions.Contains(permission);
         }
@@ -766,7 +766,7 @@ public class PermissionService : IPermissionService
         return permissions.Contains(permission);
     }
     
-    private async Task<HashSet<string>> GetUserPermissionsAsync(int userId)
+    private async Task\<HashSet<string>\> GetUserPermissionsAsync(int userId)
     {
         var query = @"
             SELECT DISTINCT p.Code 
@@ -775,10 +775,10 @@ public class PermissionService : IPermissionService
             INNER JOIN UserRoleEntity ur ON rp.RoleId = ur.RoleId
             WHERE ur.UserId = @UserId AND p.IsEnabled = 1";
         
-        var permissions = await _database.Ado.SqlQueryAsync<string>(query, 
+        var permissions = await _database.Ado.SqlQueryAsync\<string\>(query, 
             new { UserId = userId });
         
-        return new HashSet<string>(permissions);
+        return new HashSet\<string\>(permissions);
     }
     
     public async Task InvalidateUserPermissionCache(int userId)

@@ -134,7 +134,7 @@ CHANGELOG.md
     ↓
   Parse()
     ↓
-List<ChangeLogEntry>  →  ListView (平面显示)
+List\<ChangeLogEntry\>  →  ListView (平面显示)
     ↓
   点击选择
     ↓
@@ -147,11 +147,11 @@ CHANGELOG.md
     ↓
   Parse()
     ↓
-List<ChangeLogEntry>
+List\<ChangeLogEntry\>
     ↓
 BuildVersionTree()  →  按版本分组
     ↓
-Tree<VersionNode>  →  TreeView (层级显示)
+Tree\<VersionNode\>  →  TreeView (层级显示)
     ↓
   点击选择
     ↓

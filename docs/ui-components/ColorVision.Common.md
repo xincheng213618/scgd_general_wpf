@@ -133,7 +133,7 @@ public interface IMenuItem
     string Header { get; }
     object Icon { get; }
     ICommand Command { get; }
-    IList<IMenuItem> Children { get; }
+    IList\\<IMenuItem\> Children { get; }
 }
 ```
 
@@ -161,7 +161,7 @@ public interface IFileProcessor
 {
     string[] SupportedExtensions { get; }
     bool CanProcess(string filePath);
-    Task<bool> ProcessAsync(string filePath);
+    Task\<bool\> ProcessAsync(string filePath);
 }
 ```
 
@@ -173,7 +173,7 @@ public interface ISearch
 {
     string SearchText { get; set; }
     bool CaseSensitive { get; set; }
-    IEnumerable<object> Search();
+    IEnumerable\<object\> Search();
 }
 ```
 
@@ -203,9 +203,9 @@ public abstract class ViewModelBase : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    protected bool SetProperty<T>(ref T backingStore, T value, [CallerMemberName] string propertyName = "")
+    protected bool SetProperty\<T\>(ref T backingStore, T value, [CallerMemberName] string propertyName = "")
     {
-        if (EqualityComparer<T>.Default.Equals(backingStore, value))
+        if (EqualityComparer\<T\>.Default.Equals(backingStore, value))
             return false;
 
         backingStore = value;
@@ -239,9 +239,9 @@ public class SampleViewModel : ViewModelBase
 public class ActionCommand : ICommand
 {
     private readonly Action _execute;
-    private readonly Func<bool> _canExecute;
+    private readonly Func\<bool\> _canExecute;
 
-    public ActionCommand(Action execute, Func<bool> canExecute = null)
+    public ActionCommand(Action execute, Func\<bool\> canExecute = null)
     {
         _execute = execute ?? throw new ArgumentNullException(nameof(execute));
         _canExecute = canExecute;
@@ -262,12 +262,12 @@ public class ActionCommand : ICommand
 支持参数的命令实现：
 
 ```csharp
-public class RelayCommand<T> : ICommand
+public class RelayCommand\<T\> : ICommand
 {
-    private readonly Action<T> _execute;
-    private readonly Predicate<T> _canExecute;
+    private readonly Action\<T\> _execute;
+    private readonly Predicate\<T\> _canExecute;
 
-    public RelayCommand(Action<T> execute, Predicate<T> canExecute = null)
+    public RelayCommand(Action\<T\> execute, Predicate\<T\> canExecute = null)
     {
         _execute = execute ?? throw new ArgumentNullException(nameof(execute));
         _canExecute = canExecute;
@@ -332,7 +332,7 @@ public class AppConfig : IConfig
         if (File.Exists(ConfigPath))
         {
             var json = File.ReadAllText(ConfigPath);
-            var config = JsonSerializer.Deserialize<AppConfig>(json);
+            var config = JsonSerializer.Deserialize\<AppConfig\>(json);
             Theme = config.Theme;
             Language = config.Language;
         }
@@ -387,7 +387,7 @@ public class ImageProcessor : IFileProcessor
         return SupportedExtensions.Contains(ext);
     }
 
-    public async Task<bool> ProcessAsync(string filePath)
+    public async Task\<bool\> ProcessAsync(string filePath)
     {
         try
         {

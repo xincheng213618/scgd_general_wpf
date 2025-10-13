@@ -14,9 +14,6 @@
 
 Pattern Plugin (图卡生成工具) 是 ColorVision 的核心测试图案生成插件，提供了11种不同类型的测试图案，用于显示器校准、相机标定、光学测量等应用场景。该插件支持自定义分辨率、参数模板管理、实时预览和批量生成等功能。
 
-![ColorVision UI Overview](../../UI.png)
-*ColorVision 主界面及插件系统概览*
-
 ## 核心功能
 
 ### 🎯 主要特性
@@ -159,7 +156,7 @@ PatternManager.ImportTemplateGroup("MyTemplates.json");
 
 ```csharp
 // 批量生成示例代码
-var patterns = new List<PatternConfig>
+var patterns = new List\\<PatternConfig\>
 {
     new SolidConfig { MainBrush = Brushes.White },
     new SolidConfig { MainBrush = Brushes.Black },
@@ -444,7 +441,7 @@ public interface IPattern
 }
 
 // 泛型基类
-public abstract class IPatternBase<T> : IPatternBase 
+public abstract class IPatternBase\<T\> : IPatternBase 
     where T : ViewModelBase, new()
 {
     public T Config { get; set; } = new T();
@@ -584,7 +581,7 @@ Console.WriteLine($"Memory used: {stats.MemoryUsed}MB");
 1. **继承基类**：
 ```csharp
 [DisplayName("自定义图案")]
-public class CustomPattern : IPatternBase<CustomPatternConfig>
+public class CustomPattern : IPatternBase\<CustomPatternConfig\>
 {
     public override UserControl GetPatternEditor() 
         => new CustomPatternEditor(Config);
@@ -612,7 +609,7 @@ public class CustomPatternConfig : ViewModelBase, IConfig
 3. **编辑器界面**：
 ```xml
 <UserControl x:Class="Pattern.Custom.CustomPatternEditor">
-    <Grid>
+    \<Grid\>
         <!-- 参数编辑控件 -->
     </Grid>
 </UserControl>

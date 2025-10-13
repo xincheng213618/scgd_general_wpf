@@ -183,8 +183,8 @@ sequenceDiagram
 ```csharp
 public class ParallelImageProcessor
 {
-    public async Task<List<AlgorithmResult>> ProcessBatchAsync(
-        List<Mat> images, 
+    public async Task<List\\<AlgorithmResult>\> ProcessBatchAsync(
+        List\\<Mat\> images, 
         IAlgorithm algorithm)
     {
         var tasks = images.Select(async (image, index) => 
@@ -238,7 +238,7 @@ public class GPUAcceleratedAlgorithm : IAlgorithm
 ```csharp
 public class AlgorithmPerformanceMonitor
 {
-    private readonly Dictionary<string, PerformanceMetrics> _metrics = new();
+    private readonly Dictionary\\<string, PerformanceMetrics\> _metrics = new();
     
     public void RecordExecution(string algorithmId, TimeSpan duration, bool success)
     {
@@ -269,7 +269,7 @@ public class AlgorithmPerformanceMonitor
 ### 自定义算法接口
 
 ```csharp
-/// <summary>
+/// \<summary\>
 /// 算法基础接口
 /// </summary>
 public interface IAlgorithm
@@ -279,13 +279,13 @@ public interface IAlgorithm
     string Version { get; }
     
     AlgorithmResult Process(Mat input, AlgorithmParameters parameters);
-    Task<AlgorithmResult> ProcessAsync(Mat input, AlgorithmParameters parameters);
+    Task\<AlgorithmResult\> ProcessAsync(Mat input, AlgorithmParameters parameters);
     
     bool ValidateParameters(AlgorithmParameters parameters);
     AlgorithmInfo GetAlgorithmInfo();
 }
 
-/// <summary>
+/// \<summary\>
 /// 算法注册属性
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
@@ -316,8 +316,8 @@ public class CustomEdgeDetector : IAlgorithm
     public AlgorithmResult Process(Mat input, AlgorithmParameters parameters)
     {
         // 自定义算法实现
-        var threshold1 = parameters.GetValue<double>("threshold1", 100);
-        var threshold2 = parameters.GetValue<double>("threshold2", 200);
+        var threshold1 = parameters.GetValue\<double\>("threshold1", 100);
+        var threshold2 = parameters.GetValue\<double\>("threshold2", 200);
         
         var output = new Mat();
         Cv2.Canny(input, output, threshold1, threshold2);
@@ -326,7 +326,7 @@ public class CustomEdgeDetector : IAlgorithm
         {
             Success = true,
             OutputImage = output,
-            Metadata = new Dictionary<string, object>
+            Metadata = new Dictionary\\<string, object\>
             {
                 ["threshold1"] = threshold1,
                 ["threshold2"] = threshold2,
@@ -335,7 +335,7 @@ public class CustomEdgeDetector : IAlgorithm
         };
     }
     
-    public async Task<AlgorithmResult> ProcessAsync(Mat input, AlgorithmParameters parameters)
+    public async Task\<AlgorithmResult\> ProcessAsync(Mat input, AlgorithmParameters parameters)
     {
         return await Task.Run(() => Process(input, parameters));
     }

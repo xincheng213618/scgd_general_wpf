@@ -42,7 +42,7 @@ public abstract class VersionTreeNode : ViewModelBase
 public class MajorVersionNode : VersionTreeNode
 {
     public int MajorVersion { get; set; }
-    public ObservableCollection<MinorVersionNode> MinorVersions { get; set; }
+    public ObservableCollection\<MinorVersionNode\> MinorVersions { get; set; }
 }
 ```
 
@@ -54,7 +54,7 @@ public class MinorVersionNode : VersionTreeNode
 {
     public int MajorVersion { get; set; }
     public int MinorVersion { get; set; }
-    public ObservableCollection<ChangeLogEntry> Entries { get; set; }
+    public ObservableCollection\<ChangeLogEntry\> Entries { get; set; }
 }
 ```
 
@@ -66,7 +66,7 @@ public class ChangeLogEntry : ViewModelBase
 {
     public string Version { get; set; }           // 版本号 (如: 1.3.13.1)
     public DateTime ReleaseDate { get; set; }     // 发布日期
-    public List<string> Changes { get; set; }     // 变更列表
+    public List\\<string\> Changes { get; set; }     // 变更列表
     public string ChangeLog { get; }              // 格式化的变更日志
     public bool IsSelected { get; set; }          // 选中状态
 }
@@ -91,7 +91,7 @@ public class ChangeLogEntry : ViewModelBase
 
 ```csharp
 // 从TreeView选择 -> 同步到详情面板
-private void ChangeLogListView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+private void ChangeLogListView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs\<object\> e)
 {
     if (treeView.SelectedItem is ChangeLogEntry selectedEntry)
     {
@@ -157,7 +157,7 @@ private async void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
 
 ```xaml
 <TreeView x:Name="ChangeLogListView" Grid.Column="0">
-    <TreeView.Resources>
+    \<TreeView.Resources\>
         <!-- 主版本节点模板 -->
         <HierarchicalDataTemplate DataType="{x:Type local:MajorVersionNode}" 
                                   ItemsSource="{Binding MinorVersions}">
@@ -185,7 +185,7 @@ private async void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
 
 ```xaml
 <ListView x:Name="ChangeLogDetailsPanel" Grid.Column="1">
-    <ListView.ItemTemplate>
+    \<ListView.ItemTemplate\>
         <DataTemplate DataType="{x:Type local:ChangeLogEntry}">
             <StackPanel Margin="0,0,0,20">
                 <TextBox Text="{Binding Version, StringFormat='## {0}'}" 
@@ -290,8 +290,8 @@ private void SelectEntryInTreeView(ChangeLogEntry entry)
 右侧详情面板使用虚拟化以提高大量条目的滚动性能：
 
 ```xaml
-<ListView.ItemsPanel>
-    <ItemsPanelTemplate>
+\<ListView.ItemsPanel\>
+    \<ItemsPanelTemplate\>
         <VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling"/>
     </ItemsPanelTemplate>
 </ListView.ItemsPanel>

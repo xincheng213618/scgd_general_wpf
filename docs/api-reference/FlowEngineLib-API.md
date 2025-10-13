@@ -187,7 +187,7 @@ FlowNodeManager.Instance.AddDevice(device);
 
 ##### UpdateDevice
 ```csharp
-public void UpdateDevice(Dictionary<string, Dictionary<string, DeviceNode>> devices)
+public void UpdateDevice(Dictionary\<string, Dictionary\\<string, DeviceNode>\> devices)
 ```
 更新设备节点状态。
 
@@ -196,7 +196,7 @@ public void UpdateDevice(Dictionary<string, Dictionary<string, DeviceNode>> devi
 
 ##### UpdateDevice
 ```csharp
-public void UpdateDevice(List<MQTTServiceInfo> services)
+public void UpdateDevice(List\\<MQTTServiceInfo\> services)
 ```
 从MQTT服务信息更新设备。
 
@@ -241,12 +241,12 @@ public void AddService(MQTTServiceInfo service)
 
 ##### GetServices
 ```csharp
-public List<MQTTServiceInfo> GetServices()
+public List\\<MQTTServiceInfo\> GetServices()
 ```
 获取所有MQTT服务。
 
 **返回值：**
-- `List<MQTTServiceInfo>` - 服务列表
+- `List\<MQTTServiceInfo\>` - 服务列表
 
 ##### FindService
 ```csharp
@@ -466,7 +466,7 @@ protected void DoTransferData(STNodeOption option, CVStartCFC cfc)
 
 ---
 
-### CVBaseLoopServerNode<T>
+### CVBaseLoopServerNode\<T\>
 
 循环服务节点基类。
 
@@ -477,7 +477,7 @@ namespace FlowEngineLib.Base
 
 #### 继承关系
 ```csharp
-CVBaseServerNode → CVBaseLoopServerNode<T>
+CVBaseServerNode → CVBaseLoopServerNode\<T\>
 ```
 
 #### 泛型参数
@@ -905,7 +905,7 @@ public string ServiceCode { get; set; }
 
 ##### Devices
 ```csharp
-public Dictionary<string, MQTTDeviceInfo> Devices { get; set; }
+public Dictionary\\<string, MQTTDeviceInfo\> Devices { get; set; }
 ```
 设备字典。
 

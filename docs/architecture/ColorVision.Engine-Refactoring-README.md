@@ -140,7 +140,7 @@ services.AddEngineTemplates();
 _eventBus.Publish(new ImageCapturedEvent { ... });
 
 // 订阅事件
-_eventBus.Subscribe<ImageCapturedEvent>(OnImageCaptured);
+_eventBus.Subscribe\<ImageCapturedEvent\>(OnImageCaptured);
 ```
 
 ### 插件化

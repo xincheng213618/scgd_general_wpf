@@ -240,7 +240,7 @@ public interface IAlgorithm
     string AlgorithmId { get; }
     string Name { get; }
     AlgorithmResult Execute(AlgorithmParam param);
-    Task<AlgorithmResult> ExecuteAsync(AlgorithmParam param);
+    Task\<AlgorithmResult\> ExecuteAsync(AlgorithmParam param);
 }
 
 // 实现示例
@@ -255,7 +255,7 @@ public class CustomAlgorithm : IAlgorithm
         return new AlgorithmResult();
     }
     
-    public async Task<AlgorithmResult> ExecuteAsync(AlgorithmParam param)
+    public async Task\<AlgorithmResult\> ExecuteAsync(AlgorithmParam param)
     {
         return await Task.Run(() => Execute(param));
     }

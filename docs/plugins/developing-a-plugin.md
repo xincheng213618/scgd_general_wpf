@@ -132,25 +132,25 @@ dotnet new colorvision-plugin -n MyAwesomePlugin -o ./MyAwesomePlugin
 ```xml
 <!-- MyAwesomePlugin.csproj -->
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <UseWPF>true</UseWPF>
-    <OutputType>Library</OutputType>
-    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  \<PropertyGroup\>
+    \<TargetFramework\>net8.0-windows</TargetFramework>
+    \<UseWPF\>true</UseWPF>
+    \<OutputType\>Library</OutputType>
+    \<CopyLocalLockFileAssemblies\>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
-  <ItemGroup>
+  \<ItemGroup\>
     <PackageReference Include="ColorVision.UI" Version="3.0.0" />
     <PackageReference Include="ColorVision.Engine" Version="3.0.0" />
     <PackageReference Include="ColorVision.Common" Version="3.0.0" />
   </ItemGroup>
 
-  <ItemGroup>
+  \<ItemGroup\>
     <Content Include="plugin.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      \<CopyToOutputDirectory\>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Assets\**\*">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      \<CopyToOutputDirectory\>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 
@@ -271,7 +271,7 @@ namespace ColorVision.Plugins.MyAwesome
             await LoadConfigurationAsync();
             
             // 初始化服务
-            _service = context.ServiceProvider.GetService<IMyAwesomeService>();
+            _service = context.ServiceProvider.GetService\<IMyAwesomeService\>();
             await _service.InitializeAsync();
             
             _logger.Information("{PluginName} initialized successfully", Name);
@@ -320,14 +320,14 @@ namespace ColorVision.Plugins.MyAwesome
         {
             // 如果使用 DI 容器，在这里注册服务
             var services = new ServiceCollection();
-            services.AddSingleton<IMyAwesomeService, MyAwesomeService>();
+            services.AddSingleton\<IMyAwesomeService, MyAwesomeService\>();
             // 其他服务注册...
         }
         
         private void InitializeCommands()
         {
             ShowMainWindowCommand = new RelayCommand(ShowMainWindow, CanShowMainWindow);
-            ProcessImageCommand = new RelayCommand<string>(ProcessImage, CanProcessImage);
+            ProcessImageCommand = new RelayCommand\<string\>(ProcessImage, CanProcessImage);
         }
         
         private void ShowMainWindow(object parameter)
@@ -372,7 +372,7 @@ public interface IMyAwesomeService : IAsyncDisposable
     Task StartAsync();
     Task StopAsync();
     Task ProcessImageAsync(string imagePath);
-    event EventHandler<ProcessingCompletedEventArgs> ProcessingCompleted;
+    event EventHandler\<ProcessingCompletedEventArgs\> ProcessingCompleted;
 }
 
 public class MyAwesomeService : IMyAwesomeService
@@ -382,7 +382,7 @@ public class MyAwesomeService : IMyAwesomeService
     private bool _isReady;
     
     public bool IsReady => _isReady;
-    public event EventHandler<ProcessingCompletedEventArgs> ProcessingCompleted;
+    public event EventHandler\<ProcessingCompletedEventArgs\> ProcessingCompleted;
     
     public MyAwesomeService(ILogger logger, IEngineService engineService)
     {
@@ -488,7 +488,7 @@ public class MyAwesomeService : IMyAwesomeService
         Title="My Awesome Plugin" Height="450" Width="800"
         WindowStartupLocation="CenterOwner">
     
-    <Window.Resources>
+    \<Window.Resources\>
         <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Margin" Value="5"/>
             <Setter Property="Padding" Value="10,5"/>
@@ -497,7 +497,7 @@ public class MyAwesomeService : IMyAwesomeService
     </Window.Resources>
     
     <Grid Margin="10">
-        <Grid.RowDefinitions>
+        \<Grid.RowDefinitions\>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
@@ -513,7 +513,7 @@ public class MyAwesomeService : IMyAwesomeService
         <TabControl Grid.Row="1">
             <TabItem Header="Image Processing">
                 <Grid Margin="10">
-                    <Grid.RowDefinitions>
+                    \<Grid.RowDefinitions\>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
@@ -576,7 +576,7 @@ public class MyAwesomeService : IMyAwesomeService
         
         <!-- Status Bar -->
         <StatusBar Grid.Row="2">
-            <StatusBarItem>
+            \<StatusBarItem\>
                 <TextBlock Text="{Binding StatusMessage}"/>
             </StatusBarItem>
             <StatusBarItem HorizontalAlignment="Right">
@@ -693,7 +693,7 @@ public class MenuIntegration
     public static void RegisterMenuItems(IPluginContext context)
     {
         // 添加主菜单项
-        var mainMenu = context.GetService<IMainMenu>();
+        var mainMenu = context.GetService\<IMainMenu\>();
         var pluginMenu = new MenuItem
         {
             Header = "My Awesome Plugin",
@@ -724,7 +724,7 @@ public class MenuIntegration
     
     private static void RegisterShortcuts(IPluginContext context)
     {
-        var shortcutService = context.GetService<IShortcutService>();
+        var shortcutService = context.GetService\<IShortcutService\>();
         
         shortcutService.RegisterShortcut(
             new KeyGesture(Key.A, ModifierKeys.Control | ModifierKeys.Shift),
@@ -771,14 +771,14 @@ using ColorVision.Plugins.MyAwesome;
 
 public class MyAwesomeServiceTests
 {
-    private readonly Mock<ILogger> _mockLogger;
-    private readonly Mock<IEngineService> _mockEngineService;
+    private readonly Mock\<ILogger\> _mockLogger;
+    private readonly Mock\<IEngineService\> _mockEngineService;
     private readonly MyAwesomeService _service;
     
     public MyAwesomeServiceTests()
     {
-        _mockLogger = new Mock<ILogger>();
-        _mockEngineService = new Mock<IEngineService>();
+        _mockLogger = new Mock\<ILogger\>();
+        _mockEngineService = new Mock\<IEngineService\>();
         _service = new MyAwesomeService(_mockLogger.Object, _mockEngineService.Object);
     }
     
@@ -800,13 +800,13 @@ public class MyAwesomeServiceTests
         var imagePath = "test-image.jpg";
         var mockResult = new ProcessingResult { Success = true };
         
-        _mockEngineService.Setup(x => x.ExecuteTemplateAsync(It.IsAny<object>(), It.IsAny<object>()))
+        _mockEngineService.Setup(x => x.ExecuteTemplateAsync(It.IsAny\<object\>(), It.IsAny\<object\>()))
                           .ReturnsAsync(mockResult);
         
         // Act & Assert
         await _service.ProcessImageAsync(imagePath);
         
-        _mockEngineService.Verify(x => x.ExecuteTemplateAsync(It.IsAny<object>(), It.IsAny<object>()), Times.Once);
+        _mockEngineService.Verify(x => x.ExecuteTemplateAsync(It.IsAny\<object\>(), It.IsAny\<object\>()), Times.Once);
     }
 }
 ```
@@ -815,7 +815,7 @@ public class MyAwesomeServiceTests
 
 ```csharp
 [Collection("Plugin Integration Tests")]
-public class PluginIntegrationTests : IClassFixture<PluginTestFixture>
+public class PluginIntegrationTests : IClassFixture\<PluginTestFixture\>
 {
     private readonly PluginTestFixture _fixture;
     
@@ -847,17 +847,17 @@ public class PluginIntegrationTests : IClassFixture<PluginTestFixture>
 
 ```xml
 <!-- Build.targets -->
-<Project>
+\<Project\>
   <Target Name="PackagePlugin" AfterTargets="Build">
-    <PropertyGroup>
-      <PackageDir>$(OutputPath)Package\</PackageDir>
+    \<PropertyGroup\>
+      \<PackageDir\>$(OutputPath)Package\</PackageDir>
     </PropertyGroup>
     
     <!-- 创建包目录 -->
     <MakeDir Directories="$(PackageDir)" />
     
     <!-- 复制插件文件 -->
-    <ItemGroup>
+    \<ItemGroup\>
       <PluginFiles Include="$(OutputPath)**\*.*" Exclude="$(OutputPath)**\*.pdb;$(OutputPath)**\*.xml" />
     </ItemGroup>
     
@@ -913,7 +913,7 @@ public class PluginErrorHandler
 {
     private readonly ILogger _logger;
     
-    public async Task<T> ExecuteWithErrorHandlingAsync<T>(Func<Task<T>> operation, string operationName)
+    public async Task\<T\> ExecuteWithErrorHandlingAsync\<T\>(Func<Task\<T\>> operation, string operationName)
     {
         try
         {
@@ -946,19 +946,19 @@ public class PluginErrorHandler
 public class PerformanceOptimizer
 {
     // 使用对象池减少内存分配
-    private readonly ObjectPool<StringBuilder> _stringBuilderPool;
+    private readonly ObjectPool\<StringBuilder\> _stringBuilderPool;
     
     // 缓存昂贵的计算结果
     private readonly MemoryCache _computationCache;
     
     // 异步操作避免阻塞UI线程
-    public async Task<ProcessingResult> ProcessImageAsync(string imagePath)
+    public async Task\<ProcessingResult\> ProcessImageAsync(string imagePath)
     {
         return await Task.Run(() => ProcessImageCore(imagePath));
     }
     
     // 合理使用ConfigureAwait
-    private async Task<string> LoadConfigurationAsync()
+    private async Task\<string\> LoadConfigurationAsync()
     {
         var content = await File.ReadAllTextAsync(ConfigPath).ConfigureAwait(false);
         return content;
@@ -971,7 +971,7 @@ public class PerformanceOptimizer
 ```csharp
 public class ResourceManager : IDisposable
 {
-    private readonly List<IDisposable> _disposables = new();
+    private readonly List\\<IDisposable\> _disposables = new();
     private bool _disposed;
     
     public void RegisterDisposable(IDisposable disposable)
@@ -1010,7 +1010,7 @@ public class PluginConfiguration
     public bool EnableGpuAcceleration { get; set; } = true;
     public string OutputDirectory { get; set; } = "./Output";
     
-    public static async Task<PluginConfiguration> LoadAsync(string configPath)
+    public static async Task\<PluginConfiguration\> LoadAsync(string configPath)
     {
         if (!File.Exists(configPath))
         {
@@ -1020,7 +1020,7 @@ public class PluginConfiguration
         }
         
         var json = await File.ReadAllTextAsync(configPath);
-        return JsonSerializer.Deserialize<PluginConfiguration>(json);
+        return JsonSerializer.Deserialize\<PluginConfiguration\>(json);
     }
     
     public static async Task SaveAsync(PluginConfiguration config, string configPath)

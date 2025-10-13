@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8625,CS8604,CS8602
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.Database;
@@ -73,12 +74,18 @@ namespace ColorVision.Engine.Templates.POI
         {
             DataContext = PoiParam;
             ListView1.ItemsSource = DrawingVisualLists;
+            ListView1.ContextMenu = new ContextMenu();
             ImageView.ImageViewModel.ImageEditMode = true;
             ImageView.ImageViewModel.SelectEditorVisual.SelectVisualChanged += (s, e) =>
             {
                 ListView1.SelectedItem = e;
                 ListView1.ScrollIntoView(e);
             };
+
+            MoveUpCommand = new RelayCommand(a => MoveUp(), a => ListView1?.SelectedIndex > 0); // 假设ListView1是ViewModel中的属性或可以通过绑定访问
+            MoveDownCommand = new RelayCommand(a => MoveDown(), a => ListView1?.SelectedIndex < DrawingVisualLists.Count - 1);
+            MoveToTopCommand = new RelayCommand(a => MoveToTop(), a => ListView1?.SelectedIndex > 0);
+            MoveToBottomCommand = new RelayCommand(a => MoveToBottom(), a => ListView1?.SelectedIndex < DrawingVisualLists.Count - 1);
 
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(GraphicBorderType)).Cast<GraphicBorderType>()  select new KeyValuePair<GraphicBorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;
@@ -1641,6 +1648,90 @@ namespace ColorVision.Engine.Templates.POI
             PoiEditRectCache.Instance.RightBottomX = PoiParam.PoiConfig.Polygon4X;
             PoiEditRectCache.Instance.RightBottomY = PoiParam.PoiConfig.Polygon4Y;
         }
+
+        private void ListView1_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            ListView1.ContextMenu.Items.Clear();
+
+            Type type = DrawingVisualLists[ListView1.SelectedIndex].GetType();
+            foreach (var provider in ImageView.ImageViewModel.IEditorToolFactory.ContextMenuProviders)
+            {
+                if (provider.ContextType.IsAssignableFrom(type))
+                {
+                    var items = provider.GetContextMenuItems(ImageView.ImageViewModel, DrawingVisualLists[ListView1.SelectedIndex]);
+                    foreach (var item in items)
+                        ListView1.ContextMenu.Items.Add(item);
+                }
+            }
+            var moveUpItem = new MenuItem { Header = "上移", Command = MoveUpCommand };
+            ListView1.ContextMenu.Items.Add(moveUpItem);
+
+            var moveDownItem = new MenuItem { Header = "下移", Command = MoveDownCommand };
+            ListView1.ContextMenu.Items.Add(moveDownItem);
+
+            var moveToTopItem = new MenuItem { Header = "移动到首位", Command = MoveToTopCommand };
+            ListView1.ContextMenu.Items.Add(moveToTopItem);
+
+            var moveToBottomItem = new MenuItem { Header = "移动到末尾", Command = MoveToBottomCommand };
+            ListView1.ContextMenu.Items.Add(moveToBottomItem);
+
+
+
+        }
+        RelayCommand MoveUpCommand { get; set; }
+        RelayCommand MoveDownCommand { get; set; }
+        RelayCommand MoveToTopCommand { get; set; }
+        RelayCommand MoveToBottomCommand { get; set; }
+
+        // 添加移动方法
+        private void MoveUp()
+        {
+            int index = ListView1.SelectedIndex; // 假设ListView1是ViewModel中的属性
+            if (index > 0)
+            {
+                var item = DrawingVisualLists[index];
+                DrawingVisualLists.RemoveAt(index);
+                DrawingVisualLists.Insert(index - 1, item);
+                ListView1.SelectedIndex = index - 1;
+            }
+        }
+
+        private void MoveDown()
+        {
+            int index = ListView1.SelectedIndex;
+            if (index < DrawingVisualLists.Count - 1)
+            {
+                var item = DrawingVisualLists[index];
+                DrawingVisualLists.RemoveAt(index);
+                DrawingVisualLists.Insert(index + 1, item);
+                ListView1.SelectedIndex = index + 1;
+            }
+        }
+
+        private void MoveToTop()
+        {
+            int index = ListView1.SelectedIndex;
+            if (index > 0)
+            {
+                var item = DrawingVisualLists[index];
+                DrawingVisualLists.RemoveAt(index);
+                DrawingVisualLists.Insert(0, item);
+                ListView1.SelectedIndex = 0;
+            }
+        }
+
+        private void MoveToBottom()
+        {
+            int index = ListView1.SelectedIndex;
+            if (index < DrawingVisualLists.Count - 1)
+            {
+                var item = DrawingVisualLists[index];
+                DrawingVisualLists.RemoveAt(index);
+                DrawingVisualLists.Add(item);
+                ListView1.SelectedIndex = DrawingVisualLists.Count - 1;
+            }
+        }
+
     }
 
 }

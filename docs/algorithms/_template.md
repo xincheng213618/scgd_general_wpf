@@ -240,7 +240,7 @@ public interface IAlgorithm
     string Version { get; }
     
     AlgorithmResult Process(Mat image, AlgorithmParameters parameters);
-    Task<AlgorithmResult> ProcessAsync(Mat image, AlgorithmParameters parameters);
+    Task\<AlgorithmResult\> ProcessAsync(Mat image, AlgorithmParameters parameters);
     
     bool ValidateParameters(AlgorithmParameters parameters);
     AlgorithmInfo GetAlgorithmInfo();
@@ -263,7 +263,7 @@ public class CustomDetectionAlgorithm : IAlgorithm
         return ProcessCore(image, parameters);
     }
     
-    public async Task<AlgorithmResult> ProcessAsync(Mat image, AlgorithmParameters parameters)
+    public async Task\<AlgorithmResult\> ProcessAsync(Mat image, AlgorithmParameters parameters)
     {
         return await Task.Run(() => Process(image, parameters));
     }
@@ -302,7 +302,7 @@ if (result.Success)
 
 // 批量处理
 var images = Directory.GetFiles("images", "*.jpg");
-var results = new List<AlgorithmResult>();
+var results = new List\\<AlgorithmResult\>();
 
 foreach (var imagePath in images)
 {

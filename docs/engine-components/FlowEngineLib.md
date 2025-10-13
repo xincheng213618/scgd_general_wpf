@@ -215,8 +215,8 @@ flowEngine.RunFlow("MainFlow");
 public void AddDevice(DeviceNode device)
 
 // 更新设备状态
-public void UpdateDevice(Dictionary<string, Dictionary<string, DeviceNode>> devices)
-public void UpdateDevice(List<MQTTServiceInfo> services)
+public void UpdateDevice(Dictionary\<string, Dictionary\\<string, DeviceNode>\> devices)
+public void UpdateDevice(List\\<MQTTServiceInfo\> services)
 
 // 清除所有设备
 public void Clear()
@@ -240,7 +240,7 @@ public static FlowServiceManager Instance
 public void AddService(MQTTServiceInfo service)
 
 // 获取所有服务
-public List<MQTTServiceInfo> GetServices()
+public List\\<MQTTServiceInfo\> GetServices()
 
 // 查找服务
 public MQTTServiceInfo FindService(string serviceType, string serviceCode)
@@ -474,7 +474,7 @@ public class MQTTServiceInfo
 {
     public string ServiceType { get; set; }              // 服务类型
     public string ServiceCode { get; set; }              // 服务代码
-    public Dictionary<string, MQTTDeviceInfo> Devices    // 设备列表
+    public Dictionary\\<string, MQTTDeviceInfo\> Devices    // 设备列表
 }
 ```
 
@@ -566,7 +566,7 @@ public class CVLoopCFC
 public class AlgorithmParam
 {
     public string AlgorithmType { get; set; }         // 算法类型
-    public Dictionary<string, object> Params          // 算法参数
+    public Dictionary\\<string, object\> Params          // 算法参数
 }
 ```
 
@@ -611,7 +611,7 @@ public class Channel
 {
     public string ChannelName { get; set; }      // 通道名称
     public int ChannelID { get; set; }           // 通道ID
-    public Dictionary<string, object> Params     // 通道参数
+    public Dictionary\\<string, object\> Params     // 通道参数
 }
 ```
 
@@ -643,7 +643,7 @@ public class CameraDataModel
     public string CameraType { get; set; }           // 相机类型
     public int Width { get; set; }                   // 图像宽度
     public int Height { get; set; }                  // 图像高度
-    public Dictionary<string, Channel> Channels      // 通道集合
+    public Dictionary\\<string, Channel\> Channels      // 通道集合
 }
 ```
 
@@ -730,8 +730,8 @@ public enum MotorRunType
 public class CVTemplateParam
 {
     public string TemplateName { get; set; }         // 模板名称
-    public Dictionary<string, object> Params         // 模板参数
-    public List<NodeConfig> Nodes                    // 节点配置列表
+    public Dictionary\\<string, object\> Params         // 模板参数
+    public List\\<NodeConfig\> Nodes                    // 节点配置列表
 }
 ```
 
@@ -749,7 +749,7 @@ public class CVTemplateParam
 ```csharp
 public class POITemplateParam
 {
-    public List<POIStorageModel> POIs { get; set; }
+    public List\\<POIStorageModel\> POIs { get; set; }
 }
 
 public class POIStorageModel
@@ -1033,7 +1033,7 @@ protected override void OnCreate()
 protected override void DoServerWork(CVStartCFC cfc)
 {
     // 获取输入数据
-    var inputData = GetInputData<double>("Input1");
+    var inputData = GetInputData\<double\>("Input1");
     
     // 处理数据
     var result = ProcessData(inputData);
@@ -1049,7 +1049,7 @@ protected override void DoServerWork(CVStartCFC cfc)
 ### 创建循环节点
 
 ```csharp
-public class MyLoopNode : CVBaseLoopServerNode<MyLoopProperty>
+public class MyLoopNode : CVBaseLoopServerNode\<MyLoopProperty\>
 {
     protected override void DoLoopAction(CVStartCFC cfc, int loopIndex)
     {
@@ -1172,13 +1172,13 @@ protected override void DoServerWork(CVStartCFC cfc)
 
 ```csharp
 // 节点A保存数据
-cfc.Params = new Dictionary<string, object>
+cfc.Params = new Dictionary\\<string, object\>
 {
     ["SharedData"] = myData
 };
 
 // 节点B读取数据
-var sharedData = (cfc.Params as Dictionary<string, object>)?["SharedData"];
+var sharedData = (cfc.Params as Dictionary\\<string, object\>)?["SharedData"];
 ```
 
 ### Q3: 如何实现条件分支？

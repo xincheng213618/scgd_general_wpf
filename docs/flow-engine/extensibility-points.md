@@ -28,22 +28,22 @@
 Flow Engine 的核心初始化扩展点：
 
 ```csharp
-/// <summary>
+/// \<summary\>
 /// Flow Engine 初始化器接口
 /// 用于在系统启动时初始化流程引擎相关组件
 /// </summary>
 public interface IInitializerFlow : IInitializer
 {
-    /// <summary>初始化器名称</summary>
+    /// \<summary\>初始化器名称</summary>
     string Name { get; }
     
-    /// <summary>依赖的其他初始化器</summary>
-    IEnumerable<string> Dependencies { get; }
+    /// \<summary\>依赖的其他初始化器</summary>
+    IEnumerable\<string\> Dependencies { get; }
     
-    /// <summary>初始化顺序（数值越小越早执行）</summary>
+    /// \<summary\>初始化顺序（数值越小越早执行）</summary>
     int Order { get; }
     
-    /// <summary>异步初始化方法</summary>
+    /// \<summary\>异步初始化方法</summary>
     Task InitializeAsync();
 }
 ```
@@ -66,7 +66,7 @@ public class DatabaseFlowInitializer : IInitializerFlow
     private readonly ILogger _logger;
     
     public string Name => "Database Flow Integration";
-    public IEnumerable<string> Dependencies => new[] { "Database" };
+    public IEnumerable\<string\> Dependencies => new[] { "Database" };
     public int Order => 20;
 
     public async Task InitializeAsync()
@@ -74,8 +74,8 @@ public class DatabaseFlowInitializer : IInitializerFlow
         _logger.Information("Initializing database flow integration");
         
         // 创建流程相关表
-        await _database.CreateTableIfNotExistsAsync<FlowState>();
-        await _database.CreateTableIfNotExistsAsync<FlowExecution>();
+        await _database.CreateTableIfNotExistsAsync\<FlowState\>();
+        await _database.CreateTableIfNotExistsAsync\<FlowExecution\>();
         
         // 初始化数据库连接池
         await _database.WarmUpConnectionPoolAsync();
@@ -92,40 +92,40 @@ public class DatabaseFlowInitializer : IInitializerFlow
 自定义流程节点的核心接口：
 
 ```csharp
-/// <summary>
+/// \<summary\>
 /// 流程节点接口
 /// 定义流程中可执行的单个步骤
 /// </summary>
 public interface IFlowNode
 {
-    /// <summary>节点类型标识符</summary>
+    /// \<summary\>节点类型标识符</summary>
     string NodeType { get; }
     
-    /// <summary>节点实例ID</summary>
+    /// \<summary\>节点实例ID</summary>
     string NodeId { get; set; }
     
-    /// <summary>节点名称</summary>
+    /// \<summary\>节点名称</summary>
     string NodeName { get; set; }
     
-    /// <summary>节点参数配置</summary>
-    Dictionary<string, object> Parameters { get; set; }
+    /// \<summary\>节点参数配置</summary>
+    Dictionary\\<string, object\> Parameters { get; set; }
     
-    /// <summary>节点依赖的其他节点</summary>
-    IEnumerable<string> Dependencies { get; set; }
+    /// \<summary\>节点依赖的其他节点</summary>
+    IEnumerable\<string\> Dependencies { get; set; }
     
-    /// <summary>异步执行节点逻辑</summary>
+    /// \<summary\>异步执行节点逻辑</summary>
     /// <param name="context">执行上下文</param>
-    /// <returns>执行结果</returns>
-    Task<FlowNodeResult> ExecuteAsync(FlowContext context);
+    /// \<returns\>执行结果</returns>
+    Task\<FlowNodeResult\> ExecuteAsync(FlowContext context);
     
-    /// <summary>验证节点参数</summary>
-    /// <returns>验证结果</returns>
+    /// \<summary\>验证节点参数</summary>
+    /// \<returns\>验证结果</returns>
     ValidationResult ValidateParameters();
     
-    /// <summary>获取节点执行的预估时间</summary>
+    /// \<summary\>获取节点执行的预估时间</summary>
     TimeSpan GetEstimatedDuration();
     
-    /// <summary>检查节点是否可以执行</summary>
+    /// \<summary\>检查节点是否可以执行</summary>
     bool CanExecute(FlowContext context);
 }
 ```
@@ -152,17 +152,17 @@ public class CustomImageProcessNode : IFlowNode
     public string NodeType => "CustomImageProcess";
     public string NodeId { get; set; }
     public string NodeName { get; set; } = "自定义图像处理";
-    public Dictionary<string, object> Parameters { get; set; } = new();
-    public IEnumerable<string> Dependencies { get; set; } = new List<string>();
+    public Dictionary\\<string, object\> Parameters { get; set; } = new();
+    public IEnumerable\<string\> Dependencies { get; set; } = new List\\<string\>();
 
-    public async Task<FlowNodeResult> ExecuteAsync(FlowContext context)
+    public async Task\<FlowNodeResult\> ExecuteAsync(FlowContext context)
     {
         try
         {
             // 获取输入参数
-            var imagePath = Parameters.GetValue<string>("ImagePath");
-            var algorithm = Parameters.GetValue<string>("Algorithm");
-            var threshold = Parameters.GetValue<double>("Threshold", 0.5);
+            var imagePath = Parameters.GetValue\<string\>("ImagePath");
+            var algorithm = Parameters.GetValue\<string\>("Algorithm");
+            var threshold = Parameters.GetValue\<double\>("Threshold", 0.5);
             
             // 执行图像处理
             var result = await ProcessImageAsync(imagePath, algorithm, threshold);
@@ -198,7 +198,7 @@ public class CustomImageProcessNode : IFlowNode
     public TimeSpan GetEstimatedDuration()
     {
         // 根据算法类型估算执行时间
-        var algorithm = Parameters.GetValue<string>("Algorithm");
+        var algorithm = Parameters.GetValue\<string\>("Algorithm");
         return algorithm switch
         {
             "FastDetection" => TimeSpan.FromSeconds(1),
@@ -221,9 +221,9 @@ public class CustomImageProcessNode : IFlowNode
 ```csharp
 public class FlowNodeRegistry : IFlowNodeRegistry
 {
-    private readonly Dictionary<string, Type> _nodeTypes = new();
+    private readonly Dictionary\\<string, Type\> _nodeTypes = new();
     
-    public void RegisterNode<T>() where T : IFlowNode, new()
+    public void RegisterNode\<T\>() where T : IFlowNode, new()
     {
         var instance = new T();
         _nodeTypes[instance.NodeType] = typeof(T);
@@ -241,9 +241,9 @@ public class FlowNodeRegistry : IFlowNodeRegistry
 }
 
 // 在启动时注册
-registry.RegisterNode<CustomImageProcessNode>();
-registry.RegisterNode<AlgorithmNode>();
-registry.RegisterNode<DeviceControlNode>();
+registry.RegisterNode\<CustomImageProcessNode\>();
+registry.RegisterNode\<AlgorithmNode\>();
+registry.RegisterNode\<DeviceControlNode\>();
 ```
 
 ## 调度器扩展
@@ -253,31 +253,31 @@ registry.RegisterNode<DeviceControlNode>();
 自定义流程调度策略：
 
 ```csharp
-/// <summary>
+/// \<summary\>
 /// 流程调度器接口
 /// 控制流程的执行顺序和资源分配
 /// </summary>
 public interface IFlowScheduler
 {
-    /// <summary>调度器名称</summary>
+    /// \<summary\>调度器名称</summary>
     string SchedulerName { get; }
     
-    /// <summary>支持的调度模式</summary>
+    /// \<summary\>支持的调度模式</summary>
     SchedulingMode SupportedModes { get; }
     
-    /// <summary>调度流程执行</summary>
+    /// \<summary\>调度流程执行</summary>
     Task ScheduleFlowAsync(FlowExecutionRequest request);
     
-    /// <summary>获取当前调度状态</summary>
+    /// \<summary\>获取当前调度状态</summary>
     SchedulerStatus GetStatus();
     
-    /// <summary>暂停调度器</summary>
+    /// \<summary\>暂停调度器</summary>
     Task PauseAsync();
     
-    /// <summary>恢复调度器</summary>
+    /// \<summary\>恢复调度器</summary>
     Task ResumeAsync();
     
-    /// <summary>关闭调度器</summary>
+    /// \<summary\>关闭调度器</summary>
     Task ShutdownAsync();
 }
 ```
@@ -287,7 +287,7 @@ public interface IFlowScheduler
 ```csharp
 public class PriorityBasedScheduler : IFlowScheduler
 {
-    private readonly PriorityQueue<FlowExecutionRequest> _queue = new();
+    private readonly PriorityQueue\<FlowExecutionRequest\> _queue = new();
     private readonly SemaphoreSlim _semaphore;
     
     public string SchedulerName => "Priority-Based Scheduler";
@@ -328,26 +328,26 @@ public class PriorityBasedScheduler : IFlowScheduler
 自定义状态持久化实现：
 
 ```csharp
-/// <summary>
+/// \<summary\>
 /// 流程状态存储接口
 /// 提供流程状态的持久化能力
 /// </summary>
 public interface IFlowStateStore
 {
-    /// <summary>保存流程状态</summary>
+    /// \<summary\>保存流程状态</summary>
     Task SaveStateAsync(FlowStateSnapshot state);
     
-    /// <summary>加载流程状态</summary>
-    Task<FlowStateSnapshot> LoadStateAsync(string flowId);
+    /// \<summary\>加载流程状态</summary>
+    Task\<FlowStateSnapshot\> LoadStateAsync(string flowId);
     
-    /// <summary>删除流程状态</summary>
+    /// \<summary\>删除流程状态</summary>
     Task DeleteStateAsync(string flowId);
     
-    /// <summary>查询流程状态</summary>
-    Task<IEnumerable<FlowStateSnapshot>> QueryStatesAsync(FlowStateQuery query);
+    /// \<summary\>查询流程状态</summary>
+    Task\<IEnumerable<FlowStateSnapshot>\> QueryStatesAsync(FlowStateQuery query);
     
-    /// <summary>获取活跃流程数量</summary>
-    Task<int> GetActiveFlowCountAsync();
+    /// \<summary\>获取活跃流程数量</summary>
+    Task\<int\> GetActiveFlowCountAsync();
 }
 ```
 
@@ -371,7 +371,7 @@ public class RedisFlowStateStore : IFlowStateStore
         await UpdateIndexAsync(state);
     }
     
-    public async Task<FlowStateSnapshot> LoadStateAsync(string flowId)
+    public async Task\<FlowStateSnapshot\> LoadStateAsync(string flowId)
     {
         var key = $"flow_state:{flowId}";
         var value = await _redis.StringGetAsync(key);
@@ -379,7 +379,7 @@ public class RedisFlowStateStore : IFlowStateStore
         if (!value.HasValue)
             return null;
             
-        return _serializer.Deserialize<FlowStateSnapshot>(value);
+        return _serializer.Deserialize\<FlowStateSnapshot\>(value);
     }
     
     private async Task UpdateIndexAsync(FlowStateSnapshot state)
@@ -403,22 +403,22 @@ public class RedisFlowStateStore : IFlowStateStore
 流程事件监听和处理：
 
 ```csharp
-/// <summary>
+/// \<summary\>
 /// 流程事件监听器接口
 /// 处理流程执行过程中的各种事件
 /// </summary>
 public interface IFlowEventListener
 {
-    /// <summary>监听器名称</summary>
+    /// \<summary\>监听器名称</summary>
     string ListenerName { get; }
     
-    /// <summary>感兴趣的事件类型</summary>
-    IEnumerable<Type> InterestedEventTypes { get; }
+    /// \<summary\>感兴趣的事件类型</summary>
+    IEnumerable\<Type\> InterestedEventTypes { get; }
     
-    /// <summary>处理事件</summary>
+    /// \<summary\>处理事件</summary>
     Task HandleEventAsync(FlowEvent eventData);
     
-    /// <summary>事件处理优先级</summary>
+    /// \<summary\>事件处理优先级</summary>
     int Priority { get; }
 }
 ```
@@ -432,7 +432,7 @@ public class FlowMetricsCollector : IFlowEventListener
     
     public string ListenerName => "Flow Metrics Collector";
     
-    public IEnumerable<Type> InterestedEventTypes => new[]
+    public IEnumerable\<Type\> InterestedEventTypes => new[]
     {
         typeof(FlowStartedEvent),
         typeof(FlowCompletedEvent),
@@ -485,7 +485,7 @@ public class FlowMetricsCollector : IFlowEventListener
 
 #### 错误处理
 ```csharp
-public async Task<FlowNodeResult> ExecuteAsync(FlowContext context)
+public async Task\<FlowNodeResult\> ExecuteAsync(FlowContext context)
 {
     try
     {
@@ -516,10 +516,10 @@ public async Task<FlowNodeResult> ExecuteAsync(FlowContext context)
 ```csharp
 public class OptimizedImageProcessNode : IFlowNode
 {
-    private static readonly ObjectPool<ImageProcessor> _processorPool = 
-        new DefaultObjectPool<ImageProcessor>(new ImageProcessorPoolPolicy());
+    private static readonly ObjectPool\<ImageProcessor\> _processorPool = 
+        new DefaultObjectPool\<ImageProcessor\>(new ImageProcessorPoolPolicy());
     
-    public async Task<FlowNodeResult> ExecuteAsync(FlowContext context)
+    public async Task\<FlowNodeResult\> ExecuteAsync(FlowContext context)
     {
         var processor = _processorPool.Get();
         try
@@ -556,18 +556,18 @@ public class FlowEngineExtensionModule : IModule
     public void ConfigureServices(IServiceCollection services)
     {
         // 注册节点类型
-        services.AddTransient<IFlowNode, CustomImageProcessNode>();
-        services.AddTransient<IFlowNode, DeviceControlNode>();
+        services.AddTransient\<IFlowNode, CustomImageProcessNode\>();
+        services.AddTransient\<IFlowNode, DeviceControlNode\>();
         
         // 注册调度器
-        services.AddSingleton<IFlowScheduler, PriorityBasedScheduler>();
+        services.AddSingleton\<IFlowScheduler, PriorityBasedScheduler\>();
         
         // 注册状态存储
-        services.AddSingleton<IFlowStateStore, RedisFlowStateStore>();
+        services.AddSingleton\<IFlowStateStore, RedisFlowStateStore\>();
         
         // 注册事件监听器
-        services.AddTransient<IFlowEventListener, FlowMetricsCollector>();
-        services.AddTransient<IFlowEventListener, FlowAuditLogger>();
+        services.AddTransient\<IFlowEventListener, FlowMetricsCollector\>();
+        services.AddTransient\<IFlowEventListener, FlowAuditLogger\>();
     }
 }
 ```

@@ -299,13 +299,13 @@ public AlgorithmResult ProcessImageSafely(Mat image, AlgorithmParameters paramet
 ```csharp
 public interface IGhostDetectionAlgorithm : IAlgorithm
 {
-    /// <summary>重影检测特定方法</summary>
+    /// \<summary\>重影检测特定方法</summary>
     GhostDetectionResult DetectGhost(Mat image, GhostDetectionParameters parameters);
     
-    /// <summary>设置重影检测模板</summary>
+    /// \<summary\>设置重影检测模板</summary>
     void SetGhostTemplate(Mat template);
     
-    /// <summary>获取算法特定统计信息</summary>
+    /// \<summary\>获取算法特定统计信息</summary>
     GhostDetectionStatistics GetStatistics();
 }
 ```
@@ -341,7 +341,7 @@ public class AdvancedGhostDetectionAlgorithm : IGhostDetectionAlgorithm
     {
         // 多尺度模板匹配
         var scales = new[] { 0.8, 1.0, 1.2 };
-        var allMatches = new List<GhostMatch>();
+        var allMatches = new List\\<GhostMatch\>();
         
         foreach (var scale in scales)
         {
@@ -393,7 +393,7 @@ class GhostDetectionExample
     public static async Task Main(string[] args)
     {
         // 创建算法实例
-        var algorithm = AlgorithmFactory.Create<IGhostDetectionAlgorithm>("ghost-detection");
+        var algorithm = AlgorithmFactory.Create\<IGhostDetectionAlgorithm\>("ghost-detection");
         
         // 加载测试图像
         var image = Cv2.ImRead("display_test.jpg", ImreadModes.Color);
@@ -480,7 +480,7 @@ class GhostDetectionExample
 ```csharp
 public async Task BatchGhostDetectionAsync(string inputFolder, string outputFolder)
 {
-    var algorithm = AlgorithmFactory.Create<IGhostDetectionAlgorithm>("ghost-detection");
+    var algorithm = AlgorithmFactory.Create\<IGhostDetectionAlgorithm\>("ghost-detection");
     var parameters = new AlgorithmParameters
     {
         ["threshold"] = 0.35,
@@ -488,7 +488,7 @@ public async Task BatchGhostDetectionAsync(string inputFolder, string outputFold
     };
     
     var imageFiles = Directory.GetFiles(inputFolder, "*.jpg");
-    var results = new List<BatchResult>();
+    var results = new List\\<BatchResult\>();
     
     // 并行处理多个图像
     await Parallel.ForEachAsync(imageFiles, 

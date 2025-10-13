@@ -277,7 +277,7 @@ public static class MySqlControl
         }
     }
     
-    public static DataTable ExecuteQuery(string sql, Dictionary<string, object> parameters = null)
+    public static DataTable ExecuteQuery(string sql, Dictionary\\<string, object\> parameters = null)
     {
         using var connection = GetConnection();
         using var command = new MySqlCommand(sql, connection);
@@ -297,7 +297,7 @@ public static class MySqlControl
         return dataTable;
     }
     
-    public static int ExecuteNonQuery(string sql, Dictionary<string, object> parameters = null)
+    public static int ExecuteNonQuery(string sql, Dictionary\\<string, object\> parameters = null)
     {
         using var connection = GetConnection();
         using var command = new MySqlCommand(sql, connection);
@@ -323,7 +323,7 @@ public static class MySqlControl
 ### 基础表DAO
 
 ```csharp
-public abstract class BaseTableDao<T> where T : class, IEntity, new()
+public abstract class BaseTableDao\<T\> where T : class, IEntity, new()
 {
     protected readonly string ConnectionString;
     protected readonly string TableName;
@@ -334,7 +334,7 @@ public abstract class BaseTableDao<T> where T : class, IEntity, new()
         TableName = tableName;
     }
     
-    public virtual List<T> GetAll()
+    public virtual List\<T\> GetAll()
     {
         var sql = $"SELECT * FROM {TableName}";
         return ExecuteQuery(sql);
@@ -343,7 +343,7 @@ public abstract class BaseTableDao<T> where T : class, IEntity, new()
     public virtual T GetById(int id)
     {
         var sql = $"SELECT * FROM {TableName} WHERE Id = @id";
-        var parameters = new Dictionary<string, object> { { "@id", id } };
+        var parameters = new Dictionary\\<string, object\> { { "@id", id } };
         return ExecuteQuery(sql, parameters).FirstOrDefault();
     }
     
@@ -374,20 +374,20 @@ public abstract class BaseTableDao<T> where T : class, IEntity, new()
     public virtual int Delete(int id)
     {
         var sql = $"DELETE FROM {TableName} WHERE Id = @id";
-        var parameters = new Dictionary<string, object> { { "@id", id } };
+        var parameters = new Dictionary\\<string, object\> { { "@id", id } };
         
         return MySqlControl.ExecuteNonQuery(sql, parameters);
     }
     
-    protected List<T> ExecuteQuery(string sql, Dictionary<string, object> parameters = null)
+    protected List\<T\> ExecuteQuery(string sql, Dictionary\\<string, object\> parameters = null)
     {
         var dataTable = MySqlControl.ExecuteQuery(sql, parameters);
         return MapDataTableToEntities(dataTable);
     }
     
-    protected virtual List<T> MapDataTableToEntities(DataTable dataTable)
+    protected virtual List\<T\> MapDataTableToEntities(DataTable dataTable)
     {
-        var entities = new List<T>();
+        var entities = new List\<T\>();
         var properties = typeof(T).GetProperties();
         
         foreach (DataRow row in dataTable.Rows)
@@ -446,18 +446,18 @@ public class User : IEntity
 }
 
 // 用户DAO实现
-public class UserDao : BaseTableDao<User>
+public class UserDao : BaseTableDao\<User\>
 {
     public UserDao() : base("users") { }
     
     public User GetByUsername(string username)
     {
         var sql = $"SELECT * FROM {TableName} WHERE Username = @username";
-        var parameters = new Dictionary<string, object> { { "@username", username } };
+        var parameters = new Dictionary\\<string, object\> { { "@username", username } };
         return ExecuteQuery(sql, parameters).FirstOrDefault();
     }
     
-    public List<User> GetActiveUsers()
+    public List\\<User\> GetActiveUsers()
     {
         var sql = $"SELECT * FROM {TableName} WHERE IsActive = 1";
         return ExecuteQuery(sql);
@@ -751,21 +751,21 @@ public class Product : IEntity
 }
 
 // 产品DAO
-public class ProductDao : BaseTableDao<Product>
+public class ProductDao : BaseTableDao\<Product\>
 {
     public ProductDao() : base("products") { }
     
-    public List<Product> GetByCategory(int categoryId)
+    public List\\<Product\> GetByCategory(int categoryId)
     {
         var sql = $"SELECT * FROM {TableName} WHERE CategoryId = @categoryId AND IsAvailable = 1";
-        var parameters = new Dictionary<string, object> { { "@categoryId", categoryId } };
+        var parameters = new Dictionary\\<string, object\> { { "@categoryId", categoryId } };
         return ExecuteQuery(sql, parameters);
     }
     
-    public List<Product> SearchByName(string name)
+    public List\\<Product\> SearchByName(string name)
     {
         var sql = $"SELECT * FROM {TableName} WHERE Name LIKE @name AND IsAvailable = 1";
-        var parameters = new Dictionary<string, object> { { "@name", $"%{name}%" } };
+        var parameters = new Dictionary\\<string, object\> { { "@name", $"%{name}%" } };
         return ExecuteQuery(sql, parameters);
     }
 }
@@ -865,7 +865,7 @@ public class SqliteLog
             INSERT INTO {_logTableName} (Level, Message, Exception, Source)
             VALUES (@level, @message, @exception, @source)";
             
-        var parameters = new Dictionary<string, object>
+        var parameters = new Dictionary\\<string, object\>
         {
             { "@level", level },
             { "@message", message },
@@ -891,7 +891,7 @@ public class SqliteLog
         Log("WARNING", message, null, source);
     }
     
-    private void ExecuteNonQuery(string sql, Dictionary<string, object> parameters = null)
+    private void ExecuteNonQuery(string sql, Dictionary\\<string, object\> parameters = null)
     {
         using var connection = new SQLiteConnection(_connectionString);
         connection.Open();
