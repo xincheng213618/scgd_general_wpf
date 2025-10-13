@@ -102,7 +102,14 @@ namespace ColorVision.UI
                     border.BorderBrush = brush;
                 }
             }
-            disPlayControl.SelectChanged += (s, e) => UpdateDisPlayBorder();
+            disPlayControl.SelectChanged += (s, e) =>
+            {
+                UpdateDisPlayBorder();
+                if (disPlayControl.IsSelected)
+                {
+                    DisPlayManager.GetInstance().SelectedControlChanged?.Invoke(DisPlayManager.GetInstance(), disPlayControl);
+                }
+            };
             ThemeManager.Current.CurrentUIThemeChanged += (s) => UpdateDisPlayBorder();
             UpdateDisPlayBorder();
             if (disPlayControl is UserControl userControl)
@@ -145,6 +152,11 @@ namespace ColorVision.UI
         private static readonly object _locker = new();
         public static DisPlayManager GetInstance() { lock (_locker) { return _instance ??= new DisPlayManager(); } }
         public ObservableCollection<IDisPlayControl> IDisPlayControls { get; private set; }
+
+        /// <summary>
+        /// 当控件选中状态改变时触发，用于更新状态栏信息
+        /// </summary>
+        public event EventHandler<IDisPlayControl> SelectedControlChanged;
 
         private DisPlayManager()
         {

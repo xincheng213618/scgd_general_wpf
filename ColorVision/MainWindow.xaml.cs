@@ -350,6 +350,31 @@ namespace ColorVision
             {
                 AddStatusBarIconMetadata(item);
             }
+
+            // 订阅控件选中状态改变事件，用于更新状态栏中的控件状态信息
+            DisPlayManager.GetInstance().SelectedControlChanged += OnSelectedControlChanged;
+        }
+
+        private void OnSelectedControlChanged(object sender, IDisPlayControl control)
+        {
+            // 清空当前的控件状态面板
+            ControlStatusPanel.Children.Clear();
+
+            // 如果控件实现了 IControlStatusProvider 接口，显示其状态信息
+            if (control is IControlStatusProvider statusProvider)
+            {
+                var statusInfo = statusProvider.GetStatusInfo();
+                foreach (var info in statusInfo)
+                {
+                    var textBlock = new TextBlock
+                    {
+                        Text = $"{info.Key}: {info.Value}",
+                        Margin = new Thickness(5, 0, 10, 0),
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
+                    ControlStatusPanel.Children.Add(textBlock);
+                }
+            }
         }
 
         public ObservableCollection<ISearch> Searches { get; set; } = new ObservableCollection<ISearch>();

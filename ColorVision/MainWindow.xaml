@@ -124,7 +124,8 @@
                 </ItemsPanelTemplate>
             </StatusBar.ItemsPanel>
             <StatusBarItem Grid.Column="0">
-
+                <StackPanel x:Name="ControlStatusPanel" Orientation="Horizontal">
+                </StackPanel>
             </StatusBarItem>
             <StatusBarItem Grid.Column="1">
                 <StackPanel x:Name="StatusBarTextDocker" Orientation="Horizontal">
