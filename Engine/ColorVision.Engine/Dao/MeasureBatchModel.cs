@@ -15,7 +15,7 @@ namespace ColorVision.Engine
     }
 
     [SugarTable("t_scgd_measure_batch")]
-    public class MeasureBatchModel : EntityBase, IInitTables
+    public class MeasureBatchModel : EntityBase
     {
 
         [SugarColumn(ColumnName = "t_id", IsNullable = true)]

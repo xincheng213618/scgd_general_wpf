@@ -15,7 +15,7 @@ using ColorVision.Engine.Services;
 namespace ColorVision.Engine.Templates.FindLightArea
 {
     [SugarTable("t_scgd_algorithm_result_detail_light_area")]
-    public class AlgResultLightAreaModel : EntityBase, IViewResult, IInitTables
+    public class AlgResultLightAreaModel : EntityBase, IViewResult
     {
         [SugarColumn(ColumnName ="pid")]
         public int Pid { get; set; }

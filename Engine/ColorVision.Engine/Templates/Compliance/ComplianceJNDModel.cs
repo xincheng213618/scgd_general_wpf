@@ -7,7 +7,7 @@ using System.Collections.ObjectModel;
 namespace ColorVision.Engine.Templates.Compliance
 {
     [SugarTable("t_scgd_algorithm_result_detail_compliance_jnd")]
-    public class ComplianceJNDModel : EntityBase, IViewResult, IInitTables
+    public class ComplianceJNDModel : EntityBase, IViewResult
     {
         [SugarColumn(ColumnName ="pid")]
         public int PId { get; set; }

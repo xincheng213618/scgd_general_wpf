@@ -6,7 +6,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Dao
 {
 
     [SugarTable("t_scgd_measure_result_smu")]
-    public class SMUResultModel : EntityBase, IInitTables
+    public class SMUResultModel : EntityBase
     {
 
         [SugarColumn(ColumnName ="batch_id",IsNullable =true)]

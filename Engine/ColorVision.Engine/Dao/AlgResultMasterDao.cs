@@ -5,42 +5,51 @@ using System;
 namespace ColorVision.Engine
 {
     [@SugarTable("t_scgd_algorithm_result_master")]
-    public class AlgResultMasterModel : EntityBase
+    public class AlgResultMasterModel : EntityBase,IInitTables
     {
         public AlgResultMasterModel() { }
 
-        [SugarColumn(ColumnName ="tid")]
+        [SugarColumn(ColumnName ="tid", IsNullable = true)]
         public int? TId { get; set; }
 
-        [SugarColumn(ColumnName ="tname")]
+        [SugarColumn(ColumnName ="tname", IsNullable = true)]
         public string TName { get; set; }
 
-        [SugarColumn(ColumnName ="img_file")]
+        [SugarColumn(ColumnName ="img_file", IsNullable = true)]
         public string ImgFile { get; set; }
 
-        [SugarColumn(ColumnName ="img_file_type")]
+        [SugarColumn(ColumnName ="img_file_type",ColumnDataType = "tinyint",Length =4)]
         public ViewResultAlgType ImgFileType { get; set; }
 
-        [SugarColumn(ColumnName ="version")]
+        [SugarColumn(ColumnName ="version", IsNullable = true)]
         public string version { get; set; }
 
-        [SugarColumn(ColumnName ="batch_id")]
+        [SugarColumn(ColumnName ="batch_id", IsNullable = true)]
         public int? BatchId { get; set; }
 
-        [SugarColumn(ColumnName ="params")]
+        [SugarColumn(ColumnName = "z_index", IsNullable = true)]
+        public int? Zindex { get; set; }
+
+        [SugarColumn(ColumnName ="params", IsNullable = true, ColumnDataType = "json")]
         public string Params { get; set; }
 
-        [SugarColumn(ColumnName ="result_code")]
+        [SugarColumn(ColumnName = "device_code", IsNullable = true)]
+        public string DeviceCode { get; set; }
+
+        [SugarColumn(ColumnName = "smu_data_id",IsNullable =true)]
+        public int? SMUDataID { get; set; }
+
+        [SugarColumn(ColumnName ="result_code", IsNullable = true)]
         public int? ResultCode { get; set; }
 
-        [SugarColumn(ColumnName ="result")]
+        [SugarColumn(ColumnName ="result", IsNullable = true)]
         public string Result { get; set; }
 
-        [SugarColumn(ColumnName ="img_result")]
+        [SugarColumn(ColumnName ="img_result", IsNullable = true)]
         public string ResultImagFile { get; set; }
 
         [SugarColumn(ColumnName ="total_time",IsNullable =true)]
-        public long TotalTime { get; set; }
+        public int TotalTime { get; set; }
 
         [SugarColumn(ColumnName ="create_date")]
         public DateTime? CreateDate { get; set; }

@@ -4,7 +4,7 @@ using SqlSugar;
 namespace ColorVision.Engine.Templates.BuzProduct
 {
     [SugarTable("t_scgd_buz_product_detail")]
-    public class BuzProductDetailModel : ViewEntity , IInitTables
+    public class BuzProductDetailModel : ViewEntity 
     {
         [SugarColumn(ColumnName ="code")]
         public string Code { get=> _Code; set { _Code = value; OnPropertyChanged();  } }

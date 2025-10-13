@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Archive.Dao
 {
 
     [DisplayName("归档配置"),SugarTable("t_scgd_sys_config_archived")]
-    public class ConfigArchivedModel : ViewModelBase, IEntity, IInitTables
+    public class ConfigArchivedModel : ViewModelBase, IEntity
     {
         [SugarColumn(ColumnName ="id"), Browsable(false)]
         public int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }

@@ -4,7 +4,7 @@ using SqlSugar;
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
 {
     [SugarTable("t_scgd_sys_third_party_algorithms")]
-    public class ThirdPartyAlgorithmsModel : ViewEntity , IInitTables
+    public class ThirdPartyAlgorithmsModel : ViewEntity 
     {
         [SugarColumn(ColumnName ="pid")]
         public int? Pid { get => _Pid; set { _Pid = value; OnPropertyChanged(); } }

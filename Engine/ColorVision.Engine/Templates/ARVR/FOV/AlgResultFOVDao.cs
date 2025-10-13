@@ -4,7 +4,7 @@ using SqlSugar;
 namespace ColorVision.Engine.Templates.FOV
 {
     [SugarTable("t_scgd_algorithm_result_detail_fov")]
-    public class AlgResultFOVModel : EntityBase, IInitTables
+    public class AlgResultFOVModel : EntityBase
     {
         [SugarColumn(ColumnName ="pid")]
         public int? Pid { get; set; }

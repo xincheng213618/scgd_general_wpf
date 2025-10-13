@@ -5,7 +5,7 @@ using System;
 namespace ColorVision.Engine.Templates.BuzProduct
 {
     [SugarTable("t_scgd_buz_product_master")]
-    public class BuzProductMasterModel : ViewEntity , IInitTables
+    public class BuzProductMasterModel : ViewEntity 
     {
         [SugarColumn(ColumnName ="code")]
         public string Code { get; set; }

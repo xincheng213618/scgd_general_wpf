@@ -11,7 +11,7 @@ using System.Linq;
 namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
 {
     [SugarTable("t_scgd_measure_result_spectrometer")]
-    public class SpectumResultModel : EntityBase, IInitTables
+    public class SpectumResultModel : EntityBase
     {
         [SugarColumn(ColumnName = "device_code",IsNullable =true)]
         public string? DeviceCode { get; set; }
