@@ -982,6 +982,13 @@ namespace ColorVision.Engine.Templates.POI
         {
             if (e.Key == Key.Delete)
             {
+                // Check if the focused element is a TextBox
+                if (Keyboard.FocusedElement is TextBox)
+                {
+                    // Let the TextBox handle the Delete key for editing
+                    return;
+                }
+
                 if (sender is ListView listView && listView.SelectedItems.Count > 0)
                 {
                     var visualsToRemove = new List<Visual>();
