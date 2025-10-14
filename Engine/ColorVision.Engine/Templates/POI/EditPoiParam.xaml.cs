@@ -1415,10 +1415,10 @@ namespace ColorVision.Engine.Templates.POI
                             {
                                 if (rect.Width ==0)
                                 {
-                                    PoiConfig.AreaRectWidth = (int)ViewBitmapSource.Width;
-                                    PoiConfig.AreaRectHeight = (int)ViewBitmapSource.Height;
-                                    PoiConfig.CenterX = (int)ViewBitmapSource.Width /2;
-                                    PoiConfig.CenterY = (int)ViewBitmapSource.Height /2;
+                                    PoiConfig.AreaRectWidth = (int)ImageView.ViewBitmapSource.Width;
+                                    PoiConfig.AreaRectHeight = (int)ImageView.ViewBitmapSource.Height;
+                                    PoiConfig.CenterX = (int)ImageView.ViewBitmapSource.Width /2;
+                                    PoiConfig.CenterY = (int)ImageView.ViewBitmapSource.Height /2;
                                 }
                                 else
                                 {
