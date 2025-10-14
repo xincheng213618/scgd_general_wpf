@@ -2,7 +2,6 @@
   "profiles": {
     "ColorVision": {
       "commandName": "Project",
-      "commandLineArgs": "-i \"D:\\CVTest\\DEV.Camera.Default\\Data\\2025-10-10\\20251010T134434.7891864.cvraw\"",
       "nativeDebugging": false,
       "hotReloadEnabled": true
     }
