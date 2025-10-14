@@ -332,30 +332,51 @@ ColorVision.Themes 在设计时考虑了性能和用户体验，采用了多种�
 ### 1. 资源缓存机制
 
 **实现原理:**
-- 使用 `ResourceDictionary.MergedDictionaries` 缓存已加载的主题资源
+- 使用 `WeakReference<ResourceDictionary>` 缓存已加载的主题资源
 - 避免重复加载相同的 XAML 资源文件
-- 使用弱引用避免内存泄漏
+- 使用弱引用避免内存泄漏，当内存紧张时可自动回收
+- 线程安全的缓存访问机制
 
-**代码示例:**
+**代码实现:**
 ```csharp
 // ThemeManager 中的资源加载优化
-private readonly Dictionary<Theme, ResourceDictionary> _resourceCache = new();
+private readonly Dictionary<string, WeakReference<ResourceDictionary>> _resourceCache = new();
+private readonly object _cacheLock = new object();
 
-public void ApplyTheme(Application app, Theme theme)
+private ResourceDictionary? LoadResourceWithCache(string uri)
 {
-    if (_resourceCache.TryGetValue(theme, out var cachedDictionary))
+    lock (_cacheLock)
     {
-        // 使用缓存的资源，避免重新加载
-        app.Resources.MergedDictionaries.Add(cachedDictionary);
-    }
-    else
-    {
-        // 首次加载并缓存
-        var dictionary = LoadThemeResources(theme);
-        _resourceCache[theme] = dictionary;
-        app.Resources.MergedDictionaries.Add(dictionary);
+        // 尝试从缓存获取
+        if (_resourceCache.TryGetValue(uri, out var weakRef))
+        {
+            if (weakRef.TryGetTarget(out var cachedResource))
+            {
+                return cachedResource;
+            }
+            // 弱引用已被回收，从缓存中移除
+            _resourceCache.Remove(uri);
+        }
+
+        // 加载资源并缓存
+        var resource = Application.LoadComponent(new Uri(uri, UriKind.Relative)) as ResourceDictionary;
+        if (resource != null)
+        {
+            _resourceCache[uri] = new WeakReference<ResourceDictionary>(resource);
+        }
+        return resource;
     }
 }
+```
+
+**使用示例:**
+```csharp
+// 清理资源缓存
+ThemeManager.Current.ClearResourceCache();
+
+// 获取缓存统计信息
+var (total, alive) = ThemeManager.Current.GetCacheStats();
+Debug.WriteLine($"Cache: {alive}/{total} resources alive");
 ```
 
 ### 2. 延迟初始化
@@ -388,8 +409,9 @@ private async void DelayedInitialize()
 
 **加载策略:**
 - 仅加载当前主题所需的资源字典
-- 基础资源 (Base.xaml, Menu.xaml 等) 在所有主题中共享
-- 特定主题资源按需加载
+- 基础资源 (Base.xaml, Menu.xaml 等) 在所有主题中共享，通过缓存复用
+- 特定主题资源按需加载，避免重复加载
+- 使用 `LoadResourceWithCache` 方法确保资源复用
 
 **资源分层结构:**
 ```csharp
@@ -410,6 +432,21 @@ public static List<string> ResourceDictionaryDark = new()
     "/HandyControl;component/Themes/Theme.xaml",
     "/ColorVision.Themes;component/Themes/Dark.xaml",
 };
+```
+
+**优化的加载方法:**
+```csharp
+private void LoadThemeResources(Application app, List<string> resources)
+{
+    foreach (var item in resources)
+    {
+        var dictionary = LoadResourceWithCache(item);
+        if (dictionary != null && !app.Resources.MergedDictionaries.Contains(dictionary))
+        {
+            app.Resources.MergedDictionaries.Add(dictionary);
+        }
+    }
+}
 ```
 
 ### 4. 样式继承优化
@@ -470,7 +507,65 @@ public void ApplyThemeChanged(Application app, Theme theme)
 </ListView>
 ```
 
-### 7. 性能监控建议
+### 7. 主题预加载
+
+**预加载机制:**
+为了进一步提升主题切换性能，可以在应用启动后异步预加载所有主题资源：
+
+```csharp
+// 在应用启动完成后预加载主题
+protected override async void OnStartup(StartupEventArgs e)
+{
+    base.OnStartup(e);
+    
+    // 应用初始主题
+    this.ApplyTheme(ThemeConfig.Instance.Theme);
+    
+    // 异步预加载其他主题资源
+    await ThemeManager.Current.PreloadThemesAsync();
+}
+```
+
+**优势:**
+- 首次切换主题时无需等待资源加载
+- 减少主题切换的延迟感
+- 在后台异步执行，不影响主线程性能
+
+**注意事项:**
+- 预加载会增加内存使用（使用弱引用，可在内存紧张时自动释放）
+- 适合在应用空闲时执行
+- 对于内存受限的设备可选择不预加载
+
+### 7. 主题预加载
+
+**预加载机制:**
+为了进一步提升主题切换性能，可以在应用启动后异步预加载所有主题资源：
+
+```csharp
+// 在应用启动完成后预加载主题
+protected override async void OnStartup(StartupEventArgs e)
+{
+    base.OnStartup(e);
+    
+    // 应用初始主题
+    this.ApplyTheme(ThemeConfig.Instance.Theme);
+    
+    // 异步预加载其他主题资源
+    await ThemeManager.Current.PreloadThemesAsync();
+}
+```
+
+**优势:**
+- 首次切换主题时无需等待资源加载
+- 减少主题切换的延迟感
+- 在后台异步执行，不影响主线程性能
+
+**注意事项:**
+- 预加载会增加内存使用（使用弱引用，可在内存紧张时自动释放）
+- 适合在应用空闲时执行
+- 对于内存受限的设备可选择不预加载
+
+### 8. 性能监控建议
 
 **监控关键指标:**
 ```csharp
@@ -485,6 +580,10 @@ var beforeMemory = GC.GetTotalMemory(false);
 ThemeManager.Current.ApplyTheme(Application.Current, Theme.Light);
 var afterMemory = GC.GetTotalMemory(false);
 Debug.WriteLine($"Memory increase: {(afterMemory - beforeMemory) / 1024}KB");
+
+// 监控缓存使用情况
+var (total, alive) = ThemeManager.Current.GetCacheStats();
+Debug.WriteLine($"Resource cache: {alive} alive out of {total} total");
 ```
 
 ## 主题生命周期

@@ -15,6 +15,10 @@ namespace ColorVision.Themes
     {
         public static ThemeManager Current { get; set; } = new ThemeManager();
 
+        // 资源缓存，使用弱引用避免内存泄漏
+        private readonly Dictionary<string, WeakReference<ResourceDictionary>> _resourceCache = new Dictionary<string, WeakReference<ResourceDictionary>>();
+        private readonly object _cacheLock = new object();
+
         public ThemeManager()
         {
             DelayedInitialize();
@@ -101,6 +105,49 @@ namespace ColorVision.Themes
             ApplyThemeChanged(app, theme);
         }
 
+        /// <summary>
+        /// 从缓存加载资源字典，如果缓存中不存在则加载并缓存
+        /// </summary>
+        private ResourceDictionary? LoadResourceWithCache(string uri)
+        {
+            lock (_cacheLock)
+            {
+                // 尝试从缓存获取
+                if (_resourceCache.TryGetValue(uri, out var weakRef))
+                {
+                    if (weakRef.TryGetTarget(out var cachedResource))
+                    {
+                        return cachedResource;
+                    }
+                    // 弱引用已被回收，从缓存中移除
+                    _resourceCache.Remove(uri);
+                }
+
+                // 加载资源并缓存
+                var resource = Application.LoadComponent(new Uri(uri, UriKind.Relative)) as ResourceDictionary;
+                if (resource != null)
+                {
+                    _resourceCache[uri] = new WeakReference<ResourceDictionary>(resource);
+                }
+                return resource;
+            }
+        }
+
+        /// <summary>
+        /// 加载主题资源列表，避免重复加载
+        /// </summary>
+        private void LoadThemeResources(Application app, List<string> resources)
+        {
+            foreach (var item in resources)
+            {
+                var dictionary = LoadResourceWithCache(item);
+                if (dictionary != null && !app.Resources.MergedDictionaries.Contains(dictionary))
+                {
+                    app.Resources.MergedDictionaries.Add(dictionary);
+                }
+            }
+        }
+
         public void ApplyThemeChanged(Application app, Theme theme)
         {
             switch (theme)
@@ -111,16 +158,8 @@ namespace ColorVision.Themes
                     app.Resources.MergedDictionaries.Add(light);
                     app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
 
-                    foreach (var item in ResourceDictionaryWhite)
-                    {
-                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
-                        app.Resources.MergedDictionaries.Add(dictionary);
-                    }
-                    foreach (var item in ResourceDictionaryBase)
-                    {
-                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
-                        app.Resources.MergedDictionaries.Add(dictionary);
-                    }
+                    LoadThemeResources(app, ResourceDictionaryWhite);
+                    LoadThemeResources(app, ResourceDictionaryBase);
                     break;
                 case Theme.Dark:
                     var dark = new Wpf.Ui.Markup.ThemesDictionary();
@@ -128,16 +167,8 @@ namespace ColorVision.Themes
                     app.Resources.MergedDictionaries.Add(dark);
                     app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
 
-                    foreach (var item in ResourceDictionaryDark)
-                    {
-                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
-                        app.Resources.MergedDictionaries.Add(dictionary);
-                    }
-                    foreach (var item in ResourceDictionaryBase)
-                    {
-                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
-                        app.Resources.MergedDictionaries.Add(dictionary);
-                    }
+                    LoadThemeResources(app, ResourceDictionaryDark);
+                    LoadThemeResources(app, ResourceDictionaryBase);
                     break;
                 case Theme.Pink:
                     var pink1 = new Wpf.Ui.Markup.ThemesDictionary();
@@ -145,32 +176,16 @@ namespace ColorVision.Themes
                     app.Resources.MergedDictionaries.Add(pink1);
                     app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
 
-                    foreach (var item in ResourceDictionaryPink)
-                    {
-                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
-                        app.Resources.MergedDictionaries.Add(dictionary);
-                    }
-                    foreach (var item in ResourceDictionaryBase)
-                    {
-                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
-                        app.Resources.MergedDictionaries.Add(dictionary);
-                    }
+                    LoadThemeResources(app, ResourceDictionaryPink);
+                    LoadThemeResources(app, ResourceDictionaryBase);
                     break;
                 case Theme.Cyan:
                     var Cyan1 = new Wpf.Ui.Markup.ThemesDictionary();
                     Cyan1.Theme = ApplicationTheme.Light;
                     app.Resources.MergedDictionaries.Add(Cyan1);
 
-                    foreach (var item in ResourceDictionaryCyan)
-                    {
-                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
-                        app.Resources.MergedDictionaries.Add(dictionary);
-                    }
-                    foreach (var item in ResourceDictionaryBase)
-                    {
-                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
-                        app.Resources.MergedDictionaries.Add(dictionary);
-                    }
+                    LoadThemeResources(app, ResourceDictionaryCyan);
+                    LoadThemeResources(app, ResourceDictionaryBase);
                     break;
                 case Theme.UseSystem:
                     break;
@@ -236,6 +251,63 @@ namespace ColorVision.Themes
             object registryValueObject = Registry.CurrentUser.OpenSubKey(RegistryKeyPath)?.GetValue(RegistryValueName);
             if (registryValueObject is null) return true;
             return (int)registryValueObject > 0;
+        }
+
+        /// <summary>
+        /// 预加载主题资源以提高切换性能
+        /// </summary>
+        public async Task PreloadThemesAsync()
+        {
+            await Task.Run(() =>
+            {
+                // 预加载所有主题资源到缓存
+                PreloadResourceList(ResourceDictionaryBase);
+                PreloadResourceList(ResourceDictionaryDark);
+                PreloadResourceList(ResourceDictionaryWhite);
+                PreloadResourceList(ResourceDictionaryPink);
+                PreloadResourceList(ResourceDictionaryCyan);
+            });
+        }
+
+        /// <summary>
+        /// 预加载资源列表
+        /// </summary>
+        private void PreloadResourceList(List<string> resources)
+        {
+            foreach (var uri in resources)
+            {
+                LoadResourceWithCache(uri);
+            }
+        }
+
+        /// <summary>
+        /// 清理资源缓存
+        /// </summary>
+        public void ClearResourceCache()
+        {
+            lock (_cacheLock)
+            {
+                _resourceCache.Clear();
+            }
+        }
+
+        /// <summary>
+        /// 获取缓存统计信息
+        /// </summary>
+        public (int Total, int Alive) GetCacheStats()
+        {
+            lock (_cacheLock)
+            {
+                int alive = 0;
+                foreach (var kvp in _resourceCache)
+                {
+                    if (kvp.Value.TryGetTarget(out _))
+                    {
+                        alive++;
+                    }
+                }
+                return (_resourceCache.Count, alive);
+            }
         }
 
 
