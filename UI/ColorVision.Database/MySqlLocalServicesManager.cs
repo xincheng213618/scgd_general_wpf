@@ -79,6 +79,8 @@ namespace ColorVision.Database
         public DateTime CreationTime { get => _CreationTime; set { _CreationTime = value; OnPropertyChanged(); } }
         private DateTime _CreationTime;
 
+        public string CreationTimeDisplay => CreationTime.ToString("yyyy-MM-dd HH:mm:ss");
+
 
 
 
