@@ -24,7 +24,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -61,6 +60,7 @@ namespace ColorVision.Engine.Templates.POI
             }))));
             this.Title = poiParam.Name + "-" + this.Title;
         }
+
         public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.DrawingVisualLists;
 
         public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
