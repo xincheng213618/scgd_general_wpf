@@ -15,10 +15,6 @@ namespace ColorVision.Themes
     {
         public static ThemeManager Current { get; set; } = new ThemeManager();
 
-        // 资源缓存，使用弱引用避免内存泄漏
-        private readonly Dictionary<string, WeakReference<ResourceDictionary>> _resourceCache = new Dictionary<string, WeakReference<ResourceDictionary>>();
-        private readonly object _cacheLock = new object();
-
         public ThemeManager()
         {
             DelayedInitialize();
@@ -26,7 +22,7 @@ namespace ColorVision.Themes
             {
                 if (CurrentTheme == Theme.UseSystem)
                 {
-                    ApplyActTheme(Application.Current,e);
+                    ApplyActTheme(Application.Current, e);
                 }
             };
         }
@@ -51,14 +47,14 @@ namespace ColorVision.Themes
 
 
 
-        public void ApplyTheme(Application app, Theme theme) 
+        public void ApplyTheme(Application app, Theme theme)
         {
             if (CurrentTheme == theme)
                 return;
             CurrentTheme = theme;
             if (theme == Theme.UseSystem)
                 theme = AppsTheme;
-            ApplyActTheme(app,theme);
+            ApplyActTheme(app, theme);
         }
 
         public static List<string> ResourceDictionaryBase { get; set; } = new List<string>()
@@ -105,49 +101,6 @@ namespace ColorVision.Themes
             ApplyThemeChanged(app, theme);
         }
 
-        /// <summary>
-        /// 从缓存加载资源字典，如果缓存中不存在则加载并缓存
-        /// </summary>
-        private ResourceDictionary? LoadResourceWithCache(string uri)
-        {
-            lock (_cacheLock)
-            {
-                // 尝试从缓存获取
-                if (_resourceCache.TryGetValue(uri, out var weakRef))
-                {
-                    if (weakRef.TryGetTarget(out var cachedResource))
-                    {
-                        return cachedResource;
-                    }
-                    // 弱引用已被回收，从缓存中移除
-                    _resourceCache.Remove(uri);
-                }
-
-                // 加载资源并缓存
-                var resource = Application.LoadComponent(new Uri(uri, UriKind.Relative)) as ResourceDictionary;
-                if (resource != null)
-                {
-                    _resourceCache[uri] = new WeakReference<ResourceDictionary>(resource);
-                }
-                return resource;
-            }
-        }
-
-        /// <summary>
-        /// 加载主题资源列表，避免重复加载
-        /// </summary>
-        private void LoadThemeResources(Application app, List<string> resources)
-        {
-            foreach (var item in resources)
-            {
-                var dictionary = LoadResourceWithCache(item);
-                if (dictionary != null && !app.Resources.MergedDictionaries.Contains(dictionary))
-                {
-                    app.Resources.MergedDictionaries.Add(dictionary);
-                }
-            }
-        }
-
         public void ApplyThemeChanged(Application app, Theme theme)
         {
             switch (theme)
@@ -158,8 +111,16 @@ namespace ColorVision.Themes
                     app.Resources.MergedDictionaries.Add(light);
                     app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
 
-                    LoadThemeResources(app, ResourceDictionaryWhite);
-                    LoadThemeResources(app, ResourceDictionaryBase);
+                    foreach (var item in ResourceDictionaryWhite)
+                    {
+                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
+                        app.Resources.MergedDictionaries.Add(dictionary);
+                    }
+                    foreach (var item in ResourceDictionaryBase)
+                    {
+                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
+                        app.Resources.MergedDictionaries.Add(dictionary);
+                    }
                     break;
                 case Theme.Dark:
                     var dark = new Wpf.Ui.Markup.ThemesDictionary();
@@ -167,8 +128,16 @@ namespace ColorVision.Themes
                     app.Resources.MergedDictionaries.Add(dark);
                     app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
 
-                    LoadThemeResources(app, ResourceDictionaryDark);
-                    LoadThemeResources(app, ResourceDictionaryBase);
+                    foreach (var item in ResourceDictionaryDark)
+                    {
+                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
+                        app.Resources.MergedDictionaries.Add(dictionary);
+                    }
+                    foreach (var item in ResourceDictionaryBase)
+                    {
+                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
+                        app.Resources.MergedDictionaries.Add(dictionary);
+                    }
                     break;
                 case Theme.Pink:
                     var pink1 = new Wpf.Ui.Markup.ThemesDictionary();
@@ -176,16 +145,32 @@ namespace ColorVision.Themes
                     app.Resources.MergedDictionaries.Add(pink1);
                     app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
 
-                    LoadThemeResources(app, ResourceDictionaryPink);
-                    LoadThemeResources(app, ResourceDictionaryBase);
+                    foreach (var item in ResourceDictionaryPink)
+                    {
+                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
+                        app.Resources.MergedDictionaries.Add(dictionary);
+                    }
+                    foreach (var item in ResourceDictionaryBase)
+                    {
+                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
+                        app.Resources.MergedDictionaries.Add(dictionary);
+                    }
                     break;
                 case Theme.Cyan:
                     var Cyan1 = new Wpf.Ui.Markup.ThemesDictionary();
                     Cyan1.Theme = ApplicationTheme.Light;
                     app.Resources.MergedDictionaries.Add(Cyan1);
 
-                    LoadThemeResources(app, ResourceDictionaryCyan);
-                    LoadThemeResources(app, ResourceDictionaryBase);
+                    foreach (var item in ResourceDictionaryCyan)
+                    {
+                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
+                        app.Resources.MergedDictionaries.Add(dictionary);
+                    }
+                    foreach (var item in ResourceDictionaryBase)
+                    {
+                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
+                        app.Resources.MergedDictionaries.Add(dictionary);
+                    }
                     break;
                 case Theme.UseSystem:
                     break;
@@ -201,14 +186,19 @@ namespace ColorVision.Themes
         /// <summary>
         /// 选择的主题，存在三种情况：
         /// </summary>
-        public  Theme? CurrentTheme { get => _CurrentTheme;  private set { if (value == _CurrentTheme) return; _CurrentTheme = value; 
+        public Theme? CurrentTheme
+        {
+            get => _CurrentTheme; private set
+            {
+                if (value == _CurrentTheme) return; _CurrentTheme = value;
                 if (_CurrentTheme != null)
-                    CurrentThemeChanged?.Invoke((Theme)_CurrentTheme); 
-            } }
+                    CurrentThemeChanged?.Invoke((Theme)_CurrentTheme);
+            }
+        }
         private Theme? _CurrentTheme = Theme.Light;
 
         //这里是两种
-        public Theme CurrentUITheme { get => _CurrentUITheme; private set { if (value == _CurrentUITheme) return; _CurrentUITheme = value; CurrentUIThemeChanged?.Invoke(value);  } }
+        public Theme CurrentUITheme { get => _CurrentUITheme; private set { if (value == _CurrentUITheme) return; _CurrentUITheme = value; CurrentUIThemeChanged?.Invoke(value); } }
         private Theme _CurrentUITheme = Theme.Light;
 
 
@@ -219,14 +209,14 @@ namespace ColorVision.Themes
         /// <summary>
         /// Windows应用的主题
         /// </summary>
-        public Theme AppsTheme { get => _AppsTheme; set { if (value == _AppsTheme) return;  AppsThemeChanged?.Invoke(value); _AppsTheme = value; } }
-        private  Theme _AppsTheme = AppsUseLightTheme() ? Theme.Light : Theme.Dark;
+        public Theme AppsTheme { get => _AppsTheme; set { if (value == _AppsTheme) return; AppsThemeChanged?.Invoke(value); _AppsTheme = value; } }
+        private Theme _AppsTheme = AppsUseLightTheme() ? Theme.Light : Theme.Dark;
 
         /// <summary>
         /// 任务栏的主题，这里Win10和Win11的表现不一样
         /// </summary>
-        public  Theme SystemTheme { get => _SystemTheme; set { if (value == _SystemTheme) return; SystemThemeChanged?.Invoke(value);  _SystemTheme = value; } }
-        private  Theme _SystemTheme = SystemUsesLightTheme() ? Theme.Light : Theme.Dark;
+        public Theme SystemTheme { get => _SystemTheme; set { if (value == _SystemTheme) return; SystemThemeChanged?.Invoke(value); _SystemTheme = value; } }
+        private Theme _SystemTheme = SystemUsesLightTheme() ? Theme.Light : Theme.Dark;
 
 
         public static bool AppsUseLightTheme()
@@ -234,7 +224,7 @@ namespace ColorVision.Themes
 
             const string RegistryKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
             const string RegistryValueName = "AppsUseLightTheme";
-            
+
             // 这里也可能是LocalMachine(HKEY_LOCAL_MACHINE)
             // see "https://www.addictivetips.com/windows-tips/how-to-enable-the-dark-theme-in-windows-10/"
             object registryValueObject = Registry.CurrentUser.OpenSubKey(RegistryKeyPath)?.GetValue(RegistryValueName);
@@ -251,63 +241,6 @@ namespace ColorVision.Themes
             object registryValueObject = Registry.CurrentUser.OpenSubKey(RegistryKeyPath)?.GetValue(RegistryValueName);
             if (registryValueObject is null) return true;
             return (int)registryValueObject > 0;
-        }
-
-        /// <summary>
-        /// 预加载主题资源以提高切换性能
-        /// </summary>
-        public async Task PreloadThemesAsync()
-        {
-            await Task.Run(() =>
-            {
-                // 预加载所有主题资源到缓存
-                PreloadResourceList(ResourceDictionaryBase);
-                PreloadResourceList(ResourceDictionaryDark);
-                PreloadResourceList(ResourceDictionaryWhite);
-                PreloadResourceList(ResourceDictionaryPink);
-                PreloadResourceList(ResourceDictionaryCyan);
-            });
-        }
-
-        /// <summary>
-        /// 预加载资源列表
-        /// </summary>
-        private void PreloadResourceList(List<string> resources)
-        {
-            foreach (var uri in resources)
-            {
-                LoadResourceWithCache(uri);
-            }
-        }
-
-        /// <summary>
-        /// 清理资源缓存
-        /// </summary>
-        public void ClearResourceCache()
-        {
-            lock (_cacheLock)
-            {
-                _resourceCache.Clear();
-            }
-        }
-
-        /// <summary>
-        /// 获取缓存统计信息
-        /// </summary>
-        public (int Total, int Alive) GetCacheStats()
-        {
-            lock (_cacheLock)
-            {
-                int alive = 0;
-                foreach (var kvp in _resourceCache)
-                {
-                    if (kvp.Value.TryGetTarget(out _))
-                    {
-                        alive++;
-                    }
-                }
-                return (_resourceCache.Count, alive);
-            }
         }
 
 
@@ -388,7 +321,7 @@ namespace ColorVision.Themes
         private static void ResetCaptionColor(IntPtr hwnd)
         {
             ///DWMWA_COLOR_DEFAULT 
-            uint attribute = 0xFFFFFFFF; 
+            uint attribute = 0xFFFFFFFF;
             uint attributeSize = (uint)Marshal.SizeOf(typeof(uint));
             //Specifying DWMWA_COLOR_DEFAULT (value 0xFFFFFFFF) for the color will reset the window back to using the system's default behavior for the caption color.
             _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_CAPTION_COLOR, ref attribute, attributeSize);

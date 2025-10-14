@@ -61,22 +61,24 @@ this.ApplyTheme(ThemeConfig.Instance.Theme);
 ### 在XAML中使用主题资源
 ```xaml
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Window.Resources>
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/ColorVision.Themes;component/Themes/Dark.xaml"/>
+                <ui:ThemesDictionary Theme="Light" />
+                <ui:ControlsDictionary />
+                <ResourceDictionary Source="/HandyControl;component/Themes/basic/colors/colors.xaml"/>
+                <ResourceDictionary Source="/HandyControl;component/Themes/Theme.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/White.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Base.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Menu.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/GroupBox.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Icons.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
-    </Window.Resources>
+    </Application.Resources>
 </Window>
-```
-
-### 使用自定义控件
-```xaml
-<themes:MessageBox Title="提示" 
-                   Message="操作成功完成" 
-                   ButtonType="OK"/>
 ```
 
 ## 主题配置
