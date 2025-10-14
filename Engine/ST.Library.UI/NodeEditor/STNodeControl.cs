@@ -141,7 +141,7 @@ public class STNodeControl
 			Left = value.X;
 			Top = value.Y;
 			Width = value.Width;
-			Height = value.Height;
+			//Height = value.Height;
 		}
 	}
 
@@ -276,8 +276,8 @@ public class STNodeControl
 		m_sf.Alignment = StringAlignment.Center;
 		m_sf.LineAlignment = StringAlignment.Center;
 		_Font = new Font("courier new", 8.25f);
-		Width = 75;
-		Height = 23;
+		Width = 65;
+		Height = 25;
 	}
 
 	protected internal virtual void OnPaint(DrawingTools dt)
