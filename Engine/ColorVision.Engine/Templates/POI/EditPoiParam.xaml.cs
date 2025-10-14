@@ -245,8 +245,6 @@ namespace ColorVision.Engine.Templates.POI
 
         }
 
-        public ImageSource ViewBitmapSource => ImageView.ViewBitmapSource;
-
         private bool Init;
         public static WriteableBitmap CreateWhiteLayer(int width, int height)
         {
@@ -279,27 +277,8 @@ namespace ColorVision.Engine.Templates.POI
                 Application.Current.Dispatcher.Invoke((Action)(() =>
                 {
                      ImageView.SetImageSource(CreateWhiteLayer(width, height));
-                    if (ImageShow.Source == null)
-                    {
-                        ImageShow.Source = this.ViewBitmapSource;
-                        Zoombox1.ZoomUniform();
-                        if (IsClear || !Init)
-                            InitPoiConfigValue((int)this.ViewBitmapSource.Width,(int)this.ViewBitmapSource.Height);
-                    }
-                    else
-                    {
-                        if (ImageShow.Source is BitmapSource img && (img.PixelWidth != this.ViewBitmapSource.Width || img.PixelHeight != this.ViewBitmapSource.Height))
-                        {
-                            InitPoiConfigValue((int)this.ViewBitmapSource.Width, (int)this.ViewBitmapSource.Height);
-                            ImageShow.Source = this.ViewBitmapSource;
-                            Zoombox1.ZoomUniform();
-                        }
-                        else
-                        {
-                            ImageShow.Source = this.ViewBitmapSource;
-                        }
-
-                    }
+                     ImageView.UpdateZoomAndScale();
+                     InitPoiConfigValue((int)ImageView.ViewBitmapSource.Width, (int)ImageView.ViewBitmapSource.Height);
                     if (IsClear)
                     {
                         ImageShow.Clear();
@@ -1640,7 +1619,6 @@ namespace ColorVision.Engine.Templates.POI
 
         private void TextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            e.Handled = new Regex("[^0-9]+").IsMatch(e.Text);
         }
 
         private void Button_Click_41(object sender, RoutedEventArgs e)

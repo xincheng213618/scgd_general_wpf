@@ -401,41 +401,14 @@ namespace ColorVision.Engine.Templates.POI
             {
                 HImageCache?.Dispose();
             }
-
             Thread thread = new(() => 
             {
                 Application.Current.Dispatcher.Invoke((Action)(() =>
                 {
                     ImageView.OpenImage(CreateWhiteLayer(width, height));
-                    if (ImageShow.Source == null)
-                    {
-                        ImageShow.Source = this.ViewBitmapSource;
-                        Zoombox1.ZoomUniform();
-                        if (IsClear || !Init)
-                            InitPoiConfigValue((int)this.ViewBitmapSource.Width,(int)this.ViewBitmapSource.Height);
-                    }
-                    else
-                    {
-                        if (ImageShow.Source is BitmapSource img && (img.PixelWidth != this.ViewBitmapSource.Width || img.PixelHeight != this.ViewBitmapSource.Height))
-                        {
-                            InitPoiConfigValue((int)this.ViewBitmapSource.Width, (int)this.ViewBitmapSource.Height);
-                            ImageShow.Source = this.ViewBitmapSource;
-                            Zoombox1.ZoomUniform();
-                        }
-                        else
-                        {
-                            ImageShow.Source = this.ViewBitmapSource;
-                        }
-
-                    }
-                    if (IsClear)
-                    {
-                        ImageShow.Clear();
-                        DrawingVisualLists.Clear();
-                    }
-                    Init = true;
+                    ImageView.UpdateZoomAndScale();
+                    InitPoiConfigValue((int)ImageView.ViewBitmapSource.Width, (int)ImageView.ViewBitmapSource.Height);
                     ImageShow.RaiseImageInitialized();
-
                 }));
             });
             thread.Start();
@@ -1642,8 +1615,9 @@ namespace ColorVision.Engine.Templates.POI
 
         private void TextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            e.Handled = new Regex("[^0-9]+").IsMatch(e.Text);
+
         }
+
         private void TakePhoto_Click(object sender, RoutedEventArgs e)
         {
             var lsit = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList();
