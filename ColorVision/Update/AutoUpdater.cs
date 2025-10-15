@@ -416,6 +416,33 @@ namespace ColorVision.Update
 
         public static void RestartIsIncrementApplication(string downloadPath)
         {
+            if (UpdateManagerConfig.Instance.UseNewUpdateMechanism)
+            {
+                // 使用新的更新机制
+                try
+                {
+                    var manifestPath = UpdateManager.Instance.PrepareApplicationUpdate(downloadPath, isIncremental: true);
+                    UpdateManager.Instance.ExecuteUpdate(manifestPath);
+                }
+                catch (Exception ex)
+                {
+                    log.Error($"新更新机制失败，回退到旧方法: {ex.Message}", ex);
+                    // 回退到旧方法
+                    RestartIsIncrementApplication_Old(downloadPath);
+                }
+            }
+            else
+            {
+                // 使用旧的BAT方式
+                RestartIsIncrementApplication_Old(downloadPath);
+            }
+        }
+
+        /// <summary>
+        /// 旧的增量更新方法（使用BAT脚本）
+        /// </summary>
+        private static void RestartIsIncrementApplication_Old(string downloadPath)
+        {
             // 保存数据库配置
             ConfigHandler.GetInstance().SaveConfigs();
             try
@@ -475,6 +502,33 @@ del ""%~f0"" & exit
         }
 
         public static void RestartApplication(string downloadPath)
+        {
+            if (UpdateManagerConfig.Instance.UseNewUpdateMechanism)
+            {
+                // 使用新的更新机制
+                try
+                {
+                    var manifestPath = UpdateManager.Instance.PrepareApplicationUpdate(downloadPath, isIncremental: false);
+                    UpdateManager.Instance.ExecuteUpdate(manifestPath);
+                }
+                catch (Exception ex)
+                {
+                    log.Error($"新更新机制失败，回退到旧方法: {ex.Message}", ex);
+                    // 回退到旧方法
+                    RestartApplication_Old(downloadPath);
+                }
+            }
+            else
+            {
+                // 使用旧的方式
+                RestartApplication_Old(downloadPath);
+            }
+        }
+
+        /// <summary>
+        /// 旧的完整更新方法（直接运行安装程序）
+        /// </summary>
+        private static void RestartApplication_Old(string downloadPath)
         {
             // 保存数据库配置
             ConfigHandler.GetInstance().SaveConfigs();
