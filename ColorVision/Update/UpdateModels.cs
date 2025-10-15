@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace ColorVision.Update;
 
 // 数据模型类 - 与更新器中的定义保持一致

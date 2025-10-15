@@ -1,4 +1,6 @@
 using ColorVision.Common.MVVM;
+using ColorVision.UI;
+using System.IO;
 
 namespace ColorVision.Update;
 
