@@ -64,7 +64,17 @@ namespace ColorVision
             //加载DLL
             if (File.Exists("ColorVision.Engine.dll"))
                 Assembly.LoadFrom("ColorVision.Engine.dll"); ;
-            
+            if (File.Exists("ColorVision.Scheduler.dll"))
+                Assembly.LoadFrom("ColorVision.Scheduler.dll"); ;
+            if (File.Exists("ColorVision.ImageEditor.dll"))
+                Assembly.LoadFrom("ColorVision.ImageEditor.dll"); ;
+            if (File.Exists("ColorVision.Solution.dll"))
+                Assembly.LoadFrom("ColorVision.Solution.dll"); ;
+            if (File.Exists("ColorVision.SocketProtocol.dll"))
+                Assembly.LoadFrom("ColorVision.SocketProtocol.dll"); ;
+            if (File.Exists("ColorVision.Database.dll"))
+                Assembly.LoadFrom("ColorVision.Database.dll"); ;
+
 
             ConfigHandler.GetInstance();
             ConfigHandler.GetInstance().IsAutoSave = false;
