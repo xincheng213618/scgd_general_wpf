@@ -93,6 +93,7 @@ namespace ColorVision.UI
 
                     stopwatch.Start();
 
+                    bool downloadCancelled = false;
                     using (var fileStream = new FileStream(DownloadPath, FileMode.Create, FileAccess.Write, FileShare.None))
                     using (var stream = await response.Content.ReadAsStreamAsync(cancellationToken))
                     {
@@ -116,12 +117,8 @@ namespace ColorVision.UI
 
                                 if (cancellationToken.IsCancellationRequested)
                                 {
-                                    // Delete partial file on cancellation
-                                    if (File.Exists(DownloadPath))
-                                    {
-                                        File.Delete(DownloadPath);
-                                    }
-                                    return;
+                                    downloadCancelled = true;
+                                    break;
                                 }
 
                                 if (stopwatch.ElapsedMilliseconds > 200) // Update speed at least once per second
@@ -141,6 +138,16 @@ namespace ColorVision.UI
                         while (isMoreToRead);
                     }
                     stopwatch.Stop();
+
+                    // Delete partial file after streams are closed
+                    if (downloadCancelled)
+                    {
+                        if (File.Exists(DownloadPath))
+                        {
+                            File.Delete(DownloadPath);
+                        }
+                        return;
+                    }
                 }
             }
             catch (Exception ex)
