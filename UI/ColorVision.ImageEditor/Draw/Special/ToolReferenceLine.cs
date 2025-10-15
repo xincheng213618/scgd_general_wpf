@@ -338,22 +338,6 @@ namespace ColorVision.ImageEditor.Draw.Special
              
         public ReferenceLine ReferenceLine { get; set; } = new ReferenceLine();
 
-
-        private void SetMode(int i)
-        {
-            if (i == -1)
-            {
-                IsChecked = false;
-            }
-            else
-            {
-                IsChecked = true;
-                ReferenceLine.Mode = i;
-                ReferenceLine.Render();
-            }
-        }
-
-
         public override bool IsChecked
         {
             get => _IsChecked; set
