@@ -88,13 +88,13 @@ namespace ColorVision.Engine.Templates.POI
             MoveToBottomCommand = new RelayCommand(a => MoveToBottom(), a => ListView1?.SelectedIndex < DrawingVisualLists.Count - 1);
 
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(GraphicBorderType)).Cast<GraphicBorderType>()  select new KeyValuePair<GraphicBorderType, string>(e1, e1.ToDescription());
-            ComboBoxBorderType1.SelectedIndex = 0;
+            ComboBoxBorderType1.SelectedIndex = 1;
 
             ComboBoxBorderType11.ItemsSource = from e1 in Enum.GetValues(typeof(GraphicBorderType)).Cast<GraphicBorderType>() select new KeyValuePair<GraphicBorderType, string>(e1, e1.ToDescription());
-            ComboBoxBorderType11.SelectedIndex = 0;
+            ComboBoxBorderType11.SelectedIndex = 1;
 
             ComboBoxBorderType2.ItemsSource = from e1 in Enum.GetValues(typeof(DrawingGraphicPosition)).Cast<DrawingGraphicPosition>() select new KeyValuePair<DrawingGraphicPosition, string>(e1, e1.ToDescription());
-            ComboBoxBorderType2.SelectedIndex = 0;
+            ComboBoxBorderType2.SelectedIndex = 1;
 
             ImageView.ImageShow.ImageInitialized += (s, e) =>
             {

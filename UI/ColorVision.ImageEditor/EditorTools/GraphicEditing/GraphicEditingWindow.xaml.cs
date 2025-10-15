@@ -262,22 +262,22 @@ namespace ColorVision.ImageEditor
         private bool _UseCenter;
 
         public double DefalutWidth { get => _DefalutWidth; set { if (LockDeafult) return; _DefalutWidth = value; OnPropertyChanged(); } }
-        private double _DefalutWidth = 30;
+        private double _DefalutWidth = 200;
 
         public double DefalutHeight { get => _DefalutHeight; set { if (LockDeafult) return; _DefalutHeight = value; OnPropertyChanged(); } }
-        private double _DefalutHeight = 30;
+        private double _DefalutHeight = 150;
         public double DefalutRadius { get => _DefalutRadius; set { if (LockDeafult) return; _DefalutRadius = value; OnPropertyChanged(); } }
-        private double _DefalutRadius = 30;
+        private double _DefalutRadius = 100;
 
 
         public int DefaultCircleRadius { get => _DefaultCircleRadius; set { _DefaultCircleRadius = value; OnPropertyChanged(); } }
-        private int _DefaultCircleRadius = 10;
+        private int _DefaultCircleRadius = 100;
 
         public int DefaultRectWidth { get => _DefaultRectWidth; set { _DefaultRectWidth = value; OnPropertyChanged(); } }
-        private int _DefaultRectWidth = 20;
+        private int _DefaultRectWidth = 200;
 
         public int DefaultRectHeight { get => _DefaultRectHeight; set { _DefaultRectHeight = value; OnPropertyChanged(); } }
-        private int _DefaultRectHeight = 20;
+        private int _DefaultRectHeight = 150;
 
 
 
@@ -356,7 +356,7 @@ namespace ColorVision.ImageEditor
         private void Window_Initialized(object sender, EventArgs e)
         {
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(GraphicBorderType)).Cast<GraphicBorderType>() select new KeyValuePair<GraphicBorderType, string>(e1, e1.ToDescription());
-            ComboBoxBorderType1.SelectedIndex = 0;
+            ComboBoxBorderType1.SelectedIndex = 1;
             ComboBoxBorderType2.ItemsSource = from e1 in Enum.GetValues(typeof(DrawingGraphicPosition)).Cast<DrawingGraphicPosition>() select new KeyValuePair<DrawingGraphicPosition, string>(e1, e1.ToDescription());
             ComboBoxBorderType2.SelectedIndex = 0;
 
