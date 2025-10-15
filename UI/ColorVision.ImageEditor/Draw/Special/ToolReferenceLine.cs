@@ -311,7 +311,7 @@ namespace ColorVision.ImageEditor.Draw.Special
         public double PointY { get => _PointY; set { _PointY = value; OnPropertyChanged(); } }
         private double _PointY;
         public int Mode { get => _Mode; set { _Mode = value; OnPropertyChanged(); } }
-        private int _Mode = 2;
+        private int _Mode ;
 
         public double Angle { get => _Angle; set { _Angle = value; OnPropertyChanged(); } }
         private double _Angle ;
