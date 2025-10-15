@@ -11,6 +11,27 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw.Special
 {
+    /// <summary>
+    /// 参考线模式
+    /// </summary>
+    public enum ReferenceLineMode
+    {
+        /// <summary>
+        /// 同心圆模式 - 显示十字参考线和同心圆
+        /// </summary>
+        ConcentricCircles = 0,
+        
+        /// <summary>
+        /// 简单十字模式 - 仅显示十字参考线
+        /// </summary>
+        SimpleCross = 1,
+        
+        /// <summary>
+        /// 双十字模式 - 显示双层偏移的十字参考线
+        /// </summary>
+        DoubleCross = 2
+    }
+
     public class DVLineDVContextMenu : IDVContextMenu
     {
         public Type ContextType => typeof(ReferenceLine);
@@ -60,7 +81,7 @@ namespace ColorVision.ImageEditor.Draw.Special
         public Vector PointLen { get; set; }
 
         public bool IsLocked { get; set; } = true;
-        public int Mode { get => Attribute.Mode; set { Attribute.Mode = value; } }
+        public ReferenceLineMode Mode { get => Attribute.Mode; set { Attribute.Mode = value; } }
 
         SolidColorBrush SolidColorBrush = new SolidColorBrush(Color.FromArgb(1, 255, 255, 255));
 
@@ -74,7 +95,7 @@ namespace ColorVision.ImageEditor.Draw.Special
             double angle = Attribute.Angle;
             Point CenterPoint = RMouseDownP;
 
-            if (Mode == 0)
+            if (Mode == ReferenceLineMode.ConcentricCircles)
             {
                 // 旋转变换
                 List<Point> intersectionPoints = ReferenceLine.CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint, angle);
@@ -120,7 +141,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                 FormattedText formattedText3 = new((lenc + 1).ToString("F0"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(formattedText3, RMouseDownP - PointLen);
             }
-            else if (Mode == 1)
+            else if (Mode == ReferenceLineMode.SimpleCross)
             {
 
                 // 旋转变换
@@ -145,7 +166,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                 FormattedText formattedText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(formattedText, RMouseDownP + new Vector(a, a));
             }
-            else if (Mode == 2)
+            else if (Mode == ReferenceLineMode.DoubleCross)
             {
                 double angle1 = (angle + 45) * Math.PI / 180.0;
                 // 旋转变换
@@ -310,8 +331,8 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         public double PointY { get => _PointY; set { _PointY = value; OnPropertyChanged(); } }
         private double _PointY;
-        public int Mode { get => _Mode; set { _Mode = value; OnPropertyChanged(); } }
-        private int _Mode = 1;
+        public ReferenceLineMode Mode { get => _Mode; set { _Mode = value; OnPropertyChanged(); } }
+        private ReferenceLineMode _Mode = ReferenceLineMode.SimpleCross;
 
         public double Angle { get => _Angle; set { _Angle = value; OnPropertyChanged(); } }
         private double _Angle ;
