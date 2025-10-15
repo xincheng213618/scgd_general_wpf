@@ -94,6 +94,7 @@ namespace ColorVision.ImageEditor.Draw
                 {
                     DrawingVisualPolygonCache.Points.RemoveAt(DrawingVisualPolygonCache.Points.Count - 1);
                     DrawingVisualPolygonCache.Render();
+                    ImageViewModel.SelectEditorVisual.SetRender(DrawingVisualPolygonCache);
                     DrawingVisualPolygonCache = null;
                     IsChecked = false;
                 }
@@ -143,6 +144,7 @@ namespace ColorVision.ImageEditor.Draw
                 DrawingVisualPolygonCache.Points.RemoveAt(DrawingVisualPolygonCache.Points.Count - 1);
                 DrawingVisualPolygonCache.Points.Add(MouseUpP);
                 DrawingVisualPolygonCache.Render();
+                ImageViewModel.SelectEditorVisual.SetRender(DrawingVisualPolygonCache);
             }
             e.Handled = true;
         }
