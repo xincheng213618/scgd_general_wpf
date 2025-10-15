@@ -1623,7 +1623,6 @@ namespace ColorVision.Engine.Templates.POI
 
         private void Button_Click_41(object sender, RoutedEventArgs e)
         {
- 
             PoiEditRectCache.Instance.RightTopX = PoiParam.PoiConfig.Polygon1X;
             PoiEditRectCache.Instance.RightTopY = PoiParam.PoiConfig.Polygon1Y;
             PoiEditRectCache.Instance.LeftTopX = PoiParam.PoiConfig.Polygon2X;
@@ -1648,6 +1647,26 @@ namespace ColorVision.Engine.Templates.POI
                         ListView1.ContextMenu.Items.Add(item);
                 }
             }
+
+
+            if(type == typeof(DVPolygon))
+            {
+
+                var itemss= new MenuItem { Header = "设置到折线布点" };
+                itemss.Click += (s, e) =>
+                {
+                    PoiConfig.Polygons.Clear();
+                    if (DrawingVisualLists[ListView1.SelectedIndex] is DVPolygon dVPolygon)
+                    {
+                        foreach (var item in dVPolygon.Attribute.Points)
+                        {
+                            PoiConfig.Polygons.Add(new PolygonPoint(item.X, item.Y));
+                        }
+                    }
+                };
+                ListView1.ContextMenu.Items.Add(itemss);
+            }
+
             var moveUpItem = new MenuItem { Header = "上移", Command = MoveUpCommand };
             ListView1.ContextMenu.Items.Add(moveUpItem);
 

@@ -235,7 +235,6 @@ namespace ColorVision.Engine.Templates.POI
         private PointInt _PointInt4 = new PointInt();
 
 
-
         public ObservableCollection<PolygonPoint> Polygons { get; set; } = new ObservableCollection<PolygonPoint>();
 
         public int DefaultCircleRadius { get => _DefaultCircleRadius; set { _DefaultCircleRadius = value; OnPropertyChanged(); } }

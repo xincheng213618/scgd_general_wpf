@@ -159,7 +159,7 @@ namespace ColorVision.ImageEditor
         /// <param name="fileName">文件路径</param>
         public void Save(string fileName)
         {
-            RenderTargetBitmap renderTargetBitmap = new((int)ImageShow.Width, (int)ImageShow.Height, 96, 96, PixelFormats.Pbgra32);
+            RenderTargetBitmap renderTargetBitmap = new((int)ImageShow.ActualWidth, (int)ImageShow.ActualHeight, Config.GetProperties<double>("DpiX"), Config.GetProperties<double>("DpiY"), PixelFormats.Pbgra32);
             renderTargetBitmap.Render(ImageShow);
 
             // 创建一个PngBitmapEncoder对象来保存位图为PNG文件
