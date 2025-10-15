@@ -33,6 +33,12 @@ namespace ColorVision.Update
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; OnPropertyChanged(); } }
         private bool _IsAutoUpdate = true;
 
+        /// <summary>
+        /// 用户选择跳过的版本
+        /// </summary>
+        public string SkippedVersion { get => _SkippedVersion; set { _SkippedVersion = value; OnPropertyChanged(); } }
+        private string _SkippedVersion = string.Empty;
+
     }
 
 
@@ -128,6 +134,25 @@ namespace ColorVision.Update
                 var Version = Assembly.GetExecutingAssembly().GetName().Version;
                 if (LatestVersion > Version)
                 {
+                    // 检查是否是用户已跳过的版本
+                    if (!string.IsNullOrEmpty(AutoUpdateConfig.Instance.SkippedVersion))
+                    {
+                        try
+                        {
+                            Version skippedVersion = new Version(AutoUpdateConfig.Instance.SkippedVersion);
+                            if (LatestVersion == skippedVersion)
+                            {
+                                // 用户已选择跳过该版本，不再提示
+                                return;
+                            }
+                        }
+                        catch
+                        {
+                            // 如果跳过的版本号无效，清空它
+                            AutoUpdateConfig.Instance.SkippedVersion = string.Empty;
+                        }
+                    }
+
                     bool IsIncrement = false;
                     if (LatestVersion.Minor == Version.Minor)
                         IsIncrement = true;
@@ -149,20 +174,34 @@ namespace ColorVision.Update
 
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            if (MessageBox1.Show(Application.Current.GetActiveWindow(), $"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?", $"{Properties.Resources.NewVersionFound}{LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            MessageBoxResult result = MessageBox1.Show(Application.Current.GetActiveWindow(), $"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?{Environment.NewLine}点击"是"立即更新，点击"否"跳过该版本，点击"取消"稍后提醒", $"{Properties.Resources.NewVersionFound}{LatestVersion}", MessageBoxButton.YesNoCancel);
+                            if (result == MessageBoxResult.Yes)
                             {
                                 Update(LatestVersion, Path.GetTempPath(), IsIncrement);
                             }
+                            else if (result == MessageBoxResult.No)
+                            {
+                                // 用户选择跳过该版本
+                                AutoUpdateConfig.Instance.SkippedVersion = LatestVersion.ToString();
+                            }
+                            // MessageBoxResult.Cancel 或其他情况：不做任何操作，下次启动继续提示
                         });
                     }
                     else
                     {
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            if (MessageBox1.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            MessageBoxResult result = MessageBox1.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}{Environment.NewLine}点击"是"立即更新，点击"否"跳过该版本，点击"取消"稍后提醒", "ColorVision", MessageBoxButton.YesNoCancel);
+                            if (result == MessageBoxResult.Yes)
                             {
                                 Update(LatestVersion, Path.GetTempPath(), IsIncrement);
                             }
+                            else if (result == MessageBoxResult.No)
+                            {
+                                // 用户选择跳过该版本
+                                AutoUpdateConfig.Instance.SkippedVersion = LatestVersion.ToString();
+                            }
+                            // MessageBoxResult.Cancel 或其他情况：不做任何操作，下次启动继续提示
                         });
                     }
                 }
