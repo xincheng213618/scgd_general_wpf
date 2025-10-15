@@ -122,7 +122,7 @@ namespace ColorVision.Update
             });
         }
 
-        public async Task CheckAndUpdateV1(bool detection = true)
+        public async Task CheckAndUpdateV1(bool detection = true,bool skipped =false)
         {
             // 获取本地版本
             try
