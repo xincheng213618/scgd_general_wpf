@@ -48,6 +48,17 @@ namespace ColorVision.ImageEditor.Draw.Special
                     referenceLine.Render();
                 };
                 MenuItems.Add(menuItem);
+                
+                MenuItem resetMenuItem = new() { Header = "重置为图像中心" };
+                resetMenuItem.Click += (s, e) =>
+                {
+                    // Reset to image center and rotation angle to 0
+                    referenceLine.RMouseDownP = new Point(referenceLine.ActualWidth / 2, referenceLine.ActualHeight / 2);
+                    referenceLine.Attribute.Angle = 0;
+                    referenceLine.PointLen = new Vector();
+                    referenceLine.Render();
+                };
+                MenuItems.Add(resetMenuItem);
             }
             return MenuItems;
         }
@@ -376,10 +387,16 @@ namespace ColorVision.ImageEditor.Draw.Special
                     ReferenceLine.Ratio = ZoomboxSub.ContentMatrix.M11;
                     ReferenceLine.ActualWidth = Image.ActualWidth;
                     ReferenceLine.ActualHeight = Image.ActualHeight;
-                    ReferenceLine.RMouseDownP = new Point(Image.ActualWidth / 2, Image.ActualHeight / 2);
+                    
+                    // Only reset to image center when PointX and PointY are both 0 (first time)
+                    if (ReferenceLine.Attribute.PointX == 0 && ReferenceLine.Attribute.PointY == 0)
+                    {
+                        ReferenceLine.RMouseDownP = new Point(Image.ActualWidth / 2, Image.ActualHeight / 2);
+                        ReferenceLine.Attribute.Angle = 0;
+                    }
+                    
                     ReferenceLine.PointLen = new Vector();
 
-                    ReferenceLine.Attribute.Angle = 0;
                     ReferenceLine.Attribute.Pen = new Pen(ReferenceLine.Attribute.Brush, 1 / ReferenceLine.Ratio);
                     Image.MouseMove += MouseMove;
                     Image.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
