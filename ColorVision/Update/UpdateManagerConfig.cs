@@ -15,7 +15,7 @@ public class UpdateManagerConfig : ViewModelBase, IConfig
     /// 是否使用新的更新机制（双轨并行期间可切换）
     /// </summary>
     public bool UseNewUpdateMechanism { get => _useNewUpdateMechanism; set { _useNewUpdateMechanism = value; OnPropertyChanged(); } }
-    private bool _useNewUpdateMechanism = true;
+    private bool _useNewUpdateMechanism ;
 
     /// <summary>
     /// 更新器程序路径（默认为程序目录下的 ColorVision.Updater.exe）
