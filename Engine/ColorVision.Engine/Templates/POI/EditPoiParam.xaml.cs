@@ -1731,6 +1731,10 @@ namespace ColorVision.Engine.Templates.POI
             }
         }
 
+        private void SetDefault_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 
 }

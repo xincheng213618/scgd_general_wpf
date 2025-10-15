@@ -174,7 +174,7 @@ namespace ColorVision.Update
 
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            MessageBoxResult result = MessageBox1.Show(Application.Current.GetActiveWindow(), $"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?{Environment.NewLine}点击"是"立即更新，点击"否"跳过该版本，点击"取消"稍后提醒", $"{Properties.Resources.NewVersionFound}{LatestVersion}", MessageBoxButton.YesNoCancel);
+                            MessageBoxResult result = MessageBox1.Show(Application.Current.GetActiveWindow(), $"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?{Environment.NewLine}点击是立即更新，点击否跳过该版本，点击取消稍后提醒", $"{Properties.Resources.NewVersionFound}{LatestVersion}", MessageBoxButton.YesNoCancel);
                             if (result == MessageBoxResult.Yes)
                             {
                                 Update(LatestVersion, Path.GetTempPath(), IsIncrement);
@@ -191,7 +191,7 @@ namespace ColorVision.Update
                     {
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            MessageBoxResult result = MessageBox1.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}{Environment.NewLine}点击"是"立即更新，点击"否"跳过该版本，点击"取消"稍后提醒", "ColorVision", MessageBoxButton.YesNoCancel);
+                            MessageBoxResult result = MessageBox1.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}{Environment.NewLine}点击是立即更新，点击否跳过该版本，点击取消稍后提醒", "ColorVision", MessageBoxButton.YesNoCancel);
                             if (result == MessageBoxResult.Yes)
                             {
                                 Update(LatestVersion, Path.GetTempPath(), IsIncrement);
