@@ -167,14 +167,14 @@ namespace ColorVision.ImageEditor
     {
         [DisplayName("Threshold")]
         public int Threshold { get => _Threshold; set { if (value > 255) value = 255; if (value < 0) value = 0; _Threshold = value; OnPropertyChanged(); } }
-        private int _Threshold = 100;
+        private int _Threshold = 20;
     }
 
     public class FindLuminousAreaCorner : Common.MVVM.ViewModelBase
     {
         [DisplayName("Threshold")]
         public int Threshold { get => _Threshold; set { if (value > 255) value = 255; if (value < 0) value = 0; _Threshold = value; OnPropertyChanged(); } }
-        private int _Threshold = 100;
+        private int _Threshold = 20;
 
         [DisplayName("UseRotatedRect")]
         public bool UseRotatedRect { get => _UseRotatedRect; set { _UseRotatedRect = value; OnPropertyChanged(); } }

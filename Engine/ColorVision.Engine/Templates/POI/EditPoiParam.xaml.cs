@@ -1447,11 +1447,6 @@ namespace ColorVision.Engine.Templates.POI
 
         }
 
-        private void SetDefault_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
         private void TakePhoto_Click(object sender, RoutedEventArgs e)
         {
             var lsit = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList();
