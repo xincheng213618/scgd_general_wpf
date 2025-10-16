@@ -376,3 +376,6 @@ docs/.vitepress/cache
 docs/.vitepress/dist
 .temp
 *.local
+
+# Temporary build artifacts
+x64/
