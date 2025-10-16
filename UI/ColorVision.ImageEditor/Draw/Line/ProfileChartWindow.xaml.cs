@@ -2,11 +2,16 @@
 using LiveChartsCore.Measure;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
+using Microsoft.Win32;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor
 {
@@ -69,12 +74,81 @@ namespace ColorVision.ImageEditor
 
         private void SaveChartButton_Click(object sender, RoutedEventArgs e)
         {
+            try
+            {
+                SaveFileDialog dlg = new()
+                {
+                    Filter = "PNG Image|*.png|JPEG Image|*.jpg;*.jpeg|BMP Image|*.bmp",
+                    FileName = $"ProfileChart_{DateTime.Now:yyyyMMdd_HHmmss}.png",
+                    DefaultExt = ".png"
+                };
 
+                if (dlg.ShowDialog() == true)
+                {
+                    // Render the chart to a bitmap
+                    RenderTargetBitmap renderTargetBitmap = new RenderTargetBitmap(
+                        (int)ProfileChart.ActualWidth,
+                        (int)ProfileChart.ActualHeight,
+                        96d,
+                        96d,
+                        PixelFormats.Pbgra32);
+                    renderTargetBitmap.Render(ProfileChart);
+
+                    // Encode and save the bitmap
+                    BitmapEncoder encoder;
+                    string ext = System.IO.Path.GetExtension(dlg.FileName).ToLower();
+                    encoder = ext switch
+                    {
+                        ".jpg" or ".jpeg" => new JpegBitmapEncoder { QualityLevel = 95 },
+                        ".bmp" => new BmpBitmapEncoder(),
+                        _ => new PngBitmapEncoder(),
+                    };
+
+                    encoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
+                    using FileStream fs = new(dlg.FileName, FileMode.Create, FileAccess.Write);
+                    encoder.Save(fs);
+
+                    MessageBox.Show("Chart saved successfully!", "Save Chart", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save chart: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void SaveDataButton_Click(object sender, RoutedEventArgs e)
         {
+            try
+            {
+                SaveFileDialog dlg = new()
+                {
+                    Filter = "CSV File|*.csv|Text File|*.txt",
+                    FileName = $"ProfileData_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+                    DefaultExt = ".csv"
+                };
 
+                if (dlg.ShowDialog() == true)
+                {
+                    StringBuilder csv = new StringBuilder();
+                    
+                    // Add header
+                    csv.AppendLine("Index,Value");
+                    
+                    // Add data
+                    for (int i = 0; i < _profileData.Count; i++)
+                    {
+                        csv.AppendLine($"{i},{_profileData[i]}");
+                    }
+
+                    File.WriteAllText(dlg.FileName, csv.ToString());
+                    MessageBox.Show("Data saved successfully!", "Save Data", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save data: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }
