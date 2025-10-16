@@ -30,8 +30,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
         public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             // 添加日期时间戳到文件名（只到天）
-            string dateStamp = DateTime.Now.ToString("yyyyMMdd");
-            string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}_{dateStamp}.csv");
+            string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
 
             var sb = new StringBuilder();
             

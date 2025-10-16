@@ -106,8 +106,7 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
         public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             // 添加日期时间戳到文件名（只到天）
-            string dateStamp = DateTime.Now.ToString("yyyyMMdd");
-            string filePath = selectedPath + "//" + result.Batch + result.ResultType + "_" + dateStamp + ".csv";
+            string filePath = selectedPath + "//" + result.Batch + result.ResultType + ".csv";
 
             var MTFDetailViewResluts = result.ViewResults.ToSpecificViewResults<FindCrossDetailViewReslut>();
             var csvBuilder = new StringBuilder();

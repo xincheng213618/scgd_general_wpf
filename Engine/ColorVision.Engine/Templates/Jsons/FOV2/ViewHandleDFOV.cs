@@ -40,7 +40,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
 
         public override void SideSave(ViewResultAlg result, string selectedPath)
         {
-            var blackMuraViews = result.ViewResults.ToSpecificViewResults<DFovView>();
+            var DFovViews = result.ViewResults.ToSpecificViewResults<DFovView>();
             var csvBuilder = new StringBuilder();
 
             List<string> header = new List<string>();
@@ -96,7 +96,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
             string writeTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
             // 追加内容
-            foreach (var item in blackMuraViews)
+            foreach (var item in DFovViews)
             {
                 List<string> content = new List<string>();
                 // 添加WriteTime作为第一列
