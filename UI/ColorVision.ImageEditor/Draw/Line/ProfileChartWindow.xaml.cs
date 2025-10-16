@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -21,6 +22,8 @@ namespace ColorVision.ImageEditor
     public partial class ProfileChartWindow : Window
     {
         private List<double> _profileData;
+        private LineSeries<double> _series;
+
         public ProfileChartWindow(List<double> profileData,string title)
         {
             _profileData = profileData;
@@ -60,13 +63,14 @@ namespace ColorVision.ImageEditor
             var Serieschannel1 = new LineSeries<double>
             {
                 Values = redValues,
-                Name = "Red",
+                Name = "Profile",
                 Fill = new SolidColorPaint(new SKColor(255, 0, 0, 60)),
-                Stroke = new SolidColorPaint(new SKColor(255, 0, 0)),
+                Stroke = new SolidColorPaint(new SKColor(255, 0, 0)) { StrokeThickness = 2 },
                 LineSmoothness = 10,
                 GeometrySize = 0,
             };
 
+            _series = Serieschannel1;
 
             var SeriesCollection = new ISeries[] { Serieschannel1};
             ProfileChart.Series = SeriesCollection;
@@ -148,6 +152,53 @@ namespace ColorVision.ImageEditor
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to save data: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void CopyToClipboardButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Render the chart to a bitmap
+                RenderTargetBitmap renderTargetBitmap = new RenderTargetBitmap(
+                    (int)ProfileChart.ActualWidth,
+                    (int)ProfileChart.ActualHeight,
+                    96d,
+                    96d,
+                    PixelFormats.Pbgra32);
+                renderTargetBitmap.Render(ProfileChart);
+
+                // Copy to clipboard
+                Clipboard.SetImage(renderTargetBitmap);
+                MessageBox.Show("Chart copied to clipboard!", "Copy to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to copy chart: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ShowPointsCheckBox_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            if (_series != null)
+            {
+                _series.GeometrySize = ShowPointsCheckBox.IsChecked == true ? 4 : 0;
+            }
+        }
+
+        private void SmoothLineCheckBox_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            if (_series != null)
+            {
+                _series.LineSmoothness = SmoothLineCheckBox.IsChecked == true ? 10 : 0;
+            }
+        }
+
+        private void LineWidthSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (_series != null && _series.Stroke is SolidColorPaint paint)
+            {
+                paint.StrokeThickness = (float)e.NewValue;
             }
         }
     }
