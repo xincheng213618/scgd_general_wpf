@@ -4,6 +4,7 @@ using ColorVision.Database;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI.Extension;
 using log4net;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -28,15 +29,39 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
         }
         public override void SideSave(ViewResultAlg result, string selectedPath)
         {
-            string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
+            // 添加日期时间戳到文件名（只到天）
+            string dateStamp = DateTime.Now.ToString("yyyyMMdd");
+            string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}_{dateStamp}.csv");
 
             var sb = new StringBuilder();
-            // 标题
-            sb.AppendLine("OpticDistortion_OpticRatio,OpticDistortion_T,OpticDistortion_Message,OpticDistortion_MaxErrPoint_X,OpticDistortion_MaxErrPoint_Y,Point9Distortion_TopRatio,Point9Distortion_BottomRatio,Point9Distortion_LeftRatio,Point9Distortion_RightRatio,Point9Distortion_KeyStoneHoriRatio,Point9Distortion_KeyStoneVercRatio,Point9Distortion_Message,TVDistortion_HorizontalRatio,TVDistortion_VerticalRatio,TVDistortion_Message");
+            
+            // 检查文件是否存在以及是否已有标题
+            bool fileExists = File.Exists(fileName);
+            bool needHeader = !fileExists;
+            
+            if (fileExists)
+            {
+                // 读取文件检查是否已有标题
+                var lines = File.ReadAllLines(fileName, Encoding.UTF8);
+                if (lines.Length == 0 || !lines[0].Contains("OpticDistortion_OpticRatio"))
+                {
+                    needHeader = true;
+                }
+            }
+            
+            // 只在需要时写入标题
+            if (needHeader)
+            {
+                sb.AppendLine("WriteTime,OpticDistortion_OpticRatio,OpticDistortion_T,OpticDistortion_Message,OpticDistortion_MaxErrPoint_X,OpticDistortion_MaxErrPoint_Y,Point9Distortion_TopRatio,Point9Distortion_BottomRatio,Point9Distortion_LeftRatio,Point9Distortion_RightRatio,Point9Distortion_KeyStoneHoriRatio,Point9Distortion_KeyStoneVercRatio,Point9Distortion_Message,TVDistortion_HorizontalRatio,TVDistortion_VerticalRatio,TVDistortion_Message");
+            }
+
+            // 获取当前时间用于记录
+            string writeTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
             foreach (var res in result.ViewResults.ToSpecificViewResults<Distortion2View>())
             {
                 sb.AppendLine(string.Join(",",
+                    writeTime,
                     res.DistortionReslut.OpticDistortion?.OpticRatio.ToString() ?? "",
                     res.DistortionReslut.OpticDistortion?.T.ToString() ?? "",
                     EscapeCsv(res.DistortionReslut.OpticDistortion?.Message),
