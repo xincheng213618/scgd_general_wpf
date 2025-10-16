@@ -11,7 +11,7 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
 
         public int Order { get; set; } = 1;
 
-        public object? Icon { get; set; } = MenuItemIcon.TryFindResource("DIOpen");
+        public object? Icon { get; set; } = IEditorToolFactory.TryFindResource("openDrawingImage");
 
         public ICommand? Command { get; set; } = new RelayCommand(a =>
         {
