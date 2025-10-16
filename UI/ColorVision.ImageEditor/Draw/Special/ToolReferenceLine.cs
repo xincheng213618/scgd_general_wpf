@@ -332,7 +332,7 @@ namespace ColorVision.ImageEditor.Draw.Special
         private Pen _Pen;
 
 
-        [Category("RectangleAttribute"), DisplayName("颜色")]
+        [DisplayName("颜色")]
         public Brush Brush { get => _Brush; set { _Brush = value; OnPropertyChanged(); } }
         private Brush _Brush = Brushes.Red;
 

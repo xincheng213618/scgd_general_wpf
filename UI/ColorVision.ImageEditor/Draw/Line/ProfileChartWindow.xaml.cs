@@ -2,6 +2,7 @@
 using LiveChartsCore.Measure;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
+using LiveChartsCore.SkiaSharpView.WPF;
 using Microsoft.Win32;
 using SkiaSharp;
 using System;
@@ -65,7 +66,7 @@ namespace ColorVision.ImageEditor
                 Values = redValues,
                 Name = "Profile",
                 Fill = new SolidColorPaint(new SKColor(255, 0, 0, 60)),
-                Stroke = new SolidColorPaint(new SKColor(255, 0, 0)) { StrokeThickness = 2 },
+                Stroke = new SolidColorPaint(new SKColor(255, 0, 0)),
                 LineSmoothness = 10,
                 GeometrySize = 0,
             };
@@ -90,27 +91,42 @@ namespace ColorVision.ImageEditor
                 if (dlg.ShowDialog() == true)
                 {
                     // Render the chart to a bitmap
-                    RenderTargetBitmap renderTargetBitmap = new RenderTargetBitmap(
-                        (int)ProfileChart.ActualWidth,
-                        (int)ProfileChart.ActualHeight,
-                        96d,
-                        96d,
-                        PixelFormats.Pbgra32);
-                    renderTargetBitmap.Render(ProfileChart);
-
-                    // Encode and save the bitmap
-                    BitmapEncoder encoder;
-                    string ext = System.IO.Path.GetExtension(dlg.FileName).ToLower();
-                    encoder = ext switch
+                    var bounds = VisualTreeHelper.GetDescendantBounds(ProfileChart);
+                    if (bounds.Width <= 0 || bounds.Height <= 0)
                     {
-                        ".jpg" or ".jpeg" => new JpegBitmapEncoder { QualityLevel = 95 },
-                        ".bmp" => new BmpBitmapEncoder(),
-                        _ => new PngBitmapEncoder(),
-                    };
+                        MessageBox.Show("Chart is not visible or has no size.");
+                        return;
+                    }
 
-                    encoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
-                    using FileStream fs = new(dlg.FileName, FileMode.Create, FileAccess.Write);
-                    encoder.Save(fs);
+                    // Create a RenderTargetBitmap
+                    var dpi = 96d;  // Standard DPI; increase for higher resolution
+                    var renderTarget = new RenderTargetBitmap(
+                        (int)bounds.Width,
+                        (int)bounds.Height,
+                        dpi,
+                        dpi,
+                        PixelFormats.Pbgra32);
+
+                    // Render the chart
+                    var drawingVisual = new DrawingVisual();
+                    using (var context = drawingVisual.RenderOpen())
+                    {
+                        var visualBrush = new VisualBrush(ProfileChart);
+                        context.DrawRectangle(visualBrush, null, new Rect(new Point(), bounds.Size));
+                    }
+                    renderTarget.Render(drawingVisual);
+
+                    // Save to desktop as PNG
+                    var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                    var fileName = $"CartesianChart_{DateTime.Now:yyyyMMdd_HHmmss}.png";
+                    var fullPath = Path.Combine(desktopPath, fileName);
+
+                    using (var fileStream = new FileStream(fullPath, FileMode.Create))
+                    {
+                        var encoder = new PngBitmapEncoder();
+                        encoder.Frames.Add(BitmapFrame.Create(renderTarget));
+                        encoder.Save(fileStream);
+                    }
 
                     MessageBox.Show("Chart saved successfully!", "Save Chart", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
@@ -163,13 +179,40 @@ namespace ColorVision.ImageEditor
                 RenderTargetBitmap renderTargetBitmap = new RenderTargetBitmap(
                     (int)ProfileChart.ActualWidth,
                     (int)ProfileChart.ActualHeight,
-                    96d,
-                    96d,
+                    144,
+                    144,
                     PixelFormats.Pbgra32);
                 renderTargetBitmap.Render(ProfileChart);
 
+
+                // Render the chart to a bitmap
+                var bounds = VisualTreeHelper.GetDescendantBounds(ProfileChart);
+                if (bounds.Width <= 0 || bounds.Height <= 0)
+                {
+                    MessageBox.Show("Chart is not visible or has no size.");
+                    return;
+                }
+
+                // Create a RenderTargetBitmap
+                var dpi = 96d;  // Standard DPI; increase for higher resolution
+                var renderTarget = new RenderTargetBitmap(
+                    (int)bounds.Width,
+                    (int)bounds.Height,
+                    dpi,
+                    dpi,
+                    PixelFormats.Pbgra32);
+
+                // Render the chart
+                var drawingVisual = new DrawingVisual();
+                using (var context = drawingVisual.RenderOpen())
+                {
+                    var visualBrush = new VisualBrush(ProfileChart);
+                    context.DrawRectangle(visualBrush, null, new Rect(new Point(), bounds.Size));
+                }
+                renderTarget.Render(drawingVisual);
+
                 // Copy to clipboard
-                Clipboard.SetImage(renderTargetBitmap);
+                Clipboard.SetImage(renderTarget);
                 MessageBox.Show("Chart copied to clipboard!", "Copy to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
@@ -194,12 +237,5 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private void LineWidthSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (_series != null && _series.Stroke is SolidColorPaint paint)
-            {
-                paint.StrokeThickness = (float)e.NewValue;
-            }
-        }
     }
 }

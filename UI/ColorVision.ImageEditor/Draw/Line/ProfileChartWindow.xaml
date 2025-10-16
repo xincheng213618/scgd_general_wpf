@@ -7,7 +7,7 @@
         xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
         mc:Ignorable="d"
         Title="Profile Line Chart" Height="450" Width="800"
-        WindowStartupLocation="CenterScreen" Initialized="Window_Initialized">
+        WindowStartupLocation="CenterScreen" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -26,8 +26,6 @@
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
             <CheckBox x:Name="ShowPointsCheckBox" Content="Show Points" IsChecked="False" Checked="ShowPointsCheckBox_CheckChanged" Unchecked="ShowPointsCheckBox_CheckChanged" Margin="0,0,10,0" VerticalAlignment="Center"/>
             <CheckBox x:Name="SmoothLineCheckBox" Content="Smooth Line" IsChecked="True" Checked="SmoothLineCheckBox_CheckChanged" Unchecked="SmoothLineCheckBox_CheckChanged" Margin="0,0,10,0" VerticalAlignment="Center"/>
-            <TextBlock Text="Line Width:" VerticalAlignment="Center" Margin="10,0,5,0"/>
-            <Slider x:Name="LineWidthSlider" Minimum="1" Maximum="5" Value="2" Width="100" VerticalAlignment="Center" ValueChanged="LineWidthSlider_ValueChanged"/>
         </StackPanel>
 
         <!-- Chart -->
