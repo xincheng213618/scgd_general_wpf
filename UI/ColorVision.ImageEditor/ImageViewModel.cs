@@ -31,10 +31,7 @@ namespace ColorVision.ImageEditor
         public StackPanel SlectStackPanel { get; set; } = new StackPanel();
         public ImageViewConfig Config => EditorContext.Config;
 
-        public ImageFullScreenMode ImageFullScreenMode { get; set; }
-
         public MouseMagnifierManager MouseMagnifier { get; set; }
-
 
         public ImageView ImageView { get; set; }
         public ContextMenu ContextMenu { get; set; }
@@ -67,10 +64,8 @@ namespace ColorVision.ImageEditor
             ContextMenu = new ContextMenu();
 
             _transformOperations = new ImageTransformOperations(drawCanvas);
-            ImageFullScreenMode = new ImageFullScreenMode(imageView);
 
-            imageView.AdvancedStackPanel.Children.Add(SlectStackPanel);
-
+            imageView.AdvancedStackPanel.Children.Insert(0,SlectStackPanel);
 
             drawCanvas.PreviewMouseDown += (s, e) =>
             {

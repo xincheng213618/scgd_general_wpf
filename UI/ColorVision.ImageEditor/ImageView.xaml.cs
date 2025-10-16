@@ -108,9 +108,9 @@ namespace ColorVision.ImageEditor
             ComboxeType.ItemsSource = from e1 in Enum.GetValues(typeof(MagnigifierType)).Cast<MagnigifierType>()
                                       select new KeyValuePair<MagnigifierType, string>(e1, e1.ToString());
 
-            this.CommandBindings.Add(new CommandBinding( ApplicationCommands.Open, (s, e) => OpenImage(),(s, e) => { e.CanExecute = true; }));
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = true; }));
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
+            CommandBindings.Add(new CommandBinding( ApplicationCommands.Open, (s, e) => OpenImage(),(s, e) => { e.CanExecute = true; }));
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = true; }));
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
             CommandBindings.Add(new CommandBinding( ApplicationCommands.Print,(s, e) => Print(), (s, e) => { e.CanExecute = true; }));
         }
         /// <summary>
@@ -171,12 +171,6 @@ namespace ColorVision.ImageEditor
             pngEncoder.Save(fileStream);
         }
 
-
-        public void Clear(object? sender, EventArgs e)
-        {
-            Clear();
-        }
-
         private void ImageShow_VisualsAdd(object? sender, VisualChangedEventArgs e)
         {
             if (e.Visual is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && sender is Visual visual1)
@@ -234,6 +228,7 @@ namespace ColorVision.ImageEditor
             if (writeableBitmap != null)
                 SetImageSource(writeableBitmap);
         }
+
 
         private List<SelectionChangedEventHandler> _handlers = new List<SelectionChangedEventHandler>();
         public void AddSelectionChangedHandler(SelectionChangedEventHandler handler)
