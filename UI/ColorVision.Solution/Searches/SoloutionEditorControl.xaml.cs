@@ -8,7 +8,7 @@ using System.Windows.Data;
 namespace ColorVision.Solution.Searches
 {
 
-    [FolderEditor("图片编辑器")]
+    [FolderEditor("SolutionEditor")]
     public class SolutionEditor : EditorBase
     {
         public override void Open(string filePath)
@@ -44,7 +44,6 @@ namespace ColorVision.Solution.Searches
                         SolutionViewExtensions.OnContentIdSelected(filePath);
                     }
                 };
-                bool isclear = true;
             }
         }
     }

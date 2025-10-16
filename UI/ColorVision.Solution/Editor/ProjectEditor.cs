@@ -67,7 +67,6 @@ namespace ColorVision.Solution.Editor
                         SolutionViewExtensions.OnContentIdSelected(filePath);
                     }
                 };
-                bool isclear = true;
             }
         }
     }

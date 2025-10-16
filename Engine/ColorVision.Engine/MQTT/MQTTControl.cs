@@ -101,7 +101,7 @@ namespace ColorVision.Engine.MQTT
             log.Info($"{DateTime.Now:HH:mm:ss.fff} MQTT disconnected");
             IsConnect = false;
             await Task.Delay(3000);
-            Connect();
+            _ = Connect();
         }
 
         private async Task ReConnectAsync()

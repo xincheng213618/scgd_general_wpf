@@ -128,8 +128,6 @@ namespace ColorVision.Engine.Services.RC
                     GetInstance().ReRegist();
                 });
             };
-            int heartbeatTime = 2 * 1000;
-
             Timer = new Timer(e=> KeepLive(),null,1000,2000);
         }
 
