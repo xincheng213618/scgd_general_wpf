@@ -238,13 +238,13 @@ namespace ColorVision.Engine.Templates.POI
         public ObservableCollection<PolygonPoint> Polygons { get; set; } = new ObservableCollection<PolygonPoint>();
 
         public int DefaultCircleRadius { get => _DefaultCircleRadius; set { _DefaultCircleRadius = value; OnPropertyChanged(); } }
-        private int _DefaultCircleRadius = 10;
+        private int _DefaultCircleRadius = 100;
 
         public int DefaultRectWidth { get => _DefaultRectWidth; set { _DefaultRectWidth = value; OnPropertyChanged(); } }
-        private int _DefaultRectWidth = 20;
+        private int _DefaultRectWidth = 200;
 
         public int DefaultRectHeight { get => _DefaultRectHeight; set { _DefaultRectHeight = value; OnPropertyChanged(); } }
-        private int _DefaultRectHeight = 20;
+        private int _DefaultRectHeight = 150;
 
         public double LedLen1 { get => _LedLen1; set { _LedLen1 = value; OnPropertyChanged(); } }
         private double _LedLen1;
