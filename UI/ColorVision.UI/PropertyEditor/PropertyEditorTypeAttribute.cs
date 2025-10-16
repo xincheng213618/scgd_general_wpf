@@ -33,34 +33,6 @@ namespace System.ComponentModel
     }
 
     /// <summary>
-    /// 属性排序特性: 用于控制属性在属性编辑器中的显示顺序
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
-    public sealed class PropertyOrderAttribute : Attribute
-    {
-        public int Order { get; }
-        public PropertyOrderAttribute(int order)
-        {
-            Order = order;
-        }
-    }
-
-    /// <summary>
-    /// 类别排序特性: 用于控制类别在属性编辑器中的显示顺序
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = true)]
-    public sealed class CategoryOrderAttribute : Attribute
-    {
-        public string Category { get; }
-        public int Order { get; }
-        public CategoryOrderAttribute(string category, int order)
-        {
-            Category = category;
-            Order = order;
-        }
-    }
-
-    /// <summary>
     /// 属性编辑器类型特性: 仅指定一个实现 IPropertyEditor 的类型。
     /// </summary>
     [AttributeUsage(AttributeTargets.Property)]

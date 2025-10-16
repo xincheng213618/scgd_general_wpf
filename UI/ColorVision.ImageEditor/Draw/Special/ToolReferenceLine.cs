@@ -331,22 +331,25 @@ namespace ColorVision.ImageEditor.Draw.Special
         public Pen Pen { get => _Pen; set { _Pen = value; OnPropertyChanged(); } }
         private Pen _Pen;
 
+        public ReferenceLineMode Mode { get => _Mode; set { _Mode = value; OnPropertyChanged(); } }
+        private ReferenceLineMode _Mode = ReferenceLineMode.SimpleCross;
 
         [DisplayName("颜色")]
-        public Brush Brush { get => _Brush; set { _Brush = value; OnPropertyChanged(); } }
+        public Brush Brush { get => _Brush; set { _Brush = value; OnPropertyChanged();  Pen.Brush = value; } }
         private Brush _Brush = Brushes.Red;
 
+        public double Angle { get => _Angle; set { _Angle = value; OnPropertyChanged(); } }
+        private double _Angle;
 
         public double PointX { get => _PointX; set { _PointX = value; OnPropertyChanged(); } }
         private double _PointX;
 
         public double PointY { get => _PointY; set { _PointY = value; OnPropertyChanged(); } }
         private double _PointY;
-        public ReferenceLineMode Mode { get => _Mode; set { _Mode = value; OnPropertyChanged(); } }
-        private ReferenceLineMode _Mode = ReferenceLineMode.SimpleCross;
 
-        public double Angle { get => _Angle; set { _Angle = value; OnPropertyChanged(); } }
-        private double _Angle ;
+
+
+
     }
 
 
