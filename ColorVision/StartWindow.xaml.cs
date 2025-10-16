@@ -311,10 +311,12 @@ namespace ColorVision
                         }
                         if (IFeatureLaunchers.Find(a => a.Header == feature) is IFeatureLauncher project1)
                         {
+                            StartupRegistryChecker.Clear();
                             project1.Execute();
                         }
                         else if (IFeatureLaunchers.Find(a => a.GetType().ToString().contains(feature)) is IFeatureLauncher project2)
                         {
+                            StartupRegistryChecker.Clear();
                             project2.Execute();
                         }
                         else
