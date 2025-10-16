@@ -19,7 +19,7 @@ namespace ColorVision.Rbac
         public static string SqliteDbPath { get; set; } = DirectoryPath + "Rbac.db";
 
         private SqlSugarClient db;
-        public RelayCommand LoginCommand { get; set; }
+        public RelayCommand LoginCommand { get; set; } 
         public RelayCommand EditCommand { get; set; }
 
         public RelayCommand OpenUserManagerCommand { get; set; }
