@@ -3,7 +3,7 @@ using ColorVision.Engine.Templates.Jsons.FindCross; // FindCrossDetailViewReslut
 using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
 using ColorVision.Database;
 
-namespace ProjectARVRPro
+namespace ProjectARVRPro.FlowProcess
 {
     public class OpticCenterProcess : IProcess
     {
@@ -14,7 +14,6 @@ namespace ProjectARVRPro
             try
             {
                 log?.Info("处理 OpticCenter 流程结果");
-                ctx.ObjectiveTestResult.FlowOpticCenterTestReslut = true;
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (values.Count > 0)
@@ -81,5 +80,41 @@ namespace ProjectARVRPro
             Value = value,
             TestValue = value.ToString(fmt)
         };
+
+        public string GenText(IProcessExecutionContext ctx)
+        {
+            var result = ctx.Result;
+            string outtext = string.Empty;
+            outtext += $"畸变鬼影 测试项：自动AA区域定位算法+畸变算法+鬼影算法" + Environment.NewLine;
+            outtext += $"OpticCenter 测试项：" + Environment.NewLine;
+
+            if (result.ViewResultOpticCenter.FindCrossDetailViewReslut != null)
+            {
+                outtext += $"Opt中心点x:{result.ViewResultOpticCenter.FindCrossDetailViewReslut.FindCrossResult.result[0].center.x} 中心点y:{result.ViewResultOpticCenter.FindCrossDetailViewReslut.FindCrossResult.result[0].center.y}" + Environment.NewLine;
+                if (result.ViewResultOpticCenter.OptCenterXTilt != null)
+                    outtext += $"OptCenterXTilt:{result.ViewResultOpticCenter.OptCenterXTilt.TestValue} LowLimit:{result.ViewResultOpticCenter.OptCenterXTilt.LowLimit}  UpLimit:{result.ViewResultOpticCenter.OptCenterXTilt.UpLimit},Rsult{(result.ViewResultOpticCenter.OptCenterXTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                if (result.ViewResultOpticCenter.OptCenterYTilt != null)
+                    outtext += $"OptCenterYTilt:{result.ViewResultOpticCenter.OptCenterYTilt.TestValue} LowLimit:{result.ViewResultOpticCenter.OptCenterYTilt.LowLimit}  UpLimit:{result.ViewResultOpticCenter.OptCenterYTilt.UpLimit},Rsult{(result.ViewResultOpticCenter.OptCenterYTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                if (result.ViewResultOpticCenter.OptCenterRotation != null)
+                    outtext += $"OptCenterRotation:{result.ViewResultOpticCenter.OptCenterRotation.TestValue} LowLimit:{result.ViewResultOpticCenter.OptCenterRotation.LowLimit}  UpLimit:{result.ViewResultOpticCenter.OptCenterRotation.UpLimit},Rsult{(result.ViewResultOpticCenter.OptCenterRotation.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+            }
+            if (result.ViewResultOpticCenter.FindCrossDetailViewReslut1 != null)
+            {
+                outtext += $"Image中心点x:{result.ViewResultOpticCenter.FindCrossDetailViewReslut1.FindCrossResult.result[0].center.x} 中心点y:{result.ViewResultOpticCenter.FindCrossDetailViewReslut1.FindCrossResult.result[0].center.y}" + Environment.NewLine;
+                if (result.ViewResultOpticCenter.ImageCenterXTilt != null)
+                    outtext += $"ImageCenterXTilt:{result.ViewResultOpticCenter.ImageCenterXTilt.TestValue} LowLimit:{result.ViewResultOpticCenter.ImageCenterXTilt.LowLimit}  UpLimit:{result.ViewResultOpticCenter.ImageCenterXTilt.UpLimit},Rsult{(result.ViewResultOpticCenter.ImageCenterXTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                if (result.ViewResultOpticCenter.ImageCenterYTilt != null)
+                    outtext += $"ImageCenterYTilt:{result.ViewResultOpticCenter.ImageCenterYTilt.TestValue} LowLimit:{result.ViewResultOpticCenter.ImageCenterYTilt.LowLimit}  UpLimit:{result.ViewResultOpticCenter.ImageCenterYTilt.UpLimit},Rsult{(result.ViewResultOpticCenter.ImageCenterYTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                if (result.ViewResultOpticCenter.ImageCenterRotation != null)
+                    outtext += $"ImageCenterRotation:{result.ViewResultOpticCenter.ImageCenterRotation.TestValue} LowLimit:{result.ViewResultOpticCenter.ImageCenterRotation.LowLimit}  UpLimit:{result.ViewResultOpticCenter.ImageCenterRotation.UpLimit},Rsult{(result.ViewResultOpticCenter.ImageCenterRotation.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+            }
+
+            return outtext;
+        }
+
+        public void Render(IProcessExecutionContext ctx)
+        {
+            
+        }
     }
 }

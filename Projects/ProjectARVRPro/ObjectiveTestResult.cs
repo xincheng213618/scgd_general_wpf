@@ -43,6 +43,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using Org.BouncyCastle.Bcpg.OpenPgp;
 
 namespace ProjectARVRPro
 {
@@ -407,14 +408,8 @@ namespace ProjectARVRPro
         /// </summary>
         public string TotalResultString => TotalResult?"PASS":"Fail";
 
-        public bool FlowW51TestReslut { get; set; } = false;
-        public bool FlowWhiteTestReslut { get; set; } = false;
-        public bool FlowBlackTestReslut { get; set; } = false;
-        public bool FlowW25TestReslut { get; set; } = false;
-        public bool FlowChessboardTestReslut { get; set; } = false;
-        public bool FlowMTFHVTestReslut { get; set; } = false;
-        public bool FlowDistortionTestReslut { get; set; } = false;
-        public bool FlowOpticCenterTestReslut { get; set; } = false;
+
+        public Dictionary<string,bool> TestFlowResult { get; set; } = new Dictionary<string, bool>();
     }
 
 
