@@ -14,7 +14,7 @@ public class STNodeControl
 
 	private int _Top;
 
-	private int _Width;
+	public int _Width;
 
 	private int _Height;
 
