@@ -89,6 +89,8 @@ namespace ProjectARVRPro
         public RelayCommand AddMetaCommand { get; set; }
         public RelayCommand RemoveMetaCommand { get; set; }
         public RelayCommand UpdateMetaCommand { get; set; }
+        public RelayCommand MoveUpCommand { get; set; }
+        public RelayCommand MoveDownCommand { get; set; }
 
         public ProcessManager()
         {
@@ -98,6 +100,8 @@ namespace ProjectARVRPro
             AddMetaCommand = new RelayCommand(a => AddMeta(), a => CanAddMeta());
             RemoveMetaCommand = new RelayCommand(a => RemoveMeta(), a => SelectedProcessMeta != null);
             UpdateMetaCommand = new RelayCommand(a => UpdateMeta(), a => CanUpdateMeta());
+            MoveUpCommand = new RelayCommand(a => MoveUp(), a => CanMoveUp());
+            MoveDownCommand = new RelayCommand(a => MoveDown(), a => CanMoveDown());
             LoadPersistedMetas();
         }
 
@@ -207,6 +211,30 @@ namespace ProjectARVRPro
             // Update the selected ProcessMeta with new values
             SelectedProcessMeta.FlowTemplate = UpdateTemplate.Key;
             SelectedProcessMeta.Process = UpdateProcess;
+        }
+
+        private bool CanMoveUp()
+        {
+            return SelectedProcessMeta != null && ProcessMetas.IndexOf(SelectedProcessMeta) > 0;
+        }
+
+        private void MoveUp()
+        {
+            if (!CanMoveUp()) return;
+            int index = ProcessMetas.IndexOf(SelectedProcessMeta);
+            ProcessMetas.Move(index, index - 1);
+        }
+
+        private bool CanMoveDown()
+        {
+            return SelectedProcessMeta != null && ProcessMetas.IndexOf(SelectedProcessMeta) < ProcessMetas.Count - 1;
+        }
+
+        private void MoveDown()
+        {
+            if (!CanMoveDown()) return;
+            int index = ProcessMetas.IndexOf(SelectedProcessMeta);
+            ProcessMetas.Move(index, index + 1);
         }
 
         private void LoadPersistedMetas()
