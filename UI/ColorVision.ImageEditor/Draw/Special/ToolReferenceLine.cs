@@ -29,7 +29,12 @@ namespace ColorVision.ImageEditor.Draw.Special
         /// <summary>
         /// 双十字模式 - 显示双层偏移的十字参考线
         /// </summary>
-        DoubleCross = 2
+        DoubleCross = 2,
+
+        /// <summary>
+        /// 斜十字模式 - 显示相对当前角度偏移45°的对角线十字（X形）
+        /// </summary>
+        DiagonalCross = 3
     }
 
     public class DVLineDVContextMenu : IDVContextMenu
@@ -206,6 +211,29 @@ namespace ColorVision.ImageEditor.Draw.Special
                 }
 
 
+                FormattedText formattedText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                dc.DrawText(formattedText, RMouseDownP + new Vector(a, a));
+            }
+            else if (Mode == ReferenceLineMode.DiagonalCross)
+            {
+                // 斜十字：在当前角度基础上偏移45°，绘制X形两条对角线
+                List<Point> intersectionPoints = ReferenceLine.CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint, angle + 45);
+                if (intersectionPoints.Count == 4)
+                {
+                    dc.DrawLine(pen, intersectionPoints[0], intersectionPoints[1]);
+                    dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]);
+                }
+
+                TextAttribute textAttribute = new();
+                textAttribute.FontSize = 15 / Ratio;
+                double a = 15 / Ratio;
+                if (IsRMouseDown || IsLMouseDown)
+                {
+                    FormattedText formattedRText = new($"({(int)RMouseDownP.X},{(int)RMouseDownP.Y})", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                    dc.DrawText(formattedRText, RMouseDownP + new Vector(a, 2 * a));
+                }
+
+                // 仍显示基础角度，便于和其他模式一致
                 FormattedText formattedText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(formattedText, RMouseDownP + new Vector(a, a));
             }

@@ -30,10 +30,11 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
         public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             // 添加日期时间戳到文件名（只到天）
-            string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
+            string dateStamp = DateTime.Now.ToString("yyyyMMdd");
+            string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{dateStamp}.csv");
 
             var sb = new StringBuilder();
-            
+           
             // 检查文件是否存在以及是否已有标题
             bool fileExists = File.Exists(fileName);
             bool needHeader = !fileExists;
