@@ -30,7 +30,6 @@ namespace ColorVision.ImageEditor.Draw
                 if (value)
                 {
                     EditorContext.DrawEditorManager.SetCurrentDrawEditor(this);
-
                     Load();
                 }
                 else
@@ -77,7 +76,7 @@ namespace ColorVision.ImageEditor.Draw
                 {
                     DrawCanvas.RemoveVisualCommand(DVBezierCurveCache);
                     DVBezierCurveCache = null;
-                    _IsChecked = false;
+                    IsChecked = false;
                 }
             }
             else if (realKey == Key.End || realKey == Key.Space || realKey == Key.Enter || realKey == Key.Tab)
@@ -86,8 +85,9 @@ namespace ColorVision.ImageEditor.Draw
                 {
                     DVBezierCurveCache.Points.RemoveAt(DVBezierCurveCache.Points.Count - 1);
                     DVBezierCurveCache.Render();
+                    EditorContext.ImageViewModel.SelectEditorVisual.SetRender(DVBezierCurveCache);
                     DVBezierCurveCache = null;
-                    _IsChecked = false;
+                    IsChecked = false;
                 }
                 e.Handled = true;
             }
