@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8625,CS8604,CS8602
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.Database;
@@ -23,7 +24,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -60,6 +60,7 @@ namespace ColorVision.Engine.Templates.POI
             }))));
             this.Title = poiParam.Name + "-" + this.Title;
         }
+
         public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.DrawingVisualLists;
 
         public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
@@ -73,6 +74,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             DataContext = PoiParam;
             ListView1.ItemsSource = DrawingVisualLists;
+            ListView1.ContextMenu = new ContextMenu();
             ImageView.ImageViewModel.ImageEditMode = true;
             ImageView.ImageViewModel.SelectEditorVisual.SelectVisualChanged += (s, e) =>
             {
@@ -80,14 +82,19 @@ namespace ColorVision.Engine.Templates.POI
                 ListView1.ScrollIntoView(e);
             };
 
+            MoveUpCommand = new RelayCommand(a => MoveUp(), a => ListView1?.SelectedIndex > 0); // 假设ListView1是ViewModel中的属性或可以通过绑定访问
+            MoveDownCommand = new RelayCommand(a => MoveDown(), a => ListView1?.SelectedIndex < DrawingVisualLists.Count - 1);
+            MoveToTopCommand = new RelayCommand(a => MoveToTop(), a => ListView1?.SelectedIndex > 0);
+            MoveToBottomCommand = new RelayCommand(a => MoveToBottom(), a => ListView1?.SelectedIndex < DrawingVisualLists.Count - 1);
+
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(GraphicBorderType)).Cast<GraphicBorderType>()  select new KeyValuePair<GraphicBorderType, string>(e1, e1.ToDescription());
-            ComboBoxBorderType1.SelectedIndex = 0;
+            ComboBoxBorderType1.SelectedIndex = 1;
 
             ComboBoxBorderType11.ItemsSource = from e1 in Enum.GetValues(typeof(GraphicBorderType)).Cast<GraphicBorderType>() select new KeyValuePair<GraphicBorderType, string>(e1, e1.ToDescription());
-            ComboBoxBorderType11.SelectedIndex = 0;
+            ComboBoxBorderType11.SelectedIndex = 1;
 
             ComboBoxBorderType2.ItemsSource = from e1 in Enum.GetValues(typeof(DrawingGraphicPosition)).Cast<DrawingGraphicPosition>() select new KeyValuePair<DrawingGraphicPosition, string>(e1, e1.ToDescription());
-            ComboBoxBorderType2.SelectedIndex = 0;
+            ComboBoxBorderType2.SelectedIndex = 1;
 
             ImageView.ImageShow.ImageInitialized += (s, e) =>
             {
@@ -238,8 +245,6 @@ namespace ColorVision.Engine.Templates.POI
 
         }
 
-        public ImageSource ViewBitmapSource => ImageView.ViewBitmapSource;
-
         private bool Init;
         public static WriteableBitmap CreateWhiteLayer(int width, int height)
         {
@@ -272,27 +277,8 @@ namespace ColorVision.Engine.Templates.POI
                 Application.Current.Dispatcher.Invoke((Action)(() =>
                 {
                      ImageView.SetImageSource(CreateWhiteLayer(width, height));
-                    if (ImageShow.Source == null)
-                    {
-                        ImageShow.Source = this.ViewBitmapSource;
-                        Zoombox1.ZoomUniform();
-                        if (IsClear || !Init)
-                            InitPoiConfigValue((int)this.ViewBitmapSource.Width,(int)this.ViewBitmapSource.Height);
-                    }
-                    else
-                    {
-                        if (ImageShow.Source is BitmapSource img && (img.PixelWidth != this.ViewBitmapSource.Width || img.PixelHeight != this.ViewBitmapSource.Height))
-                        {
-                            InitPoiConfigValue((int)this.ViewBitmapSource.Width, (int)this.ViewBitmapSource.Height);
-                            ImageShow.Source = this.ViewBitmapSource;
-                            Zoombox1.ZoomUniform();
-                        }
-                        else
-                        {
-                            ImageShow.Source = this.ViewBitmapSource;
-                        }
-
-                    }
+                     ImageView.UpdateZoomAndScale();
+                     InitPoiConfigValue((int)ImageView.ViewBitmapSource.Width, (int)ImageView.ViewBitmapSource.Height);
                     if (IsClear)
                     {
                         ImageShow.Clear();
@@ -975,6 +961,13 @@ namespace ColorVision.Engine.Templates.POI
         {
             if (e.Key == Key.Delete)
             {
+                // Check if the focused element is a TextBox
+                if (Keyboard.FocusedElement is TextBox)
+                {
+                    // Let the TextBox handle the Delete key for editing
+                    return;
+                }
+
                 if (sender is ListView listView && listView.SelectedItems.Count > 0)
                 {
                     var visualsToRemove = new List<Visual>();
@@ -1422,10 +1415,10 @@ namespace ColorVision.Engine.Templates.POI
                             {
                                 if (rect.Width ==0)
                                 {
-                                    PoiConfig.AreaRectWidth = (int)ViewBitmapSource.Width;
-                                    PoiConfig.AreaRectHeight = (int)ViewBitmapSource.Height;
-                                    PoiConfig.CenterX = (int)ViewBitmapSource.Width /2;
-                                    PoiConfig.CenterY = (int)ViewBitmapSource.Height /2;
+                                    PoiConfig.AreaRectWidth = (int)ImageView.ViewBitmapSource.Width;
+                                    PoiConfig.AreaRectHeight = (int)ImageView.ViewBitmapSource.Height;
+                                    PoiConfig.CenterX = (int)ImageView.ViewBitmapSource.Width /2;
+                                    PoiConfig.CenterY = (int)ImageView.ViewBitmapSource.Height /2;
                                 }
                                 else
                                 {
@@ -1450,11 +1443,6 @@ namespace ColorVision.Engine.Templates.POI
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void SetDefault_Click(object sender, RoutedEventArgs e)
         {
 
         }
@@ -1626,12 +1614,10 @@ namespace ColorVision.Engine.Templates.POI
 
         private void TextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            e.Handled = new Regex("[^0-9]+").IsMatch(e.Text);
         }
 
         private void Button_Click_41(object sender, RoutedEventArgs e)
         {
- 
             PoiEditRectCache.Instance.RightTopX = PoiParam.PoiConfig.Polygon1X;
             PoiEditRectCache.Instance.RightTopY = PoiParam.PoiConfig.Polygon1Y;
             PoiEditRectCache.Instance.LeftTopX = PoiParam.PoiConfig.Polygon2X;
@@ -1640,6 +1626,114 @@ namespace ColorVision.Engine.Templates.POI
             PoiEditRectCache.Instance.LeftBottomY = PoiParam.PoiConfig.Polygon3Y;
             PoiEditRectCache.Instance.RightBottomX = PoiParam.PoiConfig.Polygon4X;
             PoiEditRectCache.Instance.RightBottomY = PoiParam.PoiConfig.Polygon4Y;
+        }
+
+        private void ListView1_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            ListView1.ContextMenu.Items.Clear();
+
+            Type type = DrawingVisualLists[ListView1.SelectedIndex].GetType();
+            foreach (var provider in ImageView.ImageViewModel.IEditorToolFactory.ContextMenuProviders)
+            {
+                if (provider.ContextType.IsAssignableFrom(type))
+                {
+                    var items = provider.GetContextMenuItems(ImageView.ImageViewModel, DrawingVisualLists[ListView1.SelectedIndex]);
+                    foreach (var item in items)
+                        ListView1.ContextMenu.Items.Add(item);
+                }
+            }
+
+
+            if(type == typeof(DVPolygon))
+            {
+
+                var itemss= new MenuItem { Header = "设置到折线布点" };
+                itemss.Click += (s, e) =>
+                {
+                    PoiConfig.Polygons.Clear();
+                    if (DrawingVisualLists[ListView1.SelectedIndex] is DVPolygon dVPolygon)
+                    {
+                        foreach (var item in dVPolygon.Attribute.Points)
+                        {
+                            PoiConfig.Polygons.Add(new PolygonPoint(item.X, item.Y));
+                        }
+                    }
+                };
+                ListView1.ContextMenu.Items.Add(itemss);
+            }
+
+            var moveUpItem = new MenuItem { Header = "上移", Command = MoveUpCommand };
+            ListView1.ContextMenu.Items.Add(moveUpItem);
+
+            var moveDownItem = new MenuItem { Header = "下移", Command = MoveDownCommand };
+            ListView1.ContextMenu.Items.Add(moveDownItem);
+
+            var moveToTopItem = new MenuItem { Header = "移动到首位", Command = MoveToTopCommand };
+            ListView1.ContextMenu.Items.Add(moveToTopItem);
+
+            var moveToBottomItem = new MenuItem { Header = "移动到末尾", Command = MoveToBottomCommand };
+            ListView1.ContextMenu.Items.Add(moveToBottomItem);
+
+
+
+        }
+        RelayCommand MoveUpCommand { get; set; }
+        RelayCommand MoveDownCommand { get; set; }
+        RelayCommand MoveToTopCommand { get; set; }
+        RelayCommand MoveToBottomCommand { get; set; }
+
+        // 添加移动方法
+        private void MoveUp()
+        {
+            int index = ListView1.SelectedIndex; // 假设ListView1是ViewModel中的属性
+            if (index > 0)
+            {
+                var item = DrawingVisualLists[index];
+                DrawingVisualLists.RemoveAt(index);
+                DrawingVisualLists.Insert(index - 1, item);
+                ListView1.SelectedIndex = index - 1;
+            }
+        }
+
+        private void MoveDown()
+        {
+            int index = ListView1.SelectedIndex;
+            if (index < DrawingVisualLists.Count - 1)
+            {
+                var item = DrawingVisualLists[index];
+                DrawingVisualLists.RemoveAt(index);
+                DrawingVisualLists.Insert(index + 1, item);
+                ListView1.SelectedIndex = index + 1;
+            }
+        }
+
+        private void MoveToTop()
+        {
+            int index = ListView1.SelectedIndex;
+            if (index > 0)
+            {
+                var item = DrawingVisualLists[index];
+                DrawingVisualLists.RemoveAt(index);
+                DrawingVisualLists.Insert(0, item);
+                ListView1.SelectedIndex = 0;
+            }
+        }
+
+        private void MoveToBottom()
+        {
+            int index = ListView1.SelectedIndex;
+            if (index < DrawingVisualLists.Count - 1)
+            {
+                var item = DrawingVisualLists[index];
+                DrawingVisualLists.RemoveAt(index);
+                DrawingVisualLists.Add(item);
+                ListView1.SelectedIndex = DrawingVisualLists.Count - 1;
+            }
+        }
+
+        private void SetDefault_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 

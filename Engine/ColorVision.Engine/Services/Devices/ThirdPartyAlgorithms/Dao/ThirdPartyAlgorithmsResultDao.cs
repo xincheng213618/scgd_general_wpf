@@ -4,7 +4,7 @@ using SqlSugar;
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
 {
     [SugarTable("t_scgd_measure_result_third_party_algorithm")]
-    public class ThirdPartyAlgorithmsResultModel : ViewEntity , IInitTables
+    public class ThirdPartyAlgorithmsResultModel : ViewEntity 
     {
 
         [SugarColumn(ColumnName ="img_file")]

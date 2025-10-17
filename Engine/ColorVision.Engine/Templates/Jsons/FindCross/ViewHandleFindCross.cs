@@ -105,22 +105,47 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
 
         public override void SideSave(ViewResultAlg result, string selectedPath)
         {
+            // 添加日期时间戳到文件名（只到天）
             string filePath = selectedPath + "//" + result.Batch + result.ResultType + ".csv";
 
             var MTFDetailViewResluts = result.ViewResults.ToSpecificViewResults<FindCrossDetailViewReslut>();
             var csvBuilder = new StringBuilder();
+            
             // For FindCross type, modify header and content
             if (MTFDetailViewResluts.Count == 1)
             {
                 var findCross = MTFDetailViewResluts[0].FindCrossResult?.result;
                 if (findCross != null)
                 {
+                    // 检查文件是否存在以及是否已有标题
+                    bool fileExists = File.Exists(filePath);
+                    bool needHeader = !fileExists;
+                    
+                    if (fileExists)
+                    {
+                        // 读取文件检查是否已有标题
+                        var lines = File.ReadAllLines(filePath, Encoding.UTF8);
+                        if (lines.Length == 0 || !lines[0].Contains("WriteTime"))
+                        {
+                            needHeader = true;
+                        }
+                    }
+                    
                     int id = 0;
-                    csvBuilder.AppendLine($"id,name,x,y,w,h,center_x,center_y,rotationAngle,tilt_tilt_x,tilt_tilt_y");
+                    
+                    // 只在需要时写入标题
+                    if (needHeader)
+                    {
+                        csvBuilder.AppendLine($"WriteTime,id,name,x,y,w,h,center_x,center_y,rotationAngle,tilt_tilt_x,tilt_tilt_y");
+                    }
+                    
+                    // 获取当前时间用于记录
+                    string writeTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                    
                     foreach (var item in findCross)
                     {
                         id++;
-                        csvBuilder.AppendLine($"{id},{item.name},{item.x},{item.y},{item.w},{item.h},{item.center.x},{item.center.y},{item.rotationAngle},{item.tilt.tilt_x},{item.tilt.tilt_y}");
+                        csvBuilder.AppendLine($"{writeTime},{id},{item.name},{item.x},{item.y},{item.w},{item.h},{item.center.x},{item.center.y},{item.rotationAngle},{item.tilt.tilt_x},{item.tilt.tilt_y}");
                     }
                     File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
                     return;

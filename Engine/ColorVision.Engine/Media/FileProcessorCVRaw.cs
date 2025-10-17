@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.ImageEditor;
+using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Shell;
 using System;
@@ -16,10 +17,6 @@ namespace ColorVision.Engine.Impl.SolutionImpl
     {
         public int Order => 1;
 
-        public bool CanProcess(string filePath)
-        {
-            return true;
-        }
         public void Export(string filePath)
         {
             var parser = ArgumentParser.GetInstance();
@@ -68,16 +65,10 @@ namespace ColorVision.Engine.Impl.SolutionImpl
             new ExportCVCIE(vie).Show();
         }
 
-
-        public bool CanExport(string filePath)
-        {
-            return true;
-        }
-
         public void Process(string filePath)
         {
             ImageView imageView = new();
-            Window window = new() { Title = Properties.Resources.QuickPreview };
+            Window window = new Window() { Title = filePath };
             if (Application.Current.MainWindow != window)
             {
                 window.Owner = Application.Current.GetActiveWindow();
@@ -85,7 +76,11 @@ namespace ColorVision.Engine.Impl.SolutionImpl
             window.Content = imageView;
             imageView.OpenImage(filePath);
 
-            window.Show();
+            imageView.ImageShow.ImageInitialized += (s, e) =>
+            {
+                window.Title = $"{imageView.Config.FilePath} - {imageView.ImageShow.Source.Width}x{imageView.ImageShow.Source.Height} {imageView.Config.GetProperties<int>("Channel")}";
+            };
+
             if (Application.Current.MainWindow != window)
             {
                 window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
@@ -93,6 +88,8 @@ namespace ColorVision.Engine.Impl.SolutionImpl
                     imageView.ImageViewModel.ClearImage();
                 }));
             }
+            window.ApplyCaption();
+            window.Show();
         }
     }
 

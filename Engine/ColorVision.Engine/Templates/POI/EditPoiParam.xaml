@@ -171,9 +171,7 @@
                                 <RadioButton x:Name="RadioButtonAreaPolygon"  GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaPolygon}" Width="60" Content="折线"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,5" >
-                                <ToggleButton  HorizontalAlignment="Left"  Height="16" Style="{StaticResource ToggleButtonSwitch}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="SetDefault_Click" IsChecked="{Binding PoiConfig.IsUserDraw}"/>
-                                <TextBlock  HorizontalAlignment="Left" Text="使用绘图添加布点区域"/>
-                                <ToggleButton HorizontalAlignment="Left" Height="16" Margin="10,0,2,0"  Style="{StaticResource ToggleButtonSwitch}"  BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="ShowPoiConfig_Click" IsChecked="{Binding PoiConfig.IsShowPoiConfig}"/>
+                                <ToggleButton HorizontalAlignment="Left" Height="16" Margin="0,0,2,0"  Style="{StaticResource ToggleButtonSwitch}"  BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="ShowPoiConfig_Click" IsChecked="{Binding PoiConfig.IsShowPoiConfig}"/>
                                 <TextBlock   HorizontalAlignment="Left"  Text="布点区域显示"/>
                             </StackPanel>
                             <StackPanel>
@@ -471,7 +469,7 @@
             <im:ImageView x:Name="ImageView"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"   Background="{DynamicResource RegionBrush}"  BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" />
             <GridSplitter Grid.Row="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
             <Grid x:Name="FocusPointGrid" Visibility="Visible" Grid.Row="1" Height="300" >
-                <ListView  x:Name="ListView1"  Style="{StaticResource ListView.Small}" ScrollViewer.HorizontalScrollBarVisibility="Visible" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
+                <ListView  x:Name="ListView1"  Style="{StaticResource ListView.Small}" ScrollViewer.HorizontalScrollBarVisibility="Visible" ContextMenuOpening="ListView1_ContextMenuOpening" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
                     <ListView.Resources>
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
 

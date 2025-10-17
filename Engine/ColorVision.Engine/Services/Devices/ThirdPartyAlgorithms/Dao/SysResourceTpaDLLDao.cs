@@ -5,7 +5,7 @@ using System;
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
 {
     [SugarTable("t_scgd_sys_resource_tpa_dll")]
-    public class SysResourceTpaDLLModel : ViewEntity , IInitTables
+    public class SysResourceTpaDLLModel : ViewEntity 
     {
 
         [SugarColumn(ColumnName ="code")]

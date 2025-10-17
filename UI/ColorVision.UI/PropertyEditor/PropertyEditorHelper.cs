@@ -243,17 +243,8 @@ namespace ColorVision.UI
             var propertyPanel = new StackPanel();
             CollectProperties(obj);
             
-            // Get category order from CategoryOrderAttribute on the class
-            var type = obj.GetType();
-            var categoryOrderAttrs = type.GetCustomAttributes<CategoryOrderAttribute>().ToList();
-            var categoryOrderMap = categoryOrderAttrs.ToDictionary(a => a.Category, a => a.Order);
 
-            // Sort categories: first by order (if specified), then alphabetically
-            var sortedCategories = categoryGroups
-                .OrderBy(cg => categoryOrderMap.TryGetValue(cg.Key, out var order) ? order : int.MaxValue)
-                .ThenBy(cg => cg.Key, StringComparer.Ordinal);
-
-            foreach (var categoryGroup in sortedCategories)
+            foreach (var categoryGroup in categoryGroups)
             {
                 var border = new Border
                 {
@@ -279,12 +270,7 @@ namespace ColorVision.UI
                 border.Child = stackPanel;
                 propertyPanel.Children.Add(border);
 
-                // Sort properties: first by PropertyOrderAttribute, then by name
-                var sortedProperties = categoryGroup.Value
-                    .OrderBy(p => p.GetCustomAttribute<PropertyOrderAttribute>()?.Order ?? int.MaxValue)
-                    .ThenBy(p => GetDisplayName(GetResourceManager(obj), p));
-
-                foreach (var property in sortedProperties)
+                foreach (var property in categoryGroup.Value)
                 {
                     DockPanel dockPanel;
 

@@ -429,7 +429,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void Button_Click_Refresh(object sender, RoutedEventArgs e)
         {
-            Refresh();
+            _= Refresh();
         }
     }
 }

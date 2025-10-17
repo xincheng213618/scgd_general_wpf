@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS8625,CS8604,CS8602
-using ColorVision.Common.Adorners.ListViewAdorners;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
@@ -204,27 +203,13 @@ namespace ColorVision.Engine.Templates.POI
                 ListView1.SelectedItem = e;
                 ListView1.ScrollIntoView(e);
             };
+            ListView1.ContextMenu = new ContextMenu();
+            MoveUpCommand = new RelayCommand(a => MoveUp(), a => ListView1?.SelectedIndex > 0); // 假设ListView1是ViewModel中的属性或可以通过绑定访问
+            MoveDownCommand = new RelayCommand(a => MoveDown(), a => ListView1?.SelectedIndex < DrawingVisualLists.Count - 1);
+            MoveToTopCommand = new RelayCommand(a => MoveToTop(), a => ListView1?.SelectedIndex > 0);
+            MoveToBottomCommand = new RelayCommand(a => MoveToBottom(), a => ListView1?.SelectedIndex < DrawingVisualLists.Count - 1);
 
-            if (AlgorithmKBConfig.Instance.KBCanDrag)
-            {
-                ListViewDragDropManager<IDrawingVisual> listViewDragDropManager = new Common.Adorners.ListViewAdorners.ListViewDragDropManager<IDrawingVisual>(ListView1);
-                listViewDragDropManager.ShowDragAdorner = true;
-                listViewDragDropManager.EventHandler += (s, e) =>
-                {
-                    if (!DBIndex.ContainsKey(e[0]))
-                        DBIndex.Add(e[0], -1);
-                    if (!DBIndex.ContainsKey(e[1]))
-                        DBIndex.Add(e[1], -1);
 
-                    int old = DBIndex[e[0]];
-                    DBIndex[e[0]] = DBIndex[e[1]];
-
-                    e[0].BaseAttribute.Name = DBIndex[e[1]].ToString();
-                    DBIndex[e[1]] = old;
-                    e[1].BaseAttribute.Name = old.ToString();
-                };
-            }
-           
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(GraphicBorderType)).Cast<GraphicBorderType>()  select new KeyValuePair<GraphicBorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;
 
@@ -416,41 +401,14 @@ namespace ColorVision.Engine.Templates.POI
             {
                 HImageCache?.Dispose();
             }
-
             Thread thread = new(() => 
             {
                 Application.Current.Dispatcher.Invoke((Action)(() =>
                 {
                     ImageView.OpenImage(CreateWhiteLayer(width, height));
-                    if (ImageShow.Source == null)
-                    {
-                        ImageShow.Source = this.ViewBitmapSource;
-                        Zoombox1.ZoomUniform();
-                        if (IsClear || !Init)
-                            InitPoiConfigValue((int)this.ViewBitmapSource.Width,(int)this.ViewBitmapSource.Height);
-                    }
-                    else
-                    {
-                        if (ImageShow.Source is BitmapSource img && (img.PixelWidth != this.ViewBitmapSource.Width || img.PixelHeight != this.ViewBitmapSource.Height))
-                        {
-                            InitPoiConfigValue((int)this.ViewBitmapSource.Width, (int)this.ViewBitmapSource.Height);
-                            ImageShow.Source = this.ViewBitmapSource;
-                            Zoombox1.ZoomUniform();
-                        }
-                        else
-                        {
-                            ImageShow.Source = this.ViewBitmapSource;
-                        }
-
-                    }
-                    if (IsClear)
-                    {
-                        ImageShow.Clear();
-                        DrawingVisualLists.Clear();
-                    }
-                    Init = true;
+                    ImageView.UpdateZoomAndScale();
+                    InitPoiConfigValue((int)ImageView.ViewBitmapSource.Width, (int)ImageView.ViewBitmapSource.Height);
                     ImageShow.RaiseImageInitialized();
-
                 }));
             });
             thread.Start();
@@ -871,6 +829,13 @@ namespace ColorVision.Engine.Templates.POI
         {
             if (e.Key == Key.Delete)
             {
+                // Check if the focused element is a TextBox
+                if (Keyboard.FocusedElement is TextBox)
+                {
+                    // Let the TextBox handle the Delete key for editing
+                    return;
+                }
+
                 if (sender is ListView listView && listView.SelectedItems.Count > 0)
                 {
                     var visualsToRemove = new List<Visual>();
@@ -1650,8 +1615,9 @@ namespace ColorVision.Engine.Templates.POI
 
         private void TextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            e.Handled = new Regex("[^0-9]+").IsMatch(e.Text);
+
         }
+
         private void TakePhoto_Click(object sender, RoutedEventArgs e)
         {
             var lsit = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList();
@@ -1699,6 +1665,113 @@ namespace ColorVision.Engine.Templates.POI
                 };
 
             }
+        }
+
+
+        private void ListView1_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            ListView1.ContextMenu.Items.Clear();
+
+            Type type = DrawingVisualLists[ListView1.SelectedIndex].GetType();
+            foreach (var provider in ImageView.ImageViewModel.IEditorToolFactory.ContextMenuProviders)
+            {
+                if (provider.ContextType.IsAssignableFrom(type))
+                {
+                    var items = provider.GetContextMenuItems(ImageView.ImageViewModel, DrawingVisualLists[ListView1.SelectedIndex]);
+                    foreach (var item in items)
+                        ListView1.ContextMenu.Items.Add(item);
+                }
+            }
+            var moveUpItem = new MenuItem { Header = "上移", Command = MoveUpCommand };
+            ListView1.ContextMenu.Items.Add(moveUpItem);
+
+            var moveDownItem = new MenuItem { Header = "下移", Command = MoveDownCommand };
+            ListView1.ContextMenu.Items.Add(moveDownItem);
+
+            var moveToTopItem = new MenuItem { Header = "移动到首位", Command = MoveToTopCommand };
+            ListView1.ContextMenu.Items.Add(moveToTopItem);
+
+            var moveToBottomItem = new MenuItem { Header = "移动到末尾", Command = MoveToBottomCommand };
+            ListView1.ContextMenu.Items.Add(moveToBottomItem);
+
+
+
+        }
+        RelayCommand MoveUpCommand { get; set; }
+        RelayCommand MoveDownCommand { get; set; }
+        RelayCommand MoveToTopCommand { get; set; }
+        RelayCommand MoveToBottomCommand { get; set; }
+
+        // 添加移动方法
+        private void MoveUp()
+        {
+            int index = ListView1.SelectedIndex; // 假设ListView1是ViewModel中的属性
+            if (index > 0)
+            {
+                var item = DrawingVisualLists[index];
+                DrawingVisualLists.RemoveAt(index);
+                DrawingVisualLists.Insert(index - 1, item);
+                ListView1.SelectedIndex = index - 1;
+                UpdateDBIndex(item, index - 1);
+            }
+        }
+
+        private void MoveDown()
+        {
+            int index = ListView1.SelectedIndex;
+            if (index < DrawingVisualLists.Count - 1)
+            {
+                var item = DrawingVisualLists[index];
+                DrawingVisualLists.RemoveAt(index);
+                DrawingVisualLists.Insert(index + 1, item);
+                ListView1.SelectedIndex = index + 1;
+                UpdateDBIndex(item, index + 1);
+            }
+        }
+
+        private void MoveToTop()
+        {
+            int index = ListView1.SelectedIndex;
+            if (index > 0)
+            {
+                var item = DrawingVisualLists[index];
+                DrawingVisualLists.RemoveAt(index);
+                DrawingVisualLists.Insert(0, item);
+                ListView1.SelectedIndex = 0;
+                UpdateDBIndex(item, 0);
+            }
+        }
+
+        private void MoveToBottom()
+        {
+            int index = ListView1.SelectedIndex;
+            if (index < DrawingVisualLists.Count - 1)
+            {
+                var item = DrawingVisualLists[index];
+                DrawingVisualLists.RemoveAt(index);
+                DrawingVisualLists.Add(item);
+                ListView1.SelectedIndex = DrawingVisualLists.Count - 1;
+                UpdateDBIndex(item, DrawingVisualLists.Count - 1);
+            }
+        }
+
+
+        private void UpdateDBIndex(IDrawingVisual movedItem, int newIndex)
+        {
+            // 找到被替换的项（假设newIndex是移动后的位置）
+            var replacedItem = DrawingVisualLists[newIndex];
+            // 交换位置
+            if (!DBIndex.ContainsKey(movedItem))
+                DBIndex.Add(movedItem, -1);
+            if (!DBIndex.ContainsKey(replacedItem))
+                DBIndex.Add(replacedItem, -1);
+
+            int temp = DBIndex[movedItem];
+            DBIndex[movedItem] = DBIndex[replacedItem];
+            DBIndex[replacedItem] = temp;
+
+            movedItem.BaseAttribute.Name = DBIndex[movedItem].ToString();
+            replacedItem.BaseAttribute.Name = DBIndex[replacedItem].ToString();
         }
     }
 

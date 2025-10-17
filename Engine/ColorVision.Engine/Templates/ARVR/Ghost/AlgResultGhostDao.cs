@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Templates.Ghost
     }
 
     [SugarTable("t_scgd_algorithm_result_detail_ghost")]
-    public class AlgResultGhostModel : ViewEntity , IViewResult, IInitTables
+    public class AlgResultGhostModel : ViewEntity , IViewResult
     {
         [SugarColumn(ColumnName ="pid")]
         public int Pid { get; set; }

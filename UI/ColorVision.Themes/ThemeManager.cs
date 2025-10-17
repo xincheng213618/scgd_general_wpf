@@ -22,7 +22,7 @@ namespace ColorVision.Themes
             {
                 if (CurrentTheme == Theme.UseSystem)
                 {
-                    ApplyActTheme(Application.Current,e);
+                    ApplyActTheme(Application.Current, e);
                 }
             };
         }
@@ -47,14 +47,14 @@ namespace ColorVision.Themes
 
 
 
-        public void ApplyTheme(Application app, Theme theme) 
+        public void ApplyTheme(Application app, Theme theme)
         {
             if (CurrentTheme == theme)
                 return;
             CurrentTheme = theme;
             if (theme == Theme.UseSystem)
                 theme = AppsTheme;
-            ApplyActTheme(app,theme);
+            ApplyActTheme(app, theme);
         }
 
         public static List<string> ResourceDictionaryBase { get; set; } = new List<string>()
@@ -186,14 +186,19 @@ namespace ColorVision.Themes
         /// <summary>
         /// 选择的主题，存在三种情况：
         /// </summary>
-        public  Theme? CurrentTheme { get => _CurrentTheme;  private set { if (value == _CurrentTheme) return; _CurrentTheme = value; 
+        public Theme? CurrentTheme
+        {
+            get => _CurrentTheme; private set
+            {
+                if (value == _CurrentTheme) return; _CurrentTheme = value;
                 if (_CurrentTheme != null)
-                    CurrentThemeChanged?.Invoke((Theme)_CurrentTheme); 
-            } }
+                    CurrentThemeChanged?.Invoke((Theme)_CurrentTheme);
+            }
+        }
         private Theme? _CurrentTheme = Theme.Light;
 
         //这里是两种
-        public Theme CurrentUITheme { get => _CurrentUITheme; private set { if (value == _CurrentUITheme) return; _CurrentUITheme = value; CurrentUIThemeChanged?.Invoke(value);  } }
+        public Theme CurrentUITheme { get => _CurrentUITheme; private set { if (value == _CurrentUITheme) return; _CurrentUITheme = value; CurrentUIThemeChanged?.Invoke(value); } }
         private Theme _CurrentUITheme = Theme.Light;
 
 
@@ -204,14 +209,14 @@ namespace ColorVision.Themes
         /// <summary>
         /// Windows应用的主题
         /// </summary>
-        public Theme AppsTheme { get => _AppsTheme; set { if (value == _AppsTheme) return;  AppsThemeChanged?.Invoke(value); _AppsTheme = value; } }
-        private  Theme _AppsTheme = AppsUseLightTheme() ? Theme.Light : Theme.Dark;
+        public Theme AppsTheme { get => _AppsTheme; set { if (value == _AppsTheme) return; AppsThemeChanged?.Invoke(value); _AppsTheme = value; } }
+        private Theme _AppsTheme = AppsUseLightTheme() ? Theme.Light : Theme.Dark;
 
         /// <summary>
         /// 任务栏的主题，这里Win10和Win11的表现不一样
         /// </summary>
-        public  Theme SystemTheme { get => _SystemTheme; set { if (value == _SystemTheme) return; SystemThemeChanged?.Invoke(value);  _SystemTheme = value; } }
-        private  Theme _SystemTheme = SystemUsesLightTheme() ? Theme.Light : Theme.Dark;
+        public Theme SystemTheme { get => _SystemTheme; set { if (value == _SystemTheme) return; SystemThemeChanged?.Invoke(value); _SystemTheme = value; } }
+        private Theme _SystemTheme = SystemUsesLightTheme() ? Theme.Light : Theme.Dark;
 
 
         public static bool AppsUseLightTheme()
@@ -219,7 +224,7 @@ namespace ColorVision.Themes
 
             const string RegistryKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
             const string RegistryValueName = "AppsUseLightTheme";
-            
+
             // 这里也可能是LocalMachine(HKEY_LOCAL_MACHINE)
             // see "https://www.addictivetips.com/windows-tips/how-to-enable-the-dark-theme-in-windows-10/"
             object registryValueObject = Registry.CurrentUser.OpenSubKey(RegistryKeyPath)?.GetValue(RegistryValueName);
@@ -316,7 +321,7 @@ namespace ColorVision.Themes
         private static void ResetCaptionColor(IntPtr hwnd)
         {
             ///DWMWA_COLOR_DEFAULT 
-            uint attribute = 0xFFFFFFFF; 
+            uint attribute = 0xFFFFFFFF;
             uint attributeSize = (uint)Marshal.SizeOf(typeof(uint));
             //Specifying DWMWA_COLOR_DEFAULT (value 0xFFFFFFFF) for the color will reset the window back to using the system's default behavior for the caption color.
             _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_CAPTION_COLOR, ref attribute, attributeSize);

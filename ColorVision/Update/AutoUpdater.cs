@@ -33,6 +33,12 @@ namespace ColorVision.Update
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; OnPropertyChanged(); } }
         private bool _IsAutoUpdate = true;
 
+        /// <summary>
+        /// 用户选择跳过的版本
+        /// </summary>
+        public string SkippedVersion { get => _SkippedVersion; set { _SkippedVersion = value; OnPropertyChanged(); } }
+        private string _SkippedVersion = string.Empty;
+
     }
 
 
@@ -116,7 +122,7 @@ namespace ColorVision.Update
             });
         }
 
-        public async Task CheckAndUpdateV1(bool detection = true)
+        public async Task CheckAndUpdateV1(bool detection = true,bool skipped =false)
         {
             // 获取本地版本
             try
@@ -128,6 +134,23 @@ namespace ColorVision.Update
                 var Version = Assembly.GetExecutingAssembly().GetName().Version;
                 if (LatestVersion > Version)
                 {
+                    // 检查是否是用户已跳过的版本
+                    if (!string.IsNullOrEmpty(AutoUpdateConfig.Instance.SkippedVersion))
+                    {
+                        try
+                        {
+                            Version skippedVersion = new Version(AutoUpdateConfig.Instance.SkippedVersion);
+                            if (LatestVersion == skippedVersion)
+                            {
+                                return;
+                            }
+                        }
+                        catch
+                        {
+                            AutoUpdateConfig.Instance.SkippedVersion = string.Empty;
+                        }
+                    }
+
                     bool IsIncrement = false;
                     if (LatestVersion.Minor == Version.Minor)
                         IsIncrement = true;
@@ -142,29 +165,31 @@ namespace ColorVision.Update
                     string CHANGELOG = await GetChangeLog(CHANGELOGUrl);
                     string versionPattern = $"## \\[{LatestVersion}\\].*?\\n(.*?)(?=\\n## |$)";
                     Match match = Regex.Match(CHANGELOG ?? string.Empty, versionPattern, RegexOptions.Singleline);
+                    string msg = string.Empty;
                     if (match.Success)
                     {
                         // 如果找到匹配项，提取变更日志
                         string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
-
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            if (MessageBox1.Show(Application.Current.GetActiveWindow(), $"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?", $"{Properties.Resources.NewVersionFound}{LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
-                            {
-                                Update(LatestVersion, Path.GetTempPath(), IsIncrement);
-                            }
-                        });
+                        msg = $"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?{Environment.NewLine}{Environment.NewLine}点击是立即更新，点击否跳过该版本，点击取消稍后提醒";
                     }
                     else
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            if (MessageBox1.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
-                            {
-                                Update(LatestVersion, Path.GetTempPath(), IsIncrement);
-                            }
-                        });
+                        msg = $"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}{Environment.NewLine}点击是立即更新，点击否跳过该版本，点击取消稍后提醒";
                     }
+
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        MessageBoxResult result = MessageBox1.Show(Application.Current.GetActiveWindow(), msg, $"{Properties.Resources.NewVersionFound}{LatestVersion}", MessageBoxButton.YesNoCancel);
+                        if (result == MessageBoxResult.Yes)
+                        {
+                            Update(LatestVersion, Path.GetTempPath(), IsIncrement);
+                        }
+                        else if (result == MessageBoxResult.No)
+                        {
+                            // 用户选择跳过该版本
+                            AutoUpdateConfig.Instance.SkippedVersion = LatestVersion.ToString();
+                        }
+                    });
                 }
                 else
                 {

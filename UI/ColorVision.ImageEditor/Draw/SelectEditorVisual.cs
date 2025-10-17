@@ -504,7 +504,7 @@ namespace ColorVision.ImageEditor.Draw
             }
             else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (realKey == Key.Delete))
             {
-                foreach (var selectVisual in SelectVisuals.Cast<DrawingVisual>())
+                foreach (var selectVisual in SelectVisuals.Cast<DrawingVisual>().ToList())
                 {
                     DrawCanvas.RemoveVisualCommand(selectVisual);
                 }

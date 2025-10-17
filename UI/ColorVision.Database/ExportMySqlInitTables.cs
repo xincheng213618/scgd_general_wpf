@@ -1,4 +1,5 @@
-﻿using ColorVision.UI.Menus;
+﻿using ColorVision.UI;
+using ColorVision.UI.Menus;
 using log4net;
 using System;
 using System.Diagnostics;
@@ -46,27 +47,27 @@ namespace ColorVision.Database
         public  async Task InitTablesAsync()
         {
             _stopwatch = Stopwatch.StartNew();
-            var foundTypes = Assembly.GetAssembly(typeof(IInitTables)).GetTypes()
-            .Where(t => typeof(IInitTables).IsAssignableFrom(t) && // 类型 t 实现了接口 T
-                        !t.IsInterface &&                         // 类型 t 本身不是接口
-                        !t.IsAbstract &&                          // 类型 t 不是抽象类
-                        t.GetConstructor(Type.EmptyTypes) != null); // 类型 t 有公共无参构造函数
-
-
-            foreach (var item in foundTypes)
+            await Task.Delay(0); // 模拟异步操作
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
-                try
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitTables).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    await Task.Delay(0); // 模拟异步操作
-                    log.Info($"正在初始化表：{item.Name}");
-                    MySqlControl.GetInstance().DB.CodeFirst.InitTables(item);
+                    try
+                    {
+                        log.Info($"正在初始化表：{type.Name}");
+                        MySqlControl.GetInstance().DB.CodeFirst.InitTables(type);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error(ex);
+                    }
+
                 }
-                catch (Exception ex)
-                {
-                    log.Info(item);
-                    log.Error(ex);
-                }
+
             }
+
+
+
             _stopwatch.Stop();
             log.Info($"InitTables：{_stopwatch.Elapsed.TotalSeconds} 秒");
         }

@@ -11,10 +11,10 @@ namespace ColorVision.Engine.Templates.Jsons
     [SugarTable("t_scgd_algorithm_result_detail_common")]
     public class DetailCommonModel : EntityBase, IInitTables
     {
-        [SugarColumn(ColumnName ="pid")]
+        [SugarColumn(ColumnName ="pid", IsNullable = true)]
         public int PId { get; set; }
 
-        [SugarColumn(ColumnName ="result",ColumnDataType ="json")]
+        [SugarColumn(ColumnName ="result",ColumnDataType ="json",IsNullable =true)]
         public string ResultJson { get; set; }
     }
 

@@ -8,6 +8,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -78,6 +79,8 @@ namespace ColorVision.Database
         public DateTime CreationTime { get => _CreationTime; set { _CreationTime = value; OnPropertyChanged(); } }
         private DateTime _CreationTime;
 
+        public string CreationTimeDisplay => CreationTime.ToString("yyyy-MM-dd HH:mm:ss");
+
 
 
 
@@ -89,6 +92,9 @@ namespace ColorVision.Database
         private static MySqlLocalServicesManager _instance;
         private static readonly object _locker = new();
         public static MySqlLocalServicesManager GetInstance() { lock (_locker) { return _instance ??= new MySqlLocalServicesManager(); } }
+        public string BackupPath { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision", "Backup");
+        public ObservableCollection<MysqlBack> Backups { get; set; } = new ObservableCollection<MysqlBack>();
+
 
         public static MySqlLocalConfig Config => MySqlLocalConfig.Instance;
 
@@ -121,12 +127,15 @@ namespace ColorVision.Database
 
             if (!Directory.Exists(BackupPath))
                 Directory.CreateDirectory(BackupPath);
-            foreach (var item in Directory.GetFiles(BackupPath))
+
+            var sqlFiles = Directory.GetFiles(BackupPath)
+                .Where(f => f.EndsWith(".sql", StringComparison.CurrentCulture))
+                .OrderByDescending(f => File.GetCreationTime(f));
+
+            Backups.Clear(); // 如果需要清空原有数据
+            foreach (var item in sqlFiles)
             {
-                if (item.EndsWith(".sql", StringComparison.CurrentCulture))
-                {
-                    Backups.Add(new MysqlBack(item));
-                }
+                Backups.Add(new MysqlBack(item));
             }
             RestoreSelectCommand = new RelayCommand(a => RestoreSelect());
             BackupResourcesCommand = new RelayCommand(a => BackupResources());
@@ -195,9 +204,6 @@ namespace ColorVision.Database
             }
         }
 
-        public string BackupPath { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision", "Backup");
-
-        public ObservableCollection<MysqlBack> Backups { get; set; } = new ObservableCollection<MysqlBack>();
 
 
 

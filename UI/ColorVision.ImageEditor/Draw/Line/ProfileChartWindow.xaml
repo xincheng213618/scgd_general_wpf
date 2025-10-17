@@ -7,27 +7,29 @@
         xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
         mc:Ignorable="d"
         Title="Profile Line Chart" Height="450" Width="800"
-        WindowStartupLocation="CenterScreen" Initialized="Window_Initialized">
+        WindowStartupLocation="CenterScreen" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid Margin="10">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+        <!-- Toolbar for save buttons -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,5">
             <Button Content="Save Chart as Image..." Click="SaveChartButton_Click" Margin="0,0,10,0" Padding="5,2"/>
-            <Button Content="Save Data as CSV..." Click="SaveDataButton_Click" Padding="5,2"/>
+            <Button Content="Save Data as CSV..." Click="SaveDataButton_Click" Padding="5,2" Margin="0,0,10,0"/>
+            <Button Content="Copy to Clipboard" Click="CopyToClipboardButton_Click" Padding="5,2"/>
         </StackPanel>
 
-        <!-- 
-        图表控件占位符。
-        你需要将下面的 Border 替换成你项目中实际使用的图表控件。
-        例如: <lvc:CartesianChart x:Name="MyChart" Grid.Row="1" />
-        -->
-        <Border x:Name="ChartContainer" Grid.Row="1" BorderBrush="Gray" BorderThickness="1">
-            <!-- 为了演示，这里只放一个文本。你应该在这里放置真实的图表控件 -->
-            <lvc:CartesianChart Grid.Row="1" Name="ProfileChart" Foreground="{StaticResource GlobalTextBrush}" ZoomingSpeed="0.5"/>
-        </Border>
+        <!-- Toolbar for display options -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
+            <CheckBox x:Name="ShowPointsCheckBox" Content="Show Points" IsChecked="False" Checked="ShowPointsCheckBox_CheckChanged" Unchecked="ShowPointsCheckBox_CheckChanged" Margin="0,0,10,0" VerticalAlignment="Center"/>
+            <CheckBox x:Name="SmoothLineCheckBox" Content="Smooth Line" IsChecked="True" Checked="SmoothLineCheckBox_CheckChanged" Unchecked="SmoothLineCheckBox_CheckChanged" Margin="0,0,10,0" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Chart -->
+        <lvc:CartesianChart Grid.Row="2" Name="ProfileChart" Foreground="{StaticResource GlobalTextBrush}" ZoomingSpeed="0.5"/>
 
     </Grid>
 </Window>

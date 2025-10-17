@@ -5,7 +5,7 @@ using System;
 namespace ColorVision.Engine
 {
     [@SugarTable("t_scgd_measure_result_img")]
-    public class MeasureResultImgModel : EntityBase, IInitTables
+    public class MeasureResultImgModel : EntityBase
     {
         [SugarColumn(ColumnName ="batch_id")]
         public int BatchId { get; set; }

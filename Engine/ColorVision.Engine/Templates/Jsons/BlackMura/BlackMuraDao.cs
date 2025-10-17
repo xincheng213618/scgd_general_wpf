@@ -4,7 +4,7 @@ using SqlSugar;
 
 namespace ColorVision.Engine.Templates.Jsons.BlackMura
 {
-    public class BlackMuraView: IViewResult,IInitTables
+    public class BlackMuraView: IViewResult
     {
         public BlackMuraView(BlackMuraModel blackMuraModel)
         {
@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
 
     [SugarTable("t_scgd_algorithm_result_detail_blackmura")]
-    public class BlackMuraModel : EntityBase, IInitTables
+    public class BlackMuraModel : EntityBase
     {
         [SugarColumn(ColumnName ="pid")]
         public int PId { get; set; }

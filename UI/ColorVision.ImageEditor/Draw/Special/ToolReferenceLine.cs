@@ -11,6 +11,32 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw.Special
 {
+    /// <summary>
+    /// 参考线模式
+    /// </summary>
+    public enum ReferenceLineMode
+    {
+        /// <summary>
+        /// 同心圆模式 - 显示十字参考线和同心圆
+        /// </summary>
+        ConcentricCircles = 0,
+        
+        /// <summary>
+        /// 简单十字模式 - 仅显示十字参考线
+        /// </summary>
+        SimpleCross = 1,
+        
+        /// <summary>
+        /// 双十字模式 - 显示双层偏移的十字参考线
+        /// </summary>
+        DoubleCross = 2,
+
+        /// <summary>
+        /// 斜十字模式 - 显示相对当前角度偏移45°的对角线十字（X形）
+        /// </summary>
+        DiagonalCross = 3
+    }
+
     public class DVLineDVContextMenu : IDVContextMenu
     {
         public Type ContextType => typeof(ReferenceLine);
@@ -27,6 +53,17 @@ namespace ColorVision.ImageEditor.Draw.Special
                     referenceLine.Render();
                 };
                 MenuItems.Add(menuItem);
+                
+                MenuItem resetMenuItem = new() { Header = "重置为图像中心" };
+                resetMenuItem.Click += (s, e) =>
+                {
+                    // Reset to image center and rotation angle to 0
+                    referenceLine.RMouseDownP = new Point(referenceLine.ActualWidth / 2, referenceLine.ActualHeight / 2);
+                    referenceLine.Attribute.Angle = 0;
+                    referenceLine.PointLen = new Vector();
+                    referenceLine.Render();
+                };
+                MenuItems.Add(resetMenuItem);
             }
             return MenuItems;
         }
@@ -60,7 +97,7 @@ namespace ColorVision.ImageEditor.Draw.Special
         public Vector PointLen { get; set; }
 
         public bool IsLocked { get; set; } = true;
-        public int Mode { get => Attribute.Mode; set { Attribute.Mode = value; } }
+        public ReferenceLineMode Mode { get => Attribute.Mode; set { Attribute.Mode = value; } }
 
         SolidColorBrush SolidColorBrush = new SolidColorBrush(Color.FromArgb(1, 255, 255, 255));
 
@@ -74,7 +111,7 @@ namespace ColorVision.ImageEditor.Draw.Special
             double angle = Attribute.Angle;
             Point CenterPoint = RMouseDownP;
 
-            if (Mode == 0)
+            if (Mode == ReferenceLineMode.ConcentricCircles)
             {
                 // 旋转变换
                 List<Point> intersectionPoints = ReferenceLine.CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint, angle);
@@ -120,7 +157,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                 FormattedText formattedText3 = new((lenc + 1).ToString("F0"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(formattedText3, RMouseDownP - PointLen);
             }
-            else if (Mode == 1)
+            else if (Mode == ReferenceLineMode.SimpleCross)
             {
 
                 // 旋转变换
@@ -145,7 +182,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                 FormattedText formattedText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(formattedText, RMouseDownP + new Vector(a, a));
             }
-            else if (Mode == 2)
+            else if (Mode == ReferenceLineMode.DoubleCross)
             {
                 double angle1 = (angle + 45) * Math.PI / 180.0;
                 // 旋转变换
@@ -174,6 +211,29 @@ namespace ColorVision.ImageEditor.Draw.Special
                 }
 
 
+                FormattedText formattedText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                dc.DrawText(formattedText, RMouseDownP + new Vector(a, a));
+            }
+            else if (Mode == ReferenceLineMode.DiagonalCross)
+            {
+                // 斜十字：在当前角度基础上偏移45°，绘制X形两条对角线
+                List<Point> intersectionPoints = ReferenceLine.CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint, angle + 45);
+                if (intersectionPoints.Count == 4)
+                {
+                    dc.DrawLine(pen, intersectionPoints[0], intersectionPoints[1]);
+                    dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]);
+                }
+
+                TextAttribute textAttribute = new();
+                textAttribute.FontSize = 15 / Ratio;
+                double a = 15 / Ratio;
+                if (IsRMouseDown || IsLMouseDown)
+                {
+                    FormattedText formattedRText = new($"({(int)RMouseDownP.X},{(int)RMouseDownP.Y})", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                    dc.DrawText(formattedRText, RMouseDownP + new Vector(a, 2 * a));
+                }
+
+                // 仍显示基础角度，便于和其他模式一致
                 FormattedText formattedText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(formattedText, RMouseDownP + new Vector(a, a));
             }
@@ -299,22 +359,25 @@ namespace ColorVision.ImageEditor.Draw.Special
         public Pen Pen { get => _Pen; set { _Pen = value; OnPropertyChanged(); } }
         private Pen _Pen;
 
+        public ReferenceLineMode Mode { get => _Mode; set { _Mode = value; OnPropertyChanged(); } }
+        private ReferenceLineMode _Mode = ReferenceLineMode.SimpleCross;
 
-        [Category("RectangleAttribute"), DisplayName("颜色")]
-        public Brush Brush { get => _Brush; set { _Brush = value; OnPropertyChanged(); } }
+        [DisplayName("颜色")]
+        public Brush Brush { get => _Brush; set { _Brush = value; OnPropertyChanged();  Pen.Brush = value; } }
         private Brush _Brush = Brushes.Red;
 
+        public double Angle { get => _Angle; set { _Angle = value; OnPropertyChanged(); } }
+        private double _Angle;
 
         public double PointX { get => _PointX; set { _PointX = value; OnPropertyChanged(); } }
         private double _PointX;
 
         public double PointY { get => _PointY; set { _PointY = value; OnPropertyChanged(); } }
         private double _PointY;
-        public int Mode { get => _Mode; set { _Mode = value; OnPropertyChanged(); } }
-        private int _Mode = 2;
 
-        public double Angle { get => _Angle; set { _Angle = value; OnPropertyChanged(); } }
-        private double _Angle ;
+
+
+
     }
 
 
@@ -338,22 +401,6 @@ namespace ColorVision.ImageEditor.Draw.Special
              
         public ReferenceLine ReferenceLine { get; set; } = new ReferenceLine();
 
-
-        private void SetMode(int i)
-        {
-            if (i == -1)
-            {
-                IsChecked = false;
-            }
-            else
-            {
-                IsChecked = true;
-                ReferenceLine.Mode = i;
-                ReferenceLine.Render();
-            }
-        }
-
-
         public override bool IsChecked
         {
             get => _IsChecked; set
@@ -371,10 +418,16 @@ namespace ColorVision.ImageEditor.Draw.Special
                     ReferenceLine.Ratio = ZoomboxSub.ContentMatrix.M11;
                     ReferenceLine.ActualWidth = Image.ActualWidth;
                     ReferenceLine.ActualHeight = Image.ActualHeight;
-                    ReferenceLine.RMouseDownP = new Point(Image.ActualWidth / 2, Image.ActualHeight / 2);
+                    
+                    // Only reset to image center when PointX and PointY are both 0 (first time)
+                    if (ReferenceLine.Attribute.PointX == 0 && ReferenceLine.Attribute.PointY == 0)
+                    {
+                        ReferenceLine.RMouseDownP = new Point(Image.ActualWidth / 2, Image.ActualHeight / 2);
+                        ReferenceLine.Attribute.Angle = 0;
+                    }
+                    
                     ReferenceLine.PointLen = new Vector();
 
-                    ReferenceLine.Attribute.Angle = 0;
                     ReferenceLine.Attribute.Pen = new Pen(ReferenceLine.Attribute.Brush, 1 / ReferenceLine.Ratio);
                     Image.MouseMove += MouseMove;
                     Image.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;

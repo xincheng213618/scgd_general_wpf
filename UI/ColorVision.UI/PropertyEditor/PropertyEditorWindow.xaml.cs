@@ -128,18 +128,9 @@ namespace ColorVision.UI
         {
             categoryGroups.Clear();
             GenCategoryGroups(obj);
-            
-            // Get category order from CategoryOrderAttribute on the class
-            var type = obj.GetType();
-            var categoryOrderAttrs = type.GetCustomAttributes<CategoryOrderAttribute>().ToList();
-            var categoryOrderMap = categoryOrderAttrs.ToDictionary(a => a.Category, a => a.Order);
 
-            // Sort categories: first by order (if specified), then alphabetically
-            var sortedCategories = categoryGroups
-                .OrderBy(cg => categoryOrderMap.TryGetValue(cg.Key, out var order) ? order : int.MaxValue)
-                .ThenBy(cg => cg.Key, StringComparer.Ordinal);
 
-            foreach (var categoryGroup in sortedCategories)
+            foreach (var categoryGroup in categoryGroups)
             {
                 var border = new Border
                 {
@@ -162,12 +153,7 @@ namespace ColorVision.UI
                 };
                 stackPanel.Children.Add(categoryHeader);
 
-                // Sort properties: first by PropertyOrderAttribute, then by name
-                var sortedProperties = categoryGroup.Value
-                    .OrderBy(p => p.GetCustomAttribute<PropertyOrderAttribute>()?.Order ?? int.MaxValue)
-                    .ThenBy(p => PropertyEditorHelper.GetDisplayName(PropertyEditorHelper.GetResourceManager(obj) , p));
-
-                foreach (var property in sortedProperties)
+                foreach (var property in categoryGroup.Value)
                 {
                     var browsableAttr = property.GetCustomAttribute<BrowsableAttribute>();
                     
@@ -257,13 +243,12 @@ namespace ColorVision.UI
                         }
                         stackPanel.Children.Add(dockPanel);
                     }
-
                 }
-                if (stackPanel.Children.Count > 0)
+
+                if (stackPanel.Children.Count > 1)
                 {
                     TreeViewItem treeViewItem = new TreeViewItem() { Header = categoryGroup.Key, Tag = border };
                     treeView.Items.Add(treeViewItem);
-
                     PropertyPanel.Children.Add(border);
                 }
             }

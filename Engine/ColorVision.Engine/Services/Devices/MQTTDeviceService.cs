@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Services.Devices
                 if (value == DeviceStatusType.Unknown)
                 {
                     TryN++;
-                    if (TryN > 4)
+                    if (TryN > 3)
                     {
                         TryN = 0;
                         return;

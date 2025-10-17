@@ -676,6 +676,43 @@ drawCanvas.InvalidateRect(updateRect);
 </log4net>
 ```
 
+### 日志系统架构
+
+ColorVision 的日志系统 (LogImp) 基于 log4net 框架，提供了强大的日志查看和管理功能：
+
+#### 核心组件
+
+1. **LogConfig** - 日志配置管理
+   - 动态日志级别切换 (Debug, Info, Warn, Error, Fatal)
+   - 自动滚动和自动刷新控制
+   - 日志加载策略配置 (全天、启动后、无)
+   - 文本换行和字符限制设置
+
+2. **TextBoxAppender** - 自定义日志追加器
+   - 批量缓冲刷新机制 (默认100ms)
+   - 线程安全的UI更新
+   - 实时日志过滤和搜索
+   - 智能滚动暂停/恢复
+
+3. **WindowLog/LogOutput** - 日志查看界面
+   - 实时日志显示
+   - 支持关键词和正则表达式搜索
+   - 日志级别动态切换
+   - 历史日志加载
+   - 响应式UI布局
+
+4. **TypeLevelCacheHelper** - 日志级别缓存
+   - 反射结果缓存优化
+   - 静态属性和字段扫描
+
+#### 主要功能
+
+- **实时日志监控** - 通过 TextBoxAppender 实时显示日志
+- **日志搜索** - 支持多关键词和正则表达式过滤
+- **级别过滤** - 运行时动态调整日志级别
+- **历史加载** - 支持加载历史日志文件
+- **性能优化** - 批量刷新、异步更新、智能滚动
+
 ### 日志使用
 
 ```csharp
@@ -686,10 +723,36 @@ log.Warn("警告信息");
 log.Error("错误信息", exception);
 ```
 
+### 打开日志查看器
+
+- **快捷键**: `Ctrl+L`
+- **菜单**: 帮助 -> 日志
+- **代码**: `new WindowLog().Show();`
+
 ### 运行日志位置
 
 - **默认路径** - `logs/application.log`
 - **配置路径** - 可在配置文件中自定义
+
+### 日志配置选项
+
+通过 LogConfig.Instance 访问和修改日志配置：
+
+```csharp
+// 设置日志级别
+LogConfig.Instance.LogLevel = Level.Debug;
+
+// 启用自动滚动
+LogConfig.Instance.AutoScrollToEnd = true;
+
+// 设置日志加载策略
+LogConfig.Instance.LogLoadState = LogLoadState.SinceStartup;
+
+// 限制最大字符数
+LogConfig.Instance.MaxChars = 100000;
+```
+
+详细文档请参考：[日志查看器文档](docs/user-interface-guide/log-viewer/日志查看器.md)
 
 ### 常见问题诊断
 

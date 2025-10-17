@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:GraphicEditingConfig}"
        
-        Title="GraphicEditingWindow" Background="{StaticResource GlobalBackground}" Height="500" Width="350" Initialized="Window_Initialized">
+        Title="GraphicEditingWindow" Background="{StaticResource GlobalBackground}" Height="600" Width="300" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}">
             <Setter Property="BorderThickness" Value="0,0,0,1" />
@@ -161,10 +161,9 @@
                     </StackPanel>
                     <ComboBox x:Name="ComboBoxBorderType2"  HorizontalAlignment="Left" Width="100" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="5,3"/>
                     <Button Content="AreaRectFull" Click="AreaRectFull"/>
-                    <StackPanel>
+                    <StackPanel Orientation="Horizontal">
                         <Button x:Name="button2" Margin="5"  Height="30" Width="100" FontWeight="Bold" HorizontalAlignment="Left"  Content="绘制" Click="Button2_Click"/>
                         <Button  Margin="5"  Height="30" Width="100" FontWeight="Bold" HorizontalAlignment="Left"  Content="清除" Click="Button3_Click"/>
-
                     </StackPanel>
 
                 </StackPanel>

@@ -1,4 +1,5 @@
-﻿using ColorVision.UI.Menus;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.UI.Menus;
 using System.Windows.Input;
 
 namespace ColorVision.ImageEditor.EditorTools.AppCommand
@@ -10,9 +11,17 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
 
         public int Order { get; set; } = 1;
 
-        public object? Icon { get; set; } = MenuItemIcon.TryFindResource("DIOpen");
+        public object? Icon { get; set; } = IEditorToolFactory.TryFindResource("openDrawingImage");
 
-        public ICommand? Command { get; set; } = ApplicationCommands.Open;
+        public ICommand? Command { get; set; } = new RelayCommand(a =>
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.RestoreDirectory = true;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                EditorContext.ImageView?.OpenImage(openFileDialog.FileName);
+            }
+        }, a => true);
     }
 
 }

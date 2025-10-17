@@ -103,7 +103,7 @@ namespace ColorVision.UI
             {
                 foreach (var t in typeList)
                 {
-                    if (Activator.CreateInstance(t) is IFileProcessor processor && processor.CanProcess(filePath))
+                    if (Activator.CreateInstance(t) is IFileProcessor processor )
                     {
                         candidates.Add(processor);
                     }
@@ -117,7 +117,7 @@ namespace ColorVision.UI
             // 如果没有，尝试 fallback
             if (_genericType != null)
             {
-                if (Activator.CreateInstance(_genericType) is IFileProcessor fallback && fallback.CanProcess(filePath))
+                if (Activator.CreateInstance(_genericType) is IFileProcessor fallback)
                     return fallback;
             }
             return null;
@@ -149,7 +149,7 @@ namespace ColorVision.UI
             {
                 foreach (var t in typeList)
                 {
-                    if (Activator.CreateInstance(t) is IFileProcessor processor && processor.CanExport(filePath))
+                    if (Activator.CreateInstance(t) is IFileProcessor processor )
                     {
                         candidates.Add(processor);
                     }
@@ -167,7 +167,7 @@ namespace ColorVision.UI
             // fallback
             if (_genericType != null)
             {
-                if (Activator.CreateInstance(_genericType) is IFileProcessor fallback && fallback.CanExport(filePath))
+                if (Activator.CreateInstance(_genericType) is IFileProcessor fallback)
                 {
                     fallback.Export(filePath);
                     return true;

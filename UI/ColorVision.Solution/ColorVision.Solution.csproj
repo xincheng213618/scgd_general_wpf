@@ -82,5 +82,8 @@
 			<Pack>true</Pack>
 		</None>
 	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="interface\" />
+	</ItemGroup>
 
 </Project>

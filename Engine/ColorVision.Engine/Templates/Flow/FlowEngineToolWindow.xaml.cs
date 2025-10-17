@@ -19,18 +19,9 @@ namespace ColorVision.Engine.Templates.Flow
     {
         public int Order => 1;
 
-        public bool CanProcess(string filePath)
-        {
-            return filePath.EndsWith("stn", StringComparison.OrdinalIgnoreCase);
-        }
         public void Export(string filePath)
         {
           
-        }
-
-        public bool CanExport(string filePath)
-        {
-            return false;
         }
 
         public void Process(string filePath)

@@ -32,6 +32,7 @@ namespace ColorVision.ImageEditor
         public ImageViewConfig Config => ImageViewModel.EditorContext.Config;
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.DrawingVisualLists;
+
         public event EventHandler ClearImageEventHandler;
 
         public ImageView()
@@ -107,9 +108,9 @@ namespace ColorVision.ImageEditor
             ComboxeType.ItemsSource = from e1 in Enum.GetValues(typeof(MagnigifierType)).Cast<MagnigifierType>()
                                       select new KeyValuePair<MagnigifierType, string>(e1, e1.ToString());
 
-            this.CommandBindings.Add(new CommandBinding( ApplicationCommands.Open, (s, e) => OpenImage(),(s, e) => { e.CanExecute = true; }));
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = true; }));
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
+            CommandBindings.Add(new CommandBinding( ApplicationCommands.Open, (s, e) => OpenImage(),(s, e) => { e.CanExecute = true; }));
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = true; }));
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
             CommandBindings.Add(new CommandBinding( ApplicationCommands.Print,(s, e) => Print(), (s, e) => { e.CanExecute = true; }));
         }
         /// <summary>
@@ -158,7 +159,7 @@ namespace ColorVision.ImageEditor
         /// <param name="fileName">文件路径</param>
         public void Save(string fileName)
         {
-            RenderTargetBitmap renderTargetBitmap = new((int)ImageShow.Width, (int)ImageShow.Height, 96, 96, PixelFormats.Pbgra32);
+            RenderTargetBitmap renderTargetBitmap = new((int)ImageShow.ActualWidth, (int)ImageShow.ActualHeight, Config.GetProperties<double>("DpiX"), Config.GetProperties<double>("DpiY"), PixelFormats.Pbgra32);
             renderTargetBitmap.Render(ImageShow);
 
             // 创建一个PngBitmapEncoder对象来保存位图为PNG文件
@@ -168,12 +169,6 @@ namespace ColorVision.ImageEditor
             // 将PNG内容保存到文件
             using FileStream fileStream = new(fileName, FileMode.Create);
             pngEncoder.Save(fileStream);
-        }
-
-
-        public void Clear(object? sender, EventArgs e)
-        {
-            Clear();
         }
 
         private void ImageShow_VisualsAdd(object? sender, VisualChangedEventArgs e)
@@ -233,6 +228,7 @@ namespace ColorVision.ImageEditor
             if (writeableBitmap != null)
                 SetImageSource(writeableBitmap);
         }
+
 
         private List<SelectionChangedEventHandler> _handlers = new List<SelectionChangedEventHandler>();
         public void AddSelectionChangedHandler(SelectionChangedEventHandler handler)

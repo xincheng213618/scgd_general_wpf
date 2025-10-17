@@ -1,4 +1,5 @@
-﻿using log4net.Appender;
+﻿using ColorVision.UI.LogImp;
+using log4net.Appender;
 using log4net.Core;
 using System.Text;
 using System.Windows;
@@ -9,16 +10,31 @@ using System.Windows.Threading;
 
 namespace ColorVision.UI
 {
+    /// <summary>
+    /// 自定义 log4net 追加器，支持批量缓冲和实时搜索功能
+    /// </summary>
+    /// <remarks>
+    /// 该追加器使用批量刷新机制（默认100ms），减少 UI 更新频率，提升性能。
+    /// 支持智能滚动控制和实时搜索过滤。
+    /// </remarks>
     public class TextBoxAppender : AppenderSkeleton
     {
         private readonly TextBox _textBox;
         private readonly StringBuilder _buffer = new StringBuilder();
         private readonly object _lock = new object();
         private readonly DispatcherTimer _flushTimer;
-        public int FlushIntervalMs { get; set; } = 100; // 刷新频率，100ms合并一次刷新
+
+        /// <summary>
+        /// 批量刷新间隔，单位：毫秒
+        /// </summary>
+        /// <value>默认值为 100ms</value>
+        public int FlushIntervalMs { get; set; } = LogConstants.DefaultFlushIntervalMs;
+        
         private bool _reverseLastState = false;
 
-
+        /// <summary>
+        /// 搜索文本，设置后启用实时搜索过滤
+        /// </summary>
         public string SearchText { get => _SearchText; set { _SearchText = value; IsSearchEnabled = !string.IsNullOrWhiteSpace(value); } }
         private string _SearchText;
 
@@ -26,6 +42,12 @@ namespace ColorVision.UI
 
         private readonly TextBox _logTextBoxSearch;
 
+        /// <summary>
+        /// 初始化 TextBoxAppender 实例
+        /// </summary>
+        /// <param name="textBox">主日志显示文本框</param>
+        /// <param name="logTextBoxSerch">搜索结果显示文本框</param>
+        /// <exception cref="ArgumentNullException">当 textBox 或 logTextBoxSerch 为 null 时抛出</exception>
         public TextBoxAppender(TextBox textBox,TextBox logTextBoxSerch)
         {
             _textBox = textBox ?? throw new ArgumentNullException(nameof(textBox));
@@ -42,6 +64,10 @@ namespace ColorVision.UI
             };
         }
 
+        /// <summary>
+        /// 追加日志事件到缓冲区
+        /// </summary>
+        /// <param name="loggingEvent">日志事件</param>
         protected override void Append(LoggingEvent loggingEvent)
         {
             if (!LogConfig.Instance.AutoRefresh) return;
@@ -62,6 +88,9 @@ namespace ColorVision.UI
             }
         }
 
+        /// <summary>
+        /// 刷新缓冲区内容到 UI
+        /// </summary>
         private void FlushBuffer()
         {
             string logs;  
@@ -85,11 +114,16 @@ namespace ColorVision.UI
             }
         }
 
+        /// <summary>
+        /// 更新文本框内容
+        /// </summary>
+        /// <param name="logs">要添加的日志内容</param>
+        /// <param name="reverse">是否倒序插入</param>
         private void UpdateTextBox(string logs, bool reverse)
         {
             if (reverse)
             {
-                if (LogConfig.Instance.MaxChars > 1000 && _textBox.Text.Length > LogConfig.Instance.MaxChars)
+                if (LogConfig.Instance.MaxChars > LogConstants.MinMaxCharsForTrimming && _textBox.Text.Length > LogConfig.Instance.MaxChars)
                 {
                     _textBox.Text = _textBox.Text.Substring(0,LogConfig.Instance.MaxChars);
                     _textBox.CaretIndex = _textBox.Text.Length;
@@ -109,7 +143,7 @@ namespace ColorVision.UI
             }
             else
             {
-                if (LogConfig.Instance.MaxChars > 1000 && _textBox.Text.Length > LogConfig.Instance.MaxChars)
+                if (LogConfig.Instance.MaxChars > LogConstants.MinMaxCharsForTrimming && _textBox.Text.Length > LogConfig.Instance.MaxChars)
                 {
                     _textBox.Text = _textBox.Text.Substring(_textBox.Text.Length - LogConfig.Instance.MaxChars);
                     _textBox.CaretIndex = _textBox.Text.Length;
@@ -137,6 +171,9 @@ namespace ColorVision.UI
         private bool suspendAutoScroll;
         private DispatcherTimer resumeScrollTimer;
 
+        /// <summary>
+        /// 附加滚动事件处理器，实现智能滚动控制
+        /// </summary>
         public void AttachScrollEventHandlers()
         {
             var scrollViewer = GetScrollViewer(_textBox);
@@ -162,18 +199,24 @@ namespace ColorVision.UI
             ResumeAutoScrollWithDelay();
         }
 
+        /// <summary>
+        /// 暂停自动滚动
+        /// </summary>
         private void PauseAutoScroll()
         {
             suspendAutoScroll = true;
             if (resumeScrollTimer != null) resumeScrollTimer.Stop();
         }
 
+        /// <summary>
+        /// 延迟恢复自动滚动
+        /// </summary>
         private void ResumeAutoScrollWithDelay()
         {
             if (resumeScrollTimer == null)
             {
                 resumeScrollTimer = new DispatcherTimer();
-                resumeScrollTimer.Interval = TimeSpan.FromSeconds(2);
+                resumeScrollTimer.Interval = TimeSpan.FromSeconds(LogConstants.AutoScrollResumeDelaySeconds);
                 resumeScrollTimer.Tick += (s, e) =>
                 {
                     suspendAutoScroll = false;
@@ -186,7 +229,11 @@ namespace ColorVision.UI
             resumeScrollTimer.Start();
         }
 
-        // 获取TextBox的ScrollViewer
+        /// <summary>
+        /// 获取 TextBox 的 ScrollViewer 控件
+        /// </summary>
+        /// <param name="depObj">依赖对象</param>
+        /// <returns>ScrollViewer 实例，如果未找到则返回 null</returns>
         private static ScrollViewer? GetScrollViewer(DependencyObject depObj)
         {
             if (depObj is ScrollViewer) return (ScrollViewer)depObj;
@@ -200,6 +247,9 @@ namespace ColorVision.UI
         }
 
 
+        /// <summary>
+        /// 关闭追加器，停止定时器并刷新剩余日志
+        /// </summary>
         protected override void OnClose()
         {
             base.OnClose();

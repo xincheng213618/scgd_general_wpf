@@ -1549,15 +1549,15 @@ public class STNodeEditor : Control
 				m_pt_canvas_old.X = _CanvasOffsetX;
 				m_pt_canvas_old.Y = _CanvasOffsetY;
 				Invalidate();
-				Thread.Sleep(30);
+				Thread.Sleep(10);
 			}
 			else
 			{
-				Thread.Sleep(100);
+				Thread.Sleep(10);
 			}
 		}
 	}
-
+	
 	private void ShowAlertThread()
 	{
 		while (true)

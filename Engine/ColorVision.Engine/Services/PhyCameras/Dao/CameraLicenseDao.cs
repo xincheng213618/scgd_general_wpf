@@ -35,7 +35,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
     }
 
     [SugarTable("t_scgd_camera_license")]
-    public class LicenseModel : ViewEntity, IInitTables
+    public class LicenseModel : ViewEntity
     {
         [SugarColumn(ColumnName ="res_dev_cam_pid")]
         public int? DevCameraId { get; set; }
