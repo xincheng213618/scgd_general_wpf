@@ -80,6 +80,8 @@
 
         <StackPanel Orientation="Horizontal" Grid.Row="2" Margin="0 0 0 8">
             <Button Content="删除选中" Padding="12 4" Command="{Binding RemoveMetaCommand}"/>
+            <Button Content="上移" Padding="12 4" Margin="8 0 0 0" Command="{Binding MoveUpCommand}"/>
+            <Button Content="下移" Padding="12 4" Margin="8 0 0 0" Command="{Binding MoveDownCommand}"/>
             <TextBlock Text="  (双击可重命名, 当前仅内存保存)" VerticalAlignment="Center" Margin="12 0 0 0" Foreground="Gray"/>
         </StackPanel>
 
