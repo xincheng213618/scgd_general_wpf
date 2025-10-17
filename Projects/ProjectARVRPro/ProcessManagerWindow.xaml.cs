@@ -77,11 +77,18 @@ namespace ProjectARVRPro
         public IProcess SelectedProcess { get => _SelectedProcess; set { _SelectedProcess = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
         private IProcess _SelectedProcess;
 
-        public ProcessMeta SelectedProcessMeta { get => _SelectedProcessMeta; set { _SelectedProcessMeta = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
+        public TemplateModel<FlowParam> UpdateTemplate { get => _UpdateTemplate; set { _UpdateTemplate = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
+        private TemplateModel<FlowParam> _UpdateTemplate;
+
+        public IProcess UpdateProcess { get => _UpdateProcess; set { _UpdateProcess = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
+        private IProcess _UpdateProcess;
+
+        public ProcessMeta SelectedProcessMeta { get => _SelectedProcessMeta; set { _SelectedProcessMeta = value; OnPropertyChanged(); OnSelectedProcessMetaChanged(); CommandManager.InvalidateRequerySuggested(); } }
         private ProcessMeta _SelectedProcessMeta;
 
         public RelayCommand AddMetaCommand { get; set; }
         public RelayCommand RemoveMetaCommand { get; set; }
+        public RelayCommand UpdateMetaCommand { get; set; }
 
         public ProcessManager()
         {
@@ -90,6 +97,7 @@ namespace ProjectARVRPro
             EditCommand = new RelayCommand(a => Edit());
             AddMetaCommand = new RelayCommand(a => AddMeta(), a => CanAddMeta());
             RemoveMetaCommand = new RelayCommand(a => RemoveMeta(), a => SelectedProcessMeta != null);
+            UpdateMetaCommand = new RelayCommand(a => UpdateMeta(), a => CanUpdateMeta());
             LoadPersistedMetas();
         }
 
@@ -175,6 +183,30 @@ namespace ProjectARVRPro
                 ProcessMetas.Remove(SelectedProcessMeta);
                 SelectedProcessMeta = null;
             }
+        }
+
+        private void OnSelectedProcessMetaChanged()
+        {
+            if (SelectedProcessMeta != null)
+            {
+                // Populate update fields when a ProcessMeta is selected
+                UpdateTemplate = templateModels.FirstOrDefault(t => t.Key == SelectedProcessMeta.FlowTemplate);
+                UpdateProcess = Processes.FirstOrDefault(p => p.GetType().FullName == SelectedProcessMeta.Process?.GetType().FullName);
+            }
+        }
+
+        private bool CanUpdateMeta()
+        {
+            return SelectedProcessMeta != null && UpdateTemplate != null && UpdateProcess != null;
+        }
+
+        private void UpdateMeta()
+        {
+            if (!CanUpdateMeta()) return;
+            
+            // Update the selected ProcessMeta with new values
+            SelectedProcessMeta.FlowTemplate = UpdateTemplate.Key;
+            SelectedProcessMeta.Process = UpdateProcess;
         }
 
         private void LoadPersistedMetas()

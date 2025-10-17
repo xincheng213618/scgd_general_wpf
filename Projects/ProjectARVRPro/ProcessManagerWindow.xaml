@@ -14,6 +14,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -51,12 +52,38 @@
             </Grid>
         </GroupBox>
 
-        <StackPanel Orientation="Horizontal" Grid.Row="1" Margin="0 0 0 8">
+        <GroupBox Header="更新 ProcessMeta" Padding="8" Margin="0 0 0 8" Grid.Row="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="180"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="180"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="流程模板:" VerticalAlignment="Center" Margin="0 0 4 0"/>
+                <ComboBox Grid.Column="1" ItemsSource="{Binding templateModels}" DisplayMemberPath="Key" SelectedItem="{Binding UpdateTemplate}"/>
+
+                <TextBlock Grid.Column="2" Text="处理类:" VerticalAlignment="Center" Margin="12 0 4 0"/>
+                <ComboBox Grid.Column="3" ItemsSource="{Binding Processes}" SelectedItem="{Binding UpdateProcess}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <Button Grid.Column="4" Content="更新" Margin="12 0 0 0" Padding="12 4" Command="{Binding UpdateMetaCommand}"/>
+            </Grid>
+        </GroupBox>
+
+        <StackPanel Orientation="Horizontal" Grid.Row="2" Margin="0 0 0 8">
             <Button Content="删除选中" Padding="12 4" Command="{Binding RemoveMetaCommand}"/>
             <TextBlock Text="  (双击可重命名, 当前仅内存保存)" VerticalAlignment="Center" Margin="12 0 0 0" Foreground="Gray"/>
         </StackPanel>
 
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="3">
             <ListView ItemsSource="{Binding ProcessMetas}" SelectedItem="{Binding SelectedProcessMeta}" x:Name="lvMetas">
                 <ListView.View>
                     <GridView>
