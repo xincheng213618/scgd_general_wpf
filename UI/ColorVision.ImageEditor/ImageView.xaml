@@ -75,7 +75,7 @@
 
                 </local:Zoombox>
 
-                <ComboBox x:Name="ComboBoxLayers" HorizontalAlignment="Right" VerticalAlignment="Top"  Style="{StaticResource ComboBox.Small}" x:FieldModifier="public"  SelectedIndex="0" Margin="0,5,5,0" Grid.Column="1"/>
+                <ComboBox x:Name="ComboBoxLayers" HorizontalAlignment="Left" Background="Transparent" BorderThickness="0" VerticalAlignment="Top"  Style="{StaticResource ComboBox.Small}" x:FieldModifier="public"  SelectedIndex="0" Margin="0,5,5,0" Grid.Column="1"/>
                 <ToolBar x:Name="ToolBarAl"  x:FieldModifier="public" Style="{StaticResource ToolBarBaseStyle}" Background="Transparent" ToolBarTray.IsLocked="True"  VerticalAlignment="Bottom" Grid.Row="0"  HorizontalAlignment="Left" Visibility="Visible">
                     <ComboBox x:Name="ComboxPOITemplate"  x:FieldModifier="public" Width="100" HorizontalAlignment="Left" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
                 </ToolBar>
