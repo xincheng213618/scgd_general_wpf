@@ -21,13 +21,13 @@ int makeDir(const std::string& d) {
 inline int divCeil(int a, int b) { return (a + b - 1) / b; }
 
 int main() {
-    std::string inputPath = "C:\\Users\\17917\\Desktop\\tiff.tiff";
+    std::string inputPath = "C:\\Users\\17917\\xwechat_files\\wxid_htzn9mxqm4gw22_1d4c\\msg\\file\\2025 - 10\\CY - 1.tif";
     int tileSize = 512;                 // 可改 256 / 512
     bool limitMaxZoom = false;          // 若想手动限制层数，设 true
     int forcedMaxZoom = 6;              // 只在 limitMaxZoom = true 时生效
     bool enablePad = false;             // 若想所有瓦片都是 tileSize×tileSize，设 true
 
-    cv::Mat imgOriginal = cv::imread(inputPath, cv::IMREAD_COLOR);
+    cv::Mat imgOriginal = cv::imread(inputPath, cv::IMREAD_UNCHANGED);
     if (imgOriginal.empty()) {
         std::cout << "Cannot load image!" << std::endl;
         return -1;
