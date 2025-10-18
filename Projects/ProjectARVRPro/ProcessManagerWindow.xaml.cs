@@ -10,6 +10,7 @@ using System.Windows.Input;
 using System.Collections.Specialized;
 using Newtonsoft.Json;
 using System.IO;
+using ColorVision.ImageEditor;
 
 namespace ProjectARVRPro
 {
@@ -20,11 +21,20 @@ namespace ProjectARVRPro
         public ObjectiveTestResult ObjectiveTestResult { get; set; }
         public ObjectiveTestResultFix ObjectiveTestResultFix { get; set; }
         public ARVRRecipeConfig RecipeConfig { get; set; }
+
+        public ImageView ImageView { get; set; }
+
         public ILog Logger { get; set; }
     }
+
     public interface IProcess
     {
-        public bool Execute(IProcessExecutionContext processExecutionContext);
+        public bool Execute(IProcessExecutionContext ctx);
+
+        public void Render(IProcessExecutionContext ctx);
+
+        public string GenText(IProcessExecutionContext ctx);
+
     }
 
     public class ProcessMeta:ViewModelBase
@@ -41,6 +51,8 @@ namespace ProjectARVRPro
         public string ProcessTypeName => Process?.GetType().Name ?? string.Empty;
         public string ProcessTypeFullName => Process?.GetType().FullName ?? string.Empty;
     }
+
+
 
     internal class ProcessMetaPersist
     {

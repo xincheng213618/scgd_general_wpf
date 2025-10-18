@@ -103,6 +103,8 @@ namespace ProjectARVRPro
         BKscreeenDefectDetection,
     }
 
+
+
     [SugarTable("ARVRReuslt")]
     public class ProjectARVRReuslt : ViewEntity 
     {
@@ -155,7 +157,7 @@ namespace ProjectARVRPro
         public FlowStatus FlowStatus { get; set; } = FlowStatus.Ready;
 
         public bool Result { get; set; } = true;
-        public ARVR1TestType TestType { get; set; }
+        public int TestType { get; set; }
 
         public long RunTime { get; set; }
         public string Msg { get; set; } = string.Empty;

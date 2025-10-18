@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.0.0.6</VersionPrefix>
+		<VersionPrefix>1.0.0.12</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -59,7 +59,6 @@
 
 	<ItemGroup>
 	  <Folder Include="Assets\" />
-	  <Folder Include="FlowProcess\" />
 	</ItemGroup>
 
 	<ItemGroup>

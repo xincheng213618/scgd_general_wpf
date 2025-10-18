@@ -2,7 +2,7 @@ using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Database;
 
-namespace ProjectARVRPro
+namespace ProjectARVRPro.FlowProcess
 {
     public class W25Process : IProcess
     {
@@ -13,7 +13,6 @@ namespace ProjectARVRPro
             try
             {
                 log?.Info("处理 White25 流程结果");
-                ctx.ObjectiveTestResult.FlowW25TestReslut = true;
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (values.Count > 0)
@@ -97,6 +96,26 @@ namespace ProjectARVRPro
                 log?.Error(ex);
                 return false;
             }
+        }
+
+        public void Render(IProcessExecutionContext ctx)
+        {
+           
+        }
+
+        public string GenText(IProcessExecutionContext ctx)
+        {
+            var result = ctx.Result;
+            string outtext = string.Empty;
+            outtext += $"W25 测试项：自动AA区域定位算法+关注点算法+序列对比度算法(中心亮度比值)" + Environment.NewLine;
+            if (result.ViewResultW25.PoiResultCIExyuvDatas != null)
+            {
+                foreach (var item in result.ViewResultW25.PoiResultCIExyuvDatas)
+                {
+                    outtext += $"{item.Name}  X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
+                }
+            }
+            return outtext;
         }
     }
 }

@@ -1,10 +1,16 @@
+using ColorVision.Common.Algorithms;
+using ColorVision.Database;
 using ColorVision.Engine; // AlgResultMasterDao, MeasureImgResultDao
 using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
 using ColorVision.Engine.Templates.Jsons.FOV2; // DFovView
-using ColorVision.Database;
+using ColorVision.Engine.Templates.Jsons.MTF2;
+using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Draw;
+using System.Windows;
+using System.Windows.Media;
 
-namespace ProjectARVRPro
+namespace ProjectARVRPro.FlowProcess
 {
     /// <summary>
     /// Extracted processing logic for White51 (W51) test type.
@@ -20,8 +26,6 @@ namespace ProjectARVRPro
             try
             {
                 log?.Info("处理 White51 流程结果");
-                ctx.ObjectiveTestResult.FlowW51TestReslut = true;
-
                 // 图像
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (values.Count > 0)
@@ -95,6 +99,50 @@ namespace ProjectARVRPro
                 log?.Error(ex);
                 return false;
             }
+        }
+
+        public void Render(IProcessExecutionContext processExecutionContext)
+        {
+            var ctx = processExecutionContext;
+            DVPolygon polygon = new DVPolygon();
+            List<System.Windows.Point> point1s = new List<System.Windows.Point>();
+            foreach (var item in ctx.Result.ViewReslutW51.AlgResultLightAreaModels)
+            {
+                point1s.Add(new System.Windows.Point((int)item.PosX, (int)item.PosY));
+            }
+            foreach (var item in GrahamScan.ComputeConvexHull(point1s))
+            {
+                polygon.Attribute.Points.Add(new Point(item.X, item.Y));
+            }
+            polygon.Attribute.Brush = Brushes.Transparent;
+            polygon.Attribute.Pen = new Pen(Brushes.Blue, 1);
+            polygon.Attribute.Id = -1;
+            polygon.IsComple = true;
+            polygon.Render();
+            ctx.ImageView.AddVisual(polygon);
+        }
+
+
+
+        public string GenText(IProcessExecutionContext ctx)
+        {
+            var result = ctx.Result;
+            string outtext = string.Empty;
+            outtext += $"白画面绿图W51 测试项：自动AA区域定位算法+FOV算法" + Environment.NewLine;
+
+            outtext += $"发光区角点：" + Environment.NewLine;
+            if (result.ViewReslutW51.AlgResultLightAreaModels != null)
+            {
+                foreach (var item in result.ViewReslutW51.AlgResultLightAreaModels)
+                {
+                    outtext += $"{item.PosX},{item.PosY}" + Environment.NewLine;
+                }
+            }
+
+            outtext += $"DiagonalFieldOfViewAngle:{result.ViewReslutW51.DiagonalFieldOfViewAngle.TestValue}  LowLimit:{result.ViewReslutW51.DiagonalFieldOfViewAngle.LowLimit} UpLimit:{result.ViewReslutW51.DiagonalFieldOfViewAngle.UpLimit},Rsult{(result.ViewReslutW51.DiagonalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+            outtext += $"HorizontalFieldOfViewAngle:{result.ViewReslutW51.HorizontalFieldOfViewAngle.TestValue} LowLimit:{result.ViewReslutW51.HorizontalFieldOfViewAngle.LowLimit} UpLimit:{result.ViewReslutW51.HorizontalFieldOfViewAngle.UpLimit} ,Rsult{(result.ViewReslutW51.HorizontalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+            outtext += $"VerticalFieldOfViewAngle:{result.ViewReslutW51.VerticalFieldOfViewAngle.TestValue} LowLimit:{result.ViewReslutW51.VerticalFieldOfViewAngle.LowLimit} UpLimit:{result.ViewReslutW51.VerticalFieldOfViewAngle.UpLimit},Rsult{(result.ViewReslutW51.VerticalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+            return outtext;
         }
     }
 }
