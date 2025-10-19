@@ -38,16 +38,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             PixelFormat pixelFormat = _imageView.Config.GetProperties<PixelFormat>("PixelFormat");
             
             int ret;
-            if (pixelFormat == PixelFormats.Rgb48)
-            {
-                // 算法本身有余数，这里优化一下
-                ret = OpenCVMediaHelper.M_GetWhiteBalance((HImage)_imageView.HImageCache, out HImage hImageProcessed, BlueSlider.Value, GreenSlider.Value, RedSlider.Value);
-            }
-            else
-            {
-                ret = OpenCVMediaHelper.M_GetWhiteBalance((HImage)_imageView.HImageCache, out HImage hImageProcessed, RedSlider.Value, GreenSlider.Value, BlueSlider.Value);
-            }
-            
+            ret = OpenCVMediaHelper.M_GetWhiteBalance((HImage)_imageView.HImageCache, out HImage hImageProcessed, RedSlider.Value, GreenSlider.Value, BlueSlider.Value);
+
             if (ret == 0)
             {
                 Application.Current?.Dispatcher.BeginInvoke(() =>
