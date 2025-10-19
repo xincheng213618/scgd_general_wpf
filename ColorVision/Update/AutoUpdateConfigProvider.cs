@@ -26,6 +26,24 @@ namespace ColorVision.Update
                 Type = ConfigSettingType.Text,
                 BindingName =nameof(AutoUpdateConfig.UpdatePath),
                 Source = AutoUpdateConfig.Instance,
+            },
+            new ConfigSettingMetadata
+            {
+                Name = "使用新更新机制",
+                Description = "启用新的独立更新器程序（推荐），禁用则使用传统 BAT 脚本方式",
+                Order = 1000,
+                Type = ConfigSettingType.Bool,
+                BindingName = nameof(UpdateManagerConfig.UseNewUpdateMechanism),
+                Source = UpdateManagerConfig.Instance,
+            },
+            new ConfigSettingMetadata
+            {
+                Name = "启用备份",
+                Description = "更新前自动备份当前版本文件",
+                Order = 1001,
+                Type = ConfigSettingType.Bool,
+                BindingName = nameof(UpdateManagerConfig.EnableBackup),
+                Source = UpdateManagerConfig.Instance,
             }
         };
         }
