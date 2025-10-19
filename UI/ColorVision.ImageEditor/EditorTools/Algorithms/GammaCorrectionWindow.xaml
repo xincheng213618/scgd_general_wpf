@@ -1,0 +1,38 @@
+<Window x:Class="ColorVision.ImageEditor.EditorTools.Algorithms.GammaCorrectionWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        Title="伽马校正" Height="200" Width="400"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="调整伽马值" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
+
+        <StackPanel Grid.Row="1">
+            <DockPanel Margin="0,10,0,5">
+                <TextBlock Text="伽马值" VerticalAlignment="Center" MinWidth="80" Margin="0,0,10,0"/>
+                <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=GammaSlider, Path=Value, StringFormat=F2}" Width="60" Margin="5,0,0,0"/>
+                <hc:PreviewSlider x:Name="GammaSlider" 
+                                  TickFrequency="0.01" 
+                                  IsSnapToTickEnabled="True" 
+                                  SmallChange="0.1" 
+                                  LargeChange="1" 
+                                  Value="1" 
+                                  Minimum="0" 
+                                  Maximum="10"
+                                  ValueChanged="GammaSlider_ValueChanged"/>
+            </DockPanel>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="应用" Width="80" Click="Apply_Click" Margin="0,0,10,0"/>
+            <Button Content="取消" Width="80" Click="Cancel_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
