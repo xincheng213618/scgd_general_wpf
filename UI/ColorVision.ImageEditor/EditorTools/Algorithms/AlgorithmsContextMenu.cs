@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Windows;
@@ -26,14 +27,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             // 反相 - 直接应用，无需参数
             RelayCommand invertCommand = new(o =>
             {
-                if (Application.Current.MainWindow is Window mainWindow)
+                if (context.ImageView != null)
                 {
-                    var imageView = FindImageView(mainWindow);
-                    if (imageView != null)
-                    {
-                        var tool = new InvertEditorTool(imageView);
-                        tool.Execute();
-                    }
+                    var tool = new InvertEditorTool(context.ImageView);
+                    tool.Execute();
                 }
             });
             MenuItemMetadatas.Add(new MenuItemMetadata() 
@@ -48,14 +45,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             // 自动色阶调整 - 直接应用，无需参数
             RelayCommand autoLevelsCommand = new(o =>
             {
-                if (Application.Current.MainWindow is Window mainWindow)
+                if (context.ImageView != null)
                 {
-                    var imageView = FindImageView(mainWindow);
-                    if (imageView != null)
-                    {
-                        var tool = new AutoLevelsAdjustEditorTool(imageView);
-                        tool.Execute();
-                    }
+                    var tool = new AutoLevelsAdjustEditorTool(context.ImageView);
+                    tool.Execute();
                 }
             });
             MenuItemMetadatas.Add(new MenuItemMetadata() 
@@ -70,17 +63,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             // 白平衡 - 打开窗口调整
             RelayCommand whiteBalanceCommand = new(o =>
             {
-                if (Application.Current.MainWindow is Window mainWindow)
+                if (context.ImageView != null)
                 {
-                    var imageView = FindImageView(mainWindow);
-                    if (imageView != null)
+                    var window = new WhiteBalanceWindow(context.ImageView)
                     {
-                        var window = new WhiteBalanceWindow(imageView)
-                        {
-                            Owner = mainWindow
-                        };
-                        window.ShowDialog();
-                    }
+                        Owner = Application.Current.GetActiveWindow()
+                    };
+                    window.ShowDialog();
                 }
             });
             MenuItemMetadatas.Add(new MenuItemMetadata() 
@@ -95,17 +84,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             // 伽马校正 - 打开窗口调整
             RelayCommand gammaCorrectionCommand = new(o =>
             {
-                if (Application.Current.MainWindow is Window mainWindow)
+                if (context.ImageView != null)
                 {
-                    var imageView = FindImageView(mainWindow);
-                    if (imageView != null)
+                    var window = new GammaCorrectionWindow(context.ImageView)
                     {
-                        var window = new GammaCorrectionWindow(imageView)
-                        {
-                            Owner = mainWindow
-                        };
-                        window.ShowDialog();
-                    }
+                        Owner = Application.Current.GetActiveWindow()
+                    };
+                    window.ShowDialog();
                 }
             });
             MenuItemMetadatas.Add(new MenuItemMetadata() 
@@ -120,17 +105,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             // 亮度对比度 - 打开窗口调整
             RelayCommand brightnessContrastCommand = new(o =>
             {
-                if (Application.Current.MainWindow is Window mainWindow)
+                if (context.ImageView != null)
                 {
-                    var imageView = FindImageView(mainWindow);
-                    if (imageView != null)
+                    var window = new BrightnessContrastWindow(context.ImageView)
                     {
-                        var window = new BrightnessContrastWindow(imageView)
-                        {
-                            Owner = mainWindow
-                        };
-                        window.ShowDialog();
-                    }
+                        Owner = Application.Current.GetActiveWindow()
+                    };
+                    window.ShowDialog();
                 }
             });
             MenuItemMetadatas.Add(new MenuItemMetadata() 
@@ -145,17 +126,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             // 阈值处理 - 打开窗口调整
             RelayCommand thresholdCommand = new(o =>
             {
-                if (Application.Current.MainWindow is Window mainWindow)
+                if (context.ImageView != null)
                 {
-                    var imageView = FindImageView(mainWindow);
-                    if (imageView != null)
+                    var window = new ThresholdWindow(context.ImageView)
                     {
-                        var window = new ThresholdWindow(imageView)
-                        {
-                            Owner = mainWindow
-                        };
-                        window.ShowDialog();
-                    }
+                        Owner = Application.Current.GetActiveWindow()
+                    };
+                    window.ShowDialog();
                 }
             });
             MenuItemMetadatas.Add(new MenuItemMetadata() 
@@ -170,14 +147,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             // 去除摩尔纹 - 直接应用，无需参数
             RelayCommand removeMoireCommand = new(o =>
             {
-                if (Application.Current.MainWindow is Window mainWindow)
+                if (context.ImageView != null)
                 {
-                    var imageView = FindImageView(mainWindow);
-                    if (imageView != null)
-                    {
-                        var tool = new RemoveMoireEditorTool(imageView);
-                        tool.Execute();
-                    }
+                    var tool = new RemoveMoireEditorTool(context.ImageView);
+                    tool.Execute();
                 }
             });
             MenuItemMetadatas.Add(new MenuItemMetadata() 
@@ -190,26 +163,6 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             });
 
             return MenuItemMetadatas;
-        }
-
-        /// <summary>
-        /// 在窗口中查找ImageView控件
-        /// </summary>
-        private ImageView? FindImageView(DependencyObject parent)
-        {
-            if (parent is ImageView imageView)
-                return imageView;
-
-            int childCount = System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent);
-            for (int i = 0; i < childCount; i++)
-            {
-                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
-                var result = FindImageView(child);
-                if (result != null)
-                    return result;
-            }
-
-            return null;
         }
     }
 }
