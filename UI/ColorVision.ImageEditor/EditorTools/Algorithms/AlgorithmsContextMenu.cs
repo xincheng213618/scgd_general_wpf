@@ -142,25 +142,6 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 Header = "阈值处理", 
                 Command = thresholdCommand 
             });
-
-            // 去除摩尔纹 - 直接应用，无需参数
-            RelayCommand removeMoireCommand = new(o =>
-            {
-                if (context.ImageView != null)
-                {
-                    var tool = new RemoveMoireEditorTool(context.ImageView);
-                    tool.Execute();
-                }
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata() 
-            { 
-                OwnerGuid = "Algorithms", 
-                GuidId = "RemoveMoire", 
-                Order = 7, 
-                Header = "去除摩尔纹", 
-                Command = removeMoireCommand 
-            });
-
             return MenuItemMetadatas;
         }
     }
