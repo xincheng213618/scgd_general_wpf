@@ -168,4 +168,7 @@
   <data name="BitmapScalingMode" xml:space="preserve">
     <value>점진적 확대 모드</value>
   </data>
+  <data name="Invert" xml:space="preserve">
+    <value>거꾸로 하다</value>
+  </data>
 </root>

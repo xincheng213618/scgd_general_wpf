@@ -168,4 +168,7 @@
   <data name="BitmapScalingMode" xml:space="preserve">
     <value>режим масштабирования растрового изображения</value>
   </data>
+  <data name="Invert" xml:space="preserve">
+    <value>Инвертировать</value>
+  </data>
 </root>

@@ -168,4 +168,7 @@
   <data name="BitmapScalingMode" xml:space="preserve">
     <value>點陣圖縮放模式</value>
   </data>
+  <data name="Invert" xml:space="preserve">
+    <value>反相</value>
+  </data>
 </root>

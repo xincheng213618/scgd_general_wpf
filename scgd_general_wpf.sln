@@ -726,6 +726,5 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
-		RESX_AutoCreateNewLanguageFiles = True
 	EndGlobalSection
 EndGlobal

@@ -767,42 +767,9 @@ namespace ColorVision.ImageEditor
             });
         }
 
-        public void InvertImag()
-        {
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                if (HImageCache == null) return;
-                Stopwatch stopwatch = new Stopwatch();
-                stopwatch.Start();
-                log.Info($"InvertImag");
-                Task.Run(() =>
-                {
-                    int ret = OpenCVMediaHelper.M_InvertImage((HImage)HImageCache, out HImage hImageProcessed);
-                    Application.Current.Dispatcher.BeginInvoke(() =>
-                    {
-                        if (ret == 0)
-                        {
-                            if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
-                            {
-                                double DpiX = Config.GetProperties<double>("DpiX");
-                                double DpiY = Config.GetProperties<double>("DpiY");
-                                var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
-                                hImageProcessed.Dispose();
-
-                                FunctionImage = image;
-                            }
-                            ImageShow.Source = FunctionImage;
-                            stopwatch.Stop();
-                            log.Info($"InvertImag {stopwatch.Elapsed}");
-                        }
-                    });
-                });
-            });
-        }
 
         private void Button_Click_InvertImage(object sender, RoutedEventArgs e)
         {
-            InvertImag();
         }
 
 

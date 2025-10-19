@@ -168,4 +168,7 @@
   <data name="BitmapScalingMode" xml:space="preserve">
     <value>ビットマップ拡大縮小モード</value>
   </data>
+  <data name="Invert" xml:space="preserve">
+    <value>反転</value>
+  </data>
 </root>
