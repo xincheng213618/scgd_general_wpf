@@ -19,26 +19,33 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         {
             InitializeComponent();
             _imageView = imageView;
-            
+
             // 从配置中加载当前白平衡值
-            RedSlider.Value = _imageView.Config.RedBalance;
-            GreenSlider.Value = _imageView.Config.GreenBalance;
-            BlueSlider.Value = _imageView.Config.BlueBalance;
+            RedSlider.Value = 1;
+            GreenSlider.Value = 1;
+            BlueSlider.Value = 1;
         }
 
         private void WhiteBalanceSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            DebounceTimer.AddOrResetTimer("AdjustWhiteBalance", 30, AdjustWhiteBalance);
+            if (RedSlider != null && GreenSlider !=null && BlueSlider !=null)
+            {
+                double red = RedSlider.Value;
+                double green = GreenSlider.Value;
+                double blue = BlueSlider.Value;
+                DebounceTimer.AddOrResetTimer("AdjustWhiteBalance", 30, () => AdjustWhiteBalance(red, green, blue));
+            }
+
         }
 
-        private void AdjustWhiteBalance()
+        private void AdjustWhiteBalance(double red,double green, double blue)
         {
             if (_imageView.HImageCache == null) return;
 
             PixelFormat pixelFormat = _imageView.Config.GetProperties<PixelFormat>("PixelFormat");
             
             int ret;
-            ret = OpenCVMediaHelper.M_GetWhiteBalance((HImage)_imageView.HImageCache, out HImage hImageProcessed, RedSlider.Value, GreenSlider.Value, BlueSlider.Value);
+            ret = OpenCVMediaHelper.M_GetWhiteBalance((HImage)_imageView.HImageCache, out HImage hImageProcessed, red, green, blue);
 
             if (ret == 0)
             {
@@ -67,11 +74,6 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 _imageView.ImageShow.Source = _imageView.ViewBitmapSource;
                 _imageView.HImageCache = writeableBitmap.ToHImage();
                 _imageView.FunctionImage = null;
-                
-                // 更新配置中的白平衡值
-                _imageView.Config.RedBalance = RedSlider.Value;
-                _imageView.Config.GreenBalance = GreenSlider.Value;
-                _imageView.Config.BlueBalance = BlueSlider.Value;
             }
             Close();
         }

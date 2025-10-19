@@ -21,7 +21,6 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 GuidId = "Algorithms", 
                 Order = 103, 
                 Header = "图像算法", 
-                Icon = MenuItemIcon.TryFindResource("DIOpen") 
             });
 
             // 反相 - 直接应用，无需参数

@@ -4,6 +4,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         Title="阈值处理" Height="200" Width="400"
         WindowStartupLocation="CenterOwner"
+        Background="{StaticResource GlobalBackground}"
         ResizeMode="NoResize">
     <Grid Margin="10">
         <Grid.RowDefinitions>

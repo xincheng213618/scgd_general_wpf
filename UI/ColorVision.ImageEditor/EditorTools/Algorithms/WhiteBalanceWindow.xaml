@@ -4,6 +4,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         Title="白平衡调整" Height="300" Width="400"
         WindowStartupLocation="CenterOwner"
+        Background="{StaticResource GlobalBackground}"
         ResizeMode="NoResize">
     <Grid Margin="10">
         <Grid.RowDefinitions>

@@ -7,14 +7,12 @@ using log4net;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -52,10 +50,7 @@ namespace ColorVision.ImageEditor
             DebounceTimer.AddOrResetTimer("PseudoSlider", 50, e => RenderPseudo(), 0);
         }
 
-        private void ImageViewConfig_BalanceChanged(object? sender, EventArgs e)
-        {
-            DebounceTimer.AddOrResetTimer("AdjustWhiteBalance", 30, AdjustWhiteBalance);
-        }
+
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -64,7 +59,6 @@ namespace ColorVision.ImageEditor
             DataContext = ImageViewModel;
             Config.ColormapTypesChanged -= Config_ColormapTypesChanged;
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
-            Config.BalanceChanged += ImageViewConfig_BalanceChanged;
 
             foreach (var item in ImageViewModel.IEditorToolFactory.IImageComponents)
                 item.Execute(this);
@@ -297,26 +291,11 @@ namespace ColorVision.ImageEditor
                         _hImageCache = writeableBitmap.Dispatcher.Invoke(() => writeableBitmap.ToHImage());
                     }
                 }
-                if (_hImageCache !=null)
-                {
-                    DebounceTimer.AddOrResetTimer("HImageCacheDispose" + ImageViewModel.EditorContext.Id.ToString(), 1000, HImageCacheDispose);
-
-                }
                 return _hImageCache;
             }
             set { _hImageCache = value; }
         }
         private HImage? _hImageCache;
-
-
-        public void HImageCacheDispose()
-        {
-            if (HImageCache != null)
-            {
-                HImageCache?.Dispose();
-                _hImageCache = null;
-            }
-        }
 
 
         public void SetImageSource(ImageSource imageSource)
@@ -392,16 +371,13 @@ namespace ColorVision.ImageEditor
                     Config.AddProperties("Max", 65535);
                     PseudoSlider.Maximum = 65535;
                     PseudoSlider.ValueEnd = 65535;
-                    thresholdSlider.Maximum = 65535;
-                    thresholdSlider.Value = 0;
                 }
                 else
                 {
                     Config.AddProperties("Max", 255);
                     PseudoSlider.Maximum = 255;
                     PseudoSlider.ValueEnd = 255;
-                    thresholdSlider.Maximum = 255;
-                    thresholdSlider.Value = 0;
+
                 }
                 Config.AddProperties("PixelFormat", writeableBitmap.Format);
             }
@@ -478,22 +454,6 @@ namespace ColorVision.ImageEditor
 
         public void AddVisual(Visual visual) => ImageShow.AddVisualCommand(visual);
 
-        private void HistogramButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (ImageShow.Source is not BitmapSource bitmapSource) return;
-
-            var (redHistogram, greenHistogram, blueHistogram) = ImageUtils.RenderHistogram(bitmapSource);
-            if (bitmapSource.Format.Masks.Count == 1)
-            {
-                HistogramChartWindow histogramChartWindow = new HistogramChartWindow(redHistogram);
-                histogramChartWindow.Show();
-            }
-            else
-            {
-                HistogramChartWindow histogramChartWindow = new HistogramChartWindow(redHistogram, greenHistogram, blueHistogram);
-                histogramChartWindow.Show();
-            }
-        }
 
         public List<string> ComboBoxLayerItems { get; set; } = new List<string>() { "Src", "R", "G", "B" };
 
@@ -551,148 +511,8 @@ namespace ColorVision.ImageEditor
             });
         }
 
-        private void CM_AutoLevelsAdjust(object sender, RoutedEventArgs e)
-        {
-            if (sender is not ToggleButton toggleButton) return;
-            if (toggleButton.IsChecked == false)
-            {
-                ImageShow.Source = ViewBitmapSource;
-                FunctionImage = null;
-                return;
-            }
-            if (HImageCache != null)
-            {
-                int ret = OpenCVMediaHelper.M_AutoLevelsAdjust((HImage)HImageCache, out HImage hImageProcessed);
-                if (ret == 0)
-                {
-                    if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
-                    {
-                        double DpiX = Config.GetProperties<double>("DpiX");
-                        double DpiY = Config.GetProperties<double>("DpiY");
-                        var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
-
-                        hImageProcessed.Dispose();
-                        FunctionImage = image;
-                    }
-                    ImageShow.Source = FunctionImage;
-                }
-            }
-            ;
-        }
-
-        public void AdjustWhiteBalance()
-        {
-            if (HImageCache != null)
-            {
-                PixelFormat pixelFormat = Config.GetProperties<PixelFormat>("PixelFormat");
-                if (pixelFormat == PixelFormats.Rgb48)
-                {
-                    //算法本身有余数，这里优化一下
-                    int ret = OpenCVMediaHelper.M_GetWhiteBalance((HImage)HImageCache, out HImage hImageProcessed, Config.BlueBalance, Config.GreenBalance, Config.RedBalance);
-                    if (ret == 0)
-                    {
-                        Application.Current?.Dispatcher.BeginInvoke(() =>
-                        {
-                            if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
-                            {
-                                double DpiX = Config.GetProperties<double>("DpiX");
-                                double DpiY = Config.GetProperties<double>("DpiY");
-                                var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
-                                hImageProcessed.Dispose();
-
-                                FunctionImage = image;
-                            }
-                            ImageShow.Source = FunctionImage;
-                        });
-                    }
-                }
-                else
-                {
-                    int ret = OpenCVMediaHelper.M_GetWhiteBalance((HImage)HImageCache, out HImage hImageProcessed, Config.RedBalance, Config.GreenBalance, Config.BlueBalance);
-                    if (ret == 0)
-                    {
-                        Application.Current?.Dispatcher.BeginInvoke(() =>
-                        {
-                            if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
-                            {
-                                double DpiX = Config.GetProperties<double>("DpiX");
-                                double DpiY = Config.GetProperties<double>("DpiY");
-                                var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
-                                hImageProcessed.Dispose();
-
-                                FunctionImage = image;
-                            }
-                            ImageShow.Source = FunctionImage;
-                        });
-                    }
-                }
 
 
-            }
-            ;
-        }
-
-        private void CM_AutomaticColorAdjustment(object sender, RoutedEventArgs e)
-        {
-            if (sender is not ToggleButton toggleButton) return;
-            if (toggleButton.IsChecked == false)
-            {
-                ImageShow.Source = ViewBitmapSource;
-                FunctionImage = null;
-                return;
-            }
-            if (HImageCache != null)
-            {
-                int ret = OpenCVMediaHelper.M_AutomaticColorAdjustment((HImage)HImageCache, out HImage hImageProcessed);
-                if (ret == 0)
-                {
-                    if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
-                    {
-                        double DpiX = Config.GetProperties<double>("DpiX");
-                        double DpiY = Config.GetProperties<double>("DpiY");
-                        var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
-
-                        hImageProcessed.Dispose();
-
-                        FunctionImage = image;
-                    }
-                    ImageShow.Source = FunctionImage;
-                }
-            }
-            ;
-        }
-
-        private void PreviewSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            DebounceTimer.AddOrResetTimer("ApplyGammaCorrection", 50, a => ApplyGammaCorrection(a), GammaSlider.Value);
-        }
-
-        public void ApplyGammaCorrection(double Gamma)
-        {
-            if (HImageCache == null) return;
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            log.Info($"ImagePath，正在执行ApplyGammaCorrection,Gamma{Gamma}");
-            int ret = OpenCVMediaHelper.M_ApplyGammaCorrection((HImage)HImageCache, out HImage hImageProcessed, Gamma);
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                if (ret == 0)
-                {
-                    if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
-                    {
-                        double DpiX = Config.GetProperties<double>("DpiX");
-                        double DpiY = Config.GetProperties<double>("DpiY");
-                        var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
-                        hImageProcessed.Dispose();
-
-                        FunctionImage = image;
-                    }
-                    ImageShow.Source = FunctionImage;
-                    stopwatch.Stop();
-                    log.Info($"ApplyGammaCorrection {stopwatch.Elapsed}");
-                }
-            });
-        }
 
         private void Apply_Click(object sender, RoutedEventArgs e)
         {
@@ -702,163 +522,16 @@ namespace ColorVision.ImageEditor
                 ImageShow.Source = ViewBitmapSource; ;
                 HImageCache = writeableBitmap.ToHImage();
                 FunctionImage = null;
-                GammaSlider.Value = 1;
-                Config.RedBalance = 1;
-                Config.GreenBalance = 1;
-                Config.BlueBalance = 1;
             }
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            GammaSlider.Value = 1;
-        }
-
-        private void Button_Click_2(object sender, RoutedEventArgs e)
-        {
-            Config.RedBalance = 1;
-            Config.GreenBalance = 1;
-            Config.BlueBalance = 1;
         }
 
         private void Reload_Click(object sender, RoutedEventArgs e)
         {
             OpenImage(Config.FilePath);
-        }
-
-        private void BrightnessSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, AdjustBrightnessContrast, ContrastSlider.Value, BrightnessSlider.Value);
-        }
-        private void ContrastSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, AdjustBrightnessContrast, ContrastSlider.Value, BrightnessSlider.Value);
-        }
-        public void AdjustBrightnessContrast(double Contrast, double Brightness)
-        {
-            if (HImageCache == null) return;
-            //实现类似于PS的效果
-            Brightness = Brightness * 4 / 5;
-            Contrast = Contrast / 300 + 1;
-            Brightness = HImageCache.Value.depth == 8 ? Brightness : Brightness * 255;
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            log.Info($"ImagePath，正在执行AdjustBrightnessContrast,Brightness{Brightness},Contrast{Contrast}");
-            int ret = OpenCVMediaHelper.M_AdjustBrightnessContrast((HImage)HImageCache, out HImage hImageProcessed, Contrast, Brightness);
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                if (ret == 0)
-                {
-                    if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
-                    {
-                        double DpiX = Config.GetProperties<double>("DpiX");
-                        double DpiY = Config.GetProperties<double>("DpiY");
-                        var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
-                        
-                        hImageProcessed.Dispose();
-
-                        FunctionImage = image;
-                    }
-                    ImageShow.Source = FunctionImage;
-                    stopwatch.Stop();
-                    log.Info($"AdjustBrightnessContrast {stopwatch.Elapsed}");
-
-                }
-            });
-        }
-
-
-        private void Button_Click_InvertImage(object sender, RoutedEventArgs e)
-        {
-        }
-
-
-        void ThresholdImg()
-        {
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                if (HImageCache == null) return;
-                Stopwatch stopwatch = new Stopwatch();
-                stopwatch.Start();
-                double thresh = thresholdSlider.Value;
-                double maxval = Config.GetProperties<int>("Max");
-
-
-                int type = 0;
-                log.Info($"InvertImag");
-                Task.Run(() =>
-                {
-                    int ret = OpenCVMediaHelper.M_Threshold((HImage)HImageCache, out HImage hImageProcessed, thresh, maxval, type);
-                    Application.Current.Dispatcher.BeginInvoke(() =>
-                    {
-                        if (ret == 0)
-                        {
-                            if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
-                            {
-                                double DpiX = Config.GetProperties<double>("DpiX");
-                                double DpiY = Config.GetProperties<double>("DpiY");
-                                var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
-                                
-                                hImageProcessed.Dispose();
-
-                                FunctionImage = image;
-                            }
-                            ImageShow.Source = FunctionImage;
-                            stopwatch.Stop();
-                            log.Info($"InvertImag {stopwatch.Elapsed}");
-                        }
-                    });
-                });
-            });
-        }
-        private void RemoveMoire_Click(object sender, RoutedEventArgs e)
-        {
-            RemoveMoire();
-        }
-
-        private void RemoveMoire()
-        {
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                if (HImageCache == null) return;
-                Stopwatch stopwatch = new Stopwatch();
-                stopwatch.Start();
-                log.Info($"RemoveMoire");
-                Task.Run(() =>
-                {
-                    int ret = OpenCVMediaHelper.M_RemoveMoire((HImage)HImageCache, out HImage hImageProcessed);
-                    Application.Current.Dispatcher.BeginInvoke(() =>
-                    {
-                        if (ret == 0)
-                        {
-                            if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
-                            {
-                                double DpiX = Config.GetProperties<double>("DpiX");
-                                double DpiY = Config.GetProperties<double>("DpiY");
-                                var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
-
-                                hImageProcessed.Dispose();
-
-                                FunctionImage = image;
-                            }
-                            ImageShow.Source = FunctionImage;
-                            stopwatch.Stop();
-                            log.Info($"InvertImag {stopwatch.Elapsed}");
-                        }
-                    });
-                });
-            });
-        }
-
-
-        private void Threshold_Click(object sender, RoutedEventArgs e)
-        {
-            ThresholdImg();
-        }
-
-        private void thresholdSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, a => ThresholdImg(), e.NewValue);
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)

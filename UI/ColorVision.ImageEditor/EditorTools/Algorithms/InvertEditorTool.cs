@@ -39,16 +39,16 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                     {
                         if (ret == 0)
                         {
-                            if (!HImageExtension.UpdateWriteableBitmap(_imageView.FunctionImage, hImageProcessed))
+                            _imageView.HImageCache?.Dispose();
+                            _imageView.HImageCache = hImageProcessed;
+                            if (!HImageExtension.UpdateWriteableBitmap(_imageView.ViewBitmapSource, hImageProcessed))
                             {
                                 double DpiX = _imageView.Config.GetProperties<double>("DpiX");
                                 double DpiY = _imageView.Config.GetProperties<double>("DpiY");
                                 var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
-                                hImageProcessed.Dispose();
-
-                                _imageView.FunctionImage = image;
+                                _imageView.ViewBitmapSource = image;
                             }
-                            _imageView.ImageShow.Source = _imageView.FunctionImage;
+                            _imageView.ImageShow.Source = _imageView.ViewBitmapSource;
                             stopwatch.Stop();
                             log.Info($"InvertImage 完成 - 耗时: {stopwatch.Elapsed}");
                         }

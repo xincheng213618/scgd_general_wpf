@@ -4,6 +4,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         Title="亮度对比度调整" Height="250" Width="400"
         WindowStartupLocation="CenterOwner"
+        Background="{StaticResource GlobalBackground}"
         ResizeMode="NoResize">
     <Grid Margin="10">
         <Grid.RowDefinitions>
