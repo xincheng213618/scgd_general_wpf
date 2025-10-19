@@ -145,3 +145,43 @@ gammaWindow.ShowDialog();
 - `ColorVision.Core` - 图像处理核心功能 (OpenCVMediaHelper)
 - `ColorVision.Common.Utilities` - 工具类 (DebounceTimer)
 - `HandyControl` - UI 控件库 (PreviewSlider)
+
+## 最近更新
+
+### 2025-10-19 更新内容
+
+1. **修复白平衡单通道问题**
+   - 白平衡功能现在只在多通道（彩色）图像下可用
+   - 单通道（灰度）图像下白平衡菜单项自动禁用
+
+2. **新增图像处理算法**
+   - 锐化 (Sharpen) - 增强图像边缘和细节
+   - 高斯模糊 (Gaussian Blur) - 可调节核大小和Sigma参数
+   - 中值滤波 (Median Blur) - 有效去除椒盐噪声
+   - 边缘检测 (Edge Detection - Canny) - 可调节双阈值
+   - 直方图均衡化 (Histogram Equalization) - 增强对比度
+   - 去除摩尔纹 (Remove Moire) - 去除图像中的摩尔纹干扰
+
+3. **C++ 底层实现**
+   - 在 `opencv_helper/algorithm.cpp` 中添加了新算法的实现
+   - 在 `opencv_helper/opencv_media_export.cpp` 中导出了C接口
+   - 更新了头文件 `algorithm.h` 和 `opencv_media_export.h`
+
+4. **C# 绑定**
+   - 在 `ColorVision.Core/OpenCVMediaHelper.cs` 中添加了P/Invoke声明
+   - 创建了对应的EditorTool类和调整窗口
+
+## 测试说明
+
+在测试新功能时，请注意：
+
+1. **白平衡单通道检查**
+   - 打开一张灰度图像（单通道）
+   - 右键菜单 -> 图像算法 -> 白平衡调整 应该是禁用状态
+   - 打开一张彩色图像（多通道）
+   - 白平衡调整应该可用
+
+2. **新算法测试**
+   - 每个算法都应该能正常应用到图像上
+   - 带参数的算法（高斯模糊、中值滤波、边缘检测）应该能实时预览
+   - 应用和取消按钮应该工作正常
