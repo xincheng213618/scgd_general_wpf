@@ -21,19 +21,19 @@ COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data)
 COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, int roi_x, int roi_y, int roi_width, int roi_height)
 {
 
-	// 1. ½« HImage Êý¾Ý°ü×°³É cv::Mat£¬ÎÞÊý¾Ý¿½±´
+	// 1. ï¿½ï¿½ HImage ï¿½ï¿½ï¿½Ý°ï¿½×°ï¿½ï¿½ cv::Matï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¿ï¿½ï¿½ï¿½
 	cv::Mat full_mat(img.rows, img.cols, img.type(), img.pData);
 	if (full_mat.empty() || full_mat.data == nullptr) {
-		return -1.0; // ÎÞÐ§Í¼Ïñ
+		return -1.0; // ï¿½ï¿½Ð§Í¼ï¿½ï¿½
 	}
 
-	// 2. ¸ù¾ÝROI²ÎÊýÈ·¶¨´¦ÀíÇøÓò
+	// 2. ï¿½ï¿½ï¿½ï¿½ROIï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	cv::Rect roi(roi_x, roi_y, roi_width, roi_height);
 	bool use_roi = (roi.width > 0 && roi.height > 0 && (roi & cv::Rect(0, 0, full_mat.cols, full_mat.rows)) == roi);
 
 	cv::Mat mat = use_roi ? full_mat(roi) : full_mat;
 
-	// 3. ×ª»»Îª»Ò¶ÈÍ¼½øÐÐ¼ÆËã
+	// 3. ×ªï¿½ï¿½Îªï¿½Ò¶ï¿½Í¼ï¿½ï¿½ï¿½Ð¼ï¿½ï¿½ï¿½
 	cv::Mat gray_mat;
 	if (mat.channels() == 3 || mat.channels() == 4)
 	{
@@ -56,7 +56,7 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, int
 	case Variance:
 		cv::meanStdDev(gray_mat, mean, stddev);
 		value = stddev.at<double>(0, 0) * stddev.at<double>(0, 0);
-		break; // ±ØÐë¼Ó break!
+		break; // ï¿½ï¿½ï¿½ï¿½ï¿½ break!
 
 	case StandardDeviation:
 		cv::meanStdDev(gray_mat, mean, stddev);
@@ -78,14 +78,14 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, int
 		value = cv::mean(cv::abs(laplacian_mat))[0];
 		break;
 
-	case VarianceOfLaplacian: // ÍÆ¼ö£¡·Ç³£Â³°ôµÄËã·¨
+	case VarianceOfLaplacian: // ï¿½Æ¼ï¿½ï¿½ï¿½ï¿½Ç³ï¿½Â³ï¿½ï¿½ï¿½ï¿½ï¿½ã·¨
 		cv::Laplacian(gray_mat, laplacian_mat, CV_8UC1);
 		cv::meanStdDev(laplacian_mat, mean, stddev);
 		value = stddev.at<double>(0, 0) * stddev.at<double>(0, 0);
 		break;
 
 	case EnergyOfGradient:
-		// Í¨¹ý¼õÈ¥ÒÆÎ»ºóµÄ×ÔÉíÀ´¼ÆËãÌÝ¶È
+		// Í¨ï¿½ï¿½ï¿½ï¿½È¥ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¶ï¿½
 		gray_mat.convertTo(gradient_mat, CV_64F);
 		cv::subtract(gradient_mat(cv::Rect(1, 0, gradient_mat.cols - 1, gradient_mat.rows)), gradient_mat(cv::Rect(0, 0, gradient_mat.cols - 1, gradient_mat.rows)), grad_x);
 		cv::subtract(gradient_mat(cv::Rect(0, 1, gradient_mat.cols, gradient_mat.rows - 1)), gradient_mat(cv::Rect(0, 0, gradient_mat.cols, gradient_mat.rows - 1)), grad_y);
@@ -96,38 +96,38 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, int
 
 	case SpatialFrequency:
 	{
-		// È·±£ gray_mat ²»Îª¿ÕÇÒÖÁÉÙÓÐ2x2µÄ´óÐ¡
+		// È·ï¿½ï¿½ gray_mat ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½2x2ï¿½Ä´ï¿½Ð¡
 		if (gray_mat.rows < 2 || gray_mat.cols < 2) {
-			value = 0; // Í¼ÏñÌ«Ð¡ÎÞ·¨¼ÆËã
+			value = 0; // Í¼ï¿½ï¿½Ì«Ð¡ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½
 			break;
 		}
 
 		double RF = 0, CF = 0;
 		cv::Mat diff_x, diff_y;
 
-		// --- Row frequency (ÐÐÆµ) ---
-		// ¼ÆËãË®Æ½·½ÏòÏàÁÚÏñËØµÄ²îÖµ
+		// --- Row frequency (ï¿½ï¿½Æµ) ---
+		// ï¿½ï¿½ï¿½ï¿½Ë®Æ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ØµÄ²ï¿½Öµ
 		cv::subtract(gray_mat.colRange(1, gray_mat.cols), gray_mat.colRange(0, gray_mat.cols - 1), diff_x, cv::noArray(), CV_64F);
-		// ¶Ô²îÖµÇóÆ½·½
+		// ï¿½Ô²ï¿½Öµï¿½ï¿½Æ½ï¿½ï¿½
 		cv::pow(diff_x, 2, diff_x);
-		// ÏÈÇó¾ùÖµ£¬ÔÙ¶Ô¾ùÖµ½á¹û¿ª·½
+		// ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½Ù¶Ô¾ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		RF = std::sqrt(cv::mean(diff_x)[0]);
 
-		// --- Column frequency (ÁÐÆµ) ---
-		// ¼ÆËã´¹Ö±·½ÏòÏàÁÚÏñËØµÄ²îÖµ
+		// --- Column frequency (ï¿½ï¿½Æµ) ---
+		// ï¿½ï¿½ï¿½ã´¹Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ØµÄ²ï¿½Öµ
 		cv::subtract(gray_mat.rowRange(1, gray_mat.rows), gray_mat.rowRange(0, gray_mat.rows - 1), diff_y, cv::noArray(), CV_64F);
-		// ¶Ô²îÖµÇóÆ½·½
+		// ï¿½Ô²ï¿½Öµï¿½ï¿½Æ½ï¿½ï¿½
 		cv::pow(diff_y, 2, diff_y);
-		// ÏÈÇó¾ùÖµ£¬ÔÙ¶Ô¾ùÖµ½á¹û¿ª·½ (ÐÞÕýµã)
+		// ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½Ù¶Ô¾ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 		CF = std::sqrt(cv::mean(diff_y)[0]);
 
-		// ×îÖÕ¿Õ¼äÆµÂÊÊÇÐÐÆµºÍÁÐÆµµÄÆ½·½ºÍµÄÆ½·½¸ù
+		// ï¿½ï¿½ï¿½Õ¿Õ¼ï¿½Æµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æµï¿½ï¿½ï¿½ï¿½Æµï¿½ï¿½Æ½ï¿½ï¿½ï¿½Íµï¿½Æ½ï¿½ï¿½ï¿½ï¿½
 		value = std::sqrt(RF * RF + CF * CF);
 		break;
 	}
-	default: // Ä¬ÈÏÐÐÎª
+	default: // Ä¬ï¿½ï¿½ï¿½ï¿½Îª
 		cv::meanStdDev(gray_mat, mean, stddev);
-		value = stddev.at<double>(0, 0) * stddev.at<double>(0, 0); // Ä¬ÈÏÊ¹ÓÃ·½²î
+		value = stddev.at<double>(0, 0) * stddev.at<double>(0, 0); // Ä¬ï¿½ï¿½Ê¹ï¿½Ã·ï¿½ï¿½ï¿½
 		break;
 	}
 
@@ -156,7 +156,7 @@ COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, ui
 		}
 	}
 	pseudoColor(out, min, max, types);
-	///ÕâÀï²»·ÖÅäµÄ»°£¬¾Ö²¿ÄÚ´æ»áÔÚÔËÐÐ½áÊøÖ®ºóÇå¿Õ
+	///ï¿½ï¿½ï¿½ï²»ï¿½ï¿½ï¿½ï¿½Ä»ï¿½ï¿½ï¿½ï¿½Ö²ï¿½ï¿½Ú´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð½ï¿½ï¿½ï¿½Ö®ï¿½ï¿½ï¿½ï¿½ï¿½
 	return MatToHImage(out, outImage);
 }
 
@@ -222,7 +222,7 @@ COLORVISIONCORE_API int M_DrawPoiImage(HImage img, HImage* outImage,int radius, 
 		return -1;
 	if (mat.channels() != 3) {
 		if (mat.channels() == 1) {
-			// ½«µ¥Í¨µÀÍ¼Ïñ×ª»»ÎªÈýÍ¨µÀ
+			// ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½Í¼ï¿½ï¿½×ªï¿½ï¿½Îªï¿½ï¿½Í¨ï¿½ï¿½
 			cv::cvtColor(mat, mat, cv::COLOR_GRAY2BGR);
 		}
 	}
@@ -255,10 +255,10 @@ COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* l
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 	if (mat.empty())
 		return -1;
-	// Èç¹ûÊÇ²ÊÉ«Í¼Ïñ£¬×ª»»Îª»Ò¶ÈÍ¼
-	if (mat.channels() == 3 || mat.channels() == 4)  // ÅÐ¶ÏÊÇ·ñÎª²ÊÉ«Í¼£¨BGR »ò BGRA£©
+	// ï¿½ï¿½ï¿½ï¿½Ç²ï¿½É«Í¼ï¿½ï¿½×ªï¿½ï¿½Îªï¿½Ò¶ï¿½Í¼
+	if (mat.channels() == 3 || mat.channels() == 4)  // ï¿½Ð¶ï¿½ï¿½Ç·ï¿½Îªï¿½ï¿½É«Í¼ï¿½ï¿½BGR ï¿½ï¿½ BGRAï¿½ï¿½
 	{
-		cv::cvtColor(mat, mat, cv::COLOR_BGR2GRAY); // ×ª»»Îª»Ò¶ÈÍ¼
+		cv::cvtColor(mat, mat, cv::COLOR_BGR2GRAY); // ×ªï¿½ï¿½Îªï¿½Ò¶ï¿½Í¼
 	}
 	else
 	{
@@ -267,11 +267,11 @@ COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* l
 
 	if (mat.depth() == CV_16U) {
 
-		///2025.02.07 16ÎªÍ¼Ïñ×öÖ±·½Í¼Ê±£¬²»×öÖ±·½Í¼¾ùºâ»¯£¬Õâ»áµ¼ÖÂÍ¼Ïñ±äÐÎ£¬Õâ¸öÐ§¹û¿ÉÒÔÍ¨¹ýµ÷½ÚGammmaÊµÏÖ
-		//// Ó¦ÓÃ×ÔÊÊÓ¦Ö±·½Í¼¾ùºâ»¯
+		///2025.02.07 16ÎªÍ¼ï¿½ï¿½ï¿½ï¿½Ö±ï¿½ï¿½Í¼Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö±ï¿½ï¿½Í¼ï¿½ï¿½ï¿½â»¯ï¿½ï¿½ï¿½ï¿½áµ¼ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½Î£ï¿½ï¿½ï¿½ï¿½Ð§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½GammmaÊµï¿½ï¿½
+		//// Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦Ö±ï¿½ï¿½Í¼ï¿½ï¿½ï¿½â»¯
 		//cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
-		////ÕâÀïÉèÖÃ¸ßÁË£¬ËÄ¸ö½Ç»á±»À©É¢µô£¬
-		//clahe->setClipLimit(1.0); // ÉèÖÃ¶Ô±È¶ÈÏÞÖÆ
+		////ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã¸ï¿½ï¿½Ë£ï¿½ï¿½Ä¸ï¿½ï¿½Ç»á±»ï¿½ï¿½É¢ï¿½ï¿½ï¿½ï¿½
+		//clahe->setClipLimit(1.0); // ï¿½ï¿½ï¿½Ã¶Ô±È¶ï¿½ï¿½ï¿½ï¿½ï¿½
 		//clahe->apply(image, image);
 
 		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
@@ -282,26 +282,26 @@ COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* l
 	}
 
 
-	// Ä¿±ê·Ö±æÂÊÉèÖÃ
-	int targetPixels = targetPixelsX * targetPixelsY; // Ä¿±êÏñËØÊý£¨¿ÉÒÔµ÷Õû£©
+	// Ä¿ï¿½ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	int targetPixels = targetPixelsX * targetPixelsY; // Ä¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ôµï¿½ï¿½ï¿½ï¿½ï¿½
 	int originalWidth = mat.cols;
 	int originalHeight = mat.rows;
 
-	// ¼ÆËã³õÊ¼±ÈÀýÒò×Ó
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	double initialScaleFactor = std::sqrt((double)originalWidth * originalHeight / targetPixels);
 
-	// È·±£±ÈÀýÒò×ÓÊÇ 1¡¢2¡¢4¡¢8 µÈ±¶Êý
+	// È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 1ï¿½ï¿½2ï¿½ï¿½4ï¿½ï¿½8 ï¿½È±ï¿½ï¿½ï¿½
 	int allowedFactors[] = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048 };
 	int scaleFactor = FindClosestFactor((int)std::round(initialScaleFactor), allowedFactors);
-	// ¼ÆËãÐÂµÄ¿í¶ÈºÍ¸ß¶È
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ÂµÄ¿ï¿½ï¿½ÈºÍ¸ß¶ï¿½
 	int newWidth = originalWidth / scaleFactor;
 	int newHeight = originalHeight / scaleFactor;
 
-	// ·ÖÅäÄÚ´æ¸ø rowGrayPixels
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½ï¿½ rowGrayPixels
 	*length = newWidth * newHeight;
 	*rowGrayPixels = new uchar[*length];
 
-	// ²¢ÐÐ´¦ÀíÍ¼ÏñÏñËØËõ·Å
+	// ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 #pragma omp parallel for
 	for (int y = 0; y < newHeight; ++y)
 	{
@@ -312,7 +312,7 @@ COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* l
 			int oldY = y * scaleFactor;
 			int oldIndex = oldY * mat.cols + oldX;
 
-			// ½«ÏñËØÖµ´æ´¢µ½ rowGrayPixels
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½æ´¢ï¿½ï¿½ rowGrayPixels
 			row[x] = mat.data[oldIndex];
 		}
 	}
@@ -369,7 +369,7 @@ COLORVISIONCORE_API int M_AdjustBrightnessContrast(HImage img, HImage* outImage,
 }
 
 /// <summary>
-/// ·´Ïà
+/// ï¿½ï¿½ï¿½ï¿½
 /// </summary>
 /// <param name="img"></param>
 /// <param name="outImage"></param>
@@ -386,7 +386,7 @@ COLORVISIONCORE_API int M_InvertImage(HImage img, HImage* outImage)
 }
 
 /// <summary>
-/// ¶þÖµ»¯
+/// ï¿½ï¿½Öµï¿½ï¿½
 /// </summary>
 /// <param name="img"></param>
 /// <param name="outImage"></param>
@@ -452,7 +452,7 @@ COLORVISIONCORE_API int M_FindLuminousArea(HImage img, const char* config, char*
 	size_t length = output.length() + 1;
 	*result = new char[length];
 	if (!*result) {
-		return -3; // ´íÎó£ºÄÚ´æ·ÖÅäÊ§°Ü
+		return -3; // ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
 	}
 	std::strcpy(*result, output.c_str());
 	return static_cast<int>(length);
@@ -474,12 +474,12 @@ StitchingErrorCode stitchImages(const std::vector<std::string>& image_files, cv:
 		}
 
 		if (images.empty()) {
-			// ¶ÁÈ¡µÚÒ»ÕÅÍ¼ÏñÒÔ»ñÈ¡²Î¿¼³ß´çºÍÀàÐÍ
+			// ï¿½ï¿½È¡ï¿½ï¿½Ò»ï¿½ï¿½Í¼ï¿½ï¿½ï¿½Ô»ï¿½È¡ï¿½Î¿ï¿½ï¿½ß´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			int ref_height = img.rows;
 			int ref_width = img.cols;
-			int ref_type = img.type(); // »ñÈ¡Í¼ÏñÀàÐÍ£¬ÀýÈç CV_8UC1 ±íÊ¾»Ò¶ÈÍ¼Ïñ
+			int ref_type = img.type(); // ï¿½ï¿½È¡Í¼ï¿½ï¿½ï¿½ï¿½ï¿½Í£ï¿½ï¿½ï¿½ï¿½ï¿½ CV_8UC1 ï¿½ï¿½Ê¾ï¿½Ò¶ï¿½Í¼ï¿½ï¿½
 
-			// ¼ì²éºóÐøÍ¼ÏñµÄ³ß´çºÍÀàÐÍÊÇ·ñÓëµÚÒ»ÕÅÍ¼ÏñÏàÍ¬
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼ï¿½ï¿½Ä³ß´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½Í¬
 			for (size_t i = 1; i < image_files.size(); ++i) {
 				std::string ss = UTF8ToGB(image_files[i].c_str());
 				cv::Mat img = cv::imread(ss, cv::IMREAD_UNCHANGED);
@@ -497,7 +497,7 @@ StitchingErrorCode stitchImages(const std::vector<std::string>& image_files, cv:
 		return StitchingErrorCode::NO_VALID_IMAGES;
 	}
 
-	// Ê¹ÓÃ×îºóÒ»ÕÅÍ¼Ïñ×÷Îªµ×Í¼
+	// Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½Í¼
 	cv::Mat last_image = images.back();
 	int result_height = last_image.rows;
 	int result_width = last_image.cols;
@@ -561,33 +561,33 @@ COLORVISIONCORE_API int M_ConvertGray32Float(HImage img, HImage* outImage)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 
-	// ¼ì²éÍ¼ÏñÉî¶ÈÊÇ·ñÎªCV_32FC1
+	// ï¿½ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ÎªCV_32FC1
 	if (mat.depth() != CV_32FC1) {
-		return -1; // Í¼Ïñ²»ÊÇ32Î»¸¡µãÀàÐÍ
+		return -1; // Í¼ï¿½ï¿½ï¿½ï¿½32Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	}
 
-	// ÕÒµ½Í¼ÏñÖÐµÄ×îÐ¡ÖµºÍ×î´óÖµ
+	// ï¿½Òµï¿½Í¼ï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½Ð¡Öµï¿½ï¿½ï¿½ï¿½ï¿½Öµ
 	double minVal, maxVal;
 	cv::minMaxLoc(mat, &minVal, &maxVal);
 
-	// Èç¹ûminValÎª0ÇÒmaxValÎª1£¬Ôò²»ÐèÒªËõ·ÅºÍÆ«ÒÆ£¬Ö±½Ó×ª»»
+	// ï¿½ï¿½ï¿½minValÎª0ï¿½ï¿½maxValÎª1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½Åºï¿½Æ«ï¿½Æ£ï¿½Ö±ï¿½ï¿½×ªï¿½ï¿½
 	if (minVal >= 0.0 && maxVal <= 5.0) {
 		cv::Mat outMat(img.rows, img.cols, CV_16UC1);
 		mat.convertTo(outMat, CV_16UC1, 65535);
-		// ½«OpenCVµÄMat¶ÔÏó×ª»»»ØHImage¶ÔÏó
+		// ï¿½ï¿½OpenCVï¿½ï¿½Matï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½HImageï¿½ï¿½ï¿½ï¿½
 		MatToHImage(outMat, outImage);
 	}
 	else {
-		// ¼ÆËã±ÈÀýÒò×ÓºÍ±êÁ¿Öµ
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÓºÍ±ï¿½ï¿½ï¿½Öµ
 		float scale = 65535 / (maxVal - minVal);
 		float delta = -minVal * scale;
 
-		// ´´½¨Êä³öÍ¼Ïñ¾ØÕó
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½ï¿½
 		cv::Mat outMat(img.rows, img.cols, CV_16UC1);
 
-		// ½«32Î»¸¡µãÍ¼Ïñ×ª»»Îª16Î»»Ò¶ÈÍ¼Ïñ
+		// ï¿½ï¿½32Î»ï¿½ï¿½ï¿½ï¿½Í¼ï¿½ï¿½×ªï¿½ï¿½Îª16Î»ï¿½Ò¶ï¿½Í¼ï¿½ï¿½
 		mat.convertTo(outMat, CV_16UC1, scale, delta);
-		// ½«OpenCVµÄMat¶ÔÏó×ª»»»ØHImage¶ÔÏó
+		// ï¿½ï¿½OpenCVï¿½ï¿½Matï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½HImageï¿½ï¿½ï¿½ï¿½
 		MatToHImage(outMat, outImage);
 	}
 
@@ -613,6 +613,50 @@ COLORVISIONCORE_API int M_RemoveMoire(HImage img, HImage* outImage)
 	return 0;
 }
 
+COLORVISIONCORE_API int M_ApplyGaussianBlur(HImage img, HImage* outImage, int kernelSize, double sigma)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	cv::Mat dst;
+	ApplyGaussianBlur(mat, dst, kernelSize, sigma);
+	MatToHImage(dst, outImage);
+	return 0;
+}
+
+COLORVISIONCORE_API int M_ApplyMedianBlur(HImage img, HImage* outImage, int kernelSize)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	cv::Mat dst;
+	ApplyMedianBlur(mat, dst, kernelSize);
+	MatToHImage(dst, outImage);
+	return 0;
+}
+
+COLORVISIONCORE_API int M_ApplySharpen(HImage img, HImage* outImage)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	cv::Mat dst;
+	ApplySharpen(mat, dst);
+	MatToHImage(dst, outImage);
+	return 0;
+}
+
+COLORVISIONCORE_API int M_ApplyCannyEdgeDetection(HImage img, HImage* outImage, double threshold1, double threshold2)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	cv::Mat dst;
+	ApplyCannyEdgeDetection(mat, dst, threshold1, threshold2);
+	MatToHImage(dst, outImage);
+	return 0;
+}
+
+COLORVISIONCORE_API int M_ApplyHistogramEqualization(HImage img, HImage* outImage)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	cv::Mat dst;
+	ApplyHistogramEqualization(mat, dst);
+	MatToHImage(dst, outImage);
+	return 0;
+}
 
 COLORVISIONCORE_API int M_Fusion(const char* fusionjson, HImage* outImage)
 {
@@ -621,12 +665,12 @@ COLORVISIONCORE_API int M_Fusion(const char* fusionjson, HImage* outImage)
 	start = std::chrono::high_resolution_clock::now();
 
 	std::string sss = fusionjson;;
-	// ´Ó×Ö·û´®½âÎö JSON ¶ÔÏó
+	// ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ JSON ï¿½ï¿½ï¿½ï¿½
 	json j = json::parse(sss);
 
-	// ¼ì²é JSON ¶ÔÏóÊÇ·ñÊÇÊý×é
+	// ï¿½ï¿½ï¿½ JSON ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (!j.is_array()) {
-		// ´íÎó´¦Àí
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		return -1;
 	}
 
@@ -655,10 +699,10 @@ COLORVISIONCORE_API int M_Fusion(const char* fusionjson, HImage* outImage)
 
 	cv::Mat out = fusion(imgs, 2);
 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-	std::cout << "fusionÖ´ÐÐÊ±¼ä: " << duration.count() / 1000.0 << " ºÁÃë" << std::endl;
+	std::cout << "fusionÖ´ï¿½ï¿½Ê±ï¿½ï¿½: " << duration.count() / 1000.0 << " ï¿½ï¿½ï¿½ï¿½" << std::endl;
 
 	MatToHImage(out, outImage);
 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-	std::cout << "MatToHImage: " << duration.count() / 1000.0 << " ºÁÃë" << std::endl;
+	std::cout << "MatToHImage: " << duration.count() / 1000.0 << " ï¿½ï¿½ï¿½ï¿½" << std::endl;
 	return 0;
 }
