@@ -59,18 +59,29 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 Command = autoLevelsCommand 
             });
 
-            // 白平衡 - 打开窗口调整
-            RelayCommand whiteBalanceCommand = new(o =>
-            {
-                if (context.ImageView != null)
+            // 白平衡 - 打开窗口调整 (仅适用于多通道图像)
+            RelayCommand whiteBalanceCommand = new(
+                o =>
                 {
-                    var window = new WhiteBalanceWindow(context.ImageView)
+                    if (context.ImageView != null)
                     {
-                        Owner = Application.Current.GetActiveWindow()
-                    };
-                    window.ShowDialog();
-                }
-            });
+                        var window = new WhiteBalanceWindow(context.ImageView)
+                        {
+                            Owner = Application.Current.GetActiveWindow()
+                        };
+                        window.ShowDialog();
+                    }
+                },
+                o =>
+                {
+                    // 白平衡仅适用于多通道（彩色）图像
+                    if (context.ImageView?.Config != null)
+                    {
+                        int channels = context.ImageView.Config.GetProperties<int>("Channel");
+                        return channels > 1;
+                    }
+                    return false;
+                });
             MenuItemMetadatas.Add(new MenuItemMetadata() 
             { 
                 OwnerGuid = "Algorithms", 
@@ -142,6 +153,124 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 Header = "阈值处理", 
                 Command = thresholdCommand 
             });
+
+            // 去除摩尔纹 - 直接应用，无需参数
+            RelayCommand removeMoireCommand = new(o =>
+            {
+                if (context.ImageView != null)
+                {
+                    var tool = new RemoveMoireEditorTool(context.ImageView);
+                    tool.Execute();
+                }
+            });
+            MenuItemMetadatas.Add(new MenuItemMetadata() 
+            { 
+                OwnerGuid = "Algorithms", 
+                GuidId = "RemoveMoire", 
+                Order = 7, 
+                Header = "去除摩尔纹", 
+                Command = removeMoireCommand 
+            });
+
+            // 锐化 - 直接应用，无需参数
+            RelayCommand sharpenCommand = new(o =>
+            {
+                if (context.ImageView != null)
+                {
+                    var tool = new SharpenEditorTool(context.ImageView);
+                    tool.Execute();
+                }
+            });
+            MenuItemMetadatas.Add(new MenuItemMetadata() 
+            { 
+                OwnerGuid = "Algorithms", 
+                GuidId = "Sharpen", 
+                Order = 8, 
+                Header = "锐化", 
+                Command = sharpenCommand 
+            });
+
+            // 高斯模糊 - 打开窗口调整
+            RelayCommand gaussianBlurCommand = new(o =>
+            {
+                if (context.ImageView != null)
+                {
+                    var window = new GaussianBlurWindow(context.ImageView)
+                    {
+                        Owner = Application.Current.GetActiveWindow()
+                    };
+                    window.ShowDialog();
+                }
+            });
+            MenuItemMetadatas.Add(new MenuItemMetadata() 
+            { 
+                OwnerGuid = "Algorithms", 
+                GuidId = "GaussianBlur", 
+                Order = 9, 
+                Header = "高斯模糊", 
+                Command = gaussianBlurCommand 
+            });
+
+            // 中值滤波 - 打开窗口调整
+            RelayCommand medianBlurCommand = new(o =>
+            {
+                if (context.ImageView != null)
+                {
+                    var window = new MedianBlurWindow(context.ImageView)
+                    {
+                        Owner = Application.Current.GetActiveWindow()
+                    };
+                    window.ShowDialog();
+                }
+            });
+            MenuItemMetadatas.Add(new MenuItemMetadata() 
+            { 
+                OwnerGuid = "Algorithms", 
+                GuidId = "MedianBlur", 
+                Order = 10, 
+                Header = "中值滤波", 
+                Command = medianBlurCommand 
+            });
+
+            // 边缘检测 - 打开窗口调整
+            RelayCommand edgeDetectionCommand = new(o =>
+            {
+                if (context.ImageView != null)
+                {
+                    var window = new EdgeDetectionWindow(context.ImageView)
+                    {
+                        Owner = Application.Current.GetActiveWindow()
+                    };
+                    window.ShowDialog();
+                }
+            });
+            MenuItemMetadatas.Add(new MenuItemMetadata() 
+            { 
+                OwnerGuid = "Algorithms", 
+                GuidId = "EdgeDetection", 
+                Order = 11, 
+                Header = "边缘检测 (Canny)", 
+                Command = edgeDetectionCommand 
+            });
+
+            // 直方图均衡化 - 直接应用，无需参数
+            RelayCommand histogramEqualizationCommand = new(o =>
+            {
+                if (context.ImageView != null)
+                {
+                    var tool = new HistogramEqualizationEditorTool(context.ImageView);
+                    tool.Execute();
+                }
+            });
+            MenuItemMetadatas.Add(new MenuItemMetadata() 
+            { 
+                OwnerGuid = "Algorithms", 
+                GuidId = "HistogramEqualization", 
+                Order = 12, 
+                Header = "直方图均衡化", 
+                Command = histogramEqualizationCommand 
+            });
+
             return MenuItemMetadatas;
         }
     }

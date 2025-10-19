@@ -160,5 +160,55 @@ namespace ColorVision.Core
         [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
         public static extern int M_Fusion(string fusionjson, out HImage hImage);
 
+        /// <summary>
+        /// 高斯模糊
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <param name="kernelSize">核大小(必须为奇数)</param>
+        /// <param name="sigma">标准差</param>
+        /// <returns></returns>
+        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int M_ApplyGaussianBlur(HImage image, out HImage hImage, int kernelSize, double sigma);
+
+        /// <summary>
+        /// 中值滤波
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <param name="kernelSize">核大小(必须为奇数)</param>
+        /// <returns></returns>
+        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int M_ApplyMedianBlur(HImage image, out HImage hImage, int kernelSize);
+
+        /// <summary>
+        /// 锐化
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <returns></returns>
+        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int M_ApplySharpen(HImage image, out HImage hImage);
+
+        /// <summary>
+        /// Canny边缘检测
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <param name="threshold1">第一个阈值</param>
+        /// <param name="threshold2">第二个阈值</param>
+        /// <returns></returns>
+        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int M_ApplyCannyEdgeDetection(HImage image, out HImage hImage, double threshold1, double threshold2);
+
+        /// <summary>
+        /// 直方图均衡化
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <returns></returns>
+        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int M_ApplyHistogramEqualization(HImage image, out HImage hImage);
+
     }
 }
