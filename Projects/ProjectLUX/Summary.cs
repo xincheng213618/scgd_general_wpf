@@ -37,7 +37,7 @@ namespace ProjectLUX
         
         [DisplayName("设备号")]
         public string MachineNO { get => _MachineNO; set { _MachineNO = value; OnPropertyChanged(); } }
-        private string _MachineNO = string.Empty;
+        private string _MachineNO = "H03";
 
         [DisplayName("是否显示总结信息")]
         public bool IsShowSummary { get => _IsShowSummary; set { _IsShowSummary = value; OnPropertyChanged(); } }

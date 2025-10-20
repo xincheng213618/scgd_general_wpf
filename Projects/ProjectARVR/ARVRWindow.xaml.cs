@@ -1863,7 +1863,7 @@ namespace ProjectARVR
                                 Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
                                 Circle.Attribute.Id = item.Id ?? -1;
                                 Circle.Attribute.Text = item.Name;
-                                Circle.Attribute.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                                Circle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
                                 Circle.Render();
                                 ImageView.AddVisual(Circle);
                                 break;
@@ -1874,7 +1874,7 @@ namespace ProjectARVR
                                 Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
                                 Rectangle.Attribute.Id = item.Id ?? -1;
                                 Rectangle.Attribute.Text = item.Name;
-                                Rectangle.Attribute.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                                Rectangle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
                                 Rectangle.Render();
                                 ImageView.AddVisual(Rectangle);
                                 break;
@@ -1904,7 +1904,7 @@ namespace ProjectARVR
                                 Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
                                 Circle.Attribute.Id = item.Id ?? -1;
                                 Circle.Attribute.Text = item.Name;
-                                Circle.Attribute.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                                Circle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
                                 Circle.Render();
                                 ImageView.AddVisual(Circle);
                                 break;
@@ -1915,7 +1915,7 @@ namespace ProjectARVR
                                 Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
                                 Rectangle.Attribute.Id = item.Id ?? -1;
                                 Rectangle.Attribute.Text = item.Name;
-                                Rectangle.Attribute.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                                Rectangle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
                                 Rectangle.Render();
                                 ImageView.AddVisual(Rectangle);
                                 break;
@@ -1945,7 +1945,7 @@ namespace ProjectARVR
                                 Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
                                 Circle.Attribute.Id = item.Id ?? -1;
                                 Circle.Attribute.Text = item.Name;
-                                Circle.Attribute.Msg = PoiImageViewComponent.FormatMessage("Y:@Y:F2", poiResultCIExyuvData);
+                                Circle.Attribute.Msg = CVRawOpen.FormatMessage("Y:@Y:F2", poiResultCIExyuvData);
                                 Circle.Render();
                                 ImageView.AddVisual(Circle);
                                 break;
@@ -1956,7 +1956,7 @@ namespace ProjectARVR
                                 Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
                                 Rectangle.Attribute.Id = item.Id ?? -1;
                                 Rectangle.Attribute.Text = item.Name;
-                                Rectangle.Attribute.Msg = PoiImageViewComponent.FormatMessage("Y:@Y:F2", poiResultCIExyuvData);
+                                Rectangle.Attribute.Msg = CVRawOpen.FormatMessage("Y:@Y:F2", poiResultCIExyuvData);
                                 Rectangle.Render();
                                 ImageView.AddVisual(Rectangle);
                                 break;
