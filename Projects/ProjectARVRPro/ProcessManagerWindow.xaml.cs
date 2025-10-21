@@ -11,6 +11,7 @@ using System.Collections.Specialized;
 using Newtonsoft.Json;
 using System.IO;
 using ColorVision.ImageEditor;
+using ProjectARVRPro.Fix;
 
 namespace ProjectARVRPro
 {
@@ -19,7 +20,7 @@ namespace ProjectARVRPro
         public MeasureBatchModel Batch { get; set; }
         public ProjectARVRReuslt Result { get; set; }
         public ObjectiveTestResult ObjectiveTestResult { get; set; }
-        public ObjectiveTestResultFix ObjectiveTestResultFix { get; set; }
+        public FixConfig ObjectiveTestResultFix { get; set; }
         public RecipeConfig RecipeConfig { get; set; }
 
         public ImageView ImageView { get; set; }

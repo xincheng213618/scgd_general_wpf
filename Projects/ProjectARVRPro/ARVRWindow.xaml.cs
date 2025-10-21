@@ -13,6 +13,7 @@ using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
 using Newtonsoft.Json;
+using ProjectARVRPro.Fix;
 using ProjectARVRPro.PluginConfig;
 using ProjectARVRPro.Services;
 using Quartz;
@@ -77,7 +78,7 @@ namespace ProjectARVRPro
 
         public static ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = ViewResultManager.ViewResluts;
 
-        public static ObjectiveTestResultFix ObjectiveTestResultFix => FixManager.GetInstance().ObjectiveTestResultFix;
+        public static FixConfig ObjectiveTestResultFix => FixManager.GetInstance().FixConfig;
 
         public static ProcessManager ProcessManager => ProcessManager.GetInstance();
         public ObservableCollection<ProcessMeta> ProcessMetas { get; } = ProcessManager.ProcessMetas;

@@ -1,0 +1,60 @@
+﻿using ColorVision.UI;
+using System.Reflection;
+using System.Windows;
+
+namespace ProjectARVRPro
+{
+
+
+    /// <summary>
+    /// EditFixWindow.xaml 的交互逻辑
+    /// </summary>
+    public partial class EditFixWindow : Window
+    {
+        FixManager FixManager { get; set; }
+        public EditFixWindow()
+        {
+            InitializeComponent();
+        }
+
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            FixManager = FixManager.GetInstance();
+            foreach (var item in FixManager.FixConfig.Configs)
+            {
+                EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(item.Value));
+            }
+        }
+
+        private void Save_Click(object sender, RoutedEventArgs e)
+        {
+            FixManager.Save();
+            this.Close();
+        }
+
+        private void Reset_Click(object sender, RoutedEventArgs e)
+        {
+
+            foreach (var item in FixManager.FixConfig.Configs)
+            {
+                object source = Activator.CreateInstance(item.Key);
+
+                var properties = item.Key.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                     .Where(p => p.CanRead && p.CanWrite);
+                foreach (var property in properties)
+                {
+                    var propertyValue = property.GetValue(source);
+                    property.SetValue(item.Value, propertyValue);
+                }
+            }
+
+            FixManager.Save();
+        }
+
+        private void Close_Click(object sender, RoutedEventArgs e)
+        {
+            FixManager.Save();
+            this.Close();
+        }
+    }
+}
