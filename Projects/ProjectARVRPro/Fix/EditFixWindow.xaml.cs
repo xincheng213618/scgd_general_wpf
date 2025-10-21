@@ -1,6 +1,7 @@
 ﻿using ColorVision.UI;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace ProjectARVRPro
 {
@@ -22,7 +23,19 @@ namespace ProjectARVRPro
             FixManager = FixManager.GetInstance();
             foreach (var item in FixManager.FixConfig.Configs)
             {
-                EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(item.Value));
+                StackPanel stackPanel = PropertyEditorHelper.GenPropertyEditorControl(item.Value);
+                TreeViewItem treeViewItem = new TreeViewItem() { Header = item.Key.Name, Tag = stackPanel };
+                treeView.Items.Add(treeViewItem);
+
+                EditStackPanel.Children.Add(stackPanel);
+            }
+        }
+
+        private void TreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            if (sender is TreeView treeView && treeView.SelectedItem is TreeViewItem treeViewItem && treeViewItem.Tag is StackPanel obj)
+            {
+                obj.BringIntoView();
             }
         }
 

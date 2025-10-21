@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
@@ -10,58 +9,9 @@ using System.Windows.Input;
 using System.Collections.Specialized;
 using Newtonsoft.Json;
 using System.IO;
-using ColorVision.ImageEditor;
-using ProjectARVRPro.Fix;
 
-namespace ProjectARVRPro
+namespace ProjectARVRPro.Process
 {
-    public class IProcessExecutionContext
-    {
-        public MeasureBatchModel Batch { get; set; }
-        public ProjectARVRReuslt Result { get; set; }
-        public ObjectiveTestResult ObjectiveTestResult { get; set; }
-        public FixConfig FixConfig { get; set; }
-        public RecipeConfig RecipeConfig { get; set; }
-
-        public ImageView ImageView { get; set; }
-
-        public ILog Logger { get; set; }
-    }
-
-    public interface IProcess
-    {
-        public bool Execute(IProcessExecutionContext ctx);
-
-        public void Render(IProcessExecutionContext ctx);
-
-        public string GenText(IProcessExecutionContext ctx);
-
-    }
-
-    public class ProcessMeta:ViewModelBase
-    {
-        public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
-        private string _Name;
-
-        public string FlowTemplate { get => _FlowTemplate; set { _FlowTemplate = value; OnPropertyChanged(); } }
-        private string _FlowTemplate;
-
-        public IProcess Process { get => _Process; set { _Process = value; OnPropertyChanged(); OnPropertyChanged(nameof(ProcessTypeName)); } }
-        private IProcess _Process;
-
-        public string ProcessTypeName => Process?.GetType().Name ?? string.Empty;
-        public string ProcessTypeFullName => Process?.GetType().FullName ?? string.Empty;
-    }
-
-
-
-    internal class ProcessMetaPersist
-    {
-        public string Name { get; set; }
-        public string FlowTemplate { get; set; }
-        public string ProcessTypeFullName { get; set; }
-    }
-
     public class ProcessManager : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(nameof(ProcessManager));
@@ -322,26 +272,5 @@ namespace ProjectARVRPro
             }
         }
 
-    }
-
-    /// <summary>
-    /// ProcessManagerWindow.xaml 的交互逻辑
-    /// </summary>
-    public partial class ProcessManagerWindow : Window
-    {
-        public ProcessManagerWindow()
-        {
-            InitializeComponent();
-        }
-
-        private void Window_Initialized(object sender, EventArgs e)
-        {
-
-        }
-
-        private void ComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-        {
-
-        }
     }
 }
