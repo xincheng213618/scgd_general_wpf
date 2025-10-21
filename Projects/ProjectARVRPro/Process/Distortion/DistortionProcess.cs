@@ -6,7 +6,7 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using System.Windows.Media;
 
-namespace ProjectARVRPro.FlowProcess
+namespace ProjectARVRPro.Process.Distortion
 {
     public class DistortionProcess : IProcess
     {

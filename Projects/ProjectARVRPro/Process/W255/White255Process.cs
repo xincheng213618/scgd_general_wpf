@@ -1,26 +1,28 @@
 using ColorVision.Database;
-using ColorVision.Engine;
+using ColorVision.Engine; // AlgResultMasterDao, MeasureImgResultDao, DeatilCommonDao
 using ColorVision.Engine.Media;
-using ColorVision.Engine.Templates.Jsons; 
-using ColorVision.Engine.Templates.Jsons.PoiAnalysis; 
-using ColorVision.Engine.Templates.POI.AlgorithmImp; 
+using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
+using ColorVision.Engine.Templates.Jsons.PoiAnalysis; // PoiAnalysisDetailViewReslut
+using ColorVision.Engine.Templates.POI.AlgorithmImp; // PoiPointResultModel
+using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ProjectARVRPro.FlowProcess
+namespace ProjectARVRPro.Process.W255
 {
-    public class GreenProcess : IProcess
+    public class White255Process : IProcess
     {
         public bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
             W255RecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<W255RecipeConfig>();
+
             try
             {
-                log?.Info("处理 Red 流程结果");
+                log?.Info("处理 White255 流程结果");
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (values.Count > 0)
@@ -210,13 +212,14 @@ namespace ProjectARVRPro.FlowProcess
                         break;
                 }
             }
+
         }
 
         public string GenText(IProcessExecutionContext ctx)
         {
             var result = ctx.Result;
             string outtext = string.Empty;
-            outtext += $"Green画面 测试项：关注点算法+亮度均匀性+颜色均匀性算法+" + Environment.NewLine;
+            outtext += $"白画面九点圆 测试项：关注点算法+亮度均匀性+颜色均匀性算法+" + Environment.NewLine;
 
             if (result.ViewResultWhite.PoiResultCIExyuvDatas != null)
             {

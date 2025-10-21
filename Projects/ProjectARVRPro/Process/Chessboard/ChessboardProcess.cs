@@ -11,7 +11,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ProjectARVRPro.FlowProcess
+namespace ProjectARVRPro.Process.Chessboard
 {
     public class ChessboardProcess : IProcess
     {

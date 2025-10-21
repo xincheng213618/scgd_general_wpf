@@ -1,7 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using NPOI.SS.Formula.Functions;
+using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Windows;
@@ -9,6 +11,49 @@ using System.Windows.Input;
 
 namespace ProjectARVRPro
 {
+    public interface IRecipeConfig
+    {
+
+    }
+
+    [DisplayName("ARVR上下限判定")]
+    public class RecipeConfig : ViewModelBase, IRecipe
+    {
+        public RecipeConfig()
+        {
+            Configs = new Dictionary<Type, IRecipeConfig>();
+
+            typeof(RecipeConfig).Assembly.GetTypes()
+                .Where(t => typeof(IRecipeConfig).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract)
+                .ToList()
+                .ForEach(t =>
+                {
+                    if (Activator.CreateInstance(t) is IRecipeConfig instance)
+                    {
+                        Configs[t] = instance;
+                    }
+                });
+        }
+        public Dictionary<Type, IRecipeConfig> Configs { get; set; }
+
+        public T GetRequiredService<T>() where T : IRecipeConfig
+        {
+            var type = typeof(T);
+
+            if (Configs.TryGetValue(type, out var service))
+            {
+                return (T)service;
+            }
+
+            if (Activator.CreateInstance(type) is IRecipeConfig defaultConfig)
+            {
+                Configs[type] = defaultConfig;
+            }
+            // 此处递归调用是为了确保缓存和异常处理逻辑一致
+            return GetRequiredService<T>();
+        }
+    }
+
 
     public class RecipeManager
     {

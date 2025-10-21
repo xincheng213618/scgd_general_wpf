@@ -10,7 +10,7 @@ using ColorVision.ImageEditor.Draw;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ProjectARVRPro.FlowProcess
+namespace ProjectARVRPro.Process.W51
 {
     /// <summary>
     /// Extracted processing logic for White51 (W51) test type.

@@ -2,7 +2,7 @@ using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Database;
 
-namespace ProjectARVRPro.FlowProcess
+namespace ProjectARVRPro.Process.W25
 {
     public class W25Process : IProcess
     {

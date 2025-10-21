@@ -7,10 +7,11 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp; // PoiPointResultModel
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
+using ProjectARVRPro.Process.W255;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ProjectARVRPro.FlowProcess
+namespace ProjectARVRPro.Process.Blue
 {
     public class BlueProcess : IProcess
     {

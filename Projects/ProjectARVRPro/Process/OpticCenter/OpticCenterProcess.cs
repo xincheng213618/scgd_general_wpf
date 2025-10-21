@@ -3,7 +3,7 @@ using ColorVision.Engine.Templates.Jsons.FindCross; // FindCrossDetailViewReslut
 using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
 using ColorVision.Database;
 
-namespace ProjectARVRPro.FlowProcess
+namespace ProjectARVRPro.Process.OpticCenter
 {
     public class OpticCenterProcess : IProcess
     {

@@ -8,7 +8,7 @@ using CVCommCore.CVAlgorithm;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ProjectARVRPro.FlowProcess
+namespace ProjectARVRPro.Process.Black
 {
     public class BlackProcess : IProcess
     {
