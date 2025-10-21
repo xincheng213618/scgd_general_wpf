@@ -6,6 +6,7 @@ using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
+using ProjectARVRPro.Process.MTFHV;
 using ProjectARVRPro.Process.W255;
 using System.Windows;
 using System.Windows.Media;
@@ -19,6 +20,8 @@ namespace ProjectARVRPro.Process.Green
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
             W255RecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<W255RecipeConfig>();
+            W255FixConfig fixConfig = ctx.FixConfig.GetRequiredService<W255FixConfig>();
+
             try
             {
                 log?.Info("处理 Red 流程结果");
@@ -43,24 +46,24 @@ namespace ProjectARVRPro.Process.Green
                             {
                                 Id = poi.Id,
                                 Name = poi.Name,
-                                CCT = poi.CCT * ctx.ObjectiveTestResultFix.BlackCenterCorrelatedColorTemperature,
+                                CCT = poi.CCT * fixConfig.BlackCenterCorrelatedColorTemperature,
                                 X = poi.X,
-                                Y = poi.Y * ctx.ObjectiveTestResultFix.W255CenterLunimance,
+                                Y = poi.Y * fixConfig.W255CenterLunimance,
                                 Z = poi.Z,
                                 Wave = poi.Wave,
-                                x = poi.x * ctx.ObjectiveTestResultFix.W255CenterCIE1931ChromaticCoordinatesx,
-                                y = poi.y * ctx.ObjectiveTestResultFix.W255CenterCIE1931ChromaticCoordinatesy,
-                                u = poi.u * ctx.ObjectiveTestResultFix.W255CenterCIE1976ChromaticCoordinatesu,
-                                v = poi.v * ctx.ObjectiveTestResultFix.W255CenterCIE1976ChromaticCoordinatesv
+                                x = poi.x * fixConfig.W255CenterCIE1931ChromaticCoordinatesx,
+                                y = poi.y * fixConfig.W255CenterCIE1931ChromaticCoordinatesy,
+                                u = poi.u * fixConfig.W255CenterCIE1976ChromaticCoordinatesu,
+                                v = poi.v * fixConfig.W255CenterCIE1976ChromaticCoordinatesv
                             });
                             if (item.PoiName == "POI_5")
                             {
-                                poi.CCT *= ctx.ObjectiveTestResultFix.BlackCenterCorrelatedColorTemperature;
-                                poi.Y *= ctx.ObjectiveTestResultFix.W255CenterLunimance;
-                                poi.x *= ctx.ObjectiveTestResultFix.W255CenterCIE1931ChromaticCoordinatesx;
-                                poi.y *= ctx.ObjectiveTestResultFix.W255CenterCIE1931ChromaticCoordinatesy;
-                                poi.u *= ctx.ObjectiveTestResultFix.W255CenterCIE1976ChromaticCoordinatesu;
-                                poi.v *= ctx.ObjectiveTestResultFix.W255CenterCIE1976ChromaticCoordinatesv;
+                                poi.CCT *= fixConfig.BlackCenterCorrelatedColorTemperature;
+                                poi.Y *= fixConfig.W255CenterLunimance;
+                                poi.x *= fixConfig.W255CenterCIE1931ChromaticCoordinatesx;
+                                poi.y *= fixConfig.W255CenterCIE1931ChromaticCoordinatesy;
+                                poi.u *= fixConfig.W255CenterCIE1976ChromaticCoordinatesu;
+                                poi.v *= fixConfig.W255CenterCIE1976ChromaticCoordinatesv;
 
                                 var centerCCT = new ObjectiveTestItem
                                 {
@@ -132,7 +135,7 @@ namespace ProjectARVRPro.Process.Green
                             if (details.Count == 1)
                             {
                                 var view = new PoiAnalysisDetailViewReslut(details[0]);
-                                view.PoiAnalysisResult.result.Value *= ctx.ObjectiveTestResultFix.W255LuminanceUniformity;
+                                view.PoiAnalysisResult.result.Value *= fixConfig.W255LuminanceUniformity;
                                 var uniform = new ObjectiveTestItem
                                 {
                                     Name = "Luminance_uniformity(%)",
@@ -152,7 +155,7 @@ namespace ProjectARVRPro.Process.Green
                             if (details.Count == 1)
                             {
                                 var view = new PoiAnalysisDetailViewReslut(details[0]);
-                                view.PoiAnalysisResult.result.Value *= ctx.ObjectiveTestResultFix.W255ColorUniformity;
+                                view.PoiAnalysisResult.result.Value *= fixConfig.W255ColorUniformity;
                                 var colorUniform = new ObjectiveTestItem
                                 {
                                     Name = "Color_uniformity",

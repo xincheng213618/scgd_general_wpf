@@ -1,7 +1,8 @@
-using ColorVision.Engine; // DAOs
-using ColorVision.Engine.Templates.Jsons.FindCross; // FindCrossDetailViewReslut
-using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
 using ColorVision.Database;
+using ColorVision.Engine; // DAOs
+using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
+using ColorVision.Engine.Templates.Jsons.FindCross; // FindCrossDetailViewReslut
+using ProjectARVRPro.Process.W25;
 
 namespace ProjectARVRPro.Process.OpticCenter
 {
@@ -12,6 +13,7 @@ namespace ProjectARVRPro.Process.OpticCenter
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
             OpticCenterRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<OpticCenterRecipeConfig>();
+            OpticCenterFixConfig fixConfig = ctx.FixConfig.GetRequiredService<OpticCenterFixConfig>();
 
             try
             {
@@ -32,9 +34,9 @@ namespace ProjectARVRPro.Process.OpticCenter
                             var find = new FindCrossDetailViewReslut(details[0]);
                             if (master.TName == "optCenter")
                             {
-                                find.FindCrossResult.result[0].tilt.tilt_x *= ctx.ObjectiveTestResultFix.OptCenterXTilt;
-                                find.FindCrossResult.result[0].tilt.tilt_y *= ctx.ObjectiveTestResultFix.OptCenterYTilt;
-                                find.FindCrossResult.result[0].rotationAngle *= ctx.ObjectiveTestResultFix.OptCenterRotation;
+                                find.FindCrossResult.result[0].tilt.tilt_x *= fixConfig.OptCenterXTilt;
+                                find.FindCrossResult.result[0].tilt.tilt_y *= fixConfig.OptCenterYTilt;
+                                find.FindCrossResult.result[0].rotationAngle *= fixConfig.OptCenterRotation;
                                 ctx.Result.ViewResultOpticCenter.FindCrossDetailViewReslut = find;
                                 ctx.ObjectiveTestResult.OptCenterXTilt = Build("OptCenterXTilt", find.FindCrossResult.result[0].tilt.tilt_x, recipeConfig.OptCenterXTiltMin, recipeConfig.OptCenterXTiltMax, "F4");
                                 ctx.ObjectiveTestResult.OptCenterYTilt = Build("OptCenterYTilt", find.FindCrossResult.result[0].tilt.tilt_y, recipeConfig.OptCenterYTiltMin, recipeConfig.OptCenterYTiltMax, "F4");
@@ -48,9 +50,9 @@ namespace ProjectARVRPro.Process.OpticCenter
                             }
                             else if (master.TName == "ImageCenter")
                             {
-                                find.FindCrossResult.result[0].tilt.tilt_x *= ctx.ObjectiveTestResultFix.ImageCenterXTilt;
-                                find.FindCrossResult.result[0].tilt.tilt_y *= ctx.ObjectiveTestResultFix.ImageCenterYTilt;
-                                find.FindCrossResult.result[0].rotationAngle *= ctx.ObjectiveTestResultFix.ImageCenterRotation;
+                                find.FindCrossResult.result[0].tilt.tilt_x *= fixConfig.ImageCenterXTilt;
+                                find.FindCrossResult.result[0].tilt.tilt_y *= fixConfig.ImageCenterYTilt;
+                                find.FindCrossResult.result[0].rotationAngle *= fixConfig.ImageCenterRotation;
                                 ctx.Result.ViewResultOpticCenter.FindCrossDetailViewReslut1 = find;
                                 ctx.ObjectiveTestResult.ImageCenterXTilt = Build("ImageCenterXTilt", find.FindCrossResult.result[0].tilt.tilt_x, recipeConfig.ImageCenterXTiltMin, recipeConfig.ImageCenterXTiltMax, "F4");
                                 ctx.ObjectiveTestResult.ImageCenterYTilt = Build("ImageCenterYTilt", find.FindCrossResult.result[0].tilt.tilt_y, recipeConfig.ImageCenterYTiltMin, recipeConfig.ImageCenterYTiltMax, "F4");

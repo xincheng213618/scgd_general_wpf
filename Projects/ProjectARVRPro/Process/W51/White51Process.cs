@@ -23,6 +23,9 @@ namespace ProjectARVRPro.Process.W51
                 return false;
             var log = ctx.Logger;
             W51RecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<W51RecipeConfig>();
+            W51FixConfig fixConfig = ctx.FixConfig.GetRequiredService<W51FixConfig>();
+
+
             try
             {
                 log?.Info("处理 White51 流程结果");
@@ -49,9 +52,9 @@ namespace ProjectARVRPro.Process.W51
                         {
                             DFovView view1 = new DFovView(algResultModels[0]);
 
-                            view1.Result.result.D_Fov = view1.Result.result.D_Fov * ctx.ObjectiveTestResultFix.W51DiagonalFieldOfViewAngle;
-                            view1.Result.result.ClolorVisionH_Fov = view1.Result.result.ClolorVisionH_Fov * ctx.ObjectiveTestResultFix.W51HorizontalFieldOfViewAngle;
-                            view1.Result.result.ClolorVisionV_Fov = view1.Result.result.ClolorVisionV_Fov * ctx.ObjectiveTestResultFix.W51VerticalFieldOfViewAngle;
+                            view1.Result.result.D_Fov = view1.Result.result.D_Fov * fixConfig.W51DiagonalFieldOfViewAngle;
+                            view1.Result.result.ClolorVisionH_Fov = view1.Result.result.ClolorVisionH_Fov * fixConfig.W51HorizontalFieldOfViewAngle;
+                            view1.Result.result.ClolorVisionV_Fov = view1.Result.result.ClolorVisionV_Fov * fixConfig.W51VerticalFieldOfViewAngle;
 
                             ctx.Result.ViewResultWhite.DFovView = view1;
                             ctx.ObjectiveTestResult.W51DiagonalFieldOfViewAngle = new ObjectiveTestItem()

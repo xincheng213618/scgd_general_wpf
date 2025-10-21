@@ -20,7 +20,7 @@ namespace ProjectARVRPro
         public MeasureBatchModel Batch { get; set; }
         public ProjectARVRReuslt Result { get; set; }
         public ObjectiveTestResult ObjectiveTestResult { get; set; }
-        public FixConfig ObjectiveTestResultFix { get; set; }
+        public FixConfig FixConfig { get; set; }
         public RecipeConfig RecipeConfig { get; set; }
 
         public ImageView ImageView { get; set; }

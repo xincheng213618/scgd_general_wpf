@@ -555,7 +555,7 @@ namespace ProjectARVRPro
                             Batch = Batch,
                             Result = result,
                             ObjectiveTestResult = ObjectiveTestResult,
-                            ObjectiveTestResultFix = ObjectiveTestResultFix,
+                            FixConfig = ObjectiveTestResultFix,
                             RecipeConfig = recipeConfig,
                             ImageView =ImageView,
                             Logger = log
@@ -724,7 +724,7 @@ namespace ProjectARVRPro
                                     {
                                         Result = result,
                                         ObjectiveTestResult = ObjectiveTestResult,
-                                        ObjectiveTestResultFix = ObjectiveTestResultFix,
+                                        FixConfig = ObjectiveTestResultFix,
                                         RecipeConfig = recipeConfig,
                                         ImageView = ImageView,
                                         Logger = log
@@ -771,7 +771,7 @@ namespace ProjectARVRPro
                     {
                         Result = result,
                         ObjectiveTestResult = ObjectiveTestResult,
-                        ObjectiveTestResultFix = ObjectiveTestResultFix,
+                        FixConfig = ObjectiveTestResultFix,
                         RecipeConfig = recipeConfig,
                         ImageView = ImageView,
                         Logger = log

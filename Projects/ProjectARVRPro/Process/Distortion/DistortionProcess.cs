@@ -15,6 +15,7 @@ namespace ProjectARVRPro.Process.Distortion
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
             DistortionRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<DistortionRecipeConfig>();
+            DistortionFixConfig fixConfig = ctx.FixConfig.GetRequiredService<DistortionFixConfig>();
 
 
             try
@@ -34,8 +35,8 @@ namespace ProjectARVRPro.Process.Distortion
                         if (details.Count == 1)
                         {
                             var distortion = new Distortion2View(details[0]);
-                            distortion.DistortionReslut.TVDistortion.HorizontalRatio *= ctx.ObjectiveTestResultFix.HorizontalTVDistortion;
-                            distortion.DistortionReslut.TVDistortion.VerticalRatio *= ctx.ObjectiveTestResultFix.VerticalTVDistortion;
+                            distortion.DistortionReslut.TVDistortion.HorizontalRatio *= fixConfig.HorizontalTVDistortion;
+                            distortion.DistortionReslut.TVDistortion.VerticalRatio *= fixConfig.VerticalTVDistortion;
 
                             ctx.Result.ViewReslutDistortionGhost.Distortion2View = distortion;
 

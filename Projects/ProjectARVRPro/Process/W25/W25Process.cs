@@ -1,6 +1,7 @@
+using ColorVision.Database;
 using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.Database;
+using ProjectARVRPro.Process.W255;
 
 namespace ProjectARVRPro.Process.W25
 {
@@ -12,6 +13,8 @@ namespace ProjectARVRPro.Process.W25
             var log = ctx.Logger;
 
             W25RecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<W25RecipeConfig>();
+            W25FixConfig fixConfig = ctx.FixConfig.GetRequiredService<W25FixConfig>();
+
             try
             {
                 log?.Info("处理 White25 流程结果");
@@ -36,11 +39,11 @@ namespace ProjectARVRPro.Process.W25
                         if (ctx.Result.ViewResultW25.PoiResultCIExyuvDatas.Count == 1)
                         {
                             var center = ctx.Result.ViewResultW25.PoiResultCIExyuvDatas[0];
-                            center.Y *= ctx.ObjectiveTestResultFix.W25CenterLunimance;
-                            center.x *= ctx.ObjectiveTestResultFix.W25CenterCIE1931ChromaticCoordinatesx;
-                            center.y *= ctx.ObjectiveTestResultFix.W25CenterCIE1931ChromaticCoordinatesy;
-                            center.u *= ctx.ObjectiveTestResultFix.W25CenterCIE1976ChromaticCoordinatesu;
-                            center.v *= ctx.ObjectiveTestResultFix.W25CenterCIE1976ChromaticCoordinatesv;
+                            center.Y *= fixConfig.W25CenterLunimance;
+                            center.x *= fixConfig.W25CenterCIE1931ChromaticCoordinatesx;
+                            center.y *= fixConfig.W25CenterCIE1931ChromaticCoordinatesy;
+                            center.u *= fixConfig.W25CenterCIE1976ChromaticCoordinatesu;
+                            center.v *= fixConfig.W25CenterCIE1976ChromaticCoordinatesv;
 
                             ctx.ObjectiveTestResult.W25CenterLunimance = new ObjectiveTestItem
                             {

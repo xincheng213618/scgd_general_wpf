@@ -7,6 +7,7 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
+using ProjectARVRPro.Process.MTFHV;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Media;
@@ -20,6 +21,7 @@ namespace ProjectARVRPro.Process.Chessboard
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
             ChessboardRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<ChessboardRecipeConfig>();
+            ChessboardFixConfig fixConfig = ctx.FixConfig.GetRequiredService<ChessboardFixConfig>();
 
             try
             {
@@ -50,7 +52,7 @@ namespace ProjectARVRPro.Process.Chessboard
                         if (details.Count == 1)
                         {
                             var view = new PoiAnalysisDetailViewReslut(details[0]);
-                            view.PoiAnalysisResult.result.Value *= ctx.ObjectiveTestResultFix.ChessboardContrast;
+                            view.PoiAnalysisResult.result.Value *= fixConfig.ChessboardContrast;
                             var contrast = new ObjectiveTestItem
                             {
                                 Name = "Chessboard_Contrast",

@@ -5,6 +5,7 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
+using ProjectARVRPro.Fix;
 using System.Windows;
 using System.Windows.Media;
 
@@ -17,6 +18,7 @@ namespace ProjectARVRPro.Process.Black
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
             BlackRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<BlackRecipeConfig>();
+            BlackFixConfig fixConfig = ctx.FixConfig.GetRequiredService<BlackFixConfig>();
 
             try
             {
@@ -43,7 +45,7 @@ namespace ProjectARVRPro.Process.Black
                         if (ctx.Result.ViewResultWhite != null && ctx.Result.ViewResultWhite.PoiResultCIExyuvDatas != null && ctx.Result.ViewResultWhite.PoiResultCIExyuvDatas.Count == 9 && ctx.Result.ViewResultBlack.PoiResultCIExyuvDatas.Count == 1)
                         {
                             double contrast = ctx.Result.ViewResultWhite.PoiResultCIExyuvDatas[5].Y / ctx.Result.ViewResultBlack.PoiResultCIExyuvDatas[0].Y;
-                            contrast *= ctx.ObjectiveTestResultFix.FOFOContrast;
+                            contrast *= fixConfig.FOFOContrast;
                             var fofo = new ObjectiveTestItem
                             {
                                 Name = "FOFOContrast",
