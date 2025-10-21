@@ -87,7 +87,7 @@ namespace ProjectARVRPro.FlowProcess
                         Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
                         Circle.Attribute.Id = item.Id ?? -1;
                         Circle.Attribute.Text = item.Name;
-                        Circle.Attribute.Msg = PoiImageViewComponent.FormatMessage("Y:@Y:F2", poiResultCIExyuvData);
+                        Circle.Attribute.Msg = CVRawOpen.FormatMessage("Y:@Y:F2", poiResultCIExyuvData);
                         Circle.Render();
                         ctx.ImageView.AddVisual(Circle);
                         break;
@@ -98,7 +98,7 @@ namespace ProjectARVRPro.FlowProcess
                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
                         Rectangle.Attribute.Id = item.Id ?? -1;
                         Rectangle.Attribute.Text = item.Name;
-                        Rectangle.Attribute.Msg = PoiImageViewComponent.FormatMessage("Y:@Y:F2", poiResultCIExyuvData);
+                        Rectangle.Attribute.Msg = CVRawOpen.FormatMessage("Y:@Y:F2", poiResultCIExyuvData);
                         Rectangle.Render();
                         ctx.ImageView.AddVisual(Rectangle);
                         break;
