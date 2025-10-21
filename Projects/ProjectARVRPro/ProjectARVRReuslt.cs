@@ -157,6 +157,7 @@ namespace ProjectARVRPro
         public FlowStatus FlowStatus { get; set; } = FlowStatus.Ready;
 
         public bool Result { get; set; } = true;
+
         public int TestType { get; set; }
 
         public long RunTime { get; set; }

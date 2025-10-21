@@ -9,10 +9,14 @@ using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
+using Dm.util;
+using NPOI.SS.Formula.Functions;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -64,6 +68,15 @@ namespace ColorVision.Engine.Services
             Task.Run(() =>
             {
                 bool exists = !string.IsNullOrEmpty(FilePath) && File.Exists(FilePath);
+                if (!exists)
+                {
+                    var parts = FilePath.Split([';'], StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).ToArray();
+                    if (parts.Length >= 2)
+                    {
+                        exists = true;
+                    }
+                }
+
                 Application.Current.Dispatcher.BeginInvoke(() =>
                 {
                     IsFileExists = exists;
@@ -71,6 +84,10 @@ namespace ColorVision.Engine.Services
             });
 
         }
+
+
+
+
 
         public bool IsFileExists { get => _IsFileExists; set { if (_IsFileExists == value) return; _IsFileExists = value; OnPropertyChanged(); } }
         private bool _IsFileExists = true;
