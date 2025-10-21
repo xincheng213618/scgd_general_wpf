@@ -1,23 +1,14 @@
-﻿using ColorVision.Common.Algorithms;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
-using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.Jsons;
-using ColorVision.Engine.Templates.Jsons.FindCross;
-using ColorVision.Engine.Templates.Jsons.MTF2;
-using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.ImageEditor.Draw;
 using ColorVision.Scheduler;
 using ColorVision.SocketProtocol;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.LogImp;
-using CVCommCore.CVAlgorithm;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
@@ -29,6 +20,7 @@ using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -95,9 +87,10 @@ namespace ProjectARVRPro
             InitializeComponent();
             this.ApplyCaption(false);
             Config.SetWindow(this);
+            this.Title += Assembly.GetAssembly(typeof(ARVRWindow))?.GetName().Version?.ToString() ?? "";
         }
 
-        public int CurrentTestType = -1;
+        private int CurrentTestType = -1;
 
         ObjectiveTestResult ObjectiveTestResult { get; set; } = new ObjectiveTestResult();
         Random Random = new Random();
@@ -336,7 +329,7 @@ namespace ProjectARVRPro
 
 
         ProjectARVRReuslt CurrentFlowResult { get; set; }
-        int TryCount = 0;
+        int TryCount;
 
         public async Task RunTemplate()
         {
@@ -353,7 +346,14 @@ namespace ProjectARVRPro
             CurrentFlowResult.SN = ProjectARVRProConfig.Instance.SN;
             CurrentFlowResult.Model = FlowTemplate.Text;
 
-            CurrentFlowResult.TestType = CurrentTestType;
+            if (ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, FlowTemplate.Text, StringComparison.OrdinalIgnoreCase)) is ProcessMeta processMeta)
+            {
+                CurrentFlowResult.TestType = ProcessMetas.IndexOf(processMeta);
+            }
+            else
+            {
+                CurrentFlowResult.TestType = CurrentTestType;
+            }
 
             FlowName = FlowTemplate.Text;
             CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
@@ -684,7 +684,6 @@ namespace ProjectARVRPro
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
                 var result = ViewResluts[listView.SelectedIndex];
-
                 try
                 {
                     if (result.FlowStatus == FlowStatus.Completed)
@@ -702,72 +701,46 @@ namespace ProjectARVRPro
                 {
                     log.Error(ex);
                 }
-
                 Task.Run(async () =>
                 {
                     if (File.Exists(result.FileName))
                     {
-                        try
+                        _ = Application.Current.Dispatcher.BeginInvoke(() =>
                         {
-                            var fileInfo = new FileInfo(result.FileName);
-                            log.Debug($"fileInfo.Length{fileInfo.Length}");
-                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                            ImageView.OpenImage(result.FileName);
+                            ImageView.ImageShow.Clear();
+
+                            if (result.FlowStatus != FlowStatus.Completed)
+                                return;
+
+                            var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
+                            if (meta?.Process != null)
                             {
-                                log.Debug("文件可以读取，没有被占用。");
+                                bool executed = false;
+                                try
+                                {
+                                    var ctx = new IProcessExecutionContext
+                                    {
+                                        Result = result,
+                                        ObjectiveTestResult = ObjectiveTestResult,
+                                        ObjectiveTestResultFix = ObjectiveTestResultFix,
+                                        RecipeConfig = recipeConfig,
+                                        ImageView = ImageView,
+                                        Logger = log
+                                    };
+                                    meta.Process.Render(ctx);
+                                }
+                                catch (Exception ex)
+                                {
+                                    log.Error("自定义 IProcess 执行异常", ex);
+                                }
                             }
-                            if (fileInfo.Length > 0)
-                            {
-                                OpenImage(result);
-                            }
-                        }
-                        catch
-                        {
-                            log.Debug("文件还在写入");
-                            await Task.Delay(ViewResultManager.Config.ViewImageReadDelay);
-                            OpenImage(result);
-                        }
+
+                        });
                     }
                 });
 
             }
-        }
-
-        public void OpenImage(ProjectARVRReuslt result)
-        {
-            _ = Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                ImageView.OpenImage(result.FileName);
-                ImageView.ImageShow.Clear();
-
-                if (result.FlowStatus != FlowStatus.Completed)
-                    return;
-
-                var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
-                if (meta?.Process != null)
-                {
-                    log.Info($"匹配到自定义流程 {meta.Name} -> {meta.ProcessTypeName}; 使用 IProcess 处理 {result.Model}");
-                    bool executed = false;
-                    try
-                    {
-                        var ctx = new IProcessExecutionContext
-                        {
-                            Result = result,
-                            ObjectiveTestResult = ObjectiveTestResult,
-                            ObjectiveTestResultFix = ObjectiveTestResultFix,
-                            RecipeConfig = recipeConfig,
-                            ImageView = ImageView,
-                            Logger = log
-                        };
-                        meta.Process.Render(ctx);
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Error("自定义 IProcess 执行异常", ex);
-                    }
-                }
-
-            });
-
         }
 
         public void GenoutputText(ProjectARVRReuslt result)
@@ -790,7 +763,6 @@ namespace ProjectARVRPro
             var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
             if (meta?.Process != null)
             {
-                log.Info($"匹配到自定义流程 {meta.Name} -> {meta.ProcessTypeName}; 使用 IProcess 处理 {result.Model}");
                 bool executed = false;
                 try
                 {

@@ -10,7 +10,7 @@
         xmlns:LogImp="clr-namespace:ColorVision.UI.LogImp;assembly=ColorVision.UI"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ProjectARVRProConfig}"
-        Title="ARVR检测" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" >
+        Title="ARVR检测模组" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" >
     <Window.Resources>
         <local:ConnectConverter x:Key="ConnectConverter"/>
         <local:OKNGConverter x:Key="OKNGConverter"/>
@@ -140,16 +140,6 @@
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn Header="TestType" Width="100">
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
-                                                <TextBlock Text="{Binding TestType}" />
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-    
-                                    
-
                                     <GridViewColumn Header="Time" Width="150">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
@@ -222,15 +212,6 @@
                     </Grid.RowDefinitions>
                     <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Margin="5,0,5,5">
                         <hc:StepBar x:Name="stepBar" Grid.Row="0" StepIndex="{Binding StepIndex}" Margin="-5,3,0,2">
-                            <hc:StepBarItem Content="初始化"/>
-                            <hc:StepBarItem Content="W51"/>
-                            <hc:StepBarItem Content="W255"/>
-                            <hc:StepBarItem Content="Black"/>
-                            <hc:StepBarItem Content="W25"/>
-                            <hc:StepBarItem Content="Chessboard"/>
-                            <hc:StepBarItem Content="MTFHV"/>
-                            <hc:StepBarItem Content="Distortion"/>
-                            <hc:StepBarItem Content="OpticCenter"/>
                         </hc:StepBar>
                     </Border>
                     <RichTextBox x:Name="outputText"  Grid.Row="1"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0,5,0">

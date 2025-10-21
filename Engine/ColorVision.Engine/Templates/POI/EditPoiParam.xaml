@@ -481,9 +481,9 @@
                         </DataTemplate>
                         <DataTemplate x:Key="DrawingVisualCircleWordTemplate" DataType="{x:Type dr:DVCircleText}" >
                             <StackPanel  Orientation="Horizontal">
-                                <TextBox Text="{Binding Attribute.Text}"  HorizontalContentAlignment="Center" Width="100"  Margin="5,0"/>
                                 <TextBox Text="{Binding Attribute.Center,StringFormat={}{0:F0}}" Width="100"  Margin="5,0"/>
                                 <TextBox Text="{Binding Attribute.Radius,StringFormat={}{0:F1},Converter={StaticResource RoundToNearestHalfConverter}}" Width="60"  Margin="5,0"/>
+                                <TextBox Text="{Binding Attribute.Text}"  HorizontalContentAlignment="Center" Width="200"  Margin="5,0"/>
                             </StackPanel>
                         </DataTemplate>
                         <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type dr:DVRectangle}">
@@ -498,8 +498,8 @@
                                         <MenuItem Header="{x:Static properties:Resources.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
                                     </ContextMenu>
                                 </StackPanel.ContextMenu>
-                                <TextBox Text="{Binding Attribute.Text}"  HorizontalContentAlignment="Center"  Width="100"  Margin="5,0"/>
                                 <TextBox Text="{Binding Attribute.Rect,StringFormat={}{0:F0}}" Width="200" Margin="5,0"/>
+                                <TextBox Text="{Binding Attribute.Text}"  HorizontalContentAlignment="Center"  Width="200"  Margin="5,0"/>
                             </StackPanel>
                         </DataTemplate>
                     </ListView.Resources>
