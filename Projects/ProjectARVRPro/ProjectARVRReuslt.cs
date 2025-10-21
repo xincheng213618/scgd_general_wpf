@@ -56,54 +56,6 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro
 {
-    public enum ARVR1TestType
-    {
-        None = 0,
-        W51,
-        /// <summary>
-        /// 白画面绿图
-        /// </summary>
-        White,
-        /// <summary>
-        /// 黑画面25
-        /// </summary>
-        Black,
-        /// <summary>
-        /// 25的图像
-        /// </summary>
-        W25,
-        /// <summary>
-        /// 棋盘格
-        /// </summary>
-        Chessboard,
-        /// <summary>
-        /// MTFHV 
-        /// </summary>
-        MTFHV,
-        /// <summary>
-        /// 畸变，9点
-        /// </summary>
-        Distortion,
-        /// <summary>
-        /// 光轴偏角
-        /// </summary>
-        OpticCenter,
-        Ghost,
-        /// <summary>
-        /// 屏幕定位
-        /// </summary>
-        DotMatrix,
-        /// <summary>
-        /// 白画面瑕疵检测
-        /// </summary>
-        WscreeenDefectDetection,
-        /// <summary>
-        /// 黑画面瑕疵检测
-        /// </summary>
-        BKscreeenDefectDetection,
-    }
-
-
 
     [SugarTable("ARVRReuslt")]
     public class ProjectARVRReuslt : ViewEntity 
