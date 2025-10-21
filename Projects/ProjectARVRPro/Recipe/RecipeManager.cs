@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using log4net;
 using Newtonsoft.Json;
 using System.IO;
 using System.Windows;
@@ -7,16 +8,18 @@ namespace ProjectARVRPro
 {
     public class RecipeManager
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(RecipeManager));
+
         private static RecipeManager _instance;
         private static readonly object _locker = new();
         public static RecipeManager GetInstance() { lock (_locker) { _instance ??= new RecipeManager(); return _instance; } }
         public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
 
         public static string RecipeFixPath { get; set; } = DirectoryPath + "ARVRRecipe.json";
-        public Dictionary<string, RecipeConfig> RecipeConfigs { get; set; }
+
         public RelayCommand EditCommand { get; set; }
 
-        public RecipeConfig RecipeConfig { get; set; } = new RecipeConfig();
+        public RecipeConfig RecipeConfig { get; set; }
 
 
         public RecipeManager()
@@ -26,16 +29,30 @@ namespace ProjectARVRPro
             if (!Directory.Exists(DirectoryPath))
                 Directory.CreateDirectory(DirectoryPath);
 
-            if (LoadFromFile(RecipeFixPath) is Dictionary<string, RecipeConfig> fix)
+            if (LoadFromFile(RecipeFixPath) is RecipeConfig fix)
             {
-                RecipeConfigs = fix;
+                RecipeConfig = fix;
+                if (RecipeConfig.Configs.Count == 0)
+                {
+                    typeof(RecipeConfig).Assembly.GetTypes().Where(t => typeof(IRecipeConfig).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract).ToList().ForEach(t => {
+                        if (Activator.CreateInstance(t) is IRecipeConfig instance)
+                        {
+                            RecipeConfig.Configs[t] = instance;
+                        }
+                    });
+                }
             }
             else
             {
-                RecipeConfigs = new Dictionary<string, RecipeConfig>();
+                RecipeConfig = new RecipeConfig();
+                typeof(RecipeConfig).Assembly.GetTypes().Where(t => typeof(IRecipeConfig).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract).ToList().ForEach(t => {
+                    if (Activator.CreateInstance(t) is IRecipeConfig instance)
+                    {
+                        RecipeConfig.Configs[t] = instance;
+                    }
+                });
                 Save();
             }
-
         }
         public static void Edit()
         {
@@ -49,26 +66,37 @@ namespace ProjectARVRPro
                 if (!Directory.Exists(DirectoryPath))
                     Directory.CreateDirectory(DirectoryPath);
 
-                string json = JsonConvert.SerializeObject(RecipeConfigs, Formatting.Indented);
+                JsonSerializerSettings settings = new JsonSerializerSettings
+                {
+                    TypeNameHandling = TypeNameHandling.All,
+                    Formatting = Formatting.Indented
+                };
+                string json = JsonConvert.SerializeObject(RecipeConfig, settings);
                 File.WriteAllText(RecipeFixPath, json);
             }
-            catch
+            catch (Exception ex)
             {
-                // Optionally log or rethrow
+                log.Error(ex);
             }
         }
 
-        public static Dictionary<string, RecipeConfig>? LoadFromFile(string filePath)
+        public static RecipeConfig? LoadFromFile(string filePath)
         {
             try
             {
                 if (!File.Exists(filePath)) return null;
                 string json = File.ReadAllText(filePath);
                 if (string.IsNullOrWhiteSpace(json)) return null;
-                return JsonConvert.DeserializeObject<Dictionary<string, RecipeConfig>>(json);
+
+                JsonSerializerSettings settings = new JsonSerializerSettings
+                {
+                    TypeNameHandling = TypeNameHandling.Auto
+                };
+                return JsonConvert.DeserializeObject<RecipeConfig>(json, settings);
             }
-            catch
+            catch (Exception ex)
             {
+                log.Error(ex);
                 return null;
             }
         }

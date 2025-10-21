@@ -178,18 +178,6 @@ namespace ProjectARVRPro
             flowEngine.AttachNodeEditor(STNodeEditorMain);
             flowControl = new FlowControl(MQTTControl.GetInstance(), flowEngine);
 
-            string Name = "Default";
-            if (RecipeManager.RecipeConfigs.TryGetValue(Name, out RecipeConfig recipeConfig))
-            {
-                RecipeManager.RecipeConfig = recipeConfig;
-            }
-            else
-            {
-                recipeConfig = new RecipeConfig();
-                RecipeManager.RecipeConfigs.TryAdd(Name, recipeConfig);
-                RecipeManager.RecipeConfig = recipeConfig;
-                RecipeManager.Save();
-            }
             timer = new Timer(TimeRun, null, 0, 100);
             timer.Change(Timeout.Infinite, 100); // 停止定时器
 

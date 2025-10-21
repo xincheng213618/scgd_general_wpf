@@ -14,16 +14,6 @@ namespace ProjectARVRPro.Fix
         {
             Configs = new Dictionary<Type, IFixConfig>();
 
-            typeof(FixConfig).Assembly.GetTypes()
-                .Where(t => typeof(IFixConfig).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract)
-                .ToList()
-                .ForEach(t =>
-                {
-                    if (Activator.CreateInstance(t) is IFixConfig instance)
-                    {
-                        Configs[t] = instance;
-                    }
-                });
         }
         public Dictionary<Type, IFixConfig> Configs { get; set; }
 

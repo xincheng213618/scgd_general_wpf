@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using log4net;
 using Newtonsoft.Json;
 using ProjectARVRPro.Fix;
 using System.IO;
@@ -8,6 +9,8 @@ namespace ProjectARVRPro
 {
     public class FixManager
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(FixManager));
+
         private static FixManager _instance;
         private static readonly object _locker = new();
         public static FixManager GetInstance() { lock (_locker) { _instance ??= new FixManager(); return _instance; } }
@@ -28,10 +31,25 @@ namespace ProjectARVRPro
             if (LoadFromFile(FixFilePath) is FixConfig fix)
             {
                 FixConfig = fix;
+                if (FixConfig.Configs.Count == 0)
+                {
+                    typeof(FixConfig).Assembly.GetTypes().Where(t => typeof(IFixConfig).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract).ToList().ForEach(t => {
+                        if (Activator.CreateInstance(t) is IFixConfig instance)
+                        {
+                            FixConfig.Configs[t] = instance;
+                        }
+                    });
+                }
             }
             else
             {
                 FixConfig = new FixConfig();
+                typeof(FixConfig).Assembly.GetTypes().Where(t => typeof(IFixConfig).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract).ToList() .ForEach(t => {
+                    if (Activator.CreateInstance(t) is IFixConfig instance)
+                    {
+                        FixConfig.Configs[t] = instance;
+                    }
+                });
                 Save();
             }
 
@@ -47,13 +65,16 @@ namespace ProjectARVRPro
             {
                 if (!Directory.Exists(DirectoryPath))
                     Directory.CreateDirectory(DirectoryPath);
-
-                string json = JsonConvert.SerializeObject(FixConfig, Formatting.Indented);
+                JsonSerializerSettings settings = new JsonSerializerSettings
+                {
+                    TypeNameHandling = TypeNameHandling.Auto
+                };
+                string json = JsonConvert.SerializeObject(FixConfig, settings);
                 File.WriteAllText(FixFilePath, json);
             }
-            catch
+            catch (Exception ex)
             {
-                // Optionally log or rethrow
+                log.Error(ex);
             }
         }
 
@@ -64,10 +85,16 @@ namespace ProjectARVRPro
                 if (!File.Exists(filePath)) return null;
                 string json = File.ReadAllText(filePath);
                 if (string.IsNullOrWhiteSpace(json)) return null;
-                return JsonConvert.DeserializeObject<FixConfig>(json);
+
+                JsonSerializerSettings settings = new JsonSerializerSettings
+                {
+                    TypeNameHandling = TypeNameHandling.Auto
+                };
+                return JsonConvert.DeserializeObject<FixConfig>(json, settings);
             }
-            catch
+            catch(Exception ex)
             {
+                log.Error(ex);
                 return null;
             }
         }
