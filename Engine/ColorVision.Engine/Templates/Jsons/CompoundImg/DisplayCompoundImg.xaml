@@ -21,13 +21,13 @@
             </DockPanel>
             <DockPanel Margin="0,0,0,5">
                 <TextBlock Text="FilePath" Width="60" Margin="0,2"/>
-                <TextBox Text="{Binding FilePath}" Width="180" Margin="5,0" HorizontalAlignment="Left" Style="{StaticResource TextBox.Small}" IsReadOnly="True"/>
+                <TextBox Text="{Binding FilePath}" Width="180" Margin="5,0" HorizontalAlignment="Left" Style="{StaticResource TextBox.Small}"/>
                 <Button  Content="..." Command="{Binding SetFilePathCommand}"/>
             </DockPanel>
             <DockPanel Margin="0,0,0,5">
                 <TextBlock Text="FilePath1" Width="60" Margin="0,2"/>
-                <TextBox Text="{Binding FilePath1}" Width="180" Margin="5,0" HorizontalAlignment="Left" Style="{StaticResource TextBox.Small}" IsReadOnly="True"/>
-                <Button  Content="..." Command="{Binding SetFilePathCommand}"/>
+                <TextBox Text="{Binding FilePath1}" Width="180" Margin="5,0" HorizontalAlignment="Left" Style="{StaticResource TextBox.Small}"/>
+                <Button  Content="..." Command="{Binding SetFilePath1Command}"/>
             </DockPanel>
         </StackPanel>
     </Grid>

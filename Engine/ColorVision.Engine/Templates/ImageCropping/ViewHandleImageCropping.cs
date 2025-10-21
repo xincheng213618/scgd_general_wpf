@@ -17,7 +17,7 @@ namespace ColorVision.Engine.Templates.ImageCropping
 
         public override void SideSave(ViewResultAlg result, string selectedPath)
         {
-            var ViewResults = result.ViewResults.ToSpecificViewResults<ResultImageModel>();
+            var ViewResults = result.ViewResults.ToSpecificViewResults<AlgResultImageModel>();
 
             var csvBuilder = new StringBuilder();
             List<string> properties = new() { "Id", "file_name", "order_index" , "FileInfo" };
@@ -50,7 +50,7 @@ namespace ColorVision.Engine.Templates.ImageCropping
         {
             if (result.ViewResults == null)
             {
-                result.ViewResults = new ObservableCollection<IViewResult>(ResultImageDao.Instance.GetAllByPid(result.Id));
+                result.ViewResults = new ObservableCollection<IViewResult>(AlgResultImageDao.Instance.GetAllByPid(result.Id));
                 result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmImageCropping), ImageFilePath = result.FilePath })) });
             }
         }
