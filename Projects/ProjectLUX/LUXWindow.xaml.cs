@@ -118,10 +118,17 @@ namespace ProjectLUX
                 ProjectLUXConfig.Instance.StepIndex = 1;
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains(templatename)).Value;
                 if (ProjectLUXConfig.Instance.LUXTestOpen)
+                {
                     RunTemplate();
+                }
+                else
+                {
+                    SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                }
             });
         }
 
+        public string ReturnCode { get; set; }
 
         public STNodeEditor STNodeEditorMain { get; set; }
         private FlowEngineControl flowEngine;
@@ -348,6 +355,8 @@ namespace ProjectLUX
             CurrentFlowResult.RunTime = stopwatch.ElapsedMilliseconds;
             logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
 
+            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+
             if (FlowControlData.EventName == "Completed")
             {
                 CurrentFlowResult.Msg = "Completed";
@@ -386,22 +395,6 @@ namespace ProjectLUX
                     });
                     return;
                 }
-                else
-                {
-                    ObjectiveTestResult.TotalResult = false;
-                    var response = new SocketResponse
-                    {
-                        Version = "1.0",
-                        MsgID = "",
-                        EventName = "ProjectLUXResult",
-                        Code = -2,
-                        Msg = "ARVR Test OverTime",
-                        Data = ObjectiveTestResult
-                    };
-                    string respString = JsonConvert.SerializeObject(response);
-                    log.Info(respString);
-                    SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
-                }
                 TryCount = 0;
             }
             else
@@ -428,18 +421,6 @@ namespace ProjectLUX
                 ViewResultManager.Save(CurrentFlowResult);
 
                 TryCount = 0;
-
-                if (ProjectConfig.AllowTestFailures)
-                {
-                    //如果允许失败，则切换PG，并且提前设置流程,执行结束时直接发送结束
-                }
-                else
-                {
-                    if (SocketManager.GetInstance().TcpClients.Count > 0 && SocketControl.Current.Stream != null)
-                    {
-                        ObjectiveTestResult.TotalResult = false;
-                    }
-                }
             }
         }
 
@@ -1421,7 +1402,6 @@ namespace ProjectLUX
             }
 
             ViewResultManager.Save(result);
-
 
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
         }

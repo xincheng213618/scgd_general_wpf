@@ -21,6 +21,7 @@ namespace ProjectLUX.Services
 
         public string Handle(NetworkStream stream, string request)
         {
+            SocketControl.Current.Stream = stream;
             var list = request.split(",");
 
             if (list.Length == 2)
@@ -29,10 +30,20 @@ namespace ProjectLUX.Services
                 string sn = list[1];
                 sn = sn.TrimEnd(';');
 
+                ProjectLUXConfig.Instance.SN = sn;
+
                 if (code.startsWith("T00"))
                 {
                     // 取 code 的最后两位（如果 code 长度足够）
                     string lastTwo = code.Length >= 2 ? code.Substring(code.Length - 2, 2) : code;
+
+                    // 拼接到 H030 上
+                    string h030x = SummaryManager.GetInstance().Summary.MachineNO + lastTwo;
+
+                    List<string> strings = new List<string>();
+                    strings.Add(h030x);
+                    strings.Add(sn);
+                    strings.Add("00");
 
                     if (!Directory.Exists(ProjectLUXConfig.Instance.ResultSavePath))
                     {
@@ -48,13 +59,14 @@ namespace ProjectLUX.Services
                         else if (lastTwo == "01")
                         {
                             log.Info("VID虚像距执行");
-                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"{sn}.csv");
+                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"B_{sn}.csv");
                             File.WriteAllText(path, request);
                         }
                     }
                     else
                     {
 
+                        ProjectWindowInstance.WindowInstance.ReturnCode = string.Join(",", strings) + ";";
                         if (lastTwo == "00")
                         {
                             log.Info("拍图窗口握手");
@@ -63,67 +75,71 @@ namespace ProjectLUX.Services
                         {
                             log.Info("测试图例1 White Fov ");
                             ProjectWindowInstance.WindowInstance.RunTemplate(0, "White255_FOV_VR");
-                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"{sn}.csv");
+                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
                             File.AppendAllText(path, request);
+                            return null;
                         }
                         else if (lastTwo == "03")
                         {
                             log.Info("测试图例2 White Corrdinate");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(1, "White255_Test");
-                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"{sn}.csv");
+                            ProjectWindowInstance.WindowInstance.RunTemplate(1, "Black255_VR_Test");
+                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
                             File.AppendAllText(path, request);
+                            return null;
                         }
                         else if (lastTwo == "04")
                         {
                             log.Info("测试图例3 Red");
                             ProjectWindowInstance.WindowInstance.RunTemplate(2, "Red255_VR_Test");
-                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"{sn}.csv");
+                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
                             File.AppendAllText(path, request);
+                            return null;
                         }
                         else if (lastTwo == "05")
                         {
                             log.Info("测试图例4 Green");
                             ProjectWindowInstance.WindowInstance.RunTemplate(3, "Green255_VR_Test");
-                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"{sn}.csv");
+                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
                             File.AppendAllText(path, request);
+                            return null;
                         }
                         else if (lastTwo == "06")
                         {
                             log.Info("测试图例5 Blue");
                             ProjectWindowInstance.WindowInstance.RunTemplate(4, "Blue255_VR_Test");
-                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"{sn}.csv");
+                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
                             File.AppendAllText(path, request);
+                            return null;
                         }
                         else if (lastTwo == "07")
                         {
                             log.Info("测试图例6 Chessboard");
                             ProjectWindowInstance.WindowInstance.RunTemplate(5, "Chessboard7*7_VR_Test");
-                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"{sn}.csv");
+                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
                             File.AppendAllText(path, request);
+                            return null;
                         }
                         else if (lastTwo == "08")
                         {
                             log.Info("测试图例7 MTF-4pixel-o.6f");
                             ProjectWindowInstance.WindowInstance.RunTemplate(6, "MTF_HV_VR_Test");
 
-                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"{sn}.csv");
+                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
                             File.AppendAllText(path, request);
+                            return null;
                         }
                         else if (lastTwo == "09")
                         {
                             log.Info("测试图例8 Distortion");
                             ProjectWindowInstance.WindowInstance.RunTemplate(7, "Distortion_VR_Test");
-                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"{sn}.csv");
+                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
                             File.AppendAllText(path, request);
+                            return null;
                         }
                     }
-                        // 拼接到 H030 上
-                    string h030x = SummaryManager.GetInstance().Summary.MachineNO + lastTwo;
 
-                    List<string> strings = new List<string>();
-                    strings.Add(h030x);
-                    strings.Add(sn);
-                    strings.Add("00");
+
+
 
                     return string.Join(",", strings) + ";";
                 }

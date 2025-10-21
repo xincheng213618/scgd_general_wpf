@@ -10,7 +10,7 @@
         xmlns:LogImp="clr-namespace:ColorVision.UI.LogImp;assembly=ColorVision.UI"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ProjectLUXConfig}"
-        Title="ARVR检测 KTD" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" >
+        Title="ARVR检测 LUX" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" >
     <Window.Resources>
         <local:ConnectConverter x:Key="ConnectConverter"/>
         <local:OKNGConverter x:Key="OKNGConverter"/>
