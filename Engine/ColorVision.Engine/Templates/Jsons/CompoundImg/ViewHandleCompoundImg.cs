@@ -91,12 +91,7 @@ namespace ColorVision.Engine.Templates.Jsons.CompoundImg
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleMTF2));
 
-        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.MTF};
-        public override bool CanHandle1(ViewResultAlg result)
-        {
-            if (result.Version != "2.0") return false;
-            return base.CanHandle1(result);
-        }
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.CompoundImg };
 
 
         public override void SideSave(ViewResultAlg result, string selectedPath)
@@ -172,45 +167,8 @@ namespace ColorVision.Engine.Templates.Jsons.CompoundImg
 
                     result.ContextMenu.Items.Add(new MenuItem() { Header = "选中2.0结果集", Command = SelectrelayCommand });
                     result.ContextMenu.Items.Add(new MenuItem() { Header = "打开2.0结果集", Command = OpenrelayCommand });
-
-
-
-                    void ExportToPoi()
-                    {
-                        int old1 = TemplatePoi.Params.Count;
-                        TemplatePoi templatePoi1 = new TemplatePoi();
-                        templatePoi1.ImportTemp = new PoiParam() { Name = templatePoi1.NewCreateFileName("poi") };
-                        templatePoi1.ImportTemp.Height = 400;
-                        templatePoi1.ImportTemp.Width = 300;
-                        templatePoi1.ImportTemp.PoiConfig.BackgroundFilePath = result.FilePath;
-                        foreach (var item in mtfresult.MTFResult.result)
-                        {
-                            PoiPoint poiPoint = new PoiPoint()
-                            {
-                                Name = item.name,
-                                PixX = item.x,
-                                PixY = item.y,
-                                PixHeight =item.w,
-                                PixWidth = item.h,
-                                PointType = GraphicTypes.Rect,
-                                Id = item.id
-                            };
-                            templatePoi1.ImportTemp.PoiPoints.Add(poiPoint);
-                        }
-
-
-                        templatePoi1.OpenCreate();
-                        int next1 = TemplatePoi.Params.Count;
-                        if (next1 == old1 + 1)
-                        {
-                            new EditPoiParam(TemplatePoi.Params[next1 - 1].Value).ShowDialog();
-                        }
-                    }
-                    RelayCommand ExportToPoiCommand = new RelayCommand(a => ExportToPoi());
-                    result.ContextMenu.Items.Add(new MenuItem() { Header = "创建到POI", Command = ExportToPoiCommand });
                 }
-
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmMTF2), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmCompoundImg), ImageFilePath = result.FilePath })) });
             }
         }
 
@@ -219,51 +177,6 @@ namespace ColorVision.Engine.Templates.Jsons.CompoundImg
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
 
-            if (result.ViewResults.Count == 1)
-            {
-                if (result.ViewResults[0] is MTFDetailViewReslut mTFDetailViewReslut)
-                {
-                    int id = 0;
-                    if (mTFDetailViewReslut.MTFResult.result.Count != 0)
-                    {
-                        foreach (var item in mTFDetailViewReslut.MTFResult.result)
-                        {
-                            id++;
-                            DVRectangleText Rectangle = new();
-                            Rectangle.Attribute.Rect = new Rect(item.x,item.y,item.w,item.h);
-                            Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                            Rectangle.Attribute.Id = id;
-                            Rectangle.Attribute.Text = item.name;
-                            Rectangle.Attribute.Msg = item.mtfValue.ToString();
-                            Rectangle.Render();
-                            view.ImageView.AddVisual(Rectangle);
-                        }
-                    }
-
-                    List<string> header = new() { "name", "x","y","w","h","mtfvalue" };
-                    List<string> bdHeader = new() { "name", "x", "y", "w", "h", "mtfValue" };
-
-                    if (view.ListView.View is GridView gridView)
-                    {
-                        view.LeftGridViewColumnVisibilitys.Clear();
-                        gridView.Columns.Clear();
-                        for (int i = 0; i < header.Count; i++)
-                            gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                        view.ListView.ItemsSource = mTFDetailViewReslut?.MTFResult?.result;
-                    }
-                }
-            }
-            else
-            {
-
-            }
-
-
-
         }
-
-
-
     }
 }

@@ -2,10 +2,14 @@
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
+using ColorVision.UI;
+using LiveChartsCore.SkiaSharpView.Painting.ImageFilters;
 using MQTTMessageLib;
 using MQTTMessageLib.FileServer;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -13,9 +17,18 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Templates.Jsons.CompoundImg
 {
 
-    [DisplayAlgorithm(54, "图像拼接", "Json")]
+    public class AlgorithmCompoundImgConfig:IConfig
+    {
+        public string FilePath { get; set; }
+
+        public string FilePath1 { get; set; }
+    }
+
+
+    [DisplayAlgorithm(46, "图像拼接", "Json")]
     public class AlgorithmCompoundImg : DisplayAlgorithmBase
     {
+        public AlgorithmCompoundImgConfig Config { get; set; } = ConfigService.Instance.GetRequiredService<AlgorithmCompoundImgConfig>();
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -26,7 +39,9 @@ namespace ColorVision.Engine.Templates.Jsons.CompoundImg
         {
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
-            OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
+
+            SetFilePathCommand = new RelayCommand(a => SetFilePath());
+            SetFilePath1Command = new RelayCommand(a => SetFilePath1());
         }
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
@@ -36,14 +51,36 @@ namespace ColorVision.Engine.Templates.Jsons.CompoundImg
             new TemplateEditorWindow(new TemplateCompoundImg(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
-        public RelayCommand OpenTemplatePoiCommand { get; set; }
-        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplatePoiSelectedIndex;
+        public RelayCommand SetFilePathCommand { get; set; }
+        public string FilePath { get => Config.FilePath; set { Config.FilePath = value; OnPropertyChanged(); } }
 
-        public void OpenTemplatePoi()
+        public void SetFilePath()
         {
-            new TemplateEditorWindow(new TemplatePoi(), _TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;*.png;*.tif;*.cvcie;*.cvraw|All files (*.*)|*.*";
+            openFileDialog.RestoreDirectory = true;
+            openFileDialog.FilterIndex = 1;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                FilePath = openFileDialog.FileName;
+            }
         }
+        public RelayCommand SetFilePath1Command { get; set; }
+
+        public string FilePath1 { get => Config.FilePath1; set { Config.FilePath1 = value; OnPropertyChanged(); } }
+
+        public void SetFilePath1()
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;*.png;*.tif;*.cvcie;*.cvraw|All files (*.*)|*.*";
+            openFileDialog.RestoreDirectory = true;
+            openFileDialog.FilterIndex = 1;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                FilePath1 = openFileDialog.FileName;
+            }
+        }
+
 
 
 
@@ -54,23 +91,48 @@ namespace ColorVision.Engine.Templates.Jsons.CompoundImg
         }
         public UserControl UserControl { get; set; }
 
+        private string UpdateFilePath(string path1,string path2)
+        {
+            
+            string full1 = Path.GetFullPath(path1);
+            string full2 = Path.GetFullPath(path2);
 
-        public MsgRecord SendCommand(ParamBase param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
+            string dir1 = Path.GetDirectoryName(full1) ?? string.Empty;
+            string dir2 = Path.GetDirectoryName(full2) ?? string.Empty;
+
+            // 归一化（去掉末尾分隔符）并做不区分大小写比较（Windows 上通常不区分大小写）
+            dir1 = dir1.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            dir2 = dir2.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+            if (string.Equals(dir1, dir2, StringComparison.OrdinalIgnoreCase))
+            {
+                // 同一文件夹：保留第一个为完整（或相对）路径组合，第二个只保留文件名
+                // 这里使用 dir + 文件名1 + ";" + 文件名2 的形式
+                string folderPart = dir1.Length > 0 ? dir1 : string.Empty;
+                string file1 = Path.GetFileName(full1);
+                string file2 = Path.GetFileName(full2);
+
+                if (folderPart.Length > 0)
+                    return Path.Combine(folderPart, file1) + ";" + file2;
+                else
+                    return file1 + ";" + file2;
+            }
+            else
+            {
+                // 不同文件夹：两个都用完整路径，用分号分隔
+                return full1 + ";" + full2;
+            }
+        }     
+
+
+        public MsgRecord SendCommand(ParamBase param)
         {
             string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
-            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
-                fileName = fullpath;
+            sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
+            string fileName = UpdateFilePath(FilePath,FilePath1);
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
-
-            if(TemplatePoiSelectedIndex > -1)
-            {
-                var poi_pm = TemplatePoi.Params[TemplatePoiSelectedIndex].Value;
-                Params.Add("POITemplateParam", new CVTemplateParam() { ID = poi_pm.Id, Name = poi_pm.Name });
-            }
 
             MsgSend msg = new()
             {

@@ -10,8 +10,6 @@ namespace ColorVision.Engine.Templates.Jsons.CompoundImg
     {
         private static ILog log = LogManager.GetLogger(nameof(TJCompoundImgParam));
 
-
-
         public TJCompoundImgParam() : base()
         {
         }
@@ -50,6 +48,7 @@ namespace ColorVision.Engine.Templates.Jsons.CompoundImg
             EditTemplateJson = new EditTemplateJson(Description);
             return EditTemplateJson;
         }
+
         public string Description { get; set; } = "{\r\n  \"caclType\": 0,\r\n  \"debugCfg\": {\r\n    \"Debug\": false,\r\n    \"debugPath\": \"Result\\\\\",\r\n    \"debugImgResize\": 2\r\n  },\r\n  \"overlapPart\": 0.2\r\n}";
 
         public override UserControl CreateUserControl() => new EditTemplateJson(Description);

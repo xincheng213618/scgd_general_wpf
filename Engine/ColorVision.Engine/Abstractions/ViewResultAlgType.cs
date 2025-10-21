@@ -61,6 +61,7 @@ namespace ColorVision.Engine
         ARVR_AAFindPoints = 61,
         PoiAnalysis = 62,
         FindCross = 63,
+        CompoundImg =65,
         Math_DataConvert = 70,
         BlackMura_Calc = 80
     }
