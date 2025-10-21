@@ -11,6 +11,8 @@ namespace ProjectARVRPro.FlowProcess
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
+            OpticCenterRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<OpticCenterRecipeConfig>();
+
             try
             {
                 log?.Info("处理 OpticCenter 流程结果");
@@ -34,9 +36,9 @@ namespace ProjectARVRPro.FlowProcess
                                 find.FindCrossResult.result[0].tilt.tilt_y *= ctx.ObjectiveTestResultFix.OptCenterYTilt;
                                 find.FindCrossResult.result[0].rotationAngle *= ctx.ObjectiveTestResultFix.OptCenterRotation;
                                 ctx.Result.ViewResultOpticCenter.FindCrossDetailViewReslut = find;
-                                ctx.ObjectiveTestResult.OptCenterXTilt = Build("OptCenterXTilt", find.FindCrossResult.result[0].tilt.tilt_x, ctx.RecipeConfig.OptCenterXTiltMin, ctx.RecipeConfig.OptCenterXTiltMax, "F4");
-                                ctx.ObjectiveTestResult.OptCenterYTilt = Build("OptCenterYTilt", find.FindCrossResult.result[0].tilt.tilt_y, ctx.RecipeConfig.OptCenterYTiltMin, ctx.RecipeConfig.OptCenterYTiltMax, "F4");
-                                ctx.ObjectiveTestResult.OptCenterRotation = Build("OptCenterRotation", find.FindCrossResult.result[0].rotationAngle, ctx.RecipeConfig.OptCenterRotationMin, ctx.RecipeConfig.OptCenterRotationMax, "F4");
+                                ctx.ObjectiveTestResult.OptCenterXTilt = Build("OptCenterXTilt", find.FindCrossResult.result[0].tilt.tilt_x, recipeConfig.OptCenterXTiltMin, recipeConfig.OptCenterXTiltMax, "F4");
+                                ctx.ObjectiveTestResult.OptCenterYTilt = Build("OptCenterYTilt", find.FindCrossResult.result[0].tilt.tilt_y, recipeConfig.OptCenterYTiltMin, recipeConfig.OptCenterYTiltMax, "F4");
+                                ctx.ObjectiveTestResult.OptCenterRotation = Build("OptCenterRotation", find.FindCrossResult.result[0].rotationAngle, recipeConfig.OptCenterRotationMin, recipeConfig.OptCenterRotationMax, "F4");
                                 ctx.Result.ViewResultOpticCenter.OptCenterXTilt = ctx.ObjectiveTestResult.OptCenterXTilt;
                                 ctx.Result.ViewResultOpticCenter.OptCenterYTilt = ctx.ObjectiveTestResult.OptCenterYTilt;
                                 ctx.Result.ViewResultOpticCenter.OptCenterRotation = ctx.ObjectiveTestResult.OptCenterRotation;
@@ -50,9 +52,9 @@ namespace ProjectARVRPro.FlowProcess
                                 find.FindCrossResult.result[0].tilt.tilt_y *= ctx.ObjectiveTestResultFix.ImageCenterYTilt;
                                 find.FindCrossResult.result[0].rotationAngle *= ctx.ObjectiveTestResultFix.ImageCenterRotation;
                                 ctx.Result.ViewResultOpticCenter.FindCrossDetailViewReslut1 = find;
-                                ctx.ObjectiveTestResult.ImageCenterXTilt = Build("ImageCenterXTilt", find.FindCrossResult.result[0].tilt.tilt_x, ctx.RecipeConfig.ImageCenterXTiltMin, ctx.RecipeConfig.ImageCenterXTiltMax, "F4");
-                                ctx.ObjectiveTestResult.ImageCenterYTilt = Build("ImageCenterYTilt", find.FindCrossResult.result[0].tilt.tilt_y, ctx.RecipeConfig.ImageCenterYTiltMin, ctx.RecipeConfig.ImageCenterYTiltMax, "F4");
-                                ctx.ObjectiveTestResult.ImageCenterRotation = Build("ImageCenterRotation", find.FindCrossResult.result[0].rotationAngle, ctx.RecipeConfig.ImageCenterRotationMin, ctx.RecipeConfig.ImageCenterRotationMax, "F4");
+                                ctx.ObjectiveTestResult.ImageCenterXTilt = Build("ImageCenterXTilt", find.FindCrossResult.result[0].tilt.tilt_x, recipeConfig.ImageCenterXTiltMin, recipeConfig.ImageCenterXTiltMax, "F4");
+                                ctx.ObjectiveTestResult.ImageCenterYTilt = Build("ImageCenterYTilt", find.FindCrossResult.result[0].tilt.tilt_y, recipeConfig.ImageCenterYTiltMin, recipeConfig.ImageCenterYTiltMax, "F4");
+                                ctx.ObjectiveTestResult.ImageCenterRotation = Build("ImageCenterRotation", find.FindCrossResult.result[0].rotationAngle, recipeConfig.ImageCenterRotationMin, recipeConfig.ImageCenterRotationMax, "F4");
                                 ctx.Result.ViewResultOpticCenter.ImageCenterXTilt = ctx.ObjectiveTestResult.ImageCenterXTilt;
                                 ctx.Result.ViewResultOpticCenter.ImageCenterYTilt = ctx.ObjectiveTestResult.ImageCenterYTilt;
                                 ctx.Result.ViewResultOpticCenter.ImageCenterRotation = ctx.ObjectiveTestResult.ImageCenterRotation;

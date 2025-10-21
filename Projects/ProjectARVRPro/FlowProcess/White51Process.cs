@@ -22,7 +22,7 @@ namespace ProjectARVRPro.FlowProcess
             if (ctx == null || ctx.Batch == null || ctx.Result == null)
                 return false;
             var log = ctx.Logger;
-
+            W51RecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<W51RecipeConfig>();
             try
             {
                 log?.Info("处理 White51 流程结果");
@@ -57,8 +57,8 @@ namespace ProjectARVRPro.FlowProcess
                             ctx.ObjectiveTestResult.W51DiagonalFieldOfViewAngle = new ObjectiveTestItem()
                             {
                                 Name = "DiagonalFieldOfViewAngle",
-                                LowLimit = ctx.RecipeConfig.DiagonalFieldOfViewAngleMin,
-                                UpLimit = ctx.RecipeConfig.DiagonalFieldOfViewAngleMax,
+                                LowLimit = recipeConfig.DiagonalFieldOfViewAngleMin,
+                                UpLimit = recipeConfig.DiagonalFieldOfViewAngleMax,
                                 Value = view1.Result.result.D_Fov,
                                 TestValue = view1.Result.result.D_Fov.ToString("F3")
                             };
@@ -66,16 +66,16 @@ namespace ProjectARVRPro.FlowProcess
                             ctx.ObjectiveTestResult.W51HorizontalFieldOfViewAngle = new ObjectiveTestItem()
                             {
                                 Name = "HorizontalFieldOfViewAngle",
-                                LowLimit = ctx.RecipeConfig.HorizontalFieldOfViewAngleMin,
-                                UpLimit = ctx.RecipeConfig.HorizontalFieldOfViewAngleMax,
+                                LowLimit = recipeConfig.HorizontalFieldOfViewAngleMin,
+                                UpLimit = recipeConfig.HorizontalFieldOfViewAngleMax,
                                 Value = view1.Result.result.ClolorVisionH_Fov,
                                 TestValue = view1.Result.result.ClolorVisionH_Fov.ToString("F3")
                             };
                             ctx.ObjectiveTestResult.W51VerticalFieldOfViewAngle = new ObjectiveTestItem()
                             {
                                 Name = "VerticalFieldOfViewAngle",
-                                LowLimit = ctx.RecipeConfig.VerticalFieldOfViewAngleMin,
-                                UpLimit = ctx.RecipeConfig.VerticalFieldOfViewAngleMax,
+                                LowLimit = recipeConfig.VerticalFieldOfViewAngleMin,
+                                UpLimit = recipeConfig.VerticalFieldOfViewAngleMax,
                                 Value = view1.Result.result.ClolorVisionV_Fov,
                                 TestValue = view1.Result.result.ClolorVisionV_Fov.ToString("F3")
                             };

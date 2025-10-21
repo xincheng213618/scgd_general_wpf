@@ -1,8 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using System.IO;
+using System.Reflection;
 using System.Windows;
+using System.Windows.Input;
 
 namespace ProjectARVRPro
 {
@@ -14,11 +17,12 @@ namespace ProjectARVRPro
         public static RecipeManager GetInstance() { lock (_locker) { _instance ??= new RecipeManager(); return _instance; } }
         public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
 
-        public static string RecipeFixPath { get; set; } = DirectoryPath + "ProjectARVRLiteRecipe.json";
-        public Dictionary<string, ARVRRecipeConfig> RecipeConfigs { get; set; }
+        public static string RecipeFixPath { get; set; } = DirectoryPath + "ARVRRecipe.json";
+        public Dictionary<string, RecipeConfig> RecipeConfigs { get; set; }
         public RelayCommand EditCommand { get; set; }
 
-        public ARVRRecipeConfig RecipeConfig { get; set; } = new ARVRRecipeConfig();
+        public RecipeConfig RecipeConfig { get; set; } = new RecipeConfig();
+
 
         public RecipeManager()
         {
@@ -27,13 +31,13 @@ namespace ProjectARVRPro
             if (!Directory.Exists(DirectoryPath))
                 Directory.CreateDirectory(DirectoryPath);
 
-            if (LoadFromFile(RecipeFixPath) is Dictionary<string, ARVRRecipeConfig> fix)
+            if (LoadFromFile(RecipeFixPath) is Dictionary<string, RecipeConfig> fix)
             {
                 RecipeConfigs = fix;
             }
             else
             {
-                RecipeConfigs = new Dictionary<string, ARVRRecipeConfig>();
+                RecipeConfigs = new Dictionary<string, RecipeConfig>();
                 Save();
             }
 
@@ -59,14 +63,14 @@ namespace ProjectARVRPro
             }
         }
 
-        public static Dictionary<string, ARVRRecipeConfig>? LoadFromFile(string filePath)
+        public static Dictionary<string, RecipeConfig>? LoadFromFile(string filePath)
         {
             try
             {
                 if (!File.Exists(filePath)) return null;
                 string json = File.ReadAllText(filePath);
                 if (string.IsNullOrWhiteSpace(json)) return null;
-                return JsonConvert.DeserializeObject<Dictionary<string, ARVRRecipeConfig>>(json);
+                return JsonConvert.DeserializeObject<Dictionary<string, RecipeConfig>>(json);
             }
             catch
             {
@@ -89,7 +93,11 @@ namespace ProjectARVRPro
         private void Window_Initialized(object sender, EventArgs e)
         {
             RecipeManager = RecipeManager.GetInstance();
-            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(RecipeManager.RecipeConfig));
+
+            foreach (var item in RecipeManager.RecipeConfig.Configs)
+            {
+                EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(item.Value));
+            }
         }
 
         private void Save_Click(object sender, RoutedEventArgs e)
@@ -100,8 +108,18 @@ namespace ProjectARVRPro
 
         private void Reset_Click(object sender, RoutedEventArgs e)
         {
-            var ObjectiveTestResultFix  = new ARVRRecipeConfig();
-            RecipeManager.RecipeConfig.CopyFrom(ObjectiveTestResultFix);
+            foreach (var item in RecipeManager.RecipeConfig.Configs)
+            {
+                object source = Activator.CreateInstance(item.Key);
+
+                var properties = item.Key.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                     .Where(p => p.CanRead && p.CanWrite);
+                foreach (var property in properties)
+                {
+                    var propertyValue = property.GetValue(source);
+                    property.SetValue(item.Value, propertyValue);
+                }
+            }
             RecipeManager.Save();
         }
 

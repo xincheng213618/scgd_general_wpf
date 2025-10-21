@@ -160,7 +160,7 @@ namespace ProjectARVRPro
         Stopwatch stopwatch = new Stopwatch();
 
         public static RecipeManager RecipeManager => RecipeManager.GetInstance();
-        public static ARVRRecipeConfig recipeConfig => RecipeManager.RecipeConfig;
+        public static RecipeConfig recipeConfig => RecipeManager.RecipeConfig;
 
 
         private LogOutput? logOutput;
@@ -177,13 +177,13 @@ namespace ProjectARVRPro
             flowControl = new FlowControl(MQTTControl.GetInstance(), flowEngine);
 
             string Name = "Default";
-            if (RecipeManager.RecipeConfigs.TryGetValue(Name, out ARVRRecipeConfig recipeConfig))
+            if (RecipeManager.RecipeConfigs.TryGetValue(Name, out RecipeConfig recipeConfig))
             {
                 RecipeManager.RecipeConfig = recipeConfig;
             }
             else
             {
-                recipeConfig = new ARVRRecipeConfig();
+                recipeConfig = new RecipeConfig();
                 RecipeManager.RecipeConfigs.TryAdd(Name, recipeConfig);
                 RecipeManager.RecipeConfig = recipeConfig;
                 RecipeManager.Save();

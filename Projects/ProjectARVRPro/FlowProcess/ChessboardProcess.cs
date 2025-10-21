@@ -19,6 +19,8 @@ namespace ProjectARVRPro.FlowProcess
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
+            ChessboardRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<ChessboardRecipeConfig>();
+
             try
             {
                 log?.Info("处理 Chessboard 流程结果");
@@ -52,8 +54,8 @@ namespace ProjectARVRPro.FlowProcess
                             var contrast = new ObjectiveTestItem
                             {
                                 Name = "Chessboard_Contrast",
-                                LowLimit = ctx.RecipeConfig.ChessboardContrastMin,
-                                UpLimit = ctx.RecipeConfig.ChessboardContrastMax,
+                                LowLimit = recipeConfig.ChessboardContrastMin,
+                                UpLimit = recipeConfig.ChessboardContrastMax,
                                 Value = view.PoiAnalysisResult.result.Value,
                                 TestValue = view.PoiAnalysisResult.result.Value.ToString("F3")
                             };

@@ -157,6 +157,9 @@ namespace ProjectARVRPro
     /// </summary>
     public class ObjectiveTestResult:ViewModelBase
     {
+
+        public Dictionary<string, ObjectiveTestItem> TestItems { get; set; } = new Dictionary<string, ObjectiveTestItem>();
+
         /// <summary>
         /// 水平视场角(°) 测试项
         /// </summary>

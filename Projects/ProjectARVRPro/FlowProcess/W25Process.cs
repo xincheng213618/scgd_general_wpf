@@ -10,6 +10,8 @@ namespace ProjectARVRPro.FlowProcess
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
+
+            W25RecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<W25RecipeConfig>();
             try
             {
                 log?.Info("处理 White25 流程结果");
@@ -43,40 +45,40 @@ namespace ProjectARVRPro.FlowProcess
                             ctx.ObjectiveTestResult.W25CenterLunimance = new ObjectiveTestItem
                             {
                                 Name = "W25CenterLunimance",
-                                LowLimit = ctx.RecipeConfig.W25CenterLunimanceMin,
-                                UpLimit = ctx.RecipeConfig.W25CenterLunimanceMax,
+                                LowLimit =recipeConfig.W25CenterLunimanceMin,
+                                UpLimit =recipeConfig.W25CenterLunimanceMax,
                                 Value = center.Y,
                                 TestValue = center.Y.ToString("F3") + " nit"
                             };
                             ctx.ObjectiveTestResult.W25CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem
                             {
                                 Name = "W25CenterCIE1931ChromaticCoordinatesx",
-                                LowLimit = ctx.RecipeConfig.W25CenterCIE1931ChromaticCoordinatesxMin,
-                                UpLimit = ctx.RecipeConfig.W25CenterCIE1931ChromaticCoordinatesxMax,
+                                LowLimit =recipeConfig.W25CenterCIE1931ChromaticCoordinatesxMin,
+                                UpLimit =recipeConfig.W25CenterCIE1931ChromaticCoordinatesxMax,
                                 Value = center.x,
                                 TestValue = center.x.ToString("F3")
                             };
                             ctx.ObjectiveTestResult.W25CenterCIE1931ChromaticCoordinatesy = new ObjectiveTestItem
                             {
                                 Name = "W25CenterCIE1931ChromaticCoordinatesy",
-                                LowLimit = ctx.RecipeConfig.W25CenterCIE1931ChromaticCoordinatesyMin,
-                                UpLimit = ctx.RecipeConfig.W25CenterCIE1931ChromaticCoordinatesyMax,
+                                LowLimit =recipeConfig.W25CenterCIE1931ChromaticCoordinatesyMin,
+                                UpLimit =recipeConfig.W25CenterCIE1931ChromaticCoordinatesyMax,
                                 Value = center.y,
                                 TestValue = center.y.ToString("F3")
                             };
                             ctx.ObjectiveTestResult.W25CenterCIE1976ChromaticCoordinatesu = new ObjectiveTestItem
                             {
                                 Name = "W25CenterCIE1976ChromaticCoordinatesu",
-                                LowLimit = ctx.RecipeConfig.W25CenterCIE1976ChromaticCoordinatesuMin,
-                                UpLimit = ctx.RecipeConfig.W25CenterCIE1976ChromaticCoordinatesuMax,
+                                LowLimit =recipeConfig.W25CenterCIE1976ChromaticCoordinatesuMin,
+                                UpLimit =recipeConfig.W25CenterCIE1976ChromaticCoordinatesuMax,
                                 Value = center.u,
                                 TestValue = center.u.ToString("F3")
                             };
                             ctx.ObjectiveTestResult.W25CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem
                             {
                                 Name = "W25CenterCIE1976ChromaticCoordinatesv",
-                                LowLimit = ctx.RecipeConfig.W25CenterCIE1976ChromaticCoordinatesvMin,
-                                UpLimit = ctx.RecipeConfig.W25CenterCIE1976ChromaticCoordinatesvMax,
+                                LowLimit =recipeConfig.W25CenterCIE1976ChromaticCoordinatesvMin,
+                                UpLimit =recipeConfig.W25CenterCIE1976ChromaticCoordinatesvMax,
                                 Value = center.v,
                                 TestValue = center.v.ToString("F3")
                             };

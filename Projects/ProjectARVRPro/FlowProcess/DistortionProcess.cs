@@ -14,6 +14,9 @@ namespace ProjectARVRPro.FlowProcess
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
+            DistortionRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<DistortionRecipeConfig>();
+
+
             try
             {
                 log?.Info("处理 Distortion 流程结果");
@@ -39,16 +42,16 @@ namespace ProjectARVRPro.FlowProcess
                             ctx.ObjectiveTestResult.HorizontalTVDistortion = new ObjectiveTestItem
                             {
                                 Name = "HorizontalTVDistortion",
-                                LowLimit = ctx.RecipeConfig.HorizontalTVDistortionMin,
-                                UpLimit = ctx.RecipeConfig.HorizontalTVDistortionMax,
+                                LowLimit = recipeConfig.HorizontalTVDistortionMin,
+                                UpLimit = recipeConfig.HorizontalTVDistortionMax,
                                 Value = distortion.DistortionReslut.TVDistortion.HorizontalRatio,
                                 TestValue = distortion.DistortionReslut.TVDistortion.HorizontalRatio.ToString("F5") + "%"
                             };
                             ctx.ObjectiveTestResult.VerticalTVDistortion = new ObjectiveTestItem
                             {
                                 Name = "VerticalTVDistortion",
-                                LowLimit = ctx.RecipeConfig.VerticalTVDistortionMin,
-                                UpLimit = ctx.RecipeConfig.VerticalTVDistortionMax,
+                                LowLimit = recipeConfig.VerticalTVDistortionMin,
+                                UpLimit = recipeConfig.VerticalTVDistortionMax,
                                 Value = distortion.DistortionReslut.TVDistortion.VerticalRatio,
                                 TestValue = distortion.DistortionReslut.TVDistortion.VerticalRatio.ToString("F5") + "%"
                             };

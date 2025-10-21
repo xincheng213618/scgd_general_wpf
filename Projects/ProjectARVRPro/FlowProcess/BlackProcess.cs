@@ -16,6 +16,8 @@ namespace ProjectARVRPro.FlowProcess
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
+            BlackRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<BlackRecipeConfig>();
+
             try
             {
                 log?.Info("处理 Black 流程结果");
@@ -45,8 +47,8 @@ namespace ProjectARVRPro.FlowProcess
                             var fofo = new ObjectiveTestItem
                             {
                                 Name = "FOFOContrast",
-                                LowLimit = ctx.RecipeConfig.FOFOContrastMin,
-                                UpLimit = ctx.RecipeConfig.FOFOContrastMax,
+                                LowLimit = recipeConfig.FOFOContrastMin,
+                                UpLimit = recipeConfig.FOFOContrastMax,
                                 Value = contrast,
                                 TestValue = contrast.ToString("F2")
                             };

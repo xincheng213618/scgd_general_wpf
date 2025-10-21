@@ -1,18 +1,22 @@
 ﻿#pragma warning disable
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates.Jsons.LargeFlow;
+using ColorVision.UI;
+using Newtonsoft.Json.Linq;
 using ProjectARVRPro;
 using ProjectARVRPro;
 using System.ComponentModel;
+using System.Text.Json.Nodes;
 
 namespace ProjectARVRPro
 {
-    [DisplayName("ARVR上下限判定")]
-    public class ARVRRecipeConfig : ViewModelBase, IRecipe
+    public interface IRecipeConfig
     {
-        public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; OnPropertyChanged(); } }
-        private bool _IsEnabled = true;
 
+    }
+
+    public class W51RecipeConfig : ViewModelBase, IRecipeConfig
+    {
         [Category("W51")]
         [DisplayName("Horizontal Field Of View Angle(°) Min")]
         public double HorizontalFieldOfViewAngleMin { get => _HorizontalFieldOfViewAngleMin; set { _HorizontalFieldOfViewAngleMin = value; OnPropertyChanged(); } }
@@ -37,7 +41,10 @@ namespace ProjectARVRPro
         [DisplayName("Diagonal  Field of View Angle(°) Max")]
         public double DiagonalFieldOfViewAngleMax { get => _DiagonalFieldOfViewAngleMax; set { _DiagonalFieldOfViewAngleMax = value; OnPropertyChanged(); } }
         private double _DiagonalFieldOfViewAngleMax = 12.5;
+    }
 
+    public class W255RecipeConfig : ViewModelBase, IRecipeConfig
+    {
         [Category("W255")]
         [DisplayName("Luminance uniformity(%) Min")]
         public double W255LuminanceUniformityMin { get => _W255LuminanceUniformityMin; set { _W255LuminanceUniformityMin = value; OnPropertyChanged(); } }
@@ -60,8 +67,6 @@ namespace ProjectARVRPro
         [DisplayName("Center Correlated Color Temperature(K) Max")]
         public double CenterCorrelatedColorTemperatureMax { get => _CenterCorrelatedColorTemperatureMax; set { _CenterCorrelatedColorTemperatureMax = value; OnPropertyChanged(); } }
         private double _CenterCorrelatedColorTemperatureMax = 7000;
-
-
 
         [Category("W255")]
         public double W255CenterLunimanceMin { get => _W255CenterLunimanceMin; set { _W255CenterLunimanceMin = value; OnPropertyChanged(); } }
@@ -94,7 +99,10 @@ namespace ProjectARVRPro
         [Category("W255")]
         public double W255CenterCIE1976ChromaticCoordinatesvMax { get => _W255CenterCIE1976ChromaticCoordinatesvMax; set { _W255CenterCIE1976ChromaticCoordinatesvMax = value; OnPropertyChanged(); } }
         private double _W255CenterCIE1976ChromaticCoordinatesvMax = 0;
+    }
 
+    public class W25RecipeConfig : ViewModelBase, IRecipeConfig
+    {
         [Category("W25")]
         public double W25CenterLunimanceMin { get => _W25CenterLunimanceMin; set { _W25CenterLunimanceMin = value; OnPropertyChanged(); } }
         private double _W25CenterLunimanceMin = 0;
@@ -126,7 +134,11 @@ namespace ProjectARVRPro
         [Category("W25")]
         public double W25CenterCIE1976ChromaticCoordinatesvMax { get => _W25CenterCIE1976ChromaticCoordinatesvMax; set { _W25CenterCIE1976ChromaticCoordinatesvMax = value; OnPropertyChanged(); } }
         private double _W25CenterCIE1976ChromaticCoordinatesvMax = 0;
+    }
 
+
+    public class BlackRecipeConfig : ViewModelBase, IRecipeConfig
+    {
         [Category("Black")]
 
         public double FOFOContrastMin { get => _FOFOContrastMin; set { _FOFOContrastMin = value; OnPropertyChanged(); } }
@@ -134,14 +146,20 @@ namespace ProjectARVRPro
         [Category("Black")]
         public double FOFOContrastMax { get => _FOFOContrastMax; set { _FOFOContrastMax = value; OnPropertyChanged(); } }
         private double _FOFOContrastMax;
+    }
+
+    public class ChessboardRecipeConfig : ViewModelBase, IRecipeConfig
+    {
         [Category("Chessboard")]
         public double ChessboardContrastMin { get => _ChessboardContrastMin; set { _ChessboardContrastMin = value; OnPropertyChanged(); } }
         private double _ChessboardContrastMin = 50;
         [Category("Chessboard")]
         public double ChessboardContrastMax { get => _ChessboardContrastMax; set { _ChessboardContrastMax = value; OnPropertyChanged(); } }
         private double _ChessboardContrastMax;
+    }
 
-
+    public class MTFHVRecipeConfig : ViewModelBase, IRecipeConfig
+    {
         [Category("MTF_HV")]
         public double MTF_HV_H_Center_0FMin { get => _MTF_HV_H_Center_0FMin; set { _MTF_HV_H_Center_0FMin = value; OnPropertyChanged(); } }
         private double _MTF_HV_H_Center_0FMin = 0.5;
@@ -250,6 +268,10 @@ namespace ProjectARVRPro
         [Category("MTF_HV")]
         public double MTF_HV_V_LeftDown_0_8FMax { get => _MTF_HV_V_LeftDown_0_8FMax; set { _MTF_HV_V_LeftDown_0_8FMax = value; OnPropertyChanged(); } }
         private double _MTF_HV_V_LeftDown_0_8FMax;
+    }
+
+    public class DistortionRecipeConfig : ViewModelBase, IRecipeConfig
+    {
 
         [Category("Distortion")]
         public double HorizontalTVDistortionMin { get => _HorizontalTVDistortionMin; set { _HorizontalTVDistortionMin = value; OnPropertyChanged(); } }
@@ -263,6 +285,11 @@ namespace ProjectARVRPro
         [Category("Distortion")]
         public double VerticalTVDistortionMax { get => _VerticalTVDistortionMax; set { _VerticalTVDistortionMax = value; OnPropertyChanged(); } }
         private double _VerticalTVDistortionMax = 2.1;
+    }
+
+
+    public class OpticCenterRecipeConfig : ViewModelBase, IRecipeConfig
+    {
         [Category("OpticCenter")]
         public double OptCenterXTiltMin { get => _OptCenterXTiltMin; set { _OptCenterXTiltMin = value; OnPropertyChanged(); } }
         private double _OptCenterXTiltMin = -0.16;
@@ -299,13 +326,47 @@ namespace ProjectARVRPro
         [Category("OpticCenter")]
         public double ImageCenterRotationMax { get => _ImageCenterRotationMax; set { _ImageCenterRotationMax = value; OnPropertyChanged(); } }
         private double _ImageCenterRotationMax = 0.16;
+    }
 
-        [Category("Ghost")]
-        public double GhostMin { get => _GhostMin; set { _GhostMin = value; OnPropertyChanged(); } }
-        private double _GhostMin;
-        [Category("Ghost")]
-        public double GhostMax { get => _GhostMax; set { _GhostMax = value; OnPropertyChanged(); } }
-        private double _GhostMax = 0.05;
+
+
+    [DisplayName("ARVR上下限判定")]
+    public class RecipeConfig : ViewModelBase, IRecipe
+    {
+        public RecipeConfig()
+        {
+            Configs = new Dictionary<Type, IRecipeConfig>();
+
+            typeof(RecipeConfig).Assembly.GetTypes()
+                .Where(t => typeof(IRecipeConfig).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract)
+                .ToList()
+                .ForEach(t =>
+                {
+                    if (Activator.CreateInstance(t) is IRecipeConfig instance)
+                    {
+                        Configs[t] = instance;
+                    }
+                });
+        }
+        public Dictionary<Type, IRecipeConfig> Configs { get; set; }
+
+        public T GetRequiredService<T>()where T: IRecipeConfig
+        {
+            var type = typeof(T);
+
+            if (Configs.TryGetValue(type, out var service))
+            {
+                return (T)service;
+            }
+
+            if (Activator.CreateInstance(type) is IRecipeConfig defaultConfig)
+            {
+                Configs[type] = defaultConfig;
+            }
+            // 此处递归调用是为了确保缓存和异常处理逻辑一致
+            return GetRequiredService<T>();
+        }
+
 
     }
 }

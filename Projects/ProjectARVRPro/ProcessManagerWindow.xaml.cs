@@ -20,7 +20,7 @@ namespace ProjectARVRPro
         public ProjectARVRReuslt Result { get; set; }
         public ObjectiveTestResult ObjectiveTestResult { get; set; }
         public ObjectiveTestResultFix ObjectiveTestResultFix { get; set; }
-        public ARVRRecipeConfig RecipeConfig { get; set; }
+        public RecipeConfig RecipeConfig { get; set; }
 
         public ImageView ImageView { get; set; }
 
