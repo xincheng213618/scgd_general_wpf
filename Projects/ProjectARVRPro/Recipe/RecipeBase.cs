@@ -7,6 +7,7 @@ using NPOI.SS.Formula.Functions;
 using ProjectARVRPro;
 using ProjectARVRPro;
 using ProjectARVRPro.Process;
+using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.Black;
 using ProjectARVRPro.Recipe;
 using System.ComponentModel;
@@ -17,15 +18,23 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 
-namespace ProjectARVRPro.Process.Black
+namespace ProjectARVRPro.Recipe
 {
-
-
-
-    public class BlackRecipeConfig : ViewModelBase, IRecipeConfig
+    public class RecipeBase : ViewModelBase
     {
-        [Category("Black")]
-        public RecipeBase FOFOContrast { get => _FOFOContrast; set { _FOFOContrast = value; OnPropertyChanged(); } }
-        private RecipeBase _FOFOContrast = new RecipeBase(100000, 0);
+        public RecipeBase()
+        {
+
+        }
+        public RecipeBase(double min,double max)
+        {
+            _Min = min;
+            _Max = max;
+        }
+        public double Min { get => _Min; set { _Min = value; OnPropertyChanged(); } }
+        private double _Min;
+
+        public double Max { get => _Max; set { _Max = value; OnPropertyChanged(); } }
+        private double _Max;
     }
 }

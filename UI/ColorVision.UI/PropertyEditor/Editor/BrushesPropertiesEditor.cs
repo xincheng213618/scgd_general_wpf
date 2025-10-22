@@ -8,6 +8,11 @@ namespace System.ComponentModel
 {
     public class BrushesPropertiesEditor : IPropertyEditor
     {
+        static BrushesPropertiesEditor()
+        {
+            PropertyEditorHelper.RegisterEditor<BrushesPropertiesEditor>(t => typeof(Brush).IsAssignableFrom(t));
+        }
+
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);

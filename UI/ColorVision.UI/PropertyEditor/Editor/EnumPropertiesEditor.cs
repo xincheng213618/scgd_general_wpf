@@ -8,6 +8,11 @@ namespace System.ComponentModel
 {
     public class EnumPropertiesEditor : IPropertyEditor
     {
+        static EnumPropertiesEditor()
+        {
+            PropertyEditorHelper.RegisterEditor<BrushesPropertiesEditor>(t => t.IsEnum);
+        }
+
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);

@@ -8,6 +8,11 @@ namespace System.ComponentModel
 {
     public class CommandPropertiesEditor : IPropertyEditor
     {
+        static CommandPropertiesEditor()
+        {
+            PropertyEditorHelper.RegisterEditor<CommandPropertiesEditor>(t => typeof(ICommand).IsAssignableFrom(t));
+        }
+
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);

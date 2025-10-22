@@ -9,6 +9,10 @@ namespace ColorVision.UI.LogImp
 {
     public class LevelPropertiesEditor : IPropertyEditor
     {
+        static LevelPropertiesEditor()
+        {
+            PropertyEditorHelper.RegisterEditor<BrushesPropertiesEditor>(t => typeof(Level).IsAssignableFrom(t));
+        }
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);

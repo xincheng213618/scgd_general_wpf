@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using ProjectARVRPro;
 using ProjectARVRPro;
 using ProjectARVRPro.Process.Chessboard;
+using ProjectARVRPro.Recipe;
 using System.ComponentModel;
 using System.Text.Json.Nodes;
 
@@ -14,10 +15,7 @@ namespace ProjectARVRPro.Process.Chessboard
     public class ChessboardRecipeConfig : ViewModelBase, IRecipeConfig
     {
         [Category("Chessboard")]
-        public double ChessboardContrastMin { get => _ChessboardContrastMin; set { _ChessboardContrastMin = value; OnPropertyChanged(); } }
-        private double _ChessboardContrastMin = 50;
-        [Category("Chessboard")]
-        public double ChessboardContrastMax { get => _ChessboardContrastMax; set { _ChessboardContrastMax = value; OnPropertyChanged(); } }
-        private double _ChessboardContrastMax;
+        public RecipeBase ChessboardContras { get => _ChessboardContras; set { _ChessboardContras = value; OnPropertyChanged(); } }
+        private RecipeBase _ChessboardContras = new RecipeBase(50, 0);
     }
 }

@@ -231,6 +231,11 @@ namespace ColorVision.UI
                     PropertyPanel.Children.Add(border);
                 }
             }
+
+            if (treeView.Items.Count == 1)
+            {
+                treeView.Visibility = Visibility.Collapsed;
+            }
         }
 
 

@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Reflection;
 using System.Resources;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -28,19 +29,14 @@ namespace ColorVision.UI
         private static readonly Dictionary<Type, Type> EditorTypeRegistry = new();
         private static readonly List<(Func<Type, bool> Predicate, Type EditorType)> TypePredicateRegistry = new();
 
-
         static PropertyEditorHelper()
         {
-            RegisterEditor<EnumPropertiesEditor>(t => t.IsEnum);
-            RegisterEditor<BoolPropertiesEditor>(typeof(bool));
-            RegisterEditor<TextboxPropertiesEditor>(t => IsTextEditableType(t));
-            RegisterEditor<BrushesPropertiesEditor>(t => typeof(Brush).IsAssignableFrom(t));
-            RegisterEditor<FontFamilyPropertiesEditor>(typeof(FontFamily));
-            RegisterEditor<FontWeightPropertiesEditor>(typeof(FontWeight));
-            RegisterEditor<FontStylePropertiesEditor>(typeof(FontStyle));
-            RegisterEditor<FontStretchPropertiesEditor>(typeof(FontStretch));
-            RegisterEditor<CommandPropertiesEditor>(t => typeof(ICommand).IsAssignableFrom(t));
-            RegisterEditor<LevelPropertiesEditor>(t => typeof(Level).IsAssignableFrom(t));
+            var editorTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes()) .Where(t => typeof(IPropertyEditor).IsAssignableFrom(t) && !t.IsAbstract && t.IsClass);
+            foreach (var type in editorTypes)
+            {
+                // 触发静态构造函数
+                RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+            }
         }
 
         public static void RegisterEditor<TEditor>(Type targetType) where TEditor : IPropertyEditor, new()
@@ -466,20 +462,6 @@ namespace ColorVision.UI
 
             btn.Click += (_, __) => storyboard.Begin();
             return btn;
-        }
-
-        public static bool IsTextEditableType(Type t)
-        {
-            // Includes common primitives and nullable counterparts that can be edited via TextBox
-            t = Nullable.GetUnderlyingType(t) ?? t;
-            return t == typeof(int) ||
-                   t == typeof(float) ||
-                   t == typeof(uint) ||
-                   t == typeof(long) ||
-                   t == typeof(ulong) ||
-                   t == typeof(sbyte) ||
-                   t == typeof(double) ||
-                   t == typeof(string);
         }
     }
 }

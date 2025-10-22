@@ -49,8 +49,8 @@ namespace ProjectARVRPro.Process.Black
                             var fofo = new ObjectiveTestItem
                             {
                                 Name = "FOFOContrast",
-                                LowLimit = recipeConfig.FOFOContrastMin,
-                                UpLimit = recipeConfig.FOFOContrastMax,
+                                LowLimit = recipeConfig.FOFOContrast.Min,
+                                UpLimit = recipeConfig.FOFOContrast.Max,
                                 Value = contrast,
                                 TestValue = contrast.ToString("F2")
                             };

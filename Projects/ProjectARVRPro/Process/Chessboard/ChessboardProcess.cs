@@ -56,8 +56,8 @@ namespace ProjectARVRPro.Process.Chessboard
                             var contrast = new ObjectiveTestItem
                             {
                                 Name = "Chessboard_Contrast",
-                                LowLimit = recipeConfig.ChessboardContrastMin,
-                                UpLimit = recipeConfig.ChessboardContrastMax,
+                                LowLimit = recipeConfig.ChessboardContras.Min,
+                                UpLimit = recipeConfig.ChessboardContras.Max,
                                 Value = view.PoiAnalysisResult.result.Value,
                                 TestValue = view.PoiAnalysisResult.result.Value.ToString("F3")
                             };

@@ -8,6 +8,11 @@ namespace System.ComponentModel
 {
     public class BoolPropertiesEditor : IPropertyEditor
     {
+        static BoolPropertiesEditor()
+        {
+            PropertyEditorHelper.RegisterEditor<BoolPropertiesEditor>(typeof(bool));
+        }
+
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);
