@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using ProjectARVRPro;
 using ProjectARVRPro;
 using ProjectARVRPro.Process.W51;
+using ProjectARVRPro.Recipe;
 using System.ComponentModel;
 using System.Text.Json.Nodes;
 
@@ -14,28 +15,18 @@ namespace ProjectARVRPro.Process.W51
     public class W51RecipeConfig : ViewModelBase, IRecipeConfig
     {
         [Category("W51")]
-        [DisplayName("Horizontal Field Of View Angle(°) Min")]
-        public double HorizontalFieldOfViewAngleMin { get => _HorizontalFieldOfViewAngleMin; set { _HorizontalFieldOfViewAngleMin = value; OnPropertyChanged(); } }
-        private double _HorizontalFieldOfViewAngleMin = 23.5;
+        [DisplayName("Horizontal Field Of View Angle(°)")]
+        public RecipeBase HorizontalFieldOfViewAngle { get => _HorizontalFieldOfViewAngle; set { _HorizontalFieldOfViewAngle = value; OnPropertyChanged(); } }
+        private RecipeBase _HorizontalFieldOfViewAngle = new RecipeBase(23.5, 24.5);
+
         [Category("W51")]
-        [DisplayName("Horizontal Field Of View Angle(°) Max")]
-        public double HorizontalFieldOfViewAngleMax { get => _HorizontalFieldOfViewAngleMax; set { _HorizontalFieldOfViewAngleMax = value; OnPropertyChanged(); } }
-        private double _HorizontalFieldOfViewAngleMax = 24.5;
+        [DisplayName("Vertical Field of View Angle(°)")]
+        public RecipeBase VerticalFieldOfViewAngle { get => _VerticalFieldOfViewAngle; set { _VerticalFieldOfViewAngle = value; OnPropertyChanged(); } }
+        private RecipeBase _VerticalFieldOfViewAngle = new RecipeBase(21.5, 22.5);
+
         [Category("W51")]
-        [DisplayName("Vertical Field of View Angle(°) Min")]
-        public double VerticalFieldOfViewAngleMin { get => _VerticalFieldOfViewAngleMin; set { _VerticalFieldOfViewAngleMin = value; OnPropertyChanged(); } }
-        private double _VerticalFieldOfViewAngleMin = 21.5;
-        [Category("W51")]
-        [DisplayName("Vertical Field of View Angle(°) Max")]
-        public double VerticalFieldOfViewAngleMax { get => _VerticalFieldOfViewAngleMax; set { _VerticalFieldOfViewAngleMax = value; OnPropertyChanged(); } }
-        private double _VerticalFieldOfViewAngleMax = 22.5;
-        [Category("W51")]
-        [DisplayName("Diagonal  Field of View Angle(°) Min")]
-        public double DiagonalFieldOfViewAngleMin { get => _DiagonalFieldOfViewAngleMin; set { _DiagonalFieldOfViewAngleMin = value; OnPropertyChanged(); } }
-        private double _DiagonalFieldOfViewAngleMin = 11.5;
-        [Category("W51")]
-        [DisplayName("Diagonal  Field of View Angle(°) Max")]
-        public double DiagonalFieldOfViewAngleMax { get => _DiagonalFieldOfViewAngleMax; set { _DiagonalFieldOfViewAngleMax = value; OnPropertyChanged(); } }
-        private double _DiagonalFieldOfViewAngleMax = 12.5;
+        [DisplayName("Diagonal  Field of View Angle(°)")]
+        public RecipeBase DiagonalFieldOfViewAngle { get => _DiagonalFieldOfViewAngle; set { _DiagonalFieldOfViewAngle = value; OnPropertyChanged(); } }
+        private RecipeBase _DiagonalFieldOfViewAngle = new RecipeBase(11.5, 12.5);
     }
 }

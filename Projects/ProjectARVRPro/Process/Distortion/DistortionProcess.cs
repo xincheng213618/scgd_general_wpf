@@ -20,7 +20,7 @@ namespace ProjectARVRPro.Process.Distortion
 
             try
             {
-                log?.Info("´¦Àí Distortion Á÷³Ì½á¹û");
+                log?.Info("ï¿½ï¿½ï¿½ï¿½ Distortion ï¿½ï¿½ï¿½Ì½ï¿½ï¿½");
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (values.Count > 0)
@@ -43,16 +43,16 @@ namespace ProjectARVRPro.Process.Distortion
                             ctx.ObjectiveTestResult.HorizontalTVDistortion = new ObjectiveTestItem
                             {
                                 Name = "HorizontalTVDistortion",
-                                LowLimit = recipeConfig.HorizontalTVDistortionMin,
-                                UpLimit = recipeConfig.HorizontalTVDistortionMax,
+                                LowLimit = recipeConfig.HorizontalTVDistortion.Min,
+                                UpLimit = recipeConfig.HorizontalTVDistortion.Max,
                                 Value = distortion.DistortionReslut.TVDistortion.HorizontalRatio,
                                 TestValue = distortion.DistortionReslut.TVDistortion.HorizontalRatio.ToString("F5") + "%"
                             };
                             ctx.ObjectiveTestResult.VerticalTVDistortion = new ObjectiveTestItem
                             {
                                 Name = "VerticalTVDistortion",
-                                LowLimit = recipeConfig.VerticalTVDistortionMin,
-                                UpLimit = recipeConfig.VerticalTVDistortionMax,
+                                LowLimit = recipeConfig.VerticalTVDistortion.Min,
+                                UpLimit = recipeConfig.VerticalTVDistortion.Max,
                                 Value = distortion.DistortionReslut.TVDistortion.VerticalRatio,
                                 TestValue = distortion.DistortionReslut.TVDistortion.VerticalRatio.ToString("F5") + "%"
                             };
@@ -99,7 +99,7 @@ namespace ProjectARVRPro.Process.Distortion
         {
             var result = ctx.Result;
             string outtext = string.Empty;
-            outtext += $"»û±ä¹íÓ° ²âÊÔÏî£º×Ô¶¯AAÇøÓò¶¨Î»Ëã·¨+»û±äËã·¨+¹íÓ°Ëã·¨" + Environment.NewLine;
+            outtext += $"ï¿½ï¿½ï¿½ï¿½ï¿½Ó° ï¿½ï¿½ï¿½ï¿½ï¿½î£ºï¿½Ô¶ï¿½AAï¿½ï¿½ï¿½ï¿½Î»ï¿½ã·¨+ï¿½ï¿½ï¿½ï¿½ï¿½ã·¨+ï¿½ï¿½Ó°ï¿½ã·¨" + Environment.NewLine;
 
             foreach (var item in result.ViewReslutDistortionGhost.Distortion2View.DistortionReslut.TVDistortion.FinalPoints)
             {
