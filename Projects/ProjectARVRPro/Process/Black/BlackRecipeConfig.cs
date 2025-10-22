@@ -20,8 +20,6 @@ using System.Windows.Data;
 namespace ProjectARVRPro.Process.Black
 {
 
-
-
     public class BlackRecipeConfig : ViewModelBase, IRecipeConfig
     {
         [Category("Black")]

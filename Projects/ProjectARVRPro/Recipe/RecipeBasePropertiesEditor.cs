@@ -40,12 +40,6 @@ namespace ProjectARVRPro.Recipe
 
             UniformGrid uniformGrid = new UniformGrid() { Columns = 2 };
 
-            Binding bindingMax = PropertyEditorHelper.CreateTwoWayBinding(recipeBase, "Max");
-            bindingMax.UpdateSourceTrigger = UpdateSourceTrigger.Default;
-            bindingMax.StringFormat = "0.0################";
-            var textbox = PropertyEditorHelper.CreateSmallTextBox(bindingMax);
-            textbox.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
-            uniformGrid.Children.Add(textbox);
 
             Binding bindingMin = PropertyEditorHelper.CreateTwoWayBinding(recipeBase, "Min");
             bindingMin.UpdateSourceTrigger = UpdateSourceTrigger.Default;
@@ -53,6 +47,14 @@ namespace ProjectARVRPro.Recipe
             var textboxMin = PropertyEditorHelper.CreateSmallTextBox(bindingMin);
             textboxMin.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
             uniformGrid.Children.Add(textboxMin);
+
+            Binding bindingMax = PropertyEditorHelper.CreateTwoWayBinding(recipeBase, "Max");
+            bindingMax.UpdateSourceTrigger = UpdateSourceTrigger.Default;
+            bindingMax.StringFormat = "0.0################";
+            var textbox = PropertyEditorHelper.CreateSmallTextBox(bindingMax);
+            textbox.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
+            uniformGrid.Children.Add(textbox);
+
 
             dockPanel.Children.Add(uniformGrid);
 

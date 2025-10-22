@@ -243,24 +243,6 @@ namespace ColorVision.UI
                         categoryGroups[category] = list;
                     }
                     list.Add(prop);
-
-                    try
-                    {
-                        // If nested ViewModelBase, recurse
-                        if (typeof(ViewModelBase).IsAssignableFrom(prop.PropertyType))
-                        {
-                            if (prop.GetValue(source) is ViewModelBase nestedVm)
-                            {
-                                CollectProperties(nestedVm);
-                            }
-                        }
-                    }
-                    catch(Exception ex)
-                    {
-
-                    }
-
-
                 }
             }
 

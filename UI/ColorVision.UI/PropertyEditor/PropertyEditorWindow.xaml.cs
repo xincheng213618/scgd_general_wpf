@@ -104,22 +104,6 @@ namespace ColorVision.UI
                 {
                     value.Add(property);
                 }
-
-                //子类型如果查找不到则设置为空
-                var browsableAttr = property.GetCustomAttribute<BrowsableAttribute>();
-                if (browsableAttr?.Browsable ?? false)
-                {
-                    if (property.PropertyType.IsSubclassOf(typeof(ViewModelBase)))
-                    {
-                        var fieldValue = property.GetValue(source);
-
-                        if (fieldValue is ViewModelBase viewModelBase)
-                        {
-                            Type type1 = fieldValue.GetType();
-                            GenCategoryGroups(viewModelBase);
-                        }
-                    }
-                }
             }
         }
 

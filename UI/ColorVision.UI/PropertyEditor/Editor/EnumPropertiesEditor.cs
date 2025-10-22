@@ -10,7 +10,7 @@ namespace System.ComponentModel
     {
         static EnumPropertiesEditor()
         {
-            PropertyEditorHelper.RegisterEditor<BrushesPropertiesEditor>(t => t.IsEnum);
+            PropertyEditorHelper.RegisterEditor<EnumPropertiesEditor>(t => t.IsEnum);
         }
 
         public DockPanel GenProperties(PropertyInfo property, object obj)
