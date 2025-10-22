@@ -24,7 +24,6 @@ namespace ProjectARVRPro.Process.Red
 
             try
             {
-                log?.Info("处理 Red 流程结果");
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (values.Count > 0)
                     ctx.Result.FileName = values[0].FileUrl;
@@ -69,8 +68,8 @@ namespace ProjectARVRPro.Process.Red
                                     Name = "CenterCorrelatedColorTemperature",
                                     TestValue = poi.CCT.ToString(),
                                     Value = poi.CCT,
-                                    LowLimit = recipeConfig.CenterCorrelatedColorTemperatureMin,
-                                    UpLimit = recipeConfig.CenterCorrelatedColorTemperatureMax
+                                    LowLimit = recipeConfig.CenterCorrelatedColorTemperature.Min,
+                                    UpLimit = recipeConfig.CenterCorrelatedColorTemperature.Max
                                 };
                                 ctx.ObjectiveTestResult.BlackCenterCorrelatedColorTemperature = centerCCT;
                                 ctx.Result.ViewResultWhite.CenterCorrelatedColorTemperature = centerCCT;
@@ -79,40 +78,40 @@ namespace ProjectARVRPro.Process.Red
                                 ctx.ObjectiveTestResult.W255CenterLunimance = new ObjectiveTestItem
                                 {
                                     Name = "W255CenterLunimance",
-                                    LowLimit = recipeConfig.W255CenterLunimanceMin,
-                                    UpLimit = recipeConfig.W255CenterLunimanceMax,
+                                    LowLimit = recipeConfig.W255CenterLunimance.Min,
+                                    UpLimit = recipeConfig.W255CenterLunimance.Max,
                                     Value = poi.Y,
                                     TestValue = poi.Y.ToString("F3") + " nit"
                                 };
                                 ctx.ObjectiveTestResult.W255CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem
                                 {
                                     Name = "W255CenterCIE1931ChromaticCoordinatesx",
-                                    LowLimit = recipeConfig.W255CenterCIE1931ChromaticCoordinatesxMin,
-                                    UpLimit = recipeConfig.W255CenterCIE1931ChromaticCoordinatesxMax,
+                                    LowLimit = recipeConfig.W255CenterCIE1931ChromaticCoordinatesx.Min,
+                                    UpLimit = recipeConfig.W255CenterCIE1931ChromaticCoordinatesx.Max,
                                     Value = poi.x,
                                     TestValue = poi.x.ToString("F3")
                                 };
                                 ctx.ObjectiveTestResult.W255CenterCIE1931ChromaticCoordinatesy = new ObjectiveTestItem
                                 {
                                     Name = "W255CenterCIE1931ChromaticCoordinatesy",
-                                    LowLimit = recipeConfig.W255CenterCIE1931ChromaticCoordinatesyMin,
-                                    UpLimit = recipeConfig.W255CenterCIE1931ChromaticCoordinatesyMax,
+                                    LowLimit = recipeConfig.W255CenterCIE1931ChromaticCoordinatesy.Min,
+                                    UpLimit = recipeConfig.W255CenterCIE1931ChromaticCoordinatesy.Max,
                                     Value = poi.y,
                                     TestValue = poi.y.ToString("F3")
                                 };
                                 ctx.ObjectiveTestResult.W255CenterCIE1976ChromaticCoordinatesu = new ObjectiveTestItem
                                 {
                                     Name = "W255CenterCIE1976ChromaticCoordinatesu",
-                                    LowLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesuMin,
-                                    UpLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesuMax,
+                                    LowLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesu.Min,
+                                    UpLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesu.Max,
                                     Value = poi.u,
                                     TestValue = poi.u.ToString("F3")
                                 };
                                 ctx.ObjectiveTestResult.W255CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem
                                 {
                                     Name = "W255CenterCIE1976ChromaticCoordinatesv",
-                                    LowLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesvMin,
-                                    UpLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesvMax,
+                                    LowLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesv.Min,
+                                    UpLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesv.Max,
                                     Value = poi.v,
                                     TestValue = poi.v.ToString("F3")
                                 };
@@ -140,8 +139,8 @@ namespace ProjectARVRPro.Process.Red
                                     Name = "Luminance_uniformity(%)",
                                     TestValue = (view.PoiAnalysisResult.result.Value * 100).ToString("F3") + "%",
                                     Value = view.PoiAnalysisResult.result.Value,
-                                    LowLimit = recipeConfig.W255LuminanceUniformityMin,
-                                    UpLimit = recipeConfig.W255LuminanceUniformityMax
+                                    LowLimit = recipeConfig.W255LuminanceUniformity.Min,
+                                    UpLimit = recipeConfig.W255LuminanceUniformity.Max
                                 };
                                 ctx.ObjectiveTestResult.W255LuminanceUniformity = uniform;
                                 ctx.Result.ViewResultWhite.W255LuminanceUniformity = uniform;
@@ -160,8 +159,8 @@ namespace ProjectARVRPro.Process.Red
                                     Name = "Color_uniformity",
                                     TestValue = view.PoiAnalysisResult.result.Value.ToString("F5"),
                                     Value = view.PoiAnalysisResult.result.Value,
-                                    LowLimit = recipeConfig.W255ColorUniformityMin,
-                                    UpLimit = recipeConfig.W255ColorUniformityMax
+                                    LowLimit = recipeConfig.W255ColorUniformity.Min,
+                                    UpLimit = recipeConfig.W255ColorUniformity.Max
                                 };
                                 ctx.ObjectiveTestResult.W255ColorUniformity = colorUniform;
                                 ctx.Result.ViewResultWhite.W255ColorUniformity = colorUniform;
