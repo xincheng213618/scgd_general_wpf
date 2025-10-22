@@ -1,0 +1,34 @@
+﻿<UserControl x:Class="ColorVision.Engine.Templates.Jsons.CompoundImg.DisplayCompoundImg"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ColorVision.Engine.Templates.Jsons.CompoundImg"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance local:AlgorithmCompoundImg}"
+             d:DesignHeight="300" d:DesignWidth="300" Initialized="UserControl_Initialized">
+    <Grid>
+        <StackPanel>
+            <DockPanel Margin="0,0,0,5">
+                <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="RunTemplate_Click" />
+                <TextBlock Text="图像拼接" Width="60"/>
+                <ComboBox x:Name="ComboxTemplate"  SelectedIndex="{Binding TemplateSelectedIndex}" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key" />
+                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
+                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding OpenTemplateCommand}"/>
+                </Grid>
+            </DockPanel>
+            <DockPanel Margin="0,0,0,5">
+                <TextBlock Text="FilePath" Width="60" Margin="0,2"/>
+                <TextBox Text="{Binding FilePath}" Width="180" Margin="5,0" HorizontalAlignment="Left" Style="{StaticResource TextBox.Small}"/>
+                <Button  Content="..." Command="{Binding SetFilePathCommand}"/>
+            </DockPanel>
+            <DockPanel Margin="0,0,0,5">
+                <TextBlock Text="FilePath1" Width="60" Margin="0,2"/>
+                <TextBox Text="{Binding FilePath1}" Width="180" Margin="5,0" HorizontalAlignment="Left" Style="{StaticResource TextBox.Small}"/>
+                <Button  Content="..." Command="{Binding SetFilePath1Command}"/>
+            </DockPanel>
+        </StackPanel>
+    </Grid>
+</UserControl>

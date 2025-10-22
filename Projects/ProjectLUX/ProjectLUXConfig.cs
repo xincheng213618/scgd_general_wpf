@@ -84,6 +84,10 @@ namespace ProjectLUX
         private bool _RefreshResult = true;
 
 
+        [DisplayName("LUXTestOpen")]
+        public bool LUXTestOpen { get => _LUXTestOpen; set { _LUXTestOpen = value; OnPropertyChanged(); } }
+        private bool _LUXTestOpen = true;
+
 
         public void OpenConfig()
         {
@@ -177,17 +181,14 @@ namespace ProjectLUX
         public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; OnPropertyChanged(); } }
         private bool _IsAutoUploadSn;
 
+
         public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; OnPropertyChanged(); } }
         private string _ResultSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop),"TestReslut");
 
 
-        public string ResultSavePath1 { get => _ResultSavePath1; set { _ResultSavePath1 = value; OnPropertyChanged(); } }
-        private string _ResultSavePath1 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "TestReslut");
-
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 300;
-        public bool AutoModbusConnect { get => _AutoModbusConnect; set { _AutoModbusConnect = value; OnPropertyChanged(); } }
-        private bool _AutoModbusConnect = true;
+
 
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; OnPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;

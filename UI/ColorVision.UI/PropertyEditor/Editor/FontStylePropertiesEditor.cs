@@ -10,6 +10,11 @@ namespace System.ComponentModel
 
     public class FontStylePropertiesEditor : IPropertyEditor
     {
+        static FontStylePropertiesEditor()
+        {
+            PropertyEditorHelper.RegisterEditor<FontFamilyPropertiesEditor>(typeof(FontStyle));
+        }
+
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);

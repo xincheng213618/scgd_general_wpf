@@ -96,3 +96,43 @@ void ApplyGammaCorrection(const cv::Mat& src, cv::Mat& dst, double gamma);
 /// <param name="alpha"></param>
 /// <param name="beta"></param>
 void AdjustBrightnessContrast(const cv::Mat& src, cv::Mat& dst, double alpha, double beta);
+
+/// <summary>
+/// 高斯模糊
+/// </summary>
+/// <param name="src"></param>
+/// <param name="dst"></param>
+/// <param name="kernelSize">核大小(必须为奇数)</param>
+/// <param name="sigma">标准差</param>
+void ApplyGaussianBlur(const cv::Mat& src, cv::Mat& dst, int kernelSize, double sigma);
+
+/// <summary>
+/// 中值滤波
+/// </summary>
+/// <param name="src"></param>
+/// <param name="dst"></param>
+/// <param name="kernelSize">核大小(必须为奇数)</param>
+void ApplyMedianBlur(const cv::Mat& src, cv::Mat& dst, int kernelSize);
+
+/// <summary>
+/// 锐化
+/// </summary>
+/// <param name="src"></param>
+/// <param name="dst"></param>
+void ApplySharpen(const cv::Mat& src, cv::Mat& dst);
+
+/// <summary>
+/// Canny边缘检测
+/// </summary>
+/// <param name="src"></param>
+/// <param name="dst"></param>
+/// <param name="threshold1">第一个阈值</param>
+/// <param name="threshold2">第二个阈值</param>
+void ApplyCannyEdgeDetection(const cv::Mat& src, cv::Mat& dst, double threshold1, double threshold2);
+
+/// <summary>
+/// 直方图均衡化 (仅用于灰度图像)
+/// </summary>
+/// <param name="src"></param>
+/// <param name="dst"></param>
+void ApplyHistogramEqualization(const cv::Mat& src, cv::Mat& dst);

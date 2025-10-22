@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.0.0.5</VersionPrefix>
+		<VersionPrefix>1.0.1.1</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -34,7 +34,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Update="EditRecipeWindow.xaml.cs">
+	  <Compile Update="Recipe\EditRecipeWindow.xaml.cs">
 	    <SubType>Code</SubType>
 	  </Compile>
 	  <Compile Update="Properties\Resources.Designer.cs">
@@ -59,11 +59,10 @@
 
 	<ItemGroup>
 	  <Folder Include="Assets\" />
-	  <Folder Include="FlowProcess\" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Page Update="EditFixWindow.xaml">
+	  <Page Update="Fix\EditFixWindow.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </Page>
 	</ItemGroup>

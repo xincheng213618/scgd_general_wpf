@@ -5,6 +5,7 @@ using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using ProjectARVRPro.PluginConfig;
+using ProjectARVRPro.Process;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -164,11 +165,6 @@ namespace ProjectARVRPro
         {
             new EditLargeFlow(TemplateLargeFlow.Params[TemplateLargeSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-
-        [DisplayName("测试结束类型")]
-        public ARVR1TestType TestTypeCompleted { get => _TestTypeCompleted; set { _TestTypeCompleted = value; OnPropertyChanged(); } }
-        private ARVR1TestType _TestTypeCompleted = ARVR1TestType.Ghost;
-
 
         public event EventHandler<string> SNChanged;
 

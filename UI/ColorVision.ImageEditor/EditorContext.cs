@@ -8,7 +8,7 @@ namespace ColorVision.ImageEditor
     {
         public Guid Id { get; init; } = Guid.NewGuid();
 
-        public ImageView? ImageView { get; set; }
+        public ImageView ImageView { get; set; }
 
         public ImageViewModel ImageViewModel { get; set; }
 

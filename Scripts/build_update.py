@@ -6,6 +6,22 @@ import time
 import requests
 from tqdm import tqdm
 
+# ----------------------
+# 动态路径计算（去除用户名硬编码）
+# ----------------------
+script_path = os.path.abspath(os.path.dirname(__file__))
+base_path = os.path.abspath(os.path.join(script_path, '..'))  # 仓库根目录
+user_home = os.environ.get('USERPROFILE') or os.path.expanduser('~')
+desktop_dir = os.path.join(user_home, 'Desktop')
+
+# 构建相关路径（基于仓库根目录）
+new_version_dir = os.path.join(base_path, 'ColorVision', 'bin', 'x64', 'Release', 'net8.0-windows')
+exe_path = os.path.join(new_version_dir, 'ColorVision.exe')
+
+# 输出历史与增量包目录（基于当前用户桌面）
+history_dir = os.path.join(desktop_dir, 'History')
+update_dir = os.path.join(history_dir, 'update')
+
 def upload_file(file_path, folder_name):
     file_size = os.path.getsize(file_path)
     file_name = os.path.basename(file_path)
@@ -30,6 +46,8 @@ def upload_file(file_path, folder_name):
         print('File uploaded successfully')
     else:
         print('File upload failed:', response.text)
+
+
 
 def copy_with_progress(src, dst):
     if os.path.isdir(dst):
@@ -171,11 +189,14 @@ def find_latest_zip(directory, version):
     latest_zip = min(matching_files, key=os.path.getmtime)
     return latest_zip
 
-new_version_dir = 'C:\\Users\\Xin\\Desktop\\scgd_general_wpf\\ColorVision\\bin\\x64\\Release\\net8.0-windows'
-history_dir = 'C:\\Users\\Xin\\Desktop\\History'
+
+
+new_version_dir = os.path.join(base_path, 'ColorVision', 'bin', 'x64', 'Release', 'net8.0-windows')
+history_dir = os.path.join(desktop_dir, 'History')
 update_dir = os.path.join(history_dir, 'update')
 
-exe_path = r'C:\Users\Xin\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ColorVision.exe'
+exe_path = os.path.join(new_version_dir, 'ColorVision.exe')
+
 version = get_file_version(exe_path)
 print("打包版本: " + version)
 

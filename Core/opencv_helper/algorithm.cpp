@@ -45,33 +45,33 @@ void LampBeadDetection(cv::Mat image, int rows, int cols)
     cv::Mat gray;
     cv::cvtColor(image8bit, gray, cv::COLOR_BGR2GRAY);
 
-    // ¶¨Òå½á¹¹ÔªËØ
+    // ï¿½ï¿½ï¿½ï¿½á¹¹Ôªï¿½ï¿½
     cv::Mat binary;
     cv::threshold(gray, binary, 20, 255, cv::THRESH_BINARY);
 
 
-    // ¸¯Ê´²Ù×÷
+    // ï¿½ï¿½Ê´ï¿½ï¿½ï¿½ï¿½
     cv::erode(binary, binary, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2, 2)));
 
     cv::dilate(binary, binary, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(4, 4)));
     cv::erode(binary, binary, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2, 2)));
 
-    // ¼ì²âÂÖÀª
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     std::vector<std::vector<cv::Point>> contours;
     cv::findContours(binary, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
     std::vector<cv::Point> centers;
 
-    // ±éÀúÂÖÀª
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     for (const auto& contour : contours) {
-        // ¼ÆËãÂÖÀªµÄ±ß½ç¿ò
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä±ß½ï¿½ï¿½
         cv::Rect boundingBox = cv::boundingRect(contour);
 
-        // ¸ù¾İµÆÖéµÄÒÑÖª´óĞ¡¹ıÂË
+        // ï¿½ï¿½ï¿½İµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öªï¿½ï¿½Ğ¡ï¿½ï¿½ï¿½ï¿½
         if (boundingBox.width > 2 && boundingBox.width < 20 &&
             boundingBox.height > 2 && boundingBox.height < 20) {
 
-            // ¼ÆËãÖĞĞÄµã
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Äµï¿½
             int cx = boundingBox.x + boundingBox.width / 2;
             int cy = boundingBox.y + boundingBox.height / 2;
             centers.push_back(cv::Point(cx, cy));
@@ -81,32 +81,32 @@ void LampBeadDetection(cv::Mat image, int rows, int cols)
         }
     }
 
-    //×ÜÁÁµã
+    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     size_t coutns = centers.size();
 
-    // ¼ÆËãÖĞĞÄµãµÄÍ¹°ü
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Äµï¿½ï¿½Í¹ï¿½ï¿½
     std::vector<cv::Point> hull;
     if (!centers.empty()) {
         cv::convexHull(centers, hull);
     }
 
-    //»æÖÆÖĞĞÄµã
+    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Äµï¿½
     for (const auto& center : centers) {
         cv::circle(image8bit, center, 4, cv::Scalar(255), -1);
     }
 
-    // »æÖÆÍ¹°ü
+    // ï¿½ï¿½ï¿½ï¿½Í¹ï¿½ï¿½
     if (!hull.empty()) {
         for (size_t i = 0; i < hull.size(); ++i) {
             cv::line(image8bit, hull[i], hull[(i + 1) % hull.size()], cv::Scalar(255), 2);
         }
     }
 
-    // ¼ÆËãÍ¹°üµÄÃæ»ı
+    // ï¿½ï¿½ï¿½ï¿½Í¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     double area = cv::contourArea(hull);
     std::cout << "Convex Hull Area: " << area << std::endl;
 
-    // ¼ÆËãÍ¹°üµÄ±ß½ç¾ØĞÎ
+    // ï¿½ï¿½ï¿½ï¿½Í¹ï¿½ï¿½ï¿½Ä±ß½ï¿½ï¿½ï¿½ï¿½
     cv::Rect boundingRect = cv::boundingRect(hull);
     double width = boundingRect.width;
     double height = boundingRect.height;
@@ -114,26 +114,26 @@ void LampBeadDetection(cv::Mat image, int rows, int cols)
     double singlewith = width / 850;
     double singleheight = height / 650;
 
-    // ´´½¨Ò»¸öÑÚÂë£¬³õÊ¼ÎªÈ«Áã
+    // ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ë£¬ï¿½ï¿½Ê¼ÎªÈ«ï¿½ï¿½
     cv::Mat mask = cv::Mat::zeros(image.size(), CV_8UC1);
 
-    // ÔÚÑÚÂëÉÏ»æÖÆÍ¹°üÇøÓò
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï»ï¿½ï¿½ï¿½Í¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     std::vector<std::vector<cv::Point>> hulls = { hull };
     cv::fillPoly(mask, hulls, cv::Scalar(255));
 
-    // ±éÀúÍ¼ÏñµÄËùÓĞµã
+    // ï¿½ï¿½ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğµï¿½
     for (int y = 0; y < binary.rows; ++y) {
         uchar* maskRow = mask.ptr<uchar>(y);
         uchar* imgRow = binary.ptr<uchar>(y);
         for (int x = 0; x < binary.cols; ++x) {
-            // Èç¹ûÑÚÂëÖĞ¸Ãµã²»ÔÚÍ¹°üÄÚ£¬ÔòÉèÖÃÎª255
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğ¸Ãµã²»ï¿½ï¿½Í¹ï¿½ï¿½ï¿½Ú£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îª255
             if (maskRow[x] == 0) {
                 imgRow[x] = 255;
             }
         }
     }
 
-    //È±ÉÙµÄµã
+    //È±ï¿½ÙµÄµï¿½
     size_t black = rows * cols - centers.size();
     std::cout << black << std::endl;
 
@@ -149,36 +149,36 @@ void LampBeadDetection(cv::Mat image, int rows, int cols)
     std::vector<std::vector<cv::Point>> contourless;
     cv::findContours(binary, contourless, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
-    // ±éÀúÂÖÀª
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     for (const auto& contour : contourless) {
-        // ¼ÆËãÂÖÀªµÄ±ß½ç¿ò
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä±ß½ï¿½ï¿½
         cv::Rect boundingBox = cv::boundingRect(contour);
 
-        // ¸ù¾İµÆÖéµÄÒÑÖª´óĞ¡¹ıÂË
+        // ï¿½ï¿½ï¿½İµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öªï¿½ï¿½Ğ¡ï¿½ï¿½ï¿½ï¿½
         if (boundingBox.width > 2 && boundingBox.width < 20 &&
             boundingBox.height > 2 && boundingBox.height < 20) {
 
-            // ¼ÆËãÖĞĞÄµã
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Äµï¿½
             int cx = boundingBox.x + boundingBox.width / 2;
             int cy = boundingBox.y + boundingBox.height / 2;
             blackcenters.push_back(cv::Point(cx, cy));
         }
         else
         {
-            // ¼ÆËãÍ¹°üµÄ±ß½ç¾ØĞÎ
+            // ï¿½ï¿½ï¿½ï¿½Í¹ï¿½ï¿½ï¿½Ä±ß½ï¿½ï¿½ï¿½ï¿½
             cv::Rect boundingRect = cv::boundingRect(contour);
 
-            // µãµÄ¼ä¸ôºÍÆğÊ¼Æ«ÒÆ
+            // ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼Æ«ï¿½ï¿½
             int offset = 4;
 
-            // ´æ´¢ÔÚÍ¹°üÄÚµÄµã
+            // ï¿½æ´¢ï¿½ï¿½Í¹ï¿½ï¿½ï¿½ÚµÄµï¿½
             std::vector<cv::Point> pointsInsideHull;
 
-            // ÔÚ±ß½ç¾ØĞÎÄÚµü´ú
+            // ï¿½Ú±ß½ï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½ï¿½ï¿½
             for (double y = boundingRect.y + offset; y < boundingRect.y + boundingRect.height; y += singlewith) {
                 for (double x = boundingRect.x + offset; x < boundingRect.x + boundingRect.width; x += singleheight) {
                     cv::Point p(x, y);
-                    // ¼ì²éµãÊÇ·ñÔÚÍ¹°üÄÚ
+                    // ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Í¹ï¿½ï¿½ï¿½ï¿½
                     if (cv::pointPolygonTest(contour, p, false) >= 0) {
                         blackcenters.push_back(p);
                     }
@@ -188,7 +188,7 @@ void LampBeadDetection(cv::Mat image, int rows, int cols)
         }
     }
 
-    //È±ÉÙµÄµã
+    //È±ï¿½ÙµÄµï¿½
     std::cout << blackcenters.size() << std::endl;
     for (const auto& contour : blackcenters)
     {
@@ -199,8 +199,8 @@ void LampBeadDetection(cv::Mat image, int rows, int cols)
 
 }
 
-// ·µ»Ø0Õı³££¬-1Í¼Ïñ¿Õ£¬-2Î´ÕÒµ½·¢¹âÇø
-// points ·µ»Ø·¢¹âÇøËÄ¸ö½Çµã£¨Ë³ĞòÎª minAreaRect Ë³Ğò£©
+// ï¿½ï¿½ï¿½ï¿½0ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½-1Í¼ï¿½ï¿½Õ£ï¿½-2Î´ï¿½Òµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// points ï¿½ï¿½ï¿½Ø·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¸ï¿½ï¿½Çµã£¨Ë³ï¿½ï¿½Îª minAreaRect Ë³ï¿½ï¿½
 int findLuminousAreaCorners(cv::Mat& src, std::vector<cv::Point2f>& points, int threshold)
 {
     points.clear();
@@ -224,7 +224,7 @@ int findLuminousAreaCorners(cv::Mat& src, std::vector<cv::Point2f>& points, int 
     std::vector<std::vector<Point>> contours;
     findContours(thresh, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
-    // È¥³ıÌù±ßµÄ
+    // È¥ï¿½ï¿½ï¿½ï¿½ï¿½ßµï¿½
     contours.erase(remove_if(contours.begin(), contours.end(),
         [&](const std::vector<Point>& contour) {
             Rect rect = boundingRect(contour);
@@ -235,7 +235,7 @@ int findLuminousAreaCorners(cv::Mat& src, std::vector<cv::Point2f>& points, int 
 
     if (contours.empty()) return -2;
 
-    // ÕÒ×î´óÃæ»ıÂÖÀª
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     size_t maxIdx = 0;
     double maxArea = 0;
     for (size_t i = 0; i < contours.size(); ++i) {
@@ -248,18 +248,18 @@ int findLuminousAreaCorners(cv::Mat& src, std::vector<cv::Point2f>& points, int 
 
     std::vector<cv::Point> approx;
     double peri = cv::arcLength(contours[maxIdx], true);
-    // 0.02 * peri ¿Éµ÷Õû£¬Í¨³£ 0.01~0.05 Ö®¼ä
+    // 0.02 * peri ï¿½Éµï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ 0.01~0.05 Ö®ï¿½ï¿½
     cv::approxPolyDP(contours[maxIdx], approx, 0.02 * peri, true);
 
     if (approx.size() == 4) {
-        // Õâ¾ÍÊÇÄãÒªµÄËÄ±ßĞÎ4¸ö½Çµã
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½Ä±ï¿½ï¿½ï¿½4ï¿½ï¿½ï¿½Çµï¿½
         for (int i = 0; i < 4; ++i)
             points.push_back(cv::Point2f(approx[i]));
         return 0;
     }
     else {
 
-        // ×îĞ¡Íâ½Ó¾ØĞÎ
+        // ï¿½ï¿½Ğ¡ï¿½ï¿½Ó¾ï¿½ï¿½ï¿½
         RotatedRect minRect = minAreaRect(contours[maxIdx]);
         Point2f verts[4];
         minRect.points(verts);
@@ -272,13 +272,13 @@ int findLuminousAreaCorners(cv::Mat& src, std::vector<cv::Point2f>& points, int 
 
 int findLuminousArea(cv::Mat& src, cv::Rect& largestRect,int threshold)
 {
-    // ¼ì²éÊäÈëÍ¼ÏñÊÇ·ñÎª¿Õ
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼ï¿½ï¿½ï¿½Ç·ï¿½Îªï¿½ï¿½
     if (src.empty()) {
         return -1;
     }
     Mat gray;
     if (src.channels() != 1) {
-        // ×ª»»Îª»Ò¶ÈÍ¼
+        // ×ªï¿½ï¿½Îªï¿½Ò¶ï¿½Í¼
         cvtColor(src, gray, COLOR_BGR2GRAY);
     }
     else {
@@ -287,18 +287,18 @@ int findLuminousArea(cv::Mat& src, cv::Rect& largestRect,int threshold)
     if (gray.depth() == CV_16U) {
         cv::normalize(gray, gray, 0, 255, cv::NORM_MINMAX, CV_8U);
     }
-    // ¸ßË¹Ä£ºı
+    // ï¿½ï¿½Ë¹Ä£ï¿½ï¿½
     GaussianBlur(gray, gray, Size(5, 5), 0);
 
-    // ãĞÖµ·Ö¸î
+    // ï¿½ï¿½Öµï¿½Ö¸ï¿½
     Mat thresh;
     cv::threshold(gray, thresh, threshold, 255, THRESH_BINARY);
 
-    // ĞÎÌ¬Ñ§²Ù×÷£ºÅòÕÍ
+    // ï¿½ï¿½Ì¬Ñ§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     Mat kernel = getStructuringElement(MORPH_RECT, Size(3, 3));
     dilate(thresh, thresh, kernel);
 
-    // ²éÕÒÂÖÀª
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     std::vector< std::vector<Point>> contours;
     findContours(thresh, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
@@ -357,7 +357,7 @@ int findLuminousAreaLocalContrast(cv::Mat& src, std::vector<cv::Point2f>& points
     std::vector<std::vector<cv::Point>> contours;
     cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
-    // ¿ÉÑ¡£ºÕë¶Ô¼ÓÈ¨ÇøÓòÉ¸Ñ¡×î´óÂÖÀª
+    // ï¿½ï¿½Ñ¡ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½È¨ï¿½ï¿½ï¿½ï¿½É¸Ñ¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     // ...
 
     if (contours.empty()) return -2;
@@ -383,8 +383,8 @@ int drawPoiImage(cv::Mat& src, cv::Mat& dst, int radius, int* points, int pointC
 {
     int depth = src.depth();
     int lutSize = (depth == CV_8U) ? 255 : 65535;
-    // ´´½¨ÊäÈëÍ¼ÏñµÄcv::Mat
-    // ´¦ÀíÍ¼Ïñ£¬»æÖÆÔ²ĞÎ
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼ï¿½ï¿½ï¿½cv::Mat
+    // ï¿½ï¿½ï¿½ï¿½Í¼ï¿½ñ£¬»ï¿½ï¿½ï¿½Ô²ï¿½ï¿½
     for (int i = 0; i < pointCount/2; ++i)
     {
         int x = points[i * 2];
@@ -392,7 +392,7 @@ int drawPoiImage(cv::Mat& src, cv::Mat& dst, int radius, int* points, int pointC
         cv::circle(src, cv::Point(x, y), radius, cv::Scalar(0, 0, lutSize), thickness);
     }
     dst = src;
-    return 0; // ³É¹¦
+    return 0; // ï¿½É¹ï¿½
 }
 
 
@@ -403,14 +403,14 @@ int extractChannel(cv::Mat& input, cv::Mat& dst ,int channel)
     if (channel < 0 || input.channels() <= channel)
         return -2;
 
-    // ²ğ·ÖÍ¨µÀ
+    // ï¿½ï¿½ï¿½Í¨ï¿½ï¿½
 
     std::vector<cv::Mat> channels;
     cv::split(input, channels);
 
     cv::Mat redChannel = channels[channel];
 
-    // ´´½¨µ¥Í¨µÀÍ¼Ïñ (»Ò¶ÈÍ¼Ïñ)
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½Í¼ï¿½ï¿½ (ï¿½Ò¶ï¿½Í¼ï¿½ï¿½)
     //cv::Mat grayImage;
     //std::vector<cv::Mat> grayChannels = { redChannel, redChannel, redChannel };
     //cv::merge(grayChannels, grayImage);
@@ -429,11 +429,11 @@ int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
 
     if (image.depth() == CV_16U) {
 
-        ///2025.02.07 16ÎªÍ¼Ïñ×öÖ±·½Í¼Ê±£¬²»×öÖ±·½Í¼¾ùºâ»¯£¬Õâ»áµ¼ÖÂÍ¼Ïñ±äĞÎ£¬Õâ¸öĞ§¹û¿ÉÒÔÍ¨¹ıµ÷½ÚGammmaÊµÏÖ
-        //// Ó¦ÓÃ×ÔÊÊÓ¦Ö±·½Í¼¾ùºâ»¯
+        ///2025.02.07 16ÎªÍ¼ï¿½ï¿½ï¿½ï¿½Ö±ï¿½ï¿½Í¼Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö±ï¿½ï¿½Í¼ï¿½ï¿½ï¿½â»¯ï¿½ï¿½ï¿½ï¿½áµ¼ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½Î£ï¿½ï¿½ï¿½ï¿½Ğ§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½GammmaÊµï¿½ï¿½
+        //// Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦Ö±ï¿½ï¿½Í¼ï¿½ï¿½ï¿½â»¯
         //cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
-        ////ÕâÀïÉèÖÃ¸ßÁË£¬ËÄ¸ö½Ç»á±»À©É¢µô£¬
-        //clahe->setClipLimit(1.0); // ÉèÖÃ¶Ô±È¶ÈÏŞÖÆ
+        ////ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã¸ï¿½ï¿½Ë£ï¿½ï¿½Ä¸ï¿½ï¿½Ç»á±»ï¿½ï¿½É¢ï¿½ï¿½ï¿½ï¿½
+        //clahe->setClipLimit(1.0); // ï¿½ï¿½ï¿½Ã¶Ô±È¶ï¿½ï¿½ï¿½ï¿½ï¿½
         //clahe->apply(image, image);
 
         min1 = min1 / 256;
@@ -494,10 +494,10 @@ void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
     CV_Assert(!src.empty() && src.channels() >= 3);
     spdlog::info("AutoLevelsAdjust");
 
-    //Í³¼Æ»Ò¶ÈÖ±·½Í¼
-    int BHist[256] = { 0 };    //B·ÖÀë
-    int GHist[256] = { 0 };    //G·ÖÁ¿
-    int RHist[256] = { 0 };    //R·ÖÁ¿
+    //Í³ï¿½Æ»Ò¶ï¿½Ö±ï¿½ï¿½Í¼
+    int BHist[256] = { 0 };    //Bï¿½ï¿½ï¿½ï¿½
+    int GHist[256] = { 0 };    //Gï¿½ï¿½ï¿½ï¿½
+    int RHist[256] = { 0 };    //Rï¿½ï¿½ï¿½ï¿½
     cv::MatIterator_<Vec3b> its, ends;
     for (its = src.begin<Vec3b>(), ends = src.end<Vec3b>(); its != ends; its++)
     {
@@ -506,11 +506,11 @@ void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
         RHist[(*its)[2]]++;
     }
 
-    //ÉèÖÃLowCutºÍHighCut
+    //ï¿½ï¿½ï¿½ï¿½LowCutï¿½ï¿½HighCut
     float LowCut = 0.4;
     float HighCut = 0.4;
 
-    //¸ù¾İLowCutºÍHighCut²éÕÒÃ¿¸öÍ¨µÀ×î´óÖµ×îĞ¡Öµ
+    //ï¿½ï¿½ï¿½ï¿½LowCutï¿½ï¿½HighCutï¿½ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½Ğ¡Öµ
     int BMax = 0, BMin = 0;
     int GMax = 0, GMin = 0;
     int RMax = 0, RMin = 0;
@@ -519,7 +519,7 @@ void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
     float LowTh = LowCut * 0.01 * TotalPixels;
     float HighTh = HighCut * 0.01 * TotalPixels;
 
-    //BÍ¨µÀ²éÕÒ×îĞ¡×î´óÖµ
+    //BÍ¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğ¡ï¿½ï¿½ï¿½Öµ
     int sumTempB = 0;
     for (int i = 0; i < 256; i++)
     {
@@ -541,7 +541,7 @@ void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
         }
     }
 
-    //GÍ¨µÀ²éÕÒ×îĞ¡×î´óÖµ
+    //GÍ¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğ¡ï¿½ï¿½ï¿½Öµ
     int sumTempG = 0;
     for (int i = 0; i < 256; i++)
     {
@@ -563,7 +563,7 @@ void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
         }
     }
 
-    //RÍ¨µÀ²éÕÒ×îĞ¡×î´óÖµ
+    //RÍ¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğ¡ï¿½ï¿½ï¿½Öµ
     int sumTempR = 0;
     for (int i = 0; i < 256; i++)
     {
@@ -585,8 +585,8 @@ void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
         }
     }
 
-    //¶ÔÃ¿¸öÍ¨µÀ½¨Á¢·Ö¶ÎÏßĞÔ²éÕÒ±í
-    //B·ÖÁ¿²éÕÒ±í
+    //ï¿½ï¿½Ã¿ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½Ô²ï¿½ï¿½Ò±ï¿½
+    //Bï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò±ï¿½
     int BTable[256] = { 0 };
     for (int i = 0; i < 256; i++)
     {
@@ -598,7 +598,7 @@ void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
             BTable[i] = 255;
     }
 
-    //G·ÖÁ¿²éÕÒ±í
+    //Gï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò±ï¿½
     int GTable[256] = { 0 };
     for (int i = 0; i < 256; i++)
     {
@@ -610,7 +610,7 @@ void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
             GTable[i] = 255;
     }
 
-    //R·ÖÁ¿²éÕÒ±í
+    //Rï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò±ï¿½
     int RTable[256] = { 0 };
     for (int i = 0; i < 256; i++)
     {
@@ -622,7 +622,7 @@ void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
             RTable[i] = 255;
     }
 
-    //¶ÔÃ¿¸öÍ¨µÀÓÃÏàÓ¦µÄ²éÕÒ±í½øĞĞ·Ö¶ÎÏßĞÔÀ­Éì
+    //ï¿½ï¿½Ã¿ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½Ä²ï¿½ï¿½Ò±ï¿½ï¿½ï¿½ï¿½Ğ·Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     cv::Mat dst_ = src.clone();
     cv::MatIterator_<Vec3b> itd, endd;
     for (itd = dst_.begin<Vec3b>(), endd = dst_.end<Vec3b>(); itd != endd; itd++)
@@ -741,5 +741,73 @@ void ApplyGammaCorrection(const cv::Mat& src, cv::Mat& dst, double gamma)
     {
         CV_Error(cv::Error::StsUnsupportedFormat, "Unsupported image depth");
     }
+}
+
+// é«˜æ–¯æ¨¡ç³Š
+void ApplyGaussianBlur(const cv::Mat& src, cv::Mat& dst, int kernelSize, double sigma)
+{
+    CV_Assert(kernelSize > 0 && kernelSize % 2 == 1);
+    cv::GaussianBlur(src, dst, cv::Size(kernelSize, kernelSize), sigma);
+}
+
+// ä¸­å€¼æ»¤æ³¢
+void ApplyMedianBlur(const cv::Mat& src, cv::Mat& dst, int kernelSize)
+{
+    CV_Assert(kernelSize > 0 && kernelSize % 2 == 1);
+    cv::medianBlur(src, dst, kernelSize);
+}
+
+// é”åŒ–
+void ApplySharpen(const cv::Mat& src, cv::Mat& dst)
+{
+    cv::Mat kernel = (cv::Mat_<float>(3, 3) <<
+        0, -1, 0,
+        -1, 5, -1,
+        0, -1, 0);
+    cv::filter2D(src, dst, src.depth(), kernel);
+}
+
+// Cannyè¾¹ç¼˜æ£€æµ‹
+void ApplyCannyEdgeDetection(const cv::Mat& src, cv::Mat& dst, double threshold1, double threshold2)
+{
+    cv::Mat gray;
+    if (src.channels() == 3 || src.channels() == 4)
+    {
+        cv::cvtColor(src, gray, cv::COLOR_BGR2GRAY);
+    }
+    else
+    {
+        gray = src;
+    }
+    
+    // Convert to 8-bit if needed
+    if (gray.depth() != CV_8U)
+    {
+        gray.convertTo(gray, CV_8U, 255.0 / 65535.0);
+    }
+    
+    cv::Canny(gray, dst, threshold1, threshold2);
+}
+
+// ç›´æ–¹å›¾å‡è¡¡åŒ– (ä»…ç”¨äºç°åº¦å›¾åƒ)
+void ApplyHistogramEqualization(const cv::Mat& src, cv::Mat& dst)
+{
+    cv::Mat gray;
+    if (src.channels() == 3 || src.channels() == 4)
+    {
+        cv::cvtColor(src, gray, cv::COLOR_BGR2GRAY);
+    }
+    else
+    {
+        gray = src.clone();
+    }
+    
+    // Convert to 8-bit if needed
+    if (gray.depth() != CV_8U)
+    {
+        gray.convertTo(gray, CV_8U, 255.0 / 65535.0);
+    }
+    
+    cv::equalizeHist(gray, dst);
 }
 

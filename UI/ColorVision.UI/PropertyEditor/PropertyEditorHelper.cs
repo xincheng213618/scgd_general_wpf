@@ -1,9 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.Extension;
+using ColorVision.UI.LogImp;
+using log4net.Core;
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Reflection;
 using System.Resources;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -23,12 +26,59 @@ namespace ColorVision.UI
         // Cache for resources and reflection results
         public static ConcurrentDictionary<Type, Lazy<ResourceManager?>> ResourceManagerCache { get; set; } = new();
         public static ConcurrentDictionary<Type, IPropertyEditor> CustomEditorCache { get; } = new();
+        private static readonly Dictionary<Type, Type> EditorTypeRegistry = new();
+        private static readonly List<(Func<Type, bool> Predicate, Type EditorType)> TypePredicateRegistry = new();
 
-        /// <summary>
-        /// Gets or creates a cached instance of the specified property editor type
-        /// </summary>
-        /// <typeparam name="T">The property editor type</typeparam>
-        /// <returns>Cached or new instance of the property editor</returns>
+        static PropertyEditorHelper()
+        {
+            var editorTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes()) .Where(t => typeof(IPropertyEditor).IsAssignableFrom(t) && !t.IsAbstract && t.IsClass);
+            foreach (var type in editorTypes)
+            {
+                // 触发静态构造函数
+                RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+            }
+        }
+
+        public static void RegisterEditor<TEditor>(Type targetType) where TEditor : IPropertyEditor, new()
+        {
+            EditorTypeRegistry[targetType] = typeof(TEditor);
+        }
+        public static void RegisterEditor<TEditor>(Func<Type, bool> typePredicate) where TEditor : IPropertyEditor, new()
+        {
+            TypePredicateRegistry.Add((typePredicate, typeof(TEditor)));
+        }
+
+        public static IPropertyEditor GetOrCreateEditor(Type editorType)
+        {
+            if (CustomEditorCache.TryGetValue(editorType, out var cachedEditor))
+            {
+                return cachedEditor;
+            }
+
+            if (Activator.CreateInstance(editorType) is IPropertyEditor newEditor)
+            {
+                CustomEditorCache[editorType] = newEditor;
+                return newEditor;
+            }
+
+            throw new InvalidOperationException($"Could not create editor of type {editorType.Name}");
+        }
+        public static Type? GetEditorTypeForPropertyType(Type propertyType)
+        {
+            // Direct type match
+            if (EditorTypeRegistry.TryGetValue(propertyType, out var editorType))
+                return editorType;
+
+            // Predicate match (first matching predicate wins)
+            foreach (var (predicate, predicateEditorType) in TypePredicateRegistry)
+            {
+                if (predicate(propertyType))
+                    return predicateEditorType;
+            }
+
+            return null;
+        }
+
         public static T GetOrCreateEditor<T>() where T : IPropertyEditor, new()
         {
             var type = typeof(T);
@@ -67,7 +117,6 @@ namespace ColorVision.UI
                     ?? throw new InvalidOperationException(Properties.Resources.Bool2VisibilityConverterNotFound);
             }
         }
-        // Cached resource lookups per app lifetime (lookups are cheap but repeated hundreds of times in dynamic editors)
 
         public static Brush GlobalTextBrush => Resources.Value.GlobalTextBrush;
         public static Brush GlobalBorderBrush => Resources.Value.GlobalBorderBrush;
@@ -168,31 +217,6 @@ namespace ColorVision.UI
             return comboBox;
         }
 
-        public static DockPanel GenTextboxProperties(PropertyInfo property, object obj)
-        {
-            var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
-            // Custom editor instantiation and cache
-            if (editorAttr?.EditorType != null)
-            {
-                if (CustomEditorCache.TryGetValue(editorAttr.EditorType, out var cachedEditor))
-                {
-                    return cachedEditor.GenProperties(property, obj);
-                }
-                try
-                {
-                    if (Activator.CreateInstance(editorAttr.EditorType) is IPropertyEditor customEditor)
-                    {
-                        CustomEditorCache[editorAttr.EditorType] = customEditor;
-                        return customEditor.GenProperties(property, obj);
-                    }
-                }
-                catch { }
-            }
-            return new TextboxPropertiesEditor().GenProperties(property, obj);
-        }
-
-
-
         public static StackPanel GenPropertyEditorControl(object obj)
         {
             var categoryGroups = new Dictionary<string, List<PropertyInfo>>(StringComparer.Ordinal);
@@ -219,31 +243,12 @@ namespace ColorVision.UI
                         categoryGroups[category] = list;
                     }
                     list.Add(prop);
-
-                    try
-                    {
-                        // If nested ViewModelBase, recurse
-                        if (typeof(ViewModelBase).IsAssignableFrom(prop.PropertyType))
-                        {
-                            if (prop.GetValue(source) is ViewModelBase nestedVm)
-                            {
-                                CollectProperties(nestedVm);
-                            }
-                        }
-                    }
-                    catch(Exception ex)
-                    {
-
-                    }
-
-
                 }
             }
 
             var propertyPanel = new StackPanel();
             CollectProperties(obj);
             
-
             foreach (var categoryGroup in categoryGroups)
             {
                 var border = new Border
@@ -272,55 +277,65 @@ namespace ColorVision.UI
 
                 foreach (var property in categoryGroup.Value)
                 {
-                    DockPanel dockPanel;
-
-                    if (property.PropertyType.IsEnum)
-                    {
-                        dockPanel = PropertyEditorHelper.GetOrCreateEditor<EnumPropertiesEditor>().GenProperties(property, obj);
-                    }
-                    else if (property.PropertyType == typeof(bool))
-                    {
-                        dockPanel = PropertyEditorHelper.GetOrCreateEditor<BoolPropertiesEditor>().GenProperties(property, obj);
-                    }
-                    else if (IsTextEditableType(property.PropertyType))
-                    {
-                        dockPanel = GenTextboxProperties(property, obj);
-                    }
-                    else if (typeof(Brush).IsAssignableFrom(property.PropertyType))
-                    {
-                        dockPanel = GetOrCreateEditor<BrushesPropertiesEditor>().GenProperties(property, obj);
-                    }
-                    else if (property.PropertyType == typeof(FontFamily))
-                        dockPanel = GetOrCreateEditor<FontFamilyPropertiesEditor>().GenProperties(property, obj);
-                    else if (property.PropertyType == typeof(FontWeight))
-                        dockPanel = GetOrCreateEditor<FontWeightPropertiesEditor>().GenProperties(property, obj);
-                    else if (property.PropertyType == typeof(FontStyle))
-                        dockPanel = GetOrCreateEditor<FontStylePropertiesEditor>().GenProperties(property, obj);
-                    else if (property.PropertyType == typeof(FontStretch))
-                        dockPanel = GetOrCreateEditor<FontStretchPropertiesEditor>().GenProperties(property, obj);
-                    else if (typeof(ICommand).IsAssignableFrom(property.PropertyType))
-                    {
-                        dockPanel = GetOrCreateEditor<CommandPropertiesEditor>().GenProperties(property, obj);
-                    }
-                    else if (typeof(ViewModelBase).IsAssignableFrom(property.PropertyType))
+                    DockPanel dockPanel = null;
+                    var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
+                    if (editorAttr?.EditorType != null)
                     {
                         try
                         {
-                            if (property.GetValue(obj) is ViewModelBase nested)
+                            var editor = GetOrCreateEditor(editorAttr.EditorType);
+                            dockPanel = editor.GenProperties(property, obj);
+                        }
+                        catch (Exception)
+                        {
+                        }
+                    }
+
+                    if (dockPanel == null)
+                    {
+                        Type? editorType = null;
+                        editorType = GetEditorTypeForPropertyType(property.PropertyType);
+                        if (editorType != null)
+                        {
+                            try
                             {
-                                stackPanel.Children.Add(GenPropertyEditorControl(nested));
+                                var editor = GetOrCreateEditor(editorType);
+                                dockPanel = editor.GenProperties(property, obj);
+                            }
+                            catch (Exception)
+                            {
+                                continue; 
+                            }
+                        }
+                        else if (typeof(INotifyPropertyChanged).IsAssignableFrom(property.PropertyType))
+                        {
+                            // 如果属性是ViewModelBase的子类，递归解析
+                            var nestedObj = (INotifyPropertyChanged)property.GetValue(obj);
+                            if (nestedObj != null)
+                            {
+                                stackPanel.Margin = new Thickness(5);
+                                StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(nestedObj);
+                                if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count > 1)
+                                {
+                                    stackPanel.Children.Add(stackPanel1);
+                                }
+                                continue;
+                            }
+                        }
+                        else if (property.PropertyType == typeof(object))
+                        {
+                            stackPanel.Margin = new Thickness(5);
+                            StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(property.GetValue(obj));
+                            if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count != 0)
+                            {
+                                stackPanel.Children.Add(stackPanel1);
                             }
                             continue;
                         }
-                        catch
+                        else
                         {
                             continue;
                         }
-
-                    }
-                    else
-                    {
-                        continue;
                     }
 
                     dockPanel.Margin = new Thickness(0, 0, 0, 5);
@@ -429,20 +444,6 @@ namespace ColorVision.UI
 
             btn.Click += (_, __) => storyboard.Begin();
             return btn;
-        }
-
-        public static bool IsTextEditableType(Type t)
-        {
-            // Includes common primitives and nullable counterparts that can be edited via TextBox
-            t = Nullable.GetUnderlyingType(t) ?? t;
-            return t == typeof(int) ||
-                   t == typeof(float) ||
-                   t == typeof(uint) ||
-                   t == typeof(long) ||
-                   t == typeof(ulong) ||
-                   t == typeof(sbyte) ||
-                   t == typeof(double) ||
-                   t == typeof(string);
         }
     }
 }

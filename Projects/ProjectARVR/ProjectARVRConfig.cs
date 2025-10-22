@@ -58,6 +58,7 @@ namespace ProjectARVR
 
             InitTestCommand = new RelayCommand(a => InitTest());
         }
+
         public void InitTest()
         {
             ProjectWindowInstance.WindowInstance.InitTest(string.Empty);

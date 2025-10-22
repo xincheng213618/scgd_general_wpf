@@ -10,7 +10,7 @@
         xmlns:LogImp="clr-namespace:ColorVision.UI.LogImp;assembly=ColorVision.UI"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ProjectLUXConfig}"
-        Title="ARVR检测 KTD" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" >
+        Title="ARVR检测 LUX" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" >
     <Window.Resources>
         <local:ConnectConverter x:Key="ConnectConverter"/>
         <local:OKNGConverter x:Key="OKNGConverter"/>
@@ -220,16 +220,14 @@
                     </Grid.RowDefinitions>
                     <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Margin="0,0,0,5">
                         <hc:StepBar Grid.Row="0" StepIndex="{Binding StepIndex}" Margin="-5,3,0,2">
-                            <hc:StepBarItem Content="初始化"/>
-                            <hc:StepBarItem Content="White"/>
-                            <hc:StepBarItem Content="White2"/>
-                            <hc:StepBarItem Content="White1"/>
-                            <hc:StepBarItem Content="Black"/>
+                            <hc:StepBarItem Content="WFov"/>
+                            <hc:StepBarItem Content="WCorrdinate"/>
+                            <hc:StepBarItem Content="Red"/>
+                            <hc:StepBarItem Content="Green"/>
+                            <hc:StepBarItem Content="Blue"/>
                             <hc:StepBarItem Content="Chessboard"/>
-                            <hc:StepBarItem Content="MTFH"/>
-                            <hc:StepBarItem Content="MTFV"/>
+                            <hc:StepBarItem Content="MTF"/>
                             <hc:StepBarItem Content="Distortion"/>
-                            <hc:StepBarItem Content="OpticCenter"/>
                         </hc:StepBar>
                     </Border>
                     <RichTextBox x:Name="outputText"  Grid.Row="1"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">

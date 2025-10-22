@@ -50,13 +50,13 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             List<GridViewColumn> gridViewColumns = new List<GridViewColumn>();
 
 
-            List<string> header = new List<string> { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Shape, Properties.Resources.Size, "CCT", "Wave", "X", "Y", "Z", "u'", "v", "x", "y", "Validate" };
+            List<string> header = new List<string> { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Shape, Properties.Resources.Size, "CCT", "Wave", "X", "Y", "Z", "u'", "v", "x", "y" };
             if (result.ResultType == ViewResultAlgType.LEDStripDetection)
             {
                 header = new List<string> { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Shape };
             }
 
-            List<string> bdHeader = new List<string> { "Id", "Name", "PixelPos", "Shapes", "PixelSize", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "POIPointResultModel.ValidateResult" };
+            List<string> bdHeader = new List<string> { "Id", "Name", "PixelPos", "Shapes", "PixelSize", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
 
 
             if (result.ViewResults.Count <= 4000)
@@ -74,7 +74,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                             circleTextProperties.Pen = new Pen(Brushes.Red, 1);
                             circleTextProperties.Id = item.Id ?? -1;
                             circleTextProperties.Text = item.Name;
-                            circleTextProperties.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                            circleTextProperties.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
 
                             DVCircleText Circle = new DVCircleText(circleTextProperties);
                             Circle.Render();
@@ -87,7 +87,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                             rectangleTextProperties.Pen = new Pen(Brushes.Red, 1);
                             rectangleTextProperties.Id = item.Id ?? -1;
                             rectangleTextProperties.Text = item.Name;
-                            rectangleTextProperties.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                            rectangleTextProperties.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
 
                             DVRectangleText Rectangle = new DVRectangleText(rectangleTextProperties);
                             Rectangle.Render();

@@ -72,6 +72,7 @@ namespace ColorVision
         private static Hierarchy Hierarchy { get; set; }
 
         public static void Start()
+        
         {
             _stopwatch = Stopwatch.StartNew();
 

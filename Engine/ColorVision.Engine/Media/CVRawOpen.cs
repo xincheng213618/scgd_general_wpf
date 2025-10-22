@@ -1,17 +1,24 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.Themes.Controls;
 using ColorVision.UI.Menus;
 using cvColorVision;
+using CVCommCore.CVAlgorithm;
 using log4net;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -323,24 +330,247 @@ namespace ColorVision.Engine.Media
 
         public List<MenuItemMetadata> GetContextMenuItems()
         {
-            return new List<MenuItemMetadata>()
+
+
+            PoiResultCIEYData GetCVCIEY(POIPoint poiPoint)
             {
-                new MenuItemMetadata()
+                int x = (int)poiPoint.PixelX; int y = (int)poiPoint.PixelY; int rect = (int)poiPoint.Width; int rect2 = (int)poiPoint.Height;
+                PoiResultCIEYData PoiResultCIEYData = new PoiResultCIEYData();
+                PoiResultCIEYData.Point = poiPoint;
+                float dYVal = 0;
+
+                switch (poiPoint.PointType)
                 {
-                    Header = "导出",
-                    GuidId = "CVCIEExport",
-                    Order = 301,
+                    case POIPointTypes.None:
+                        break;
+                    case POIPointTypes.SolidPoint:
+                        _ = ConvertXYZ.CM_GetYCircle(EditorContext.Config.ConvertXYZhandle, x, y, ref dYVal, 1);
+                        break;
+                    case POIPointTypes.Circle:
+                        _ = ConvertXYZ.CM_GetYCircle(EditorContext.Config.ConvertXYZhandle, x, y, ref dYVal, rect / 2);
+                        break;
+                    case POIPointTypes.Rect:
+                        _ = ConvertXYZ.CM_GetYRect(EditorContext.Config.ConvertXYZhandle, x, y, ref dYVal, rect, rect2);
+                        break;
+                    default:
+                        break;
+                }
+                PoiResultCIEYData.Y = dYVal;
+                return PoiResultCIEYData;
+            }
+
+
+            PoiResultCIExyuvData GetCVCIE(POIPoint pOIPoint)
+            {
+                int x = (int)pOIPoint.PixelX; int y = (int)pOIPoint.PixelY; int rect = (int)pOIPoint.Width; int rect2 = (int)pOIPoint.Height;
+                PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData();
+                poiResultCIExyuvData.Point = pOIPoint;
+                float dXVal = 0;
+                float dYVal = 0;
+                float dZVal = 0;
+                float dx = 0;
+                float dy = 0;
+                float du = 0;
+                float dv = 0;
+                float CCT = 0;
+                float Wave = 0;
+
+                switch (pOIPoint.PointType)
+                {
+                    case POIPointTypes.None:
+                        break;
+                    case POIPointTypes.SolidPoint:
+                        _ = ConvertXYZ.CM_GetXYZxyuvCircle(EditorContext.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1);
+                        break;
+                    case POIPointTypes.Circle:
+                        _ = ConvertXYZ.CM_GetXYZxyuvCircle(EditorContext.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect / 2);
+                        break;
+                    case POIPointTypes.Rect:
+                        _ = ConvertXYZ.CM_GetXYZxyuvRect(EditorContext.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2);
+                        break;
+                    default:
+                        break;
+                }
+
+                poiResultCIExyuvData.u = du;
+                poiResultCIExyuvData.v = dv;
+                poiResultCIExyuvData.x = dx;
+                poiResultCIExyuvData.y = dy;
+                poiResultCIExyuvData.X = dXVal;
+                poiResultCIExyuvData.Y = dYVal;
+                poiResultCIExyuvData.Z = dZVal;
+
+                int i = ConvertXYZ.CM_GetxyuvCCTWaveCircle(EditorContext.Config.ConvertXYZhandle, x, y, ref dx, ref dy, ref du, ref dv, ref CCT, ref Wave, rect / 2);
+                poiResultCIExyuvData.CCT = CCT;
+                poiResultCIExyuvData.Wave = Wave;
+
+                return poiResultCIExyuvData;
+            }
+
+
+            List<MenuItemMetadata> menuItems = new List<MenuItemMetadata>();
+            menuItems.Add(new MenuItemMetadata()
+            {
+                Header = "导出",
+                GuidId = "CVCIEExport",
+                Order = 301,
+                Command = new RelayCommand(a =>
+                {
+                    if (EditorContext.Config.GetProperties<string>("FilePath") is string FilePath && File.Exists(FilePath))
+                    {
+                        new ExportCVCIE(FilePath).ShowDialog();
+                    }
+                })
+            });
+            
+            if (EditorContext.Config.GetProperties<bool>("IsCVCIE"))
+            {
+                MenuItemMetadata menuItemMetadata = new MenuItemMetadata()
+                {
+                    Header = "POI",
+                    GuidId = "POI",
+                    Order = 302,
                     Command = new RelayCommand(a =>
                     {
-                        if (EditorContext.Config.GetProperties<string>("FilePath") is string FilePath && File.Exists(FilePath))
+
+                        if (EditorContext.ImageView.ComboxPOITemplate.SelectedValue is not PoiParam poiParams)
                         {
-                            new ExportCVCIE(FilePath).ShowDialog();
+                            MessageBox1.Show("需要配置关注点");
+                            return;
+                        }
+
+                        if (!EditorContext.Config.GetProperties<bool>("IsBufferSet"))
+                        {
+                            Action action = EditorContext.Config.GetProperties<Action>("LoadBuffer");
+                            action?.Invoke();
+                        }
+
+
+                        int result = ConvertXYZ.CM_SetFilter(EditorContext.Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.Enable, poiParams.PoiConfig.Filter.Threshold);
+                        result = ConvertXYZ.CM_SetFilterNoArea(EditorContext.Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.NoAreaEnable, poiParams.PoiConfig.Filter.Threshold);
+                        result = ConvertXYZ.CM_SetFilterXYZ(EditorContext.Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.XYZEnable, (int)poiParams.PoiConfig.Filter.XYZType, poiParams.PoiConfig.Filter.Threshold);
+
+
+                        if (EditorContext.Config.GetProperties<float[]>("Exp") is float[] exp && exp.Length == 1)
+                        {
+                            ObservableCollection<PoiResultCIEYData> PoiResultCIEYData = new ObservableCollection<PoiResultCIEYData>();
+
+                            bool Isshow = EditorContext.ImageView.DrawingVisualLists.Count < 1000;
+                            foreach (var item in EditorContext.ImageView.DrawingVisualLists)
+                            {
+                                BaseProperties drawAttributeBase = item.BaseAttribute;
+                                if (drawAttributeBase is CircleTextProperties circle)
+                                {
+                                    POIPoint pOIPoint = new POIPoint() { Name = circle.Text, PixelX = (int)circle.Center.X, PixelY = (int)circle.Center.Y, PointType = POIPointTypes.Circle, Height = (int)circle.Radius * 2, Width = (int)circle.Radius * 2 };
+                                    var sss = GetCVCIEY(pOIPoint);
+                                    if (Isshow)
+                                        circle.Msg = "Y:" + sss.Y.ToString("F1");
+                                    PoiResultCIEYData.Add(sss);
+                                }
+                                else if (drawAttributeBase is CircleProperties circleProperties)
+                                {
+
+                                    POIPoint pOIPoint = new POIPoint() { Name = circleProperties.Id.ToString(), PixelX = (int)circleProperties.Center.X, PixelY = (int)circleProperties.Center.Y, PointType = POIPointTypes.Circle, Height = (int)circleProperties.Radius * 2, Width = (int)circleProperties.Radius * 2 };
+                                    var sss = GetCVCIEY(pOIPoint);
+                                    if (Isshow)
+                                        circleProperties.Msg = "Y:" + sss.Y.ToString("F1");
+                                    PoiResultCIEYData.Add(sss);
+                                }
+                                else if (drawAttributeBase is RectangleTextProperties rectangle)
+                                {
+                                    POIPoint pOIPoint = new POIPoint() { Name = rectangle.Id.ToString(), PixelX = (int)(rectangle.Rect.X + rectangle.Rect.Width / 2), PixelY = (int)(rectangle.Rect.Y + rectangle.Rect.Height / 2), PointType = POIPointTypes.Rect, Height = (int)rectangle.Rect.Height, Width = (int)rectangle.Rect.Width };
+                                    var sss = GetCVCIEY(pOIPoint);
+                                    if (Isshow)
+                                        rectangle.Msg = "Y:" + sss.Y.ToString("F1");
+                                    PoiResultCIEYData.Add(sss);
+                                }
+                                else if (drawAttributeBase is RectangleProperties rectangleProperties)
+                                {
+                                    POIPoint pOIPoint = new POIPoint() { Name = rectangleProperties.Id.ToString(), PixelX = (int)(rectangleProperties.Rect.X + rectangleProperties.Rect.Width / 2), PixelY = (int)(rectangleProperties.Rect.Y + rectangleProperties.Rect.Height / 2), PointType = POIPointTypes.Rect, Height = (int)rectangleProperties.Rect.Height, Width = (int)rectangleProperties.Rect.Width };
+                                    var sss = GetCVCIEY(pOIPoint);
+                                    if (Isshow)
+                                        rectangleProperties.Msg = "Y:" + sss.Y.ToString("F1");
+                                    PoiResultCIEYData.Add(sss);
+                                }
+                            }
+
+                            new WindowCVCIE(PoiResultCIEYData) { Owner = Application.Current.GetActiveWindow() }.Show();
+                        }
+                        else
+                        {
+                            ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
+
+                            bool Isshow = EditorContext.ImageView.DrawingVisualLists.Count < 1000;
+                            foreach (var item in EditorContext.ImageView.DrawingVisualLists)
+                            {
+                                BaseProperties drawAttributeBase = item.BaseAttribute;
+                                if (drawAttributeBase is CircleTextProperties circle)
+                                {
+                                    POIPoint pOIPoint = new POIPoint() { Name = circle.Text, PixelX = (int)circle.Center.X, PixelY = (int)circle.Center.Y, PointType = POIPointTypes.Circle, Height = (int)circle.Radius * 2, Width = (int)circle.Radius * 2 };
+                                    var sss = GetCVCIE(pOIPoint);
+                                    if (Isshow)
+                                        if (CVCIEShowConfig.Instance.IsShowString)
+                                            circle.Msg = FormatMessage(CVCIEShowConfig.Instance.Template, sss);
+
+                                    PoiResultCIExyuvDatas.Add(sss);
+                                }
+                                else if (drawAttributeBase is CircleProperties circleProperties)
+                                {
+                                    POIPoint pOIPoint = new POIPoint() { Name = circleProperties.Id.ToString(), PixelX = (int)circleProperties.Center.X, PixelY = (int)circleProperties.Center.Y, PointType = POIPointTypes.Circle, Height = (int)circleProperties.Radius * 2, Width = (int)circleProperties.Radius * 2 };
+                                    var sss = GetCVCIE(pOIPoint);
+                                    if (Isshow)
+                                        if (CVCIEShowConfig.Instance.IsShowString)
+                                            circleProperties.Msg = FormatMessage(CVCIEShowConfig.Instance.Template, sss);
+                                    PoiResultCIExyuvDatas.Add(sss);
+                                }
+                                else if (drawAttributeBase is RectangleTextProperties rectangle)
+                                {
+                                    POIPoint pOIPoint = new POIPoint() { Name = rectangle.Id.ToString(), PixelX = (int)(rectangle.Rect.X + rectangle.Rect.Width / 2), PixelY = (int)(rectangle.Rect.Y + rectangle.Rect.Height / 2), PointType = POIPointTypes.Rect, Height = (int)rectangle.Rect.Height, Width = (int)rectangle.Rect.Width };
+                                    var sss = GetCVCIE(pOIPoint);
+                                    if (Isshow)
+                                        if (CVCIEShowConfig.Instance.IsShowString)
+                                            rectangle.Msg = FormatMessage(CVCIEShowConfig.Instance.Template, sss);
+
+                                    PoiResultCIExyuvDatas.Add(sss);
+                                }
+                                else if (drawAttributeBase is RectangleProperties rectangleProperties)
+                                {
+                                    POIPoint pOIPoint = new POIPoint() { Name = rectangleProperties.Id.ToString(), PixelX = (int)(rectangleProperties.Rect.X + rectangleProperties.Rect.Width / 2), PixelY = (int)(rectangleProperties.Rect.Y + rectangleProperties.Rect.Height / 2), PointType = POIPointTypes.Rect, Height = (int)rectangleProperties.Rect.Height, Width = (int)rectangleProperties.Rect.Width };
+                                    var sss = GetCVCIE(pOIPoint);
+                                    if (Isshow)
+                                        if (CVCIEShowConfig.Instance.IsShowString)
+                                            rectangleProperties.Msg = FormatMessage(CVCIEShowConfig.Instance.Template, sss);
+                                    PoiResultCIExyuvDatas.Add(sss);
+                                }
+                            }
+
+                            new WindowCVCIE(PoiResultCIExyuvDatas) { Owner = Application.Current.GetActiveWindow() }.Show();
+
                         }
                     })
-                }
-            };
+                };
+                menuItems.Add(menuItemMetadata);
+            }
+            return menuItems;
         }
 
+        public static string FormatMessage(string template, PoiResultCIExyuvData properties)
+        {
+            template = template.Replace("\\n", Environment.NewLine);
+            return Regex.Replace(template, @"@(\w+):([F\d]+)", match =>
+            {
+                var propertyName = match.Groups[1].Value;
+                var format = match.Groups[2].Value;
+
+                var propertyInfo = typeof(PoiResultCIExyuvData).GetProperty(propertyName);
+                if (propertyInfo != null)
+                {
+                    var value = propertyInfo.GetValue(properties);
+                    return string.Format($"{{0:{format}}}", value);
+                }
+                return match.Value;
+            });
+        }
 
 
         public async void OpenImage(ImageView imageView, string? filePath)  

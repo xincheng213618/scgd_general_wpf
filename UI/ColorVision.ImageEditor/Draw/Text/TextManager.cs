@@ -37,7 +37,7 @@ namespace ColorVision.ImageEditor.Draw
             EditorContext = context;
             ToolBarLocal = ToolBarLocal.Draw;
             Order = 8;
-            Icon = new TextBlock() { Text = "T" };
+            Icon = new TextBlock() { Text = "A" };
         }
 
         public override bool IsChecked

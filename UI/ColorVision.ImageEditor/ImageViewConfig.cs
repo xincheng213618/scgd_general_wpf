@@ -89,18 +89,5 @@ namespace ColorVision.ImageEditor
         public bool IsShowMsg { get => _IsShowMsg; set { _IsShowMsg = value; OnPropertyChanged(); ShowMsgChanged?.Invoke(this, _IsShowMsg); } }
         private bool _IsShowMsg = true;
 
-
-
-        public event EventHandler BalanceChanged;
-
-        public double RedBalance { get => _RedBalance; set { _RedBalance = value; OnPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
-        private double _RedBalance = 1;
-
-        public double GreenBalance { get => _GreenBalance; set { _GreenBalance = value; OnPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
-        private double _GreenBalance = 1;
-
-        public double BlueBalance { get => _BlueBalance; set { _BlueBalance = value; OnPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
-        private double _BlueBalance = 1;
-
     }
 }

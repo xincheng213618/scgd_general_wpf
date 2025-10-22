@@ -1,5 +1,6 @@
 ﻿using ColorVision.UI;
 using System.Reflection;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
@@ -7,6 +8,21 @@ namespace System.ComponentModel
 {
     public class TextboxPropertiesEditor : IPropertyEditor
     {
+        static TextboxPropertiesEditor()
+        {
+            PropertyEditorHelper.RegisterEditor<TextboxPropertiesEditor>(t =>
+            {
+                t = Nullable.GetUnderlyingType(t) ?? t;
+                return t == typeof(int) ||
+                       t == typeof(float) ||
+                       t == typeof(uint) ||
+                       t == typeof(long) ||
+                       t == typeof(ulong) ||
+                       t == typeof(sbyte) ||
+                       t == typeof(double) ||
+                       t == typeof(string);
+            });
+        }
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);

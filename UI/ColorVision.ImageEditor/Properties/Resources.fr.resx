@@ -168,4 +168,7 @@
   <data name="BitmapScalingMode" xml:space="preserve">
     <value>mode de mise à l'échelle bitmap</value>
   </data>
+  <data name="Invert" xml:space="preserve">
+    <value>Inverser</value>
+  </data>
 </root>

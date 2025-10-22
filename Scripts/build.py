@@ -17,8 +17,8 @@ def rebuild_project(msbuild_path, solution_path, advanced_installer_path, aip_pa
         print(f"An error occurred while rebuilding the project: {e}")
         return None
 
-def get_latest_file(directory, file_pattern):
-    files = [os.path.join(directory, f) for f in os.listdir(directory) if re.match(file_pattern, f)]
+def get_latest_file(directory):
+    files = [os.path.join(directory, f) for f in os.listdir(directory)]
     if not files:
         return None
     latest_file = max(files, key=os.path.getctime)
@@ -105,9 +105,10 @@ def compare_and_write_version(latest_version, latest_release_path, latest_file, 
             file.write(latest_version)
         print(f"Updated the release version to {latest_version}")
         try:
-            # copy_with_progress(latest_file, target_directory)
-            # 这里先禁用掉，上传慢，走百度云会快很多
-            # upload_file(latest_file,"ColorVision")
+            if(os.path.abspath(os.path.join(script_path, '..')).startswith("C:\\Users\\17917\\Desktop")):
+                # copy_with_progress(latest_file, target_directory)
+                  # 这里先禁用掉，上传慢，走百度云会快很多
+                upload_file(latest_file,"ColorVision")
             print(f"Upload {latest_file} ")
         except IOError as e:
             print(f"Upload {latest_file}: {e}")
@@ -115,6 +116,9 @@ def compare_and_write_version(latest_version, latest_release_path, latest_file, 
         print(f"The current version ({current_version}) is up to date.")
 
 def compare_and_write_version_weixin(latest_version, latest_release_path, latest_file,target_directory ,changelog_src, changelog_dst):
+    if not os.path.exists(latest_release_path):
+        print(target_directory +"不存在，跳过更新。")
+        return
     try:
         with open(latest_release_path, 'r') as file:
             current_version = file.read().strip()
@@ -139,25 +143,31 @@ def compare_and_write_version_weixin(latest_version, latest_release_path, latest
 
 
 if __name__ == "__main__":
-    
+
     script_path =  os.path.abspath(os.path.dirname(__file__))
     base_path = os.path.abspath(os.path.join(script_path, '..'))  # 获取 base_path 的父级节点
-    
-    
+
+    # 根据当前登录用户动态生成 Advanced Installer 项目与输出目录
+    user_home = os.environ.get('USERPROFILE') or os.path.expanduser('~')
+    documents_dir = os.path.join(user_home, 'Documents')
+    ai_project_dir = os.path.join(documents_dir, 'Advanced Installer', 'Projects', 'ColorVision')
+    dynamic_aip_path = os.path.join(ai_project_dir, 'ColorVision.aip')
+    dynamic_setup_files_dir = os.path.join(ai_project_dir, 'Setup Files')
+
     projects = {
         'ColorVision': {
-            'msbuild_path': r'C:\Program Files\Microsoft Visual Studio\2022\Preview\MSBuild\Current\Bin\msbuild.exe',
+            'msbuild_path': r'C:\\Program Files\\Microsoft Visual Studio\\2022\\Preview\\MSBuild\\Current\\Bin\\msbuild.exe',
             'solution_path': os.path.join(base_path, 'build.sln'),
             'advanced_installer_path': os.path.join(base_path,'..', 'AdvancedInstaller v19.7.1', 'App', 'ProgramFiles', 'bin', 'x86', 'AdvancedInstaller.com'),
-            'aip_path': r"C:\Users\Xin\Documents\Advanced Installer\Projects\ColorVision\ColorVision.aip",
-            'setup_files_dir': r"C:\Users\Xin\Documents\Advanced Installer\Projects\ColorVision\Setup Files",
-            'latest_release_path': r"H:\ColorVision\LATEST_RELEASE",
-            'target_directory': r"H:\ColorVision",
+            # 动态路径：仅修改这两个字段
+            'aip_path': dynamic_aip_path,
+            'setup_files_dir': dynamic_setup_files_dir,
+            'latest_release_path': r'H:\\ColorVision\\LATEST_RELEASE',
+            'target_directory': r'H:\\ColorVision',
             'changelog_src':  os.path.join(base_path, 'CHANGELOG.md'),
-            'changelog_dst': r"H:\ColorVision\CHANGELOG.md",
-            'file_pattern': r'ColorVision-\d+\.\d+\.\d+\.\d+\.exe',
-            'wechat_target_directory': r"C:\Users\Xin\Documents\WXWork\1688854819471931\WeDrive\视彩光电\视彩（上海）光电技术有限公司\视彩软件及工具简易教程\新版软件安装包\ColorVision",
-            'baidu_target_directory':r"D:\BaiduSyncdisk\ColorVision"
+            'changelog_dst': r'H:\\ColorVision\\CHANGELOG.md',
+            'wechat_target_directory': r'C:\\Users\\Xin\\Documents\\WXWork\\1688854819471931\\WeDrive\\视彩光电\\视彩（上海）光电技术有限公司\\视彩软件及工具简易教程\\新版软件安装包\\ColorVision',
+            'baidu_target_directory': r'D:\\BaiduSyncdisk\\ColorVision'
     }
     }
 
@@ -166,7 +176,8 @@ if __name__ == "__main__":
     project = projects[project_name]
 
     rebuild_project(project['msbuild_path'], project['solution_path'], project['advanced_installer_path'],   project['aip_path'])
-    latest_file = get_latest_file(project['setup_files_dir'], project['file_pattern'])
+    print(project['setup_files_dir'])
+    latest_file = get_latest_file(project['setup_files_dir'])
     print("latest_file: " + str(latest_file))
     if latest_file:
         latest_version = extract_version_from_filename(latest_file)

@@ -35,7 +35,7 @@ public abstract class STNode
 
 	private int _Top;
 
-	private int _Width = 100;
+	private int _Width = 80;
 
 	private int _Height = 40;
 
@@ -741,7 +741,8 @@ public abstract class STNode
 				point = control.Location;
 				dt.Graphics.TranslateTransform(empty.X, empty.Y);
 				dt.Graphics.SmoothingMode = SmoothingMode.None;
-				control.OnPaint(dt);
+				control._Width = this.Width - 10;
+                control.OnPaint(dt);
 			}
 		}
 		dt.Graphics.TranslateTransform(-_Left - point.X, -_Top - _TitleHeight - point.Y);

@@ -43,8 +43,8 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
             List<GridViewColumn> gridViewColumns = new List<GridViewColumn>();
 
-            List<string> header = new() { "名称", "位置", "大小", "形状", "Y", "Validate" };
-            List<string> bdHeader = new() { "Name", "PixelPos", "PixelSize", "Shapes", "Y", "POIPointResultModel.ValidateResult" };
+            List<string> header = new() { "名称", "位置", "大小", "形状", "Y" };
+            List<string> bdHeader = new() { "Name", "PixelPos", "PixelSize", "Shapes", "Y" };
 
             if (result.ViewResults.Count <= 4000)
             {

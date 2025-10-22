@@ -10,6 +10,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
@@ -252,6 +253,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
     public class PoiResultData : ViewModelBase, IViewResult
     {
+        public ContextMenu ContextMenu { get; set; }
         public PoiResultData()
         {
 

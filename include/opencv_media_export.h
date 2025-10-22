@@ -20,17 +20,17 @@ enum FocusAlgorithm {
     VarianceOfLaplacian = 4,
     EnergyOfGradient = 5,
     SpatialFrequency = 6
-    // CalResol ±È½Ï¸´ÔÓ£¬Í¨³£ÐèÒªÌØ¶¨Í¼¿¨£¬ÕâÀï²»×÷ÎªÍ¨ÓÃ¶Ô½¹Ëã·¨
+    // CalResol ï¿½È½Ï¸ï¿½ï¿½Ó£ï¿½Í¨ï¿½ï¿½ï¿½ï¿½Òªï¿½Ø¶ï¿½Í¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï²»ï¿½ï¿½ÎªÍ¨ï¿½Ã¶Ô½ï¿½ï¿½ã·¨
 };
 
-// ¶¨Òå´íÎó´úÂëÃ¶¾Ù
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã¶ï¿½ï¿½
 enum class StitchingErrorCode {
-    SUCCESS = 0,          // ³É¹¦
-    EMPTY_INPUT = -1,     // ÊäÈëÎª¿Õ
-    FILE_NOT_FOUND = -2,  // ÎÄ¼þÎ´ÕÒµ½
-    DIFFERENT_DIMENSIONS = -3, // ³ß´ç²»Í¬
-    DIFFERENT_TYPE = -4,  // ÀàÐÍ²»Í¬
-    NO_VALID_IMAGES = -5 // Ã»ÓÐÓÐÐ§µÄÍ¼Ïñ
+    SUCCESS = 0,          // ï¿½É¹ï¿½
+    EMPTY_INPUT = -1,     // ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½
+    FILE_NOT_FOUND = -2,  // ï¿½Ä¼ï¿½Î´ï¿½Òµï¿½
+    DIFFERENT_DIMENSIONS = -3, // ï¿½ß´ç²»Í¬
+    DIFFERENT_TYPE = -4,  // ï¿½ï¿½ï¿½Í²ï¿½Í¬
+    NO_VALID_IMAGES = -5 // Ã»ï¿½ï¿½ï¿½ï¿½Ð§ï¿½ï¿½Í¼ï¿½ï¿½
 };
 
 extern "C" COLORVISIONCORE_API int M_ExtractChannel(HImage img, HImage* outImage, int channel);
@@ -66,6 +66,17 @@ extern "C" COLORVISIONCORE_API int M_StitchImages(const char* config, HImage* ou
 
 extern "C" COLORVISIONCORE_API int M_Fusion(const char* fusionjson, HImage* outImage);
 
+extern "C" COLORVISIONCORE_API int M_RemoveMoire(HImage img, HImage* outImage);
+
+extern "C" COLORVISIONCORE_API int M_ApplyGaussianBlur(HImage img, HImage* outImage, int kernelSize, double sigma);
+
+extern "C" COLORVISIONCORE_API int M_ApplyMedianBlur(HImage img, HImage* outImage, int kernelSize);
+
+extern "C" COLORVISIONCORE_API int M_ApplySharpen(HImage img, HImage* outImage);
+
+extern "C" COLORVISIONCORE_API int M_ApplyCannyEdgeDetection(HImage img, HImage* outImage, double threshold1, double threshold2);
+
+extern "C" COLORVISIONCORE_API int M_ApplyHistogramEqualization(HImage img, HImage* outImage);
 
 extern "C" COLORVISIONCORE_API int FreeResult(char* result) {
     delete[] result;

@@ -24,7 +24,7 @@ namespace ProjectARVRPro.Services
             {
                 ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
                 //现在先切换PG
-                return new SocketResponse() { MsgID = request.MsgID, EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVR1TestType.W51 } };
+                return new SocketResponse() { MsgID = request.MsgID, EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = 0 } };
             }
             else
             {

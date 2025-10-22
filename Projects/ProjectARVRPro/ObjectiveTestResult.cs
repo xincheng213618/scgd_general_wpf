@@ -43,6 +43,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using Org.BouncyCastle.Bcpg.OpenPgp;
 
 namespace ProjectARVRPro
 {
@@ -156,6 +157,9 @@ namespace ProjectARVRPro
     /// </summary>
     public class ObjectiveTestResult:ViewModelBase
     {
+
+        public Dictionary<string, ObjectiveTestItem> TestItems { get; set; } = new Dictionary<string, ObjectiveTestItem>();
+
         /// <summary>
         /// 水平视场角(°) 测试项
         /// </summary>
@@ -343,24 +347,6 @@ namespace ProjectARVRPro
         public ObjectiveTestItem MTF_HV_V_LeftDown_0_8F { get; set; }
 
 
-        // 平均值
-        //public ObjectiveTestItem MTF_HV_Center_OF { get; set; }
-        //public ObjectiveTestItem MTF_HV_LeftUp_0_4F { get; set; }
-        //public ObjectiveTestItem MTF_HV_RightUp_0_4F { get; set; }
-
-        //public ObjectiveTestItem MTF_HV_RightDown_0_4F { get; set; }
-
-        //public ObjectiveTestItem MTF_HV_LeftDown_0_4F { get; set; }
-
-        //public ObjectiveTestItem MTF_HV_LeftUp_0_8F { get; set; }
-
-        //public ObjectiveTestItem MTF_HV_RightUp_0_8F { get; set; }
-
-        //public ObjectiveTestItem MTF_HV_RightDown_0_8F { get; set; }
-
-        //public ObjectiveTestItem MTF_HV_LeftDown_0_8F { get; set; }
-
-
         /// <summary>
         /// X轴倾斜角(°) 测试项
         /// </summary>
@@ -407,14 +393,6 @@ namespace ProjectARVRPro
         /// </summary>
         public string TotalResultString => TotalResult?"PASS":"Fail";
 
-        public bool FlowW51TestReslut { get; set; } = false;
-        public bool FlowWhiteTestReslut { get; set; } = false;
-        public bool FlowBlackTestReslut { get; set; } = false;
-        public bool FlowW25TestReslut { get; set; } = false;
-        public bool FlowChessboardTestReslut { get; set; } = false;
-        public bool FlowMTFHVTestReslut { get; set; } = false;
-        public bool FlowDistortionTestReslut { get; set; } = false;
-        public bool FlowOpticCenterTestReslut { get; set; } = false;
     }
 
 

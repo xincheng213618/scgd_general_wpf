@@ -68,8 +68,8 @@ namespace ProjectLUX
         /// 白画面
         /// </summary>
         White,
-        White2,
-        White1,
+        WhiteFOV,
+        White_calibrate,
         /// <summary>
         /// 黑画面
         /// </summary>
@@ -81,7 +81,7 @@ namespace ProjectLUX
         /// <summary>
         /// MTF 横
         /// </summary>
-        MTFH,
+        MTFHV,
         /// <summary>
         /// MTF垂直
         /// </summary>

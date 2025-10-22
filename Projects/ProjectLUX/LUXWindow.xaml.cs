@@ -59,13 +59,6 @@ using System.Windows.Media;
 
 namespace ProjectLUX
 {
-
-    public class SwitchPG
-    {
-        public ARVRTestType ARVRTestType { get; set; }
-    }
-
-
     public class LUXWindowConfig : WindowConfig
     {
         public static LUXWindowConfig Instance => ConfigService.Instance.GetRequiredService<LUXWindowConfig>();
@@ -118,102 +111,24 @@ namespace ProjectLUX
             }
         }
 
-        bool IsSwitchRun = false;
-        public void SwitchPGCompleted()
+        public void RunTemplate(int index,string templatename)
         {
-            if (IsSwitchRun)
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                log.Info("重复触发PG");
-                return;
-            }
-            IsSwitchRun = true;
-
-            if (flowControl.IsFlowRun)
-            {
-                log.Info("PG切换错误，正在执行流程");
-                return;
-            }
-            var values = Enum.GetValues(typeof(ARVRTestType));
-            int currentIndex = Array.IndexOf(values, CurrentTestType);
-            int nextIndex = (currentIndex + 1) % values.Length;
-            // 跳过 None（假设 None 是第一个）
-            if ((ARVRTestType)values.GetValue(nextIndex) == ARVRTestType.None)
-                nextIndex = (nextIndex + 1) % values.Length;
-            var TestType = (ARVRTestType)values.GetValue(nextIndex);
-
-            try
-            {
-                if (CurrentTestType == ARVRTestType.White2)
+                ProjectLUXConfig.Instance.StepIndex = 1;
+                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains(templatename)).Value;
+                if (ProjectLUXConfig.Instance.LUXTestOpen)
                 {
-                    ProjectLUXConfig.Instance.StepIndex = 1;
-                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("WhiteFOV")).Value;
                     RunTemplate();
                 }
-                if (TestType == ARVRTestType.White)
+                else
                 {
-                    ProjectLUXConfig.Instance.StepIndex = 2;
-                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White255")).Value;
-                    CurrentTestType = TestType;
-                    RunTemplate();
+                    SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                 }
-                if (CurrentTestType == ARVRTestType.White1)
-                {
-                    ProjectLUXConfig.Instance.StepIndex = 3;
-                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White_calibrate")).Value;
-                    RunTemplate();
-                }
-                if (TestType == ARVRTestType.Black)
-                {
-                    ProjectLUXConfig.Instance.StepIndex = 4;
-                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Black")).Value;
-                    CurrentTestType = TestType;
-                    RunTemplate();
-                }
-                if (TestType == ARVRTestType.Chessboard)
-                {
-                    ProjectLUXConfig.Instance.StepIndex = 5;
-                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Chessboard")).Value;
-                    CurrentTestType = TestType;
-                    RunTemplate();
-                }
-                if (TestType == ARVRTestType.MTFH)
-                {
-                    ProjectLUXConfig.Instance.StepIndex = 6;
-                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("MTF_H")).Value;
-                    CurrentTestType = TestType;
-                    RunTemplate();
-                }
-
-                if (TestType == ARVRTestType.MTFV)
-                {
-                    ProjectLUXConfig.Instance.StepIndex = 7;
-                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("MTF_V")).Value;
-                    CurrentTestType = TestType;
-                    RunTemplate();
-                }
-
-                if (TestType == ARVRTestType.Distortion)
-                {
-                    ProjectLUXConfig.Instance.StepIndex = 8;
-                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Distortion")).Value;
-                    CurrentTestType = TestType;
-                    RunTemplate();
-                }
-                if (TestType == ARVRTestType.OpticCenter)
-                {
-                    ProjectLUXConfig.Instance.StepIndex = 9;
-                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("OpticCenter")).Value;
-                    CurrentTestType = TestType;
-                    RunTemplate();
-                }
-            }
-            catch(Exception ex)
-            {
-                log.Error(ex);
-            }
-
-            IsSwitchRun = false;
+            });
         }
+
+        public string ReturnCode { get; set; }
 
         public STNodeEditor STNodeEditorMain { get; set; }
         private FlowEngineControl flowEngine;
@@ -440,17 +355,13 @@ namespace ProjectLUX
             CurrentFlowResult.RunTime = stopwatch.ElapsedMilliseconds;
             logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
 
+            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+
             if (FlowControlData.EventName == "Completed")
             {
                 CurrentFlowResult.Msg = "Completed";
                 try
                 {
-                    //如果没有执行完，先切换PG，并且提前设置流程
-                    if (!IsTestTypeCompleted())
-                    {
-                        SwitchPG();
-                    }
-
                     Application.Current.Dispatcher.BeginInvoke(() =>
                     {
                         Processing(FlowControlData.SerialNumber);
@@ -484,22 +395,6 @@ namespace ProjectLUX
                     });
                     return;
                 }
-                else
-                {
-                    ObjectiveTestResult.TotalResult = false;
-                    var response = new SocketResponse
-                    {
-                        Version = "1.0",
-                        MsgID = "",
-                        EventName = "ProjectLUXResult",
-                        Code = -2,
-                        Msg = "ARVR Test OverTime",
-                        Data = ObjectiveTestResult
-                    };
-                    string respString = JsonConvert.SerializeObject(response);
-                    log.Info(respString);
-                    SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
-                }
                 TryCount = 0;
             }
             else
@@ -526,38 +421,6 @@ namespace ProjectLUX
                 ViewResultManager.Save(CurrentFlowResult);
 
                 TryCount = 0;
-
-                if (ProjectConfig.AllowTestFailures)
-                {
-                    //如果允许失败，则切换PG，并且提前设置流程,执行结束时直接发送结束
-                    if (!IsTestTypeCompleted())
-                    {
-                        SwitchPG();
-                    }
-                    else
-                    {
-                        TestCompleted();
-                    }
-                }
-                else
-                {
-                    if (SocketManager.GetInstance().TcpClients.Count > 0 && SocketControl.Current.Stream != null)
-                    {
-                        ObjectiveTestResult.TotalResult = false;
-                        var response = new SocketResponse
-                        {
-                            Version = "1.0",
-                            MsgID = "",
-                            EventName = "ProjectLUXResult",
-                            Code = -1,
-                            Msg = "ARVR Test Fail",
-                            Data = ObjectiveTestResult
-                        };
-                        string respString = JsonConvert.SerializeObject(response);
-                        log.Info(respString);
-                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
-                    }
-                }
             }
         }
 
@@ -581,7 +444,7 @@ namespace ProjectLUX
             if (result.Model.Contains("White_calibrate"))
             {
                 log.Info("正在解析白画面的流程");
-                result.TestType = ARVRTestType.White1;
+                result.TestType = ARVRTestType.White_calibrate;
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
                 {
@@ -1062,7 +925,7 @@ namespace ProjectLUX
             else if (result.Model.Contains("MTF_H"))
             {
                 log.Info("正在解析MTF_H画面的流程");
-                result.TestType = ARVRTestType.MTFH;
+                result.TestType = ARVRTestType.MTFHV;
                 ObjectiveTestResult.FlowMTFHTestReslut = true;
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
@@ -1540,26 +1403,7 @@ namespace ProjectLUX
 
             ViewResultManager.Save(result);
 
-
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
-
-            if (IsTestTypeCompleted())
-            {
-                TestCompleted();
-            }
-        }
-
-        private bool IsTestTypeCompleted()
-        {
-            var values = Enum.GetValues(typeof(ARVRTestType));
-            int currentIndex = Array.IndexOf(values, CurrentTestType);
-            int nextIndex = (currentIndex + 1) % values.Length;
-            // 跳过 None（假设 None 是第一个）
-            if ((ARVRTestType)values.GetValue(nextIndex) == ARVRTestType.None)
-                nextIndex = (nextIndex + 1) % values.Length;
-            ARVRTestType aRVRTestType = (ARVRTestType)values.GetValue(nextIndex);
-
-            return aRVRTestType >= ARVRTestType.Ghost;
         }
 
         private void SwitchPG()
@@ -1570,32 +1414,9 @@ namespace ProjectLUX
                 return;
             }
             log.Info("Socket已经链接 ");
-
-            var values = Enum.GetValues(typeof(ARVRTestType));
-            int currentIndex = Array.IndexOf(values, CurrentTestType);
-            int nextIndex = (currentIndex + 1) % values.Length;
-            // 跳过 None（假设 None 是第一个）
-            if ((ARVRTestType)values.GetValue(nextIndex) == ARVRTestType.None)
-                nextIndex = (nextIndex + 1) % values.Length;
-            ARVRTestType aRVRTestType = (ARVRTestType)values.GetValue(nextIndex);
-
-            var response = new SocketResponse
-            {
-                Version = "1.0",
-                MsgID = string.Empty,
-                EventName = "SwitchPG",
-                Code = 0,
-                Msg = "Switch PG",
-                SerialNumber = SNtextBox.Text,
-                Data = new SwitchPG
-                {
-                    ARVRTestType = aRVRTestType
-                },
-            };
-            string respString = JsonConvert.SerializeObject(response);
-            log.Info(respString);
-            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
-
+            //string respString = JsonConvert.SerializeObject(response);
+            //log.Info(respString);
+            //SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
         }
 
         private void TestCompleted()
@@ -1753,7 +1574,7 @@ namespace ProjectLUX
                                 Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
                                 Circle.Attribute.Id = item.Id ?? -1;
                                 Circle.Attribute.Text = item.Name;
-                                Circle.Attribute.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                                Circle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
                                 Circle.Render();
                                 ImageView.AddVisual(Circle);
                                 break;
@@ -1764,7 +1585,7 @@ namespace ProjectLUX
                                 Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
                                 Rectangle.Attribute.Id = item.Id ?? -1;
                                 Rectangle.Attribute.Text = item.Name;
-                                Rectangle.Attribute.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                                Rectangle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
                                 Rectangle.Render();
                                 ImageView.AddVisual(Rectangle);
                                 break;
@@ -1794,7 +1615,7 @@ namespace ProjectLUX
                                 Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
                                 Circle.Attribute.Id = item.Id ?? -1;
                                 Circle.Attribute.Text = item.Name;
-                                Circle.Attribute.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                                Circle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
                                 Circle.Render();
                                 ImageView.AddVisual(Circle);
                                 break;
@@ -1805,7 +1626,7 @@ namespace ProjectLUX
                                 Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
                                 Rectangle.Attribute.Id = item.Id ?? -1;
                                 Rectangle.Attribute.Text = item.Name;
-                                Rectangle.Attribute.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                                Rectangle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
                                 Rectangle.Render();
                                 ImageView.AddVisual(Rectangle);
                                 break;
@@ -1835,7 +1656,7 @@ namespace ProjectLUX
                                 Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
                                 Circle.Attribute.Id = item.Id ?? -1;
                                 Circle.Attribute.Text = item.Name;
-                                Circle.Attribute.Msg = PoiImageViewComponent.FormatMessage("Y:@Y:F2", poiResultCIExyuvData);
+                                Circle.Attribute.Msg = CVRawOpen.FormatMessage("Y:@Y:F2", poiResultCIExyuvData);
                                 Circle.Render();
                                 ImageView.AddVisual(Circle);
                                 break;
@@ -1846,7 +1667,7 @@ namespace ProjectLUX
                                 Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
                                 Rectangle.Attribute.Id = item.Id ?? -1;
                                 Rectangle.Attribute.Text = item.Name;
-                                Rectangle.Attribute.Msg = PoiImageViewComponent.FormatMessage("Y:@Y:F2", poiResultCIExyuvData);
+                                Rectangle.Attribute.Msg = CVRawOpen.FormatMessage("Y:@Y:F2", poiResultCIExyuvData);
                                 Rectangle.Render();
                                 ImageView.AddVisual(Rectangle);
                                 break;
@@ -1856,7 +1677,7 @@ namespace ProjectLUX
                     }
                 }
 
-                if (result.TestType == ARVRTestType.MTFH)
+                if (result.TestType == ARVRTestType.MTFHV)
                 {
 
                     if (result.ViewRelsultMTFH == null || result.ViewRelsultMTFH.MTFDetailViewReslut == null)
@@ -2011,7 +1832,7 @@ namespace ProjectLUX
                     if (result.ViewResultBlack.FOFOContrast !=null)
                         outtext += $"FOFOContrast:{result.ViewResultBlack.FOFOContrast.TestValue}  LowLimit:{result.ViewResultBlack.FOFOContrast.LowLimit} UpLimit:{result.ViewResultBlack.FOFOContrast.UpLimit},Rsult{(result.ViewResultBlack.FOFOContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     break;
-                case ARVRTestType.MTFH:
+                case ARVRTestType.MTFHV:
                     outtext += $"水平MTF 测试项：自动AA区域定位算法+关注点+MTF算法" + Environment.NewLine;
                     if (result.ViewRelsultMTFH.MTFDetailViewReslut.MTFResult != null)
                     {

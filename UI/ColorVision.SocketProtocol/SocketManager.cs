@@ -136,6 +136,8 @@ namespace ColorVision.SocketProtocol
                     string respose = handle.Handle(stream, request);
                     if (!string.IsNullOrWhiteSpace(respose))
                         return respose;
+                    else
+                        return null;
                 }
             }
             return "No Dispatcher Hanle";
@@ -347,8 +349,11 @@ namespace ColorVision.SocketProtocol
                             try
                             {
                                 var string1 = TextDispatcher.Dispatch(stream, message);
-                                byte[] respBytes = Encoding.UTF8.GetBytes(string1);
-                                stream.Write(respBytes, 0, respBytes.Length);
+                                if (string1 != null)
+                                {
+                                    byte[] respBytes = Encoding.UTF8.GetBytes(string1);
+                                    stream.Write(respBytes, 0, respBytes.Length);
+                                }
                             }
                             catch (Exception ex)
                             {
