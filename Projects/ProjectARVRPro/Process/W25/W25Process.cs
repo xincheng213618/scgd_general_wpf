@@ -17,7 +17,7 @@ namespace ProjectARVRPro.Process.W25
 
             try
             {
-                log?.Info("´¦Àí White25 Á÷³Ì½á¹û");
+                log?.Info("ï¿½ï¿½ï¿½ï¿½ White25 ï¿½ï¿½ï¿½Ì½ï¿½ï¿½");
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (values.Count > 0)
@@ -48,40 +48,40 @@ namespace ProjectARVRPro.Process.W25
                             ctx.ObjectiveTestResult.W25CenterLunimance = new ObjectiveTestItem
                             {
                                 Name = "W25CenterLunimance",
-                                LowLimit =recipeConfig.W25CenterLunimanceMin,
-                                UpLimit =recipeConfig.W25CenterLunimanceMax,
+                                LowLimit = recipeConfig.W25CenterLunimance.Min,
+                                UpLimit = recipeConfig.W25CenterLunimance.Max,
                                 Value = center.Y,
                                 TestValue = center.Y.ToString("F3") + " nit"
                             };
                             ctx.ObjectiveTestResult.W25CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem
                             {
                                 Name = "W25CenterCIE1931ChromaticCoordinatesx",
-                                LowLimit =recipeConfig.W25CenterCIE1931ChromaticCoordinatesxMin,
-                                UpLimit =recipeConfig.W25CenterCIE1931ChromaticCoordinatesxMax,
+                                LowLimit = recipeConfig.W25CenterCIE1931ChromaticCoordinatesx.Min,
+                                UpLimit = recipeConfig.W25CenterCIE1931ChromaticCoordinatesx.Max,
                                 Value = center.x,
                                 TestValue = center.x.ToString("F3")
                             };
                             ctx.ObjectiveTestResult.W25CenterCIE1931ChromaticCoordinatesy = new ObjectiveTestItem
                             {
                                 Name = "W25CenterCIE1931ChromaticCoordinatesy",
-                                LowLimit =recipeConfig.W25CenterCIE1931ChromaticCoordinatesyMin,
-                                UpLimit =recipeConfig.W25CenterCIE1931ChromaticCoordinatesyMax,
+                                LowLimit = recipeConfig.W25CenterCIE1931ChromaticCoordinatesy.Min,
+                                UpLimit = recipeConfig.W25CenterCIE1931ChromaticCoordinatesy.Max,
                                 Value = center.y,
                                 TestValue = center.y.ToString("F3")
                             };
                             ctx.ObjectiveTestResult.W25CenterCIE1976ChromaticCoordinatesu = new ObjectiveTestItem
                             {
                                 Name = "W25CenterCIE1976ChromaticCoordinatesu",
-                                LowLimit =recipeConfig.W25CenterCIE1976ChromaticCoordinatesuMin,
-                                UpLimit =recipeConfig.W25CenterCIE1976ChromaticCoordinatesuMax,
+                                LowLimit = recipeConfig.W25CenterCIE1976ChromaticCoordinatesu.Min,
+                                UpLimit = recipeConfig.W25CenterCIE1976ChromaticCoordinatesu.Max,
                                 Value = center.u,
                                 TestValue = center.u.ToString("F3")
                             };
                             ctx.ObjectiveTestResult.W25CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem
                             {
                                 Name = "W25CenterCIE1976ChromaticCoordinatesv",
-                                LowLimit =recipeConfig.W25CenterCIE1976ChromaticCoordinatesvMin,
-                                UpLimit =recipeConfig.W25CenterCIE1976ChromaticCoordinatesvMax,
+                                LowLimit = recipeConfig.W25CenterCIE1976ChromaticCoordinatesv.Min,
+                                UpLimit = recipeConfig.W25CenterCIE1976ChromaticCoordinatesv.Max,
                                 Value = center.v,
                                 TestValue = center.v.ToString("F3")
                             };
@@ -112,7 +112,7 @@ namespace ProjectARVRPro.Process.W25
         {
             var result = ctx.Result;
             string outtext = string.Empty;
-            outtext += $"W25 ²âÊÔÏî£º×Ô¶¯AAÇøÓò¶¨Î»Ëã·¨+¹Ø×¢µãËã·¨+ÐòÁÐ¶Ô±È¶ÈËã·¨(ÖÐÐÄÁÁ¶È±ÈÖµ)" + Environment.NewLine;
+            outtext += $"W25 ï¿½ï¿½ï¿½ï¿½ï¿½î£ºï¿½Ô¶ï¿½AAï¿½ï¿½ï¿½ï¿½Î»ï¿½ã·¨+ï¿½ï¿½×¢ï¿½ï¿½ï¿½ã·¨+ï¿½ï¿½ï¿½Ð¶Ô±È¶ï¿½ï¿½ã·¨(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È±ï¿½Öµ)" + Environment.NewLine;
             if (result.ViewResultW25.PoiResultCIExyuvDatas != null)
             {
                 foreach (var item in result.ViewResultW25.PoiResultCIExyuvDatas)

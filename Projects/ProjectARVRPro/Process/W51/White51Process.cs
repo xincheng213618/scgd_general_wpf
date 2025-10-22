@@ -28,8 +28,8 @@ namespace ProjectARVRPro.Process.W51
 
             try
             {
-                log?.Info("´¦Àí White51 Á÷³Ì½á¹û");
-                // Í¼Ïñ
+                log?.Info("ï¿½ï¿½ï¿½ï¿½ White51 ï¿½ï¿½ï¿½Ì½ï¿½ï¿½");
+                // Í¼ï¿½ï¿½
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (values.Count > 0)
                 {
@@ -60,8 +60,8 @@ namespace ProjectARVRPro.Process.W51
                             ctx.ObjectiveTestResult.W51DiagonalFieldOfViewAngle = new ObjectiveTestItem()
                             {
                                 Name = "DiagonalFieldOfViewAngle",
-                                LowLimit = recipeConfig.DiagonalFieldOfViewAngleMin,
-                                UpLimit = recipeConfig.DiagonalFieldOfViewAngleMax,
+                                LowLimit = recipeConfig.DiagonalFieldOfViewAngle.Min,
+                                UpLimit = recipeConfig.DiagonalFieldOfViewAngle.Max,
                                 Value = view1.Result.result.D_Fov,
                                 TestValue = view1.Result.result.D_Fov.ToString("F3")
                             };
@@ -69,16 +69,16 @@ namespace ProjectARVRPro.Process.W51
                             ctx.ObjectiveTestResult.W51HorizontalFieldOfViewAngle = new ObjectiveTestItem()
                             {
                                 Name = "HorizontalFieldOfViewAngle",
-                                LowLimit = recipeConfig.HorizontalFieldOfViewAngleMin,
-                                UpLimit = recipeConfig.HorizontalFieldOfViewAngleMax,
+                                LowLimit = recipeConfig.HorizontalFieldOfViewAngle.Min,
+                                UpLimit = recipeConfig.HorizontalFieldOfViewAngle.Max,
                                 Value = view1.Result.result.ClolorVisionH_Fov,
                                 TestValue = view1.Result.result.ClolorVisionH_Fov.ToString("F3")
                             };
                             ctx.ObjectiveTestResult.W51VerticalFieldOfViewAngle = new ObjectiveTestItem()
                             {
                                 Name = "VerticalFieldOfViewAngle",
-                                LowLimit = recipeConfig.VerticalFieldOfViewAngleMin,
-                                UpLimit = recipeConfig.VerticalFieldOfViewAngleMax,
+                                LowLimit = recipeConfig.VerticalFieldOfViewAngle.Min,
+                                UpLimit = recipeConfig.VerticalFieldOfViewAngle.Max,
                                 Value = view1.Result.result.ClolorVisionV_Fov,
                                 TestValue = view1.Result.result.ClolorVisionV_Fov.ToString("F3")
                             };
@@ -130,9 +130,9 @@ namespace ProjectARVRPro.Process.W51
         {
             var result = ctx.Result;
             string outtext = string.Empty;
-            outtext += $"°×»­ÃæÂÌÍ¼W51 ²âÊÔÏî£º×Ô¶¯AAÇøÓò¶¨Î»Ëã·¨+FOVËã·¨" + Environment.NewLine;
+            outtext += $"ï¿½×»ï¿½ï¿½ï¿½ï¿½ï¿½Í¼W51 ï¿½ï¿½ï¿½ï¿½ï¿½î£ºï¿½Ô¶ï¿½AAï¿½ï¿½ï¿½ï¿½Î»ï¿½ã·¨+FOVï¿½ã·¨" + Environment.NewLine;
 
-            outtext += $"·¢¹âÇø½Çµã£º" + Environment.NewLine;
+            outtext += $"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Çµã£º" + Environment.NewLine;
             if (result.ViewReslutW51.AlgResultLightAreaModels != null)
             {
                 foreach (var item in result.ViewReslutW51.AlgResultLightAreaModels)

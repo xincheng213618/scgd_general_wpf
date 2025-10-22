@@ -17,7 +17,7 @@ namespace ProjectARVRPro.Process.OpticCenter
 
             try
             {
-                log?.Info("´¦Àí OpticCenter Á÷³Ì½á¹û");
+                log?.Info("ï¿½ï¿½ï¿½ï¿½ OpticCenter ï¿½ï¿½ï¿½Ì½ï¿½ï¿½");
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (values.Count > 0)
@@ -38,9 +38,9 @@ namespace ProjectARVRPro.Process.OpticCenter
                                 find.FindCrossResult.result[0].tilt.tilt_y *= fixConfig.OptCenterYTilt;
                                 find.FindCrossResult.result[0].rotationAngle *= fixConfig.OptCenterRotation;
                                 ctx.Result.ViewResultOpticCenter.FindCrossDetailViewReslut = find;
-                                ctx.ObjectiveTestResult.OptCenterXTilt = Build("OptCenterXTilt", find.FindCrossResult.result[0].tilt.tilt_x, recipeConfig.OptCenterXTiltMin, recipeConfig.OptCenterXTiltMax, "F4");
-                                ctx.ObjectiveTestResult.OptCenterYTilt = Build("OptCenterYTilt", find.FindCrossResult.result[0].tilt.tilt_y, recipeConfig.OptCenterYTiltMin, recipeConfig.OptCenterYTiltMax, "F4");
-                                ctx.ObjectiveTestResult.OptCenterRotation = Build("OptCenterRotation", find.FindCrossResult.result[0].rotationAngle, recipeConfig.OptCenterRotationMin, recipeConfig.OptCenterRotationMax, "F4");
+                                ctx.ObjectiveTestResult.OptCenterXTilt = Build("OptCenterXTilt", find.FindCrossResult.result[0].tilt.tilt_x, recipeConfig.OptCenterXTilt.Min, recipeConfig.OptCenterXTilt.Max, "F4");
+                                ctx.ObjectiveTestResult.OptCenterYTilt = Build("OptCenterYTilt", find.FindCrossResult.result[0].tilt.tilt_y, recipeConfig.OptCenterYTilt.Min, recipeConfig.OptCenterYTilt.Max, "F4");
+                                ctx.ObjectiveTestResult.OptCenterRotation = Build("OptCenterRotation", find.FindCrossResult.result[0].rotationAngle, recipeConfig.OptCenterRotation.Min, recipeConfig.OptCenterRotation.Max, "F4");
                                 ctx.Result.ViewResultOpticCenter.OptCenterXTilt = ctx.ObjectiveTestResult.OptCenterXTilt;
                                 ctx.Result.ViewResultOpticCenter.OptCenterYTilt = ctx.ObjectiveTestResult.OptCenterYTilt;
                                 ctx.Result.ViewResultOpticCenter.OptCenterRotation = ctx.ObjectiveTestResult.OptCenterRotation;
@@ -54,9 +54,9 @@ namespace ProjectARVRPro.Process.OpticCenter
                                 find.FindCrossResult.result[0].tilt.tilt_y *= fixConfig.ImageCenterYTilt;
                                 find.FindCrossResult.result[0].rotationAngle *= fixConfig.ImageCenterRotation;
                                 ctx.Result.ViewResultOpticCenter.FindCrossDetailViewReslut1 = find;
-                                ctx.ObjectiveTestResult.ImageCenterXTilt = Build("ImageCenterXTilt", find.FindCrossResult.result[0].tilt.tilt_x, recipeConfig.ImageCenterXTiltMin, recipeConfig.ImageCenterXTiltMax, "F4");
-                                ctx.ObjectiveTestResult.ImageCenterYTilt = Build("ImageCenterYTilt", find.FindCrossResult.result[0].tilt.tilt_y, recipeConfig.ImageCenterYTiltMin, recipeConfig.ImageCenterYTiltMax, "F4");
-                                ctx.ObjectiveTestResult.ImageCenterRotation = Build("ImageCenterRotation", find.FindCrossResult.result[0].rotationAngle, recipeConfig.ImageCenterRotationMin, recipeConfig.ImageCenterRotationMax, "F4");
+                                ctx.ObjectiveTestResult.ImageCenterXTilt = Build("ImageCenterXTilt", find.FindCrossResult.result[0].tilt.tilt_x, recipeConfig.ImageCenterXTilt.Min, recipeConfig.ImageCenterXTilt.Max, "F4");
+                                ctx.ObjectiveTestResult.ImageCenterYTilt = Build("ImageCenterYTilt", find.FindCrossResult.result[0].tilt.tilt_y, recipeConfig.ImageCenterYTilt.Min, recipeConfig.ImageCenterYTilt.Max, "F4");
+                                ctx.ObjectiveTestResult.ImageCenterRotation = Build("ImageCenterRotation", find.FindCrossResult.result[0].rotationAngle, recipeConfig.ImageCenterRotation.Min, recipeConfig.ImageCenterRotation.Max, "F4");
                                 ctx.Result.ViewResultOpticCenter.ImageCenterXTilt = ctx.ObjectiveTestResult.ImageCenterXTilt;
                                 ctx.Result.ViewResultOpticCenter.ImageCenterYTilt = ctx.ObjectiveTestResult.ImageCenterYTilt;
                                 ctx.Result.ViewResultOpticCenter.ImageCenterRotation = ctx.ObjectiveTestResult.ImageCenterRotation;
@@ -89,12 +89,12 @@ namespace ProjectARVRPro.Process.OpticCenter
         {
             var result = ctx.Result;
             string outtext = string.Empty;
-            outtext += $"»û±ä¹íÓ° ²âÊÔÏî£º×Ô¶¯AAÇøÓò¶¨Î»Ëã·¨+»û±äËã·¨+¹íÓ°Ëã·¨" + Environment.NewLine;
-            outtext += $"OpticCenter ²âÊÔÏî£º" + Environment.NewLine;
+            outtext += $"ï¿½ï¿½ï¿½ï¿½ï¿½Ó° ï¿½ï¿½ï¿½ï¿½ï¿½î£ºï¿½Ô¶ï¿½AAï¿½ï¿½ï¿½ï¿½Î»ï¿½ã·¨+ï¿½ï¿½ï¿½ï¿½ï¿½ã·¨+ï¿½ï¿½Ó°ï¿½ã·¨" + Environment.NewLine;
+            outtext += $"OpticCenter ï¿½ï¿½ï¿½ï¿½ï¿½î£º" + Environment.NewLine;
 
             if (result.ViewResultOpticCenter.FindCrossDetailViewReslut != null)
             {
-                outtext += $"OptÖÐÐÄµãx:{result.ViewResultOpticCenter.FindCrossDetailViewReslut.FindCrossResult.result[0].center.x} ÖÐÐÄµãy:{result.ViewResultOpticCenter.FindCrossDetailViewReslut.FindCrossResult.result[0].center.y}" + Environment.NewLine;
+                outtext += $"Optï¿½ï¿½ï¿½Äµï¿½x:{result.ViewResultOpticCenter.FindCrossDetailViewReslut.FindCrossResult.result[0].center.x} ï¿½ï¿½ï¿½Äµï¿½y:{result.ViewResultOpticCenter.FindCrossDetailViewReslut.FindCrossResult.result[0].center.y}" + Environment.NewLine;
                 if (result.ViewResultOpticCenter.OptCenterXTilt != null)
                     outtext += $"OptCenterXTilt:{result.ViewResultOpticCenter.OptCenterXTilt.TestValue} LowLimit:{result.ViewResultOpticCenter.OptCenterXTilt.LowLimit}  UpLimit:{result.ViewResultOpticCenter.OptCenterXTilt.UpLimit},Rsult{(result.ViewResultOpticCenter.OptCenterXTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                 if (result.ViewResultOpticCenter.OptCenterYTilt != null)
@@ -104,7 +104,7 @@ namespace ProjectARVRPro.Process.OpticCenter
             }
             if (result.ViewResultOpticCenter.FindCrossDetailViewReslut1 != null)
             {
-                outtext += $"ImageÖÐÐÄµãx:{result.ViewResultOpticCenter.FindCrossDetailViewReslut1.FindCrossResult.result[0].center.x} ÖÐÐÄµãy:{result.ViewResultOpticCenter.FindCrossDetailViewReslut1.FindCrossResult.result[0].center.y}" + Environment.NewLine;
+                outtext += $"Imageï¿½ï¿½ï¿½Äµï¿½x:{result.ViewResultOpticCenter.FindCrossDetailViewReslut1.FindCrossResult.result[0].center.x} ï¿½ï¿½ï¿½Äµï¿½y:{result.ViewResultOpticCenter.FindCrossDetailViewReslut1.FindCrossResult.result[0].center.y}" + Environment.NewLine;
                 if (result.ViewResultOpticCenter.ImageCenterXTilt != null)
                     outtext += $"ImageCenterXTilt:{result.ViewResultOpticCenter.ImageCenterXTilt.TestValue} LowLimit:{result.ViewResultOpticCenter.ImageCenterXTilt.LowLimit}  UpLimit:{result.ViewResultOpticCenter.ImageCenterXTilt.UpLimit},Rsult{(result.ViewResultOpticCenter.ImageCenterXTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                 if (result.ViewResultOpticCenter.ImageCenterYTilt != null)

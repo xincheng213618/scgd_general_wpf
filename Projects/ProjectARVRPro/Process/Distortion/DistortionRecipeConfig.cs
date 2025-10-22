@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using ProjectARVRPro;
 using ProjectARVRPro;
 using ProjectARVRPro.Process.Distortion;
+using ProjectARVRPro.Recipe;
 using System.ComponentModel;
 using System.Text.Json.Nodes;
 
@@ -13,18 +14,12 @@ namespace ProjectARVRPro.Process.Distortion
 {
     public class DistortionRecipeConfig : ViewModelBase, IRecipeConfig
     {
+        [Category("Distortion")]
+        public RecipeBase HorizontalTVDistortion { get => _HorizontalTVDistortion; set { _HorizontalTVDistortion = value; OnPropertyChanged(); } }
+        private RecipeBase _HorizontalTVDistortion = new RecipeBase(0, 2.1);
 
         [Category("Distortion")]
-        public double HorizontalTVDistortionMin { get => _HorizontalTVDistortionMin; set { _HorizontalTVDistortionMin = value; OnPropertyChanged(); } }
-        private double _HorizontalTVDistortionMin;
-        [Category("Distortion")]
-        public double HorizontalTVDistortionMax { get => _HorizontalTVDistortionMax; set { _HorizontalTVDistortionMax = value; OnPropertyChanged(); } }
-        private double _HorizontalTVDistortionMax = 2.1;
-        [Category("Distortion")]
-        public double VerticalTVDistortionMin { get => _VerticalTVDistortionMin; set { _VerticalTVDistortionMin = value; OnPropertyChanged(); } }
-        private double _VerticalTVDistortionMin;
-        [Category("Distortion")]
-        public double VerticalTVDistortionMax { get => _VerticalTVDistortionMax; set { _VerticalTVDistortionMax = value; OnPropertyChanged(); } }
-        private double _VerticalTVDistortionMax = 2.1;
+        public RecipeBase VerticalTVDistortion { get => _VerticalTVDistortion; set { _VerticalTVDistortion = value; OnPropertyChanged(); } }
+        private RecipeBase _VerticalTVDistortion = new RecipeBase(0, 2.1);
     }
 }
