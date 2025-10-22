@@ -175,7 +175,7 @@ if __name__ == "__main__":
     project_name = 'ColorVision'  # 或 'Microscope'
     project = projects[project_name]
 
-    # rebuild_project(project['msbuild_path'], project['solution_path'], project['advanced_installer_path'],   project['aip_path'])
+    rebuild_project(project['msbuild_path'], project['solution_path'], project['advanced_installer_path'],   project['aip_path'])
     print(project['setup_files_dir'])
     latest_file = get_latest_file(project['setup_files_dir'])
     print("latest_file: " + str(latest_file))

@@ -170,7 +170,7 @@ namespace ColorVision.Database
             }
             else
             {
-                dockPanel = PropertyEditorHelper.GenTextboxProperties(property, QueryValue);
+                dockPanel = PropertyEditorHelper.GetOrCreateEditor<TextboxPropertiesEditor>().GenProperties(property, QueryValue);
             }
             PropertyInfo propertyInfo = typeof(QueryCondition).GetProperty("Operator");
             var com = PropertyEditorHelper.GenEnumPropertiesComboBox(propertyInfo, queryCondition);
@@ -326,7 +326,7 @@ namespace ColorVision.Database
             }
             else
             {
-                dockPanel = PropertyEditorHelper.GenTextboxProperties(property, QueryValue);
+                dockPanel = PropertyEditorHelper.GetOrCreateEditor<TextboxPropertiesEditor>().GenProperties(property, QueryValue);
             }
             PropertyInfo propertyInfo = typeof(QueryCondition).GetProperty("Operator");
             var com = PropertyEditorHelper.GenEnumPropertiesComboBox(propertyInfo, queryCondition);

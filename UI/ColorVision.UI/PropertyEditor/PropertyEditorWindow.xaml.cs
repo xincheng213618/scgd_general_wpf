@@ -160,7 +160,26 @@ namespace ColorVision.UI
                     if (browsableAttr?.Browsable ?? true)
                     {
                         DockPanel dockPanel = new DockPanel();
-                        if (property.PropertyType.IsEnum)
+
+                        var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
+                        // Custom editor instantiation and cache
+                        if (editorAttr?.EditorType != null)
+                        {
+                            if (PropertyEditorHelper.CustomEditorCache.TryGetValue(editorAttr.EditorType, out var cachedEditor))
+                            {
+                                dockPanel = cachedEditor.GenProperties(property, obj);
+                            }
+                            try
+                            {
+                                if (Activator.CreateInstance(editorAttr.EditorType) is IPropertyEditor customEditor)
+                                {
+                                    PropertyEditorHelper.CustomEditorCache[editorAttr.EditorType] = customEditor;
+                                    dockPanel = customEditor.GenProperties(property, obj);
+                                }
+                            }
+                            catch { }
+                        }
+                        else if (property.PropertyType.IsEnum)
                         {
                             dockPanel = PropertyEditorHelper.GetOrCreateEditor<EnumPropertiesEditor>().GenProperties(property, obj);
                         }
@@ -170,11 +189,11 @@ namespace ColorVision.UI
                         }
                         else if (property.PropertyType == typeof(int?) || property.PropertyType == typeof(int) || property.PropertyType == typeof(float) || property.PropertyType == typeof(float?) || property.PropertyType == typeof(uint) || property.PropertyType == typeof(long) || property.PropertyType == typeof(ulong) || property.PropertyType == typeof(sbyte) || property.PropertyType == typeof(double) || property.PropertyType == typeof(double?) || property.PropertyType == typeof(string))
                         {
-                            dockPanel = PropertyEditorHelper.GenTextboxProperties(property, obj);
+                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<TextboxPropertiesEditor>().GenProperties(property, obj);
                         }
                         else if (property.PropertyType == typeof(System.Windows.Rect))
                         {
-                            dockPanel = PropertyEditorHelper.GenTextboxProperties(property, obj);
+                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<TextboxPropertiesEditor>().GenProperties(property, obj);
                         }
                         else if (typeof(Brush).IsAssignableFrom(property.PropertyType))
                         {
@@ -205,14 +224,14 @@ namespace ColorVision.UI
                             {
                                 stackPanel.Margin = new Thickness(5);
                                 StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(nestedObj);
-                                if (stackPanel1.Children.Count ==1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count !=0)
+                                if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count > 1)
                                 {
                                     stackPanel.Children.Add(stackPanel1);
                                 }
                                 continue;
                             }
                         }
-                        else if (property.PropertyType ==typeof(object) && property.GetValue(obj) is INotifyPropertyChanged nestedObj)
+                        else if (property.PropertyType == typeof(object) && property.GetValue(obj) is INotifyPropertyChanged nestedObj)
                         {
                             stackPanel.Margin = new Thickness(5);
                             StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(nestedObj);

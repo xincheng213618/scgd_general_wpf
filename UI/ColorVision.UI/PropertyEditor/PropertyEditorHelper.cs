@@ -168,31 +168,6 @@ namespace ColorVision.UI
             return comboBox;
         }
 
-        public static DockPanel GenTextboxProperties(PropertyInfo property, object obj)
-        {
-            var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
-            // Custom editor instantiation and cache
-            if (editorAttr?.EditorType != null)
-            {
-                if (CustomEditorCache.TryGetValue(editorAttr.EditorType, out var cachedEditor))
-                {
-                    return cachedEditor.GenProperties(property, obj);
-                }
-                try
-                {
-                    if (Activator.CreateInstance(editorAttr.EditorType) is IPropertyEditor customEditor)
-                    {
-                        CustomEditorCache[editorAttr.EditorType] = customEditor;
-                        return customEditor.GenProperties(property, obj);
-                    }
-                }
-                catch { }
-            }
-            return new TextboxPropertiesEditor().GenProperties(property, obj);
-        }
-
-
-
         public static StackPanel GenPropertyEditorControl(object obj)
         {
             var categoryGroups = new Dictionary<string, List<PropertyInfo>>(StringComparer.Ordinal);
@@ -272,7 +247,7 @@ namespace ColorVision.UI
 
                 foreach (var property in categoryGroup.Value)
                 {
-                    DockPanel dockPanel;
+                    DockPanel dockPanel = new DockPanel();
 
                     var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
                     if (editorAttr?.EditorType != null)
@@ -293,14 +268,17 @@ namespace ColorVision.UI
                         { 
                         }
                     }
-
-                    if (property.PropertyType.IsEnum)
+                    else if (property.PropertyType.IsEnum)
                     {
                         dockPanel = GetOrCreateEditor<EnumPropertiesEditor>().GenProperties(property, obj);
                     }
                     else if (property.PropertyType == typeof(bool))
                     {
                         dockPanel = GetOrCreateEditor<BoolPropertiesEditor>().GenProperties(property, obj);
+                    }
+                    else if (IsTextEditableType(property.PropertyType))
+                    {
+                        dockPanel = GetOrCreateEditor<TextboxPropertiesEditor>().GenProperties(property, obj);
                     }
                     else if (typeof(Brush).IsAssignableFrom(property.PropertyType))
                     {
