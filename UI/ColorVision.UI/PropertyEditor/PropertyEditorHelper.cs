@@ -274,17 +274,33 @@ namespace ColorVision.UI
                 {
                     DockPanel dockPanel;
 
+                    var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
+                    if (editorAttr?.EditorType != null)
+                    {
+                        if (CustomEditorCache.TryGetValue(editorAttr.EditorType, out var cachedEditor))
+                        {
+                            dockPanel = cachedEditor.GenProperties(property, obj);
+                        }
+                        try
+                        {
+                            if (Activator.CreateInstance(editorAttr.EditorType) is IPropertyEditor customEditor)
+                            {
+                                CustomEditorCache[editorAttr.EditorType] = customEditor;
+                                dockPanel = customEditor.GenProperties(property, obj);
+                            }
+                        }
+                        catch
+                        { 
+                        }
+                    }
+
                     if (property.PropertyType.IsEnum)
                     {
-                        dockPanel = PropertyEditorHelper.GetOrCreateEditor<EnumPropertiesEditor>().GenProperties(property, obj);
+                        dockPanel = GetOrCreateEditor<EnumPropertiesEditor>().GenProperties(property, obj);
                     }
                     else if (property.PropertyType == typeof(bool))
                     {
-                        dockPanel = PropertyEditorHelper.GetOrCreateEditor<BoolPropertiesEditor>().GenProperties(property, obj);
-                    }
-                    else if (IsTextEditableType(property.PropertyType))
-                    {
-                        dockPanel = GenTextboxProperties(property, obj);
+                        dockPanel = GetOrCreateEditor<BoolPropertiesEditor>().GenProperties(property, obj);
                     }
                     else if (typeof(Brush).IsAssignableFrom(property.PropertyType))
                     {

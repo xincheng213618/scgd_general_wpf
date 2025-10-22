@@ -86,7 +86,6 @@ namespace ProjectARVRPro.Process.W51
                             ctx.Result.ViewReslutW51.HorizontalFieldOfViewAngle = ctx.ObjectiveTestResult.W51HorizontalFieldOfViewAngle;
                             ctx.Result.ViewReslutW51.VerticalFieldOfViewAngle = ctx.ObjectiveTestResult.W51VerticalFieldOfViewAngle;
 
-
                             ctx.Result.Result = ctx.Result.Result && ctx.ObjectiveTestResult.W51DiagonalFieldOfViewAngle.TestResult;
                             ctx.Result.Result = ctx.Result.Result && ctx.ObjectiveTestResult.W51HorizontalFieldOfViewAngle.TestResult;
                             ctx.Result.Result = ctx.Result.Result && ctx.ObjectiveTestResult.W51VerticalFieldOfViewAngle.TestResult;

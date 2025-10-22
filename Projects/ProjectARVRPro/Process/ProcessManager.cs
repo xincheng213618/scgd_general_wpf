@@ -89,7 +89,7 @@ namespace ProjectARVRPro.Process
             }
         }
 
-        private void ProcessMetas_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        private void ProcessMetas_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             if (e.NewItems != null)
             {
@@ -108,7 +108,7 @@ namespace ProjectARVRPro.Process
             SavePersistedMetas();
         }
 
-        private void Meta_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        private void Meta_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             // 任意属性变更即持久化，避免频繁：可加节流，这里简单实现
             SavePersistedMetas();

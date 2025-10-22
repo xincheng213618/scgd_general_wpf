@@ -27,6 +27,7 @@ namespace ProjectARVRPro.Process.W255
         [Category("W255")]
         public double W255ColorUniformityMax { get => _W255ColorUniformityMax; set { _W255ColorUniformityMax = value; OnPropertyChanged(); } }
         private double _W255ColorUniformityMax = 0.02;
+
         [Category("W255")]
         [DisplayName("Center Correlated Color Temperature(K) Min")]
         public double CenterCorrelatedColorTemperatureMin { get => _CenterCorrelatedColorTemperatureMin; set { _CenterCorrelatedColorTemperatureMin = value; OnPropertyChanged(); } }
