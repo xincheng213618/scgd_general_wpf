@@ -347,24 +347,6 @@ namespace ProjectARVRPro
         public ObjectiveTestItem MTF_HV_V_LeftDown_0_8F { get; set; }
 
 
-        // 平均值
-        //public ObjectiveTestItem MTF_HV_Center_OF { get; set; }
-        //public ObjectiveTestItem MTF_HV_LeftUp_0_4F { get; set; }
-        //public ObjectiveTestItem MTF_HV_RightUp_0_4F { get; set; }
-
-        //public ObjectiveTestItem MTF_HV_RightDown_0_4F { get; set; }
-
-        //public ObjectiveTestItem MTF_HV_LeftDown_0_4F { get; set; }
-
-        //public ObjectiveTestItem MTF_HV_LeftUp_0_8F { get; set; }
-
-        //public ObjectiveTestItem MTF_HV_RightUp_0_8F { get; set; }
-
-        //public ObjectiveTestItem MTF_HV_RightDown_0_8F { get; set; }
-
-        //public ObjectiveTestItem MTF_HV_LeftDown_0_8F { get; set; }
-
-
         /// <summary>
         /// X轴倾斜角(°) 测试项
         /// </summary>
@@ -411,8 +393,6 @@ namespace ProjectARVRPro
         /// </summary>
         public string TotalResultString => TotalResult?"PASS":"Fail";
 
-
-        public Dictionary<string,bool> TestFlowResult { get; set; } = new Dictionary<string, bool>();
     }
 
 
