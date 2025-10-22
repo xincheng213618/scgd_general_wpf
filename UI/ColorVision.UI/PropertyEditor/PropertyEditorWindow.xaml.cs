@@ -159,93 +159,53 @@ namespace ColorVision.UI
                     
                     if (browsableAttr?.Browsable ?? true)
                     {
-                        DockPanel dockPanel = new DockPanel();
+                        DockPanel dockPanel = null;
 
                         var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
-                        // Custom editor instantiation and cache
                         if (editorAttr?.EditorType != null)
                         {
-                            if (PropertyEditorHelper.CustomEditorCache.TryGetValue(editorAttr.EditorType, out var cachedEditor))
-                            {
-                                dockPanel = cachedEditor.GenProperties(property, obj);
-                            }
                             try
                             {
-                                if (Activator.CreateInstance(editorAttr.EditorType) is IPropertyEditor customEditor)
+                                var editor = PropertyEditorHelper.GetOrCreateEditor(editorAttr.EditorType);
+                                dockPanel = editor.GenProperties(property, obj);
+                            }
+                            catch (Exception)
+                            {
+                            }
+                        }
+
+                        if (dockPanel == null)
+                        {
+                            Type? editorType = null;
+                            editorType = PropertyEditorHelper.GetEditorTypeForPropertyType(property.PropertyType);
+                            if (editorType != null)
+                            {
+                                try
                                 {
-                                    PropertyEditorHelper.CustomEditorCache[editorAttr.EditorType] = customEditor;
-                                    dockPanel = customEditor.GenProperties(property, obj);
+                                    var editor = PropertyEditorHelper.GetOrCreateEditor(editorType);
+                                    dockPanel = editor.GenProperties(property, obj);
+                                }
+                                catch (Exception)
+                                {
+                                    continue;
                                 }
                             }
-                            catch { }
-                        }
-                        else if (property.PropertyType.IsEnum)
-                        {
-                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<EnumPropertiesEditor>().GenProperties(property, obj);
-                        }
-                        else if (property.PropertyType == typeof(bool))
-                        {
-                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<BoolPropertiesEditor>().GenProperties(property, obj);
-                        }
-                        else if (property.PropertyType == typeof(int?) || property.PropertyType == typeof(int) || property.PropertyType == typeof(float) || property.PropertyType == typeof(float?) || property.PropertyType == typeof(uint) || property.PropertyType == typeof(long) || property.PropertyType == typeof(ulong) || property.PropertyType == typeof(sbyte) || property.PropertyType == typeof(double) || property.PropertyType == typeof(double?) || property.PropertyType == typeof(string))
-                        {
-                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<TextboxPropertiesEditor>().GenProperties(property, obj);
-                        }
-                        else if (property.PropertyType == typeof(System.Windows.Rect))
-                        {
-                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<TextboxPropertiesEditor>().GenProperties(property, obj);
-                        }
-                        else if (typeof(Brush).IsAssignableFrom(property.PropertyType))
-                        {
-                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<BrushesPropertiesEditor>().GenProperties(property, obj);
-                        }
-                        else if (typeof(ICommand).IsAssignableFrom(property.PropertyType))
-                        {
-                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<CommandPropertiesEditor>().GenProperties(property, obj);
-                        }
-                        else if (typeof(Level).IsAssignableFrom(property.PropertyType))
-                        {
-                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<LevelPropertiesEditor>().GenProperties(property, obj);
-                        }
-                        else if (property.PropertyType == typeof(FontFamily))
-                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<FontFamilyPropertiesEditor>().GenProperties(property, obj);
-                        else if (property.PropertyType == typeof(FontWeight))
-                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<FontWeightPropertiesEditor>().GenProperties(property, obj);
-                        else if (property.PropertyType == typeof(FontStyle))
-                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<FontStylePropertiesEditor>().GenProperties(property, obj);
-                        else if (property.PropertyType == typeof(FontStretch))
-                            dockPanel = PropertyEditorHelper.GetOrCreateEditor<FontStretchPropertiesEditor>().GenProperties(property, obj);
-
-                        else if (typeof(INotifyPropertyChanged).IsAssignableFrom(property.PropertyType))
-                        {
-                            // 如果属性是ViewModelBase的子类，递归解析
-                            var nestedObj = (INotifyPropertyChanged)property.GetValue(obj);
-                            if (nestedObj != null)
+                            else if (property.PropertyType == typeof(object))
                             {
                                 stackPanel.Margin = new Thickness(5);
-                                StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(nestedObj);
-                                if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count > 1)
+                                StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(property.GetValue(obj));
+                                if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count != 0)
                                 {
                                     stackPanel.Children.Add(stackPanel1);
                                 }
                                 continue;
                             }
-                        }
-                        else if (property.PropertyType == typeof(object) && property.GetValue(obj) is INotifyPropertyChanged nestedObj)
-                        {
-                            stackPanel.Margin = new Thickness(5);
-                            StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(nestedObj);
-                            if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count != 0)
+                            else
                             {
-                                stackPanel.Children.Add(stackPanel1);
+                                continue;
                             }
-                            continue;
                         }
-                        else
-                        {
-                            continue;
-                        }
-                        
+
                         dockPanel.Margin = new Thickness(0, 0, 0, 5);
 
                         var VisibleBlindAttr = property.GetCustomAttribute<PropertyVisibilityAttribute>();
