@@ -49,6 +49,7 @@ using ProjectARVRPro.Process.Blue;
 using ProjectARVRPro.Process.Green;
 using ProjectARVRPro.Process.W255;
 using ProjectARVRPro.Process.Chessboard;
+using ProjectARVRPro.Process.Distortion;
 
 namespace ProjectARVRPro
 {
