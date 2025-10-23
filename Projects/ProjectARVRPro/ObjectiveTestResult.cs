@@ -44,6 +44,8 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using Org.BouncyCastle.Bcpg.OpenPgp;
+using ProjectARVRPro.Process.Red;
+using ProjectARVRPro.Process.Blue;
 
 namespace ProjectARVRPro
 {
@@ -152,11 +154,16 @@ namespace ProjectARVRPro
         }
     }
 
+
+
     /// <summary>
     /// 表示一组客观测试项的测试结果，每个属性对应一个具体的测试项目，包含测试值、上下限、结果等信息。
     /// </summary>
     public class ObjectiveTestResult:ViewModelBase
     {
+        public RedTestResult RedTestResult { get; set; }
+
+        public BlueTestResult BlueTestResult { get; set; }
 
         public Dictionary<string, ObjectiveTestItem> TestItems { get; set; } = new Dictionary<string, ObjectiveTestItem>();
 
@@ -207,12 +214,14 @@ namespace ProjectARVRPro
         /// </summary>
         public ObjectiveTestItem W255CenterCIE1976ChromaticCoordinatesv { get; set; }
 
+        public List<PoixyuvData> W255PoixyuvDatas { get; set; } = new List<PoixyuvData>();
+
+
         /// <summary>
         /// 中心相关色温(K) 测试项
         /// </summary>
         public ObjectiveTestItem BlackCenterCorrelatedColorTemperature { get; set; }
 
-        public List<PoixyuvData> W255PoixyuvDatas { get; set; } = new List<PoixyuvData>();
 
         /// <summary>
         /// FOFO对比度 测试项

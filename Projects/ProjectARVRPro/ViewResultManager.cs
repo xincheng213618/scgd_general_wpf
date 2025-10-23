@@ -47,7 +47,7 @@ namespace ProjectARVRPro
         public static ViewResultManager GetInstance() { lock (_locker) { _instance ??= new ViewResultManager(); return _instance; } }
         public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
 
-        public static string SqliteDbPath { get; set; } = DirectoryPath + "ProjectARVRLite.db";
+        public static string SqliteDbPath { get; set; } = DirectoryPath + "ProjectARVRPro.db";
 
         public ViewResultManagerConfig Config { get; set; }
 

@@ -117,6 +117,10 @@ namespace ProjectARVRPro
 
         public DateTime CreateTime { get; set; } = DateTime.Now;
 
+        [SugarColumn(IsNullable =true)]
+        public string ViewResultJson { get; set; } 
+
+
         [SugarColumn(IsIgnore = true)]
         public ViewResultW25 ViewResultW25 { get; set; } = new ViewResultW25();
 
