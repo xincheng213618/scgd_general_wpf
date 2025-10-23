@@ -1,58 +1,15 @@
-﻿#pragma warning disable
-using ColorVision.Common.Algorithms;
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
-using ColorVision.Engine.Archive.Dao;
-using ColorVision.Engine.Media;
-using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.Jsons;
-using ColorVision.Engine.Templates.Jsons.BinocularFusion;
-using ColorVision.Engine.Templates.Jsons.FindCross;
-using ColorVision.Engine.Templates.Jsons.FOV2;
-using ColorVision.Engine.Templates.Jsons.MTF2;
-using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
-using ColorVision.Engine.Templates.MTF;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.ImageEditor.Draw;
-using ColorVision.SocketProtocol;
-using ColorVision.Themes;
-using ColorVision.UI;
-using ColorVision.UI.Extension;
-using ColorVision.UI.LogImp;
-using CVCommCore.CVAlgorithm;
-using FlowEngineLib;
-using FlowEngineLib.Base;
-using LiveChartsCore.Kernel;
-using log4net;
-using log4net.Util;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Org.BouncyCastle.Asn1.Ocsp;
-using ProjectARVRPro;
-using ProjectARVRPro.Services;
 using SqlSugar;
-using ST.Library.UI.NodeEditor;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
-using System.Net.Sockets;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
 
 namespace ProjectARVRPro
 {
@@ -117,6 +74,7 @@ namespace ProjectARVRPro
 
         public DateTime CreateTime { get; set; } = DateTime.Now;
 
+
         [SugarColumn(IsNullable =true)]
         public string ViewResultJson { get; set; } 
 
@@ -135,19 +93,6 @@ namespace ProjectARVRPro
             }
         }
 
-        [SugarColumn(IsIgnore = true)]
-        public ViewResultWhite ViewResultWhite { get; set; } = new ViewResultWhite();
-
-        [Browsable(false)]
-        public string ViewResultWhiteJson
-        {
-            get => JsonConvert.SerializeObject(ViewResultWhite);
-            set
-            {
-                if (!string.IsNullOrEmpty(value))
-                    ViewResultWhite = JsonConvert.DeserializeObject<ViewResultWhite>(value);
-            }
-        }
 
         [SugarColumn(IsIgnore = true)]
         public ViewResultBlack ViewResultBlack { get; set; } = new ViewResultBlack();
@@ -162,29 +107,8 @@ namespace ProjectARVRPro
                     ViewResultBlack = JsonConvert.DeserializeObject<ViewResultBlack>(value);
             }
         }
-
-
-        [SugarColumn(IsIgnore = true)]
-        public ViewRelsultMTFHV ViewRelsultMTFH { get; set; } = new ViewRelsultMTFHV();
-
-        [Browsable(false)]
-        public string ViewRelsultMTFHJson
-        {
-            get => JsonConvert.SerializeObject(ViewRelsultMTFH);
-            set
-            {
-                if (!string.IsNullOrEmpty(value))
-                    ViewRelsultMTFH = JsonConvert.DeserializeObject<ViewRelsultMTFHV>(value);
-            }
-        }
     }
 
-
-    public class ViewRelsultMTFHV
-    {
-        public MTFDetailViewReslut MTFDetailViewReslut { get; set; }
-
-    }
 
     public class ViewResultBlack
     {
@@ -204,11 +128,5 @@ namespace ProjectARVRPro
 
     }
 
-
-    public class ViewResultWhite
-    {
-        public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
-
-    }
 
 }

@@ -17,7 +17,6 @@ namespace ProjectARVRPro.Process.OpticCenter
             OpticCenterRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<OpticCenterRecipeConfig>();
             OpticCenterFixConfig fixConfig = ctx.FixConfig.GetRequiredService<OpticCenterFixConfig>();
             OpticCenterTestResult testResult = new OpticCenterTestResult();
-            ctx.ObjectiveTestResult.OpticCenterTestResult = testResult;
 
             try
             {
@@ -63,6 +62,9 @@ namespace ProjectARVRPro.Process.OpticCenter
                         }
                     }
                 }
+
+                ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
+                ctx.ObjectiveTestResult.OpticCenterTestResult = testResult;
                 return true;
             }
             catch (Exception ex)
@@ -86,6 +88,7 @@ namespace ProjectARVRPro.Process.OpticCenter
             var result = ctx.Result;
             string outtext = string.Empty;
             outtext += $"光轴校准 + Environment.NewLine";
+
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
             OpticCenterTestResult testResult = JsonConvert.DeserializeObject<OpticCenterTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return outtext;

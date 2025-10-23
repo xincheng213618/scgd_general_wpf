@@ -51,6 +51,7 @@ using ProjectARVRPro.Process.W255;
 using ProjectARVRPro.Process.Chessboard;
 using ProjectARVRPro.Process.Distortion;
 using ProjectARVRPro.Process.OpticCenter;
+using ProjectARVRPro.Process.MTFHV;
 
 namespace ProjectARVRPro
 {
@@ -180,6 +181,8 @@ namespace ProjectARVRPro
 
         public OpticCenterTestResult OpticCenterTestResult { get; set; }
 
+        public MTFHVTestResult MTFHVTestResult { get; set; }
+
 
 
         /// <summary>
@@ -208,101 +211,6 @@ namespace ProjectARVRPro
         /// CenterCIE1976ChromaticCoordinatesv
         /// </summary>
         public ObjectiveTestItem W25CenterCIE1976ChromaticCoordinatesv { get; set; }
-
-        /// <summary>
-        /// MTF_HV_H 中心_0F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_Center_0F { get; set; }
-
-        /// <summary>
-        /// MTF_HV_H 左上_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_LeftUp_0_4F { get; set; }
-
-        /// <summary>
-        /// MTF_HV_H 右上_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_RightUp_0_4F { get; set; }
-
-        /// <summary>
-        /// MTF_HV_H 右下_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_RightDown_0_4F { get; set; }
-
-        /// <summary>
-        /// MTF_HV_H 左下_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_LeftDown_0_4F { get; set; }
-
-        /// <summary>
-        /// MTF_HV_H 左上_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_LeftUp_0_8F { get; set; }
-
-        /// <summary>
-        /// MTF_HV_H 右上_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_RightUp_0_8F { get; set; }
-
-        /// <summary>
-        /// MTF_HV_H 右下_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_RightDown_0_8F { get; set; }
-
-        /// <summary>
-        /// MTF_HV_H 左下_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_LeftDown_0_8F { get; set; }
-
-        /// <summary>
-        /// MTF_HV_V 中心_0F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_Center_0F { get; set; }
-
-        /// <summary>
-        /// MTF_HV_V 左上_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_LeftUp_0_4F { get; set; }
-
-        /// <summary>
-        /// MTF_HV_V 右上_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_RightUp_0_4F { get; set; }
-
-        /// <summary>
-        /// MTF_HV_V 右下_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_RightDown_0_4F { get; set; }
-
-        /// <summary>
-        /// MTF_HV_V 左下_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_LeftDown_0_4F { get; set; }
-
-        /// <summary>
-        /// MTF_HV_V 左上_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_LeftUp_0_8F { get; set; }
-
-        /// <summary>
-        /// MTF_HV_V 右上_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_RightUp_0_8F { get; set; }
-
-        /// <summary>
-        /// MTF_HV_V 右下_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_RightDown_0_8F { get; set; }
-
-        /// <summary>
-        /// MTF_HV_V 左下_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_LeftDown_0_8F { get; set; }
-
-        /// <summary>
-        /// 鬼影(%) 测试项
-        /// </summary>
-        public ObjectiveTestItem Ghost { get; set; }
 
         /// <summary>
         /// 总体测试结果（true表示通过，false表示不通过）
