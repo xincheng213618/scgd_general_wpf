@@ -12,6 +12,9 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Red
 {
+
+
+
     public class RedProcess : IProcess
     {
         public bool Execute(IProcessExecutionContext ctx)
@@ -20,8 +23,7 @@ namespace ProjectARVRPro.Process.Red
             var log = ctx.Logger;
             RedRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<RedRecipeConfig>();
             RedFixConfig fixConfig = ctx.FixConfig.GetRequiredService<RedFixConfig>();
-            RedTestResult redTestResult = new RedTestResult();
-            ctx.ObjectiveTestResult.RedTestResult = redTestResult;
+            RedViewTestResult redTestResult = new RedViewTestResult();
 
             try
             {
@@ -143,8 +145,8 @@ namespace ProjectARVRPro.Process.Red
                     }
                 }
 
-
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(redTestResult);
+                ctx.ObjectiveTestResult.RedTestResult = JsonConvert.DeserializeObject<RedTestResult>(ctx.Result.ViewResultJson) ?? new RedTestResult();
                 return true;
             }
             catch (Exception ex)
@@ -157,7 +159,7 @@ namespace ProjectARVRPro.Process.Red
         public void Render (IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
-            RedTestResult redTestResult = JsonConvert.DeserializeObject<RedTestResult>(ctx.Result.ViewResultJson);
+            RedViewTestResult redTestResult = JsonConvert.DeserializeObject<RedViewTestResult>(ctx.Result.ViewResultJson);
             if (redTestResult == null) return;
             foreach (var poiResultCIExyuvData in redTestResult.PoixyuvDatas)
             {
@@ -201,7 +203,7 @@ namespace ProjectARVRPro.Process.Red
             outtext += $"Red »­Ãæ½á¹û" + Environment.NewLine;
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
-            RedTestResult redTestResult = JsonConvert.DeserializeObject<RedTestResult>(ctx.Result.ViewResultJson);
+            RedViewTestResult redTestResult = JsonConvert.DeserializeObject<RedViewTestResult>(ctx.Result.ViewResultJson);
             if (redTestResult == null) return outtext;
 
             foreach (var item in redTestResult.PoixyuvDatas)

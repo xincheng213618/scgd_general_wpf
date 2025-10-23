@@ -6,6 +6,7 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
 using ProjectARVRPro.Process.Chessboard;
+using ProjectARVRPro.Process.Green;
 using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Distortion
@@ -18,9 +19,7 @@ namespace ProjectARVRPro.Process.Distortion
             var log = ctx.Logger;
             DistortionRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<DistortionRecipeConfig>();
             DistortionFixConfig fixConfig = ctx.FixConfig.GetRequiredService<DistortionFixConfig>();
-
-            DistortionTestResult testResult = new DistortionTestResult();
-            ctx.ObjectiveTestResult.DistortionTestResult = testResult;
+            DistortionViewTestResult testResult = new DistortionViewTestResult();
 
             try
             {
@@ -70,6 +69,7 @@ namespace ProjectARVRPro.Process.Distortion
                 }
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
+                ctx.ObjectiveTestResult.DistortionTestResult = JsonConvert.DeserializeObject<DistortionTestResult>(ctx.Result.ViewResultJson) ?? new DistortionTestResult();
                 return true;
             }
             catch (Exception ex)
@@ -82,7 +82,7 @@ namespace ProjectARVRPro.Process.Distortion
         public void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
-            DistortionTestResult testResult = JsonConvert.DeserializeObject<DistortionTestResult>(ctx.Result.ViewResultJson);
+            DistortionViewTestResult testResult = JsonConvert.DeserializeObject<DistortionViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return;
 
             foreach (var points in testResult.Points)
@@ -106,7 +106,7 @@ namespace ProjectARVRPro.Process.Distortion
             outtext += $"Distortion" + Environment.NewLine;
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
-            DistortionTestResult testResult = JsonConvert.DeserializeObject<DistortionTestResult>(ctx.Result.ViewResultJson);
+            DistortionViewTestResult testResult = JsonConvert.DeserializeObject<DistortionViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return outtext;
 
             outtext += $"HorizontalTVDistortion:{testResult.HorizontalTVDistortion.TestValue} LowLimit:{testResult.HorizontalTVDistortion.LowLimit}  UpLimit:{testResult.HorizontalTVDistortion.UpLimit},Rsult{(testResult.HorizontalTVDistortion.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";

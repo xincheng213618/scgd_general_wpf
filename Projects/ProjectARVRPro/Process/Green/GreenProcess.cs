@@ -8,6 +8,7 @@ using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Dm.util;
 using Newtonsoft.Json;
+using ProjectARVRPro.Process.Red;
 using System.Windows;
 using System.Windows.Media;
 
@@ -21,8 +22,7 @@ namespace ProjectARVRPro.Process.Green
             var log = ctx.Logger;
             GreenRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<GreenRecipeConfig>();
             GreenFixConfig fixConfig = ctx.FixConfig.GetRequiredService<GreenFixConfig>();
-            GreenTestResult GreenTestResult = new GreenTestResult();
-            ctx.ObjectiveTestResult.GreenTestResult = GreenTestResult;
+            GreenViewTestResult testResult = new GreenViewTestResult();
 
             try
             {
@@ -37,7 +37,7 @@ namespace ProjectARVRPro.Process.Green
                     {
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
                         int id = 0;
-                        GreenTestResult.PoixyuvDatas.Clear();
+                        testResult.PoixyuvDatas.Clear();
                         foreach (var item in poiPoints)
                         {
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };
@@ -48,11 +48,11 @@ namespace ProjectARVRPro.Process.Green
                             poi.u *= fixConfig.CenterCIE1976ChromaticCoordinatesu;
                             poi.v *= fixConfig.CenterCIE1976ChromaticCoordinatesv;
 
-                            GreenTestResult.PoixyuvDatas.Add(poi);
+                            testResult.PoixyuvDatas.Add(poi);
 
                             if (item.PoiName == "P_9")
                             {
-                                GreenTestResult.CenterLunimance = new ObjectiveTestItem
+                                testResult.CenterLunimance = new ObjectiveTestItem
                                 {
                                     Name = "CenterLunimance",
                                     LowLimit = recipeConfig.CenterLunimance.Min,
@@ -60,7 +60,7 @@ namespace ProjectARVRPro.Process.Green
                                     Value = poi.Y,
                                     TestValue = poi.Y.ToString("F3") + " nit"
                                 };
-                                GreenTestResult.CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem
+                                testResult.CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem
                                 {
                                     Name = "CenterCIE1931ChromaticCoordinatesx",
                                     LowLimit = recipeConfig.CenterCIE1931ChromaticCoordinatesx.Min,
@@ -68,7 +68,7 @@ namespace ProjectARVRPro.Process.Green
                                     Value = poi.x,
                                     TestValue = poi.x.ToString("F3")
                                 };
-                                GreenTestResult.CenterCIE1931ChromaticCoordinatesy = new ObjectiveTestItem
+                                testResult.CenterCIE1931ChromaticCoordinatesy = new ObjectiveTestItem
                                 {
                                     Name = "CenterCIE1931ChromaticCoordinatesy",
                                     LowLimit = recipeConfig.CenterCIE1931ChromaticCoordinatesy.Min,
@@ -76,7 +76,7 @@ namespace ProjectARVRPro.Process.Green
                                     Value = poi.y,
                                     TestValue = poi.y.ToString("F3")
                                 };
-                                GreenTestResult.CenterCIE1976ChromaticCoordinatesu = new ObjectiveTestItem
+                                testResult.CenterCIE1976ChromaticCoordinatesu = new ObjectiveTestItem
                                 {
                                     Name = "CenterCIE1976ChromaticCoordinatesu",
                                     LowLimit = recipeConfig.CenterCIE1976ChromaticCoordinatesu.Min,
@@ -84,7 +84,7 @@ namespace ProjectARVRPro.Process.Green
                                     Value = poi.u,
                                     TestValue = poi.u.ToString("F3")
                                 };
-                                GreenTestResult.CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem
+                                testResult.CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem
                                 {
                                     Name = "CenterCIE1976ChromaticCoordinatesv",
                                     LowLimit = recipeConfig.CenterCIE1976ChromaticCoordinatesv.Min,
@@ -93,11 +93,11 @@ namespace ProjectARVRPro.Process.Green
                                     TestValue = poi.v.ToString("F3")
                                 };
 
-                                ctx.Result.Result &= GreenTestResult.CenterLunimance.TestResult;
-                                ctx.Result.Result &= GreenTestResult.CenterCIE1931ChromaticCoordinatesx.TestResult;
-                                ctx.Result.Result &= GreenTestResult.CenterCIE1931ChromaticCoordinatesy.TestResult;
-                                ctx.Result.Result &= GreenTestResult.CenterCIE1976ChromaticCoordinatesu.TestResult;
-                                ctx.Result.Result &= GreenTestResult.CenterCIE1976ChromaticCoordinatesv.TestResult;
+                                ctx.Result.Result &= testResult.CenterLunimance.TestResult;
+                                ctx.Result.Result &= testResult.CenterCIE1931ChromaticCoordinatesx.TestResult;
+                                ctx.Result.Result &= testResult.CenterCIE1931ChromaticCoordinatesy.TestResult;
+                                ctx.Result.Result &= testResult.CenterCIE1976ChromaticCoordinatesu.TestResult;
+                                ctx.Result.Result &= testResult.CenterCIE1976ChromaticCoordinatesv.TestResult;
                             }
                         }
                     }
@@ -118,7 +118,7 @@ namespace ProjectARVRPro.Process.Green
                                     LowLimit = recipeConfig.LuminanceUniformity.Min,
                                     UpLimit = recipeConfig.LuminanceUniformity.Max
                                 };
-                                GreenTestResult.LuminanceUniformity = uniform;
+                                testResult.LuminanceUniformity = uniform;
                                 ctx.Result.Result &= uniform.TestResult;
                             }
                         }
@@ -137,15 +137,15 @@ namespace ProjectARVRPro.Process.Green
                                     LowLimit = recipeConfig.ColorUniformity.Min,
                                     UpLimit = recipeConfig.ColorUniformity.Max
                                 };
-                                GreenTestResult.ColorUniformity = colorUniform;
+                                testResult.ColorUniformity = colorUniform;
                                 ctx.Result.Result &= colorUniform.TestResult;
                             }
                         }
                     }
                 }
 
-
-                ctx.Result.ViewResultJson = JsonConvert.SerializeObject(GreenTestResult);
+                ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
+                ctx.ObjectiveTestResult.GreenTestResult = JsonConvert.DeserializeObject<GreenTestResult>(ctx.Result.ViewResultJson) ?? new GreenTestResult();
                 return true;
             }
             catch (Exception ex)
@@ -158,7 +158,7 @@ namespace ProjectARVRPro.Process.Green
         public void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
-            GreenTestResult GreenTestResult = JsonConvert.DeserializeObject<GreenTestResult>(ctx.Result.ViewResultJson);
+            GreenViewTestResult GreenTestResult = JsonConvert.DeserializeObject<GreenViewTestResult>(ctx.Result.ViewResultJson);
             if (GreenTestResult == null) return;
             foreach (var poiResultCIExyuvData in GreenTestResult.PoixyuvDatas)
             {
@@ -202,7 +202,7 @@ namespace ProjectARVRPro.Process.Green
             outtext += $"Green »­Ãæ½á¹û" + Environment.NewLine;
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
-            GreenTestResult GreenTestResult = JsonConvert.DeserializeObject<GreenTestResult>(ctx.Result.ViewResultJson);
+            GreenViewTestResult GreenTestResult = JsonConvert.DeserializeObject<GreenViewTestResult>(ctx.Result.ViewResultJson);
             if (GreenTestResult == null) return outtext;
 
             foreach (var item in GreenTestResult.PoixyuvDatas)

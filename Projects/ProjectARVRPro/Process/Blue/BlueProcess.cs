@@ -8,6 +8,7 @@ using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Dm.util;
 using Newtonsoft.Json;
+using ProjectARVRPro.Process.Green;
 using System.Windows;
 using System.Windows.Media;
 
@@ -22,8 +23,7 @@ namespace ProjectARVRPro.Process.Blue
             var log = ctx.Logger;
             BlueRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<BlueRecipeConfig>();
             BlueFixConfig fixConfig = ctx.FixConfig.GetRequiredService<BlueFixConfig>();
-            BlueTestResult BlueTestResult = new BlueTestResult();
-            ctx.ObjectiveTestResult.BlueTestResult = BlueTestResult;
+            BlueViewTestResult testResult = new BlueViewTestResult();
 
             try
             {
@@ -38,7 +38,7 @@ namespace ProjectARVRPro.Process.Blue
                     {
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
                         int id = 0;
-                        BlueTestResult.PoixyuvDatas.Clear();
+                        testResult.PoixyuvDatas.Clear();
                         foreach (var item in poiPoints)
                         {
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };
@@ -49,11 +49,11 @@ namespace ProjectARVRPro.Process.Blue
                             poi.u *= fixConfig.CenterCIE1976ChromaticCoordinatesu;
                             poi.v *= fixConfig.CenterCIE1976ChromaticCoordinatesv;
 
-                            BlueTestResult.PoixyuvDatas.Add(poi);
+                            testResult.PoixyuvDatas.Add(poi);
 
                             if (item.PoiName == "P_9")
                             {
-                                BlueTestResult.CenterLunimance = new ObjectiveTestItem
+                                testResult.CenterLunimance = new ObjectiveTestItem
                                 {
                                     Name = "CenterLunimance",
                                     LowLimit = recipeConfig.CenterLunimance.Min,
@@ -61,7 +61,7 @@ namespace ProjectARVRPro.Process.Blue
                                     Value = poi.Y,
                                     TestValue = poi.Y.ToString("F3") + " nit"
                                 };
-                                BlueTestResult.CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem
+                                testResult.CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem
                                 {
                                     Name = "CenterCIE1931ChromaticCoordinatesx",
                                     LowLimit = recipeConfig.CenterCIE1931ChromaticCoordinatesx.Min,
@@ -69,7 +69,7 @@ namespace ProjectARVRPro.Process.Blue
                                     Value = poi.x,
                                     TestValue = poi.x.ToString("F3")
                                 };
-                                BlueTestResult.CenterCIE1931ChromaticCoordinatesy = new ObjectiveTestItem
+                                testResult.CenterCIE1931ChromaticCoordinatesy = new ObjectiveTestItem
                                 {
                                     Name = "CenterCIE1931ChromaticCoordinatesy",
                                     LowLimit = recipeConfig.CenterCIE1931ChromaticCoordinatesy.Min,
@@ -77,7 +77,7 @@ namespace ProjectARVRPro.Process.Blue
                                     Value = poi.y,
                                     TestValue = poi.y.ToString("F3")
                                 };
-                                BlueTestResult.CenterCIE1976ChromaticCoordinatesu = new ObjectiveTestItem
+                                testResult.CenterCIE1976ChromaticCoordinatesu = new ObjectiveTestItem
                                 {
                                     Name = "CenterCIE1976ChromaticCoordinatesu",
                                     LowLimit = recipeConfig.CenterCIE1976ChromaticCoordinatesu.Min,
@@ -85,7 +85,7 @@ namespace ProjectARVRPro.Process.Blue
                                     Value = poi.u,
                                     TestValue = poi.u.ToString("F3")
                                 };
-                                BlueTestResult.CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem
+                                testResult.CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem
                                 {
                                     Name = "CenterCIE1976ChromaticCoordinatesv",
                                     LowLimit = recipeConfig.CenterCIE1976ChromaticCoordinatesv.Min,
@@ -94,11 +94,11 @@ namespace ProjectARVRPro.Process.Blue
                                     TestValue = poi.v.ToString("F3")
                                 };
 
-                                ctx.Result.Result &= BlueTestResult.CenterLunimance.TestResult;
-                                ctx.Result.Result &= BlueTestResult.CenterCIE1931ChromaticCoordinatesx.TestResult;
-                                ctx.Result.Result &= BlueTestResult.CenterCIE1931ChromaticCoordinatesy.TestResult;
-                                ctx.Result.Result &= BlueTestResult.CenterCIE1976ChromaticCoordinatesu.TestResult;
-                                ctx.Result.Result &= BlueTestResult.CenterCIE1976ChromaticCoordinatesv.TestResult;
+                                ctx.Result.Result &= testResult.CenterLunimance.TestResult;
+                                ctx.Result.Result &= testResult.CenterCIE1931ChromaticCoordinatesx.TestResult;
+                                ctx.Result.Result &= testResult.CenterCIE1931ChromaticCoordinatesy.TestResult;
+                                ctx.Result.Result &= testResult.CenterCIE1976ChromaticCoordinatesu.TestResult;
+                                ctx.Result.Result &= testResult.CenterCIE1976ChromaticCoordinatesv.TestResult;
                             }
                         }
                     }
@@ -119,7 +119,7 @@ namespace ProjectARVRPro.Process.Blue
                                     LowLimit = recipeConfig.LuminanceUniformity.Min,
                                     UpLimit = recipeConfig.LuminanceUniformity.Max
                                 };
-                                BlueTestResult.LuminanceUniformity = uniform;
+                                testResult.LuminanceUniformity = uniform;
                                 ctx.Result.Result &= uniform.TestResult;
                             }
                         }
@@ -138,7 +138,7 @@ namespace ProjectARVRPro.Process.Blue
                                     LowLimit = recipeConfig.ColorUniformity.Min,
                                     UpLimit = recipeConfig.ColorUniformity.Max
                                 };
-                                BlueTestResult.ColorUniformity = colorUniform;
+                                testResult.ColorUniformity = colorUniform;
                                 ctx.Result.Result &= colorUniform.TestResult;
                             }
                         }
@@ -146,7 +146,8 @@ namespace ProjectARVRPro.Process.Blue
                 }
 
 
-                ctx.Result.ViewResultJson = JsonConvert.SerializeObject(BlueTestResult);
+                ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
+                ctx.ObjectiveTestResult.GreenTestResult = JsonConvert.DeserializeObject<GreenTestResult>(ctx.Result.ViewResultJson) ?? new GreenTestResult();
                 return true;
             }
             catch (Exception ex)
@@ -159,7 +160,7 @@ namespace ProjectARVRPro.Process.Blue
         public void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
-            BlueTestResult BlueTestResult = JsonConvert.DeserializeObject<BlueTestResult>(ctx.Result.ViewResultJson);
+            BlueViewTestResult BlueTestResult = JsonConvert.DeserializeObject<BlueViewTestResult>(ctx.Result.ViewResultJson);
             if (BlueTestResult == null) return;
             foreach (var poiResultCIExyuvData in BlueTestResult.PoixyuvDatas)
             {
@@ -203,7 +204,7 @@ namespace ProjectARVRPro.Process.Blue
             outtext += $"Blue »­Ãæ½á¹û" + Environment.NewLine;
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
-            BlueTestResult BlueTestResult = JsonConvert.DeserializeObject<BlueTestResult>(ctx.Result.ViewResultJson);
+            BlueViewTestResult BlueTestResult = JsonConvert.DeserializeObject<BlueViewTestResult>(ctx.Result.ViewResultJson);
             if (BlueTestResult == null) return outtext;
 
             foreach (var item in BlueTestResult.PoixyuvDatas)

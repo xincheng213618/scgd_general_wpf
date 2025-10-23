@@ -4,6 +4,11 @@ using System.Windows; // PoiPointResultModel
 
 namespace ProjectARVRPro.Process.Distortion
 {
+    public class DistortionViewTestResult: DistortionTestResult
+    {
+        public List<Point> Points { get; set; } = new List<Point>();
+    }
+
     public class DistortionTestResult : ViewModelBase
     {
         /// <summary>
@@ -16,6 +21,5 @@ namespace ProjectARVRPro.Process.Distortion
         /// </summary>
         public ObjectiveTestItem VerticalTVDistortion { get; set; }
 
-        public List<Point> Points { get; set; } = new List<Point>();
     }
 }

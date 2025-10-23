@@ -177,62 +177,8 @@ namespace ProjectARVRPro
                     ViewRelsultMTFH = JsonConvert.DeserializeObject<ViewRelsultMTFHV>(value);
             }
         }
-
-
-        [SugarColumn(IsIgnore = true)]
-        public ViewResultOpticCenter ViewResultOpticCenter { get; set; } = new ViewResultOpticCenter();
-
-        [Browsable(false)]
-        public string ViewResultOpticCentertJson
-        {
-            get => JsonConvert.SerializeObject(ViewResultOpticCenter);
-            set
-            {
-                if (!string.IsNullOrEmpty(value))
-                    ViewResultOpticCenter = JsonConvert.DeserializeObject<ViewResultOpticCenter>(value);
-            }
-        }
-
-
     }
 
-
-    public class ViewResultOpticCenter
-    {
-        public FindCrossDetailViewReslut FindCrossDetailViewReslut { get; set; }
-
-        public FindCrossDetailViewReslut FindCrossDetailViewReslut1 { get; set; }
-
-        /// <summary>
-        /// X轴倾斜角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem OptCenterXTilt { get; set; }
-
-        /// <summary>
-        /// Y轴倾斜角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem OptCenterYTilt { get; set; }
-
-        /// <summary>
-        /// 旋转角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem OptCenterRotation { get; set; }
-
-        /// <summary>
-        /// X轴倾斜角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem ImageCenterXTilt { get; set; }
-
-        /// <summary>
-        /// Y轴倾斜角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem ImageCenterYTilt { get; set; }
-
-        /// <summary>
-        /// 旋转角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem ImageCenterRotation { get; set; }
-    }
 
     public class ViewRelsultMTFHV
     {

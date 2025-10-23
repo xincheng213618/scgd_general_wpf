@@ -8,7 +8,6 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp; // PoiPointResultModel
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
-using ProjectARVRPro.Process.Red;
 using System.Windows;
 using System.Windows.Media;
 
@@ -22,8 +21,7 @@ namespace ProjectARVRPro.Process.W255
             var log = ctx.Logger;
             W255RecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<W255RecipeConfig>();
             W255FixConfig fixConfig = ctx.FixConfig.GetRequiredService<W255FixConfig>();
-            W255TestResult testResult = new W255TestResult();
-            ctx.ObjectiveTestResult.W255TestResult = testResult;
+            W255ViewTestResult testResult = new W255ViewTestResult();
 
             try
             {
@@ -187,6 +185,8 @@ namespace ProjectARVRPro.Process.W255
                     }
                 }
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
+                ctx.ObjectiveTestResult.W255TestResult = JsonConvert.DeserializeObject<W255TestResult>(ctx.Result.ViewResultJson) ?? new W255TestResult();
+
                 return true;
             }
             catch (Exception ex)
@@ -199,7 +199,7 @@ namespace ProjectARVRPro.Process.W255
         public void Render (IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
-            W255TestResult testResult = JsonConvert.DeserializeObject<W255TestResult>(ctx.Result.ViewResultJson);
+            W255ViewTestResult testResult = JsonConvert.DeserializeObject<W255ViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return;
 
             foreach (var poiResultCIExyuvData in testResult.PoixyuvDatas)
@@ -244,7 +244,7 @@ namespace ProjectARVRPro.Process.W255
             outtext += $"W255 画面结果" + Environment.NewLine;
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
-            W255TestResult testResult = JsonConvert.DeserializeObject<W255TestResult>(ctx.Result.ViewResultJson);
+            W255ViewTestResult testResult = JsonConvert.DeserializeObject<W255ViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return outtext;
 
             foreach (var item in testResult.PoixyuvDatas)

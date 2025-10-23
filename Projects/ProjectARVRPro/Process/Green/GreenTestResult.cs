@@ -3,6 +3,11 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp; // PoiPointResultModel
 
 namespace ProjectARVRPro.Process.Green
 {
+    public class GreenViewTestResult : GreenTestResult
+    {
+        public List<PoiResultCIExyuvData> PoixyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
+    }
+
     public class GreenTestResult : ViewModelBase
     {
         /// <summary>
@@ -35,7 +40,5 @@ namespace ProjectARVRPro.Process.Green
         /// CenterCIE1976ChromaticCoordinatesv
         /// </summary>
         public ObjectiveTestItem CenterCIE1976ChromaticCoordinatesv { get; set; } = new ObjectiveTestItem();
-
-        public List<PoiResultCIExyuvData> PoixyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
     }
 }

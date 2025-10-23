@@ -50,6 +50,7 @@ using ProjectARVRPro.Process.Green;
 using ProjectARVRPro.Process.W255;
 using ProjectARVRPro.Process.Chessboard;
 using ProjectARVRPro.Process.Distortion;
+using ProjectARVRPro.Process.OpticCenter;
 
 namespace ProjectARVRPro
 {
@@ -177,6 +178,10 @@ namespace ProjectARVRPro
 
         public DistortionTestResult DistortionTestResult { get; set; }
 
+        public OpticCenterTestResult OpticCenterTestResult { get; set; }
+
+
+
         /// <summary>
         /// FOFO对比度 测试项
         /// </summary>
@@ -293,37 +298,6 @@ namespace ProjectARVRPro
         /// MTF_HV_V 左下_0.8F 测试项
         /// </summary>
         public ObjectiveTestItem MTF_HV_V_LeftDown_0_8F { get; set; }
-
-
-        /// <summary>
-        /// X轴倾斜角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem ImageCenterXTilt { get; set; }
-
-        /// <summary>
-        /// Y轴倾斜角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem ImageCenterYTilt { get; set; }
-
-        /// <summary>
-        /// 旋转角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem ImageCenterRotation { get; set; }
-
-        /// <summary>
-        /// 旋转角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem OptCenterRotation { get; set; }
-
-        /// <summary>
-        /// X轴倾斜角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem OptCenterXTilt { get; set; }
-
-        /// <summary>
-        /// Y轴倾斜角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem OptCenterYTilt { get; set; }
 
         /// <summary>
         /// 鬼影(%) 测试项

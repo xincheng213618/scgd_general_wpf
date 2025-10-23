@@ -7,6 +7,7 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
+using ProjectARVRPro.Process.Green;
 using System.Windows;
 using System.Windows.Media;
 
@@ -20,8 +21,7 @@ namespace ProjectARVRPro.Process.Chessboard
             var log = ctx.Logger;
             ChessboardRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<ChessboardRecipeConfig>();
             ChessboardFixConfig fixConfig = ctx.FixConfig.GetRequiredService<ChessboardFixConfig>();
-            ChessboardTestResult testResult = new ChessboardTestResult();
-            ctx.ObjectiveTestResult.ChessboardTestResult = testResult;
+            ChessboardViewTestResult testResult = new ChessboardViewTestResult();
 
 
             try
@@ -68,6 +68,7 @@ namespace ProjectARVRPro.Process.Chessboard
                 }
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
+                ctx.ObjectiveTestResult.ChessboardTestResult = JsonConvert.DeserializeObject<ChessboardTestResult>(ctx.Result.ViewResultJson) ?? new ChessboardTestResult();
                 return true;
             }
             catch (Exception ex)
@@ -80,7 +81,7 @@ namespace ProjectARVRPro.Process.Chessboard
         public void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
-            ChessboardTestResult testResult = JsonConvert.DeserializeObject<ChessboardTestResult>(ctx.Result.ViewResultJson);
+            ChessboardViewTestResult testResult = JsonConvert.DeserializeObject<ChessboardViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return;
 
             foreach (var poiResultCIExyuvData in testResult.PoixyuvDatas)
@@ -124,7 +125,7 @@ namespace ProjectARVRPro.Process.Chessboard
             outtext += $"∆Â≈Ã∏Ò ≤‚ ‘œÓ£∫" + Environment.NewLine;
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
-            ChessboardTestResult testResult = JsonConvert.DeserializeObject<ChessboardTestResult>(ctx.Result.ViewResultJson);
+            ChessboardViewTestResult testResult = JsonConvert.DeserializeObject<ChessboardViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return outtext;
 
             foreach (var item in testResult.PoixyuvDatas)
