@@ -32,9 +32,11 @@ namespace ProjectARVRPro
             if (LoadFromFile(RecipeFixPath) is RecipeConfig fix)
             {
                 RecipeConfig = fix;
-                if (RecipeConfig.Configs.Count == 0)
+                var lists = typeof(RecipeConfig).Assembly.GetTypes().Where(t => typeof(IRecipeConfig).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract).ToList();
+                if (RecipeConfig.Configs.Count != lists.Count)
                 {
-                    typeof(RecipeConfig).Assembly.GetTypes().Where(t => typeof(IRecipeConfig).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract).ToList().ForEach(t => {
+                    RecipeConfig.Configs.Clear();
+                    lists.ForEach(t => {
                         if (Activator.CreateInstance(t) is IRecipeConfig instance)
                         {
                             RecipeConfig.Configs[t] = instance;

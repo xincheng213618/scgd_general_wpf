@@ -136,20 +136,6 @@ namespace ProjectARVRPro
         }
 
         [SugarColumn(IsIgnore = true)]
-        public ViewReslutW51 ViewReslutW51 { get; set; } = new ViewReslutW51();
-
-        [Browsable(false)]
-        public string ViewReslutW51Json
-        {
-            get => JsonConvert.SerializeObject(ViewReslutW51);
-            set
-            {
-                if (!string.IsNullOrEmpty(value))
-                    ViewReslutW51 = JsonConvert.DeserializeObject<ViewReslutW51>(value);
-            }
-        }
-
-        [SugarColumn(IsIgnore = true)]
         public ViewResultWhite ViewResultWhite { get; set; } = new ViewResultWhite();
 
         [Browsable(false)]
@@ -177,19 +163,7 @@ namespace ProjectARVRPro
             }
         }
 
-        [SugarColumn(IsIgnore = true)]
-        public ViewReslutCheckerboard ViewReslutCheckerboard { get; set; } = new ViewReslutCheckerboard();
 
-        [Browsable(false)]
-        public string ViewReslutCheckerboardJson
-        {
-            get => JsonConvert.SerializeObject(ViewReslutCheckerboard);
-            set
-            {
-                if (!string.IsNullOrEmpty(value))
-                    ViewReslutCheckerboard = JsonConvert.DeserializeObject<ViewReslutCheckerboard>(value);
-            }
-        }
         [SugarColumn(IsIgnore = true)]
         public ViewRelsultMTFHV ViewRelsultMTFH { get; set; } = new ViewRelsultMTFHV();
 
@@ -204,19 +178,6 @@ namespace ProjectARVRPro
             }
         }
 
-        [SugarColumn(IsIgnore = true)]
-        public ViewReslutDistortionGhost ViewReslutDistortionGhost { get; set; } = new ViewReslutDistortionGhost();
-
-        [Browsable(false)]
-        public string ViewReslutDistortionGhostJson
-        {
-            get => JsonConvert.SerializeObject(ViewReslutDistortionGhost);
-            set
-            {
-                if (!string.IsNullOrEmpty(value))
-                    ViewReslutDistortionGhost = JsonConvert.DeserializeObject<ViewReslutDistortionGhost>(value);
-            }
-        }
 
         [SugarColumn(IsIgnore = true)]
         public ViewResultOpticCenter ViewResultOpticCenter { get; set; } = new ViewResultOpticCenter();
@@ -273,22 +234,6 @@ namespace ProjectARVRPro
         public ObjectiveTestItem ImageCenterRotation { get; set; }
     }
 
-    public class ViewReslutDistortionGhost
-    {
-        public ColorVision.Engine.Templates.Jsons.Distortion2.Distortion2View Distortion2View { get; set; }
-
-        /// <summary>
-        /// 水平TV畸变(%) 测试项
-        /// </summary>
-        public ObjectiveTestItem HorizontalTVDistortion { get; set; }
-
-        /// <summary>
-        /// 垂直TV畸变(%) 测试项
-        /// </summary>
-        public ObjectiveTestItem VerticalTVDistortion { get; set; }
-
-    }
-
     public class ViewRelsultMTFHV
     {
         public MTFDetailViewReslut MTFDetailViewReslut { get; set; }
@@ -303,29 +248,9 @@ namespace ProjectARVRPro
         /// FOFO对比度 测试项
         /// </summary>
         public ObjectiveTestItem FOFOContrast { get; set; }
-
-
     }
 
-    public class ViewReslutW51
-    {
-        public List<AlgResultLightAreaModel> AlgResultLightAreaModels { get; set; }
-        /// <summary>
-        /// 水平视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem HorizontalFieldOfViewAngle { get; set; }
 
-        /// <summary>
-        /// 垂直视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem VerticalFieldOfViewAngle { get; set; }
-
-        /// <summary>
-        /// 对角线视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem DiagonalFieldOfViewAngle { get; set; }
-
-    }
 
     public class ViewResultW25
     {
@@ -338,32 +263,6 @@ namespace ProjectARVRPro
     {
         public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
 
-        public DFovView DFovView { get; set; }
-        /// <summary>
-        /// 中心相关色温(K) 测试项
-        /// </summary>
-        public ObjectiveTestItem CenterCorrelatedColorTemperature { get; set; } = new ObjectiveTestItem();
-
-        /// <summary>
-        /// 亮度均匀性(%) 测试项
-        /// </summary>
-        public ObjectiveTestItem W255LuminanceUniformity { get; set; } = new ObjectiveTestItem();
-
-        /// <summary>
-        /// 色彩均匀性 测试项
-        /// </summary>
-        public ObjectiveTestItem W255ColorUniformity { get; set; } = new ObjectiveTestItem();
-
-    }
-
-    public class ViewReslutCheckerboard
-    {
-        public ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
-
-        /// <summary>
-        /// 棋盘格对比度 测试项
-        /// </summary>
-        public ObjectiveTestItem ChessboardContrast { get; set; }
     }
 
 }

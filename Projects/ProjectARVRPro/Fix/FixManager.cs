@@ -31,9 +31,11 @@ namespace ProjectARVRPro
             if (LoadFromFile(FixFilePath) is FixConfig fix)
             {
                 FixConfig = fix;
-                if (FixConfig.Configs.Count == 0)
+                var lists = typeof(RecipeConfig).Assembly.GetTypes().Where(t => typeof(IFixConfig).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract).ToList();
+                if (FixConfig.Configs.Count != lists.Count)
                 {
-                    typeof(FixConfig).Assembly.GetTypes().Where(t => typeof(IFixConfig).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract).ToList().ForEach(t => {
+                    FixConfig.Configs.Clear();
+                    lists.ForEach(t => {
                         if (Activator.CreateInstance(t) is IFixConfig instance)
                         {
                             FixConfig.Configs[t] = instance;

@@ -46,6 +46,9 @@ using System.Windows.Media;
 using Org.BouncyCastle.Bcpg.OpenPgp;
 using ProjectARVRPro.Process.Red;
 using ProjectARVRPro.Process.Blue;
+using ProjectARVRPro.Process.Green;
+using ProjectARVRPro.Process.W255;
+using ProjectARVRPro.Process.Chessboard;
 
 namespace ProjectARVRPro
 {
@@ -161,67 +164,17 @@ namespace ProjectARVRPro
     /// </summary>
     public class ObjectiveTestResult:ViewModelBase
     {
+        public W255TestResult W255TestResult { get; set; }
+
         public RedTestResult RedTestResult { get; set; }
 
         public BlueTestResult BlueTestResult { get; set; }
 
-        public Dictionary<string, ObjectiveTestItem> TestItems { get; set; } = new Dictionary<string, ObjectiveTestItem>();
+        public GreenTestResult GreenTestResult { get; set; }
 
-        /// <summary>
-        /// 水平视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem W51HorizontalFieldOfViewAngle { get; set; }
+        public ChessboardTestResult ChessboardTestResult { get; set; }
 
-        /// <summary>
-        /// 垂直视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem W51VerticalFieldOfViewAngle { get; set; }
-
-        /// <summary>
-        /// 对角线视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem W51DiagonalFieldOfViewAngle { get; set; }
-
-
-        /// <summary>
-        /// 亮度均匀性(%) 测试项
-        /// </summary>
-        public ObjectiveTestItem W255LuminanceUniformity { get; set; }
-
-        /// <summary>
-        /// 色彩均匀性 测试项
-        /// </summary>
-        public ObjectiveTestItem W255ColorUniformity { get; set; }
-
-        /// <summary>
-        /// 中心点亮度
-        /// </summary>
-        public ObjectiveTestItem W255CenterLunimance {get;set;}
-        /// <summary>
-        /// W255CenterCIE1931ChromaticCoordinatesx
-        /// </summary>
-        public ObjectiveTestItem W255CenterCIE1931ChromaticCoordinatesx { get; set; }
-        /// <summary>
-        /// W255CenterCIE1931ChromaticCoordinatesy
-        /// </summary>
-        public ObjectiveTestItem W255CenterCIE1931ChromaticCoordinatesy { get; set; }
-        /// <summary>
-        /// W255CenterCIE1976ChromaticCoordinatesu
-        /// </summary>
-        public ObjectiveTestItem W255CenterCIE1976ChromaticCoordinatesu { get; set; }
-        /// <summary>
-        /// W255CenterCIE1976ChromaticCoordinatesv
-        /// </summary>
-        public ObjectiveTestItem W255CenterCIE1976ChromaticCoordinatesv { get; set; }
-
-        public List<PoixyuvData> W255PoixyuvDatas { get; set; } = new List<PoixyuvData>();
-
-
-        /// <summary>
-        /// 中心相关色温(K) 测试项
-        /// </summary>
-        public ObjectiveTestItem BlackCenterCorrelatedColorTemperature { get; set; }
-
+        public DistortionTestResult DistortionTestResult { get; set; }
 
         /// <summary>
         /// FOFO对比度 测试项
@@ -234,36 +187,21 @@ namespace ProjectARVRPro
         /// </summary>
         public ObjectiveTestItem W25CenterLunimance { get; set; }
         /// <summary>
-        /// W255CenterCIE1931ChromaticCoordinatesx
+        /// CenterCIE1931ChromaticCoordinatesx
         /// </summary>
         public ObjectiveTestItem W25CenterCIE1931ChromaticCoordinatesx { get; set; }
         /// <summary>
-        /// W255CenterCIE1931ChromaticCoordinatesy
+        /// CenterCIE1931ChromaticCoordinatesy
         /// </summary>
         public ObjectiveTestItem W25CenterCIE1931ChromaticCoordinatesy { get; set; }
         /// <summary>
-        /// W255CenterCIE1976ChromaticCoordinatesu
+        /// CenterCIE1976ChromaticCoordinatesu
         /// </summary>
         public ObjectiveTestItem W25CenterCIE1976ChromaticCoordinatesu { get; set; }
         /// <summary>
-        /// W255CenterCIE1976ChromaticCoordinatesv
+        /// CenterCIE1976ChromaticCoordinatesv
         /// </summary>
         public ObjectiveTestItem W25CenterCIE1976ChromaticCoordinatesv { get; set; }
-
-        /// <summary>
-        /// 棋盘格对比度 测试项
-        /// </summary>
-        public ObjectiveTestItem ChessboardContrast { get; set; }
-
-        /// <summary>
-        /// 水平TV畸变(%) 测试项
-        /// </summary>
-        public ObjectiveTestItem HorizontalTVDistortion { get; set; }
-
-        /// <summary>
-        /// 垂直TV畸变(%) 测试项
-        /// </summary>
-        public ObjectiveTestItem VerticalTVDistortion { get; set; }
 
         /// <summary>
         /// MTF_HV_H 中心_0F 测试项
