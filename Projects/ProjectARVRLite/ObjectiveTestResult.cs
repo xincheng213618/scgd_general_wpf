@@ -29,7 +29,7 @@ using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Org.BouncyCastle.Asn1.Ocsp;
-using ProjectARVRPro.Services;
+using ProjectARVRLite.Services;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.ObjectModel;
@@ -44,7 +44,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ProjectARVRPro
+namespace ProjectARVRLite
 {
     public static class ObjectiveTestResultCsvExporter
     {

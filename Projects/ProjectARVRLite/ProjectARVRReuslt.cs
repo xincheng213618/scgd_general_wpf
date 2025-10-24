@@ -36,8 +36,8 @@ using log4net.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Org.BouncyCastle.Asn1.Ocsp;
-using ProjectARVRPro;
-using ProjectARVRPro.Services;
+using ProjectARVRLite;
+using ProjectARVRLite.Services;
 using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
@@ -54,7 +54,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ProjectARVRPro
+namespace ProjectARVRLite
 {
     public enum ARVR1TestType
     {

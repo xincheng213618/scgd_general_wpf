@@ -1,4 +1,4 @@
-﻿namespace ProjectARVRPro.PluginConfig
+﻿namespace ProjectARVRLite.PluginConfig
 {
     public class ProjectWindowInstance
     {

@@ -3,7 +3,7 @@
 using ColorVision.Common.MVVM;
 using System.ComponentModel;
 
-namespace ProjectARVRPro
+namespace ProjectARVRLite
 {
     public class ObjectiveTestResultFix : ViewModelBase
     {

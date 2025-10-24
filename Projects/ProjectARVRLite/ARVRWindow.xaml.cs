@@ -39,9 +39,9 @@ using log4net;
 using log4net.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using ProjectARVRPro;
-using ProjectARVRPro.PluginConfig;
-using ProjectARVRPro.Services;
+using ProjectARVRLite;
+using ProjectARVRLite.PluginConfig;
+using ProjectARVRLite.Services;
 using Quartz;
 using SqlSugar;
 using ST.Library.UI.NodeEditor;
@@ -60,7 +60,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ProjectARVRPro
+namespace ProjectARVRLite
 {
     public class ProjectARVRLitetestJob : IJob
     {

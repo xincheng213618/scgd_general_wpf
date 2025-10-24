@@ -1,7 +1,7 @@
-﻿<Application x:Class="ProjectARVRPro.App"
+﻿<Application x:Class="ProjectARVRLite.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:ProjectARVRPro"
+             xmlns:local="clr-namespace:ProjectARVRLite"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
     <Application.Resources>
         <ResourceDictionary>

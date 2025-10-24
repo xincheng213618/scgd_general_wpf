@@ -5,7 +5,7 @@ using ColorVision.UI.Languages;
 using System.Reflection;
 using System.Windows;
 
-namespace ProjectARVRPro
+namespace ProjectARVRLite
 {
     /// <summary>
     /// Interaction logic for App.xaml

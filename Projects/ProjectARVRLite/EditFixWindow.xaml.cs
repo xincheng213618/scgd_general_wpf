@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 using System.IO;
 using System.Windows;
 
-namespace ProjectARVRPro
+namespace ProjectARVRLite
 {
 
     public class FixManager
