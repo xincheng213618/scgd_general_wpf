@@ -29,6 +29,14 @@ using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Org.BouncyCastle.Asn1.Ocsp;
+using ProjectLUX.Process.Blue;
+using ProjectLUX.Process.Chessboard;
+using ProjectLUX.Process.Distortion;
+using ProjectLUX.Process.Green;
+using ProjectLUX.Process.MTFHV;
+using ProjectLUX.Process.OpticCenter;
+using ProjectLUX.Process.Red;
+using ProjectLUX.Process.W255;
 using ProjectLUX.Services;
 using ST.Library.UI.NodeEditor;
 using System;
@@ -127,182 +135,51 @@ namespace ProjectLUX
     /// </summary>
     public class ObjectiveTestResult:ViewModelBase
     {
-        /// <summary>
-        /// 亮度均匀性(%) 测试项
-        /// </summary>
-        public ObjectiveTestItem LuminanceUniformity { get; set; }
+        public W255TestResult W255TestResult { get; set; }
 
-        /// <summary>
-        /// 色彩均匀性 测试项
-        /// </summary>
-        public ObjectiveTestItem ColorUniformity { get; set; }
+        public RedTestResult RedTestResult { get; set; }
 
-        /// <summary>
-        /// 中心相关色温(K) 测试项
-        /// </summary>
-        public ObjectiveTestItem CenterCorrelatedColorTemperature { get; set; }
+        public BlueTestResult BlueTestResult { get; set; }
 
-        /// <summary>
-        /// 新增中心相关色温(K) 测试项
-        /// </summary>
-        public ObjectiveTestItem White1CenterCorrelatedColorTemperature { get; set; }
+        public GreenTestResult GreenTestResult { get; set; }
 
-        /// <summary>
-        /// 白画面的中心亮度
-        /// </summary>
-        public ObjectiveTestItem CenterLuminace { get; set; }
+        public ChessboardTestResult ChessboardTestResult { get; set; }
 
-        /// <summary>
-        /// 新增白画面的中心亮度
-        /// </summary>
-        public ObjectiveTestItem White1CenterLuminace { get; set; }
+        public DistortionTestResult DistortionTestResult { get; set; }
+
+        public OpticCenterTestResult OpticCenterTestResult { get; set; }
+
+        public MTFHVTestResult MTFHVTestResult { get; set; }
 
 
-
-        /// <summary>
-        /// 水平视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem HorizontalFieldOfViewAngle { get; set; }
-
-        /// <summary>
-        /// 垂直视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem VerticalFieldOfViewAngle { get; set; }
-
-        /// <summary>
-        /// 对角线视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem DiagonalFieldOfViewAngle { get; set; }
 
         /// <summary>
         /// FOFO对比度 测试项
         /// </summary>
         public ObjectiveTestItem FOFOContrast { get; set; }
 
-        /// <summary>
-        /// 棋盘格对比度 测试项
-        /// </summary>
-        public ObjectiveTestItem ChessboardContrast { get; set; }
 
         /// <summary>
-        /// 水平TV畸变(%) 测试项
+        /// 中心点亮度
         /// </summary>
-        public ObjectiveTestItem HorizontalTVDistortion { get; set; }
-
+        public ObjectiveTestItem W25CenterLunimance { get; set; }
         /// <summary>
-        /// 垂直TV畸变(%) 测试项
+        /// CenterCIE1931ChromaticCoordinatesx
         /// </summary>
-        public ObjectiveTestItem VerticalTVDistortion { get; set; }
-
+        public ObjectiveTestItem W25CenterCIE1931ChromaticCoordinatesx { get; set; }
         /// <summary>
-        /// MTF_H 中心_0F 测试项
+        /// CenterCIE1931ChromaticCoordinatesy
         /// </summary>
-        public ObjectiveTestItem MTF_H_Center_0F { get; set; }
-
+        public ObjectiveTestItem W25CenterCIE1931ChromaticCoordinatesy { get; set; }
         /// <summary>
-        /// MTF_H 左上_0.5F 测试项
+        /// CenterCIE1976ChromaticCoordinatesu
         /// </summary>
-        public ObjectiveTestItem MTF_H_LeftUp_0_5F { get; set; }
-
+        public ObjectiveTestItem W25CenterCIE1976ChromaticCoordinatesu { get; set; }
         /// <summary>
-        /// MTF_H 右上_0.5F 测试项
+        /// CenterCIE1976ChromaticCoordinatesv
         /// </summary>
-        public ObjectiveTestItem MTF_H_RightUp_0_5F { get; set; }
+        public ObjectiveTestItem W25CenterCIE1976ChromaticCoordinatesv { get; set; }
 
-        /// <summary>
-        /// MTF_H 右下_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_H_RightDown_0_5F { get; set; }
-
-        /// <summary>
-        /// MTF_H 左下_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_H_LeftDown_0_5F { get; set; }
-
-        /// <summary>
-        /// MTF_H 左上_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_H_LeftUp_0_8F { get; set; }
-
-        /// <summary>
-        /// MTF_H 右上_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_H_RightUp_0_8F { get; set; }
-
-        /// <summary>
-        /// MTF_H 右下_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_H_RightDown_0_8F { get; set; }
-
-        /// <summary>
-        /// MTF_H 左下_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_H_LeftDown_0_8F { get; set; }
-
-        /// <summary>
-        /// MTF_V 中心_0F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_V_Center_0F { get; set; }
-
-        /// <summary>
-        /// MTF_V 左上_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_V_LeftUp_0_5F { get; set; }
-
-        /// <summary>
-        /// MTF_V 右上_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_V_RightUp_0_5F { get; set; }
-
-        /// <summary>
-        /// MTF_V 右下_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_V_RightDown_0_5F { get; set; }
-
-        /// <summary>
-        /// MTF_V 左下_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_V_LeftDown_0_5F { get; set; }
-
-        /// <summary>
-        /// MTF_V 左上_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_V_LeftUp_0_8F { get; set; }
-
-        /// <summary>
-        /// MTF_V 右上_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_V_RightUp_0_8F { get; set; }
-
-        /// <summary>
-        /// MTF_V 右下_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_V_RightDown_0_8F { get; set; }
-
-        /// <summary>
-        /// MTF_V 左下_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_V_LeftDown_0_8F { get; set; }
-
-        /// <summary>
-        /// X轴倾斜角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem XTilt { get; set; }
-
-        /// <summary>
-        /// Y轴倾斜角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem YTilt { get; set; }
-
-        /// <summary>
-        /// 旋转角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem Rotation { get; set; }
-
-        /// <summary>
-        /// 鬼影(%) 测试项
-        /// </summary>
-        public ObjectiveTestItem Ghost { get; set; }
 
         /// <summary>
         /// 总体测试结果（true表示通过，false表示不通过）
