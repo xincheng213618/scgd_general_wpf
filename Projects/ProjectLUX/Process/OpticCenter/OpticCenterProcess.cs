@@ -45,18 +45,6 @@ namespace ProjectLUX.Process.OpticCenter
                                 ctx.Result.Result &= testResult.OptCenterYTilt.TestResult;
                                 ctx.Result.Result &= testResult.OptCenterRotation.TestResult;
                             }
-                            else if (master.TName == "ImageCenter")
-                            {
-                                find.FindCrossResult.result[0].tilt.tilt_x *= fixConfig.ImageCenterXTilt;
-                                find.FindCrossResult.result[0].tilt.tilt_y *= fixConfig.ImageCenterYTilt;
-                                find.FindCrossResult.result[0].rotationAngle *= fixConfig.ImageCenterRotation;
-                                testResult.ImageCenterXTilt = Build("ImageCenterXTilt", find.FindCrossResult.result[0].tilt.tilt_x, recipeConfig.ImageCenterXTilt.Min, recipeConfig.ImageCenterXTilt.Max, "F4");
-                                testResult.ImageCenterYTilt = Build("ImageCenterYTilt", find.FindCrossResult.result[0].tilt.tilt_y, recipeConfig.ImageCenterYTilt.Min, recipeConfig.ImageCenterYTilt.Max, "F4");
-                                testResult.ImageCenterRotation = Build("ImageCenterRotation", find.FindCrossResult.result[0].rotationAngle, recipeConfig.ImageCenterRotation.Min, recipeConfig.ImageCenterRotation.Max, "F4");
-                                ctx.Result.Result &= testResult.ImageCenterXTilt.TestResult;
-                                ctx.Result.Result &= testResult.ImageCenterYTilt.TestResult;
-                                ctx.Result.Result &= testResult.ImageCenterRotation.TestResult;
-                            }
                         }
                     }
                 }

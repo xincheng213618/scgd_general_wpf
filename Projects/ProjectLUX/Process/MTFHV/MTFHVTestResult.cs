@@ -11,95 +11,35 @@ namespace ProjectLUX.Process.MTFHV
 
     public class MTFHVTestResult : ViewModelBase
     {
-
-        /// <summary>
-        /// MTF_HV_H 中心_0F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_Center_0F { get; set; } = new ObjectiveTestItem();
-
-        /// <summary>
-        /// MTF_HV_H 左上_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_LeftUp_0_4F { get; set; } = new ObjectiveTestItem();
-
-        /// <summary>
-        /// MTF_HV_H 右上_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_RightUp_0_4F { get; set; } = new ObjectiveTestItem();
-
-        /// <summary>
-        /// MTF_HV_H 右下_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_RightDown_0_4F { get; set; } = new ObjectiveTestItem();
-
-        /// <summary>
-        /// MTF_HV_H 左下_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_LeftDown_0_4F { get; set; }   = new ObjectiveTestItem();
-
-        /// <summary>
-        /// MTF_HV_H 左上_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_LeftUp_0_8F { get; set; } = new ObjectiveTestItem();
-
-        /// <summary>
-        /// MTF_HV_H 右上_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_RightUp_0_8F { get; set; } = new ObjectiveTestItem();
-
-        /// <summary>
-        /// MTF_HV_H 右下_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_RightDown_0_8F { get; set; } = new ObjectiveTestItem();
-
-        /// <summary>
-        /// MTF_HV_H 左下_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_LeftDown_0_8F { get; set; } = new ObjectiveTestItem();
-            
-        /// <summary>
-        /// MTF_HV_V 中心_0F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_Center_0F { get; set; } = new ObjectiveTestItem();
-
-        /// <summary>
-        /// MTF_HV_V 左上_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_LeftUp_0_4F { get; set; } = new ObjectiveTestItem();
-
-        /// <summary>
-        /// MTF_HV_V 右上_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_RightUp_0_4F { get; set; } = new ObjectiveTestItem();
-
-        /// <summary>
-        /// MTF_HV_V 右下_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_RightDown_0_4F { get; set; } = new ObjectiveTestItem();
-
-        /// <summary>
-        /// MTF_HV_V 左下_0.5F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_LeftDown_0_4F { get; set; } = new ObjectiveTestItem();
-            
-        /// <summary>
-        /// MTF_HV_V 左上_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_LeftUp_0_8F { get; set; } = new ObjectiveTestItem();
-
-        /// <summary>
-        /// MTF_HV_V 右上_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_RightUp_0_8F { get; set; } = new ObjectiveTestItem();
-
-        /// <summary>
-        /// MTF_HV_V 右下_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_RightDown_0_8F { get; set; } = new ObjectiveTestItem();
-
-        /// <summary>
-        /// MTF_HV_V 左下_0.8F 测试项
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_LeftDown_0_8F { get; set; } = new ObjectiveTestItem();
+        public ObjectiveTestItem MTF0F_Center_H1 { get; set; } = new ObjectiveTestItem() { Name = "0F_Center_H1", Unit = "%" };
+        public ObjectiveTestItem MTF0F_Center_V1 { get; set; } = new ObjectiveTestItem() { Name = "0F_Center_V1", Unit = "%" };
+        public ObjectiveTestItem MTF0F_Center_H2 { get; set; } = new ObjectiveTestItem() { Name = "0F_Center_H2", Unit = "%" };
+        public ObjectiveTestItem MTF0F_Center_V2 { get; set; } = new ObjectiveTestItem() { Name = "0F_Center_V2", Unit = "%" };
+        public ObjectiveTestItem MTF0F_Center_horizontal { get; set; } = new ObjectiveTestItem() { Name = "0F_Center_horizontal", Unit = "%" };
+        public ObjectiveTestItem MTF0F_Center_Vertical { get; set; } = new ObjectiveTestItem() { Name = "0F_Center_Vertical", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_LeftUp_H1 { get; set; } = new ObjectiveTestItem() { Name = "0.6F_LeftUp_H1", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_LeftUp_V1 { get; set; } = new ObjectiveTestItem() { Name = "0.6F_LeftUp_V1", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_LeftUp_H2 { get; set; } = new ObjectiveTestItem() { Name = "0.6F_LeftUp_H2", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_LeftUp_V2 { get; set; } = new ObjectiveTestItem() { Name = "0.6F_LeftUp_V2", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_LeftUp_horizontal { get; set; } = new ObjectiveTestItem() { Name = "0.6F_LeftUp_horizontal", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_LeftUp_Vertical { get; set; } = new ObjectiveTestItem() { Name = "0.6F_LeftUp_Vertical", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_RightUp_H1 { get; set; } = new ObjectiveTestItem() { Name = "0.6F_RightUp_H1", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_RightUp_V1 { get; set; } = new ObjectiveTestItem() { Name = "0.6F_RightUp_V1", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_RightUp_H2 { get; set; } = new ObjectiveTestItem() { Name = "0.6F_RightUp_H2", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_RightUp_V2 { get; set; } = new ObjectiveTestItem() { Name = "0.6F_RightUp_V2", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_RightUp_horizontal { get; set; } = new ObjectiveTestItem() { Name = "0.6F_RightUp_horizontal", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_RightUp_Vertical { get; set; } = new ObjectiveTestItem() { Name = "0.6F_RightUp_Vertical", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_RightDown_H1 { get; set; } = new ObjectiveTestItem() { Name = "0.6F_RightDown_H1", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_RightDown_V1 { get; set; } = new ObjectiveTestItem() { Name = "0.6F_RightDown_V1", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_RightDown_H2 { get; set; } = new ObjectiveTestItem() { Name = "0.6F_RightDown_H2", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_RightDown_V2 { get; set; } = new ObjectiveTestItem() { Name = "0.6F_RightDown_V2", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_RightDown_horizontal { get; set; } = new ObjectiveTestItem() { Name = "0.6F_RightDown_horizontal", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_RightDown_Vertical { get; set; } = new ObjectiveTestItem() { Name = "0.6F_RightDown_Vertical", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_LeftDown_H1 { get; set; } = new ObjectiveTestItem() { Name = "0.6F_LeftDown_H1", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_LeftDown_V1 { get; set; } = new ObjectiveTestItem() { Name = "0.6F_LeftDown_V1", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_LeftDown_H2 { get; set; } = new ObjectiveTestItem() { Name = "0.6F_LeftDown_H2", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_LeftDown_V2 { get; set; } = new ObjectiveTestItem() { Name = "0.6F_LeftDown_V2", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_LeftDown_horizontal { get; set; } = new ObjectiveTestItem() { Name = "0.6F_LeftDown_horizontal", Unit = "%" };
+        public ObjectiveTestItem MTF0_6F_LeftDown_Vertical { get; set; } = new ObjectiveTestItem() { Name = "0.6F_LeftDown_Vertical", Unit = "%" };
     }
 }
