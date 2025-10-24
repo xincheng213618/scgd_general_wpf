@@ -14,12 +14,12 @@ namespace ProjectLUX.Process.Distortion
         /// <summary>
         /// 水平TV畸变(%) 测试项
         /// </summary>
-        public ObjectiveTestItem HorizontalTVDistortion { get; set; }
+        public ObjectiveTestItem HorizontalTVDistortion { get; set; } = new ObjectiveTestItem();
 
         /// <summary>
         /// 垂直TV畸变(%) 测试项
         /// </summary>
-        public ObjectiveTestItem VerticalTVDistortion { get; set; }
+        public ObjectiveTestItem VerticalTVDistortion { get; set; } = new ObjectiveTestItem();
 
     }
 }

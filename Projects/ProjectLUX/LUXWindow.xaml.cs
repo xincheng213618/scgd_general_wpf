@@ -460,25 +460,12 @@ namespace ProjectLUX
                 return;
             }
             ObjectiveTestResult.TotalResult = true;
-            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowWhiteTestReslut;
-            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowBlackTestReslut;
-            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowChessboardTestReslut;
-            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowMTFVTestReslut;
-            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowMTFHTestReslut;
-            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowDistortionTestReslut;
-            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowOpticCenterTestReslut;
             log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
 
             string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 
-
-
             string filePath = Path.Combine(ViewResultManager.Config.CsvSavePath, $"ObjectiveTestResults_{timeStr}.csv");
-
-            List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
-
-            objectiveTestResults.Add(ObjectiveTestResult);
-            ObjectiveTestResultCsvExporter.ExportToCsv(objectiveTestResults, filePath);
+            ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, filePath);
             var response = new SocketResponse
             {
                 Version = "1.0",
@@ -651,6 +638,25 @@ namespace ProjectLUX
         {
             timer?.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            ObjectiveTestResult TestResult = new ObjectiveTestResult();
+            TestResult.W255TestResult = new Process.W255.W255TestResult();
+            TestResult.RedTestResult = new Process.Red.RedTestResult();
+            TestResult.BlueTestResult = new Process.Blue.BlueTestResult();
+            TestResult.GreenTestResult = new Process.Green.GreenTestResult();
+            TestResult.MTFHVTestResult = new Process.MTFHV.MTFHVTestResult();
+            TestResult.DistortionTestResult = new Process.Distortion.DistortionTestResult();
+            TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
+            TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
+
+
+
+            string filePath = Path.Combine(ViewResultManager.Config.CsvSavePath, $"ObjectiveTestResults.csv");
+
+            ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, filePath);
         }
     }
 }

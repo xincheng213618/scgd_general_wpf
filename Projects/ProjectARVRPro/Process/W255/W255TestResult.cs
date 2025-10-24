@@ -11,6 +11,20 @@ namespace ProjectARVRPro.Process.W255
     public class W255TestResult : ViewModelBase
     {
         /// <summary>
+        /// 水平视场角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem HorizontalFieldOfViewAngle { get; set; } = new ObjectiveTestItem();
+
+        /// <summary>
+        /// 垂直视场角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem VerticalFieldOfViewAngle { get; set; } = new ObjectiveTestItem();
+        /// <summary>
+        /// 对角线视场角(°) 测试项
+        /// </summary>
+        public ObjectiveTestItem DiagonalFieldOfViewAngle { get; set; } = new ObjectiveTestItem();
+
+        /// <summary>
         /// 亮度均匀性(%) 测试项
         /// </summary>
         public ObjectiveTestItem LuminanceUniformity { get; set; } = new ObjectiveTestItem();
@@ -40,21 +54,5 @@ namespace ProjectARVRPro.Process.W255
         /// CenterCIE1976ChromaticCoordinatesv
         /// </summary>
         public ObjectiveTestItem CenterCIE1976ChromaticCoordinatesv { get; set; } = new ObjectiveTestItem();
-
-
-        /// <summary>
-        /// 水平视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem HorizontalFieldOfViewAngle { get; set; }
-
-        /// <summary>
-        /// 垂直视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem VerticalFieldOfViewAngle { get; set; }
-
-        /// <summary>
-        /// 对角线视场角(°) 测试项
-        /// </summary>
-        public ObjectiveTestItem DiagonalFieldOfViewAngle { get; set; }
     }
 }

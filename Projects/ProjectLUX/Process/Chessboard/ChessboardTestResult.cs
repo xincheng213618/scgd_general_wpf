@@ -13,7 +13,7 @@ namespace ProjectLUX.Process.Chessboard
         /// <summary>
         /// 棋盘格对比度 测试项
         /// </summary>
-        public ObjectiveTestItem ChessboardContrast { get; set; }
+        public ObjectiveTestItem ChessboardContrast { get; set; } = new ObjectiveTestItem();
 
     }
 }
