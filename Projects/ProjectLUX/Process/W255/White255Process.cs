@@ -99,6 +99,7 @@ namespace ProjectLUX.Process.W255
                             }
                         }
                     }
+
                     if (master.ImgFileType == ViewResultAlgType.PoiAnalysis)
                     {
                         if (master.TName.Contains("Luminance_uniformity"))
@@ -107,17 +108,16 @@ namespace ProjectLUX.Process.W255
                             if (details.Count == 1)
                             {
                                 var view = new PoiAnalysisDetailViewReslut(details[0]);
+
                                 view.PoiAnalysisResult.result.Value *= fixConfig.LuminanceUniformity;
-                                var uniform = new ObjectiveTestItem
-                                {
-                                    Name = "Luminance_uniformity(%)",
-                                    TestValue = (view.PoiAnalysisResult.result.Value * 100).ToString("F3") + "%",
-                                    Value = view.PoiAnalysisResult.result.Value,
-                                    LowLimit = recipeConfig.LuminanceUniformity.Min,
-                                    UpLimit = recipeConfig.LuminanceUniformity.Max
-                                };
-                                testResult.LuminanceUniformity = uniform;
-                                ctx.Result.Result &= uniform.TestResult;
+
+                                testResult.LuminanceUniformity.LowLimit = recipeConfig.LuminanceUniformity.Min;
+                                testResult.LuminanceUniformity.UpLimit = recipeConfig.LuminanceUniformity.Max;
+                                testResult.LuminanceUniformity.Value = view.PoiAnalysisResult.result.Value;
+                                testResult.LuminanceUniformity.TestValue = (view.PoiAnalysisResult.result.Value * 100).ToString("F3") + "%";
+
+                                ctx.Result.Result &= testResult.LuminanceUniformity.TestResult;
+
                             }
                         }
                         if (master.TName.Contains("Color_uniformity"))
@@ -126,17 +126,15 @@ namespace ProjectLUX.Process.W255
                             if (details.Count == 1)
                             {
                                 var view = new PoiAnalysisDetailViewReslut(details[0]);
+
                                 view.PoiAnalysisResult.result.Value *= fixConfig.ColorUniformity;
-                                var colorUniform = new ObjectiveTestItem
-                                {
-                                    Name = "Color_uniformity",
-                                    TestValue = view.PoiAnalysisResult.result.Value.ToString("F5"),
-                                    Value = view.PoiAnalysisResult.result.Value,
-                                    LowLimit = recipeConfig.ColorUniformity.Min,
-                                    UpLimit = recipeConfig.ColorUniformity.Max
-                                };
-                                testResult.ColorUniformity = colorUniform;
-                                ctx.Result.Result &= colorUniform.TestResult;
+
+                                testResult.ColorUniformity.LowLimit = recipeConfig.ColorUniformity.Min;
+                                testResult.ColorUniformity.UpLimit = recipeConfig.ColorUniformity.Max;
+                                testResult.ColorUniformity.Value = view.PoiAnalysisResult.result.Value;
+                                testResult.ColorUniformity.TestValue = view.PoiAnalysisResult.result.Value.ToString("F5");
+
+                                ctx.Result.Result &= testResult.ColorUniformity.TestResult;
                             }
                         }
                     }
