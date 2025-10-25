@@ -622,10 +622,7 @@ namespace ProjectARVRPro
 
             string filePath = Path.Combine(ViewResultManager.Config.CsvSavePath, $"ObjectiveTestResults_{timeStr}.csv");
 
-            List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
-
-            objectiveTestResults.Add(ObjectiveTestResult);
-            ObjectiveTestResultCsvExporter.ExportToCsv(objectiveTestResults, filePath);
+            ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, filePath);
             var response = new SocketResponse
             {
                 Version = "1.0",

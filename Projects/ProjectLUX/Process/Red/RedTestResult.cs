@@ -61,17 +61,17 @@ namespace ProjectLUX.Process.Red
         /// <summary>
         /// 亮度均匀性(%) 测试项
         /// </summary>
-        public ObjectiveTestItem LuminanceUniformity { get; set; } = new ObjectiveTestItem() { Name = "Luminance_Uniformity(min/max*100%)" };
+        public ObjectiveTestItem LuminanceUniformity { get; set; } = new ObjectiveTestItem() { Name = "Luminance_Uniformity(min_max_100)" };
 
         /// <summary>
         /// 色彩均匀性 测试项
         /// </summary>
-        public ObjectiveTestItem ColorUniformity { get; set; } = new ObjectiveTestItem() { Name = "Color_Uniformity(△u'v'max)" };
+        public ObjectiveTestItem ColorUniformity { get; set; } = new ObjectiveTestItem() { Name = "Color_Uniformity(uv_max)" };
 
         /// <summary>
         /// 中心点亮度
         /// </summary>
-        public ObjectiveTestItem CenterLunimance { get; set; } = new ObjectiveTestItem() { Name = "Center_Lunimance ", Unit = "cd/m^2" };
+        public ObjectiveTestItem CenterLunimance { get; set; } = new ObjectiveTestItem() { Name = "Center_Luminance", Unit = "cd/m^2" };
         /// <summary>
         /// CenterCIE1931ChromaticCoordinatesx
         /// </summary>
