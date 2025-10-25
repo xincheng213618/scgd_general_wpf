@@ -129,7 +129,6 @@ namespace ProjectLUX
                 PlatformHelper.OpenFolderAndSelectFile(FileName);
             }, e => File.Exists(FileName));
 
-
             ContextMenu.Items.Add(new MenuItem() { Command = openFolderAndSelectFile, Header = "OpenFolderAndSelectFile" });
 
             RelayCommand BatchDataHistoryCommand = new RelayCommand(a => BatchDataHistory(),e => BatchId > 0);

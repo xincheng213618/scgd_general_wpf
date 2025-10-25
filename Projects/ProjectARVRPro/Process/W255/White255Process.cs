@@ -10,6 +10,7 @@ using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 using System.Windows;
 using System.Windows.Media;
+using static HelixToolkit.Wpf.Viewport3DHelper;
 
 namespace ProjectARVRPro.Process.W255
 {
@@ -107,17 +108,16 @@ namespace ProjectARVRPro.Process.W255
                             if (details.Count == 1)
                             {
                                 var view = new PoiAnalysisDetailViewReslut(details[0]);
+
                                 view.PoiAnalysisResult.result.Value *= fixConfig.LuminanceUniformity;
-                                var uniform = new ObjectiveTestItem
-                                {
-                                    Name = "Luminance_uniformity(%)",
-                                    TestValue = (view.PoiAnalysisResult.result.Value * 100).ToString("F3") + "%",
-                                    Value = view.PoiAnalysisResult.result.Value,
-                                    LowLimit = recipeConfig.LuminanceUniformity.Min,
-                                    UpLimit = recipeConfig.LuminanceUniformity.Max
-                                };
-                                testResult.LuminanceUniformity = uniform;
-                                ctx.Result.Result &= uniform.TestResult;
+
+                                testResult.LuminanceUniformity.LowLimit = recipeConfig.LuminanceUniformity.Min;
+                                testResult.LuminanceUniformity.UpLimit = recipeConfig.LuminanceUniformity.Max;
+                                testResult.LuminanceUniformity.Value = view.PoiAnalysisResult.result.Value;
+                                testResult.LuminanceUniformity.TestValue = (view.PoiAnalysisResult.result.Value * 100).ToString("F3") + "%";
+
+                                ctx.Result.Result &= testResult.LuminanceUniformity.TestResult;
+
                             }
                         }
                         if (master.TName.Contains("Color_uniformity"))
@@ -126,17 +126,15 @@ namespace ProjectARVRPro.Process.W255
                             if (details.Count == 1)
                             {
                                 var view = new PoiAnalysisDetailViewReslut(details[0]);
+
                                 view.PoiAnalysisResult.result.Value *= fixConfig.ColorUniformity;
-                                var colorUniform = new ObjectiveTestItem
-                                {
-                                    Name = "Color_uniformity",
-                                    TestValue = view.PoiAnalysisResult.result.Value.ToString("F5"),
-                                    Value = view.PoiAnalysisResult.result.Value,
-                                    LowLimit = recipeConfig.ColorUniformity.Min,
-                                    UpLimit = recipeConfig.ColorUniformity.Max
-                                };
-                                testResult.ColorUniformity = colorUniform;
-                                ctx.Result.Result &= colorUniform.TestResult;
+
+                                testResult.ColorUniformity.LowLimit = recipeConfig.ColorUniformity.Min;
+                                testResult.ColorUniformity.UpLimit = recipeConfig.ColorUniformity.Max;
+                                testResult.ColorUniformity.Value = view.PoiAnalysisResult.result.Value;
+                                testResult.ColorUniformity.TestValue = view.PoiAnalysisResult.result.Value.ToString("F5");
+
+                                ctx.Result.Result &= testResult.ColorUniformity.TestResult;
                             }
                         }
                     }
@@ -148,38 +146,31 @@ namespace ProjectARVRPro.Process.W255
                         {
                             DFovView view1 = new DFovView(algResultModels[0]);
 
+
                             view1.Result.result.D_Fov = view1.Result.result.D_Fov * fixConfig.W51DiagonalFieldOfViewAngle;
                             view1.Result.result.ClolorVisionH_Fov = view1.Result.result.ClolorVisionH_Fov * fixConfig.W51HorizontalFieldOfViewAngle;
                             view1.Result.result.ClolorVisionV_Fov = view1.Result.result.ClolorVisionV_Fov * fixConfig.W51VerticalFieldOfViewAngle;
 
-                            testResult.DiagonalFieldOfViewAngle = new ObjectiveTestItem()
-                            {
-                                Name = "DiagonalFieldOfViewAngle",
-                                LowLimit = recipeConfig.DiagonalFieldOfViewAngle.Min,
-                                UpLimit = recipeConfig.DiagonalFieldOfViewAngle.Max,
-                                Value = view1.Result.result.D_Fov,
-                                TestValue = view1.Result.result.D_Fov.ToString("F3")
-                            };
 
-                            testResult.HorizontalFieldOfViewAngle = new ObjectiveTestItem()
-                            {
-                                Name = "HorizontalFieldOfViewAngle",
-                                LowLimit = recipeConfig.HorizontalFieldOfViewAngle.Min,
-                                UpLimit = recipeConfig.HorizontalFieldOfViewAngle.Max,
-                                Value = view1.Result.result.ClolorVisionH_Fov,
-                                TestValue = view1.Result.result.ClolorVisionH_Fov.ToString("F3")
-                            };
-                            testResult.VerticalFieldOfViewAngle = new ObjectiveTestItem()
-                            {
-                                Name = "VerticalFieldOfViewAngle",
-                                LowLimit = recipeConfig.VerticalFieldOfViewAngle.Min,
-                                UpLimit = recipeConfig.VerticalFieldOfViewAngle.Max,
-                                Value = view1.Result.result.ClolorVisionV_Fov,
-                                TestValue = view1.Result.result.ClolorVisionV_Fov.ToString("F3")
-                            };
+                            testResult.DiagonalFieldOfViewAngle.LowLimit = recipeConfig.DiagonalFieldOfViewAngle.Min;
+                            testResult.DiagonalFieldOfViewAngle.UpLimit = recipeConfig.DiagonalFieldOfViewAngle.Max;
+                            testResult.DiagonalFieldOfViewAngle.Value = view1.Result.result.D_Fov;
+                            testResult.DiagonalFieldOfViewAngle.TestValue = view1.Result.result.D_Fov.ToString("F3");
+
+                            testResult.HorizontalFieldOfViewAngle.LowLimit = recipeConfig.HorizontalFieldOfViewAngle.Min;
+                            testResult.HorizontalFieldOfViewAngle.UpLimit = recipeConfig.HorizontalFieldOfViewAngle.Max;
+                            testResult.HorizontalFieldOfViewAngle.Value = view1.Result.result.ClolorVisionH_Fov;
+                            testResult.HorizontalFieldOfViewAngle.TestValue = view1.Result.result.ClolorVisionH_Fov.ToString("F3");
+
+                            testResult.VerticalFieldOfViewAngle.LowLimit = recipeConfig.VerticalFieldOfViewAngle.Min;
+                            testResult.VerticalFieldOfViewAngle.UpLimit = recipeConfig.VerticalFieldOfViewAngle.Max;
+                            testResult.VerticalFieldOfViewAngle.Value = view1.Result.result.ClolorVisionV_Fov;
+                            testResult.VerticalFieldOfViewAngle.TestValue = view1.Result.result.ClolorVisionV_Fov.ToString("F3");
+
                             ctx.Result.Result = ctx.Result.Result && testResult.DiagonalFieldOfViewAngle.TestResult;
                             ctx.Result.Result = ctx.Result.Result && testResult.HorizontalFieldOfViewAngle.TestResult;
                             ctx.Result.Result = ctx.Result.Result && testResult.VerticalFieldOfViewAngle.TestResult;
+
                         }
 
                     }

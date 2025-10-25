@@ -9,31 +9,16 @@ namespace ProjectLUX.Process.OpticCenter
         /// <summary>
         /// XÖáÇãĞ±½Ç(¡ã) ²âÊÔÏî
         /// </summary>
-        public ObjectiveTestItem ImageCenterXTilt { get; set; }
+        public ObjectiveTestItem OptCenterXTilt { get; set; } = new ObjectiveTestItem() { Name = "Tilt_x", Unit = "degree" };
 
         /// <summary>
         /// YÖáÇãĞ±½Ç(¡ã) ²âÊÔÏî
         /// </summary>
-        public ObjectiveTestItem ImageCenterYTilt { get; set; }
-
+        public ObjectiveTestItem OptCenterYTilt { get; set; } = new ObjectiveTestItem() { Name = "Tilt_y", Unit = "degree" };
         /// <summary>
         /// Ğı×ª½Ç(¡ã) ²âÊÔÏî
         /// </summary>
-        public ObjectiveTestItem ImageCenterRotation { get; set; }
+        public ObjectiveTestItem OptCenterRotation { get; set; } = new ObjectiveTestItem() { Name = "Rotation", Unit = "degree" };
 
-        /// <summary>
-        /// Ğı×ª½Ç(¡ã) ²âÊÔÏî
-        /// </summary>
-        public ObjectiveTestItem OptCenterRotation { get; set; }
-
-        /// <summary>
-        /// XÖáÇãĞ±½Ç(¡ã) ²âÊÔÏî
-        /// </summary>
-        public ObjectiveTestItem OptCenterXTilt { get; set; }
-
-        /// <summary>
-        /// YÖáÇãĞ±½Ç(¡ã) ²âÊÔÏî
-        /// </summary>
-        public ObjectiveTestItem OptCenterYTilt { get; set; }
     }
 }

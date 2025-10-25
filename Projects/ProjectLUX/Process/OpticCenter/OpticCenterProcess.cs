@@ -45,18 +45,6 @@ namespace ProjectLUX.Process.OpticCenter
                                 ctx.Result.Result &= testResult.OptCenterYTilt.TestResult;
                                 ctx.Result.Result &= testResult.OptCenterRotation.TestResult;
                             }
-                            else if (master.TName == "ImageCenter")
-                            {
-                                find.FindCrossResult.result[0].tilt.tilt_x *= fixConfig.ImageCenterXTilt;
-                                find.FindCrossResult.result[0].tilt.tilt_y *= fixConfig.ImageCenterYTilt;
-                                find.FindCrossResult.result[0].rotationAngle *= fixConfig.ImageCenterRotation;
-                                testResult.ImageCenterXTilt = Build("ImageCenterXTilt", find.FindCrossResult.result[0].tilt.tilt_x, recipeConfig.ImageCenterXTilt.Min, recipeConfig.ImageCenterXTilt.Max, "F4");
-                                testResult.ImageCenterYTilt = Build("ImageCenterYTilt", find.FindCrossResult.result[0].tilt.tilt_y, recipeConfig.ImageCenterYTilt.Min, recipeConfig.ImageCenterYTilt.Max, "F4");
-                                testResult.ImageCenterRotation = Build("ImageCenterRotation", find.FindCrossResult.result[0].rotationAngle, recipeConfig.ImageCenterRotation.Min, recipeConfig.ImageCenterRotation.Max, "F4");
-                                ctx.Result.Result &= testResult.ImageCenterXTilt.TestResult;
-                                ctx.Result.Result &= testResult.ImageCenterYTilt.TestResult;
-                                ctx.Result.Result &= testResult.ImageCenterRotation.TestResult;
-                            }
                         }
                     }
                 }
@@ -97,12 +85,12 @@ namespace ProjectLUX.Process.OpticCenter
                 outtext += $"OptCenterYTilt:{testResult.OptCenterYTilt.TestValue} LowLimit:{testResult.OptCenterYTilt.LowLimit}  UpLimit:{testResult.OptCenterYTilt.UpLimit},Rsult{(testResult.OptCenterYTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             if (testResult.OptCenterRotation != null)
                 outtext += $"OptCenterRotation:{testResult.OptCenterRotation.TestValue} LowLimit:{testResult.OptCenterRotation.LowLimit}  UpLimit:{testResult.OptCenterRotation.UpLimit},Rsult{(testResult.OptCenterRotation.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-            if (testResult.ImageCenterXTilt != null)
-                outtext += $"ImageCenterXTilt:{testResult.ImageCenterXTilt.TestValue} LowLimit:{testResult.ImageCenterXTilt.LowLimit}  UpLimit:{testResult.ImageCenterXTilt.UpLimit},Rsult{(testResult.ImageCenterXTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-            if (testResult.ImageCenterYTilt != null)
-                outtext += $"ImageCenterYTilt:{testResult.ImageCenterYTilt.TestValue} LowLimit:{testResult.ImageCenterYTilt.LowLimit}  UpLimit:{testResult.ImageCenterYTilt.UpLimit},Rsult{(testResult.ImageCenterYTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-            if (testResult.ImageCenterRotation != null)
-                outtext += $"ImageCenterRotation:{testResult.ImageCenterRotation.TestValue} LowLimit:{testResult.ImageCenterRotation.LowLimit}  UpLimit:{testResult.ImageCenterRotation.UpLimit},Rsult{(testResult.ImageCenterRotation.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+            //if (testResult.ImageCenterXTilt != null)
+            //    outtext += $"ImageCenterXTilt:{testResult.ImageCenterXTilt.TestValue} LowLimit:{testResult.ImageCenterXTilt.LowLimit}  UpLimit:{testResult.ImageCenterXTilt.UpLimit},Rsult{(testResult.ImageCenterXTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+            //if (testResult.ImageCenterYTilt != null)
+            //    outtext += $"ImageCenterYTilt:{testResult.ImageCenterYTilt.TestValue} LowLimit:{testResult.ImageCenterYTilt.LowLimit}  UpLimit:{testResult.ImageCenterYTilt.UpLimit},Rsult{(testResult.ImageCenterYTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+            //if (testResult.ImageCenterRotation != null)
+            //    outtext += $"ImageCenterRotation:{testResult.ImageCenterRotation.TestValue} LowLimit:{testResult.ImageCenterRotation.LowLimit}  UpLimit:{testResult.ImageCenterRotation.UpLimit},Rsult{(testResult.ImageCenterRotation.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             return outtext;
         }
 

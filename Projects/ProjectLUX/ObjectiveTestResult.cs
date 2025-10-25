@@ -1,34 +1,5 @@
-﻿#pragma warning disable
-using ColorVision.Common.Algorithms;
-using ColorVision.Common.MVVM;
-using ColorVision.Database;
-using ColorVision.Engine;
-using ColorVision.Engine.Media;
-using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.FindLightArea;
-using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.Jsons;
-using ColorVision.Engine.Templates.Jsons.BinocularFusion;
-using ColorVision.Engine.Templates.Jsons.LargeFlow;
-using ColorVision.Engine.Templates.Jsons.MTF2;
-using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
-using ColorVision.Engine.Templates.MTF;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.ImageEditor.Draw;
-using ColorVision.SocketProtocol;
-using ColorVision.Themes;
-using ColorVision.UI.Extension;
-using CVCommCore.CVAlgorithm;
-using FlowEngineLib;
-using FlowEngineLib.Base;
-using log4net;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Org.BouncyCastle.Asn1.Ocsp;
+﻿using ColorVision.Common.MVVM;
+using NetTaste;
 using ProjectLUX.Process.Blue;
 using ProjectLUX.Process.Chessboard;
 using ProjectLUX.Process.Distortion;
@@ -37,72 +8,67 @@ using ProjectLUX.Process.MTFHV;
 using ProjectLUX.Process.OpticCenter;
 using ProjectLUX.Process.Red;
 using ProjectLUX.Process.W255;
-using ProjectLUX.Services;
-using ST.Library.UI.NodeEditor;
-using System;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
-using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
 
 namespace ProjectLUX
 {
     public static class ObjectiveTestResultCsvExporter
     {
-        public static void ExportToCsv(List<ObjectiveTestResult> results, string filePath)
+        private static void CollectRows(object obj, string testScreenName, List<string> rows)
         {
-            // 获取所有 ObjectiveTestItem 类型的属性
-            var itemProps = typeof(ObjectiveTestResult).GetProperties()
-                .Where(p => p.PropertyType == typeof(ObjectiveTestItem))
-                .ToList();
-
-            // CSV 列头（每项后缀可自定义，比如 TestValue/Name/LowLimit/UpLimit/TestResult 均输出）
-            var headers = new List<string>();
-            foreach (var prop in itemProps)
+            foreach (var property in obj.GetType().GetProperties())
             {
-                headers.Add($"{prop.Name}_TestValue");
-                headers.Add($"{prop.Name}_TestResult");
-                headers.Add($"{prop.Name}_LowLimit");
-                headers.Add($"{prop.Name}_UpLimit");
-            }
-            headers.Add("TotalResult");
-            headers.Add("TotalResultString");
-
-            var sb = new StringBuilder();
-            sb.AppendLine(string.Join(",", headers));
-
-            foreach (var result in results)
-            {
-                var row = new List<string>();
-                foreach (var prop in itemProps)
+                if (property.PropertyType == typeof(ObjectiveTestItem))
                 {
-                    var item = (ObjectiveTestItem)prop.GetValue(result);
-                    row.Add(item?.TestValue ?? "");
-                    row.Add(item?.TestResult.ToString() ?? "");
-                    row.Add(item?.LowLimit.ToString());
-                    row.Add(item?.UpLimit.ToString());
+                    var testItem = (ObjectiveTestItem)property.GetValue(obj);
+                    if (testItem != null)
+                    {
+                        rows.Add(FormatCsvRow(testScreenName, property.Name, testItem));
+                    }
                 }
-                row.Add(result.TotalResult.ToString());
-                row.Add(result.TotalResultString);
-                sb.AppendLine(string.Join(",", row.Select(EscapeCsv)));
+                else if (!property.PropertyType.IsValueType && property.PropertyType != typeof(string))
+                {
+                    // Recursively process child objects
+                    var childObj = property.GetValue(obj);
+                    if (childObj != null)
+                    {
+                        CollectRows(childObj, testScreenName, rows);
+                    }
+                }
             }
-            File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8);
         }
 
-        // 防止逗号、引号等导致格式问题
-        private static string EscapeCsv(string value)
+        private static string FormatCsvRow(string testScreenName, string propertyName, ObjectiveTestItem testItem)
         {
-            if (string.IsNullOrEmpty(value)) return "";
-            if (value.Contains(",") || value.Contains("\"") || value.Contains("\n"))
-                return $"\"{value.Replace("\"", "\"\"")}\"";
-            return value;
+            string testResult = testItem.TestResult ? "pass" : "fail";
+            return $"{testScreenName},{testItem.Name},{testItem.Value},{testItem.Unit},{testItem.LowLimit},{testItem.UpLimit},{testResult}";
+        }
+
+        public static void ExportToCsv(ObjectiveTestResult results, string filePath)
+        {
+            var rows = new List<string> {  "Test_Screen,Test_item,Test_Value,unit,lower_limit,upper_limit,Test_Result" };
+            foreach (var prop in results.GetType().GetProperties())
+            {
+
+                if (!prop.PropertyType.IsValueType && prop.PropertyType != typeof(string))
+                {
+
+                    var displayNameAttr = prop.GetCustomAttribute<DisplayNameAttribute>();
+                    var raw = displayNameAttr?.DisplayName ?? prop.Name;
+
+                    // Recursively process child objects
+                    var childObj = prop.GetValue(results);
+                    if (childObj != null)
+                    {
+                        CollectRows(childObj, raw, rows);
+                    }
+                }
+            }
+
+            File.WriteAllLines(filePath, rows);
         }
     }
 
@@ -116,6 +82,8 @@ namespace ProjectLUX
 
         public double LowLimit { get; set; }     // 下限
         public double UpLimit { get; set; }      // 上限
+
+        public string Unit { get; set; }         // 单位
 
         public bool TestResult {
             get
@@ -135,73 +103,29 @@ namespace ProjectLUX
     /// </summary>
     public class ObjectiveTestResult:ViewModelBase
     {
+        [DisplayName("W255")]
         public W255TestResult W255TestResult { get; set; }
-
+        [DisplayName("R255")]
         public RedTestResult RedTestResult { get; set; }
 
+        [DisplayName("G255")]
+        public GreenTestResult GreenTestResult { get; set; }
+        [DisplayName("B255")]
         public BlueTestResult BlueTestResult { get; set; }
 
-        public GreenTestResult GreenTestResult { get; set; }
-
+        [DisplayName("Chessborad_7x7")]
         public ChessboardTestResult ChessboardTestResult { get; set; }
 
-        public DistortionTestResult DistortionTestResult { get; set; }
-
-        public OpticCenterTestResult OpticCenterTestResult { get; set; }
-
+        [DisplayName("MTF")]
         public MTFHVTestResult MTFHVTestResult { get; set; }
 
+        [DisplayName("Distortion")]
+        public DistortionTestResult DistortionTestResult { get; set; }
 
+        [DisplayName("Optical_Center")]
+        public OpticCenterTestResult OpticCenterTestResult { get; set; }
 
-        /// <summary>
-        /// FOFO对比度 测试项
-        /// </summary>
-        public ObjectiveTestItem FOFOContrast { get; set; }
-
-
-        /// <summary>
-        /// 中心点亮度
-        /// </summary>
-        public ObjectiveTestItem W25CenterLunimance { get; set; }
-        /// <summary>
-        /// CenterCIE1931ChromaticCoordinatesx
-        /// </summary>
-        public ObjectiveTestItem W25CenterCIE1931ChromaticCoordinatesx { get; set; }
-        /// <summary>
-        /// CenterCIE1931ChromaticCoordinatesy
-        /// </summary>
-        public ObjectiveTestItem W25CenterCIE1931ChromaticCoordinatesy { get; set; }
-        /// <summary>
-        /// CenterCIE1976ChromaticCoordinatesu
-        /// </summary>
-        public ObjectiveTestItem W25CenterCIE1976ChromaticCoordinatesu { get; set; }
-        /// <summary>
-        /// CenterCIE1976ChromaticCoordinatesv
-        /// </summary>
-        public ObjectiveTestItem W25CenterCIE1976ChromaticCoordinatesv { get; set; }
-
-
-        /// <summary>
-        /// 总体测试结果（true表示通过，false表示不通过）
-        /// </summary>
-        public bool TotalResult { get => _TotalResult; set { _TotalResult = value; OnPropertyChanged(); OnPropertyChanged(nameof(TotalResultString)); } } 
-        private bool _TotalResult = false;
-
-        /// <summary>
-        /// 总体测试结果字符串（如“pass”或“fail”）
-        /// </summary>
-        public string TotalResultString => TotalResult?"PASS":"Fail";
-
-        public bool FlowWhiteTestReslut { get; set; } = false;
-        public bool FlowWhite1TestReslut { get; set; } = false;
-        public bool FlowWhite2TestReslut { get; set; } = false;
-
-        public bool FlowBlackTestReslut { get; set; } = false;
-        public bool FlowChessboardTestReslut { get; set; } = false;
-        public bool FlowMTFHTestReslut { get; set; } = false;
-
-        public bool FlowMTFVTestReslut { get; set; } = false;
-        public bool FlowDistortionTestReslut { get; set; } = false;
-        public bool FlowOpticCenterTestReslut { get; set; } = false;
+        public bool TotalResult { get => _TotalResult; set { _TotalResult = value; OnPropertyChanged(); } } 
+        private bool _TotalResult;
     }
 }
