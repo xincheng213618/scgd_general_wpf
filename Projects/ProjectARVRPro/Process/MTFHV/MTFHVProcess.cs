@@ -45,37 +45,69 @@ namespace ProjectARVRPro.Process.MTFHV
                                     ctx.Result.Result &= testResult.MTF_HV_H_Center_0F.TestResult;
                                     ctx.Result.Result &= testResult.MTF_HV_V_Center_0F.TestResult;
                                     break;
-                                case "LeftUp_0.4F":
-                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_LeftUp_0_4F;
-                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_LeftUp_0_4F;
-                                    testResult.MTF_HV_H_LeftUp_0_4F = Build("MTF_HV_H_LeftUp_0_4F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_LeftUp_0_4F.Min, recipeConfig.MTF_HV_H_LeftUp_0_4F.Max);
-                                    testResult.MTF_HV_V_LeftUp_0_4F = Build("MTF_HV_V_LeftUp_0_4F", mtf.verticalAverage, recipeConfig.MTF_HV_V_LeftUp_0_4F.Min, recipeConfig.MTF_HV_V_LeftUp_0_4F.Max);
-                                    ctx.Result.Result &= testResult.MTF_HV_H_LeftUp_0_4F.TestResult;
-                                    ctx.Result.Result &= testResult.MTF_HV_V_LeftUp_0_4F.TestResult;
+                                case "LeftUp_0.3F":
+                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_LeftUp_0_3F;
+                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_LeftUp_0_3F;
+                                    testResult.MTF_HV_H_LeftUp_0_3F = Build("MTF_HV_H_LeftUp_0_3F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_LeftUp_0_3F.Min, recipeConfig.MTF_HV_H_LeftUp_0_3F.Max);
+                                    testResult.MTF_HV_V_LeftUp_0_3F = Build("MTF_HV_V_LeftUp_0_3F", mtf.verticalAverage, recipeConfig.MTF_HV_V_LeftUp_0_3F.Min, recipeConfig.MTF_HV_V_LeftUp_0_3F.Max);
+                                    ctx.Result.Result &= testResult.MTF_HV_H_LeftUp_0_3F.TestResult;
+                                    ctx.Result.Result &= testResult.MTF_HV_V_LeftUp_0_3F.TestResult;
                                     break;
-                                case "RightUp_0.4F":
-                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_RightUp_0_4F;
-                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_RightUp_0_4F;
-                                    testResult.MTF_HV_H_RightUp_0_4F = Build("MTF_HV_H_RightUp_0_4F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_RightUp_0_4F.Min, recipeConfig.MTF_HV_H_RightUp_0_4F.Max);
-                                    testResult.MTF_HV_V_RightUp_0_4F = Build("MTF_HV_V_RightUp_0_4F", mtf.verticalAverage, recipeConfig.MTF_HV_V_RightUp_0_4F.Min, recipeConfig.MTF_HV_V_RightUp_0_4F.Max);
-                                    ctx.Result.Result &= testResult.MTF_HV_H_RightUp_0_4F.TestResult;
-                                    ctx.Result.Result &= testResult.MTF_HV_V_RightUp_0_4F.TestResult;
+                                case "RightUp_0.3F":
+                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_RightUp_0_3F;
+                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_RightUp_0_3F;
+                                    testResult.MTF_HV_H_RightUp_0_3F = Build("MTF_HV_H_RightUp_0_3F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_RightUp_0_3F.Min, recipeConfig.MTF_HV_H_RightUp_0_3F.Max);
+                                    testResult.MTF_HV_V_RightUp_0_3F = Build("MTF_HV_V_RightUp_0_3F", mtf.verticalAverage, recipeConfig.MTF_HV_V_RightUp_0_3F.Min, recipeConfig.MTF_HV_V_RightUp_0_3F.Max);
+                                    ctx.Result.Result &= testResult.MTF_HV_H_RightUp_0_3F.TestResult;
+                                    ctx.Result.Result &= testResult.MTF_HV_V_RightUp_0_3F.TestResult;
                                     break;
-                                case "LeftDown_0.4F":
-                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_LeftDown_0_4F;
-                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_LeftDown_0_4F;
-                                    testResult.MTF_HV_H_LeftDown_0_4F = Build("MTF_HV_H_LeftDown_0_4F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_LeftDown_0_4F.Min, recipeConfig.MTF_HV_H_LeftDown_0_4F.Max);
-                                    testResult.MTF_HV_V_LeftDown_0_4F = Build("MTF_HV_V_LeftDown_0_4F", mtf.verticalAverage, recipeConfig.MTF_HV_V_LeftDown_0_4F.Min, recipeConfig.MTF_HV_V_LeftDown_0_4F.Max);
-                                    ctx.Result.Result &= testResult.MTF_HV_H_LeftDown_0_4F.TestResult;
-                                    ctx.Result.Result &= testResult.MTF_HV_V_LeftDown_0_4F.TestResult;
+                                case "LeftDown_0.3F":
+                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_LeftDown_0_3F;
+                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_LeftDown_0_3F;
+                                    testResult.MTF_HV_H_LeftDown_0_3F = Build("MTF_HV_H_LeftDown_0_3F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_LeftDown_0_3F.Min, recipeConfig.MTF_HV_H_LeftDown_0_3F.Max);
+                                    testResult.MTF_HV_V_LeftDown_0_3F = Build("MTF_HV_V_LeftDown_0_3F", mtf.verticalAverage, recipeConfig.MTF_HV_V_LeftDown_0_3F.Min, recipeConfig.MTF_HV_V_LeftDown_0_3F.Max);
+                                    ctx.Result.Result &= testResult.MTF_HV_H_LeftDown_0_3F.TestResult;
+                                    ctx.Result.Result &= testResult.MTF_HV_V_LeftDown_0_3F.TestResult;
                                     break;
-                                case "RightDown_0.4F":
-                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_RightDown_0_4F;
-                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_RightDown_0_4F;
-                                    testResult.MTF_HV_H_RightDown_0_4F = Build("MTF_HV_H_RightDown_0_4F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_RightDown_0_4F.Min, recipeConfig.MTF_HV_H_RightDown_0_4F.Max);
-                                    testResult.MTF_HV_V_RightDown_0_4F = Build("MTF_HV_V_RightDown_0_4F", mtf.verticalAverage, recipeConfig.MTF_HV_V_RightDown_0_4F.Min, recipeConfig.MTF_HV_V_RightDown_0_4F.Max);
-                                    ctx.Result.Result &= testResult.MTF_HV_H_RightDown_0_4F.TestResult;
-                                    ctx.Result.Result &= testResult.MTF_HV_V_RightDown_0_4F.TestResult;
+                                case "RightDown_0.3F":
+                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_RightDown_0_3F;
+                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_RightDown_0_3F;
+                                    testResult.MTF_HV_H_RightDown_0_3F = Build("MTF_HV_H_RightDown_0_3F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_RightDown_0_3F.Min, recipeConfig.MTF_HV_H_RightDown_0_3F.Max);
+                                    testResult.MTF_HV_V_RightDown_0_3F = Build("MTF_HV_V_RightDown_0_3F", mtf.verticalAverage, recipeConfig.MTF_HV_V_RightDown_0_3F.Min, recipeConfig.MTF_HV_V_RightDown_0_3F.Max);
+                                    ctx.Result.Result &= testResult.MTF_HV_H_RightDown_0_3F.TestResult;
+                                    ctx.Result.Result &= testResult.MTF_HV_V_RightDown_0_3F.TestResult;
+                                    break;
+                                case "LeftUp_0.6F":
+                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_LeftUp_0_6F;
+                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_LeftUp_0_6F;
+                                    testResult.MTF_HV_H_LeftUp_0_6F = Build("MTF_HV_H_LeftUp_0_6F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_LeftUp_0_6F.Min, recipeConfig.MTF_HV_H_LeftUp_0_6F.Max);
+                                    testResult.MTF_HV_V_LeftUp_0_6F = Build("MTF_HV_V_LeftUp_0_6F", mtf.verticalAverage, recipeConfig.MTF_HV_V_LeftUp_0_6F.Min, recipeConfig.MTF_HV_V_LeftUp_0_6F.Max);
+                                    ctx.Result.Result &= testResult.MTF_HV_H_LeftUp_0_6F.TestResult;
+                                    ctx.Result.Result &= testResult.MTF_HV_V_LeftUp_0_6F.TestResult;
+                                    break;
+                                case "RightUp_0.6F":
+                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_RightUp_0_6F;
+                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_RightUp_0_6F;
+                                    testResult.MTF_HV_H_RightUp_0_6F = Build("MTF_HV_H_RightUp_0_6F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_RightUp_0_6F.Min, recipeConfig.MTF_HV_H_RightUp_0_6F.Max);
+                                    testResult.MTF_HV_V_RightUp_0_6F = Build("MTF_HV_V_RightUp_0_6F", mtf.verticalAverage, recipeConfig.MTF_HV_V_RightUp_0_6F.Min, recipeConfig.MTF_HV_V_RightUp_0_6F.Max);
+                                    ctx.Result.Result &= testResult.MTF_HV_H_RightUp_0_6F.TestResult;
+                                    ctx.Result.Result &= testResult.MTF_HV_V_RightUp_0_6F.TestResult;
+                                    break;
+                                case "LeftDown_0.6F":
+                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_LeftDown_0_6F;
+                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_LeftDown_0_6F;
+                                    testResult.MTF_HV_H_LeftDown_0_6F = Build("MTF_HV_H_LeftDown_0_6F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_LeftDown_0_6F.Min, recipeConfig.MTF_HV_H_LeftDown_0_6F.Max);
+                                    testResult.MTF_HV_V_LeftDown_0_6F = Build("MTF_HV_V_LeftDown_0_6F", mtf.verticalAverage, recipeConfig.MTF_HV_V_LeftDown_0_6F.Min, recipeConfig.MTF_HV_V_LeftDown_0_6F.Max);
+                                    ctx.Result.Result &= testResult.MTF_HV_H_LeftDown_0_6F.TestResult;
+                                    ctx.Result.Result &= testResult.MTF_HV_V_LeftDown_0_6F.TestResult;
+                                    break;
+                                case "RightDown_0.6F":
+                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_RightDown_0_6F;
+                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_RightDown_0_6F;
+                                    testResult.MTF_HV_H_RightDown_0_6F = Build("MTF_HV_H_RightDown_0_6F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_RightDown_0_6F.Min, recipeConfig.MTF_HV_H_RightDown_0_6F.Max);
+                                    testResult.MTF_HV_V_RightDown_0_6F = Build("MTF_HV_V_RightDown_0_6F", mtf.verticalAverage, recipeConfig.MTF_HV_V_RightDown_0_6F.Min, recipeConfig.MTF_HV_V_RightDown_0_6F.Max);
+                                    ctx.Result.Result &= testResult.MTF_HV_H_RightDown_0_6F.TestResult;
+                                    ctx.Result.Result &= testResult.MTF_HV_V_RightDown_0_6F.TestResult;
                                     break;
                                 case "LeftUp_0.8F":
                                     mtf.horizontalAverage *= fixConfig.MTF_HV_H_LeftUp_0_8F;
