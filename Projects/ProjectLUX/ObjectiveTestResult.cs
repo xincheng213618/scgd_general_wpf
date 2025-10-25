@@ -17,7 +17,7 @@ namespace ProjectLUX
 {
     public static class ObjectiveTestResultCsvExporter
     {
-        private static void CollectRows(object obj, string testScreenName, List<string> rows)
+        public static void CollectRows(object obj, string testScreenName, List<string> rows)
         {
             foreach (var property in obj.GetType().GetProperties())
             {
