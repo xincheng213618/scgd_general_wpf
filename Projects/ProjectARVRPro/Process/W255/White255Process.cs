@@ -246,10 +246,9 @@ namespace ProjectARVRPro.Process.W255
             outtext += $"Luminance_uniformity:{testResult.LuminanceUniformity.TestValue} LowLimit:{testResult.LuminanceUniformity.LowLimit}  UpLimit:{testResult.LuminanceUniformity.UpLimit},Rsult{(testResult.LuminanceUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             outtext += $"Color_uniformity:{testResult.ColorUniformity.TestValue} LowLimit:{testResult.ColorUniformity.LowLimit} UpLimit:{testResult.ColorUniformity.UpLimit},Rsult{(testResult.ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
 
-
-            outtext += $"DiagonalFieldOfViewAngle:{testResult.DiagonalFieldOfViewAngle.TestValue}  LowLimit:{testResult.DiagonalFieldOfViewAngle.LowLimit} UpLimit:{testResult.DiagonalFieldOfViewAngle.UpLimit},Rsult{(testResult.DiagonalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             outtext += $"HorizontalFieldOfViewAngle:{testResult.HorizontalFieldOfViewAngle.TestValue} LowLimit:{testResult.HorizontalFieldOfViewAngle.LowLimit} UpLimit:{testResult.HorizontalFieldOfViewAngle.UpLimit} ,Rsult{(testResult.HorizontalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             outtext += $"VerticalFieldOfViewAngle:{testResult.VerticalFieldOfViewAngle.TestValue} LowLimit:{testResult.VerticalFieldOfViewAngle.LowLimit} UpLimit:{testResult.VerticalFieldOfViewAngle.UpLimit},Rsult{(testResult.VerticalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+            outtext += $"DiagonalFieldOfViewAngle:{testResult.DiagonalFieldOfViewAngle.TestValue}  LowLimit:{testResult.DiagonalFieldOfViewAngle.LowLimit} UpLimit:{testResult.DiagonalFieldOfViewAngle.UpLimit},Rsult{(testResult.DiagonalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             return outtext;
         }
     }

@@ -147,7 +147,7 @@ namespace ProjectARVRPro.Process.Blue
 
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
-                ctx.ObjectiveTestResult.GreenTestResult = JsonConvert.DeserializeObject<GreenTestResult>(ctx.Result.ViewResultJson) ?? new GreenTestResult();
+                ctx.ObjectiveTestResult.BlueTestResult = JsonConvert.DeserializeObject<BlueTestResult>(ctx.Result.ViewResultJson) ?? new BlueTestResult();
                 return true;
             }
             catch (Exception ex)

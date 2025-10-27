@@ -25,9 +25,6 @@ namespace ColorVision
         public bool IsFull { get => _IsFull; set { _IsFull = value; OnPropertyChanged(); } }
         private bool _IsFull;
 
-        public Version? LastOpenVersion { get => _Version; set { _Version = value; OnPropertyChanged(); } }
-        private Version? _Version = new Version(0, 0, 0, 0);
-
         public bool OpenFloatingBall { get => _OpenFloatingBall; set { _OpenFloatingBall = value; OnPropertyChanged(); FloatingBall(); } }
         private bool _OpenFloatingBall;
 
