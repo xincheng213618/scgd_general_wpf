@@ -566,6 +566,10 @@ namespace ColorVision.Engine.Media
                 await Task.Run(() =>
                 {
                     CVCIEFile cVCIEFile = CVFileUtil.OpenLocalCVFile(filePath);
+                    context.Config.AddProperties("Gain", cVCIEFile.gain);
+                    context.Config.AddProperties("exp", cVCIEFile.exp);
+                    context.Config.AddProperties("FileExtType", cVCIEFile.FileExtType);
+                    context.Config.AddProperties("srcFileName", cVCIEFile.srcFileName);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         context.ImageView.OpenImage(cVCIEFile.ToWriteableBitmap());
