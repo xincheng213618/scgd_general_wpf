@@ -25,7 +25,6 @@ namespace ColorVision.ImageEditor
     {
         public DrawCanvas Image { get; set; }
         public Crosshair Crosshair { get; set; }
-        public ToolBarScaleRuler ToolBarScaleRuler { get; set; }
 
         public SelectEditorVisual SelectEditorVisual { get; set; }
 
@@ -39,33 +38,38 @@ namespace ColorVision.ImageEditor
 
         public EditorContext EditorContext { get; set; }
 
-        public ImageViewModel(ImageView imageView, Zoombox zoombox, DrawCanvas drawCanvas)
+        public double MaxZoom { get => _MaxZoom; set { _MaxZoom = value; OnPropertyChanged(); } }
+        private double _MaxZoom = 20;
+        public double MinZoom { get => _MinZoom; set { _MinZoom = value; OnPropertyChanged(); } }
+        private double _MinZoom = 0.005;
+
+
+        public ImageViewModel(ImageView imageView)
         {
             EditorContext = new EditorContext()
             {
                 ImageView = imageView,
                 ImageViewModel = this,
-                DrawCanvas = drawCanvas,
-                Zoombox = zoombox,
+                DrawCanvas = imageView.ImageShow,
+                Zoombox = imageView.Zoombox1,
             };
             SelectEditorVisual = new SelectEditorVisual(EditorContext);
             IEditorToolFactory = new IEditorToolFactory(imageView, EditorContext);
 
             MouseMagnifier = IEditorToolFactory.IEditorTools.OfType<MouseMagnifierManager>().FirstOrDefault();
 
-            Image = drawCanvas;
+            Image = EditorContext.DrawCanvas;
 
             imageView.AdvancedStackPanel.Children.Insert(0,SlectStackPanel);
 
-            drawCanvas.PreviewKeyDown += HandleKeyDown;
+            EditorContext.DrawCanvas.PreviewKeyDown += HandleKeyDown;
 
-            Crosshair = new Crosshair(zoombox, drawCanvas);
-            ToolBarScaleRuler = new ToolBarScaleRuler(imageView, zoombox, drawCanvas);
+            Crosshair = new Crosshair(EditorContext);
 
             Image.ContextMenuOpening += HandleContextMenuOpening;
             Image.ContextMenu = EditorContext.ContextMenu;
-            zoombox.ContextMenu = EditorContext.ContextMenu;
-            zoombox.LayoutUpdated += Zoombox1_LayoutUpdated;
+            EditorContext.Zoombox.ContextMenu = EditorContext.ContextMenu;
+            EditorContext.Zoombox.LayoutUpdated += Zoombox1_LayoutUpdated;
 
         }
 
@@ -329,12 +333,12 @@ namespace ColorVision.ImageEditor
         double oldMax;
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
         {
-            if (oldMax != EditorContext.Zoomratio)
+            if (oldMax != EditorContext.ZoomRatio)
             {
                 if (EditorContext.Config.IsLayoutUpdated)
                 {
-                    oldMax = EditorContext.Zoomratio;
-                    double scale = 1 / EditorContext.Zoomratio;
+                    oldMax = EditorContext.ZoomRatio;
+                    double scale = 1 / EditorContext.ZoomRatio;
                     DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + EditorContext.Id.ToString(), 20, () => ImageLayoutUpdatedRender(scale, EditorContext.DrawingVisualLists));
                 }
             }

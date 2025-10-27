@@ -101,10 +101,7 @@ namespace ColorVision.ImageEditor
             return sb.ToString();
 
         }
-        public double MaxZoom { get => _MaxZoom; set { _MaxZoom = value; OnPropertyChanged(); } }
-        private double _MaxZoom = 10;
-        public double MinZoom { get => _MinZoom; set { _MinZoom = value; OnPropertyChanged(); } }
-        private double _MinZoom = 0.01;
+
 
         [JsonIgnore]
         public string FilePath { get => _FilePath; set { _FilePath = value; OnPropertyChanged(); } }

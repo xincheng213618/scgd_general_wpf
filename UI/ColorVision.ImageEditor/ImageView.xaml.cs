@@ -56,7 +56,7 @@ namespace ColorVision.ImageEditor
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow);
+            ImageViewModel = new ImageViewModel(this);
 
             EditorContext = ImageViewModel.EditorContext;
             DataContext = ImageViewModel;
@@ -388,7 +388,6 @@ namespace ColorVision.ImageEditor
             ImageShow.Source = ViewBitmapSource;
 
             ImageShow.RaiseImageInitialized();
-            ImageViewModel.ToolBarScaleRuler.IsShow = true;
             CommandManager.InvalidateRequerySuggested();
 
         }
@@ -509,7 +508,6 @@ namespace ColorVision.ImageEditor
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
                 Zoombox1.ZoomUniform();
-                ImageViewModel.ToolBarScaleRuler.Render();
             });
         }
 

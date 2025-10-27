@@ -51,24 +51,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             this.DataContext = Config;
             View = new View();
-            ImageView.ImageViewModel.ToolBarScaleRuler.ScalRuler.ActualLength = Device.Config.ScaleFactor;
-            ImageView.ImageViewModel.ToolBarScaleRuler.ScalRuler.PhysicalUnit = Device.Config.ScaleFactorUnit;
-            ImageView.ImageViewModel.ToolBarScaleRuler.ScalRuler.PropertyChanged += (s, e) =>
-            {
-                if (s is DrawingVisualScaleHost host)
-                {
-                    if (e.PropertyName == "ActualLength")
-                    {
-                        Device.Config.ScaleFactor = host.ActualLength;
-                        Device.SaveConfig();
-                    }
-                    else if (e.PropertyName == "PhysicalUnit")
-                    {
-                        Device.Config.ScaleFactorUnit = host.PhysicalUnit;
-                        Device.SaveConfig();
-                    }
-                }
-            };
 
             listView1.ItemsSource = ViewResults;
 
