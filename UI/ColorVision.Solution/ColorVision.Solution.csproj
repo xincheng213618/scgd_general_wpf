@@ -16,6 +16,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="interface\**" />
+	  <EmbeddedResource Remove="interface\**" />
+	  <None Remove="interface\**" />
+	  <Page Remove="interface\**" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Content Remove="C:\Users\Xin\.nuget\packages\wpfhexaeditor\2.1.7\contentFiles\any\net5.0-windows7.0\Resources\EBCDIC-NoSpecialChar.tbl" />
 		<Content Remove="C:\Users\Xin\.nuget\packages\wpfhexaeditor\2.1.7\contentFiles\any\net5.0-windows7.0\Resources\EBCDIC.tbl" />
 	</ItemGroup>
@@ -81,9 +88,6 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 		</None>
-	</ItemGroup>
-	<ItemGroup>
-	  <Folder Include="interface\" />
 	</ItemGroup>
 
 </Project>

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
@@ -26,39 +27,21 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Media
 {
-
-    internal static class Extension
+    public class CVFilemageEditorConfig : IImageEditorConfig
     {
-        internal static void ClearEventInvocations(this object obj, string eventName)
-        {
-            var fi = obj.GetType().GetEventField(eventName);
-            if (fi == null) return;
-            fi.SetValue(obj, null);
-        }
+        [JsonIgnore]
+        public bool ConvertXYZhandleOnce { get; set; }
 
-        private static FieldInfo? GetEventField(this Type type, string eventName)
-        {
-            FieldInfo field = null;
-            while (type != null)
-            {
-                /* Find events defined as field */
-                field = type.GetField(eventName, BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic);
-                if (field != null && (field.FieldType == typeof(MulticastDelegate) || field.FieldType.IsSubclassOf(typeof(MulticastDelegate))))
-                    break;
-
-                /* Find events defined as property { add; remove; } */
-                field = type.GetField("EVENT_" + eventName.ToUpper(System.Globalization.CultureInfo.CurrentCulture), BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic);
-                if (field != null)
-                    break;
-                type = type.BaseType;
-            }
-            return field;
-        }
+        [JsonIgnore]
+        public IntPtr ConvertXYZhandle { get; set; } = Tool.GenerateRandomIntPtr();
     }
+
 
     [FileExtension(".cvraw|.cvcie")]
     public record class CVRawOpen(EditorContext EditorContext) : IImageOpen, IIEditorToolContextMenu
     {
+        public CVFilemageEditorConfig Config => EditorContext.Config.GetRequiredService<CVFilemageEditorConfig>();
+
         private static readonly ILog log = LogManager.GetLogger(typeof(CVRawOpen));
 
         public List<string> ComboBoxLayerItems { get; set; } = new List<string>() { "Src", "R", "G", "B" };
@@ -102,7 +85,7 @@ namespace ColorVision.Engine.Media
                 var meta = imageView.Config.GetProperties<CVCIEFile>("meta");
                 int index = imageView.Config.GetProperties<int>("index");
                 CVFileUtil.ReadCIEFileData(filePath, ref meta, index);
-                int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(imageView.Config.ConvertXYZhandle, (uint)meta.rows, (uint)meta.cols, (uint)meta.bpp, (uint)meta.channels, meta.data);
+                int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(Config.ConvertXYZhandle, (uint)meta.rows, (uint)meta.cols, (uint)meta.bpp, (uint)meta.channels, meta.data);
                 log.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
                 imageView.Config.AddProperties("IsBufferSet", true);
 
@@ -155,7 +138,7 @@ namespace ColorVision.Engine.Media
                     case MagnigifierType.Circle:
                         if (exp.Length == 1)
                         {
-                            int ret = ConvertXYZ.CM_GetYCircle(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dYVal, imageView.ImageViewModel.MouseMagnifier.Radius);
+                            int ret = ConvertXYZ.CM_GetYCircle(Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dYVal, imageView.ImageViewModel.MouseMagnifier.Radius);
                             string text1 = $"Y:{dYVal:F1}";
                             string text2 = $"";
                             imageView.ImageViewModel.MouseMagnifier.DrawImage(imageInfo, text1, text2);
@@ -163,7 +146,7 @@ namespace ColorVision.Engine.Media
                         else
                         {
 
-                            int ret = ConvertXYZ.CM_GetXYZxyuvCircle(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.ImageViewModel.MouseMagnifier.Radius);
+                            int ret = ConvertXYZ.CM_GetXYZxyuvCircle(Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.ImageViewModel.MouseMagnifier.Radius);
                             string text1;
                             if (ShowDateFilePath)
                                 text1 = $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1},({x2},{y2})";
@@ -178,14 +161,14 @@ namespace ColorVision.Engine.Media
                     case MagnigifierType.Rect:
                         if (exp.Length == 1)
                         {
-                            int ret = ConvertXYZ.CM_GetYRect(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dYVal, (int)imageView.ImageViewModel.MouseMagnifier.RectWidth, (int)imageView.ImageViewModel.MouseMagnifier.RectHeight);
+                            int ret = ConvertXYZ.CM_GetYRect(Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dYVal, (int)imageView.ImageViewModel.MouseMagnifier.RectWidth, (int)imageView.ImageViewModel.MouseMagnifier.RectHeight);
                             string text1 = $"Y:{dYVal:F1}";
                             string text2 = $"";
                             imageView.ImageViewModel.MouseMagnifier.DrawImage(imageInfo, text1, text2);
                         }
                         else
                         {
-                            int ret = ConvertXYZ.CM_GetXYZxyuvRect(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, (int)imageView.ImageViewModel.MouseMagnifier.RectWidth, (int)imageView.ImageViewModel.MouseMagnifier.RectHeight);
+                            int ret = ConvertXYZ.CM_GetXYZxyuvRect(Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, (int)imageView.ImageViewModel.MouseMagnifier.RectWidth, (int)imageView.ImageViewModel.MouseMagnifier.RectHeight);
                             string text1;
                             if (ShowDateFilePath)
                                 text1 = $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1},({x2},{y2})";
@@ -204,18 +187,17 @@ namespace ColorVision.Engine.Media
 
             }
 
-            imageView.ImageViewModel.MouseMagnifier.ClearEventInvocations("MouseMoveColorHandler");
+            imageView.ImageViewModel.MouseMagnifier.ClearMouseMoveColorHandler();
 
             imageView.ClearImageEventHandler += (s, e) =>
             {
-                int result = ConvertXYZ.CM_ReleaseBuffer(imageView.Config.ConvertXYZhandle);
-                imageView.Config.AddProperties("IsBufferSet", false);
+                int result = ConvertXYZ.CM_ReleaseBuffer(Config.ConvertXYZhandle);
             };
-            if (!imageView.Config.ConvertXYZhandleOnce)
+            if (!Config.ConvertXYZhandleOnce)
             {
-                int result = ConvertXYZ.CM_InitXYZ(imageView.Config.ConvertXYZhandle);
+                int result = ConvertXYZ.CM_InitXYZ(Config.ConvertXYZhandle);
                 log.Info($"ConvertXYZ.CM_InitXYZ :{result}");
-                imageView.Config.ConvertXYZhandleOnce = true;
+                Config.ConvertXYZhandleOnce = true;
             }
             imageView.Config.FilePath = filePath;
             void ComboBoxLayers1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -345,13 +327,13 @@ namespace ColorVision.Engine.Media
                     case POIPointTypes.None:
                         break;
                     case POIPointTypes.SolidPoint:
-                        _ = ConvertXYZ.CM_GetYCircle(EditorContext.Config.ConvertXYZhandle, x, y, ref dYVal, 1);
+                        _ = ConvertXYZ.CM_GetYCircle(Config.ConvertXYZhandle, x, y, ref dYVal, 1);
                         break;
                     case POIPointTypes.Circle:
-                        _ = ConvertXYZ.CM_GetYCircle(EditorContext.Config.ConvertXYZhandle, x, y, ref dYVal, rect / 2);
+                        _ = ConvertXYZ.CM_GetYCircle(Config.ConvertXYZhandle, x, y, ref dYVal, rect / 2);
                         break;
                     case POIPointTypes.Rect:
-                        _ = ConvertXYZ.CM_GetYRect(EditorContext.Config.ConvertXYZhandle, x, y, ref dYVal, rect, rect2);
+                        _ = ConvertXYZ.CM_GetYRect(Config.ConvertXYZhandle, x, y, ref dYVal, rect, rect2);
                         break;
                     default:
                         break;
@@ -381,13 +363,13 @@ namespace ColorVision.Engine.Media
                     case POIPointTypes.None:
                         break;
                     case POIPointTypes.SolidPoint:
-                        _ = ConvertXYZ.CM_GetXYZxyuvCircle(EditorContext.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1);
+                        _ = ConvertXYZ.CM_GetXYZxyuvCircle(Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1);
                         break;
                     case POIPointTypes.Circle:
-                        _ = ConvertXYZ.CM_GetXYZxyuvCircle(EditorContext.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect / 2);
+                        _ = ConvertXYZ.CM_GetXYZxyuvCircle(Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect / 2);
                         break;
                     case POIPointTypes.Rect:
-                        _ = ConvertXYZ.CM_GetXYZxyuvRect(EditorContext.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2);
+                        _ = ConvertXYZ.CM_GetXYZxyuvRect(Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2);
                         break;
                     default:
                         break;
@@ -401,7 +383,7 @@ namespace ColorVision.Engine.Media
                 poiResultCIExyuvData.Y = dYVal;
                 poiResultCIExyuvData.Z = dZVal;
 
-                int i = ConvertXYZ.CM_GetxyuvCCTWaveCircle(EditorContext.Config.ConvertXYZhandle, x, y, ref dx, ref dy, ref du, ref dv, ref CCT, ref Wave, rect / 2);
+                int i = ConvertXYZ.CM_GetxyuvCCTWaveCircle(Config.ConvertXYZhandle, x, y, ref dx, ref dy, ref du, ref dv, ref CCT, ref Wave, rect / 2);
                 poiResultCIExyuvData.CCT = CCT;
                 poiResultCIExyuvData.Wave = Wave;
 
@@ -447,9 +429,9 @@ namespace ColorVision.Engine.Media
                         }
 
 
-                        int result = ConvertXYZ.CM_SetFilter(EditorContext.Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.Enable, poiParams.PoiConfig.Filter.Threshold);
-                        result = ConvertXYZ.CM_SetFilterNoArea(EditorContext.Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.NoAreaEnable, poiParams.PoiConfig.Filter.Threshold);
-                        result = ConvertXYZ.CM_SetFilterXYZ(EditorContext.Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.XYZEnable, (int)poiParams.PoiConfig.Filter.XYZType, poiParams.PoiConfig.Filter.Threshold);
+                        int result = ConvertXYZ.CM_SetFilter(Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.Enable, poiParams.PoiConfig.Filter.Threshold);
+                        result = ConvertXYZ.CM_SetFilterNoArea(Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.NoAreaEnable, poiParams.PoiConfig.Filter.Threshold);
+                        result = ConvertXYZ.CM_SetFilterXYZ(Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.XYZEnable, (int)poiParams.PoiConfig.Filter.XYZType, poiParams.PoiConfig.Filter.Threshold);
 
 
                         if (EditorContext.Config.GetProperties<float[]>("Exp") is float[] exp && exp.Length == 1)

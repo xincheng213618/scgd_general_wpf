@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
+using ColorVision.UI;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
@@ -9,8 +10,55 @@ using System.Text;
 
 namespace ColorVision.ImageEditor
 {
+
+    public interface IImageEditorConfig
+    {
+
+    }
+
     public class ImageViewConfig:ViewModelBase
     {
+
+        public ImageViewConfig()
+        {
+            Configs = new Dictionary<Type, IImageEditorConfig>();
+            foreach (var a in AssemblyHandler.GetInstance().GetAssemblies())
+            {
+                foreach (var type in a.GetTypes())
+                {
+                    if (typeof(IImageEditorConfig).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
+                    {
+                        if (!Configs.ContainsKey(type))
+                        {
+                            if (Activator.CreateInstance(type) is IImageEditorConfig instance)
+                            {
+                                Configs[type] = instance;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        public Dictionary<Type, IImageEditorConfig> Configs { get; set; }
+
+        public T GetRequiredService<T>() where T : IImageEditorConfig
+        {
+            var type = typeof(T);
+
+            if (Configs.TryGetValue(type, out var service))
+            {
+                return (T)service;
+            }
+
+            if (Activator.CreateInstance(type) is IImageEditorConfig defaultConfig)
+            {
+                Configs[type] = defaultConfig;
+            }
+            // 此处递归调用是为了确保缓存和异常处理逻辑一致
+            return GetRequiredService<T>();
+        }
+
         [JsonIgnore]
         public Dictionary<string, object?> Properties { get; set; } = new Dictionary<string, object?>();
 
@@ -62,11 +110,7 @@ namespace ColorVision.ImageEditor
         public string FilePath { get => _FilePath; set { _FilePath = value; OnPropertyChanged(); } }
         private string _FilePath;
 
-        [JsonIgnore]
-        public bool ConvertXYZhandleOnce { get; set; }
 
-        [JsonIgnore]
-        public IntPtr ConvertXYZhandle { get; set; } = Tool.GenerateRandomIntPtr();
 
         public event EventHandler ColormapTypesChanged;
 

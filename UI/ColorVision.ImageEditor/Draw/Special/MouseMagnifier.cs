@@ -51,6 +51,11 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         public event MouseMoveColorHandler MouseMoveColorHandler;
 
+        public void ClearMouseMoveColorHandler()
+        {
+            MouseMoveColorHandler = null;
+        }
+
         public override bool IsChecked
         {
             get => _IsChecked; set
