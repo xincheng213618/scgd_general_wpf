@@ -25,6 +25,7 @@ namespace ColorVision.ImageEditor
         public DrawCanvas Image { get; set; }
         public Crosshair Crosshair { get; set; }
         public ToolBarScaleRuler ToolBarScaleRuler { get; set; }
+
         public SelectEditorVisual SelectEditorVisual { get; set; }
 
         public StackPanel SlectStackPanel { get; set; } = new StackPanel();
@@ -32,10 +33,7 @@ namespace ColorVision.ImageEditor
         public ImageViewConfig Config => EditorContext.Config;
 
         public MouseMagnifierManager MouseMagnifier { get; set; }
-        public ContextMenu ContextMenu { get; set; }
         public IImageOpen? IImageOpen { get; set; }
-
-        private ImageTransformOperations _transformOperations;
 
         public IEditorToolFactory IEditorToolFactory { get; set; }
 
@@ -56,21 +54,15 @@ namespace ColorVision.ImageEditor
             MouseMagnifier = IEditorToolFactory.IEditorTools.OfType<MouseMagnifierManager>().FirstOrDefault();
             Image = drawCanvas;
 
-            ContextMenu = new ContextMenu();
-
-            _transformOperations = new ImageTransformOperations(drawCanvas);
-
             imageView.AdvancedStackPanel.Children.Insert(0,SlectStackPanel);
 
             drawCanvas.PreviewMouseDown += (s, e) =>
             {
-                Keyboard.ClearFocus();
                 drawCanvas.Focus();
             };
 
             drawCanvas.PreviewKeyDown += (s, e) =>
             {
-                Keyboard.ClearFocus();
                 drawCanvas.Focus();
             };
 
@@ -80,8 +72,8 @@ namespace ColorVision.ImageEditor
             ToolBarScaleRuler = new ToolBarScaleRuler(imageView, zoombox, drawCanvas);
 
             Image.ContextMenuOpening += HandleContextMenuOpening;
-            Image.ContextMenu = ContextMenu;
-            zoombox.ContextMenu = ContextMenu;
+            Image.ContextMenu = EditorContext.ContextMenu;
+            zoombox.ContextMenu = EditorContext.ContextMenu;
             zoombox.LayoutUpdated += Zoombox1_LayoutUpdated;
 
         }
@@ -93,44 +85,38 @@ namespace ColorVision.ImageEditor
         /// <param name="e">键盘事件参数</param>
         public void HandleKeyDown(object sender, KeyEventArgs e)
         {
-            HandleBrowseModeKeyDown(e);
-        }
-
-
-        /// <summary>
-        /// 处理浏览模式下的键盘操作
-        /// </summary>
-        private void HandleBrowseModeKeyDown(KeyEventArgs e)
-        {
-            if (e.Key == Key.Left)
+            if (!ImageEditMode)
             {
-                MoveView(-10, 0);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Right)
-            {
-                MoveView(10, 0);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Up)
-            {
-                // 切换到上一个文件
-                string? previousFile = GetAdjacentImageFile(EditorContext.Config.FilePath, false);
-                if (!string.IsNullOrEmpty(previousFile))
+                if (e.Key == Key.Left)
                 {
-                    EditorContext.ImageView.OpenImage(previousFile);
+                    MoveView(-10, 0);
+                    e.Handled = true;
                 }
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Down)
-            {
-                // 切换到下一个文件
-                string? nextFile = GetAdjacentImageFile(EditorContext.Config.FilePath, true);
-                if (!string.IsNullOrEmpty(nextFile))
+                else if (e.Key == Key.Right)
                 {
-                    EditorContext.ImageView.OpenImage(nextFile);
+                    MoveView(10, 0);
+                    e.Handled = true;
                 }
-                e.Handled = true;
+                else if (e.Key == Key.Up)
+                {
+                    // 切换到上一个文件
+                    string? previousFile = GetAdjacentImageFile(EditorContext.Config.FilePath, false);
+                    if (!string.IsNullOrEmpty(previousFile))
+                    {
+                        EditorContext.ImageView.OpenImage(previousFile);
+                    }
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Down)
+                {
+                    // 切换到下一个文件
+                    string? nextFile = GetAdjacentImageFile(EditorContext.Config.FilePath, true);
+                    if (!string.IsNullOrEmpty(nextFile))
+                    {
+                        EditorContext.ImageView.OpenImage(nextFile);
+                    }
+                    e.Handled = true;
+                }
             }
         }
 
@@ -216,7 +202,7 @@ namespace ColorVision.ImageEditor
         /// </summary>
         public void HandleContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
-            ContextMenu.Items.Clear();
+            EditorContext.ContextMenu.Items.Clear();
 
             if (ImageEditMode)
             {
@@ -232,7 +218,7 @@ namespace ColorVision.ImageEditor
                         {
                             var items = provider.GetContextMenuItems(EditorContext, selectVisual);
                             foreach (var item in items)
-                                ContextMenu.Items.Add(item);
+                                EditorContext.ContextMenu.Items.Add(item);
                         }
                     }
                     foreach (var provider in IEditorToolFactory.ContextMenuProviders)
@@ -241,7 +227,7 @@ namespace ColorVision.ImageEditor
                         {
                             var items = provider.GetContextMenuItems(EditorContext, selectEditorVisual);
                             foreach (var item in items)
-                                ContextMenu.Items.Add(item);
+                                EditorContext.ContextMenu.Items.Add(item);
                         }
                     }
                 }
@@ -253,12 +239,12 @@ namespace ColorVision.ImageEditor
                         {
                             var items = provider.GetContextMenuItems(EditorContext, MouseVisual);
                             foreach (var item in items)
-                                ContextMenu.Items.Add(item);
+                                EditorContext.ContextMenu.Items.Add(item);
                         }
                     }
                 }
 
-                if (ContextMenu.Items.Count == 0)
+                if (EditorContext.ContextMenu.Items.Count == 0)
                     CreateStandardContextMenu();
             }
             else
@@ -339,9 +325,9 @@ namespace ColorVision.ImageEditor
                 if (menuItemMeta.GuidId != null)
                     CreateMenu(menuItem, menuItemMeta.GuidId);
                 if (i > 0 && menuItemMeta.Order - iMenuItemMetas[i - 1].Order > 4)
-                    ContextMenu.Items.Add(new Separator());
+                    EditorContext.ContextMenu.Items.Add(new Separator());
 
-                ContextMenu.Items.Add(menuItem);
+                EditorContext.ContextMenu.Items.Add(menuItem);
             }
         }
 

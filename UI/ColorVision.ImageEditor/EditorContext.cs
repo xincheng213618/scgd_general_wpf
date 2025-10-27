@@ -2,14 +2,17 @@
 using ColorVision.Core;
 using System;
 using System.Collections.ObjectModel;
+using System.Windows.Controls;
 
 namespace ColorVision.ImageEditor
 {
     public class EditorContext
     {
         public Guid Id { get; init; } = Guid.NewGuid();
+        public ContextMenu ContextMenu { get; set; } = new ContextMenu();
 
         public ImageView ImageView { get; set; }
+
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
 
         public ImageViewModel ImageViewModel { get; set; }
