@@ -69,7 +69,7 @@ namespace ColorVision.ImageEditor.Draw
         private bool IsMouseDown;
         private int CheckNo()
         {
-            if (ImageViewModel.DrawingVisualLists.Count > 0 && ImageViewModel.DrawingVisualLists.Last() is DrawingVisualBase drawingVisual)
+            if (EditorContext.DrawingVisualLists.Count > 0 && EditorContext.DrawingVisualLists.Last() is DrawingVisualBase drawingVisual)
             {
                 return drawingVisual.ID + 1;
             }
