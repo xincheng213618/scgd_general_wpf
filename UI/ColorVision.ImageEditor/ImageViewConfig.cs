@@ -61,6 +61,7 @@ namespace ColorVision.ImageEditor
         [JsonIgnore]
         public string FilePath { get => _FilePath; set { _FilePath = value; OnPropertyChanged(); } }
         private string _FilePath;
+
         [JsonIgnore]
         public bool ConvertXYZhandleOnce { get; set; }
 

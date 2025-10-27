@@ -25,8 +25,8 @@ namespace ColorVision.ImageEditor
         public DrawCanvas Image { get; set; }
         public Crosshair Crosshair { get; set; }
         public ToolBarScaleRuler ToolBarScaleRuler { get; set; }
-        public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
         public SelectEditorVisual SelectEditorVisual { get; set; }
+
         public StackPanel SlectStackPanel { get; set; } = new StackPanel();
 
         public ImageViewConfig Config => EditorContext.Config;
@@ -358,7 +358,7 @@ namespace ColorVision.ImageEditor
                 {
                     oldMax = EditorContext.Zoomratio;
                     double scale = 1 / EditorContext.Zoomratio;
-                    DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + EditorContext.Id.ToString(), 20, () => ImageLayoutUpdatedRender(scale, DrawingVisualLists));
+                    DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + EditorContext.Id.ToString(), 20, () => ImageLayoutUpdatedRender(scale, EditorContext.DrawingVisualLists));
                 }
             }
 
@@ -416,8 +416,8 @@ namespace ColorVision.ImageEditor
                 item.Dispose();
             }
 
-            DrawingVisualLists?.Clear();
-            DrawingVisualLists = null;
+            EditorContext.DrawingVisualLists?.Clear();
+            EditorContext.DrawingVisualLists = null;
             EditorContext.Zoombox.LayoutUpdated -= Zoombox1_LayoutUpdated;
 
 

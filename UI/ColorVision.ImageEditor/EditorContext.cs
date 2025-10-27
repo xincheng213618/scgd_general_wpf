@@ -1,6 +1,7 @@
 ﻿
 using ColorVision.Core;
 using System;
+using System.Collections.ObjectModel;
 
 namespace ColorVision.ImageEditor
 {
@@ -9,6 +10,7 @@ namespace ColorVision.ImageEditor
         public Guid Id { get; init; } = Guid.NewGuid();
 
         public ImageView ImageView { get; set; }
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
 
         public ImageViewModel ImageViewModel { get; set; }
 

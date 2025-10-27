@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Templates.POI
             this.Title = poiParam.Name + "-" + this.Title;
         }
 
-        public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.DrawingVisualLists;
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.EditorContext.DrawingVisualLists;
 
         public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
 
