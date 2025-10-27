@@ -43,7 +43,7 @@ namespace ColorVision.ImageEditor.Draw
     {
         public Type ContextType => typeof(DrawingVisualBase);
 
-        public IEnumerable<MenuItem> GetContextMenuItems(ImageViewModel imageViewModel, object obj)
+        public IEnumerable<MenuItem> GetContextMenuItems(EditorContext context, object obj)
         {
             List<MenuItem> MenuItems = new List<MenuItem>();
             if (obj is DrawingVisualBase visual)
@@ -51,15 +51,15 @@ namespace ColorVision.ImageEditor.Draw
                 MenuItem menuIte2 = new() { Header = "删除" };
                 menuIte2.Click += (s, e) =>
                 {
-                    imageViewModel.Image.RemoveVisualCommand(visual);
-                    imageViewModel.SelectEditorVisual.ClearRender();
+                    context.ImageView.ImageShow.RemoveVisualCommand(visual);
+                    context.ImageViewModel.SelectEditorVisual.ClearRender();
                 };
                 MenuItems.Add(menuIte2);
 
                 MenuItem menuIte3 = new() { Header = "Top" };
                 menuIte3.Click += (s, e) =>
                 {
-                    imageViewModel.Image.TopVisual(visual);
+                    context.ImageView.ImageShow.TopVisual(visual);
                 };
                 MenuItems.Add(menuIte3);
 

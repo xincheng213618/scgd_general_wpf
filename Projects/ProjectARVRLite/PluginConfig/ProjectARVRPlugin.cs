@@ -1,7 +1,7 @@
 ﻿using ColorVision.UI;
 using System.Windows;
 
-namespace ProjectARVRPro.PluginConfig
+namespace ProjectARVRLite.PluginConfig
 {
 
     public class ProjectARVRLitePlugin : IFeatureLauncherBase

@@ -138,19 +138,8 @@ namespace ProjectARVRPro
                 ProcessMeta processMeta = ProcessMetas[TestType];
                 ProjectConfig.StepIndex = TestType;
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains(processMeta.FlowTemplate)).Value;
+                CurrentTestType = TestType;
                 RunTemplate();
-            }
-            else
-            {
-                log.Info("无法找到测试类型对应的测试模板,正在切换下一张图");
-                if (!IsTestTypeCompleted())
-                {
-                    SwitchPG();
-                }
-                else
-                {
-                    TestCompleted();
-                }
             }
 
             IsSwitchRun = false;
@@ -559,8 +548,11 @@ namespace ProjectARVRPro
                     {
                         ViewResultManager.Save(result);
                         ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
+
                         if (IsTestTypeCompleted())
+                        {
                             TestCompleted();
+                        }
                         return; // 已处理，直接返回
                     }
                     else
@@ -577,16 +569,10 @@ namespace ProjectARVRPro
             {
                 log.Error("匹配/执行自定义 IProcess 出错，回退内置逻辑", ex);
             }
-
             ViewResultManager.Save(result);
-            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
-            if (IsTestTypeCompleted())
-            {
-                TestCompleted();
-            }
         }
 
-        private bool IsTestTypeCompleted() => CurrentTestType >= ProcessMetas.Count;
+        private bool IsTestTypeCompleted() => CurrentTestType +1 >= ProcessMetas.Count;
 
 
         private void SwitchPG()
@@ -636,10 +622,7 @@ namespace ProjectARVRPro
 
             string filePath = Path.Combine(ViewResultManager.Config.CsvSavePath, $"ObjectiveTestResults_{timeStr}.csv");
 
-            List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
-
-            objectiveTestResults.Add(ObjectiveTestResult);
-            ObjectiveTestResultCsvExporter.ExportToCsv(objectiveTestResults, filePath);
+            ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, filePath);
             var response = new SocketResponse
             {
                 Version = "1.0",

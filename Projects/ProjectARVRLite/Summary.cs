@@ -5,7 +5,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows;
 
-namespace ProjectARVRPro
+namespace ProjectARVRLite
 {
     public class Summary : ViewModelBase
     {

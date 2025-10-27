@@ -31,7 +31,7 @@ namespace ColorVision.UI
 
         static PropertyEditorHelper()
         {
-            var editorTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes()) .Where(t => typeof(IPropertyEditor).IsAssignableFrom(t) && !t.IsAbstract && t.IsClass);
+            var editorTypes = AssemblyHandler.Instance.GetAssemblies().SelectMany(a => a.GetTypes()) .Where(t => typeof(IPropertyEditor).IsAssignableFrom(t) && !t.IsAbstract && t.IsClass);
             foreach (var type in editorTypes)
             {
                 // 触发静态构造函数

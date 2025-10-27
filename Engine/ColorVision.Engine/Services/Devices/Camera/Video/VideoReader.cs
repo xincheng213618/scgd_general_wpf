@@ -285,7 +285,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                         if (first)
                         {
                             first = false;
-                            Image.ImageViewModel.ZoomboxSub.ZoomUniform();
+                            Image.Zoombox1.ZoomUniform();
                         }
                         // 用完上一帧归还
                         if (lastFrameData != null)

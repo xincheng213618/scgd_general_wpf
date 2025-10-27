@@ -1,9 +1,6 @@
-﻿#pragma warning disable
-
+﻿
 using ColorVision.Common.MVVM;
-using ProjectARVRPro;
 using ProjectARVRPro.Fix;
-using ProjectARVRPro.Process.W255;
 using System.ComponentModel;
 
 namespace ProjectARVRPro.Process.W255
@@ -11,29 +8,39 @@ namespace ProjectARVRPro.Process.W255
     public class W255FixConfig : ViewModelBase, IFixConfig
     {
         [Category("W255")]
-        public double W255LuminanceUniformity { get => _W255LuminanceUniformity; set { _W255LuminanceUniformity = value; OnPropertyChanged(); } }
-        private double _W255LuminanceUniformity = 1;
+        public double LuminanceUniformity { get => _LuminanceUniformity; set { _LuminanceUniformity = value; OnPropertyChanged(); } }
+        private double _LuminanceUniformity = 1;
         [Category("W255")]
-        public double W255ColorUniformity { get => _W255ColorUniformity; set { _W255ColorUniformity = value; OnPropertyChanged(); } }
-        private double _W255ColorUniformity = 1;
+        public double ColorUniformity { get => _ColorUniformity; set { _ColorUniformity = value; OnPropertyChanged(); } }
+        private double _ColorUniformity = 1;
         [Category("W255")]
-        public double W255CenterLunimance { get => _W255CenterLunimance; set { _W255CenterLunimance = value; OnPropertyChanged(); } }
-        private double _W255CenterLunimance = 1;
+        public double CenterLunimance { get => _CenterLunimance; set { _CenterLunimance = value; OnPropertyChanged(); } }
+        private double _CenterLunimance = 1;
         [Category("W255")]
-        public double W255CenterCIE1931ChromaticCoordinatesx { get => _W255CenterCIE1931ChromaticCoordinatesx; set { _W255CenterCIE1931ChromaticCoordinatesx = value; OnPropertyChanged(); } }
-        private double _W255CenterCIE1931ChromaticCoordinatesx = 1;
+        public double CenterCIE1931ChromaticCoordinatesx { get => _CenterCIE1931ChromaticCoordinatesx; set { _CenterCIE1931ChromaticCoordinatesx = value; OnPropertyChanged(); } }
+        private double _CenterCIE1931ChromaticCoordinatesx = 1;
         [Category("W255")]
-        public double W255CenterCIE1931ChromaticCoordinatesy { get => _W255CenterCIE1931ChromaticCoordinatesy; set { _W255CenterCIE1931ChromaticCoordinatesy = value; OnPropertyChanged(); } }
-        private double _W255CenterCIE1931ChromaticCoordinatesy = 1;
+        public double CenterCIE1931ChromaticCoordinatesy { get => _CenterCIE1931ChromaticCoordinatesy; set { _CenterCIE1931ChromaticCoordinatesy = value; OnPropertyChanged(); } }
+        private double _CenterCIE1931ChromaticCoordinatesy = 1;
         [Category("W255")]
-        public double W255CenterCIE1976ChromaticCoordinatesu { get => _W255CenterCIE1976ChromaticCoordinatesu; set { _W255CenterCIE1976ChromaticCoordinatesu = value; OnPropertyChanged(); } }
-        private double _W255CenterCIE1976ChromaticCoordinatesu = 1;
+        public double CenterCIE1976ChromaticCoordinatesu { get => _CenterCIE1976ChromaticCoordinatesu; set { _CenterCIE1976ChromaticCoordinatesu = value; OnPropertyChanged(); } }
+        private double _CenterCIE1976ChromaticCoordinatesu = 1;
         [Category("W255")]
-        public double W255CenterCIE1976ChromaticCoordinatesv { get => _W255CenterCIE1976ChromaticCoordinatesv; set { _W255CenterCIE1976ChromaticCoordinatesv = value; OnPropertyChanged(); } }
-        private double _W255CenterCIE1976ChromaticCoordinatesv = 1;
+        public double CenterCIE1976ChromaticCoordinatesv { get => _CenterCIE1976ChromaticCoordinatesv; set { _CenterCIE1976ChromaticCoordinatesv = value; OnPropertyChanged(); } }
+        private double _CenterCIE1976ChromaticCoordinatesv = 1;
         [Category("W255")]
-        public double BlackCenterCorrelatedColorTemperature { get => _BlackCenterCorrelatedColorTemperature; set { _BlackCenterCorrelatedColorTemperature = value; OnPropertyChanged(); } }
+        public double CenterCorrelatedColorTemperature { get => _BlackCenterCorrelatedColorTemperature; set { _BlackCenterCorrelatedColorTemperature = value; OnPropertyChanged(); } }
         private double _BlackCenterCorrelatedColorTemperature = 1;
+
+        [Category("FOV")]
+        public double W51HorizontalFieldOfViewAngle { get => _W51HorizontalFieldOfViewAngle; set { _W51HorizontalFieldOfViewAngle = value; OnPropertyChanged(); } }
+        private double _W51HorizontalFieldOfViewAngle = 1;
+        [Category("FOV")]
+        public double W51VerticalFieldOfViewAngle { get => _W51VerticalFieldOfViewAngle; set { _W51VerticalFieldOfViewAngle = value; OnPropertyChanged(); } }
+        private double _W51VerticalFieldOfViewAngle = 1;
+        [Category("FOV")]
+        public double W51DiagonalFieldOfViewAngle { get => _W51DiagonalFieldOfViewAngle; set { _W51DiagonalFieldOfViewAngle = value; OnPropertyChanged(); } }
+        private double _W51DiagonalFieldOfViewAngle = 1;
     }
 
 }

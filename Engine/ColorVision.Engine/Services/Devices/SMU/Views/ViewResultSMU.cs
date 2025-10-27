@@ -31,6 +31,8 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 }
             }
             Gen();
+
+            Type = "GetData";
         }
 
 
@@ -53,6 +55,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 }
             }
             Gen();
+            Type = "GetData";
         }
 
 
@@ -64,8 +67,18 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             this.IList = IList;
             MeasurementType = measurementType;
             this.LimitEnd = LimitEnd;
+            if (VList != null && IList != null)
+            {
+                for (int i = 0; i < VList.Length; i++)
+                {
+                    SMUDatas.Add(new SMUData() { Voltage = VList[i], Current = IList[i] });
+                }
+            }
             Gen();
+            Type = "Scan";
         }
+
+        public string Type { get; set; }
 
         public double VResult { get; set; }
         public double IResult { get; set; }
@@ -176,7 +189,6 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         public string? Batch { get; set; }
         public int? BatchID { get; set; }
         public ObservableCollection<SMUData> SMUDatas { get; set; } = new ObservableCollection<SMUData>();
-
 
         public MeasurementType MeasurementType { get; set; }
 

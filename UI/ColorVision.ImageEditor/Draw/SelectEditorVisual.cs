@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8625,CS8602,CS8607,CS0103,CS0067
 using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw.Rasterized;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,7 +17,7 @@ namespace ColorVision.ImageEditor.Draw
     {
         public Type ContextType => typeof(SelectEditorVisual);
 
-        public IEnumerable<MenuItem> GetContextMenuItems(ImageViewModel imageViewModel, object obj)
+        public IEnumerable<MenuItem> GetContextMenuItems(EditorContext context, object obj)
         {
             List<MenuItem> MenuItems = new List<MenuItem>();
             if (obj is SelectEditorVisual selectEditorVisual)

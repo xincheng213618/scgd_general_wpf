@@ -34,13 +34,12 @@ namespace ProjectARVRPro.Recipe
             var rm = PropertyEditorHelper.GetResourceManager(obj);
             var dockPanel = new DockPanel();
 
-            var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
-            dockPanel.Children.Add(textBlock);
 
 
-            UniformGrid uniformGrid = new UniformGrid() { Columns = 2 };
+            
 
-
+            UniformGrid uniformGrid = new UniformGrid() { Columns = 2 ,HorizontalAlignment = HorizontalAlignment.Right,Width =200};
+            
             Binding bindingMin = PropertyEditorHelper.CreateTwoWayBinding(recipeBase, "Min");
             bindingMin.UpdateSourceTrigger = UpdateSourceTrigger.Default;
             bindingMin.StringFormat = "0.0################";
@@ -54,9 +53,14 @@ namespace ProjectARVRPro.Recipe
             var textbox = PropertyEditorHelper.CreateSmallTextBox(bindingMax);
             textbox.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
             uniformGrid.Children.Add(textbox);
+            
 
-
+            DockPanel.SetDock(uniformGrid, Dock.Right);
             dockPanel.Children.Add(uniformGrid);
+
+            var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
+            dockPanel.Children.Add(textBlock);
+
 
             return dockPanel;
         }

@@ -24,8 +24,6 @@ namespace ProjectARVRPro
         public static SummaryManager SummaryManager => SummaryManager.GetInstance();
         public static ProcessManager ProcessManager => ProcessManager.GetInstance();
 
-
-
         [JsonIgnore]
         public RelayCommand OpenTemplateCommand { get; set; }
         [JsonIgnore]

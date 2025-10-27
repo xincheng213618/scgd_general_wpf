@@ -45,7 +45,7 @@ namespace ColorVision.ImageEditor
     public interface IDVContextMenu
     {
         Type ContextType { get; }
-        IEnumerable<MenuItem> GetContextMenuItems(ImageViewModel imageViewModel, object obj);
+        IEnumerable<MenuItem> GetContextMenuItems(EditorContext context, object obj);
     }
 
     /// <summary>
@@ -55,7 +55,7 @@ namespace ColorVision.ImageEditor
     {
         public Type ContextType => typeof(IDrawingVisual);
 
-        public IEnumerable<MenuItem> GetContextMenuItems(ImageViewModel imageViewModel, object obj)
+        public IEnumerable<MenuItem> GetContextMenuItems(EditorContext context, object obj)
         {
             List<MenuItem> MenuItems = new List<MenuItem>();
             if (obj is IDrawingVisual drawingVisual)

@@ -18,7 +18,8 @@ namespace ColorVision.ImageEditor
         Left,
         Right,
         RightBottom,
-        LeftTop
+        LeftTop,
+        None
     }
 
     /// <summary>

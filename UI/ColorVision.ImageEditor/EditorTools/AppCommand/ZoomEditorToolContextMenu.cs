@@ -1,5 +1,7 @@
-﻿using ColorVision.UI.Menus;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.UI.Menus;
 using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Input;
 
 namespace ColorVision.ImageEditor.EditorTools.AppCommand
@@ -16,7 +18,10 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
 
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 11, Header = Properties.Resources.Clear, Command = ApplicationCommands.Close, Icon = MenuItemIcon.TryFindResource("DIDelete") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Print", Order = 300, Header = Properties.Resources.Print, Command = ApplicationCommands.Print, Icon = MenuItemIcon.TryFindResource("DIPrint"), InputGestureText = "Ctrl+P" });
-           
+
+            RelayCommand relayCommand = new RelayCommand(a => { MessageBox.Show(context.Config.GetPropertyString()); });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 99999, Header = Properties.Resources.Property, Command = relayCommand });
+
             return MenuItemMetadatas;
         }
     }

@@ -12,7 +12,7 @@ namespace ColorVision.ImageEditor.Draw.Line
     {
         public Type ContextType => typeof(DVLine);
 
-        public IEnumerable<MenuItem> GetContextMenuItems(ImageViewModel imageViewModel, object obj)
+        public IEnumerable<MenuItem> GetContextMenuItems(EditorContext context, object obj)
         {
             List<MenuItem> MenuItems = new List<MenuItem>();
             if (obj is DVLine dVLine)
@@ -27,7 +27,7 @@ namespace ColorVision.ImageEditor.Draw.Line
                     }
 
                     // 2. 检查图像源是否为 WriteableBitmap
-                    if (imageViewModel.Image.Source is WriteableBitmap writeableBitmap)
+                    if (context.ImageView.ImageShow.Source is WriteableBitmap writeableBitmap)
                     {
                         // 3. 提取截面数据
                         List<double> profileData = ExtractProfileData(dVLine, writeableBitmap);

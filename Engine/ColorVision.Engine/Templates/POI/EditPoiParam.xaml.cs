@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Templates.POI
             this.Title = poiParam.Name + "-" + this.Title;
         }
 
-        public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.DrawingVisualLists;
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.EditorContext.DrawingVisualLists;
 
         public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
 
@@ -1637,7 +1637,7 @@ namespace ColorVision.Engine.Templates.POI
             {
                 if (provider.ContextType.IsAssignableFrom(type))
                 {
-                    var items = provider.GetContextMenuItems(ImageView.ImageViewModel, DrawingVisualLists[ListView1.SelectedIndex]);
+                    var items = provider.GetContextMenuItems(ImageView.ImageViewModel.EditorContext, DrawingVisualLists[ListView1.SelectedIndex]);
                     foreach (var item in items)
                         ListView1.ContextMenu.Items.Add(item);
                 }

@@ -12,7 +12,7 @@ namespace ColorVision.ImageEditor.Draw.Polygon
     {
         public Type ContextType => typeof(DVPolygon);
 
-        public IEnumerable<MenuItem> GetContextMenuItems(ImageViewModel imageViewModel, object obj)
+        public IEnumerable<MenuItem> GetContextMenuItems(EditorContext context, object obj)
         {
             List<MenuItem> MenuItems = new List<MenuItem>();
             if (obj is DVPolygon dvPolygon)
@@ -27,7 +27,7 @@ namespace ColorVision.ImageEditor.Draw.Polygon
                     }
 
                     // Check if image source is WriteableBitmap
-                    if (imageViewModel.Image.Source is WriteableBitmap writeableBitmap)
+                    if (context.ImageView.ImageShow.Source is WriteableBitmap writeableBitmap)
                     {
                         // Extract profile data along the polygon edges
                         List<double> profileData = ExtractProfileData(dvPolygon, writeableBitmap);

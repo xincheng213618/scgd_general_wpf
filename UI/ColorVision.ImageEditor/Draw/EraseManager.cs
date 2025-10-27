@@ -47,17 +47,6 @@ namespace ColorVision.ImageEditor.Draw
             }
         }
 
-        public int CheckNo()
-        {
-            if (ImageViewModel.DrawingVisualLists.Count > 0 && ImageViewModel.DrawingVisualLists.Last() is DrawingVisualBase drawingVisual)
-            {
-                return drawingVisual.ID + 1;
-            }
-            else
-            {
-                return 1;
-            }
-        }
 
         public void Load()
         {

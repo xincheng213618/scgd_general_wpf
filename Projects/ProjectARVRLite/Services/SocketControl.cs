@@ -1,11 +1,11 @@
 ﻿using ColorVision.Engine.Templates.Flow;
 using ColorVision.SocketProtocol;
 using log4net;
-using ProjectARVRPro.PluginConfig;
+using ProjectARVRLite.PluginConfig;
 using System.Net.Sockets;
 using System.Windows;
 
-namespace ProjectARVRPro.Services
+namespace ProjectARVRLite.Services
 {
     public class SocketControl
     {

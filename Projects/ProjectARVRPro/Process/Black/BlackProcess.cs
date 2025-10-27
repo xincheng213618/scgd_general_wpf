@@ -42,9 +42,9 @@ namespace ProjectARVRPro.Process.Black
                             ctx.Result.ViewResultBlack.PoiResultCIExyuvDatas.Add(poi);
                         }
                         // 需要白画面的亮度才能计算对比度
-                        if (ctx.Result.ViewResultWhite != null && ctx.Result.ViewResultWhite.PoiResultCIExyuvDatas != null && ctx.Result.ViewResultWhite.PoiResultCIExyuvDatas.Count == 9 && ctx.Result.ViewResultBlack.PoiResultCIExyuvDatas.Count == 1)
+                        if (ctx.ObjectiveTestResult.W255TestResult != null && ctx.ObjectiveTestResult.W255TestResult.CenterLunimance != null)
                         {
-                            double contrast = ctx.Result.ViewResultWhite.PoiResultCIExyuvDatas[5].Y / ctx.Result.ViewResultBlack.PoiResultCIExyuvDatas[0].Y;
+                            double contrast = ctx.ObjectiveTestResult.W255TestResult.CenterLunimance.Value / ctx.Result.ViewResultBlack.PoiResultCIExyuvDatas[0].Y;
                             contrast *= fixConfig.FOFOContrast;
                             var fofo = new ObjectiveTestItem
                             {

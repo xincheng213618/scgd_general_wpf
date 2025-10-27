@@ -1,3 +1,4 @@
+using ColorVision.ImageEditor.Abstractions;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;

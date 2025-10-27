@@ -2,6 +2,7 @@
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
 using cvColorVision;
@@ -16,12 +17,10 @@ namespace ColorVision.Engine.Media
     {
         public void Execute(ImageView imageView)
         {
-            imageView.ToolBarAl.Visibility  = Visibility.Visible;
             if (MySqlControl.GetInstance().IsConnect)
             {
                 imageView.ComboxPOITemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
                 imageView.ComboxPOITemplate.SelectedIndex = 0;
-                imageView.ToolBarAl.Visibility = Visibility.Visible;   
             }
             else
             {
@@ -122,7 +121,7 @@ namespace ColorVision.Engine.Media
                             float dYVal = 0;
                             float dZVal = 0;
                             float dx = 0, dy = 0, du = 0, dv = 0;
-                            int result = ConvertXYZ.CM_GetXYZxyuvRect(imageView.Config.ConvertXYZhandle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, (int)imageView.ImageViewModel.MouseMagnifier.RectWidth, (int)imageView.ImageViewModel.MouseMagnifier.RectHeight);
+                            int result = ConvertXYZ.CM_GetXYZxyuvRect(imageView.Config.GetRequiredService<CVFilemageEditorConfig>().ConvertXYZhandle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, (int)imageView.ImageViewModel.MouseMagnifier.RectWidth, (int)imageView.ImageViewModel.MouseMagnifier.RectHeight);
                             
                             windowCIE.ChangeSelect(dx, dy);
                         }
@@ -133,6 +132,7 @@ namespace ColorVision.Engine.Media
                     }
 
                     imageView.ImageViewModel.MouseMagnifier.MouseMoveColorHandler += mouseMoveColorHandler;
+
                     windowCIE.Closed += (s, e) =>
                     {
                         imageView.ImageViewModel.MouseMagnifier.MouseMoveColorHandler -= mouseMoveColorHandler;

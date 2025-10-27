@@ -17,7 +17,7 @@ namespace ColorVision.ImageEditor.Draw
     {
         public Type ContextType => typeof(IRectangle);
 
-        public IEnumerable<MenuItem> GetContextMenuItems(ImageViewModel imageViewModel, object obj)
+        public IEnumerable<MenuItem> GetContextMenuItems(EditorContext context, object obj)
         {
             List<MenuItem> menuItems = new();
             if (obj is not IRectangle dvRectangle) return menuItems;
@@ -26,7 +26,7 @@ namespace ColorVision.ImageEditor.Draw
             var cropSave = new MenuItem { Header = "裁剪并另存..." };
             cropSave.Click += (s, e) =>
             {
-                if (!TryGetCropBitmap(imageViewModel, dvRectangle, out BitmapSource? cropped, out string? error))
+                if (!TryGetCropBitmap(context, dvRectangle, out BitmapSource? cropped, out string? error))
                 {
                     if (!string.IsNullOrWhiteSpace(error)) MessageBox.Show(error, "提示", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
@@ -56,7 +56,7 @@ namespace ColorVision.ImageEditor.Draw
             var cropClipboard = new MenuItem { Header = "裁剪复制到剪贴板" };
             cropClipboard.Click += (s, e) =>
             {
-                if (!TryGetCropBitmap(imageViewModel, dvRectangle, out BitmapSource? cropped, out string? error))
+                if (!TryGetCropBitmap(context, dvRectangle, out BitmapSource? cropped, out string? error))
                 {
                     if (!string.IsNullOrWhiteSpace(error)) MessageBox.Show(error, "提示", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
@@ -77,25 +77,25 @@ namespace ColorVision.ImageEditor.Draw
             var cropReplace = new MenuItem { Header = "裁剪并替换当前图像" };
             cropReplace.Click += (s, e) =>
             {
-                if (!TryGetCropBitmap(imageViewModel, dvRectangle, out BitmapSource? cropped, out string? error))
+                if (!TryGetCropBitmap(context, dvRectangle, out BitmapSource? cropped, out string? error))
                 {
                     if (!string.IsNullOrWhiteSpace(error)) MessageBox.Show(error, "提示", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
-                imageViewModel.ImageView.SetImageSource(new WriteableBitmap(cropped)) ;
+                context.ImageView.SetImageSource(new WriteableBitmap(cropped)) ;
                 // 清除所有绘制元素（可选）
-                imageViewModel.Image.Clear();
+                context.ImageView.ImageShow.Clear();
             };
             menuItems.Add(cropReplace);
 
             return menuItems;
         }
 
-        private static bool TryGetCropBitmap(ImageViewModel imageViewModel, IRectangle dvRectangle, out BitmapSource? cropped, out string? error)
+        private static bool TryGetCropBitmap(EditorContext imageViewModel, IRectangle dvRectangle, out BitmapSource? cropped, out string? error)
         {
             cropped = null;
             error = null;
-            if (imageViewModel.Image.Source is not BitmapSource source)
+            if (imageViewModel.ImageView.ImageShow.Source is not BitmapSource source)
             {
                 error = "当前图像源不可裁剪";
                 return false;

@@ -5,7 +5,7 @@
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<VersionPrefix>1.3.8.6</VersionPrefix>
+		<VersionPrefix>1.3.8.7</VersionPrefix>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<PackageReadmeFile></PackageReadmeFile>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -14,6 +14,13 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <Compile Remove="interface\**" />
+	  <EmbeddedResource Remove="interface\**" />
+	  <None Remove="interface\**" />
+	  <Page Remove="interface\**" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<Content Remove="C:\Users\Xin\.nuget\packages\wpfhexaeditor\2.1.7\contentFiles\any\net5.0-windows7.0\Resources\EBCDIC-NoSpecialChar.tbl" />
@@ -81,9 +88,6 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 		</None>
-	</ItemGroup>
-	<ItemGroup>
-	  <Folder Include="interface\" />
 	</ItemGroup>
 
 </Project>

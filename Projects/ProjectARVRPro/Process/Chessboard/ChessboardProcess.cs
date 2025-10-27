@@ -4,11 +4,10 @@ using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis; // PoiAnalysisDetailViewReslut
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
-using ProjectARVRPro.Process.MTFHV;
-using System.Collections.ObjectModel;
+using Newtonsoft.Json;
+using ProjectARVRPro.Process.Green;
 using System.Windows;
 using System.Windows.Media;
 
@@ -22,6 +21,8 @@ namespace ProjectARVRPro.Process.Chessboard
             var log = ctx.Logger;
             ChessboardRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<ChessboardRecipeConfig>();
             ChessboardFixConfig fixConfig = ctx.FixConfig.GetRequiredService<ChessboardFixConfig>();
+            ChessboardViewTestResult testResult = new ChessboardViewTestResult();
+
 
             try
             {
@@ -36,13 +37,12 @@ namespace ProjectARVRPro.Process.Chessboard
                 {
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
-                        ctx.Result.ViewReslutCheckerboard.PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
                         int id = 0;
                         foreach (var item in poiPoints)
                         {
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };
-                            ctx.Result.ViewReslutCheckerboard.PoiResultCIExyuvDatas.Add(poi);
+                            testResult.PoixyuvDatas.Add(poi);
                         }
                     }
 
@@ -61,12 +61,14 @@ namespace ProjectARVRPro.Process.Chessboard
                                 Value = view.PoiAnalysisResult.result.Value,
                                 TestValue = view.PoiAnalysisResult.result.Value.ToString("F3")
                             };
-                            ctx.ObjectiveTestResult.ChessboardContrast = contrast;
-                            ctx.Result.ViewReslutCheckerboard.ChessboardContrast = contrast;
+                            testResult.ChessboardContrast = contrast;
                             ctx.Result.Result &= contrast.TestResult;
                         }
                     }
                 }
+
+                ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
+                ctx.ObjectiveTestResult.ChessboardTestResult = JsonConvert.DeserializeObject<ChessboardTestResult>(ctx.Result.ViewResultJson) ?? new ChessboardTestResult();
                 return true;
             }
             catch (Exception ex)
@@ -78,7 +80,11 @@ namespace ProjectARVRPro.Process.Chessboard
 
         public void Render(IProcessExecutionContext ctx)
         {
-            foreach (var poiResultCIExyuvData in ctx.Result.ViewReslutCheckerboard.PoiResultCIExyuvDatas)
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
+            ChessboardViewTestResult testResult = JsonConvert.DeserializeObject<ChessboardViewTestResult>(ctx.Result.ViewResultJson);
+            if (testResult == null) return;
+
+            foreach (var poiResultCIExyuvData in testResult.PoixyuvDatas)
             {
                 var item = poiResultCIExyuvData.Point;
                 switch (item.PointType)
@@ -118,14 +124,16 @@ namespace ProjectARVRPro.Process.Chessboard
             string outtext = string.Empty;
             outtext += $"∆Â≈Ã∏Ò ≤‚ ‘œÓ£∫" + Environment.NewLine;
 
-            if (result.ViewReslutCheckerboard.PoiResultCIExyuvDatas != null)
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
+            ChessboardViewTestResult testResult = JsonConvert.DeserializeObject<ChessboardViewTestResult>(ctx.Result.ViewResultJson);
+            if (testResult == null) return outtext;
+
+            foreach (var item in testResult.PoixyuvDatas)
             {
-                foreach (var item in result.ViewReslutCheckerboard.PoiResultCIExyuvDatas)
-                {
-                    outtext += $"{item.Name}  Y:{item.Y.ToString("F2")}{Environment.NewLine}";
-                }
+                outtext += $"{item.Name}  Y:{item.Y.ToString("F2")}{Environment.NewLine}";
             }
-            outtext += $"ChessboardContrast:{result.ViewReslutCheckerboard.ChessboardContrast.TestValue} LowLimit:{result.ViewReslutCheckerboard.ChessboardContrast.LowLimit}  UpLimit:{result.ViewReslutCheckerboard.ChessboardContrast.UpLimit},Rsult{(result.ViewReslutCheckerboard.ChessboardContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+
+            outtext += $"ChessboardContrast:{testResult.ChessboardContrast.TestValue} LowLimit:{testResult.ChessboardContrast.LowLimit}  UpLimit:{testResult.ChessboardContrast.UpLimit},Rsult{(testResult.ChessboardContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             return outtext;
         }
     }

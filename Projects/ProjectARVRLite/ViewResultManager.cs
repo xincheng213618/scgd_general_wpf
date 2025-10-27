@@ -8,7 +8,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ProjectARVRPro
+namespace ProjectARVRLite
 {
     public class ViewResultManagerConfig : ViewModelBase, IConfig
     {

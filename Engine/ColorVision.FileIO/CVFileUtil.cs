@@ -423,6 +423,7 @@ namespace ColorVision.FileIO
             {
                 if (CVFileUtil.ReadCVCIESrc(fileName, out CVCIEFile fileInf))
                 {
+                    fileInf.srcFileName = fileInfo.srcFileName;
                     fileInfo = fileInf;
                     fileInfo.FilePath = fileName;
                     return true;

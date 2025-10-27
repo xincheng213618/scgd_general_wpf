@@ -4,6 +4,9 @@ using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.Distortion2;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
+using Newtonsoft.Json;
+using ProjectARVRPro.Process.Chessboard;
+using ProjectARVRPro.Process.Green;
 using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Distortion
@@ -16,12 +19,10 @@ namespace ProjectARVRPro.Process.Distortion
             var log = ctx.Logger;
             DistortionRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<DistortionRecipeConfig>();
             DistortionFixConfig fixConfig = ctx.FixConfig.GetRequiredService<DistortionFixConfig>();
-
+            DistortionViewTestResult testResult = new DistortionViewTestResult();
 
             try
             {
-                log?.Info("���� Distortion ���̽��");
-
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (values.Count > 0)
                     ctx.Result.FileName = values[0].FileUrl;
@@ -38,9 +39,13 @@ namespace ProjectARVRPro.Process.Distortion
                             distortion.DistortionReslut.TVDistortion.HorizontalRatio *= fixConfig.HorizontalTVDistortion;
                             distortion.DistortionReslut.TVDistortion.VerticalRatio *= fixConfig.VerticalTVDistortion;
 
-                            ctx.Result.ViewReslutDistortionGhost.Distortion2View = distortion;
 
-                            ctx.ObjectiveTestResult.HorizontalTVDistortion = new ObjectiveTestItem
+                            foreach (var pt in distortion.DistortionReslut.TVDistortion.FinalPoints)
+                            {
+                                testResult.Points.Add(new System.Windows.Point(pt.X, pt.Y));
+                            }
+
+                            testResult.HorizontalTVDistortion = new ObjectiveTestItem
                             {
                                 Name = "HorizontalTVDistortion",
                                 LowLimit = recipeConfig.HorizontalTVDistortion.Min,
@@ -48,7 +53,7 @@ namespace ProjectARVRPro.Process.Distortion
                                 Value = distortion.DistortionReslut.TVDistortion.HorizontalRatio,
                                 TestValue = distortion.DistortionReslut.TVDistortion.HorizontalRatio.ToString("F5") + "%"
                             };
-                            ctx.ObjectiveTestResult.VerticalTVDistortion = new ObjectiveTestItem
+                            testResult.VerticalTVDistortion = new ObjectiveTestItem
                             {
                                 Name = "VerticalTVDistortion",
                                 LowLimit = recipeConfig.VerticalTVDistortion.Min,
@@ -56,14 +61,15 @@ namespace ProjectARVRPro.Process.Distortion
                                 Value = distortion.DistortionReslut.TVDistortion.VerticalRatio,
                                 TestValue = distortion.DistortionReslut.TVDistortion.VerticalRatio.ToString("F5") + "%"
                             };
-                            ctx.Result.ViewReslutDistortionGhost.HorizontalTVDistortion = ctx.ObjectiveTestResult.HorizontalTVDistortion;
-                            ctx.Result.ViewReslutDistortionGhost.VerticalTVDistortion = ctx.ObjectiveTestResult.VerticalTVDistortion;
 
-                            ctx.Result.Result &= ctx.ObjectiveTestResult.HorizontalTVDistortion.TestResult;
-                            ctx.Result.Result &= ctx.ObjectiveTestResult.VerticalTVDistortion.TestResult;
+                            ctx.Result.Result &= testResult.HorizontalTVDistortion.TestResult;
+                            ctx.Result.Result &= testResult.VerticalTVDistortion.TestResult;
                         }
                     }
                 }
+
+                ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
+                ctx.ObjectiveTestResult.DistortionTestResult = JsonConvert.DeserializeObject<DistortionTestResult>(ctx.Result.ViewResultJson) ?? new DistortionTestResult();
                 return true;
             }
             catch (Exception ex)
@@ -75,38 +81,36 @@ namespace ProjectARVRPro.Process.Distortion
 
         public void Render(IProcessExecutionContext ctx)
         {
-            if (ctx.Result.ViewReslutDistortionGhost.Distortion2View.DistortionReslut.TVDistortion != null)
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
+            DistortionViewTestResult testResult = JsonConvert.DeserializeObject<DistortionViewTestResult>(ctx.Result.ViewResultJson);
+            if (testResult == null) return;
+
+            foreach (var points in testResult.Points)
             {
-                if (ctx.Result.ViewReslutDistortionGhost.Distortion2View.DistortionReslut.TVDistortion.FinalPoints != null)
-                {
-                    foreach (var points in ctx.Result.ViewReslutDistortionGhost.Distortion2View.DistortionReslut.TVDistortion.FinalPoints)
-                    {
-                        DVCircleText Circle = new();
-                        Circle.Attribute.Center = new System.Windows.Point(points.X, points.Y);
-                        Circle.Attribute.Radius = 20 / ctx.ImageView.Zoombox1.ContentMatrix.M11;
-                        Circle.Attribute.Brush = Brushes.Transparent;
-                        Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / ctx.ImageView.Zoombox1.ContentMatrix.M11);
-                        Circle.Attribute.Text = $"id:{points.Id}{Environment.NewLine} X:{points.X.ToString("F0")}{Environment.NewLine}Y:{points.Y.ToString("F0")}";
-                        Circle.Attribute.Id = points.Id;
-                        Circle.Render();
-                        ctx.ImageView.AddVisual(Circle);
-                    }
-                }
+                DVCircleText Circle = new();
+                Circle.Attribute.Center = new System.Windows.Point(points.X, points.Y);
+                Circle.Attribute.Radius = 20 / ctx.ImageView.Zoombox1.ContentMatrix.M11;
+                Circle.Attribute.Brush = Brushes.Transparent;
+                Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / ctx.ImageView.Zoombox1.ContentMatrix.M11);
+                Circle.Attribute.Text = $"{Environment.NewLine} X:{points.X.ToString("F0")}{Environment.NewLine}Y:{points.Y.ToString("F0")}";
+                Circle.Render();
+                ctx.ImageView.AddVisual(Circle);
             }
+
         }
 
         public string GenText(IProcessExecutionContext ctx)
         {
             var result = ctx.Result;
             string outtext = string.Empty;
-            outtext += $"�����Ӱ ������Զ�AA����λ�㷨+�����㷨+��Ӱ�㷨" + Environment.NewLine;
+            outtext += $"Distortion" + Environment.NewLine;
 
-            foreach (var item in result.ViewReslutDistortionGhost.Distortion2View.DistortionReslut.TVDistortion.FinalPoints)
-            {
-                outtext += $"id:{item.Id} X:{item.X} Y:{item.Y}" + Environment.NewLine;
-            }
-            outtext += $"HorizontalTVDistortion:{result.ViewReslutDistortionGhost.HorizontalTVDistortion.TestValue} LowLimit:{result.ViewReslutDistortionGhost.HorizontalTVDistortion.LowLimit}  UpLimit:{result.ViewReslutDistortionGhost.HorizontalTVDistortion.UpLimit},Rsult{(result.ViewReslutDistortionGhost.HorizontalTVDistortion.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-            outtext += $"VerticalTVDistortion:{result.ViewReslutDistortionGhost.VerticalTVDistortion.TestValue} LowLimit:{result.ViewReslutDistortionGhost.VerticalTVDistortion.LowLimit}  UpLimit:{result.ViewReslutDistortionGhost.VerticalTVDistortion.UpLimit},Rsult{(result.ViewReslutDistortionGhost.VerticalTVDistortion.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
+            DistortionViewTestResult testResult = JsonConvert.DeserializeObject<DistortionViewTestResult>(ctx.Result.ViewResultJson);
+            if (testResult == null) return outtext;
+
+            outtext += $"HorizontalTVDistortion:{testResult.HorizontalTVDistortion.TestValue} LowLimit:{testResult.HorizontalTVDistortion.LowLimit}  UpLimit:{testResult.HorizontalTVDistortion.UpLimit},Rsult{(testResult.HorizontalTVDistortion.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+            outtext += $"VerticalTVDistortion:{testResult.VerticalTVDistortion.TestValue} LowLimit:{testResult.VerticalTVDistortion.LowLimit}  UpLimit:{testResult.VerticalTVDistortion.UpLimit},Rsult{(testResult.VerticalTVDistortion.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             return outtext;
         }
     }

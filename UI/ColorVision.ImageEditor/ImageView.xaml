@@ -69,7 +69,7 @@
             <Grid Background="{StaticResource SmallGridLinesDrawingBrush}"  Visibility="Collapsed"/>
 
             <Grid x:Name="ZoomGrid" Background="{StaticResource TransparentGridBrush}">
-                <local:Zoombox x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}" Grid.ColumnSpan="2">
+                <local:Zoombox x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding MaxZoom}"  MinZoom="{Binding MinZoom}" Grid.ColumnSpan="2">
                     <local:DrawCanvas x:Name="ImageShow"  x:FieldModifier="public" FocusVisualStyle="{x:Null}"   RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto">
                     </local:DrawCanvas>
 
@@ -163,11 +163,11 @@
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
                                 <TextBlock Text="MaxZoom" Width="100"/>
-                                <TextBox  Text="{Binding Config.MaxZoom}"/>
+                                <TextBox  Text="{Binding MaxZoom}"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
                                 <TextBlock Text="MinZoom" Width="100"/>
-                                <TextBox  Text="{Binding Config.MinZoom}" />
+                                <TextBox  Text="{Binding MinZoom}" />
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
                                 <TextBlock Text="伪彩色" Width="100"/>

@@ -80,7 +80,6 @@ namespace ColorVision.ImageEditor
 
             ImageViewModel.Crosshair.IsShow = true;
             ImageView.SetImageSource(new BitmapImage(new Uri("/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy.png", UriKind.Relative)));
-            ImageViewModel.ToolBarScaleRuler.IsShow = false;
 
             ImageView.ComboBoxLayers.Visibility = Visibility.Collapsed;
             ImageView.Zoombox1.ZoomUniform();

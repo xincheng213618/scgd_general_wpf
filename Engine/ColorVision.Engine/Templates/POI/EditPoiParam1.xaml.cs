@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8625,CS8604,CS8602
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.Database;
@@ -28,7 +27,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -186,13 +184,12 @@ namespace ColorVision.Engine.Templates.POI
             this.Title = poiParam.Name + "-" + this.Title;
         }
 
-        public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.DrawingVisualLists;
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageView.ImageViewModel.EditorContext.DrawingVisualLists;
         public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
 
         public Zoombox Zoombox1 => ImageView.Zoombox1;
 
         public DrawCanvas ImageShow => ImageView.ImageShow;
-        public ImageViewModel ImageViewModel => ImageView.ImageViewModel;
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -1581,7 +1578,7 @@ namespace ColorVision.Engine.Templates.POI
             {
                 window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
                 {
-                    imageView.ImageViewModel.ClearImage();
+                    imageView.Clear();
                 }));
             }
 
@@ -1677,7 +1674,7 @@ namespace ColorVision.Engine.Templates.POI
             {
                 if (provider.ContextType.IsAssignableFrom(type))
                 {
-                    var items = provider.GetContextMenuItems(ImageView.ImageViewModel, DrawingVisualLists[ListView1.SelectedIndex]);
+                    var items = provider.GetContextMenuItems(ImageView.ImageViewModel.EditorContext, DrawingVisualLists[ListView1.SelectedIndex]);
                     foreach (var item in items)
                         ListView1.ContextMenu.Items.Add(item);
                 }
