@@ -153,6 +153,7 @@ namespace ColorVision.Wizards
                     if (Application.Current.MainWindow == this)
                     {
                         WindowConfig.WizardCompletionKey = true;
+                        ConfigHandler.GetInstance().SaveConfigs();  
                         //这里使用件的启动路径，启动主程序
                         Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"));
                         Application.Current.Shutdown();
