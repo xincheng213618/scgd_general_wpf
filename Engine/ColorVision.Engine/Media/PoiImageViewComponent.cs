@@ -16,12 +16,10 @@ namespace ColorVision.Engine.Media
     {
         public void Execute(ImageView imageView)
         {
-            imageView.ToolBarAl.Visibility  = Visibility.Visible;
             if (MySqlControl.GetInstance().IsConnect)
             {
                 imageView.ComboxPOITemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
                 imageView.ComboxPOITemplate.SelectedIndex = 0;
-                imageView.ToolBarAl.Visibility = Visibility.Visible;   
             }
             else
             {
@@ -133,6 +131,7 @@ namespace ColorVision.Engine.Media
                     }
 
                     imageView.ImageViewModel.MouseMagnifier.MouseMoveColorHandler += mouseMoveColorHandler;
+
                     windowCIE.Closed += (s, e) =>
                     {
                         imageView.ImageViewModel.MouseMagnifier.MouseMoveColorHandler -= mouseMoveColorHandler;

@@ -33,7 +33,7 @@ namespace ColorVision.ImageEditor.Tif
             {
                 window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
                 {
-                    imageView.ImageViewModel.ClearImage();
+                    imageView.Clear();
                 }));
             }
             window.Show();

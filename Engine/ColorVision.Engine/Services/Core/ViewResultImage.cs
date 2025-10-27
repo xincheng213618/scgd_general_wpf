@@ -157,7 +157,7 @@ namespace ColorVision.Engine.Services
                 window.Show();
                 window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
                 {
-                    imageView.ImageViewModel.ClearImage();
+                    imageView.Clear();
                 }));
             }
             else

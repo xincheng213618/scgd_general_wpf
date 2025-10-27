@@ -22,18 +22,16 @@ namespace ColorVision.ImageEditor
 {
     public class ImageViewModel : ViewModelBase, IDisposable
     {
-        public Zoombox ZoomboxSub { get; set; }
         public DrawCanvas Image { get; set; }
         public Crosshair Crosshair { get; set; }
         public ToolBarScaleRuler ToolBarScaleRuler { get; set; }
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
         public SelectEditorVisual SelectEditorVisual { get; set; }
         public StackPanel SlectStackPanel { get; set; } = new StackPanel();
+
         public ImageViewConfig Config => EditorContext.Config;
 
         public MouseMagnifierManager MouseMagnifier { get; set; }
-
-        public ImageView ImageView { get; set; }
         public ContextMenu ContextMenu { get; set; }
         public IImageOpen? IImageOpen { get; set; }
 
@@ -56,9 +54,6 @@ namespace ColorVision.ImageEditor
             IEditorToolFactory = new IEditorToolFactory(imageView, EditorContext);
 
             MouseMagnifier = IEditorToolFactory.IEditorTools.OfType<MouseMagnifierManager>().FirstOrDefault();
-
-            this.ImageView = imageView;
-            ZoomboxSub = zoombox;
             Image = drawCanvas;
 
             ContextMenu = new ContextMenu();
@@ -82,12 +77,12 @@ namespace ColorVision.ImageEditor
             drawCanvas.PreviewKeyDown += HandleKeyDown;
 
             Crosshair = new Crosshair(zoombox, drawCanvas);
-            ToolBarScaleRuler = new ToolBarScaleRuler(ImageView, zoombox, drawCanvas);
+            ToolBarScaleRuler = new ToolBarScaleRuler(imageView, zoombox, drawCanvas);
 
             Image.ContextMenuOpening += HandleContextMenuOpening;
             Image.ContextMenu = ContextMenu;
-            ZoomboxSub.ContextMenu = ContextMenu;
-            ZoomboxSub.LayoutUpdated += Zoombox1_LayoutUpdated;
+            zoombox.ContextMenu = ContextMenu;
+            zoombox.LayoutUpdated += Zoombox1_LayoutUpdated;
 
         }
 
@@ -98,53 +93,9 @@ namespace ColorVision.ImageEditor
         /// <param name="e">键盘事件参数</param>
         public void HandleKeyDown(object sender, KeyEventArgs e)
         {
-            // F11全屏处理
-            //if (e.Key == Key.F11)
-            //{
-            //    if (!_viewModel.IsMax)
-            //        _viewModel.FullCommand.Execute(null);
-            //    e.Handled = true;
-            //    return;
-            //}
-
-            // 编辑模式下的键盘操作
-            if (ImageEditMode)
-            {
-                HandleEditModeKeyDown(e);
-            }
-            // 浏览模式下的键盘操作
-            else
-            {
-                HandleBrowseModeKeyDown(e);
-            }
+            HandleBrowseModeKeyDown(e);
         }
 
-        /// <summary>
-        /// 处理编辑模式下的键盘操作
-        /// </summary>
-        private void HandleEditModeKeyDown(KeyEventArgs e)
-        {
-            if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Left || e.Key == Key.A))
-            {
-                MoveView(-10, 0);
-                e.Handled = true;
-            }
-            else if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Right || e.Key == Key.D))
-            {
-                MoveView(10, 0);
-                e.Handled = true;
-            }
-            else if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Up || e.Key == Key.W))
-            {
-                MoveView(0, -10);
-                e.Handled = true;
-            }
-            else if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Down || e.Key == Key.S))
-            {
-                MoveView(0, 10);
-                e.Handled = true;
-            }
-        }
 
         /// <summary>
         /// 处理浏览模式下的键盘操作
@@ -194,8 +145,8 @@ namespace ColorVision.ImageEditor
             Vector vector = new(x, y);
             translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
             translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
-            ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty,
-                Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
+            EditorContext.Zoombox.SetCurrentValue(Zoombox.ContentMatrixProperty,
+                Matrix.Multiply(EditorContext.Zoombox.ContentMatrix, translateTransform.Value));
         }
 
         /// <summary>
@@ -279,7 +230,7 @@ namespace ColorVision.ImageEditor
                     {
                         if (provider.ContextType.IsAssignableFrom(selectVisual.GetType()))
                         {
-                            var items = provider.GetContextMenuItems(this, selectVisual);
+                            var items = provider.GetContextMenuItems(EditorContext, selectVisual);
                             foreach (var item in items)
                                 ContextMenu.Items.Add(item);
                         }
@@ -288,7 +239,7 @@ namespace ColorVision.ImageEditor
                     {
                         if (provider.ContextType.IsAssignableFrom(selectEditorVisual.GetType()))
                         {
-                            var items = provider.GetContextMenuItems(this, selectEditorVisual);
+                            var items = provider.GetContextMenuItems(EditorContext, selectEditorVisual);
                             foreach (var item in items)
                                 ContextMenu.Items.Add(item);
                         }
@@ -300,7 +251,7 @@ namespace ColorVision.ImageEditor
                     {
                         if (provider.ContextType.IsAssignableFrom(type))
                         {
-                            var items = provider.GetContextMenuItems(this, MouseVisual);
+                            var items = provider.GetContextMenuItems(EditorContext, MouseVisual);
                             foreach (var item in items)
                                 ContextMenu.Items.Add(item);
                         }
@@ -401,12 +352,12 @@ namespace ColorVision.ImageEditor
         double oldMax;
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
         {
-            if (oldMax != ZoomboxSub.ContentMatrix.M11)
+            if (oldMax != EditorContext.Zoomratio)
             {
                 if (EditorContext.Config.IsLayoutUpdated)
                 {
-                    oldMax = ZoomboxSub.ContentMatrix.M11;
-                    double scale = 1 / ZoomboxSub.ContentMatrix.M11;
+                    oldMax = EditorContext.Zoomratio;
+                    double scale = 1 / EditorContext.Zoomratio;
                     DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + EditorContext.Id.ToString(), 20, () => ImageLayoutUpdatedRender(scale, DrawingVisualLists));
                 }
             }
@@ -433,18 +384,6 @@ namespace ColorVision.ImageEditor
             IsUpdatedRender = false;
         }
 
-     
-        public void Save(string file) => ImageView.Save(file);
-        public void ClearImage() => ImageView.Clear();
-
-        
-        public double ZoomRatio
-        {
-            get => ZoomboxSub.ContentMatrix.M11;
-            set => ZoomboxSub.Zoom(value);
-        }
-
-
         private bool _ImageEditMode;
         public bool ImageEditMode
         {
@@ -456,13 +395,13 @@ namespace ColorVision.ImageEditor
 
                 if (_ImageEditMode)
                 {
-                    ZoomboxSub.ActivateOn = ModifierKeys.Control;
-                    ZoomboxSub.Cursor = Cursors.Cross;
+                    EditorContext.Zoombox.ActivateOn = ModifierKeys.Control;
+                    EditorContext.Zoombox.Cursor = Cursors.Cross;
                 }
                 else
                 {
-                    ZoomboxSub.ActivateOn = ModifierKeys.None;
-                    ZoomboxSub.Cursor = Cursors.Arrow;
+                    EditorContext.Zoombox.ActivateOn = ModifierKeys.None;
+                    EditorContext.Zoombox.Cursor = Cursors.Arrow;
                 }
                 EditorContext.DrawEditorManager.SetCurrentDrawEditor(null); 
                 OnPropertyChanged();
@@ -477,24 +416,15 @@ namespace ColorVision.ImageEditor
                 item.Dispose();
             }
 
-            if (DrawingVisualLists != null)
-            {
-                DrawingVisualLists.Clear();
-                DrawingVisualLists = null;
-            }
+            DrawingVisualLists?.Clear();
+            DrawingVisualLists = null;
+            EditorContext.Zoombox.LayoutUpdated -= Zoombox1_LayoutUpdated;
 
-            if (ZoomboxSub != null)
-            {
-                ZoomboxSub.LayoutUpdated -= Zoombox1_LayoutUpdated;
-                ZoomboxSub = null;
-            }
 
             if (Image != null)
             {
                 Image.PreviewKeyDown -= HandleKeyDown;
             }
-
-            ImageView = null;
             Image = null;
 
             GC.SuppressFinalize(this);

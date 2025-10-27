@@ -46,7 +46,7 @@ namespace ColorVision.Engine.Templates.JND
             File.WriteAllText(selectedPath, csvBuilder.ToString(), Encoding.UTF8);
 
             string saveng = System.IO.Path.Combine(selectedPath, $"{DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")}.png");
-            AlgorithmView.ImageView.ImageViewModel.Save(saveng);
+            AlgorithmView.ImageView.Save(saveng);
         }
 
         public IViewImageA AlgorithmView { get; set; }
