@@ -149,103 +149,6 @@ namespace ColorVision
         private  List<IInitializer> _IComponentInitializers;
 
 
-        private static string? GetLogFilePath()
-        {
-            var hierarchy = (Hierarchy)LogManager.GetRepository();
-            var fileAppender = hierarchy.Root.Appenders.OfType<RollingFileAppender>().FirstOrDefault();
-            return fileAppender?.File;
-        }
-
-
-        public void LoadLogHistory()
-        {
-            if (LogConfig.Instance.LogLoadState == LogLoadState.None) return;
-            logTextBox.Text = string.Empty;
-            var logFilePath = GetLogFilePath();
-            if (logFilePath != null && File.Exists(logFilePath))
-            {
-                try
-                {
-                    using (FileStream fileStream = new FileStream(logFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                    using (StreamReader reader = new StreamReader(fileStream, Encoding.Default))
-                    {
-                        LoadLogs(reader);
-                    }
-                }
-                catch (IOException ex)
-                {
-                    MessageBox.Show($"Error reading log file: {ex.Message}");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"An unexpected error occurred: {ex.Message}");
-                }
-            }
-        }
-
-        private void LoadLogs(StreamReader reader)
-        {
-            var logLoadState = LogConfig.Instance.LogLoadState;
-            var logReserve = LogConfig.Instance.LogReserve;
-            DateTime today = DateTime.Today;
-            DateTime startupTime = Process.GetCurrentProcess().StartTime;
-            StringBuilder logBuilder = new StringBuilder();
-
-            string line;
-            while ((line = reader.ReadLine()) != null)
-            {
-                if (string.IsNullOrWhiteSpace(line)) continue;
-
-                string timestampLine = line;
-                string logContentLine = reader.ReadLine(); // 读取日志内容行
-
-                if (timestampLine.Length > 23 && DateTime.TryParseExact(timestampLine.Substring(0, 23), "yyyy-MM-dd HH:mm:ss,fff", null, DateTimeStyles.None, out DateTime logTime))
-                {
-                    if (logLoadState == LogLoadState.AllToday && logTime.Date != today)
-                    {
-                        continue;
-                    }
-                    else if (logLoadState == LogLoadState.SinceStartup && logTime < startupTime)
-                    {
-                        continue;
-                    }
-                }
-                else
-                {
-                    // 如果时间解析失败，跳过当前日志条目
-                    continue;
-                }
-
-                // 找到符合条件的日志条目后，读取并添加后续所有日志条目
-                logBuilder.AppendLine(timestampLine);
-                logBuilder.AppendLine(logContentLine);
-
-                while ((line = reader.ReadLine()) != null)
-                {
-                    if (string.IsNullOrWhiteSpace(line)) continue;
-
-                    logBuilder.AppendLine(line);
-                    logContentLine = reader.ReadLine(); // 读取日志内容行
-                    if (!string.IsNullOrWhiteSpace(logContentLine))
-                    {
-                        logBuilder.AppendLine(logContentLine);
-                    }
-                }
-
-                break; // 退出外层循环
-            }
-
-            // 将日志内容添加到日志文 框中
-                logTextBox.AppendText(logBuilder.ToString());
-
-        }
-
-        public static string? GetTargetFrameworkVersion()
-        {
-            var assembly = Assembly.GetExecutingAssembly();
-            var targetFrameworkAttribute = assembly.GetCustomAttribute<TargetFrameworkAttribute>();
-            return targetFrameworkAttribute?.FrameworkName;
-        }
 
         private static bool DebugBuild(Assembly assembly)
         {
@@ -265,11 +168,6 @@ namespace ColorVision
             foreach (var initializer in _IComponentInitializers)
             {
                 stopwatch.Start();
-
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    logTextBox.Text += "";
-                });
 
                 log.Info($"{Properties.Resources.Initializer} {initializer.GetType().Name}");
                 try
