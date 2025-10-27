@@ -1,6 +1,7 @@
 #pragma warning disable CS8625,CS8602,CS8607,CS0103,CS0067
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
@@ -33,7 +34,6 @@ namespace ColorVision.ImageEditor
         public ImageViewConfig Config => EditorContext.Config;
 
         public MouseMagnifierManager MouseMagnifier { get; set; }
-        public IImageOpen? IImageOpen { get; set; }
 
         public IEditorToolFactory IEditorToolFactory { get; set; }
 
@@ -259,7 +259,7 @@ namespace ColorVision.ImageEditor
         public void CreateStandardContextMenu()
         {
             List<MenuItemMetadata> MenuItemMetadatas = new List<MenuItemMetadata>();
-            if (IImageOpen is IIEditorToolContextMenu contentMenuProvider)
+            if (EditorContext.IImageOpen is IIEditorToolContextMenu contentMenuProvider)
             {
                 MenuItemMetadatas.AddRange(contentMenuProvider.GetContextMenuItems());
             }

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Core;
+using ColorVision.ImageEditor.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -90,7 +91,7 @@ namespace ColorVision.ImageEditor.Tif
             return writeableBitmap;
         }
 
-        public async void OpenImage(ImageView imageView, string? filePath)
+        public async void OpenImage(EditorContext context, string? filePath)
         {
             if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return;
             BitmapImage? bitmapImage = null;
@@ -106,11 +107,11 @@ namespace ColorVision.ImageEditor.Tif
                 bitmapImage = tmp;
             });
             if (bitmapImage == null) return;
-            imageView.SetImageSource(bitmapImage.ToWriteableBitmap());
-            imageView.ComboBoxLayers.SelectedIndex = 0;
-            imageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src", "R", "G", "B" };
-            imageView.AddSelectionChangedHandler(imageView.ComboBoxLayersSelectionChanged);
-            imageView.UpdateZoomAndScale();
+            context.ImageView.SetImageSource(bitmapImage.ToWriteableBitmap());
+            context.ImageView.ComboBoxLayers.SelectedIndex = 0;
+            context.ImageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src", "R", "G", "B" };
+            context.ImageView.AddSelectionChangedHandler(context.ImageView.ComboBoxLayersSelectionChanged);
+            context.ImageView.UpdateZoomAndScale();
         }
     }
 

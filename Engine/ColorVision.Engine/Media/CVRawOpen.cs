@@ -4,6 +4,7 @@ using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes.Controls;
@@ -573,10 +574,10 @@ namespace ColorVision.Engine.Media
         }
 
 
-        public async void OpenImage(ImageView imageView, string? filePath)  
+        public async void OpenImage(EditorContext context, string? filePath)  
         {
             if (filePath == null) return;
-            CVCIESetBuffer(imageView, filePath);
+            CVCIESetBuffer(context.ImageView, filePath);
 
             try
             {
@@ -585,8 +586,8 @@ namespace ColorVision.Engine.Media
                     CVCIEFile cVCIEFile = CVFileUtil.OpenLocalCVFile(filePath);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        imageView.OpenImage(cVCIEFile.ToWriteableBitmap());
-                        imageView.UpdateZoomAndScale();
+                        context.ImageView.OpenImage(cVCIEFile.ToWriteableBitmap());
+                        context.ImageView.UpdateZoomAndScale();
                     });
                 });
             }

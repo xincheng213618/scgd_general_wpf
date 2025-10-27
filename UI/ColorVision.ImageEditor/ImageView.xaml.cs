@@ -33,6 +33,8 @@ namespace ColorVision.ImageEditor
 
         public event EventHandler ClearImageEventHandler;
 
+        public EditorContext EditorContext { get; set; }
+
         public ImageView()
         {
             InitializeComponent();
@@ -55,7 +57,7 @@ namespace ColorVision.ImageEditor
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow);
-
+            EditorContext = ImageViewModel.EditorContext;
             DataContext = ImageViewModel;
             Config.ColormapTypesChanged -= Config_ColormapTypesChanged;
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
@@ -257,9 +259,8 @@ namespace ColorVision.ImageEditor
                     string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
                     if (ImageViewModel.IEditorToolFactory.IImageOpens.TryGetValue(ext, out var imageOpen))
                     {
-                        ImageViewModel.IImageOpen = imageOpen;
-                        Config.AddProperties("ImageViewOpen", ImageViewModel.IImageOpen);
-                        ImageViewModel.IImageOpen.OpenImage(this, filePath);
+                        EditorContext.IImageOpen = imageOpen;
+                        EditorContext.IImageOpen.OpenImage(EditorContext, filePath);
                         return;
                     }
                     else

@@ -35,7 +35,6 @@ namespace ColorVision.Solution.V
         public DirectoryInfo DirectoryInfo { get; private set; }
         public RelayCommand OpenFileInExplorerCommand { get; }
         public RelayCommand SaveCommand { get; }
-        public RelayCommand CopyFullPathCommand { get; }
         public RelayCommand EditCommand { get; }
         public RelayCommand AddDirCommand { get; }
 

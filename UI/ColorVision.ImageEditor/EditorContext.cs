@@ -1,5 +1,6 @@
 ﻿
 using ColorVision.Core;
+using ColorVision.ImageEditor.Abstractions;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
@@ -10,6 +11,7 @@ namespace ColorVision.ImageEditor
     {
         public Guid Id { get; init; } = Guid.NewGuid();
         public ContextMenu ContextMenu { get; set; } = new ContextMenu();
+        public IImageOpen? IImageOpen { get; set; }
 
         public ImageView ImageView { get; set; }
 
