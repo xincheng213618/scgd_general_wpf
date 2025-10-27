@@ -57,6 +57,7 @@ namespace ColorVision.ImageEditor
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow);
+
             EditorContext = ImageViewModel.EditorContext;
             DataContext = ImageViewModel;
             Config.ColormapTypesChanged -= Config_ColormapTypesChanged;

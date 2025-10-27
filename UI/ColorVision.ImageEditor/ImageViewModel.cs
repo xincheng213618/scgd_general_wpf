@@ -52,19 +52,10 @@ namespace ColorVision.ImageEditor
             IEditorToolFactory = new IEditorToolFactory(imageView, EditorContext);
 
             MouseMagnifier = IEditorToolFactory.IEditorTools.OfType<MouseMagnifierManager>().FirstOrDefault();
+
             Image = drawCanvas;
 
             imageView.AdvancedStackPanel.Children.Insert(0,SlectStackPanel);
-
-            drawCanvas.PreviewMouseDown += (s, e) =>
-            {
-                drawCanvas.Focus();
-            };
-
-            drawCanvas.PreviewKeyDown += (s, e) =>
-            {
-                drawCanvas.Focus();
-            };
 
             drawCanvas.PreviewKeyDown += HandleKeyDown;
 

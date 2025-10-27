@@ -35,6 +35,8 @@ namespace ColorVision.ImageEditor
         {
             this.Focusable = true;
             this.MouseLeftButtonDown += OnMouseLeftButtonDown;
+            PreviewMouseDown += (s, e) => Focus();
+            PreviewKeyDown += (s, e) => Focus();
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo(), (s, e) => { e.CanExecute = UndoStack.Count > 0; }));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo(), (s, e) => { e.CanExecute = RedoStack.Count > 0; }));
             this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, null, (s, e) =>{ e.CanExecute = UndoStack.Count > 0;  if (e.Parameter is MenuItem m1 && m1.ItemsSource != UndoStack) m1.ItemsSource = UndoStack; }));
