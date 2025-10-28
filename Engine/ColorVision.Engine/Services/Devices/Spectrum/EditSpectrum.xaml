@@ -53,10 +53,14 @@
                                 <TextBlock Text="波长文件" Width="120"/>
                                 <TextBox Text="{Binding WavelengthFile}" Style="{StaticResource TextBox.Small}"/>
                             </DockPanel>
-                            <DockPanel >
+                            <DockPanel  Margin="0,0,0,5">
                                 <Button DockPanel.Dock="Right" Content="..." Style="{StaticResource ButtonDefault.Small}" Margin="5,0,0,0" Command="{Binding SetMaguideFileCommand}"/>
                                 <TextBlock Text="幅值文件" Width="120"/>
                                 <TextBox Text="{Binding MaguideFile}" Style="{StaticResource TextBox.Small}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,0">
+                                <TextBlock Text="饱和度"  Width="120"/>
+                                <TextBox Text="{Binding Saturation}" Style="{StaticResource TextBox.Small}"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>

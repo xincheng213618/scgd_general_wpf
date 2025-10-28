@@ -53,11 +53,11 @@ namespace ProjectARVRPro.Process.Wafer
 
                 string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 string filePath = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, $"Wafer_{timeStr}.csv");
-                var rows = new List<string> { "X,Y,Z,x,y,u,v,V,I" };
+                var rows = new List<string> { "X,Y,Z,x,y,u,v,CCT,Wave,V,I" };
 
                 for (int i = 0; i < testResult.PoixyuvDatas.Count;i++)
                 {
-                    rows.Add($"{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.SMUResultModels[i].VResult},{testResult.SMUResultModels[i].IResult}");
+                    rows.Add($"{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave},{testResult.SMUResultModels[i].VResult},{testResult.SMUResultModels[i].IResult}");
                 }
                 File.WriteAllLines(filePath, rows);
                 return true;
