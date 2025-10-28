@@ -35,7 +35,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                     {
                         double DpiX = _imageView.Config.GetProperties<double>("DpiX");
                         double DpiY = _imageView.Config.GetProperties<double>("DpiY");
-                        var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
+                        var image = hImageProcessed.ToWriteableBitmap();
 
                         hImageProcessed.Dispose();
                         _imageView.FunctionImage = image;
