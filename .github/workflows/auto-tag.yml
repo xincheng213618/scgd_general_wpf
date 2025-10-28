@@ -1,0 +1,122 @@
+# Auto Tag on Version Change
+# This workflow automatically creates a Git tag when the VersionPrefix in Directory.Build.props changes.
+# The tag is created with the format "v{VersionPrefix}" (e.g., v1.3.13.41)
+# Only triggers on pushes to the master branch that modify Directory.Build.props
+
+name: Auto Tag on Version Change
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'Directory.Build.props'
+
+permissions:
+  contents: write
+
+jobs:
+  auto-tag:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Need at least 2 commits to compare changes
+      
+      - name: Check if VersionPrefix changed
+        id: check_version
+        run: |
+          # Get the current VersionPrefix
+          CURRENT_VERSION=$(grep -oP '(?<=<VersionPrefix>)[^<]+' Directory.Build.props || true)
+          
+          # Validate that version was extracted
+          if [ -z "$CURRENT_VERSION" ]; then
+            echo "Error: Could not extract VersionPrefix from Directory.Build.props"
+            exit 1
+          fi
+          
+          echo "Current version: $CURRENT_VERSION"
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          
+          # Check if this is the first commit or if there's a previous version
+          if git show HEAD~1:Directory.Build.props > /dev/null 2>&1; then
+            PREVIOUS_VERSION=$(git show HEAD~1:Directory.Build.props | grep -oP '(?<=<VersionPrefix>)[^<]+' || true)
+            
+            # Validate previous version extraction
+            if [ -z "$PREVIOUS_VERSION" ]; then
+              echo "Warning: Could not extract previous VersionPrefix, treating as new version"
+              echo "version_changed=true" >> $GITHUB_OUTPUT
+              echo "previous_version=" >> $GITHUB_OUTPUT
+            else
+              echo "Previous version: $PREVIOUS_VERSION"
+              echo "previous_version=$PREVIOUS_VERSION" >> $GITHUB_OUTPUT
+              
+              if [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ]; then
+                echo "Version changed from $PREVIOUS_VERSION to $CURRENT_VERSION"
+                echo "version_changed=true" >> $GITHUB_OUTPUT
+              else
+                echo "Version unchanged"
+                echo "version_changed=false" >> $GITHUB_OUTPUT
+              fi
+            fi
+          else
+            echo "First commit or Directory.Build.props is new, creating tag"
+            echo "version_changed=true" >> $GITHUB_OUTPUT
+            echo "previous_version=" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Check if tag already exists
+        id: check_tag
+        if: steps.check_version.outputs.version_changed == 'true'
+        run: |
+          TAG_NAME="v${{ steps.check_version.outputs.current_version }}"
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME already exists"
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Tag $TAG_NAME does not exist"
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Create and push tag
+        if: steps.check_version.outputs.version_changed == 'true' && steps.check_tag.outputs.tag_exists == 'false'
+        run: |
+          TAG_NAME="${{ steps.check_tag.outputs.tag_name }}"
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Create annotated tag with version information
+          if [ -n "${{ steps.check_version.outputs.previous_version }}" ]; then
+            TAG_MESSAGE="Release version ${{ steps.check_version.outputs.current_version }} (updated from ${{ steps.check_version.outputs.previous_version }})"
+          else
+            TAG_MESSAGE="Release version ${{ steps.check_version.outputs.current_version }}"
+          fi
+          
+          git tag -a "$TAG_NAME" -m "$TAG_MESSAGE"
+          git push origin "$TAG_NAME"
+          
+          echo "✅ Created and pushed tag: $TAG_NAME"
+      
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Auto-Tag Workflow Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Current Version**: ${{ steps.check_version.outputs.current_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Previous Version**: ${{ steps.check_version.outputs.previous_version || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version Changed**: ${{ steps.check_version.outputs.version_changed }}" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.check_version.outputs.version_changed }}" == "true" ]; then
+            if [ "${{ steps.check_tag.outputs.tag_exists }}" == "true" ]; then
+              echo "- **Tag Status**: ⚠️ Tag ${{ steps.check_tag.outputs.tag_name }} already exists" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- **Tag Status**: ✅ Created tag ${{ steps.check_tag.outputs.tag_name }}" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "- **Tag Status**: ℹ️ No tag created (version unchanged)" >> $GITHUB_STEP_SUMMARY
+          fi
