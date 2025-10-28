@@ -433,9 +433,7 @@ namespace ColorVision.ImageEditor
                             {
                                 if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                                 {
-                                    double DpiX = Config.GetProperties<double>("DpiX");
-                                    double DpiY = Config.GetProperties<double>("DpiY");
-                                    var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
+                                    var image = hImageProcessed.ToWriteableBitmap();
                                     hImageProcessed.Dispose();
 
                                     FunctionImage = image;
@@ -491,9 +489,7 @@ namespace ColorVision.ImageEditor
                     {
                         if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                         {
-                            double DpiX = Config.GetProperties<double>("DpiX");
-                            double DpiY = Config.GetProperties<double>("DpiY");
-                            var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
+                            var image = hImageProcessed.ToWriteableBitmap();
                             hImageProcessed.Dispose();
                             FunctionImage = image;
                         }
