@@ -163,7 +163,7 @@ namespace ColorVision.ImageEditor
             {
                 OpenToolbarSettingsWindow();
             }));
-            InputBindings.Add(new KeyBinding(openToolbarSettingsCommand, Key.T, ModifierKeys.Control | ModifierKeys.Shift));
+            InputBindings.Add(new KeyBinding(openToolbarSettingsCommand, Key.Q, ModifierKeys.Control));
         }
 
         private void OpenToolbarSettingsWindow()

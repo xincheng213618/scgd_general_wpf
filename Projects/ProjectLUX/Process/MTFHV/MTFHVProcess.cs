@@ -128,16 +128,6 @@ namespace ProjectLUX.Process.MTFHV
         }
 
 
-
-        private ObjectiveTestItem Build(string name, double value, double low, double up) => new ObjectiveTestItem
-        {
-            Name = name,
-            LowLimit = low,
-            UpLimit = up,
-            Value = value,
-            TestValue = value.ToString()
-        };
-
         public void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;

@@ -98,7 +98,6 @@
                     <ToolBar ToolBarTray.IsLocked="True" Padding="2,3"  >
                     </ToolBar>
                 </ToolBarTray>
-
                 <ToolBarTray x:Name="ToolBarRight" Visibility="{Binding Config.IsToolBarRightVisible,Converter={StaticResource bool2VisibilityConverter}}" Orientation="Vertical" Margin="0,50,2,0" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top" Grid.Column="1">
                     <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
                         <ToggleButton x:Name="AdvancedButton" Margin="0,0,0,2"  Padding="5">
