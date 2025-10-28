@@ -647,7 +647,7 @@ namespace ProjectLUX
             TestResult.RedTestResult = new Process.Red.RedTestResult();
             TestResult.BlueTestResult = new Process.Blue.BlueTestResult();
             TestResult.GreenTestResult = new Process.Green.GreenTestResult();
-            TestResult.MTFHVTestResult = new Process.MTFHV.MTFHVTestResult();
+            TestResult.MTFHVTestResult = new Process.MTFHVAR.MTFHARVTestResult();
             TestResult.DistortionTestResult = new Process.DistortionAR.DistortionARTestResult();
             TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
             TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();

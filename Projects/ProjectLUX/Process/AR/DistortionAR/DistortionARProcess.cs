@@ -69,7 +69,7 @@ namespace ProjectLUX.Process.DistortionAR
                 }
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
-                ctx.ObjectiveTestResult.DistortionTestResult = JsonConvert.DeserializeObject<DistortionARTestResult>(ctx.Result.ViewResultJson) ?? new DistortionARTestResult();
+                ctx.ObjectiveTestResult.DistortionARTestResult = JsonConvert.DeserializeObject<DistortionARTestResult>(ctx.Result.ViewResultJson) ?? new DistortionARTestResult();
                 return true;
             }
             catch (Exception ex)

@@ -1,0 +1,185 @@
+using ColorVision.Database;
+using ColorVision.Engine; // DAOs
+using ColorVision.Engine.Templates.Jsons;
+using ColorVision.Engine.Templates.Jsons.MTF2; // MTFDetailViewReslut
+using ColorVision.ImageEditor.Draw;
+using Newtonsoft.Json;
+using System.Windows;
+using System.Windows.Media;
+
+namespace ProjectLUX.Process.MTFHVAR
+{
+    public class MTFHVARProcess : IProcess
+    {
+        public bool Execute(IProcessExecutionContext ctx)
+        {
+            if (ctx?.Batch == null || ctx.Result == null) return false;
+            var log = ctx.Logger;
+            MTFHVARRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<MTFHVARRecipeConfig>();
+            MTFHVARFixConfig fixConfig = ctx.FixConfig.GetRequiredService<MTFHVARFixConfig>();
+            MTFHVARViewTestResult testResult = new MTFHVARViewTestResult();
+
+
+            try
+            {
+                var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                if (values.Count > 0)
+                    ctx.Result.FileName = values[0].FileUrl;
+
+                var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                foreach (var master in masters.Where(m => m.ImgFileType == ViewResultAlgType.MTF && m.version == "2.0"))
+                {
+                    var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
+                    if (details.Count == 1)
+                    {
+                        var mtfDetail = new MTFDetailViewReslut(details[0]);
+                        foreach (var mtf in mtfDetail.MTFResult.resultChild)
+                        {
+                            switch (mtf.name)
+                            {
+                                case "Center_0F":
+                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_Center_0F;
+                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_Center_0F;
+                                    testResult.MTF_HV_H_Center_0F = Build("MTF_HV_H_Center_0F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_Center_0F.Min, recipeConfig.MTF_HV_H_Center_0F.Max);
+                                    testResult.MTF_HV_V_Center_0F = Build("MTF_HV_V_Center_0F", mtf.verticalAverage, recipeConfig.MTF_HV_V_Center_0F.Min, recipeConfig.MTF_HV_V_Center_0F.Max);
+                                    ctx.Result.Result &= testResult.MTF_HV_H_Center_0F.TestResult;
+                                    ctx.Result.Result &= testResult.MTF_HV_V_Center_0F.TestResult;
+                                    break;
+                                case "LeftUp_0.4F":
+                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_LeftUp_0_4F;
+                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_LeftUp_0_4F;
+                                    testResult.MTF_HV_H_LeftUp_0_4F = Build("MTF_HV_H_LeftUp_0_4F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_LeftUp_0_4F.Min, recipeConfig.MTF_HV_H_LeftUp_0_4F.Max);
+                                    testResult.MTF_HV_V_LeftUp_0_4F = Build("MTF_HV_V_LeftUp_0_4F", mtf.verticalAverage, recipeConfig.MTF_HV_V_LeftUp_0_4F.Min, recipeConfig.MTF_HV_V_LeftUp_0_4F.Max);
+                                    ctx.Result.Result &= testResult.MTF_HV_H_LeftUp_0_4F.TestResult;
+                                    ctx.Result.Result &= testResult.MTF_HV_V_LeftUp_0_4F.TestResult;
+                                    break;
+                                case "RightUp_0.4F":
+                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_RightUp_0_4F;
+                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_RightUp_0_4F;
+                                    testResult.MTF_HV_H_RightUp_0_4F = Build("MTF_HV_H_RightUp_0_4F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_RightUp_0_4F.Min, recipeConfig.MTF_HV_H_RightUp_0_4F.Max);
+                                    testResult.MTF_HV_V_RightUp_0_4F = Build("MTF_HV_V_RightUp_0_4F", mtf.verticalAverage, recipeConfig.MTF_HV_V_RightUp_0_4F.Min, recipeConfig.MTF_HV_V_RightUp_0_4F.Max);
+                                    ctx.Result.Result &= testResult.MTF_HV_H_RightUp_0_4F.TestResult;
+                                    ctx.Result.Result &= testResult.MTF_HV_V_RightUp_0_4F.TestResult;
+                                    break;
+                                case "LeftDown_0.4F":
+                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_LeftDown_0_4F;
+                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_LeftDown_0_4F;
+                                    testResult.MTF_HV_H_LeftDown_0_4F = Build("MTF_HV_H_LeftDown_0_4F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_LeftDown_0_4F.Min, recipeConfig.MTF_HV_H_LeftDown_0_4F.Max);
+                                    testResult.MTF_HV_V_LeftDown_0_4F = Build("MTF_HV_V_LeftDown_0_4F", mtf.verticalAverage, recipeConfig.MTF_HV_V_LeftDown_0_4F.Min, recipeConfig.MTF_HV_V_LeftDown_0_4F.Max);
+                                    ctx.Result.Result &= testResult.MTF_HV_H_LeftDown_0_4F.TestResult;
+                                    ctx.Result.Result &= testResult.MTF_HV_V_LeftDown_0_4F.TestResult;
+                                    break;
+                                case "RightDown_0.4F":
+                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_RightDown_0_4F;
+                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_RightDown_0_4F;
+                                    testResult.MTF_HV_H_RightDown_0_4F = Build("MTF_HV_H_RightDown_0_4F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_RightDown_0_4F.Min, recipeConfig.MTF_HV_H_RightDown_0_4F.Max);
+                                    testResult.MTF_HV_V_RightDown_0_4F = Build("MTF_HV_V_RightDown_0_4F", mtf.verticalAverage, recipeConfig.MTF_HV_V_RightDown_0_4F.Min, recipeConfig.MTF_HV_V_RightDown_0_4F.Max);
+                                    ctx.Result.Result &= testResult.MTF_HV_H_RightDown_0_4F.TestResult;
+                                    ctx.Result.Result &= testResult.MTF_HV_V_RightDown_0_4F.TestResult;
+                                    break;
+                                case "LeftUp_0.8F":
+                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_LeftUp_0_8F;
+                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_LeftUp_0_8F;
+                                    testResult.MTF_HV_H_LeftUp_0_8F = Build("MTF_HV_H_LeftUp_0_8F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_LeftUp_0_8F.Min, recipeConfig.MTF_HV_H_LeftUp_0_8F.Max);
+                                    testResult.MTF_HV_V_LeftUp_0_8F = Build("MTF_HV_V_LeftUp_0_8F", mtf.verticalAverage, recipeConfig.MTF_HV_V_LeftUp_0_8F.Min, recipeConfig.MTF_HV_V_LeftUp_0_8F.Max);
+                                    ctx.Result.Result &= testResult.MTF_HV_H_LeftUp_0_8F.TestResult;
+                                    ctx.Result.Result &= testResult.MTF_HV_V_LeftUp_0_8F.TestResult;
+                                    break;
+                                case "RightUp_0.8F":
+                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_RightUp_0_8F;
+                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_RightUp_0_8F;
+                                    testResult.MTF_HV_H_RightUp_0_8F = Build("MTF_HV_H_RightUp_0_8F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_RightUp_0_8F.Min, recipeConfig.MTF_HV_H_RightUp_0_8F.Max);
+                                    testResult.MTF_HV_V_RightUp_0_8F = Build("MTF_HV_V_RightUp_0_8F", mtf.verticalAverage, recipeConfig.MTF_HV_V_RightUp_0_8F.Min, recipeConfig.MTF_HV_V_RightUp_0_8F.Max);
+                                    ctx.Result.Result &= testResult.MTF_HV_H_RightUp_0_8F.TestResult;
+                                    ctx.Result.Result &= testResult.MTF_HV_V_RightUp_0_8F.TestResult;
+                                    break;
+                                case "LeftDown_0.8F":
+                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_LeftDown_0_8F;
+                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_LeftDown_0_8F;
+                                    testResult.MTF_HV_H_LeftDown_0_8F = Build("MTF_HV_H_LeftDown_0_8F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_LeftDown_0_8F.Min, recipeConfig.MTF_HV_H_LeftDown_0_8F.Max);
+                                    testResult.MTF_HV_V_LeftDown_0_8F = Build("MTF_HV_V_LeftDown_0_8F", mtf.verticalAverage, recipeConfig.MTF_HV_V_LeftDown_0_8F.Min, recipeConfig.MTF_HV_V_LeftDown_0_8F.Max);
+                                    ctx.Result.Result &= testResult.MTF_HV_H_LeftDown_0_8F.TestResult;
+                                    ctx.Result.Result &= testResult.MTF_HV_V_LeftDown_0_8F.TestResult;
+                                    break;
+                                case "RightDown_0.8F":
+                                    mtf.horizontalAverage *= fixConfig.MTF_HV_H_RightDown_0_8F;
+                                    mtf.verticalAverage *= fixConfig.MTF_HV_V_RightDown_0_8F;
+                                    testResult.MTF_HV_H_RightDown_0_8F = Build("MTF_HV_H_RightDown_0_8F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_RightDown_0_8F.Min, recipeConfig.MTF_HV_H_RightDown_0_8F.Max);
+                                    testResult.MTF_HV_V_RightDown_0_8F = Build("MTF_HV_V_RightDown_0_8F", mtf.verticalAverage, recipeConfig.MTF_HV_V_RightDown_0_8F.Min, recipeConfig.MTF_HV_V_RightDown_0_8F.Max);
+                                    ctx.Result.Result &= testResult.MTF_HV_H_RightDown_0_8F.TestResult;
+                                    ctx.Result.Result &= testResult.MTF_HV_V_RightDown_0_8F.TestResult;
+                                    break;
+                            }
+                        }
+                        testResult.MTFDetailViewReslut = mtfDetail;
+                    }
+                }
+
+
+                ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
+                ctx.ObjectiveTestResult.MTFHVARTestResult = JsonConvert.DeserializeObject<MTFHARVTestResult>(ctx.Result.ViewResultJson) ?? new MTFHARVTestResult();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                log?.Error(ex);
+                return false;
+            }
+        }
+        private ObjectiveTestItem Build(string name, double value, double low, double up) => new ObjectiveTestItem
+        {
+            Name = name,
+            LowLimit = low,
+            UpLimit = up,
+            Value = value,
+            TestValue = value.ToString()
+        };
+        public void Render(IProcessExecutionContext ctx)
+        {
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
+            MTFHVARViewTestResult testResult = JsonConvert.DeserializeObject<MTFHVARViewTestResult>(ctx.Result.ViewResultJson);
+            if (testResult == null) return;
+
+            int id = 0;
+            if (testResult.MTFDetailViewReslut.MTFResult.result.Count != 0)
+            {
+                foreach (var item in testResult.MTFDetailViewReslut.MTFResult.result)
+                {
+                    id++;
+                    DVRectangleText Rectangle = new();
+                    Rectangle.Attribute.Rect = new Rect(item.x, item.y, item.w, item.h);
+                    Rectangle.Attribute.Brush = Brushes.Transparent;
+                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                    Rectangle.Attribute.Id = id;
+                    Rectangle.Attribute.Text = item.name + "_" + item.id;
+                    Rectangle.Attribute.Msg = item.mtfValue.ToString();
+                    Rectangle.Render();
+                    ctx.ImageView.AddVisual(Rectangle);
+                }
+            }
+        }
+
+        public string GenText(IProcessExecutionContext ctx)
+        {
+            var result = ctx.Result;
+            string outtext = string.Empty;
+            outtext += $"MTFHV 画面结果" + Environment.NewLine;
+
+
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
+            MTFHVARViewTestResult testResult = JsonConvert.DeserializeObject<MTFHVARViewTestResult>(ctx.Result.ViewResultJson);
+            if (testResult == null) return outtext;
+
+            outtext += $"name,horizontalAverage,verticalAverage,Average," + Environment.NewLine;
+
+            if (testResult.MTFDetailViewReslut.MTFResult != null)
+            {
+                foreach (var item in testResult.MTFDetailViewReslut.MTFResult.resultChild)
+                {
+                    outtext += $"{item.name},{item.horizontalAverage},{item.verticalAverage},{item.Average}" + Environment.NewLine;
+                }
+            }
+            return outtext;
+        }
+    }
+}
