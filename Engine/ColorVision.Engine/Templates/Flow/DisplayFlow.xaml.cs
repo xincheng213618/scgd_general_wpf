@@ -22,6 +22,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Effects;
 
 
 namespace ColorVision.Engine.Templates.Flow
@@ -246,6 +247,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
             string msg = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}节点:{Msg1}{Environment.NewLine}{FlowControlData.Params}{Environment.NewLine}{stopwatch.ElapsedMilliseconds}ms";
             View.logTextBox.Text = msg;
+            View.ProgressBar1.Value = 100;
             log.Info(msg);
 
         }
@@ -271,7 +273,7 @@ namespace ColorVision.Engine.Templates.Flow
                 }
                 else
                 {
-                    long remainingMilliseconds =LastFlowTime - elapsedMilliseconds;
+                    long remainingMilliseconds = LastFlowTime - elapsedMilliseconds;
                     TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                     string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
@@ -279,6 +281,11 @@ namespace ColorVision.Engine.Templates.Flow
                 }
                 Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
+                    if (LastFlowTime != 0)
+                    {
+                        double perfect = (double) elapsedMilliseconds / (double)LastFlowTime * 100;
+                        View.ProgressBar1.Value = perfect >= 100 ?  99:perfect;
+                    }
                     View.logTextBox.Text = msg;
                 });
             }
@@ -379,6 +386,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
 
             View.logTextBox.Text = "Run " + ComboBoxFlow.Text;
+            View.ProgressBar1.Value = 0;
 
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");

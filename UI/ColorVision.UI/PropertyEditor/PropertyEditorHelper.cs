@@ -219,6 +219,7 @@ namespace ColorVision.UI
 
         public static StackPanel GenPropertyEditorControl(object obj)
         {
+            if (obj == null) return new StackPanel();
             var categoryGroups = new Dictionary<string, List<PropertyInfo>>(StringComparer.Ordinal);
 
             void CollectProperties(object source)

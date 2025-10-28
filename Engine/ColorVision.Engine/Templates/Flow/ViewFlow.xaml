@@ -35,7 +35,6 @@
             <Border Grid.Row="0"    Margin="0,5,0,5" >
                 <StackPanel Margin="0">
                     <UniformGrid  Columns="6" Margin="0,0,0,5">
-
                         <Button Command="{Binding SaveCommand}" Height="25" Width="25"  Margin="0,0,5,0" Padding="2">
                             <Image Source="{DynamicResource DrawingImageSave}" Height="15" />
                         </Button>
@@ -85,12 +84,14 @@
                         <Button Content="查询结果" Click="Button_Click" Margin="0,0,5,0"/>
                         <Button Content="流程结果管理"  Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"/>
                     </StackPanel>
+                    <ProgressBar x:Name="ProgressBar1" Maximum="100"/>
                     <TextBox x:FieldModifier="public"  x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Height="105" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" Margin="0,0,0,5" />
                 </StackPanel>
             </Border>
 
-            <Border x:Name="SignStackBorder" Grid.Row="3"  Background="{DynamicResource SecondaryRegionBrush}" Visibility="Collapsed" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0" Margin="5,0,5,5" CornerRadius="5">
-                <StackPanel x:Name="SignStackPannel"  Orientation="Vertical" Margin="3" >
+            <Border x:Name="SignStackBorder" Grid.Row="3"  Background="{DynamicResource SecondaryRegionBrush}" Visibility="Visible" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0" Margin="5,0,5,5" CornerRadius="5">
+                <StackPanel>
+                    <StackPanel x:Name="SignStackPannel"  Orientation="Vertical" Margin="3" />
                 </StackPanel>
             </Border>
 
