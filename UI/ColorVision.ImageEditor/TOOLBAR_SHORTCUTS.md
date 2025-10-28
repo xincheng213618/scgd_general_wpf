@@ -10,18 +10,17 @@
 
 | 快捷键 | 功能 |
 |--------|------|
-| `Ctrl+Shift+1` | 切换底部工具栏 (ToolBarAl) 的显示/隐藏 |
-| `Ctrl+Shift+2` | 切换绘制工具栏 (ToolBarDraw) 的显示/隐藏 |
-| `Ctrl+Shift+3` | 切换顶部工具栏 (ToolBarTop) 的显示/隐藏 |
-| `Ctrl+Shift+4` | 切换左侧工具栏 (ToolBarLeft) 的显示/隐藏 |
-| `Ctrl+Shift+5` | 切换右侧工具栏 (ToolBarRight) 的显示/隐藏 |
-| `Ctrl+Shift+T` | 打开工具栏设置窗口 |
+| `Ctrl+Shift+A` | 显示所有工具栏 |
+| `Ctrl+Shift+H` | 隐藏所有工具栏 |
+| `Ctrl+Q` | 打开工具栏设置窗口 |
+
+**注意：** 个别工具栏的单独切换快捷键已移除。请使用工具栏设置窗口来单独控制每个工具栏的显示/隐藏。
 
 ## 工具栏设置窗口
 
 ### 打开方式
 
-1. 使用快捷键 `Ctrl+Shift+T`
+1. 使用快捷键 `Ctrl+Q`
 2. 以编程方式调用 `ImageView.OpenToolbarSettingsWindow()`
 
 ### 功能
@@ -30,7 +29,7 @@
 
 1. **工具栏可见性控制**
    - 可以独立控制每个工具栏的显示/隐藏
-   - 显示对应的键盘快捷键提示
+   - ToolBarDraw (绘制工具栏) 仅在编辑模式 (ImageEditMode) 下显示
 
 2. **编辑器工具可见性控制**
    - 列出所有注册的 IEditorTool
@@ -75,6 +74,7 @@ visibilityConfig.SetToolVisibility("ToolGuidId", true);
 
 ### 1. XAML 绑定
 
+#### 普通工具栏
 工具栏的 Visibility 属性绑定到配置：
 
 ```xml
@@ -83,21 +83,66 @@ visibilityConfig.SetToolVisibility("ToolGuidId", true);
              ...>
 ```
 
-### 2. 键盘快捷键
+#### ToolBarDraw (绘制工具栏)
+ToolBarDraw 使用 MultiBinding 来同时检查 ImageEditMode 和 IsToolBarDrawVisible：
+
+```xml
+<ToolBarTray x:Name="ToolBarDraw" ...>
+    <ToolBarTray.Visibility>
+        <MultiBinding Converter="{StaticResource BooleanAndToVisibilityConverter}">
+            <Binding Path="ImageEditMode"/>
+            <Binding Path="Config.IsToolBarDrawVisible"/>
+        </MultiBinding>
+    </ToolBarTray.Visibility>
+    ...
+</ToolBarTray>
+```
+
+这确保 ToolBarDraw 仅在以下两个条件同时满足时显示：
+1. ImageEditMode = true (编辑模式已启用)
+2. Config.IsToolBarDrawVisible = true (配置中设置为可见)
+
+### 2. BooleanAndToVisibilityConverter
+
+新增的多值转换器，执行逻辑 AND 操作：
+
+```csharp
+public class BooleanAndToVisibilityConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, ...)
+    {
+        // 所有值都为 true 时返回 Visible，否则返回 Collapsed
+        bool allTrue = values.All(v => v is true);
+        return allTrue ? Visibility.Visible : Visibility.Collapsed;
+    }
+}
+```
+
+### 3. 键盘快捷键
 
 在 `ImageView.UserControl_Initialized` 中设置快捷键：
 
 ```csharp
 private void SetupToolbarToggleCommands()
 {
-    // 为每个工具栏创建切换命令
-    var toggleCommand = new RoutedCommand();
-    CommandBindings.Add(new CommandBinding(toggleCommand, handler));
-    InputBindings.Add(new KeyBinding(toggleCommand, Key, ModifierKeys));
+    // 显示所有工具栏 (Ctrl+Shift+A)
+    var showAllToolbarsCommand = new RoutedCommand();
+    CommandBindings.Add(new CommandBinding(showAllToolbarsCommand, ...));
+    InputBindings.Add(new KeyBinding(showAllToolbarsCommand, Key.A, ModifierKeys.Control | ModifierKeys.Shift));
+    
+    // 隐藏所有工具栏 (Ctrl+Shift+H)
+    var hideAllToolbarsCommand = new RoutedCommand();
+    CommandBindings.Add(new CommandBinding(hideAllToolbarsCommand, ...));
+    InputBindings.Add(new KeyBinding(hideAllToolbarsCommand, Key.H, ModifierKeys.Control | ModifierKeys.Shift));
+    
+    // 打开工具栏设置窗口 (Ctrl+Q)
+    var openToolbarSettingsCommand = new RoutedCommand();
+    CommandBindings.Add(new CommandBinding(openToolbarSettingsCommand, ...));
+    InputBindings.Add(new KeyBinding(openToolbarSettingsCommand, Key.Q, ModifierKeys.Control));
 }
 ```
 
-### 3. 工具UI元素映射
+### 4. 工具UI元素映射
 
 `EditorToolFactory` 维护工具到UI元素的映射：
 
@@ -137,6 +182,17 @@ visibilityConfig.SetToolVisibility("ZoomOutEditorTool", true);
 2. 工具可见性设置会在 ImageViewConfig 中持久化
 3. 隐藏的工具仍然存在于工具集合中，只是UI上不可见
 4. 键盘快捷键仅在 ImageView 控件具有焦点时有效
+5. **重要：** ToolBarDraw (绘制工具栏) 仅在编辑模式 (ImageEditMode) 启用时显示，这是为了保持原有的设计逻辑
+
+## 变更记录
+
+### 2025-10-28
+- 移除了单独工具栏的切换快捷键 (Ctrl+Shift+1~5)
+- 添加了 "显示所有" 快捷键 (Ctrl+Shift+A)
+- 添加了 "隐藏所有" 快捷键 (Ctrl+Shift+H)
+- 修改了打开设置窗口的快捷键为 Ctrl+Q
+- 实现了 ToolBarDraw 的条件显示：仅在 ImageEditMode 和 IsToolBarDrawVisible 都为 true 时显示
+- 添加了 BooleanAndToVisibilityConverter 用于多条件可见性控制
 
 ## 未来改进
 
