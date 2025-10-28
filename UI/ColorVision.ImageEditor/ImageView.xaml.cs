@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.UI;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -59,6 +60,7 @@ namespace ColorVision.ImageEditor
             ImageViewModel = new ImageViewModel(this);
 
             EditorContext = ImageViewModel.EditorContext;
+
             DataContext = ImageViewModel;
             Config.ColormapTypesChanged -= Config_ColormapTypesChanged;
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
@@ -113,6 +115,22 @@ namespace ColorVision.ImageEditor
 
             // Setup toolbar visibility toggle commands
             SetupToolbarToggleCommands();
+
+            var _visibilityConfig = ConfigService.Instance.GetRequiredService<EditorToolVisibilityConfig>();
+
+            // Initialize editor tools visibility list
+            var EditorTools = new ObservableCollection<EditorToolViewModel>();
+            foreach (var tool in ImageViewModel.IEditorToolFactory.IEditorTools.OrderBy(t => t.ToolBarLocal).ThenBy(t => t.Order))
+            {
+                var guidId = tool.GuidId ?? tool.GetType().Name;
+                var toolViewModel = new EditorToolViewModel(this, tool, _visibilityConfig)
+                {
+                    DisplayName = guidId,
+                    Location = tool.ToolBarLocal.ToString(),
+                    IsVisible = _visibilityConfig.GetToolVisibility(guidId)
+                };
+                EditorTools.Add(toolViewModel);
+            }
         }
 
         private void SetupToolbarToggleCommands()

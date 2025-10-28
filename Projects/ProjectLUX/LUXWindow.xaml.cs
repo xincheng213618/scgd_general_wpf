@@ -647,7 +647,7 @@ namespace ProjectLUX
             ObjectiveTestResult TestResult = new ObjectiveTestResult();
             TestResult.W255TestResult = new Process.W255.W255TestResult();
             TestResult.MTFHVARTestResult = new Process.MTFHVAR.MTFHARVTestResult();
-            TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
+            TestResult.ChessboardARTestResult = new Process.ChessboardAR.ChessboardARTestResult();
             TestResult.DistortionARTestResult = new Process.DistortionAR.DistortionARTestResult();
             TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
             ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path);

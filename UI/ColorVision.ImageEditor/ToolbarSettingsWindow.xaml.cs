@@ -1,3 +1,4 @@
+using ColorVision.UI;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
@@ -20,7 +21,7 @@ namespace ColorVision.ImageEditor
             DataContext = imageView.ImageViewModel;
 
             // Get or create visibility config
-            _visibilityConfig = imageView.Config.GetRequiredService<EditorToolVisibilityConfig>();
+            _visibilityConfig = ConfigService.Instance.GetRequiredService<EditorToolVisibilityConfig>();
 
             // Initialize editor tools visibility list
             EditorTools = new ObservableCollection<EditorToolViewModel>();

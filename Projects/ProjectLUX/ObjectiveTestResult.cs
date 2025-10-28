@@ -2,6 +2,7 @@
 using NetTaste;
 using ProjectLUX.Process.Blue;
 using ProjectLUX.Process.Chessboard;
+using ProjectLUX.Process.ChessboardAR;
 using ProjectLUX.Process.Distortion;
 using ProjectLUX.Process.DistortionAR;
 using ProjectLUX.Process.Green;
@@ -114,6 +115,9 @@ namespace ProjectLUX
         public GreenTestResult GreenTestResult { get; set; }
         [DisplayName("B255")]
         public BlueTestResult BlueTestResult { get; set; }
+
+        [DisplayName("Chessborad_4x4")]
+        public ChessboardARTestResult ChessboardARTestResult { get; set; }
 
         [DisplayName("Chessborad_7x7")]
         public ChessboardTestResult ChessboardTestResult { get; set; }

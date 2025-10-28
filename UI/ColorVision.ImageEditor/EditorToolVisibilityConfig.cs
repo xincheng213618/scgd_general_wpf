@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using System.Collections.Generic;
 
 namespace ColorVision.ImageEditor
@@ -6,7 +7,7 @@ namespace ColorVision.ImageEditor
     /// <summary>
     /// Configuration for managing visibility of editor tools
     /// </summary>
-    public class EditorToolVisibilityConfig : ViewModelBase, IImageEditorConfig
+    public class EditorToolVisibilityConfig : ViewModelBase, IConfig
     {
         /// <summary>
         /// Dictionary to store visibility state for each tool by its GuidId
