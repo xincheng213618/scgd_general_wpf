@@ -118,7 +118,6 @@ namespace ProjectLUX
         [DisplayName("Chessborad_7x7")]
         public ChessboardTestResult ChessboardTestResult { get; set; }
 
-
         [DisplayName("MTF")]
         public MTFHARVTestResult MTFHVARTestResult { get; set; }
         [DisplayName("MTF")]
