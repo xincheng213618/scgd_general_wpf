@@ -29,22 +29,37 @@ jobs:
         id: check_version
         run: |
           # Get the current VersionPrefix
-          CURRENT_VERSION=$(grep -oP '(?<=<VersionPrefix>)[^<]+' Directory.Build.props)
+          CURRENT_VERSION=$(grep -oP '(?<=<VersionPrefix>)[^<]+' Directory.Build.props || true)
+          
+          # Validate that version was extracted
+          if [ -z "$CURRENT_VERSION" ]; then
+            echo "Error: Could not extract VersionPrefix from Directory.Build.props"
+            exit 1
+          fi
+          
           echo "Current version: $CURRENT_VERSION"
           echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
           
           # Check if this is the first commit or if there's a previous version
           if git show HEAD~1:Directory.Build.props > /dev/null 2>&1; then
-            PREVIOUS_VERSION=$(git show HEAD~1:Directory.Build.props | grep -oP '(?<=<VersionPrefix>)[^<]+')
-            echo "Previous version: $PREVIOUS_VERSION"
-            echo "previous_version=$PREVIOUS_VERSION" >> $GITHUB_OUTPUT
+            PREVIOUS_VERSION=$(git show HEAD~1:Directory.Build.props | grep -oP '(?<=<VersionPrefix>)[^<]+' || true)
             
-            if [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ]; then
-              echo "Version changed from $PREVIOUS_VERSION to $CURRENT_VERSION"
+            # Validate previous version extraction
+            if [ -z "$PREVIOUS_VERSION" ]; then
+              echo "Warning: Could not extract previous VersionPrefix, treating as new version"
               echo "version_changed=true" >> $GITHUB_OUTPUT
+              echo "previous_version=" >> $GITHUB_OUTPUT
             else
-              echo "Version unchanged"
-              echo "version_changed=false" >> $GITHUB_OUTPUT
+              echo "Previous version: $PREVIOUS_VERSION"
+              echo "previous_version=$PREVIOUS_VERSION" >> $GITHUB_OUTPUT
+              
+              if [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ]; then
+                echo "Version changed from $PREVIOUS_VERSION to $CURRENT_VERSION"
+                echo "version_changed=true" >> $GITHUB_OUTPUT
+              else
+                echo "Version unchanged"
+                echo "version_changed=false" >> $GITHUB_OUTPUT
+              fi
             fi
           else
             echo "First commit or Directory.Build.props is new, creating tag"
