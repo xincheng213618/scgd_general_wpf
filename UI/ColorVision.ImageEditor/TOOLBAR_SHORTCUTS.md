@@ -29,7 +29,7 @@
 
 1. **工具栏可见性控制**
    - 可以独立控制每个工具栏的显示/隐藏
-   - ToolBarDraw (绘制工具栏) 仅在编辑模式 (ImageEditMode) 下显示
+   - **注意：** ToolBarDraw (绘制工具栏) 仅在编辑模式 (ImageEditMode) 下显示
 
 2. **编辑器工具可见性控制**
    - 列出所有注册的 IEditorTool
@@ -111,7 +111,7 @@ public class BooleanAndToVisibilityConverter : IMultiValueConverter
 {
     public object Convert(object[] values, ...)
     {
-        // 所有值都为 true 时返回 Visible，否则返回 Collapsed
+        // Returns Visible when all values are true, otherwise returns Collapsed
         bool allTrue = values.All(v => v is true);
         return allTrue ? Visibility.Visible : Visibility.Collapsed;
     }
@@ -182,7 +182,7 @@ visibilityConfig.SetToolVisibility("ZoomOutEditorTool", true);
 2. 工具可见性设置会在 ImageViewConfig 中持久化
 3. 隐藏的工具仍然存在于工具集合中，只是UI上不可见
 4. 键盘快捷键仅在 ImageView 控件具有焦点时有效
-5. **重要：** ToolBarDraw (绘制工具栏) 仅在编辑模式 (ImageEditMode) 启用时显示，这是为了保持原有的设计逻辑
+5. **ToolBarDraw 条件显示** - 绘制工具栏仅在编辑模式 (ImageEditMode) 启用时显示，这是为了保持原有的设计逻辑
 
 ## 变更记录
 
