@@ -105,10 +105,72 @@ namespace ColorVision.ImageEditor
             ComboxeType.ItemsSource = from e1 in Enum.GetValues(typeof(MagnigifierType)).Cast<MagnigifierType>()
                                       select new KeyValuePair<MagnigifierType, string>(e1, e1.ToString());
 
+            // Setup commands for file operations
             CommandBindings.Add(new CommandBinding( ApplicationCommands.Open, (s, e) => OpenImage(),(s, e) => { e.CanExecute = true; }));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = true; }));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
             CommandBindings.Add(new CommandBinding( ApplicationCommands.Print,(s, e) => Print(), (s, e) => { e.CanExecute = true; }));
+
+            // Setup toolbar visibility toggle commands
+            SetupToolbarToggleCommands();
+        }
+
+        private void SetupToolbarToggleCommands()
+        {
+            // Toggle ToolBarAl (Ctrl+Shift+1)
+            var toggleToolBarAlCommand = new RoutedCommand();
+            CommandBindings.Add(new CommandBinding(toggleToolBarAlCommand, (s, e) => 
+            {
+                Config.IsToolBarAlVisible = !Config.IsToolBarAlVisible;
+            }));
+            InputBindings.Add(new KeyBinding(toggleToolBarAlCommand, Key.D1, ModifierKeys.Control | ModifierKeys.Shift));
+
+            // Toggle ToolBarDraw (Ctrl+Shift+2)
+            var toggleToolBarDrawCommand = new RoutedCommand();
+            CommandBindings.Add(new CommandBinding(toggleToolBarDrawCommand, (s, e) => 
+            {
+                Config.IsToolBarDrawVisible = !Config.IsToolBarDrawVisible;
+            }));
+            InputBindings.Add(new KeyBinding(toggleToolBarDrawCommand, Key.D2, ModifierKeys.Control | ModifierKeys.Shift));
+
+            // Toggle ToolBarTop (Ctrl+Shift+3)
+            var toggleToolBarTopCommand = new RoutedCommand();
+            CommandBindings.Add(new CommandBinding(toggleToolBarTopCommand, (s, e) => 
+            {
+                Config.IsToolBarTopVisible = !Config.IsToolBarTopVisible;
+            }));
+            InputBindings.Add(new KeyBinding(toggleToolBarTopCommand, Key.D3, ModifierKeys.Control | ModifierKeys.Shift));
+
+            // Toggle ToolBarLeft (Ctrl+Shift+4)
+            var toggleToolBarLeftCommand = new RoutedCommand();
+            CommandBindings.Add(new CommandBinding(toggleToolBarLeftCommand, (s, e) => 
+            {
+                Config.IsToolBarLeftVisible = !Config.IsToolBarLeftVisible;
+            }));
+            InputBindings.Add(new KeyBinding(toggleToolBarLeftCommand, Key.D4, ModifierKeys.Control | ModifierKeys.Shift));
+
+            // Toggle ToolBarRight (Ctrl+Shift+5)
+            var toggleToolBarRightCommand = new RoutedCommand();
+            CommandBindings.Add(new CommandBinding(toggleToolBarRightCommand, (s, e) => 
+            {
+                Config.IsToolBarRightVisible = !Config.IsToolBarRightVisible;
+            }));
+            InputBindings.Add(new KeyBinding(toggleToolBarRightCommand, Key.D5, ModifierKeys.Control | ModifierKeys.Shift));
+
+            // Open Toolbar Settings Window (Ctrl+Shift+T)
+            var openToolbarSettingsCommand = new RoutedCommand();
+            CommandBindings.Add(new CommandBinding(openToolbarSettingsCommand, (s, e) => 
+            {
+                OpenToolbarSettingsWindow();
+            }));
+            InputBindings.Add(new KeyBinding(openToolbarSettingsCommand, Key.T, ModifierKeys.Control | ModifierKeys.Shift));
+        }
+
+        private void OpenToolbarSettingsWindow()
+        {
+            var window = new ToolbarSettingsWindow(this);
+            window.Owner = Window.GetWindow(this);
+            window.ShowDialog();
         }
         /// <summary>
         /// 打印图像

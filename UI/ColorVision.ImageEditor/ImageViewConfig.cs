@@ -131,5 +131,21 @@ namespace ColorVision.ImageEditor
         public bool IsShowMsg { get => _IsShowMsg; set { _IsShowMsg = value; OnPropertyChanged(); ShowMsgChanged?.Invoke(this, _IsShowMsg); } }
         private bool _IsShowMsg = true;
 
+        // Toolbar visibility properties
+        public bool IsToolBarAlVisible { get => _IsToolBarAlVisible; set { _IsToolBarAlVisible = value; OnPropertyChanged(); } }
+        private bool _IsToolBarAlVisible = true;
+
+        public bool IsToolBarDrawVisible { get => _IsToolBarDrawVisible; set { _IsToolBarDrawVisible = value; OnPropertyChanged(); } }
+        private bool _IsToolBarDrawVisible = true;
+
+        public bool IsToolBarTopVisible { get => _IsToolBarTopVisible; set { _IsToolBarTopVisible = value; OnPropertyChanged(); } }
+        private bool _IsToolBarTopVisible = true;
+
+        public bool IsToolBarLeftVisible { get => _IsToolBarLeftVisible; set { _IsToolBarLeftVisible = value; OnPropertyChanged(); } }
+        private bool _IsToolBarLeftVisible = true;
+
+        public bool IsToolBarRightVisible { get => _IsToolBarRightVisible; set { _IsToolBarRightVisible = value; OnPropertyChanged(); } }
+        private bool _IsToolBarRightVisible = true;
+
     }
 }
