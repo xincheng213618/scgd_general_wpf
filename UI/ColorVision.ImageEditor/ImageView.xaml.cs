@@ -117,47 +117,31 @@ namespace ColorVision.ImageEditor
 
         private void SetupToolbarToggleCommands()
         {
-            // Toggle ToolBarAl (Ctrl+Shift+1)
-            var toggleToolBarAlCommand = new RoutedCommand();
-            CommandBindings.Add(new CommandBinding(toggleToolBarAlCommand, (s, e) => 
+            // Show All Toolbars (Ctrl+Shift+A)
+            var showAllToolbarsCommand = new RoutedCommand();
+            CommandBindings.Add(new CommandBinding(showAllToolbarsCommand, (s, e) => 
             {
-                Config.IsToolBarAlVisible = !Config.IsToolBarAlVisible;
+                Config.IsToolBarAlVisible = true;
+                Config.IsToolBarDrawVisible = true;
+                Config.IsToolBarTopVisible = true;
+                Config.IsToolBarLeftVisible = true;
+                Config.IsToolBarRightVisible = true;
             }));
-            InputBindings.Add(new KeyBinding(toggleToolBarAlCommand, Key.D1, ModifierKeys.Control | ModifierKeys.Shift));
+            InputBindings.Add(new KeyBinding(showAllToolbarsCommand, Key.A, ModifierKeys.Control | ModifierKeys.Shift));
 
-            // Toggle ToolBarDraw (Ctrl+Shift+2)
-            var toggleToolBarDrawCommand = new RoutedCommand();
-            CommandBindings.Add(new CommandBinding(toggleToolBarDrawCommand, (s, e) => 
+            // Hide All Toolbars (Ctrl+Shift+H)
+            var hideAllToolbarsCommand = new RoutedCommand();
+            CommandBindings.Add(new CommandBinding(hideAllToolbarsCommand, (s, e) => 
             {
-                Config.IsToolBarDrawVisible = !Config.IsToolBarDrawVisible;
+                Config.IsToolBarAlVisible = false;
+                Config.IsToolBarDrawVisible = false;
+                Config.IsToolBarTopVisible = false;
+                Config.IsToolBarLeftVisible = false;
+                Config.IsToolBarRightVisible = false;
             }));
-            InputBindings.Add(new KeyBinding(toggleToolBarDrawCommand, Key.D2, ModifierKeys.Control | ModifierKeys.Shift));
+            InputBindings.Add(new KeyBinding(hideAllToolbarsCommand, Key.H, ModifierKeys.Control | ModifierKeys.Shift));
 
-            // Toggle ToolBarTop (Ctrl+Shift+3)
-            var toggleToolBarTopCommand = new RoutedCommand();
-            CommandBindings.Add(new CommandBinding(toggleToolBarTopCommand, (s, e) => 
-            {
-                Config.IsToolBarTopVisible = !Config.IsToolBarTopVisible;
-            }));
-            InputBindings.Add(new KeyBinding(toggleToolBarTopCommand, Key.D3, ModifierKeys.Control | ModifierKeys.Shift));
-
-            // Toggle ToolBarLeft (Ctrl+Shift+4)
-            var toggleToolBarLeftCommand = new RoutedCommand();
-            CommandBindings.Add(new CommandBinding(toggleToolBarLeftCommand, (s, e) => 
-            {
-                Config.IsToolBarLeftVisible = !Config.IsToolBarLeftVisible;
-            }));
-            InputBindings.Add(new KeyBinding(toggleToolBarLeftCommand, Key.D4, ModifierKeys.Control | ModifierKeys.Shift));
-
-            // Toggle ToolBarRight (Ctrl+Shift+5)
-            var toggleToolBarRightCommand = new RoutedCommand();
-            CommandBindings.Add(new CommandBinding(toggleToolBarRightCommand, (s, e) => 
-            {
-                Config.IsToolBarRightVisible = !Config.IsToolBarRightVisible;
-            }));
-            InputBindings.Add(new KeyBinding(toggleToolBarRightCommand, Key.D5, ModifierKeys.Control | ModifierKeys.Shift));
-
-            // Open Toolbar Settings Window (Ctrl+Shift+T)
+            // Open Toolbar Settings Window (Ctrl+Q)
             var openToolbarSettingsCommand = new RoutedCommand();
             CommandBindings.Add(new CommandBinding(openToolbarSettingsCommand, (s, e) => 
             {
