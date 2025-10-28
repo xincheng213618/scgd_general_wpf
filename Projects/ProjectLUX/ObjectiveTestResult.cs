@@ -2,7 +2,7 @@
 using NetTaste;
 using ProjectLUX.Process.Blue;
 using ProjectLUX.Process.Chessboard;
-using ProjectLUX.Process.Distortion;
+using ProjectLUX.Process.DistortionAR;
 using ProjectLUX.Process.Green;
 using ProjectLUX.Process.MTFHV;
 using ProjectLUX.Process.OpticCenter;
@@ -120,7 +120,7 @@ namespace ProjectLUX
         public MTFHVTestResult MTFHVTestResult { get; set; }
 
         [DisplayName("Distortion")]
-        public DistortionTestResult DistortionTestResult { get; set; }
+        public DistortionARTestResult DistortionTestResult { get; set; }
 
         [DisplayName("Optical_Center")]
         public OpticCenterTestResult OpticCenterTestResult { get; set; }
