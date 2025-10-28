@@ -11,6 +11,7 @@ namespace ColorVision.ImageEditor
     {
         public ImageView ImageView { get; set; }
         public ObservableCollection<EditorToolViewModel> EditorTools { get; set; }
+        private EditorToolVisibilityConfig _visibilityConfig;
 
         public ToolbarSettingsWindow(ImageView imageView)
         {
@@ -18,16 +19,19 @@ namespace ColorVision.ImageEditor
             ImageView = imageView;
             DataContext = imageView.ImageViewModel;
 
+            // Get or create visibility config
+            _visibilityConfig = imageView.Config.GetRequiredService<EditorToolVisibilityConfig>();
+
             // Initialize editor tools visibility list
             EditorTools = new ObservableCollection<EditorToolViewModel>();
             foreach (var tool in imageView.ImageViewModel.IEditorToolFactory.IEditorTools.OrderBy(t => t.ToolBarLocal).ThenBy(t => t.Order))
             {
-                var toolViewModel = new EditorToolViewModel
+                var guidId = tool.GuidId ?? tool.GetType().Name;
+                var toolViewModel = new EditorToolViewModel(imageView, tool, _visibilityConfig)
                 {
-                    Tool = tool,
-                    DisplayName = tool.GuidId ?? tool.GetType().Name,
+                    DisplayName = guidId,
                     Location = tool.ToolBarLocal.ToString(),
-                    IsVisible = true // Default to visible, you can enhance this with persistence
+                    IsVisible = _visibilityConfig.GetToolVisibility(guidId)
                 };
                 EditorTools.Add(toolViewModel);
             }
@@ -74,6 +78,9 @@ namespace ColorVision.ImageEditor
     /// </summary>
     public class EditorToolViewModel : Common.MVVM.ViewModelBase
     {
+        private readonly ImageView _imageView;
+        private readonly EditorToolVisibilityConfig _visibilityConfig;
+
         public IEditorTool Tool { get; set; }
         
         public string DisplayName { get; set; }
@@ -93,10 +100,25 @@ namespace ColorVision.ImageEditor
             } 
         }
 
+        public EditorToolViewModel(ImageView imageView, IEditorTool tool, EditorToolVisibilityConfig visibilityConfig)
+        {
+            _imageView = imageView;
+            Tool = tool;
+            _visibilityConfig = visibilityConfig;
+        }
+
         private void UpdateToolVisibility()
         {
-            // This would require enhancing the EditorToolFactory to support dynamic visibility
-            // For now, this is a placeholder for future enhancement
+            var guidId = Tool.GuidId ?? Tool.GetType().Name;
+            
+            // Save visibility state
+            _visibilityConfig.SetToolVisibility(guidId, _isVisible);
+
+            // Update UI element visibility
+            if (_imageView.ImageViewModel.IEditorToolFactory.ToolUIElements.TryGetValue(guidId, out var uiElement))
+            {
+                uiElement.Visibility = _isVisible ? Visibility.Visible : Visibility.Collapsed;
+            }
         }
     }
 }
