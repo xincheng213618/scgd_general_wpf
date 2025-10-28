@@ -121,26 +121,14 @@ namespace ColorVision.ImageEditor
             var showAllToolbarsCommand = new RoutedCommand();
             CommandBindings.Add(new CommandBinding(showAllToolbarsCommand, (s, e) => 
             {
-                Config.IsToolBarAlVisible = true;
-                Config.IsToolBarDrawVisible = true;
-                Config.IsToolBarTopVisible = true;
-                Config.IsToolBarLeftVisible = true;
-                Config.IsToolBarRightVisible = true;
+                Config.IsToolBarAlVisible = !Config.IsToolBarAlVisible;
+                Config.IsToolBarDrawVisible = !Config.IsToolBarDrawVisible;
+                Config.IsToolBarTopVisible = !Config.IsToolBarTopVisible;
+                Config.IsToolBarLeftVisible = !Config.IsToolBarLeftVisible;
+                Config.IsToolBarRightVisible = !Config.IsToolBarRightVisible;
             }));
-            InputBindings.Add(new KeyBinding(showAllToolbarsCommand, Key.A, ModifierKeys.Control | ModifierKeys.Shift));
-
-            // Hide All Toolbars (Ctrl+Shift+H)
-            var hideAllToolbarsCommand = new RoutedCommand();
-            CommandBindings.Add(new CommandBinding(hideAllToolbarsCommand, (s, e) => 
-            {
-                Config.IsToolBarAlVisible = false;
-                Config.IsToolBarDrawVisible = false;
-                Config.IsToolBarTopVisible = false;
-                Config.IsToolBarLeftVisible = false;
-                Config.IsToolBarRightVisible = false;
-            }));
-            InputBindings.Add(new KeyBinding(hideAllToolbarsCommand, Key.H, ModifierKeys.Control | ModifierKeys.Shift));
-
+            InputBindings.Add(new KeyBinding(showAllToolbarsCommand, Key.H, ModifierKeys.Control));
+  
             // Open Toolbar Settings Window (Ctrl+Q)
             var openToolbarSettingsCommand = new RoutedCommand();
             CommandBindings.Add(new CommandBinding(openToolbarSettingsCommand, (s, e) => 

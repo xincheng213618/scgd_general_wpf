@@ -12,7 +12,6 @@
              d:DataContext="{d:DesignInstance local:ImageViewModel}"
              d:DesignHeight="600" d:DesignWidth="1000" Initialized="UserControl_Initialized" AllowDrop="True">
     <UserControl.Resources>
-        <converters:BooleanAndToVisibilityConverter x:Key="BooleanAndToVisibilityConverter"/>
         <Style TargetType="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         </Style>
@@ -82,16 +81,9 @@
                     <ComboBox x:Name="ComboxPOITemplate"  x:FieldModifier="public" Style="{StaticResource ComboBox.Small}" Width="100" HorizontalAlignment="Left" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
                 </ToolBar>
 
-                <ToolBarTray x:Name="ToolBarDraw" HorizontalAlignment="Center" VerticalAlignment="Bottom" Grid.Column="1"  >
-                    <ToolBarTray.Visibility>
-                        <MultiBinding Converter="{StaticResource BooleanAndToVisibilityConverter}">
-                            <Binding Path="ImageEditMode"/>
-                            <Binding Path="Config.IsToolBarDrawVisible"/>
-                        </MultiBinding>
-                    </ToolBarTray.Visibility>
+                <ToolBarTray x:Name="ToolBarDraw" HorizontalAlignment="Center" VerticalAlignment="Bottom" Grid.Column="1" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
                     <ToolBar ToolBarTray.IsLocked="True"  >
                     </ToolBar>
-
                 </ToolBarTray>
 
                 <ToolBarTray x:Name="ToolBarTop" Visibility="{Binding Config.IsToolBarTopVisible,Converter={StaticResource bool2VisibilityConverter}}" VerticalAlignment="Top" Grid.Row="0"  HorizontalAlignment="Center" Grid.Column="1">
