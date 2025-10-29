@@ -40,6 +40,7 @@ using Newtonsoft.Json.Linq;
 using Org.BouncyCastle.Asn1.Ocsp;
 using ProjectLUX;
 using ProjectLUX.Fix;
+using ProjectLUX.Process;
 using ProjectLUX.Services;
 using SqlSugar;
 using ST.Library.UI.NodeEditor;
@@ -76,8 +77,12 @@ namespace ProjectLUX
 
         public static ObservableCollection<ProjectLUXReuslt> ViewResluts { get; set; } = ViewResultManager.ViewResluts;
 
-        public static FixConfig FixConfig => FixManager.GetInstance().FixConfig;
+        public static FixConfig ObjectiveTestResultFix => FixManager.GetInstance().FixConfig;
+        public static RecipeManager RecipeManager => RecipeManager.GetInstance();
+        public static RecipeConfig RecipeConfig => RecipeManager.RecipeConfig;
 
+        public static ProcessManager ProcessManager => ProcessManager.GetInstance();
+        public ObservableCollection<ProcessMeta> ProcessMetas { get; } = ProcessManager.ProcessMetas;
 
         public LUXWindow()
         {
@@ -86,7 +91,7 @@ namespace ProjectLUX
             Config.SetWindow(this);
         }
 
-        public ARVRTestType CurrentTestType = ARVRTestType.None;
+        public int CurrentTestType = -1;
         ObjectiveTestResult ObjectiveTestResult { get; set; } = new ObjectiveTestResult();
 
 
@@ -95,7 +100,20 @@ namespace ProjectLUX
         {
             ProjectLUXConfig.Instance.StepIndex = 0;
             ObjectiveTestResult = new ObjectiveTestResult();
-            CurrentTestType = ARVRTestType.None;
+            CurrentTestType = -1;
+
+            if (!Directory.Exists(ProjectLUXConfig.Instance.ResultSavePath))
+            {
+                try
+                {
+                    Directory.CreateDirectory(ProjectLUXConfig.Instance.ResultSavePath);
+                }
+                catch (Exception ex)
+                {
+                    log.Error("创建结果保存目录失败：" + ex.Message);
+                }
+            }
+
             if (string.IsNullOrWhiteSpace(SN))
             {
                 Application.Current.Dispatcher.Invoke(() =>
@@ -136,8 +154,7 @@ namespace ProjectLUX
         private Timer timer;
         Stopwatch stopwatch = new Stopwatch();
 
-        public static RecipeManager RecipeManager => RecipeManager.GetInstance();
-        public static RecipeConfig SPECConfig => RecipeManager.RecipeConfig;
+
         LogOutput logOutput;
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -417,7 +434,6 @@ namespace ProjectLUX
         {
             MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
 
-
             if (Batch == null)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
@@ -431,13 +447,67 @@ namespace ProjectLUX
             result.Result = true;
 
 
+            try
+            {
+                log.Info($"{result.Model}");
 
+                var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
+                if (meta?.Process != null)
+                {
+                    log.Info($"匹配到自定义流程 {meta.Name} -> {meta.ProcessTypeName}; 使用 IProcess 处理 {result.Model}");
 
+                    bool executed = false;
+                    try
+                    {
+                        var ctx = new IProcessExecutionContext
+                        {
+                            Batch = Batch,
+                            Result = result,
+                            ObjectiveTestResult = ObjectiveTestResult,
+                            FixConfig = ObjectiveTestResultFix,
+                            RecipeConfig = RecipeConfig,
+                            ImageView = ImageView,
+                            Logger = log
+                        };
+                        executed = meta.Process.Execute(ctx);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("自定义 IProcess 执行异常", ex);
+                    }
+                    if (executed)
+                    {
+                        //每次结束都保存
+                        string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{ProjectLUXConfig.Instance.SN}.csv");
+                        ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, path);
 
+                        ViewResultManager.Save(result);
+                        ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
+
+                        if (IsTestTypeCompleted())
+                        {
+                            TestCompleted();
+                        }
+                        return; // 已处理，直接返回
+                    }
+                    else
+                    {
+                        log.Warn("自定义 IProcess 执行失败，继续使用内置解析逻辑");
+                    }
+                }
+                else
+                {
+                    log.Info($"匹配到不到自定义流程 {meta.Name} -> {meta.ProcessTypeName};");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("匹配/执行自定义 IProcess 出错，回退内置逻辑", ex);
+            }
             ViewResultManager.Save(result);
-
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
         }
+        private bool IsTestTypeCompleted() => CurrentTestType + 1 >= ProcessMetas.Count;
 
         private void SwitchPG()
         {

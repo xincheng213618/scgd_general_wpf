@@ -272,6 +272,9 @@
                 <Button Content="变更日志" Command="{Binding OpenChangeLogCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
+                <Button Content="ProcessManager" Command="{Binding ProcessManager.EditCommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
                 <Button Content="测试" Click="Button_Click" />
             </StatusBarItem>
         </StatusBar>

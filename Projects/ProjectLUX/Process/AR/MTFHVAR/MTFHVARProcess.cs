@@ -40,7 +40,7 @@ namespace ProjectLUX.Process.MTFHVAR
                             //    case "Center_0F":
                             //        mtf.horizontalAverage *= fixConfig.MTF_HV_H_Center_0F;
                             //        mtf.verticalAverage *= fixConfig.MTF_HV_V_Center_0F;
-                            //        testResult.MTF_HV_H_Center_0F = Build("MTF_HV_H_Center_0F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_Center_0F.Min, recipeConfig.MTF_HV_H_Center_0F.Max);
+                            //        testResult.MTF0F_Center_H1 = Build("MTF_HV_H_Center_0F", mtf.horizontalAverage, recipeConfig.MTF_HV_H_Center_0F.Min, recipeConfig.MTF_HV_H_Center_0F.Max);
                             //        testResult.MTF_HV_V_Center_0F = Build("MTF_HV_V_Center_0F", mtf.verticalAverage, recipeConfig.MTF_HV_V_Center_0F.Min, recipeConfig.MTF_HV_V_Center_0F.Max);
                             //        ctx.Result.Result &= testResult.MTF_HV_H_Center_0F.TestResult;
                             //        ctx.Result.Result &= testResult.MTF_HV_V_Center_0F.TestResult;

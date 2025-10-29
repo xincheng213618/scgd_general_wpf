@@ -52,10 +52,7 @@ namespace ProjectLUX.Services
                     strings.Add(sn);
                     strings.Add("00");
 
-                    if (!Directory.Exists(ProjectLUXConfig.Instance.ResultSavePath))
-                    {
-                        Directory.CreateDirectory(ProjectLUXConfig.Instance.ResultSavePath);
-                    }
+                    ProjectLUXConfig.Instance.SN = sn;
 
                     if (SummaryManager.GetInstance().Summary.MachineNO == "H02")
                     {
@@ -116,6 +113,7 @@ namespace ProjectLUX.Services
                         if (lastTwo == "00")
                         {
                             log.Info("拍图窗口握手");
+                            ProjectWindowInstance.WindowInstance.InitTest(sn);
                         }
                         else if (lastTwo == "02")
                         {

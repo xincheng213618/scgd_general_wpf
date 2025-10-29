@@ -61,57 +61,6 @@ using System.Windows.Media;
 namespace ProjectLUX
 {
 
-    public enum ARVRTestType
-    {
-        None,
-        /// <summary>
-        /// 白画面
-        /// </summary>
-        White,
-        WhiteFOV,
-        White_calibrate,
-        /// <summary>
-        /// 黑画面
-        /// </summary>
-        Black,
-        /// <summary>
-        /// 棋盘格
-        /// </summary>
-        Chessboard,
-        /// <summary>
-        /// MTF 横
-        /// </summary>
-        MTFHV,
-        /// <summary>
-        /// MTF垂直
-        /// </summary>
-        MTFV,
-        /// <summary>
-        /// 畸变
-        /// </summary>
-        Distortion,
-        /// <summary>
-        /// 光轴偏角
-        /// </summary>
-        OpticCenter,
-        /// <summary>
-        /// 鬼影
-        /// </summary>
-        Ghost,
-        /// <summary>
-        /// 屏幕定位
-        /// </summary>
-        DotMatrix,
-        /// <summary>
-        /// 白画面瑕疵检测
-        /// </summary>
-        WscreeenDefectDetection,
-        /// <summary>
-        /// 黑画面瑕疵检测
-        /// </summary>
-        BKscreeenDefectDetection
-    }
-
     [SugarTable("ARVRReuslt")]
     public class ProjectLUXReuslt : ViewEntity 
     {
@@ -166,7 +115,7 @@ namespace ProjectLUX
         public FlowStatus FlowStatus { get; set; } = FlowStatus.Ready;
 
         public bool Result { get; set; } = true;
-        public ARVRTestType TestType { get; set; }
+        public int TestType { get; set; }
         public long RunTime { get; set; }
         public string Msg { get; set; } = string.Empty;
 
