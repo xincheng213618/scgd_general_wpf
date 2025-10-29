@@ -27,7 +27,7 @@ namespace System.ComponentModel
                        elem == typeof(int) || elem == typeof(uint) ||
                        elem == typeof(long) || elem == typeof(ulong) ||
                        elem == typeof(float) || elem == typeof(double) ||
-                       elem == typeof(decimal);
+                       elem == typeof(decimal) || elem == typeof(string);
             });
         }
 
@@ -126,7 +126,7 @@ namespace System.ComponentModel
                    t == typeof(int) || t == typeof(uint) ||
                    t == typeof(long) || t == typeof(ulong) ||
                    t == typeof(float) || t == typeof(double) ||
-                   t == typeof(decimal);
+                   t == typeof(decimal) || t == typeof(string);
         }
     }
 }

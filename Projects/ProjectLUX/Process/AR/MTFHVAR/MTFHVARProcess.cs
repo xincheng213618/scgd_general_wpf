@@ -7,17 +7,17 @@ using Newtonsoft.Json;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ProjectLUX.Process.MTFHV
+namespace ProjectLUX.Process.MTFHVAR
 {
-    public class MTFHVProcess : IProcess
+    public class MTFHVARProcess : IProcess
     {
         public bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
-            MTFHVRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<MTFHVRecipeConfig>();
-            MTFHVFixConfig fixConfig = ctx.FixConfig.GetRequiredService<MTFHVFixConfig>();
-            MTFHVViewTestResult testResult = new MTFHVViewTestResult();
+            MTFHVARRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<MTFHVARRecipeConfig>();
+            MTFHVARFixConfig fixConfig = ctx.FixConfig.GetRequiredService<MTFHVARFixConfig>();
+            MTFHVARViewTestResult testResult = new MTFHVARViewTestResult();
 
 
             try
@@ -117,7 +117,7 @@ namespace ProjectLUX.Process.MTFHV
 
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
-                ctx.ObjectiveTestResult.MTFHVTestResult = JsonConvert.DeserializeObject<MTFHVTestResult>(ctx.Result.ViewResultJson) ?? new MTFHVTestResult();
+                ctx.ObjectiveTestResult.MTFHVARTestResult = JsonConvert.DeserializeObject<MTFHARVTestResult>(ctx.Result.ViewResultJson) ?? new MTFHARVTestResult();
                 return true;
             }
             catch (Exception ex)
@@ -126,12 +126,18 @@ namespace ProjectLUX.Process.MTFHV
                 return false;
             }
         }
-
-
+        private ObjectiveTestItem Build(string name, double value, double low, double up) => new ObjectiveTestItem
+        {
+            Name = name,
+            LowLimit = low,
+            UpLimit = up,
+            Value = value,
+            TestValue = value.ToString()
+        };
         public void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
-            MTFHVViewTestResult testResult = JsonConvert.DeserializeObject<MTFHVViewTestResult>(ctx.Result.ViewResultJson);
+            MTFHVARViewTestResult testResult = JsonConvert.DeserializeObject<MTFHVARViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return;
 
             int id = 0;
@@ -161,7 +167,7 @@ namespace ProjectLUX.Process.MTFHV
 
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
-            MTFHVViewTestResult testResult = JsonConvert.DeserializeObject<MTFHVViewTestResult>(ctx.Result.ViewResultJson);
+            MTFHVARViewTestResult testResult = JsonConvert.DeserializeObject<MTFHVARViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return outtext;
 
             outtext += $"name,horizontalAverage,verticalAverage,Average," + Environment.NewLine;

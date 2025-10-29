@@ -181,7 +181,7 @@ namespace ProjectLUX
         public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; OnPropertyChanged(); } }
         private bool _IsAutoUploadSn;
 
-
+        [PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; OnPropertyChanged(); } }
         private string _ResultSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop),"TestReslut");
 

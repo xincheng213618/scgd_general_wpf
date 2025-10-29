@@ -642,21 +642,15 @@ namespace ProjectLUX
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            string sn = "ssss";
+            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
             ObjectiveTestResult TestResult = new ObjectiveTestResult();
             TestResult.W255TestResult = new Process.W255.W255TestResult();
-            TestResult.RedTestResult = new Process.Red.RedTestResult();
-            TestResult.BlueTestResult = new Process.Blue.BlueTestResult();
-            TestResult.GreenTestResult = new Process.Green.GreenTestResult();
-            TestResult.MTFHVTestResult = new Process.MTFHV.MTFHVTestResult();
-            TestResult.DistortionTestResult = new Process.Distortion.DistortionTestResult();
-            TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
+            TestResult.MTFHVARTestResult = new Process.MTFHVAR.MTFHARVTestResult();
+            TestResult.ChessboardARTestResult = new Process.ChessboardAR.ChessboardARTestResult();
+            TestResult.DistortionARTestResult = new Process.DistortionAR.DistortionARTestResult();
             TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
-
-
-
-            string filePath = Path.Combine(ViewResultManager.Config.CsvSavePath, $"ObjectiveTestResults.csv");
-
-            ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, filePath);
+            ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path);
         }
     }
 }

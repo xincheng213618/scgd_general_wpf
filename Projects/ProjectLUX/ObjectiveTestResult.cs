@@ -2,9 +2,12 @@
 using NetTaste;
 using ProjectLUX.Process.Blue;
 using ProjectLUX.Process.Chessboard;
+using ProjectLUX.Process.ChessboardAR;
 using ProjectLUX.Process.Distortion;
+using ProjectLUX.Process.DistortionAR;
 using ProjectLUX.Process.Green;
 using ProjectLUX.Process.MTFHV;
+using ProjectLUX.Process.MTFHVAR;
 using ProjectLUX.Process.OpticCenter;
 using ProjectLUX.Process.Red;
 using ProjectLUX.Process.W255;
@@ -113,11 +116,19 @@ namespace ProjectLUX
         [DisplayName("B255")]
         public BlueTestResult BlueTestResult { get; set; }
 
+        [DisplayName("Chessborad_4x4")]
+        public ChessboardARTestResult ChessboardARTestResult { get; set; }
+
         [DisplayName("Chessborad_7x7")]
         public ChessboardTestResult ChessboardTestResult { get; set; }
 
         [DisplayName("MTF")]
+        public MTFHARVTestResult MTFHVARTestResult { get; set; }
+        [DisplayName("MTF")]
         public MTFHVTestResult MTFHVTestResult { get; set; }
+
+        [DisplayName("Distortion")]
+        public DistortionARTestResult DistortionARTestResult { get; set; }
 
         [DisplayName("Distortion")]
         public DistortionTestResult DistortionTestResult { get; set; }

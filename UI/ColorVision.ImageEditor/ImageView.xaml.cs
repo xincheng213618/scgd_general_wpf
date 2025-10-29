@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.UI;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -59,6 +60,7 @@ namespace ColorVision.ImageEditor
             ImageViewModel = new ImageViewModel(this);
 
             EditorContext = ImageViewModel.EditorContext;
+
             DataContext = ImageViewModel;
             Config.ColormapTypesChanged -= Config_ColormapTypesChanged;
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
@@ -105,10 +107,60 @@ namespace ColorVision.ImageEditor
             ComboxeType.ItemsSource = from e1 in Enum.GetValues(typeof(MagnigifierType)).Cast<MagnigifierType>()
                                       select new KeyValuePair<MagnigifierType, string>(e1, e1.ToString());
 
+            // Setup commands for file operations
             CommandBindings.Add(new CommandBinding( ApplicationCommands.Open, (s, e) => OpenImage(),(s, e) => { e.CanExecute = true; }));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = true; }));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
             CommandBindings.Add(new CommandBinding( ApplicationCommands.Print,(s, e) => Print(), (s, e) => { e.CanExecute = true; }));
+
+            // Setup toolbar visibility toggle commands
+            SetupToolbarToggleCommands();
+
+            var _visibilityConfig = ConfigService.Instance.GetRequiredService<EditorToolVisibilityConfig>();
+
+            // Initialize editor tools visibility list
+            var EditorTools = new ObservableCollection<EditorToolViewModel>();
+            foreach (var tool in ImageViewModel.IEditorToolFactory.IEditorTools.OrderBy(t => t.ToolBarLocal).ThenBy(t => t.Order))
+            {
+                var guidId = tool.GuidId ?? tool.GetType().Name;
+                var toolViewModel = new EditorToolViewModel(this, tool, _visibilityConfig)
+                {
+                    DisplayName = guidId,
+                    Location = tool.ToolBarLocal.ToString(),
+                    IsVisible = _visibilityConfig.GetToolVisibility(guidId)
+                };
+                EditorTools.Add(toolViewModel);
+            }
+        }
+
+        private void SetupToolbarToggleCommands()
+        {
+            // Show All Toolbars (Ctrl+Shift+A)
+            var showAllToolbarsCommand = new RoutedCommand();
+            CommandBindings.Add(new CommandBinding(showAllToolbarsCommand, (s, e) => 
+            {
+                Config.IsToolBarAlVisible = !Config.IsToolBarAlVisible;
+                Config.IsToolBarDrawVisible = !Config.IsToolBarDrawVisible;
+                Config.IsToolBarTopVisible = !Config.IsToolBarTopVisible;
+                Config.IsToolBarLeftVisible = !Config.IsToolBarLeftVisible;
+                Config.IsToolBarRightVisible = !Config.IsToolBarRightVisible;
+            }));
+            InputBindings.Add(new KeyBinding(showAllToolbarsCommand, Key.H, ModifierKeys.Control));
+  
+            // Open Toolbar Settings Window (Ctrl+Q)
+            var openToolbarSettingsCommand = new RoutedCommand();
+            CommandBindings.Add(new CommandBinding(openToolbarSettingsCommand, (s, e) => 
+            {
+                OpenToolbarSettingsWindow();
+            }));
+            InputBindings.Add(new KeyBinding(openToolbarSettingsCommand, Key.Q, ModifierKeys.Control));
+        }
+
+        private void OpenToolbarSettingsWindow()
+        {
+            var window = new ToolbarSettingsWindow(this);
+            window.Owner = Window.GetWindow(this);
+            window.ShowDialog();
         }
         /// <summary>
         /// 打印图像
@@ -433,9 +485,7 @@ namespace ColorVision.ImageEditor
                             {
                                 if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                                 {
-                                    double DpiX = Config.GetProperties<double>("DpiX");
-                                    double DpiY = Config.GetProperties<double>("DpiY");
-                                    var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
+                                    var image = hImageProcessed.ToWriteableBitmap();
                                     hImageProcessed.Dispose();
 
                                     FunctionImage = image;
@@ -491,9 +541,7 @@ namespace ColorVision.ImageEditor
                     {
                         if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                         {
-                            double DpiX = Config.GetProperties<double>("DpiX");
-                            double DpiY = Config.GetProperties<double>("DpiY");
-                            var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
+                            var image = hImageProcessed.ToWriteableBitmap();
                             hImageProcessed.Dispose();
                             FunctionImage = image;
                         }

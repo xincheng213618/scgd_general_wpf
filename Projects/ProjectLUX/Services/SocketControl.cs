@@ -108,6 +108,101 @@ namespace ProjectLUX.Services
                             return string.Join(",", strings) + ";";
                         }
                     }
+                    else if (SummaryManager.GetInstance().Summary.MachineNO == "H03AR")
+                    {
+                        if (ProjectWindowInstance.WindowInstance == null) return string.Join(",", strings) + ";";
+
+                        ProjectWindowInstance.WindowInstance.ReturnCode = string.Join(",", strings) + ";";
+                        if (lastTwo == "00")
+                        {
+                            log.Info("拍图窗口握手");
+                        }
+                        else if (lastTwo == "02")
+                        {
+                            log.Info("测试图例1 White 51 ");
+                            ProjectWindowInstance.WindowInstance.RunTemplate(0, "White255_FOV_VR");
+                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
+                            ObjectiveTestResult TestResult = new ObjectiveTestResult();
+                            TestResult.W255TestResult = new Process.W255.W255TestResult();
+                            TestResult.MTFHVARTestResult = new Process.MTFHVAR.MTFHARVTestResult();
+                            TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
+                            TestResult.DistortionARTestResult = new Process.DistortionAR.DistortionARTestResult();
+                            TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
+                            ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path);
+                            return null;
+                        }
+                        else if (lastTwo == "03")
+                        {
+                            log.Info("测试图例1 White Fov ");
+                            ProjectWindowInstance.WindowInstance.RunTemplate(0, "VR_W255_Test");
+                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
+                            ObjectiveTestResult TestResult = new ObjectiveTestResult();
+                            TestResult.W255TestResult = new Process.W255.W255TestResult();
+                            TestResult.MTFHVARTestResult = new Process.MTFHVAR.MTFHARVTestResult();
+                            TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
+                            TestResult.DistortionARTestResult = new Process.DistortionAR.DistortionARTestResult();
+                            TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
+                            ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path);
+                            return null;
+                        }
+                        else if (lastTwo == "04")
+                        {
+                            log.Info("测试图例3 Chessboard");
+                            ProjectWindowInstance.WindowInstance.RunTemplate(5, "VR_Chessboard_Test");
+                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
+                            ObjectiveTestResult TestResult = new ObjectiveTestResult();
+                            TestResult.W255TestResult = new Process.W255.W255TestResult();
+                            TestResult.MTFHVARTestResult = new Process.MTFHVAR.MTFHARVTestResult();
+                            TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
+                            TestResult.DistortionARTestResult = new Process.DistortionAR.DistortionARTestResult();
+                            TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
+                            ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path);
+                            return null;
+                        }
+                        else if (lastTwo == "05")
+                        {
+                            log.Info("测试图例7 MTF-4pixel-o.6f");
+                            ProjectWindowInstance.WindowInstance.RunTemplate(6, "VR_MTF_Test");
+
+                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
+                            ObjectiveTestResult TestResult = new ObjectiveTestResult();
+                            TestResult.W255TestResult = new Process.W255.W255TestResult();
+                            TestResult.MTFHVARTestResult = new Process.MTFHVAR.MTFHARVTestResult();
+                            TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
+                            TestResult.DistortionARTestResult = new Process.DistortionAR.DistortionARTestResult();
+                            TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
+                            ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path);
+                            return null;
+                        }
+                        else if (lastTwo == "06")
+                        {
+                            log.Info("测试图例8 Distortion");
+                            ProjectWindowInstance.WindowInstance.RunTemplate(7, "VR_Distortion_Test");
+                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
+                            ObjectiveTestResult TestResult = new ObjectiveTestResult();
+                            TestResult.W255TestResult = new Process.W255.W255TestResult();
+                            TestResult.MTFHVARTestResult = new Process.MTFHVAR.MTFHARVTestResult();
+                            TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
+                            TestResult.DistortionARTestResult = new Process.DistortionAR.DistortionARTestResult();
+                            TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
+                            ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path);
+                            return null;
+                        }
+                        else if (lastTwo == "07")
+                        {
+                            log.Info("测试图例8 Optic");
+                            ProjectWindowInstance.WindowInstance.RunTemplate(7, "VR_OpticalCenter");
+                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
+                            ObjectiveTestResult TestResult = new ObjectiveTestResult();
+                            TestResult.W255TestResult = new Process.W255.W255TestResult();
+                            TestResult.MTFHVARTestResult = new Process.MTFHVAR.MTFHARVTestResult();
+                            TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
+                            TestResult.DistortionARTestResult = new Process.DistortionAR.DistortionARTestResult();
+                            TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
+                            ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path);
+                            return null;
+                        }
+                    }
                     else
                     {
                         if (ProjectWindowInstance.WindowInstance == null) return string.Join(",", strings) + ";";
@@ -252,14 +347,9 @@ namespace ProjectLUX.Services
                             TestResult.DistortionTestResult = new Process.Distortion.DistortionTestResult();
                             TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
                             TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
-
                             ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path); return null;
                         }
                     }
-
-
-
-
                     return string.Join(",", strings) + ";";
                 }
                 else

@@ -91,8 +91,8 @@
 						  Condition="'$(OS)' == 'Windows_NT'" />
 
 		<!-- 非 Windows（如 Linux、macOS）用 NuGet 包 -->
-		<PackageReference Include="ColorVision.Core" Version="1.3.9.1"
-						  Condition="'$(OS)' != 'Windows_NT'" />
+		<PackageReference Include="ColorVision.Core" Version="1.3.9.1" Condition="'$(OS)' != 'Windows_NT'" />
+		
 		<ProjectReference Include="..\ColorVision.Themes\ColorVision.Themes.csproj" />
 		<ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
 	</ItemGroup>
