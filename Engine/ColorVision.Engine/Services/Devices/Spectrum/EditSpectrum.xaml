@@ -62,6 +62,14 @@
                                 <TextBlock Text="饱和度"  Width="120"/>
                                 <TextBox Text="{Binding Saturation}" Style="{StaticResource TextBox.Small}"/>
                             </DockPanel>
+                            <DockPanel Margin="0,0,0,0">
+                                <TextBlock Text="ComPort"  Width="120"/>
+                                <TextBox Text="{Binding ComPort}" Style="{StaticResource TextBox.Small}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,0">
+                                <TextBlock Text="BaudRate"  Width="120"/>
+                                <TextBox Text="{Binding BaudRate}" Style="{StaticResource TextBox.Small}"/>
+                            </DockPanel>
                         </StackPanel>
                     </GroupBox>
                     <GroupBox Header="配置信息" Margin="0,5">
