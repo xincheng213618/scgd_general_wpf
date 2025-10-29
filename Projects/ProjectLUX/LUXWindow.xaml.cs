@@ -457,7 +457,6 @@ namespace ProjectLUX
             result.CreateTime = DateTime.Now;
             result.Result = true;
 
-
             try
             {
                 log.Info($"{result.Model}");
@@ -695,7 +694,8 @@ namespace ProjectLUX
             string sn = "ssss";
             string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
             ObjectiveTestResult TestResult = new ObjectiveTestResult();
-            TestResult.W255TestResult = new Process.W255.W255TestResult();
+            TestResult.W51ARTestResult = new Process.AR.W51AR.W51ARTestResult();
+            TestResult.W255ARTestResult = new Process.W255AR.W255ARTestResult();
             TestResult.MTFHVARTestResult = new Process.MTFHVAR.MTFHARVTestResult();
             TestResult.ChessboardARTestResult = new Process.ChessboardAR.ChessboardARTestResult();
             TestResult.DistortionARTestResult = new Process.DistortionAR.DistortionARTestResult();
