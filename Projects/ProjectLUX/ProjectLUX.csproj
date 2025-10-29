@@ -27,7 +27,6 @@
 
 	<ItemGroup>
 		<Folder Include="Assets\" />
-		<Folder Include="Process\AR\W51AR\" />
 		<Folder Include="Process\VR\" />
 	</ItemGroup>
 

@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using NetTaste;
+using ProjectLUX.Process.AR.W51AR;
 using ProjectLUX.Process.Blue;
 using ProjectLUX.Process.Chessboard;
 using ProjectLUX.Process.ChessboardAR;
@@ -11,6 +12,7 @@ using ProjectLUX.Process.MTFHVAR;
 using ProjectLUX.Process.OpticCenter;
 using ProjectLUX.Process.Red;
 using ProjectLUX.Process.W255;
+using ProjectLUX.Process.W255AR;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
@@ -107,7 +109,13 @@ namespace ProjectLUX
     public class ObjectiveTestResult:ViewModelBase
     {
         [DisplayName("W255")]
+        public W51ARTestResult W51ARTestResult { get; set; }
+        [DisplayName("W255")]
+        public W255ARTestResult W255ARTestResult { get; set; }
+
+        [DisplayName("W255")]
         public W255TestResult W255TestResult { get; set; }
+
         [DisplayName("R255")]
         public RedTestResult RedTestResult { get; set; }
 
