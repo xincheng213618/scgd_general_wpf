@@ -26,4 +26,9 @@
 		<RepositoryUrl>https://github.com/xincheng213618/scgd_general_wpf</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 	</PropertyGroup>
+	
+	<!-- Include shared AssemblyInfo for WPF projects -->
+	<ItemGroup Condition="'$(UseWPF)' == 'true'">
+		<Compile Include="$(MSBuildThisFileDirectory)Shared\AssemblyInfo.WPF.cs" Link="Properties\AssemblyInfo.Shared.cs" />
+	</ItemGroup>
 </Project>  
