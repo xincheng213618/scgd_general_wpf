@@ -73,6 +73,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public bool IsAutoDark { get => _IsAutoDark; set { if (value) IsShutterEnable = false; _IsAutoDark = value; OnPropertyChanged(); } }
         private bool _IsAutoDark;
 
+        public bool IsWithND { get => _IsWithND; set { _IsWithND = value; OnPropertyChanged(); } }
+        private bool _IsWithND;
+
         [DisplayName("饱和度")]
         public int Saturation { get => _Saturation; set { _Saturation = value; OnPropertyChanged(); } }
         private int _Saturation = 80;

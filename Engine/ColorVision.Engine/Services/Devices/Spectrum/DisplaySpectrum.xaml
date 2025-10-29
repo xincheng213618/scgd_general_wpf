@@ -74,8 +74,9 @@
                             </hc:PreviewSlider>
                         </DockPanel>
                         <StackPanel Margin="0,0,0,5">
-                            <UniformGrid Columns="3">
+                            <UniformGrid Columns="2">
                                 <CheckBox Content="自动积分" x:Name="AutoIntTime"/>
+                                <CheckBox Content="ND"  IsChecked="{Binding Config.IsWithND}"/>
                                 <CheckBox Content="自动校零"  IsChecked="{Binding Config.IsShutterEnable}" x:Name="AutoShutterDark"/>
                                 <CheckBox Content="自适应校零" x:Name="AutoDark"  IsChecked="{Binding Config.IsAutoDark}"/>
                             </UniformGrid>
