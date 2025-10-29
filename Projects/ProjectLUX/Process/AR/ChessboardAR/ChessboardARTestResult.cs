@@ -30,6 +30,7 @@ namespace ProjectLUX.Process.ChessboardAR
         public ObjectiveTestItem AverageWhiteLunimance { get; set; } = new ObjectiveTestItem() { Name = "Average_White_Lunimance", Unit = "cd/m^2" };
 
         public ObjectiveTestItem AverageBlackLunimance { get; set; } = new ObjectiveTestItem() { Name = "Average_Black_Lunimance", Unit = "cd/m^2" };
+       
         /// <summary>
         /// 棋盘格对比度 测试项
         /// </summary>

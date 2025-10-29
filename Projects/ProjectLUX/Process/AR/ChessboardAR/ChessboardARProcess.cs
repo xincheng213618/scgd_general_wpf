@@ -7,7 +7,6 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
-using ProjectLUX.Process.Green;
 using System.Windows;
 using System.Windows.Media;
 
@@ -39,11 +38,85 @@ namespace ProjectLUX.Process.ChessboardAR
                     {
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
                         int id = 0;
+
+                        if (poiPoints != null && poiPoints.Count >= 16)
+                        {
+                            var lvItems = new[]
+                            {
+                            testResult.P1Lv,  testResult.P2Lv,  testResult.P3Lv,  testResult.P4Lv,
+                            testResult.P5Lv,  testResult.P6Lv,  testResult.P7Lv,  testResult.P8Lv,
+                            testResult.P9Lv,  testResult.P10Lv, testResult.P11Lv, testResult.P12Lv,
+                            testResult.P13Lv, testResult.P14Lv, testResult.P15Lv, testResult.P16Lv
+                        };
+
+                            var lvFixes = new[]
+                            {
+                            fixConfig.P1Lv,  fixConfig.P2Lv,  fixConfig.P3Lv,  fixConfig.P4Lv,
+                            fixConfig.P5Lv,  fixConfig.P6Lv,  fixConfig.P7Lv,  fixConfig.P8Lv,
+                            fixConfig.P9Lv,  fixConfig.P10Lv, fixConfig.P11Lv, fixConfig.P12Lv,
+                            fixConfig.P13Lv, fixConfig.P14Lv, fixConfig.P15Lv, fixConfig.P16Lv
+                        };
+
+                            var lvRecipes = new[]
+                            {
+                            recipeConfig.P1Lv,  recipeConfig.P2Lv,  recipeConfig.P3Lv,  recipeConfig.P4Lv,
+                            recipeConfig.P5Lv,  recipeConfig.P6Lv,  recipeConfig.P7Lv,  recipeConfig.P8Lv,
+                            recipeConfig.P9Lv,  recipeConfig.P10Lv, recipeConfig.P11Lv, recipeConfig.P12Lv,
+                            recipeConfig.P13Lv, recipeConfig.P14Lv, recipeConfig.P15Lv, recipeConfig.P16Lv
+                        };
+
+                            for (int i = 0; i < 16; i++)
+                            {
+                                var poi = new PoiResultCIExyuvData(poiPoints[i]);
+                                var item = lvItems[i];
+                                var fix = lvFixes[i];
+                                var rc = lvRecipes[i];
+
+                                item.Value = poi.Y;
+                                item.Value *= fix;
+                                item.LowLimit = rc.Min;
+                                item.UpLimit = rc.Max;
+                                item.TestValue = item.Value.ToString();
+
+                                ctx.Result.Result &= item.TestResult;
+                            }
+                        }
                         foreach (var item in poiPoints)
                         {
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };
                             testResult.PoixyuvDatas.Add(poi);
                         }
+                        double AverageWhiteLunimance = 0;
+                        double AverageBlackLunimance = 0;
+
+                        for (int i = 0; i < 16; i+=2)
+                        {
+                            var poi = new PoiResultCIExyuvData(poiPoints[i]);
+                            AverageWhiteLunimance += poi.Y;
+                        }
+                        AverageWhiteLunimance /= 8.0;
+
+                        for (int i = 1; i < 16; i += 2)
+                        {
+                            var poi = new PoiResultCIExyuvData(poiPoints[i]);
+                            AverageBlackLunimance += poi.Y;
+                        }
+                        AverageBlackLunimance /= 8.0;
+
+                        testResult.AverageWhiteLunimance.Value = AverageWhiteLunimance;
+                        testResult.AverageWhiteLunimance.Value *= fixConfig.AverageWhiteLunimance;
+                        testResult.AverageWhiteLunimance.TestValue = testResult.AverageWhiteLunimance.Value.ToString("F3");
+                        testResult.AverageWhiteLunimance.LowLimit *= recipeConfig.AverageWhiteLunimance.Min;
+                        testResult.AverageWhiteLunimance.UpLimit *= recipeConfig.AverageWhiteLunimance.Max;
+                        ctx.Result.Result &= testResult.AverageWhiteLunimance.TestResult;
+
+                        testResult.AverageBlackLunimance.Value = AverageBlackLunimance;
+                        testResult.AverageBlackLunimance.Value *= fixConfig.AverageBlackLunimance;
+                        testResult.AverageBlackLunimance.TestValue = testResult.AverageBlackLunimance.Value.ToString("F3");
+                        testResult.AverageBlackLunimance.LowLimit *= recipeConfig.AverageBlackLunimance.Min;
+                        testResult.AverageBlackLunimance.UpLimit *= recipeConfig.AverageBlackLunimance.Max;
+                        ctx.Result.Result &= testResult.AverageBlackLunimance.TestResult;
+
                     }
 
                     if (master.ImgFileType == ViewResultAlgType.PoiAnalysis && master.TName.Contains("Chessboard_Contrast"))
@@ -52,17 +125,13 @@ namespace ProjectLUX.Process.ChessboardAR
                         if (details.Count == 1)
                         {
                             var view = new PoiAnalysisDetailViewReslut(details[0]);
-                            view.PoiAnalysisResult.result.Value *= fixConfig.ChessboardContrast;
-                            var contrast = new ObjectiveTestItem
-                            {
-                                Name = "Chessboard_Contrast",
-                                LowLimit = recipeConfig.ChessboardContras.Min,
-                                UpLimit = recipeConfig.ChessboardContras.Max,
-                                Value = view.PoiAnalysisResult.result.Value,
-                                TestValue = view.PoiAnalysisResult.result.Value.ToString("F3")
-                            };
-                            testResult.ChessboardContrast = contrast;
-                            ctx.Result.Result &= contrast.TestResult;
+
+                            testResult.ChessboardContrast.Value = view.PoiAnalysisResult.result.Value;
+                            testResult.ChessboardContrast.Value *= fixConfig.ChessboardContrast;
+                            testResult.ChessboardContrast.TestValue = testResult.ChessboardContrast.Value.ToString("F3");
+                            testResult.ChessboardContrast.LowLimit *= recipeConfig.ChessboardContrast.Min;
+                            testResult.ChessboardContrast.UpLimit *= recipeConfig.ChessboardContrast.Max;
+                            ctx.Result.Result &= testResult.ChessboardContrast.TestResult;
                         }
                     }
                 }
