@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System.ComponentModel;
@@ -92,9 +93,9 @@ namespace ProjectLUX
         public static SummaryManager GetInstance() { lock (_locker) { _instance ??= new SummaryManager(); return _instance; } }
         public RelayCommand EditCommand { get; set; }
 
-        public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
+        public static string DirectoryPath { get; set; } = ColorVisionPaths.ConfigDirectory;
 
-        public static string ConfigPath { get; set; } = DirectoryPath + "ProjectLUXSummary.json";
+        public static string ConfigPath { get; set; } = Path.Combine(DirectoryPath, "ProjectLUXSummary.json");
 
 
         public Summary Summary { get; set; } = new Summary();

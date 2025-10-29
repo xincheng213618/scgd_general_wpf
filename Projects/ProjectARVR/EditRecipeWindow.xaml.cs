@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿using ColorVision.Common;
+using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System.IO;
@@ -12,9 +13,9 @@ namespace ProjectARVR
         private static RecipeManager _instance;
         private static readonly object _locker = new();
         public static RecipeManager GetInstance() { lock (_locker) { _instance ??= new RecipeManager(); return _instance; } }
-        public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
+        public static string DirectoryPath { get; set; } = ColorVisionPaths.ConfigDirectory;
 
-        public static string ObjectiveTestResultFixPath { get; set; } = DirectoryPath + "ProjectARVRLite.json";
+        public static string ObjectiveTestResultFixPath { get; set; } = Path.Combine(DirectoryPath, "ProjectARVRLite.json");
         public Dictionary<string, ARVRRecipeConfig> RecipeConfigs { get; set; }
 
         public ARVRRecipeConfig RecipeConfig { get; set; } = new ARVRRecipeConfig();

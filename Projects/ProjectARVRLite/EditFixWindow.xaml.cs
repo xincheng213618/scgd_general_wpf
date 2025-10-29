@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿using ColorVision.Common;
+using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System.IO;
@@ -12,9 +13,9 @@ namespace ProjectARVRLite
         private static FixManager _instance;
         private static readonly object _locker = new();
         public static FixManager GetInstance() { lock (_locker) { _instance ??= new FixManager(); return _instance; } }
-        public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
+        public static string DirectoryPath { get; set; } = ColorVisionPaths.ConfigDirectory;
 
-        public static string ObjectiveTestResultFixPath { get; set; } = DirectoryPath + "ObjectiveTestResultFix.json";
+        public static string ObjectiveTestResultFixPath { get; set; } = Path.Combine(DirectoryPath, "ObjectiveTestResultFix.json");
         public RelayCommand EditCommand { get; set; }
 
         public ObjectiveTestResultFix ObjectiveTestResultFix { get; set; }

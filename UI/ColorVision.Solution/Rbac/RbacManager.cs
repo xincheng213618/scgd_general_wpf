@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common;
 using ColorVision.Rbac.Services;
 using ColorVision.Rbac.Services.Auth;
 using ColorVision.Rbac.Security;
@@ -15,8 +16,8 @@ namespace ColorVision.Rbac
         private static readonly object Locker = new();
         public static RbacManager GetInstance() { lock (Locker) { return _instance ??= new RbacManager(); } }
 
-        public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
-        public static string SqliteDbPath { get; set; } = DirectoryPath + "Rbac.db";
+        public static string DirectoryPath { get; set; } = ColorVisionPaths.ConfigDirectory;
+        public static string SqliteDbPath { get; set; } = Path.Combine(DirectoryPath, "Rbac.db");
 
         private SqlSugarClient db;
         public RelayCommand LoginCommand { get; set; } 

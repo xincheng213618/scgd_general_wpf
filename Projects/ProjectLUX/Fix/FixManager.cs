@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common;
 using log4net;
 using Newtonsoft.Json;
 using ProjectLUX.Fix;
@@ -14,9 +15,9 @@ namespace ProjectLUX
         private static FixManager _instance;
         private static readonly object _locker = new();
         public static FixManager GetInstance() { lock (_locker) { _instance ??= new FixManager(); return _instance; } }
-        public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
+        public static string DirectoryPath { get; set; } = ColorVisionPaths.ConfigDirectory;
 
-        public static string FixFilePath { get; set; } = DirectoryPath + "ProjectARVRProFixConfig.json";
+        public static string FixFilePath { get; set; } = Path.Combine(DirectoryPath, "ProjectARVRProFixConfig.json");
         public RelayCommand EditCommand { get; set; }
 
         public FixConfig FixConfig { get; set; }

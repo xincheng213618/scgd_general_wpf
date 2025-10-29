@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿using ColorVision.Common;
+using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.UI;
 using SqlSugar;
@@ -45,9 +46,9 @@ namespace ProjectARVRPro
         private static ViewResultManager _instance;
         private static readonly object _locker = new();
         public static ViewResultManager GetInstance() { lock (_locker) { _instance ??= new ViewResultManager(); return _instance; } }
-        public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
+        public static string DirectoryPath { get; set; } = ColorVisionPaths.ConfigDirectory;
 
-        public static string SqliteDbPath { get; set; } = DirectoryPath + "ProjectARVRPro.db";
+        public static string SqliteDbPath { get; set; } = Path.Combine(DirectoryPath, "ProjectARVRPro.db");
 
         public ViewResultManagerConfig Config { get; set; }
 

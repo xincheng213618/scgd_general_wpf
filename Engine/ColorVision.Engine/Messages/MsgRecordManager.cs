@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.UI;
@@ -30,8 +31,8 @@ namespace ColorVision.Engine.Messages
         private static MsgRecordManager _instance;
         private static readonly object _locker = new();
         public static MsgRecordManager GetInstance() { lock (_locker) { _instance ??= new MsgRecordManager(); return _instance; } }
-        public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
-        public static string SqliteDbPath { get; set; } = DirectoryPath + "MsgRecords.db";
+        public static string DirectoryPath { get; set; } = ColorVisionPaths.ConfigDirectory;
+        public static string SqliteDbPath { get; set; } = Path.Combine(DirectoryPath, "MsgRecords.db");
         private readonly SqlSugarClient _db;
         public ObservableCollection<MsgRecord> MsgRecords { get; set; } = new ObservableCollection<MsgRecord>();
         public MsgRecordManagerConfig Config { get; set; }
