@@ -36,33 +36,23 @@ namespace ProjectLUX.Process.DistortionAR
                         if (details.Count == 1)
                         {
                             var distortion = new Distortion2View(details[0]);
-                            distortion.DistortionReslut.TVDistortion.HorizontalRatio *= fixConfig.HorizontalTVDistortion;
-                            distortion.DistortionReslut.TVDistortion.VerticalRatio *= fixConfig.VerticalTVDistortion;
-
-
                             foreach (var pt in distortion.DistortionReslut.TVDistortion.FinalPoints)
                             {
                                 testResult.Points.Add(new System.Windows.Point(pt.X, pt.Y));
                             }
 
-                            testResult.HorizontalTVDistortion = new ObjectiveTestItem
-                            {
-                                Name = "HorizontalTVDistortion",
-                                LowLimit = recipeConfig.HorizontalTVDistortion.Min,
-                                UpLimit = recipeConfig.HorizontalTVDistortion.Max,
-                                Value = distortion.DistortionReslut.TVDistortion.HorizontalRatio,
-                                TestValue = distortion.DistortionReslut.TVDistortion.HorizontalRatio.ToString("F5") + "%"
-                            };
-                            testResult.VerticalTVDistortion = new ObjectiveTestItem
-                            {
-                                Name = "VerticalTVDistortion",
-                                LowLimit = recipeConfig.VerticalTVDistortion.Min,
-                                UpLimit = recipeConfig.VerticalTVDistortion.Max,
-                                Value = distortion.DistortionReslut.TVDistortion.VerticalRatio,
-                                TestValue = distortion.DistortionReslut.TVDistortion.VerticalRatio.ToString("F5") + "%"
-                            };
-
+                            testResult.HorizontalTVDistortion.Value = distortion.DistortionReslut.TVDistortion.HorizontalRatio;
+                            testResult.HorizontalTVDistortion.Value *=fixConfig.HorizontalTVDistortion;
+                            testResult.HorizontalTVDistortion.LowLimit = recipeConfig.HorizontalTVDistortion.Min;
+                            testResult.HorizontalTVDistortion.UpLimit = recipeConfig.HorizontalTVDistortion.Max;
+                            testResult.HorizontalTVDistortion.TestValue = distortion.DistortionReslut.TVDistortion.HorizontalRatio.ToString("F5") + "%";
                             ctx.Result.Result &= testResult.HorizontalTVDistortion.TestResult;
+
+                            testResult.VerticalTVDistortion.Value = distortion.DistortionReslut.TVDistortion.VerticalRatio;
+                            testResult.VerticalTVDistortion.Value *= fixConfig.VerticalTVDistortion;
+                            testResult.VerticalTVDistortion.UpLimit = recipeConfig.VerticalTVDistortion.Max;
+                            testResult.VerticalTVDistortion.LowLimit = recipeConfig.VerticalTVDistortion.Min;
+                            testResult.VerticalTVDistortion.TestValue = distortion.DistortionReslut.TVDistortion.VerticalRatio.ToString("F5") + "%";
                             ctx.Result.Result &= testResult.VerticalTVDistortion.TestResult;
                         }
                     }
