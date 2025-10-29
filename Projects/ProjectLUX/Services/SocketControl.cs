@@ -118,86 +118,37 @@ namespace ProjectLUX.Services
                         else if (lastTwo == "02")
                         {
                             log.Info("测试图例1 White 51 ");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(0, "White255_FOV_VR");
-                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
-                            ObjectiveTestResult TestResult = new ObjectiveTestResult();
-                            TestResult.W255TestResult = new Process.W255.W255TestResult();
-                            TestResult.MTFHVARTestResult = new Process.MTFHVAR.MTFHARVTestResult();
-                            TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
-                            TestResult.DistortionARTestResult = new Process.DistortionAR.DistortionARTestResult();
-                            TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
-                            ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path);
+                            ProjectWindowInstance.WindowInstance.RunTemplate(0, "White51_Test");
                             return null;
                         }
                         else if (lastTwo == "03")
                         {
                             log.Info("测试图例1 White Fov ");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(0, "VR_W255_Test");
-                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
-                            ObjectiveTestResult TestResult = new ObjectiveTestResult();
-                            TestResult.W255TestResult = new Process.W255.W255TestResult();
-                            TestResult.MTFHVARTestResult = new Process.MTFHVAR.MTFHARVTestResult();
-                            TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
-                            TestResult.DistortionARTestResult = new Process.DistortionAR.DistortionARTestResult();
-                            TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
-                            ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path);
+                            ProjectWindowInstance.WindowInstance.RunTemplate(1, "White255_Test");
                             return null;
                         }
                         else if (lastTwo == "04")
                         {
                             log.Info("测试图例3 Chessboard");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(5, "VR_Chessboard_Test");
-                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
-                            ObjectiveTestResult TestResult = new ObjectiveTestResult();
-                            TestResult.W255TestResult = new Process.W255.W255TestResult();
-                            TestResult.MTFHVARTestResult = new Process.MTFHVAR.MTFHARVTestResult();
-                            TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
-                            TestResult.DistortionARTestResult = new Process.DistortionAR.DistortionARTestResult();
-                            TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
-                            ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path);
+                            ProjectWindowInstance.WindowInstance.RunTemplate(2, "Chessboard_ANSI_Test");
                             return null;
                         }
                         else if (lastTwo == "05")
                         {
                             log.Info("测试图例7 MTF-4pixel-o.6f");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(6, "VR_MTF_Test");
-
-                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
-                            ObjectiveTestResult TestResult = new ObjectiveTestResult();
-                            TestResult.W255TestResult = new Process.W255.W255TestResult();
-                            TestResult.MTFHVARTestResult = new Process.MTFHVAR.MTFHARVTestResult();
-                            TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
-                            TestResult.DistortionARTestResult = new Process.DistortionAR.DistortionARTestResult();
-                            TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
-                            ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path);
+                            ProjectWindowInstance.WindowInstance.RunTemplate(3, "MTF_HV_Test");
                             return null;
                         }
                         else if (lastTwo == "06")
                         {
                             log.Info("测试图例8 Distortion");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(7, "VR_Distortion_Test");
-                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
-                            ObjectiveTestResult TestResult = new ObjectiveTestResult();
-                            TestResult.W255TestResult = new Process.W255.W255TestResult();
-                            TestResult.MTFHVARTestResult = new Process.MTFHVAR.MTFHARVTestResult();
-                            TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
-                            TestResult.DistortionARTestResult = new Process.DistortionAR.DistortionARTestResult();
-                            TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
-                            ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path);
+                            ProjectWindowInstance.WindowInstance.RunTemplate(4, "Distortion_Test");
                             return null;
                         }
                         else if (lastTwo == "07")
                         {
                             log.Info("测试图例8 Optic");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(7, "VR_OpticalCenter");
-                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
-                            ObjectiveTestResult TestResult = new ObjectiveTestResult();
-                            TestResult.W255TestResult = new Process.W255.W255TestResult();
-                            TestResult.MTFHVARTestResult = new Process.MTFHVAR.MTFHARVTestResult();
-                            TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
-                            TestResult.DistortionARTestResult = new Process.DistortionAR.DistortionARTestResult();
-                            TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
-                            ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path);
+                            ProjectWindowInstance.WindowInstance.RunTemplate(5, "OpticCenter_Test");
                             return null;
                         }
                     }

@@ -76,6 +76,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public bool IsWithND { get => _IsWithND; set { _IsWithND = value; OnPropertyChanged(); } }
         private bool _IsWithND;
 
+        public string ComPort { get => _ComPort; set { _ComPort = value; OnPropertyChanged(); } }
+        private string _ComPort;
+
+        public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
+        private int _BaudRate;
+
         [DisplayName("饱和度")]
         public int Saturation { get => _Saturation; set { _Saturation = value; OnPropertyChanged(); } }
         private int _Saturation = 80;

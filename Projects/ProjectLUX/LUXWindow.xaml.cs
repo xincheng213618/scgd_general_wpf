@@ -134,14 +134,17 @@ namespace ProjectLUX
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                ProjectLUXConfig.Instance.StepIndex = 1;
-                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains(templatename)).Value;
-                if (ProjectLUXConfig.Instance.LUXTestOpen)
+                ProjectLUXConfig.Instance.StepIndex = index;
+                CurrentTestType = index;
+                var temp = TemplateFlow.Params.FirstOrDefault(a => a.Key.Contains(templatename));     
+                if (ProjectLUXConfig.Instance.LUXTestOpen && temp !=null)
                 {
+                    FlowTemplate.SelectedValue = temp.Value;
                     RunTemplate();
                 }
                 else
                 {
+                    log.Error($"cant find {templatename} error");
                     SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                 }
             });
@@ -361,8 +364,6 @@ namespace ProjectLUX
             CurrentFlowResult.RunTime = stopwatch.ElapsedMilliseconds;
             logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
 
-            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
-
             if (FlowControlData.EventName == "Completed")
             {
                 CurrentFlowResult.Msg = "Completed";
@@ -401,10 +402,22 @@ namespace ProjectLUX
                     });
                     return;
                 }
+                else
+                {
+                    if (!string.IsNullOrWhiteSpace(ReturnCode))
+                    {
+                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                    }
+                }
                 TryCount = 0;
             }
             else
             {
+                if (!string.IsNullOrWhiteSpace(ReturnCode))
+                {
+                    SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                }
+
                 log.Error("流程运行失败" + FlowControlData.EventName + FlowControlData.Params);
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                 CurrentFlowResult.Msg = FlowControlData.Params;
@@ -422,10 +435,8 @@ namespace ProjectLUX
                         }
                     }
                 }
-
                 logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
                 ViewResultManager.Save(CurrentFlowResult);
-
                 TryCount = 0;
             }
         }
@@ -484,6 +495,11 @@ namespace ProjectLUX
                         ViewResultManager.Save(result);
                         ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
 
+                        if (!string.IsNullOrWhiteSpace(ReturnCode))
+                        {
+                            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                        }
+
                         if (IsTestTypeCompleted())
                         {
                             TestCompleted();
@@ -509,18 +525,6 @@ namespace ProjectLUX
         }
         private bool IsTestTypeCompleted() => CurrentTestType + 1 >= ProcessMetas.Count;
 
-        private void SwitchPG()
-        {
-            if (SocketManager.GetInstance().TcpClients.Count <= 0 || SocketControl.Current.Stream == null)
-            {
-                log.Info("找不到连接的Socket");
-                return;
-            }
-            log.Info("Socket已经链接 ");
-            //string respString = JsonConvert.SerializeObject(response);
-            //log.Info(respString);
-            //SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
-        }
 
         private void TestCompleted()
         {
@@ -529,6 +533,7 @@ namespace ProjectLUX
                 log.Info("找不到连接的Socket");
                 return;
             }
+
             ObjectiveTestResult.TotalResult = true;
             log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
 
@@ -587,45 +592,20 @@ namespace ProjectLUX
                     log.Info("展示图片报错");
                     log.Error(ex);
                 }
-
                 Task.Run(async () =>
                 {
                     if (File.Exists(result.FileName))
                     {
-                        try
+                        _ = Application.Current.Dispatcher.BeginInvoke(() =>
                         {
-                            var fileInfo = new FileInfo(result.FileName);
-                            log.Debug($"fileInfo.Length{fileInfo.Length}");
-                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                            {
-                                log.Debug("文件可以读取，没有被占用。");
-                            }
-                            if (fileInfo.Length > 0)
-                            {
-                                OpenImage(result);
-                            }
-                        }
-                        catch
-                        {
-                            log.Debug("文件还在写入");
-                            await Task.Delay(ProjectLUXConfig.Instance.ViewImageReadDelay);
-                            OpenImage(result);
-                        }
+                            ImageView.OpenImage(result.FileName);
+                            ImageView.ImageShow.Clear();
+
+                        });
                     }
                 });
 
             }
-        }
-
-        public void OpenImage(ProjectLUXReuslt result)
-        {
-            _ = Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                ImageView.OpenImage(result.FileName);
-                ImageView.ImageShow.Clear();
-
-            });
-
         }
 
         public void GenoutputText(ProjectLUXReuslt result)
