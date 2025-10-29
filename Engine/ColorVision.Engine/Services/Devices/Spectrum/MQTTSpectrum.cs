@@ -96,11 +96,18 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         else if (msg.EventName == "GetParam")
                         {
                             AutoIntTimeParam param = JsonConvert.DeserializeObject<AutoIntTimeParam>(JsonConvert.SerializeObject(msg.Data));
-                            Application.Current.Dispatcher.BeginInvoke(() =>
+                            if (param != null)
                             {
-                                DeviceSpectrum.Config.BeginIntegralTime = param.fTimeB;
-                                DeviceSpectrum.Config.MaxIntegralTime = param.iLimitTime;
-                            });
+                                Application.Current.Dispatcher.BeginInvoke(() =>
+                                {
+                                    DeviceSpectrum.Config.BeginIntegralTime = param.fTimeB;
+                                    DeviceSpectrum.Config.MaxIntegralTime = param.iLimitTime;
+                                });
+                            }
+                            else
+                            {
+                                log.Info("GetParam is null");
+                            }
                         }
                     }
                 }
