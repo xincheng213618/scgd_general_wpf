@@ -17,6 +17,7 @@ using System.Windows.Input;
 namespace ColorVision.Engine
 {
 
+
     public class ViewBatchResult : ViewModelBase
     {
         public MeasureBatchModel MeasureBatchModel { get; set; }

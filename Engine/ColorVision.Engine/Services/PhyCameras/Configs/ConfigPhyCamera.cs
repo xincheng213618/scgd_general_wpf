@@ -75,10 +75,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
                     CameraModel = CameraModel.HK_USB;
                     break;
                 case CameraType.CameraType_Total:
-                    // Process CameraType_Total case if needed
+                    // BatchProcess CameraType_Total case if needed
                     break;
                 default:
-                    // Process default case if needed
+                    // BatchProcess default case if needed
                     break;
             }
             return false;

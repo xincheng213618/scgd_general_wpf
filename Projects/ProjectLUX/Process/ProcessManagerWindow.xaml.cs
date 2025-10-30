@@ -4,7 +4,7 @@ namespace ProjectLUX.Process
 {
 
     /// <summary>
-    /// ProcessManagerWindow.xaml 的交互逻辑
+    /// BatchProcessManagerWindow.xaml 的交互逻辑
     /// </summary>
     public partial class ProcessManagerWindow : Window
     {

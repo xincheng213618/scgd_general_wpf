@@ -1,8 +1,10 @@
 ﻿#pragma warning disable CS8602,CS8603,CS8601
 using ColorVision.Database;
+using ColorVision.Engine.Batch;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
+using ColorVision.ImageEditor;
 using ColorVision.Scheduler;
 using ColorVision.SocketProtocol;
 using ColorVision.UI;
@@ -73,9 +75,12 @@ namespace ColorVision.Engine.Templates.Flow
 
         private static DisplayFlow _instance;
         private static readonly object _locker = new();
+
         public static DisplayFlow GetInstance() { lock (_locker) { return _instance ??= new DisplayFlow(); } }
 
         public static ViewFlow View => FlowEngineManager.GetInstance().View;
+
+        public static FlowEngineManager FlowEngineManager => FlowEngineManager.GetInstance();  
 
         public string DisPlayName => "Flow";
         public static FlowEngineConfig Config => FlowEngineConfig.Instance;
@@ -154,7 +159,6 @@ namespace ColorVision.Engine.Templates.Flow
             this.Loaded -= FlowDisplayControl_Loaded;
         }
 
-
         public async Task Refresh()
         {
             if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
@@ -227,29 +231,69 @@ namespace ColorVision.Engine.Templates.Flow
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
-            measureBatchModel.FlowStatus = FlowControlData.FlowStatus;
-            measureBatchModel.TotalTime = (int)stopwatch.ElapsedMilliseconds;
-            measureBatchModel.Result = FlowControlData.Params;
-            MySqlControl.GetInstance().DB.Updateable(measureBatchModel).ExecuteReturnEntity();
-
+            FlowEngineManager.Batch.FlowStatus = FlowControlData.FlowStatus;
+            FlowEngineManager.Batch.TotalTime = (int)stopwatch.ElapsedMilliseconds;
+            FlowEngineManager.Batch.Result = FlowControlData.Params;
+            MySqlControl.GetInstance().DB.Updateable(FlowEngineManager.Batch).ExecuteReturnEntity();
 
             FlowEngineConfig.Instance.FlowRunTime[ComboBoxFlow.Text] = stopwatch.ElapsedMilliseconds;
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
 
-            FlowEngineManager.GetInstance().CurrentFlowMsg = FlowControlData;
-
             ButtonRun.Visibility = Visibility.Visible;
             ButtonStop.Visibility = Visibility.Collapsed;
-
-            if (FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
-            {
-                MarkColorProperty.SetValue(LastNode, System.Drawing.Color.Red);
-            }
             string msg = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}节点:{Msg1}{Environment.NewLine}{FlowControlData.Params}{Environment.NewLine}{stopwatch.ElapsedMilliseconds}ms";
             View.logTextBox.Text = msg;
             View.ProgressBar1.Value = 100;
             log.Info(msg);
 
+            if (FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
+            {
+                MarkColorProperty.SetValue(LastNode, System.Drawing.Color.Red);
+            }
+            else if (FlowControlData.EventName == "Completed")
+            {
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    Processing(FlowEngineManager.Batch);
+                });
+            }
+        }
+        
+        private void Processing(MeasureBatchModel batch)
+        {
+            try
+            {
+                var meta = BatchManager.GetInstance().ProcessMetas.FirstOrDefault(m => string.Equals(m.TemplateName, FlowName, StringComparison.OrdinalIgnoreCase));
+                if (meta?.BatchProcess != null)
+                {
+                    log.Info($"匹配到自定义流程 {meta.Name} -> {meta.ProcessTypeName}; 使用 IProcess 处理 {FlowName}");
+                    bool executed = false;
+                    try
+                    {
+                        var ctx = new IBatchContext
+                        {
+                            Batch = batch,
+                        };
+                        executed = meta.BatchProcess.Process(ctx);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("自定义 IProcess 执行异常", ex);
+                    }
+                    if (executed)
+                    {
+                        return; // 已处理，直接返回
+                    }
+                    else
+                    {
+                        log.Warn("自定义 IProcess 执行失败，继续使用内置解析逻辑");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("匹配/执行自定义 IProcess 出错，回退内置逻辑", ex);
+            }
         }
 
         public ImageSource Icon { get => _Icon; set { _Icon = value; } }
@@ -322,8 +366,6 @@ namespace ColorVision.Engine.Templates.Flow
         {
             RunFlow();
         }
-
-        MeasureBatchModel measureBatchModel;
         string FlowName;
         public async void RunFlow()
         {
@@ -396,8 +438,8 @@ namespace ColorVision.Engine.Templates.Flow
             stopwatch.Start();
 
             timer.Change(0, 100); // 启动定时器
-            measureBatchModel = new MeasureBatchModel() { TId = TemplateFlow.Params[ComboBoxFlow.SelectedIndex].Id, Name = sn, Code = sn };
-            measureBatchModel.Id = MySqlControl.GetInstance().DB.Insertable(measureBatchModel).ExecuteReturnIdentity();
+            FlowEngineManager.Batch = new MeasureBatchModel() { TId = TemplateFlow.Params[ComboBoxFlow.SelectedIndex].Id, Name = sn, Code = sn };
+            FlowEngineManager.Batch.Id = MySqlControl.GetInstance().DB.Insertable(FlowEngineManager.Batch).ExecuteReturnIdentity();
 
             flowControl.Start(sn);
         }
@@ -415,9 +457,9 @@ namespace ColorVision.Engine.Templates.Flow
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
-            measureBatchModel.FlowStatus = FlowStatus.Canceled;
-            measureBatchModel.TotalTime = (int)stopwatch.ElapsedMilliseconds;
-            MySqlControl.GetInstance().DB.Updateable(measureBatchModel);
+            FlowEngineManager.Batch.FlowStatus = FlowStatus.Canceled;
+            FlowEngineManager.Batch.TotalTime = (int)stopwatch.ElapsedMilliseconds;
+            MySqlControl.GetInstance().DB.Updateable(FlowEngineManager.Batch);
 
             View.logTextBox.Text = "已经取消执行";
 

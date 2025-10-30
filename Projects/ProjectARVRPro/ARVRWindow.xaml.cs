@@ -510,6 +510,7 @@ namespace ProjectARVRPro
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
                 return;
             }
+
             ProjectARVRReuslt result = CurrentFlowResult ?? new ProjectARVRReuslt();
 
             result.BatchId = Batch.Id;

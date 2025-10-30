@@ -1,56 +1,36 @@
-﻿#pragma warning disable
+﻿
 using ColorVision.Common.Algorithms;
-using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
-using ColorVision.Engine;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Services.Types;
-using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
-using ColorVision.Engine.Templates.Jsons.BlackMura;
 using ColorVision.Engine.Templates.Jsons.FOV2;
-using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
-using ColorVision.Engine.Templates.MTF;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.SocketProtocol;
 using ColorVision.Themes;
 using ColorVision.UI;
-using ColorVision.UI.Extension;
 using ColorVision.UI.LogImp;
 using CVCommCore.CVAlgorithm;
 using FlowEngineLib;
 using FlowEngineLib.Base;
-using LiveChartsCore.Kernel;
 using log4net;
-using log4net.Util;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Org.BouncyCastle.Asn1.Ocsp;
-using ProjectARVR;
 using ProjectARVR.Services;
-using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO;
-using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -147,7 +127,7 @@ namespace ProjectARVR
                 //if (TestType == ARVRTestType.White2)
                 //{
                 //    ProjectARVRConfig.Instance.StepIndex = 1;
-                //    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("WhiteFOV")).Value;
+                //    TemplateName.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("WhiteFOV")).Value;
                 //    CurrentTestType = TestType;
                 //    RunTemplate();
                 //}
@@ -161,7 +141,7 @@ namespace ProjectARVR
                 //if (TestType == ARVRTestType.White1)
                 //{
                 //    ProjectARVRConfig.Instance.StepIndex = 3;
-                //    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White_calibrate")).Value;
+                //    TemplateName.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White_calibrate")).Value;
                 //    CurrentTestType = TestType;
                 //    RunTemplate();
                 //}

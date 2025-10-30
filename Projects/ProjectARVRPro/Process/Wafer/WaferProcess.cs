@@ -1,20 +1,9 @@
 using ColorVision.Database;
-using ColorVision.Engine; // AlgResultMasterDao, MeasureImgResultDao, DeatilCommonDao
-using ColorVision.Engine.Media;
+using ColorVision.Engine; 
 using ColorVision.Engine.Services.Devices.SMU.Dao;
-using ColorVision.Engine.Services.Devices.SMU.Views;
-using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
-using ColorVision.Engine.Templates.Jsons.FOV2;
-using ColorVision.Engine.Templates.Jsons.PoiAnalysis; // PoiAnalysisDetailViewReslut
-using ColorVision.Engine.Templates.POI.AlgorithmImp; // PoiPointResultModel
-using ColorVision.ImageEditor.Draw;
-using CVCommCore.CVAlgorithm;
-using Dm.util;
+using ColorVision.Engine.Templates.POI.AlgorithmImp; 
 using Newtonsoft.Json;
-using System.Collections.Generic;
 using System.IO;
-using System.Windows;
-using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Wafer
 {
@@ -25,7 +14,6 @@ namespace ProjectARVRPro.Process.Wafer
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
             WaferViewTestResult testResult = new WaferViewTestResult();
-
             try
             {
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
@@ -41,7 +29,7 @@ namespace ProjectARVRPro.Process.Wafer
 
                         foreach (var item in poiPoints)
                         {
-                            testResult.PoixyuvDatas.add(new PoiResultCIExyuvData(item));
+                            testResult.PoixyuvDatas.Add(new PoiResultCIExyuvData(item));
                         }
                     }
                 }
