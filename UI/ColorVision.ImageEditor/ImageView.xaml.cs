@@ -115,6 +115,10 @@ namespace ColorVision.ImageEditor
 
             // Setup toolbar visibility toggle commands
             SetupToolbarToggleCommands();
+            this.PreviewMouseDown += (s, e) =>
+            {
+                this.Focus();
+            };
 
             var _visibilityConfig = ConfigService.Instance.GetRequiredService<EditorToolVisibilityConfig>();
 
@@ -135,6 +139,9 @@ namespace ColorVision.ImageEditor
 
         private void SetupToolbarToggleCommands()
         {
+            this.Focusable = true;
+            this.Focus();
+
             // Show All Toolbars (Ctrl+Shift+A)
             var showAllToolbarsCommand = new RoutedCommand();
             CommandBindings.Add(new CommandBinding(showAllToolbarsCommand, (s, e) => 

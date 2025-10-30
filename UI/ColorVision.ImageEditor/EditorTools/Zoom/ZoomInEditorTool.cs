@@ -6,7 +6,7 @@ namespace ColorVision.ImageEditor.EditorTools.Zoom
     public record class ZoomInEditorTool(EditorContext EditorContext) : IEditorTool
     {
         public ToolBarLocal ToolBarLocal => ToolBarLocal.Top;
-        public string? GuidId => "ZoomUniform";
+        public string? GuidId => "ZoomIn";
 
         public int Order { get; set; } = 1;
 

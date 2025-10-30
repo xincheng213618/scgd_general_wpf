@@ -8,7 +8,7 @@ namespace ColorVision.ImageEditor.EditorTools.Zoom
         public ToolBarLocal ToolBarLocal => ToolBarLocal.Top;
         public string? GuidId => "ZoomUniform";
 
-        public int Order { get; set; }
+        public int Order { get; set; } = 1;
 
         public object Icon { get; set; } = IEditorToolFactory.TryFindResource("DrawingImage1_1");
 
