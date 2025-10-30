@@ -28,6 +28,7 @@ using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
 using ColorVision.Engine.Templates.Jsons.BuildPOIAA;
+using ColorVision.Engine.Templates.Jsons.CompoundImg;
 using ColorVision.Engine.Templates.Jsons.Distortion2;
 using ColorVision.Engine.Templates.Jsons.FindCross;
 using ColorVision.Engine.Templates.Jsons.FOV2;
@@ -479,6 +480,12 @@ namespace ColorVision.Engine.Templates.Flow
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.图像裁剪:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "图像裁剪", new TemplateImageCropping());
+                            break;
+                        case FlowEngineLib.Algorithm.AlgorithmType.ImageCompound:
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "ImageCompound", new TemplateCompoundImg());
+                            break;
+                        case FlowEngineLib.Algorithm.AlgorithmType.十字计算:
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "十字计算", new TemplateFindCross());
                             break;
                         default:
                             break;
