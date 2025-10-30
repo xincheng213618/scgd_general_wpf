@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
 namespace ST.Library.UI.NodeEditor;
@@ -79,57 +80,58 @@ public class STNodePropertyDescriptor
 		}
 		if (sTNodePropertyDescriptor.IsEnum)
 		{
-			return Enum.Parse(sTNodePropertyDescriptor, strText);
+			string value = Regex.Replace(strText, "[\\[\\]]", "");
+			return Enum.Parse(sTNodePropertyDescriptor, value);
 		}
 		if (sTNodePropertyDescriptor.IsArray)
 		{
-			Type elementType = sTNodePropertyDescriptor.GetElementType();
-			if (elementType == m_t_string)
+			Type item = sTNodePropertyDescriptor.GetElementType();
+			if (item == m_t_string)
 			{
 				return strText.Split(',');
 			}
-			string[] item = strText.Trim(' ', ',').Split(',');
-			if (elementType == m_t_int)
+			string[] array = strText.Trim(' ', ',').Split(',');
+			if (item == m_t_int)
 			{
-				int[] array = new int[item.Length];
-				for (int i = 0; i < item.Length; i++)
+				int[] array2 = new int[array.Length];
+				for (int i = 0; i < array.Length; i++)
 				{
-					array[i] = int.Parse(item[i].Trim());
-				}
-				return array;
-			}
-			if (elementType == m_t_float)
-			{
-				float[] array2 = new float[item.Length];
-				for (int j = 0; j < item.Length; j++)
-				{
-					array2[j] = float.Parse(item[j].Trim());
+					array2[i] = int.Parse(array[i].Trim());
 				}
 				return array2;
 			}
-			if (elementType == m_t_int)
+			if (item == m_t_float)
 			{
-				double[] array3 = new double[item.Length];
-				for (int k = 0; k < item.Length; k++)
+				float[] array3 = new float[array.Length];
+				for (int j = 0; j < array.Length; j++)
 				{
-					array3[k] = double.Parse(item[k].Trim());
+					array3[j] = float.Parse(array[j].Trim());
 				}
 				return array3;
 			}
-			if (elementType == m_t_int)
+			if (item == m_t_int)
 			{
-				bool[] array4 = new bool[item.Length];
-				for (int l = 0; l < item.Length; l++)
+				double[] array4 = new double[array.Length];
+				for (int k = 0; k < array.Length; k++)
 				{
-					array4[l] = bool.Parse(item[l].Trim());
+					array4[k] = double.Parse(array[k].Trim());
 				}
 				return array4;
+			}
+			if (item == m_t_int)
+			{
+				bool[] array5 = new bool[array.Length];
+				for (int l = 0; l < array.Length; l++)
+				{
+					array5[l] = bool.Parse(array[l].Trim());
+				}
+				return array5;
 			}
 		}
 		throw new InvalidCastException("无法完成[string]到[" + sTNodePropertyDescriptor.FullName + "]的转换 请重载[STNodePropertyDescriptor.GetValueFromString(string)]");
 	}
 
-	protected internal virtual string GetStringFromValue()
+	protected internal virtual string GetStringFromValue(bool isLang = false)
 	{
 		object value = PropertyInfo.GetValue(Node, null);
 		Type propertyType = PropertyInfo.PropertyType;
@@ -145,6 +147,10 @@ public class STNodePropertyDescriptor
 				list.Add(item.ToString());
 			}
 			return string.Join(",", list.ToArray());
+		}
+		if (propertyType.IsEnum && isLang)
+		{
+			return Lang.Get(value.ToString());
 		}
 		return value.ToString();
 	}
@@ -220,7 +226,7 @@ public class STNodePropertyDescriptor
 		rectangleR.Width--;
 		rectangleR.Height--;
 		solidBrush.Color = Control.ForeColor;
-		graphics.DrawString(GetStringFromValue(), control.Font, solidBrush, RectangleR, m_sf);
+		graphics.DrawString(GetStringFromValue(isLang: true), control.Font, solidBrush, RectangleR, m_sf);
 		if (PropertyInfo.PropertyType.IsEnum || PropertyInfo.PropertyType == m_t_bool)
 		{
 			graphics.FillPolygon(Brushes.Gray, new Point[3]
