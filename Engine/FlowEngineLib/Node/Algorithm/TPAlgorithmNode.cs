@@ -21,7 +21,7 @@ public class TPAlgorithmNode : CVBaseServerNode
 
 	private STNodeEditText<string> m_ctrl_op;
 
-	[STNodeProperty("算子类型", "算子类型", true)]
+	[STNodeProperty("类别", "算子类别", true)]
 	public TPAlgorithmType Algorithm
 	{
 		get
@@ -108,7 +108,7 @@ public class TPAlgorithmNode : CVBaseServerNode
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_editText = CreateControl(typeof(STNodeEditText<TPAlgorithmType>), m_custom_item, "类型:", _Algorithm);
+		m_ctrl_editText = CreateControl(typeof(STNodeEditText<TPAlgorithmType>), m_custom_item, "类别:", _Algorithm);
 		m_custom_item.Y += 25;
 		m_ctrl_op = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "算子:", operatorCode);
 		m_custom_item.Y += 25;
@@ -119,41 +119,13 @@ public class TPAlgorithmNode : CVBaseServerNode
 	{
 		m_ctrl_editText.Value = _Algorithm;
 		AlgorithmObjType.instance.TPAlgorithmType = _Algorithm;
-		switch (_Algorithm)
+		if (_Algorithm == TPAlgorithmType.其他)
 		{
-		case TPAlgorithmType.像素定位:
-			Operator = "findDotsArrayImp";
-			break;
-		case TPAlgorithmType.重组像素:
-			Operator = "rebuildPixelsImp";
-			break;
-		case TPAlgorithmType.像素缺陷:
-			Operator = "findPixelDefectsForRebuildPicImp";
-			break;
-		case TPAlgorithmType.像素缺陷2:
-			Operator = "findPixelDefectsForRebuildPicGradingImp";
-			break;
-		case TPAlgorithmType.检测灰尘:
-			Operator = "findParticlesForRebuildPicImp";
-			break;
-		case TPAlgorithmType.修补灰尘:
-			Operator = "fillParticlesImp";
-			break;
-		case TPAlgorithmType.检测mura:
-			Operator = "findMuraImp";
-			break;
-		case TPAlgorithmType.检测线:
-			Operator = "findLineImp";
-			break;
-		case TPAlgorithmType.图像组合:
-			Operator = "combineSpacingDataImp";
-			break;
-		case TPAlgorithmType.其他:
 			Operator = "";
-			break;
-		default:
+		}
+		else
+		{
 			Operator = "";
-			break;
 		}
 	}
 

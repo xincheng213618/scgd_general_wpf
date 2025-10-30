@@ -227,7 +227,7 @@ public class CommCameraNode : CVBaseServerNode
 
 	private string GetAutoExpDis()
 	{
-		return $"{_IsAutoExp}/{_IsWithND}";
+		return string.Format("{0}/{1}", _IsAutoExp ? "T" : "F", _IsWithND ? "T" : "F");
 	}
 
 	private string GetPOITempDisplay()

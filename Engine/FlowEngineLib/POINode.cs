@@ -29,7 +29,7 @@ public class POINode : CVBaseServerNode
 
 	private STNodeEditText<string> m_ctrl_outtemp;
 
-	[STNodeProperty("POI模板", "POI模板", true)]
+	[STNodeProperty("参数模板", "参数模板", true)]
 	public string TemplateName
 	{
 		get
@@ -43,7 +43,7 @@ public class POINode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("POI模板ID", "POI模板ID", true)]
+	[STNodeProperty("参数模板ID", "参数模板ID", true)]
 	public int TempId
 	{
 		get

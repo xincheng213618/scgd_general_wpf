@@ -26,19 +26,6 @@ public class Algorithm2InNode : CVBaseServerNodeIn2Hub
 
 	private STNodeEditText<Algorithm2Type> m_ctrl_editText;
 
-	[STNodeProperty("o-index", "Input Order Index", true, false, false)]
-	public int OrderIndex
-	{
-		get
-		{
-			return _OrderIndex;
-		}
-		set
-		{
-			_OrderIndex = value;
-		}
-	}
-
 	[STNodeProperty("参数模板", "参数模板", true)]
 	public string TempName
 	{
@@ -67,7 +54,7 @@ public class Algorithm2InNode : CVBaseServerNodeIn2Hub
 		}
 	}
 
-	[STNodeProperty("算子类别", "算子类别", true)]
+	[STNodeProperty("算子", "算子", true)]
 	public Algorithm2Type Algorithm
 	{
 		get
@@ -130,7 +117,7 @@ public class Algorithm2InNode : CVBaseServerNodeIn2Hub
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_editText = CreateControl(typeof(STNodeEditText<Algorithm2Type>), m_custom_item, "算法:", _Algorithm);
+		m_ctrl_editText = CreateControl(typeof(STNodeEditText<Algorithm2Type>), m_custom_item, "算子:", _Algorithm);
 		m_custom_item.Y += 25;
 		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", $"{_TempId}:{_TempName}");
 	}

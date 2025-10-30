@@ -115,7 +115,14 @@ public class CVCommonNode : STNode
 	protected STNodeEditText<T> CreateControl<T>(Type clsType, Rectangle rect, string text, T value)
 	{
 		STNodeEditText<T> sTNodeEditText = (STNodeEditText<T>)Activator.CreateInstance(clsType);
-		sTNodeEditText.Text = text;
+		if (text.EndsWith(":"))
+		{
+			sTNodeEditText.Text = Lang.Get(text.Substring(0, text.Length - 1)) + ":";
+		}
+		else
+		{
+			sTNodeEditText.Text = Lang.Get(text);
+		}
 		sTNodeEditText.DisplayRectangle = rect;
 		sTNodeEditText.Value = value;
 		base.Controls.Add(sTNodeEditText);

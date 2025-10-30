@@ -92,10 +92,7 @@ public class LoopNode : CVCommonNode
 		m_op_end = base.OutputOptions.Add("OUT", typeof(CVStartCFC), bSingle: false);
 		m_in_start.DataTransfer += m_in_start_DataTransfer;
 		m_in_next.DataTransfer += m_in_next_DataTransfer;
-		m_ctrl_editText = new STNodeEditText<string>();
-		m_ctrl_editText.Text = "值";
-		m_ctrl_editText.DisplayRectangle = new Rectangle(5, 45, base.Width - 10, OptionItemHeight);
-		base.Controls.Add(m_ctrl_editText);
+		m_ctrl_editText = CreateControl(typeof(STNodeEditText<string>), new Rectangle(5, 45, base.Width - 10, OptionItemHeight), "Value:", string.Empty);
 		m_actionBegin = new Dictionary<string, LoopDataModel>();
 		updateUI(null);
 	}

@@ -15,5 +15,7 @@ public enum AlgorithmType
 	图像裁剪,
 	双目融合,
 	SFR_FindROI,
-	AA布点
+	AA布点,
+	ImageCompound,
+	十字计算
 }

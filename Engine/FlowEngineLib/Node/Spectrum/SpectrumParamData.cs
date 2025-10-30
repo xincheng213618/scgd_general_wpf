@@ -12,5 +12,7 @@ public class SpectrumParamData
 
 	public bool AutoInitDark { get; set; }
 
+	public bool IsWithND { get; set; }
+
 	public SMUResultData SMUData { get; set; }
 }

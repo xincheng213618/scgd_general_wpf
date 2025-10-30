@@ -28,20 +28,7 @@ public class AlgorithmARVRNode : CVBaseServerNode
 
 	private STNodeEditText<CVOLED_COLOR> m_ctrl_color;
 
-	[STNodeProperty("o-index", "Input Order Index", true, false, false)]
-	public int OrderIndex
-	{
-		get
-		{
-			return _OrderIndex;
-		}
-		set
-		{
-			_OrderIndex = value;
-		}
-	}
-
-	[STNodeProperty("算子类别", "算子类别", true)]
+	[STNodeProperty("算子", "算子", true)]
 	public AlgorithmARVRType Algorithm
 	{
 		get
@@ -156,7 +143,7 @@ public class AlgorithmARVRNode : CVBaseServerNode
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_editText = CreateControl(typeof(STNodeEditText<AlgorithmARVRType>), m_custom_item, "算法:", _Algorithm);
+		m_ctrl_editText = CreateControl(typeof(STNodeEditText<AlgorithmARVRType>), m_custom_item, "算子:", _Algorithm);
 		m_custom_item.Y += 25;
 		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", $"{_TempId}:{_TempName}");
 		m_custom_item.Y += 25;

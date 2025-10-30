@@ -35,20 +35,7 @@ public class AlgorithmNode : CVBaseServerNode
 
 	private STNodeEditText<CVOLED_COLOR> m_ctrl_color;
 
-	[STNodeProperty("o-index", "Input Order Index", true, false, false)]
-	public int OrderIndex
-	{
-		get
-		{
-			return _OrderIndex;
-		}
-		set
-		{
-			_OrderIndex = value;
-		}
-	}
-
-	[STNodeProperty("算子类别", "算子类别", true)]
+	[STNodeProperty("算子", "算子", true)]
 	public AlgorithmType Algorithm
 	{
 		get
@@ -103,19 +90,6 @@ public class AlgorithmNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("POI模板ID", "POI模板ID", true)]
-	public int POITempId
-	{
-		get
-		{
-			return _POITempId;
-		}
-		set
-		{
-			_POITempId = value;
-		}
-	}
-
 	[STNodeProperty("图像文件", "图像文件", true)]
 	public string ImgFileName
 	{
@@ -143,19 +117,6 @@ public class AlgorithmNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("图像水平翻转", "图像水平翻转", true)]
-	public bool IsInversion
-	{
-		get
-		{
-			return _IsInversion;
-		}
-		set
-		{
-			_IsInversion = value;
-		}
-	}
-
 	[STNodeProperty("缓存大小", "缓存大小", true)]
 	public int BufferLen
 	{
@@ -179,18 +140,19 @@ public class AlgorithmNode : CVBaseServerNode
 	{
 		operatorCode = "MTF";
 		_TempName = "";
-		base.Height += 50;
 		_OrderIndex = -1;
 		_TempId = -1;
 		_POITempId = -1;
 		_BufferLen = 1024;
+		_IsInversion = false;
 		_Color = CVOLED_COLOR.GREEN;
+		base.Height += 50;
 	}
 
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_editText = CreateControl(typeof(STNodeEditText<AlgorithmType>), m_custom_item, "算法:", _Algorithm);
+		m_ctrl_editText = CreateControl(typeof(STNodeEditText<AlgorithmType>), m_custom_item, "算子:", _Algorithm);
 		m_custom_item.Y += 25;
 		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", $"{_TempId}:{_TempName}");
 		m_custom_item.Y += 25;
@@ -245,6 +207,12 @@ public class AlgorithmNode : CVBaseServerNode
 		case AlgorithmType.AA布点:
 			operatorCode = "ARVR.AA.FindPoints";
 			break;
+		case AlgorithmType.ImageCompound:
+			operatorCode = "CompoundImg";
+			break;
+		case AlgorithmType.十字计算:
+			operatorCode = "FindCross";
+			break;
 		}
 		base.nodeEvent?.Invoke(this, new FlowEngineNodeEventArgs());
 	}
@@ -262,6 +230,7 @@ public class AlgorithmNode : CVBaseServerNode
 		case AlgorithmType.JND:
 		case AlgorithmType.图像裁剪:
 		case AlgorithmType.SFR_FindROI:
+		case AlgorithmType.十字计算:
 			algorithmParam = new AlgorithmParam_ROI
 			{
 				POITemplateParam = new CVTemplateParam
