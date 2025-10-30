@@ -1644,9 +1644,8 @@ namespace ColorVision.Engine.Templates.POI
             }
 
 
-            if(type == typeof(DVPolygon))
+            if(type == typeof(DVPolygon) || type == typeof(DVLine))
             {
-
                 var itemss= new MenuItem { Header = "设置到折线布点" };
                 itemss.Click += (s, e) =>
                 {
@@ -1658,11 +1657,21 @@ namespace ColorVision.Engine.Templates.POI
                             PoiConfig.Polygons.Add(new PolygonPoint(item.X, item.Y));
                         }
                     }
+                    else if (DrawingVisualLists[ListView1.SelectedIndex] is DVLine dVLine)
+                    {
+                        foreach (var item in dVLine.Attribute.Points)
+                        {
+                            PoiConfig.Polygons.Add(new PolygonPoint(item.X, item.Y));
+                        }
+                    }
                 };
                 ListView1.ContextMenu.Items.Add(itemss);
             }
 
-            var moveUpItem = new MenuItem { Header = "上移", Command = MoveUpCommand };
+
+
+
+                var moveUpItem = new MenuItem { Header = "上移", Command = MoveUpCommand };
             ListView1.ContextMenu.Items.Add(moveUpItem);
 
             var moveDownItem = new MenuItem { Header = "下移", Command = MoveDownCommand };

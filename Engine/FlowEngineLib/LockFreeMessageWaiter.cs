@@ -20,7 +20,7 @@ public class LockFreeMessageWaiter
 		{
 			tcs.TrySetResult(result: false);
 		});
-        return tcs.Task;
+		return tcs.Task;
 	}
 
 	public Task<bool> WaitForMessageAsync(int milliseconds = 6000)

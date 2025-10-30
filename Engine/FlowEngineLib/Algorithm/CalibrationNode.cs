@@ -23,19 +23,6 @@ public class CalibrationNode : CVBaseServerNode
 
 	private STNodeEditText<string> m_ctrl_temp_exp;
 
-	[STNodeProperty("o-index", "Input Order Index", true, false, false)]
-	public int OrderIndex
-	{
-		get
-		{
-			return _OrderIndex;
-		}
-		set
-		{
-			_OrderIndex = value;
-		}
-	}
-
 	[STNodeProperty("参数模板", "参数模板", true)]
 	public string TempName
 	{

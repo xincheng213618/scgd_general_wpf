@@ -22,7 +22,7 @@ public class OLEDNodeDescriptor : STNodePropertyDescriptor
 		return JsonConvert.DeserializeObject<PointFloat[]>(strText);
 	}
 
-	protected override string GetStringFromValue()
+	protected override string GetStringFromValue(bool isLang = false)
 	{
 		PointFloat[] array = (PointFloat[])GetValue(null);
 		if (array != null)

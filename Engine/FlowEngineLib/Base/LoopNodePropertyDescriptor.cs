@@ -22,7 +22,7 @@ public class LoopNodePropertyDescriptor<T, U> : STNodePropertyDescriptor where U
 		return JsonConvert.DeserializeObject<List<T>>(strText);
 	}
 
-	protected override string GetStringFromValue()
+	protected override string GetStringFromValue(bool isLang = false)
 	{
 		List<T> list = (List<T>)GetValue(null);
 		if (list != null)

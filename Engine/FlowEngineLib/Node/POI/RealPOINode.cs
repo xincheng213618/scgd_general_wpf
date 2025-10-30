@@ -194,7 +194,7 @@ public class RealPOINode : CVBaseServerNodeIn2Hub
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_type = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "类型:", getTypeSize());
+		m_ctrl_type = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "类别:", getTypeSize());
 		m_custom_item.Y += 25;
 		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "F/R:", getFilterReviseTemp());
 		m_custom_item.Y += 25;

@@ -162,7 +162,7 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_editText = CreateControl(typeof(STNodeEditText<AlgorithmOLED_AOIType>), m_custom_item, "算法:", _Algorithm);
+		m_ctrl_editText = CreateControl(typeof(STNodeEditText<AlgorithmOLED_AOIType>), m_custom_item, "算子:", _Algorithm);
 		m_custom_item.Y += 25;
 		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", $"{_TempId}:{_TempName}");
 	}

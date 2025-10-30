@@ -1,6 +1,7 @@
 using System.Drawing;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
+using ST.Library.UI;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Camera;
@@ -164,10 +165,11 @@ public class CVAOICameraNode : CVBaseServerNode
 		set
 		{
 			_AOIType = value;
+			setAOIValue();
 		}
 	}
 
-	[STNodeProperty("算法模板", "算法模板", true)]
+	[STNodeProperty("算子模板", "算子模板", true)]
 	public string AlgTempName
 	{
 		get
@@ -177,7 +179,7 @@ public class CVAOICameraNode : CVBaseServerNode
 		set
 		{
 			_AlgTempName = value;
-			m_ctrl_algTemp.Value = value;
+			setAOIValue();
 		}
 	}
 
@@ -213,7 +215,7 @@ public class CVAOICameraNode : CVBaseServerNode
 
 	private string GetAutoExpDis()
 	{
-		return $"{_IsAutoExp}/{_IsWithND}";
+		return string.Format("{0}/{1}", _IsAutoExp ? "T" : "F", _IsWithND ? "T" : "F");
 	}
 
 	private string GetCameraTempDis()
@@ -226,9 +228,14 @@ public class CVAOICameraNode : CVBaseServerNode
 		m_ctrl_img.Value = GetImgTempDis();
 	}
 
+	private void setAOIValue()
+	{
+		m_ctrl_algTemp.Value = GetAlgTempDis();
+	}
+
 	private string GetImgTempDis()
 	{
-		return $"{_IsSaveRawImg}:{_FlipMode.ToString()}";
+		return string.Format("{0}:{1}", _IsSaveRawImg ? "T" : "F", _FlipMode.ToString());
 	}
 
 	private void initCtrl()
@@ -242,7 +249,12 @@ public class CVAOICameraNode : CVBaseServerNode
 		custom_item.Y += 25;
 		m_ctrl_caliTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "校正:", _CalibTempName);
 		custom_item.Y += 25;
-		m_ctrl_algTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "算法:", _AlgTempName);
+		m_ctrl_algTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "算子:", GetAlgTempDis());
+	}
+
+	private string GetAlgTempDis()
+	{
+		return $"{Lang.Get(_AOIType.ToString())}:{_AlgTempName}";
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)

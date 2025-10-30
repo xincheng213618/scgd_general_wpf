@@ -18,6 +18,8 @@ public class SpectrumNode : CVBaseServerNode
 
 	private bool _AutoIntTime;
 
+	private bool _IsWithND;
+
 	private bool _SelfDark;
 
 	private bool _AutoInitDark;
@@ -27,6 +29,8 @@ public class SpectrumNode : CVBaseServerNode
 	private STNodeEditText<float> m_ctrl_editText;
 
 	private STNodeEditText<int> m_ctrl_AveNum;
+
+	private STNodeEditText<string> m_ctrl_Dark;
 
 	[STNodeProperty("命令", "命令", true)]
 	public SPCommCmdType PGCmd
@@ -83,6 +87,19 @@ public class SpectrumNode : CVBaseServerNode
 		}
 	}
 
+	[STNodeProperty("启用ND", "启用ND滤轮(自动曝光)", true)]
+	public bool IsWithND
+	{
+		get
+		{
+			return _IsWithND;
+		}
+		set
+		{
+			_IsWithND = value;
+		}
+	}
+
 	[STNodeProperty("自适应校零", "自适应校零", true)]
 	public bool SelfDark
 	{
@@ -93,6 +110,7 @@ public class SpectrumNode : CVBaseServerNode
 		set
 		{
 			_SelfDark = value;
+			setDarkDis();
 		}
 	}
 
@@ -106,6 +124,7 @@ public class SpectrumNode : CVBaseServerNode
 		set
 		{
 			_AutoInitDark = value;
+			setDarkDis();
 		}
 	}
 
@@ -118,7 +137,12 @@ public class SpectrumNode : CVBaseServerNode
 		_AveNum = 1;
 		_AutoIntTime = false;
 		_SelfDark = false;
-		base.Height += 50;
+		base.Height += 75;
+	}
+
+	private void setDarkDis()
+	{
+		m_ctrl_Dark.Value = GetDarkDis();
 	}
 
 	private void setValue(SPCommCmdType _Cmd)
@@ -128,12 +152,14 @@ public class SpectrumNode : CVBaseServerNode
 		{
 			m_ctrl_editText.Visable = false;
 			m_ctrl_AveNum.Visable = false;
+			m_ctrl_Dark.Visable = false;
 			operatorCode = "InitDark";
 		}
 		else
 		{
 			m_ctrl_editText.Visable = true;
 			m_ctrl_AveNum.Visable = true;
+			m_ctrl_Dark.Visable = true;
 			operatorCode = "GetData";
 		}
 	}
@@ -141,24 +167,19 @@ public class SpectrumNode : CVBaseServerNode
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		int x = m_custom_item.X;
-		int width = m_custom_item.Width;
-		int y = m_custom_item.Y;
-		m_ctrl_cmd = new STNodeEditText<SPCommCmdType>();
-		m_ctrl_cmd.Text = "命令 ";
-		m_ctrl_cmd.DisplayRectangle = new Rectangle(x, y, width, m_custom_item.Height);
-		m_ctrl_cmd.Value = _Cmd;
-		base.Controls.Add(m_ctrl_cmd);
-		m_ctrl_editText = new STNodeEditText<float>();
-		m_ctrl_editText.Text = "积分时间:";
-		m_ctrl_editText.DisplayRectangle = new Rectangle(x, y + 25, width, m_custom_item.Height);
-		m_ctrl_editText.Value = _Temp;
-		base.Controls.Add(m_ctrl_editText);
-		m_ctrl_AveNum = new STNodeEditText<int>();
-		m_ctrl_AveNum.Text = "平均次数:";
-		m_ctrl_AveNum.DisplayRectangle = new Rectangle(x, y + 50, width, m_custom_item.Height);
-		m_ctrl_AveNum.Value = _AveNum;
-		base.Controls.Add(m_ctrl_AveNum);
+		Rectangle custom_item = m_custom_item;
+		m_ctrl_cmd = CreateControl(typeof(STNodeEditText<SPCommCmdType>), custom_item, "命令:", _Cmd);
+		custom_item.Y += 25;
+		m_ctrl_editText = CreateControl(typeof(STNodeEditText<float>), custom_item, "积分时间:", _Temp);
+		custom_item.Y += 25;
+		m_ctrl_AveNum = CreateControl(typeof(STNodeEditText<int>), custom_item, "平均次数:", _AveNum);
+		custom_item.Y += 25;
+		m_ctrl_Dark = CreateControl(typeof(STNodeEditText<string>), custom_item, "自动/自适应:", GetDarkDis());
+	}
+
+	private string GetDarkDis()
+	{
+		return $"{_AutoInitDark}/{_SelfDark}";
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
@@ -171,6 +192,7 @@ public class SpectrumNode : CVBaseServerNode
 			AutoIntegration = _AutoIntTime,
 			SelfAdaptionInitDark = _SelfDark,
 			AutoInitDark = _AutoInitDark,
+			IsWithND = _IsWithND,
 			SMUData = sMUResult
 		};
 	}

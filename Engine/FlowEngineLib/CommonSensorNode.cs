@@ -25,7 +25,7 @@ public class CommonSensorNode : CVBaseServerNode
 
 	private STNodeEditText<CommCmdType> m_ctrl_cmd_type;
 
-	[STNodeProperty("模板名称", "模板名称", true)]
+	[STNodeProperty("参数模板", "参数模板名称", true)]
 	public string TempName
 	{
 		get
@@ -109,7 +109,7 @@ public class CommonSensorNode : CVBaseServerNode
 		_CmdSend = "";
 		_CmdReceive = "";
 		base.Width = 220;
-		base.Height += 70;
+		base.Height += 75;
 		m_custom_item = new Rectangle(5, 30, 210, 18);
 	}
 
@@ -125,7 +125,7 @@ public class CommonSensorNode : CVBaseServerNode
 		m_custom_item.Y += 25;
 		m_ctrl_cmd_type = CreateControl(typeof(STNodeEditText<CommCmdType>), m_custom_item, "指令类型:", _CmdType);
 		m_custom_item.Y += 25;
-		m_ctrl_cmd_send = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "指令类型:", _CmdSend);
+		m_ctrl_cmd_send = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "发送指令:", _CmdSend);
 		m_custom_item.Y += 25;
 		m_ctrl_cmd_recv = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "接收指令:", _CmdReceive);
 	}

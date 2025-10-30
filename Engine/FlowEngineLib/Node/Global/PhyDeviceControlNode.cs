@@ -55,9 +55,9 @@ public class PhyDeviceControlNode : CVBaseServerNode
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_editText = CreateControl(typeof(STNodeEditText<CVDeviceType>), m_custom_item, "DeviceType:", _DeviceType);
+		m_ctrl_editText = CreateControl(typeof(STNodeEditText<CVDeviceType>), m_custom_item, "设备类型:", _DeviceType);
 		m_custom_item.Y += 25;
-		m_ctrl_cmd = CreateControl(typeof(STNodeEditText<CVDeviceControlCmd>), m_custom_item, "Command:", _CmdType);
+		m_ctrl_cmd = CreateControl(typeof(STNodeEditText<CVDeviceControlCmd>), m_custom_item, "控制命令:", _CmdType);
 	}
 
 	private void setDeviceType()

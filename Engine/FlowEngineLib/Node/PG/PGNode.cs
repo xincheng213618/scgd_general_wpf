@@ -37,11 +37,7 @@ public class PGNode : CVBaseServerNode
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_editText = new STNodeEditText<PGCommCmdType>();
-		m_ctrl_editText.Text = "命令 ";
-		m_ctrl_editText.DisplayRectangle = m_custom_item;
-		m_ctrl_editText.Value = _PGCmd;
-		base.Controls.Add(m_ctrl_editText);
+		m_ctrl_editText = CreateControl(typeof(STNodeEditText<PGCommCmdType>), m_custom_item, "Command:", _PGCmd);
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
