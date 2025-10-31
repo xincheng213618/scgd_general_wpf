@@ -173,6 +173,11 @@ namespace ColorVision.Engine.Templates
         {
             throw new NotImplementedException();
         }
+
+        public virtual bool SwapTemplateOrder(int index1, int index2)
+        {
+            return false;
+        }
     }
 
     public class ITemplate<T> : ITemplate where T : ParamModBase, new() 
@@ -502,6 +507,79 @@ namespace ColorVision.Engine.Templates
                         MySqlControl.GetInstance().BatchExecuteNonQuery(mysqlCommand.GetRecover());
                     }
                 }
+            }
+        }
+
+        public override bool SwapTemplateOrder(int index1, int index2)
+        {
+            if (index1 < 0 || index1 >= TemplateParams.Count || index2 < 0 || index2 >= TemplateParams.Count)
+                return false;
+
+            if (index1 == index2)
+                return true;
+
+            try
+            {
+                var template1 = TemplateParams[index1];
+                var template2 = TemplateParams[index2];
+
+                // Get the IDs from database
+                int id1 = template1.Value.Id;
+                int id2 = template2.Value.Id;
+
+                // Swap the IDs in the database
+                // We need to use a temporary ID to avoid unique constraint violations
+                int tempId = -9999999; // Use a very negative number as temporary ID
+
+                // Step 1: Update template1 to temporary ID
+                template1.Value.ModMaster.Id = tempId;
+                Db.Updateable(template1.Value.ModMaster).ExecuteCommand();
+                
+                // Update all detail records for template1 to use tempId
+                var details1 = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id1).ToList();
+                foreach (var detail in details1)
+                {
+                    detail.Pid = tempId;
+                }
+                Db.Updateable(details1).ExecuteCommand();
+
+                // Step 2: Update template2 to id1
+                template2.Value.ModMaster.Id = id1;
+                Db.Updateable(template2.Value.ModMaster).ExecuteCommand();
+                
+                // Update all detail records for template2 to use id1
+                var details2 = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id2).ToList();
+                foreach (var detail in details2)
+                {
+                    detail.Pid = id1;
+                }
+                Db.Updateable(details2).ExecuteCommand();
+
+                // Step 3: Update template1 from temporary ID to id2
+                template1.Value.ModMaster.Id = id2;
+                Db.Updateable(template1.Value.ModMaster).ExecuteCommand();
+                
+                // Update all detail records for template1 to use id2
+                details1 = Db.Queryable<ModDetailModel>().Where(x => x.Pid == tempId).ToList();
+                foreach (var detail in details1)
+                {
+                    detail.Pid = id2;
+                }
+                Db.Updateable(details1).ExecuteCommand();
+
+                // Update the in-memory values
+                template1.Value.Id = id2;
+                template2.Value.Id = id1;
+
+                // Swap the items in the ObservableCollection
+                TemplateParams.Move(index1, index2);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"交换模板顺序失败: {ex.Message}", "ColorVision");
+                return false;
             }
         }
     }
