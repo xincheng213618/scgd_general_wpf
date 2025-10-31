@@ -435,5 +435,45 @@ namespace ColorVision.Engine.Templates
         {
             ITemplate.Export(ListView1.SelectedIndex);
         }
+
+        private void Button_MoveUp_Click(object sender, RoutedEventArgs e)
+        {
+            if (ListView1.SelectedIndex > 0)
+            {
+                int selectedIndex = ListView1.SelectedIndex;
+                ITemplate.MoveUp(selectedIndex);
+                ListView1.SelectedIndex = selectedIndex - 1;
+            }
+        }
+
+        private void Button_MoveDown_Click(object sender, RoutedEventArgs e)
+        {
+            if (ListView1.SelectedIndex >= 0 && ListView1.SelectedIndex < ITemplate.Count - 1)
+            {
+                int selectedIndex = ListView1.SelectedIndex;
+                ITemplate.MoveDown(selectedIndex);
+                ListView1.SelectedIndex = selectedIndex + 1;
+            }
+        }
+
+        private void MenuItem_MoveUp_Click(object sender, RoutedEventArgs e)
+        {
+            if (ListView1.SelectedIndex > 0)
+            {
+                int selectedIndex = ListView1.SelectedIndex;
+                ITemplate.MoveUp(selectedIndex);
+                ListView1.SelectedIndex = selectedIndex - 1;
+            }
+        }
+
+        private void MenuItem_MoveDown_Click(object sender, RoutedEventArgs e)
+        {
+            if (ListView1.SelectedIndex >= 0 && ListView1.SelectedIndex < ITemplate.Count - 1)
+            {
+                int selectedIndex = ListView1.SelectedIndex;
+                ITemplate.MoveDown(selectedIndex);
+                ListView1.SelectedIndex = selectedIndex + 1;
+            }
+        }
     }
 }

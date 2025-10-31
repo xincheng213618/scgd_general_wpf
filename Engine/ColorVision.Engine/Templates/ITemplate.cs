@@ -173,6 +173,22 @@ namespace ColorVision.Engine.Templates
         {
             throw new NotImplementedException();
         }
+
+        /// <summary>
+        /// 将指定索引的模板向上移动一位（交换顺序和ID）
+        /// Move the template at the specified index up one position (swap order and ID)
+        /// </summary>
+        public virtual void MoveUp(int index)
+        {
+        }
+
+        /// <summary>
+        /// 将指定索引的模板向下移动一位（交换顺序和ID）
+        /// Move the template at the specified index down one position (swap order and ID)
+        /// </summary>
+        public virtual void MoveDown(int index)
+        {
+        }
     }
 
     public class ITemplate<T> : ITemplate where T : ParamModBase, new() 
@@ -502,6 +518,94 @@ namespace ColorVision.Engine.Templates
                         MySqlControl.GetInstance().BatchExecuteNonQuery(mysqlCommand.GetRecover());
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// 交换两个模板的顺序，包括在ObservableCollection中的位置和数据库中的ID
+        /// Swap the order of two templates, including their positions in ObservableCollection and IDs in database
+        /// </summary>
+        /// <param name="index1">第一个模板的索引</param>
+        /// <param name="index2">第二个模板的索引</param>
+        public virtual void SwapTemplateOrder(int index1, int index2)
+        {
+            if (index1 < 0 || index1 >= TemplateParams.Count || index2 < 0 || index2 >= TemplateParams.Count || index1 == index2)
+                return;
+
+            var template1 = TemplateParams[index1];
+            var template2 = TemplateParams[index2];
+
+            // 保存原始ID
+            int id1 = template1.Value.ModMaster.Id;
+            int id2 = template2.Value.ModMaster.Id;
+
+            // 交换数据库中的ID
+            // 1. 先将第一个模板的ID临时设置为-1（避免ID冲突）
+            template1.Value.ModMaster.Id = -1;
+            template1.Value.Id = -1;
+            Db.Updateable(template1.Value.ModMaster).ExecuteCommand();
+            
+            // 更新关联的详细记录的Pid
+            var details1 = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id1).ToList();
+            foreach (var detail in details1)
+            {
+                detail.Pid = -1;
+            }
+            Db.Updateable(details1).ExecuteCommand();
+
+            // 2. 将第二个模板的ID改为第一个模板的原ID
+            template2.Value.ModMaster.Id = id1;
+            template2.Value.Id = id1;
+            Db.Updateable(template2.Value.ModMaster).ExecuteCommand();
+            
+            var details2 = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id2).ToList();
+            foreach (var detail in details2)
+            {
+                detail.Pid = id1;
+            }
+            Db.Updateable(details2).ExecuteCommand();
+
+            // 3. 将第一个模板的ID改为第二个模板的原ID
+            template1.Value.ModMaster.Id = id2;
+            template1.Value.Id = id2;
+            Db.Updateable(template1.Value.ModMaster).ExecuteCommand();
+            
+            details1 = Db.Queryable<ModDetailModel>().Where(x => x.Pid == -1).ToList();
+            foreach (var detail in details1)
+            {
+                detail.Pid = id2;
+            }
+            Db.Updateable(details1).ExecuteCommand();
+
+            // 交换在ObservableCollection中的位置
+            TemplateParams.Move(index1, index2);
+
+            // 标记这两个索引需要保存
+            SetSaveIndex(index1);
+            SetSaveIndex(index2);
+        }
+
+        /// <summary>
+        /// 将指定索引的模板向上移动一位（交换顺序和ID）
+        /// Move the template at the specified index up one position (swap order and ID)
+        /// </summary>
+        public override void MoveUp(int index)
+        {
+            if (index > 0 && index < TemplateParams.Count)
+            {
+                SwapTemplateOrder(index, index - 1);
+            }
+        }
+
+        /// <summary>
+        /// 将指定索引的模板向下移动一位（交换顺序和ID）
+        /// Move the template at the specified index down one position (swap order and ID)
+        /// </summary>
+        public override void MoveDown(int index)
+        {
+            if (index >= 0 && index < TemplateParams.Count - 1)
+            {
+                SwapTemplateOrder(index, index + 1);
             }
         }
     }

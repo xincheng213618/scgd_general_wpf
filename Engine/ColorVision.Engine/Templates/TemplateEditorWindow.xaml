@@ -91,6 +91,9 @@
                         <MenuItem Header="{x:Static properties:Resources.MenuRename}" Command="{x:Static commands:Commands.ReName}" Tag="{Binding .}" />
                         <MenuItem Header="创建副本"  Click="Button_CreateCopy_Click" Tag="{Binding .}"  />
                         <MenuItem Header="创建为样例"  Click="CreateTemplate_Click" Tag="{Binding .}"  />
+                        <Separator/>
+                        <MenuItem Header="上移" Click="MenuItem_MoveUp_Click" Tag="{Binding .}" />
+                        <MenuItem Header="下移" Click="MenuItem_MoveDown_Click" Tag="{Binding .}" />
                     </ContextMenu>
                 </ListView.Resources>
                 <ListView.ItemContainerStyle>
@@ -167,6 +170,14 @@
                 </Button>
                 <Button Click="Button_Import_Click"  >
                     <TextBlock Text="{x:Static properties:Resources.Import}"/>
+                </Button>
+            </UniformGrid>
+            <UniformGrid x:Name="OrderGrid" Columns="2" Margin="0,5,0,0">
+                <Button Click="Button_MoveUp_Click" Margin="0,0,5,0">
+                    <TextBlock Text="上移"/>
+                </Button>
+                <Button Click="Button_MoveDown_Click">
+                    <TextBlock Text="下移"/>
                 </Button>
             </UniformGrid>
         </StackPanel>
