@@ -528,7 +528,8 @@ namespace ColorVision.Engine.Templates
                 int id2 = template2.Value.Id;
 
                 // Swap the IDs in the database using a three-step process to avoid constraint violations
-                int tempId = -9999999; // Use a very negative number as temporary ID
+                // Use the minimum integer value as temporary ID to minimize conflict risk
+                int tempId = int.MinValue + Math.Abs(id1.GetHashCode() % 1000);
 
                 // Step 1: Move template1 to temporary ID
                 var modMaster1 = Db.Queryable<ModMasterModel>().InSingle(id1);
@@ -584,8 +585,10 @@ namespace ColorVision.Engine.Templates
                 template2.Value.Id = id1;
                 template2.Value.ModMaster.Id = id1;
 
-                // Swap the items in the ObservableCollection
-                TemplateParams.Move(index1, index2);
+                // Swap the items in the ObservableCollection using proper swap
+                var temp = TemplateParams[index1];
+                TemplateParams[index1] = TemplateParams[index2];
+                TemplateParams[index2] = temp;
 
                 return true;
             }
