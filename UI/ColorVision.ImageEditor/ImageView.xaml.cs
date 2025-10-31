@@ -136,7 +136,9 @@ namespace ColorVision.ImageEditor
                 EditorTools.Add(toolViewModel);
             }
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
         private void SetupToolbarToggleCommands()
         {
             this.Focusable = true;
