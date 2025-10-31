@@ -45,14 +45,16 @@ public static class Lang
 
 	public static string Get(string key)
 	{
-		try
-		{
-			return _resourceManager.GetString(key, _currentCulture) ?? ("[" + key + "]");
-		}
-		catch
-		{
-			return "[" + key + "]";
-		}
+        return "[" + key + "]";
+
+  //      try
+  //      {
+		//	return _resourceManager.GetString(key, _currentCulture) ?? ("[" + key + "]");
+		//}
+		//catch
+		//{
+		//	return "[" + key + "]";
+		//}
 	}
 
 	public static string Get(string key, params object[] args)
