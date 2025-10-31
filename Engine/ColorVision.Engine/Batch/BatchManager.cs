@@ -3,29 +3,52 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using log4net;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Input;
-using System.Collections.Specialized;
-using Newtonsoft.Json;
-using System.IO;
 
-namespace ProjectARVRPro.Process
+namespace ColorVision.Engine.Batch
 {
-    public class ProcessManager : ViewModelBase
+    public class BatchConfig : ViewModelBase,IConfig
     {
-        private static readonly ILog log = LogManager.GetLogger(nameof(ProcessManager));
+        public static BatchConfig Instance => ConfigService.Instance.GetRequiredService<BatchConfig>();
+        [JsonIgnore]
+        public RelayCommand EditCommand { get; set; }
+        public BatchConfig()
+        {
+            EditCommand = new RelayCommand(a => BatchManager.GetInstance().Edit());
+        }
+
+        [DisplayName("默认保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
+        public string SavePath { get => _SavePath; set { _SavePath = value; OnPropertyChanged(); } }
+        private string _SavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Batch"); 
+    }
+
+
+    public class BatchManager : ViewModelBase
+    {
+        private static readonly ILog log = LogManager.GetLogger(nameof(BatchManager));
+
         private const string PersistFileName = "ProcessMetas.json";
-        private static string PersistDirectory => ViewResultManager.DirectoryPath; // 复用配置目录
+        private static string PersistDirectory => Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
         private static string PersistFilePath => Path.Combine(PersistDirectory, PersistFileName);
 
-        private static ProcessManager _instance;
+        private static BatchManager _instance;
         private static readonly object _locker = new();
-        public static ProcessManager GetInstance() { lock (_locker) { _instance ??= new ProcessManager(); return _instance; } }
+        public static BatchManager GetInstance() { lock (_locker) { _instance ??= new BatchManager(); return _instance; } }
 
-        public ObservableCollection<IProcess> Processes { get; } = new ObservableCollection<IProcess>();
+        public BatchConfig BatchConfig { get; set; }
 
-        public ObservableCollection<ProcessMeta> ProcessMetas { get; } = new ObservableCollection<ProcessMeta>();
+        public ObservableCollection<IBatchProcess> Processes { get; } = new ObservableCollection<IBatchProcess>();
+
+        public ObservableCollection<BatchProcessMeta> ProcessMetas { get; } = new ObservableCollection<BatchProcessMeta>();
 
         public ObservableCollection<TemplateModel<FlowParam>> templateModels { get; set; } = TemplateFlow.Params;
         public RelayCommand EditCommand { get; set; }
@@ -37,17 +60,17 @@ namespace ProjectARVRPro.Process
         public TemplateModel<FlowParam> SelectedTemplate { get => _SelectedTemplate; set { _SelectedTemplate = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
         private TemplateModel<FlowParam> _SelectedTemplate;
 
-        public IProcess SelectedProcess { get => _SelectedProcess; set { _SelectedProcess = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
-        private IProcess _SelectedProcess;
+        public IBatchProcess SelectedProcess { get => _SelectedProcess; set { _SelectedProcess = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
+        private IBatchProcess _SelectedProcess;
 
         public TemplateModel<FlowParam> UpdateTemplate { get => _UpdateTemplate; set { _UpdateTemplate = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
         private TemplateModel<FlowParam> _UpdateTemplate;
 
-        public IProcess UpdateProcess { get => _UpdateProcess; set { _UpdateProcess = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
-        private IProcess _UpdateProcess;
+        public IBatchProcess UpdateProcess { get => _UpdateProcess; set { _UpdateProcess = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
+        private IBatchProcess _UpdateProcess;
 
-        public ProcessMeta SelectedProcessMeta { get => _SelectedProcessMeta; set { _SelectedProcessMeta = value; OnPropertyChanged(); OnSelectedProcessMetaChanged(); CommandManager.InvalidateRequerySuggested(); } }
-        private ProcessMeta _SelectedProcessMeta;
+        public BatchProcessMeta SelectedProcessMeta { get => _SelectedProcessMeta; set { _SelectedProcessMeta = value; OnPropertyChanged(); OnSelectedProcessMetaChanged(); CommandManager.InvalidateRequerySuggested(); } }
+        private BatchProcessMeta _SelectedProcessMeta;
 
         public RelayCommand AddMetaCommand { get; set; }
         public RelayCommand RemoveMetaCommand { get; set; }
@@ -55,8 +78,10 @@ namespace ProjectARVRPro.Process
         public RelayCommand MoveUpCommand { get; set; }
         public RelayCommand MoveDownCommand { get; set; }
 
-        public ProcessManager()
+        public BatchManager()
         {
+            BatchConfig = ConfigService.Instance.GetRequiredService<BatchConfig>();
+
             LoadProcesses();
             ProcessMetas.CollectionChanged += ProcessMetas_CollectionChanged;
             EditCommand = new RelayCommand(a => Edit());
@@ -74,9 +99,9 @@ namespace ProjectARVRPro.Process
             {
                 try
                 {
-                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IProcess).IsAssignableFrom(t) && !t.IsAbstract))
+                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IBatchProcess).IsAssignableFrom(t) && !t.IsAbstract))
                     {
-                        if (Activator.CreateInstance(type) is IProcess process)
+                        if (Activator.CreateInstance(type) is IBatchProcess process)
                         {
                             Processes.Add(process);
                         }
@@ -93,14 +118,14 @@ namespace ProjectARVRPro.Process
         {
             if (e.NewItems != null)
             {
-                foreach (ProcessMeta meta in e.NewItems)
+                foreach (BatchProcessMeta meta in e.NewItems)
                 {
                     meta.PropertyChanged += Meta_PropertyChanged;
                 }
             }
             if (e.OldItems != null)
             {
-                foreach (ProcessMeta meta in e.OldItems)
+                foreach (BatchProcessMeta meta in e.OldItems)
                 {
                     meta.PropertyChanged -= Meta_PropertyChanged;
                 }
@@ -116,7 +141,7 @@ namespace ProjectARVRPro.Process
 
         public void Edit()
         {
-            ProcessManagerWindow processManagerWindow = new ProcessManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            BatchProcessManagerWindow processManagerWindow = new BatchProcessManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             processManagerWindow.DataContext = this;
             processManagerWindow.ShowDialog();
         }
@@ -134,11 +159,11 @@ namespace ProjectARVRPro.Process
                 MessageBox.Show(Application.Current.GetActiveWindow(), "名称重复", "ColorVision");
                 return;
             }
-            ProcessMetas.Add(new ProcessMeta
+            ProcessMetas.Add(new BatchProcessMeta
             {
                 Name = NewMetaName,
-                FlowTemplate = SelectedTemplate.Key,
-                Process = SelectedProcess
+                TemplateName = SelectedTemplate.Key,
+                BatchProcess = SelectedProcess
             });
             NewMetaName = string.Empty;
         }
@@ -157,8 +182,8 @@ namespace ProjectARVRPro.Process
             if (SelectedProcessMeta != null)
             {
                 // Populate update fields when a BatchProcessMeta is selected
-                UpdateTemplate = templateModels.FirstOrDefault(t => t.Key == SelectedProcessMeta.FlowTemplate);
-                UpdateProcess = Processes.FirstOrDefault(p => p.GetType().FullName == SelectedProcessMeta.Process?.GetType().FullName);
+                UpdateTemplate = templateModels.FirstOrDefault(t => t.Key == SelectedProcessMeta.TemplateName);
+                UpdateProcess = Processes.FirstOrDefault(p => p.GetType().FullName == SelectedProcessMeta.BatchProcess?.GetType().FullName);
             }
         }
 
@@ -172,8 +197,8 @@ namespace ProjectARVRPro.Process
             if (!CanUpdateMeta()) return;
             
             // Update the selected BatchProcessMeta with new values
-            SelectedProcessMeta.FlowTemplate = UpdateTemplate.Key;
-            SelectedProcessMeta.Process = UpdateProcess;
+            SelectedProcessMeta.TemplateName = UpdateTemplate.Key;
+            SelectedProcessMeta.BatchProcess = UpdateProcess;
         }
 
         private bool CanMoveUp()
@@ -207,20 +232,20 @@ namespace ProjectARVRPro.Process
                 if (!Directory.Exists(PersistDirectory)) Directory.CreateDirectory(PersistDirectory);
                 if (!File.Exists(PersistFilePath)) return;
                 string json = File.ReadAllText(PersistFilePath);
-                var list = JsonConvert.DeserializeObject<List<ProcessMetaPersist>>(json) ?? new List<ProcessMetaPersist>();
+                var list = JsonConvert.DeserializeObject<List<BatchProcessMetaPersist>>(json) ?? new List<BatchProcessMetaPersist>();
                 ProcessMetas.CollectionChanged -= ProcessMetas_CollectionChanged; // 暂停事件
                 foreach (var item in list)
                 {
-                    IProcess proc = Processes.FirstOrDefault(p => p.GetType().FullName == item.ProcessTypeFullName);
+                    IBatchProcess proc = Processes.FirstOrDefault(p => p.GetType().FullName == item.ProcessTypeFullName);
                     if (proc == null)
                     {
                         // 尝试反射创建
                         try
                         {
-                            var t = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes()).FirstOrDefault(x => x.FullName == item.ProcessTypeFullName && typeof(IProcess).IsAssignableFrom(x));
+                            var t = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes()).FirstOrDefault(x => x.FullName == item.ProcessTypeFullName && typeof(IBatchProcess).IsAssignableFrom(x));
                             if (t != null)
                             {
-                                proc = Activator.CreateInstance(t) as IProcess;
+                                proc = Activator.CreateInstance(t) as IBatchProcess;
                                 if (proc != null && !Processes.Any(p => p.GetType().FullName == proc.GetType().FullName))
                                     Processes.Add(proc);
                             }
@@ -230,7 +255,7 @@ namespace ProjectARVRPro.Process
                             log.Warn($"无法实例化进程类型 {item.ProcessTypeFullName}: {ex.Message}");
                         }
                     }
-                    ProcessMeta meta = new ProcessMeta() { Name = item.Name, FlowTemplate = item.FlowTemplate, Process = proc };
+                    BatchProcessMeta meta = new BatchProcessMeta() { Name = item.Name, TemplateName = item.TemplateName, BatchProcess = proc };
                     meta.PropertyChanged += Meta_PropertyChanged;
                     ProcessMetas.Add(meta);
                 }
@@ -247,11 +272,11 @@ namespace ProjectARVRPro.Process
             try
             {
                 if (!Directory.Exists(PersistDirectory)) Directory.CreateDirectory(PersistDirectory);
-                var list = ProcessMetas.Select(m => new ProcessMetaPersist
+                var list = ProcessMetas.Select(m => new BatchProcessMetaPersist
                 {
                     Name = m.Name,
-                    FlowTemplate = m.FlowTemplate,
-                    ProcessTypeFullName = m.Process?.GetType().FullName
+                    TemplateName = m.TemplateName,
+                    ProcessTypeFullName = m.BatchProcess?.GetType().FullName
                 }).ToList();
                 string json = JsonConvert.SerializeObject(list, Formatting.Indented);
                 File.WriteAllText(PersistFilePath, json);

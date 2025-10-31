@@ -35,6 +35,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         public string SerialNumber { get => _SerialNumber; set { _SerialNumber = value; OnPropertyChanged(); } }
         private string _SerialNumber;
+
         public string StartNodeName { get; set; }
         public string Message { get; set; }
 

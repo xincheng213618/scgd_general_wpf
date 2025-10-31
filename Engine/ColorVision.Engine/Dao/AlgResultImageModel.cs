@@ -1,7 +1,7 @@
 ﻿using ColorVision.Database;
 using SqlSugar;
 
-namespace ColorVision.Engine.Templates.ImageCropping
+namespace ColorVision.Engine
 {
     [SugarTable("t_scgd_algorithm_result_detail_image")]
     public class AlgResultImageModel : ViewEntity ,IViewResult

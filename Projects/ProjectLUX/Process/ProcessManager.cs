@@ -156,7 +156,7 @@ namespace ProjectLUX.Process
         {
             if (SelectedProcessMeta != null)
             {
-                // Populate update fields when a ProcessMeta is selected
+                // Populate update fields when a BatchProcessMeta is selected
                 UpdateTemplate = templateModels.FirstOrDefault(t => t.Key == SelectedProcessMeta.FlowTemplate);
                 UpdateProcess = Processes.FirstOrDefault(p => p.GetType().FullName == SelectedProcessMeta.Process?.GetType().FullName);
             }
@@ -171,7 +171,7 @@ namespace ProjectLUX.Process
         {
             if (!CanUpdateMeta()) return;
             
-            // Update the selected ProcessMeta with new values
+            // Update the selected BatchProcessMeta with new values
             SelectedProcessMeta.FlowTemplate = UpdateTemplate.Key;
             SelectedProcessMeta.Process = UpdateProcess;
         }
