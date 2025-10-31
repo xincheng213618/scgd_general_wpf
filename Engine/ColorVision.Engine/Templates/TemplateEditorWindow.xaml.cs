@@ -464,7 +464,7 @@ namespace ColorVision.Engine.Templates
 
         private void Button_MoveDown_Click(object sender, RoutedEventArgs e)
         {
-            if (ListView1.SelectedIndex >= 0 && ListView1.SelectedIndex < ITemplate.Count - 1)
+            if (ListView1.SelectedIndex < ITemplate.Count - 1 && ListView1.SelectedIndex >= 0)
             {
                 SwapTemplateAndUpdateUI(ListView1.SelectedIndex + 1, "交换失败");
             }

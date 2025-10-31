@@ -528,8 +528,8 @@ namespace ColorVision.Engine.Templates
                 int id2 = template2.Value.Id;
 
                 // Swap the IDs in the database using a three-step process to avoid constraint violations
-                // Use the minimum integer value as temporary ID to minimize conflict risk
-                int tempId = int.MinValue + Math.Abs(id1.GetHashCode() % 1000);
+                // Use int.MinValue plus a hash-based offset incorporating both IDs to minimize collision risk
+                int tempId = int.MinValue + Math.Abs((id1 ^ id2).GetHashCode());
 
                 // Step 1: Move template1 to temporary ID
                 var modMaster1 = Db.Queryable<ModMasterModel>().InSingle(id1);
@@ -592,9 +592,9 @@ namespace ColorVision.Engine.Templates
 
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"交换模板顺序失败: {ex.Message}", "ColorVision");
+                // Let the caller handle the error display
                 return false;
             }
         }
