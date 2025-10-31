@@ -527,49 +527,62 @@ namespace ColorVision.Engine.Templates
                 int id1 = template1.Value.Id;
                 int id2 = template2.Value.Id;
 
-                // Swap the IDs in the database
-                // We need to use a temporary ID to avoid unique constraint violations
+                // Swap the IDs in the database using a three-step process to avoid constraint violations
                 int tempId = -9999999; // Use a very negative number as temporary ID
 
-                // Step 1: Update template1 to temporary ID
-                template1.Value.ModMaster.Id = tempId;
-                Db.Updateable(template1.Value.ModMaster).ExecuteCommand();
+                // Step 1: Move template1 to temporary ID
+                var modMaster1 = Db.Queryable<ModMasterModel>().InSingle(id1);
+                if (modMaster1 != null)
+                {
+                    modMaster1.Id = tempId;
+                    Db.Updateable(modMaster1).ExecuteCommand();
+                }
                 
-                // Update all detail records for template1 to use tempId
                 var details1 = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id1).ToList();
                 foreach (var detail in details1)
                 {
                     detail.Pid = tempId;
                 }
-                Db.Updateable(details1).ExecuteCommand();
+                if (details1.Count > 0)
+                    Db.Updateable(details1).ExecuteCommand();
 
-                // Step 2: Update template2 to id1
-                template2.Value.ModMaster.Id = id1;
-                Db.Updateable(template2.Value.ModMaster).ExecuteCommand();
+                // Step 2: Move template2 to id1
+                var modMaster2 = Db.Queryable<ModMasterModel>().InSingle(id2);
+                if (modMaster2 != null)
+                {
+                    modMaster2.Id = id1;
+                    Db.Updateable(modMaster2).ExecuteCommand();
+                }
                 
-                // Update all detail records for template2 to use id1
                 var details2 = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id2).ToList();
                 foreach (var detail in details2)
                 {
                     detail.Pid = id1;
                 }
-                Db.Updateable(details2).ExecuteCommand();
+                if (details2.Count > 0)
+                    Db.Updateable(details2).ExecuteCommand();
 
-                // Step 3: Update template1 from temporary ID to id2
-                template1.Value.ModMaster.Id = id2;
-                Db.Updateable(template1.Value.ModMaster).ExecuteCommand();
+                // Step 3: Move template1 from temporary to id2
+                modMaster1 = Db.Queryable<ModMasterModel>().InSingle(tempId);
+                if (modMaster1 != null)
+                {
+                    modMaster1.Id = id2;
+                    Db.Updateable(modMaster1).ExecuteCommand();
+                }
                 
-                // Update all detail records for template1 to use id2
                 details1 = Db.Queryable<ModDetailModel>().Where(x => x.Pid == tempId).ToList();
                 foreach (var detail in details1)
                 {
                     detail.Pid = id2;
                 }
-                Db.Updateable(details1).ExecuteCommand();
+                if (details1.Count > 0)
+                    Db.Updateable(details1).ExecuteCommand();
 
                 // Update the in-memory values
                 template1.Value.Id = id2;
+                template1.Value.ModMaster.Id = id2;
                 template2.Value.Id = id1;
+                template2.Value.ModMaster.Id = id1;
 
                 // Swap the items in the ObservableCollection
                 TemplateParams.Move(index1, index2);
