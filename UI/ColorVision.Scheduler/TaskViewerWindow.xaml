@@ -36,7 +36,7 @@
             <DockPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                     <Button Content="清除" Click="ClearFilter_Click" Margin="5,0,0,0" Padding="10,2"/>
-                    <Separator Margin="10,0" Style="{StaticResource VerticalSeparator}"/>
+                    <Separator Margin="10,0"/>
                     <TextBlock Text="批量操作:" VerticalAlignment="Center" Margin="5,0,5,0"/>
                     <Button Content="批量启动" Click="BatchResume_Click" Margin="2" Padding="8,2" ToolTip="启动所有选中的任务"/>
                     <Button Content="批量暂停" Click="BatchPause_Click" Margin="2" Padding="8,2" ToolTip="暂停所有选中的任务"/>
