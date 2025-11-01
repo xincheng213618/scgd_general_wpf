@@ -76,10 +76,12 @@ namespace ColorVision.UI
             {
                 Config.CopyTo(EditConfig);
                 PropertyPanel.Children.Clear();
+                SearchBox.Text = string.Empty;  // Clear search when resetting
                 DisplayProperties(EditConfig);
             }
             else
             {
+                SearchBox.Text = string.Empty;  // Clear search when resetting
                 Config.Reset();
             }
         }
@@ -250,8 +252,8 @@ namespace ColorVision.UI
 
         private void ApplySearchFilter()
         {
-            // Check if dictionary is populated (avoid race condition)
-            if (PropertyPanel.Children.Count == 0)
+            // Check if UI is initialized (avoid race condition)
+            if (borderToTreeViewItem.Count == 0)
                 return;
             
             if (string.IsNullOrWhiteSpace(searchText))
