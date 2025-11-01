@@ -110,5 +110,55 @@ namespace ColorVision.Scheduler
 
         public DateTime CreateTime { get => _CreateTime; set { _CreateTime = value; OnPropertyChanged(); } }
         private DateTime _CreateTime = DateTime.Now;
+
+        // Phase 3: 新增功能字段
+        
+        /// <summary>
+        /// 任务优先级 (1-10, 默认5)
+        /// </summary>
+        public int Priority { get => _Priority; set { _Priority = value; OnPropertyChanged(); } }
+        private int _Priority = 5;
+
+        /// <summary>
+        /// 超时时间（秒），0表示无超时限制
+        /// </summary>
+        public int TimeoutSeconds { get => _TimeoutSeconds; set { _TimeoutSeconds = value; OnPropertyChanged(); } }
+        private int _TimeoutSeconds = 0;
+
+        /// <summary>
+        /// 成功执行次数
+        /// </summary>
+        public int SuccessCount { get => _SuccessCount; set { _SuccessCount = value; OnPropertyChanged(); } }
+        private int _SuccessCount;
+
+        /// <summary>
+        /// 失败执行次数
+        /// </summary>
+        public int FailureCount { get => _FailureCount; set { _FailureCount = value; OnPropertyChanged(); } }
+        private int _FailureCount;
+
+        /// <summary>
+        /// 最后执行时间（毫秒）
+        /// </summary>
+        public long LastExecutionTimeMs { get => _LastExecutionTimeMs; set { _LastExecutionTimeMs = value; OnPropertyChanged(); } }
+        private long _LastExecutionTimeMs;
+
+        /// <summary>
+        /// 平均执行时间（毫秒）
+        /// </summary>
+        public long AverageExecutionTimeMs { get => _AverageExecutionTimeMs; set { _AverageExecutionTimeMs = value; OnPropertyChanged(); } }
+        private long _AverageExecutionTimeMs;
+
+        /// <summary>
+        /// 最长执行时间（毫秒）
+        /// </summary>
+        public long MaxExecutionTimeMs { get => _MaxExecutionTimeMs; set { _MaxExecutionTimeMs = value; OnPropertyChanged(); } }
+        private long _MaxExecutionTimeMs;
+
+        /// <summary>
+        /// 最短执行时间（毫秒）
+        /// </summary>
+        public long MinExecutionTimeMs { get => _MinExecutionTimeMs; set { _MinExecutionTimeMs = value; OnPropertyChanged(); } }
+        private long _MinExecutionTimeMs;
     }
 }

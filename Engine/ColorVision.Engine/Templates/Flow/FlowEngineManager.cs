@@ -1,18 +1,36 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using ColorVision.UI;
 using FlowEngineLib;
 using log4net;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Flow
 {
+    public class IInitializerFlow : IInitializer
+    {
+        public string Name => "Flow";
+        public IEnumerable<string> Dependencies => Array.Empty<string>();
+        public int Order => 10;
+
+        public Task InitializeAsync()
+        {
+            MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
+
+            FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
+            return Task.CompletedTask;
+        }
+    }
+
     public class FlowEngineConfig : ViewModelBase, IConfig
     {
         public static FlowEngineConfig Instance => ConfigService.Instance.GetRequiredService<FlowEngineConfig>();
@@ -40,9 +58,6 @@ namespace ColorVision.Engine.Templates.Flow
 
         public int LastSelectFlow { get => _LastSelectFlow; set { _LastSelectFlow = value; OnPropertyChanged(); } }
         private int _LastSelectFlow;
-        [DisplayName("UseNewUI")]
-        public bool UseNewUI { get => _UseNewUI; set { _UseNewUI = value; OnPropertyChanged(); } }
-        private bool _UseNewUI = true;
 
         public Dictionary<string, long> FlowRunTime { get; set; } = new Dictionary<string, long>();
 
@@ -59,7 +74,7 @@ namespace ColorVision.Engine.Templates.Flow
         private bool _IsReady;
     }
 
-    public class FlowEngineManager:ViewModelBase
+    public class FlowEngineManager : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowEngineManager));
 
@@ -85,8 +100,8 @@ namespace ColorVision.Engine.Templates.Flow
 
         public ViewFlow View { get; set; }
         public FlowEngineControl FlowEngineControl { get; set; }
-
-        public FlowControlData CurrentFlowMsg { get; set; } = new FlowControlData();
+        public MeasureBatchModel Batch { get => _Batch; set { _Batch = value; OnPropertyChanged(); } }
+        private MeasureBatchModel _Batch;
 
         public FlowEngineManager()
         {

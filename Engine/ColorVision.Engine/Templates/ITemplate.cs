@@ -173,6 +173,11 @@ namespace ColorVision.Engine.Templates
         {
             throw new NotImplementedException();
         }
+
+        public virtual bool SwapTemplateOrder(int index1, int index2)
+        {
+            return false;
+        }
     }
 
     public class ITemplate<T> : ITemplate where T : ParamModBase, new() 
@@ -502,6 +507,95 @@ namespace ColorVision.Engine.Templates
                         MySqlControl.GetInstance().BatchExecuteNonQuery(mysqlCommand.GetRecover());
                     }
                 }
+            }
+        }
+
+        public override bool SwapTemplateOrder(int index1, int index2)
+        {
+            if (index1 < 0 || index1 >= TemplateParams.Count || index2 < 0 || index2 >= TemplateParams.Count)
+                return false;
+
+            if (index1 == index2)
+                return true;
+
+            try
+            {
+                var template1 = TemplateParams[index1];
+                var template2 = TemplateParams[index2];
+
+                // Get the IDs from database
+                int id1 = template1.Value.Id;
+                int id2 = template2.Value.Id;
+
+                // Swap the IDs in the database using a three-step process to avoid constraint violations
+                // Use int.MinValue plus a hash-based offset incorporating both IDs to minimize collision risk
+                int tempId = int.MinValue + Math.Abs((id1 ^ id2).GetHashCode());
+
+                // Step 1: Move template1 to temporary ID
+                var modMaster1 = Db.Queryable<ModMasterModel>().InSingle(id1);
+                if (modMaster1 != null)
+                {
+                    modMaster1.Id = tempId;
+                    Db.Updateable(modMaster1).ExecuteCommand();
+                }
+                
+                var details1 = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id1).ToList();
+                foreach (var detail in details1)
+                {
+                    detail.Pid = tempId;
+                }
+                if (details1.Count > 0)
+                    Db.Updateable(details1).ExecuteCommand();
+
+                // Step 2: Move template2 to id1
+                var modMaster2 = Db.Queryable<ModMasterModel>().InSingle(id2);
+                if (modMaster2 != null)
+                {
+                    modMaster2.Id = id1;
+                    Db.Updateable(modMaster2).ExecuteCommand();
+                }
+                
+                var details2 = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id2).ToList();
+                foreach (var detail in details2)
+                {
+                    detail.Pid = id1;
+                }
+                if (details2.Count > 0)
+                    Db.Updateable(details2).ExecuteCommand();
+
+                // Step 3: Move template1 from temporary to id2
+                modMaster1 = Db.Queryable<ModMasterModel>().InSingle(tempId);
+                if (modMaster1 != null)
+                {
+                    modMaster1.Id = id2;
+                    Db.Updateable(modMaster1).ExecuteCommand();
+                }
+                
+                details1 = Db.Queryable<ModDetailModel>().Where(x => x.Pid == tempId).ToList();
+                foreach (var detail in details1)
+                {
+                    detail.Pid = id2;
+                }
+                if (details1.Count > 0)
+                    Db.Updateable(details1).ExecuteCommand();
+
+                // Update the in-memory values
+                template1.Value.Id = id2;
+                template1.Value.ModMaster.Id = id2;
+                template2.Value.Id = id1;
+                template2.Value.ModMaster.Id = id1;
+
+                // Swap the items in the ObservableCollection using proper swap
+                var temp = TemplateParams[index1];
+                TemplateParams[index1] = TemplateParams[index2];
+                TemplateParams[index2] = temp;
+
+                return true;
+            }
+            catch (Exception)
+            {
+                // Let the caller handle the error display
+                return false;
             }
         }
     }

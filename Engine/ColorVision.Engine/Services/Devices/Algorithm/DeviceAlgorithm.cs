@@ -5,6 +5,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.UI.Authorizations;
+using ColorVision.Engine.Extension;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {

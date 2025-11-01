@@ -45,7 +45,7 @@ public class BuildPOINode : CVBaseServerNode
 
 	private STNodeEditText<string> m_ctrl_out;
 
-	[STNodeProperty("模板名称", "模板名称", true)]
+	[STNodeProperty("参数模板", "参数模板", true)]
 	public string TemplateName
 	{
 		get
@@ -277,7 +277,7 @@ public class BuildPOINode : CVBaseServerNode
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_type = CreateControl(typeof(STNodeEditText<POIBuildType>), m_custom_item, "类型:", _BuildType);
+		m_ctrl_type = CreateControl(typeof(STNodeEditText<POIBuildType>), m_custom_item, "类别:", _BuildType);
 		m_custom_item.Y += 25;
 		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", $"{_TempId}:{_TemplateName}");
 		m_custom_item.Y += 25;

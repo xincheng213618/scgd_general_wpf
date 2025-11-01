@@ -169,6 +169,15 @@
                     <TextBlock Text="{x:Static properties:Resources.Import}"/>
                 </Button>
             </UniformGrid>
+            <UniformGrid Columns="5" Margin="0,5,0,0">
+                <Button Click="Button_MoveUp_Click" Margin="0,0,5,0">
+                    <TextBlock Text="上移"/>
+                </Button>
+                <Button Click="Button_MoveDown_Click" Margin="0,0,5,0">
+                    <TextBlock Text="下移"/>
+                </Button>
+                <Grid Grid.Column="2" Grid.ColumnSpan="3"/>
+            </UniformGrid>
         </StackPanel>
 
 

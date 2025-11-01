@@ -45,7 +45,7 @@ public class AlgComplianceMathNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("合规类型", "合规类型", true)]
+	[STNodeProperty("类别", "合规类别", true)]
 	public ComplianceMathType ComplianceMath
 	{
 		get
@@ -77,7 +77,7 @@ public class AlgComplianceMathNode : CVBaseServerNode
 		base.OnCreate();
 		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", _TempName);
 		m_custom_item.Y += 25;
-		m_ctrl_type = CreateControl(typeof(STNodeEditText<ComplianceMathType>), m_custom_item, "类型:", _ComplianceMath);
+		m_ctrl_type = CreateControl(typeof(STNodeEditText<ComplianceMathType>), m_custom_item, "类别:", _ComplianceMath);
 	}
 
 	private void SetMathType(ComplianceMathType value)

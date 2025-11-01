@@ -117,7 +117,7 @@ public class SMUNode : CVBaseServerNode
 		m_in_next.DataTransfer += m_in_next_DataTransfer;
 		Rectangle custom_item = m_custom_item;
 		custom_item.Y = 50;
-		m_ctrl_editText = CreateControl(typeof(STNodeEditText<string>), custom_item, "Current:", string.Empty);
+		m_ctrl_editText = CreateControl(typeof(STNodeEditText<string>), custom_item, "当前值:", string.Empty);
 		custom_item.Y += 25;
 		m_ctrl_lpName = CreateControl(typeof(STNodeEditText<string>), custom_item, "LoopName:", loopName);
 		updateUI();

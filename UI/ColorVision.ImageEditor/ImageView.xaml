@@ -5,11 +5,12 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.ImageEditor"
              xmlns:converter="clr-namespace:ColorVision.ImageEditor.Draw.Converter"
+             xmlns:converters="clr-namespace:ColorVision.ImageEditor.Converters"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:ImageViewModel}"
-             d:DesignHeight="600" d:DesignWidth="1000" Initialized="UserControl_Initialized" AllowDrop="True">
+             d:DesignHeight="600" d:DesignWidth="1000" Initialized="UserControl_Initialized" AllowDrop="True" FocusVisualStyle="{x:Null}">
     <UserControl.Resources>
         <Style TargetType="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -76,17 +77,16 @@
                 </local:Zoombox>
 
                 <ComboBox x:Name="ComboBoxLayers" HorizontalAlignment="Left" BorderThickness="0" VerticalAlignment="Top"  Style="{StaticResource ComboBox.Small}" x:FieldModifier="public"  SelectedIndex="0"  Grid.Column="1"/>
-                <ToolBar x:Name="ToolBarAl"  x:FieldModifier="public" Style="{StaticResource ToolBarBaseStyle}" Background="Transparent" ToolBarTray.IsLocked="True"  VerticalAlignment="Bottom" Grid.Row="0"  HorizontalAlignment="Left" Visibility="Visible">
+                <ToolBar x:Name="ToolBarAl"  x:FieldModifier="public" Style="{StaticResource ToolBarBaseStyle}" Background="Transparent" ToolBarTray.IsLocked="True"  VerticalAlignment="Bottom" Grid.Row="0"  HorizontalAlignment="Left" Visibility="{Binding Config.IsToolBarAlVisible,Converter={StaticResource bool2VisibilityConverter}}">
                     <ComboBox x:Name="ComboxPOITemplate"  x:FieldModifier="public" Style="{StaticResource ComboBox.Small}" Width="100" HorizontalAlignment="Left" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
                 </ToolBar>
 
-                <ToolBarTray x:Name="ToolBarDraw" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Grid.Column="1"  >
+                <ToolBarTray x:Name="ToolBarDraw" HorizontalAlignment="Center" VerticalAlignment="Bottom" Grid.Column="1" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
                     <ToolBar ToolBarTray.IsLocked="True"  >
                     </ToolBar>
-
                 </ToolBarTray>
 
-                <ToolBarTray x:Name="ToolBarTop" VerticalAlignment="Top" Grid.Row="0"  HorizontalAlignment="Center" Grid.Column="1">
+                <ToolBarTray x:Name="ToolBarTop" Visibility="{Binding Config.IsToolBarTopVisible,Converter={StaticResource bool2VisibilityConverter}}" VerticalAlignment="Top" Grid.Row="0"  HorizontalAlignment="Center" Grid.Column="1">
                     <ToolBar  ToolBarTray.IsLocked="True" Margin="0,2,4,0" >
                         <ToggleButton IsChecked="{Binding ImageEditMode}"  Margin="1,0">
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
@@ -94,12 +94,11 @@
                     </ToolBar>
                 </ToolBarTray>
 
-                <ToolBarTray x:Name="ToolBarLeft" HorizontalAlignment="Left" Orientation="Vertical" Margin="2,50,0,0"  VerticalAlignment="Top">
+                <ToolBarTray x:Name="ToolBarLeft" Visibility="{Binding Config.IsToolBarLeftVisible,Converter={StaticResource bool2VisibilityConverter}}" HorizontalAlignment="Left" Orientation="Vertical" Margin="2,50,0,0"  VerticalAlignment="Top">
                     <ToolBar ToolBarTray.IsLocked="True" Padding="2,3"  >
                     </ToolBar>
                 </ToolBarTray>
-
-                <ToolBarTray x:Name="ToolBarRight" Orientation="Vertical" Margin="0,50,2,0" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top" Grid.Column="1">
+                <ToolBarTray x:Name="ToolBarRight" Visibility="{Binding Config.IsToolBarRightVisible,Converter={StaticResource bool2VisibilityConverter}}" Orientation="Vertical" Margin="0,50,2,0" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top" Grid.Column="1">
                     <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
                         <ToggleButton x:Name="AdvancedButton" Margin="0,0,0,2"  Padding="5">
                             <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIExpand}" />

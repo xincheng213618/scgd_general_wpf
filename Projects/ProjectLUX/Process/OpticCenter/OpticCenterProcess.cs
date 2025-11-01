@@ -35,14 +35,30 @@ namespace ProjectLUX.Process.OpticCenter
                             var find = new FindCrossDetailViewReslut(details[0]);
                             if (master.TName == "optCenter")
                             {
+                                // 先应用修正系数（保留你原有的三行）
                                 find.FindCrossResult.result[0].tilt.tilt_x *= fixConfig.OptCenterXTilt;
                                 find.FindCrossResult.result[0].tilt.tilt_y *= fixConfig.OptCenterYTilt;
                                 find.FindCrossResult.result[0].rotationAngle *= fixConfig.OptCenterRotation;
-                                testResult.OptCenterXTilt = Build("OptCenterXTilt", find.FindCrossResult.result[0].tilt.tilt_x, recipeConfig.OptCenterXTilt.Min, recipeConfig.OptCenterXTilt.Max, "F4");
-                                testResult.OptCenterYTilt = Build("OptCenterYTilt", find.FindCrossResult.result[0].tilt.tilt_y, recipeConfig.OptCenterYTilt.Min, recipeConfig.OptCenterYTilt.Max, "F4");
-                                testResult.OptCenterRotation = Build("OptCenterRotation", find.FindCrossResult.result[0].rotationAngle, recipeConfig.OptCenterRotation.Min, recipeConfig.OptCenterRotation.Max, "F4");
+
+                                // OptCenterXTilt
+                                testResult.OptCenterXTilt.Value = find.FindCrossResult.result[0].tilt.tilt_x;
+                                testResult.OptCenterXTilt.LowLimit = recipeConfig.OptCenterXTilt.Min;
+                                testResult.OptCenterXTilt.UpLimit = recipeConfig.OptCenterXTilt.Max;
+                                testResult.OptCenterXTilt.TestValue = testResult.OptCenterXTilt.Value.ToString("F4");
                                 ctx.Result.Result &= testResult.OptCenterXTilt.TestResult;
+
+                                // OptCenterYTilt
+                                testResult.OptCenterYTilt.Value = find.FindCrossResult.result[0].tilt.tilt_y;
+                                testResult.OptCenterYTilt.LowLimit = recipeConfig.OptCenterYTilt.Min;
+                                testResult.OptCenterYTilt.UpLimit = recipeConfig.OptCenterYTilt.Max;
+                                testResult.OptCenterYTilt.TestValue = testResult.OptCenterYTilt.Value.ToString("F4");
                                 ctx.Result.Result &= testResult.OptCenterYTilt.TestResult;
+
+                                // OptCenterRotation
+                                testResult.OptCenterRotation.Value = find.FindCrossResult.result[0].rotationAngle;
+                                testResult.OptCenterRotation.LowLimit = recipeConfig.OptCenterRotation.Min;
+                                testResult.OptCenterRotation.UpLimit = recipeConfig.OptCenterRotation.Max;
+                                testResult.OptCenterRotation.TestValue = testResult.OptCenterRotation.Value.ToString("F4");
                                 ctx.Result.Result &= testResult.OptCenterRotation.TestResult;
                             }
                         }
@@ -60,14 +76,6 @@ namespace ProjectLUX.Process.OpticCenter
             }
         }
 
-        private ObjectiveTestItem Build(string name, double value, double low, double up, string fmt) => new ObjectiveTestItem
-        {
-            Name = name,
-            LowLimit = low,
-            UpLimit = up,
-            Value = value,
-            TestValue = value.ToString(fmt)
-        };
 
         public string GenText(IProcessExecutionContext ctx)
         {

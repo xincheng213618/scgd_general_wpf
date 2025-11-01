@@ -17,6 +17,21 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
+    public class GetDataParam
+    {
+        [JsonProperty("IntegralTime")]
+        public float IntTime { get; set; }
+        [JsonProperty("NumberOfAverage")]
+        public int AveNum { get; set; }
+        [JsonProperty("AutoIntegration")]
+        public bool BUseAutoIntTime { get; set; }
+        [JsonProperty("SelfAdaptionInitDark")]
+        public bool BUseAutoDark { get; set; }
+        [JsonProperty("AutoInitDark")]
+        public bool BUseAutoShutterDark { get; set; }
+
+        public bool IsWithND { get; set; }
+    }
 
     public class MQTTSpectrum : MQTTDeviceService<ConfigSpectrum>
     {
@@ -81,11 +96,18 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         else if (msg.EventName == "GetParam")
                         {
                             AutoIntTimeParam param = JsonConvert.DeserializeObject<AutoIntTimeParam>(JsonConvert.SerializeObject(msg.Data));
-                            Application.Current.Dispatcher.BeginInvoke(() =>
+                            if (param != null)
                             {
-                                DeviceSpectrum.Config.BeginIntegralTime = param.fTimeB;
-                                DeviceSpectrum.Config.MaxIntegralTime = param.iLimitTime;
-                            });
+                                Application.Current.Dispatcher.BeginInvoke(() =>
+                                {
+                                    DeviceSpectrum.Config.BeginIntegralTime = param.fTimeB;
+                                    DeviceSpectrum.Config.MaxIntegralTime = param.iLimitTime;
+                                });
+                            }
+                            else
+                            {
+                                log.Info("GetParam is null");
+                            }
                         }
                     }
                 }
@@ -143,13 +165,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 EventName = "GetData",
                 SerialNumber = sn,
                 ServiceName = Config.Code,
-                Params = new GetDataParamMQTT()
+                Params = new GetDataParam()
                 {
                     IntTime = IntTime,
                     AveNum = AveNum,
                     BUseAutoIntTime = bUseAutoIntTime,
                     BUseAutoDark = bUseAutoDark,
                     BUseAutoShutterDark = bUseAutoShutterDark,
+                    IsWithND =Config.IsWithND
                 }
             };
             MsgRecord msgRecord= PublishAsyncClient(msg);
@@ -195,13 +218,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             {
                 EventName = "GetDataAuto",
                 ServiceName = Config.Code,
-                Params = new GetDataParamMQTT()
+                Params = new GetDataParam()
                 {
                     IntTime = IntTime,
                     AveNum = AveNum,
                     BUseAutoIntTime = bUseAutoIntTime,
                     BUseAutoDark = bUseAutoDark,
                     BUseAutoShutterDark = bUseAutoShutterDark,
+                    IsWithND = Config.IsWithND
                 }
             };
             PublishAsyncClient(msg);

@@ -22,7 +22,7 @@ public class CalibrationNodeDescriptor : STNodePropertyDescriptor
 		return JsonConvert.DeserializeObject<List<CalibrationNodeProperty>>(strText);
 	}
 
-	protected override string GetStringFromValue()
+	protected override string GetStringFromValue(bool isLang = false)
 	{
 		List<CalibrationNodeProperty> list = (List<CalibrationNodeProperty>)GetValue(null);
 		if (list != null)

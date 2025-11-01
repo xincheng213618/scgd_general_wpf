@@ -1,9 +1,10 @@
 ﻿using ColorVision.Themes;
+using ColorVision.UI;
 using ColorVision.UI.Views;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ColorVision.UI
+namespace ColorVision.Engine.Extension
 {
     public static class IIconExtension
     {

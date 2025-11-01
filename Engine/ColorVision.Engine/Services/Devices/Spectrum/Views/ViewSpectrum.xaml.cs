@@ -29,13 +29,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
     {
         public ObservableCollection<ViewResultSpectrum> ViewResults { get; set; } = new ObservableCollection<ViewResultSpectrum>();
         public View View { get; set; }
-        public DeviceSpectrum Device { get; set; }
 
         public static ViewSpectrumConfig Config => ViewSpectrumConfig.Instance;
 
-        public ViewSpectrum(DeviceSpectrum device)
+        public ViewSpectrum()
         {
-            Device = device;
             InitializeComponent();
         }
 
@@ -234,6 +232,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         }
 
         bool MulComparison;
+
         Scatter? LastMulSelectComparsion;
 
         private void DrawPlot()
@@ -301,8 +300,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             if (listView1.SelectedIndex < 0) return;
 
             wpfplot1.Plot.Clear();
-
-
 
             LastMulSelectComparsion = null;
             if (MulComparison)

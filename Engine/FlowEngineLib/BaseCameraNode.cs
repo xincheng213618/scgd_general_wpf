@@ -61,7 +61,7 @@ public class BaseCameraNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("曝光时间", "曝光时间", true)]
+	[STNodeProperty("曝光", "曝光时间", true)]
 	public float ExpTime
 	{
 		get
@@ -165,10 +165,10 @@ public class BaseCameraNode : CVBaseServerNode
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_exp = CreateControl(typeof(STNodeEditText<float>), m_custom_item, "曝光(ms):", _ExpTime);
+		m_ctrl_exp = CreateControl(typeof(STNodeEditText<float>), m_custom_item, "曝光:", _ExpTime);
 		Rectangle custom_item = m_custom_item;
 		custom_item.Y += 25;
-		m_ctrl_caliTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "校正:", _CaliTempName);
+		m_ctrl_caliTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "校正模板:", _CaliTempName);
 		custom_item.Y += 25;
 		m_ctrl_poitemplate = CreateControl(typeof(STNodeEditText<string>), custom_item, "POI:", GetPOITempDisplay());
 	}

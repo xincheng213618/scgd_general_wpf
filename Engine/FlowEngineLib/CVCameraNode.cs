@@ -75,7 +75,7 @@ public class CVCameraNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("R 曝光(ms)", "R 通道曝光时间(ms)", true)]
+	[STNodeProperty("R曝光", "R 通道曝光时间(ms)", true)]
 	public float TempR
 	{
 		get
@@ -89,7 +89,7 @@ public class CVCameraNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("G 曝光(ms)", "G 通道曝光时间(ms)", true)]
+	[STNodeProperty("G曝光", "G 通道曝光时间(ms)", true)]
 	public float TempG
 	{
 		get
@@ -103,7 +103,7 @@ public class CVCameraNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("B 曝光(ms)", "B 通道曝光时间(ms)", true)]
+	[STNodeProperty("B曝光", "B 通道曝光时间(ms)", true)]
 	public float TempB
 	{
 		get
@@ -267,10 +267,10 @@ public class CVCameraNode : CVBaseServerNode
 		for (int i = 0; i < channelCount; i++)
 		{
 			ChannelData channel = _Channel.GetChannel(i);
-			m_ctrl_expTime[i] = CreateControl(typeof(STNodeEditText<float>), custom_item, szTypeCode[i] + " 曝光(ms):", channel.Temp);
+			m_ctrl_expTime[i] = CreateControl(typeof(STNodeEditText<float>), custom_item, szTypeCode[i] + "曝光:", channel.Temp);
 			custom_item.Y += 25;
 		}
-		m_ctrl_caliTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "校正:", _CalibTempName);
+		m_ctrl_caliTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "校正模板:", _CalibTempName);
 		custom_item.Y += 25;
 		m_ctrl_poitemplate = CreateControl(typeof(STNodeEditText<string>), custom_item, "POI:", GetPOITempDisplay());
 	}

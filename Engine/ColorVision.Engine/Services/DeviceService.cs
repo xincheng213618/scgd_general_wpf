@@ -50,6 +50,7 @@ namespace ColorVision.Engine.Services
         public RelayCommand ResetCommand { get; set; }
         [CommandDisplayAttribute("RestartService",Order =-2)]
         public RelayCommand RefreshCommand { get; set; }
+
         [CommandDisplayAttribute("ModifyConfiguration",Order =-3)]
         public RelayCommand EditCommand { get; set; }
 

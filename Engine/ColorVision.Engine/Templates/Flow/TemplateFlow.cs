@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Database;
+using ColorVision.Engine.Templates.Menus;
 using ColorVision.UI.Extension;
+using ColorVision.UI.Menus;
 using Newtonsoft.Json;
 using SqlSugar;
 using System;
@@ -13,6 +15,17 @@ using System.Windows;
 
 namespace ColorVision.Engine.Templates.Flow
 {
+    public class MenuTemplateFlow : MenuItemBase
+    {
+        public override string OwnerGuid => nameof(MenuTemplate);
+        public override int Order => 0;
+        public override string Header => Properties.Resources.MenuFlow;
+        public override void Execute()
+        {
+            new TemplateEditorWindow(new TemplateFlow()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        }
+    }
+
     public class TemplateFlow : ITemplate<FlowParam>, IITemplateLoad
     {
         public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();

@@ -103,27 +103,6 @@ public class CamMotorNode : CVBaseServerNode
 	{
 		_RunType = value;
 		m_ctrl_RunType.Value = value;
-		switch (_RunType)
-		{
-		case CamMotorRunType.焦距:
-			Hide("焦距", isHide: false);
-			Hide("绝对位置", isHide: false);
-			Hide("光圈", isHide: true);
-			Hide("自动对焦模板", isHide: true);
-			break;
-		case CamMotorRunType.光圈:
-			Hide("焦距", isHide: true);
-			Hide("绝对位置", isHide: true);
-			Hide("光圈", isHide: false);
-			Hide("自动对焦模板", isHide: true);
-			break;
-		case CamMotorRunType.自动对焦:
-			Hide("焦距", isHide: true);
-			Hide("绝对位置", isHide: true);
-			Hide("光圈", isHide: true);
-			Hide("自动对焦模板", isHide: false);
-			break;
-		}
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)

@@ -1,57 +1,25 @@
-﻿#pragma warning disable
-using ColorVision.Common.Algorithms;
-using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
-using ColorVision.Engine;
-using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Services.Types;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.Jsons;
-using ColorVision.Engine.Templates.Jsons.BinocularFusion;
-using ColorVision.Engine.Templates.Jsons.BlackMura;
-using ColorVision.Engine.Templates.Jsons.FOV2;
-using ColorVision.Engine.Templates.Jsons.LargeFlow;
-using ColorVision.Engine.Templates.Jsons.MTF2;
-using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
-using ColorVision.Engine.Templates.MTF;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.ImageEditor.Draw;
 using ColorVision.SocketProtocol;
 using ColorVision.Themes;
 using ColorVision.UI;
-using ColorVision.UI.Extension;
 using ColorVision.UI.LogImp;
-using CVCommCore.CVAlgorithm;
 using FlowEngineLib;
 using FlowEngineLib.Base;
-using LiveChartsCore.Kernel;
 using log4net;
-using log4net.Util;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Org.BouncyCastle.Asn1.Ocsp;
-using ProjectLUX;
 using ProjectLUX.Fix;
+using ProjectLUX.Process;
 using ProjectLUX.Services;
-using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO;
-using System.Net.Sockets;
-using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -76,8 +44,12 @@ namespace ProjectLUX
 
         public static ObservableCollection<ProjectLUXReuslt> ViewResluts { get; set; } = ViewResultManager.ViewResluts;
 
-        public static FixConfig FixConfig => FixManager.GetInstance().FixConfig;
+        public static FixConfig ObjectiveTestResultFix => FixManager.GetInstance().FixConfig;
+        public static RecipeManager RecipeManager => RecipeManager.GetInstance();
+        public static RecipeConfig RecipeConfig => RecipeManager.RecipeConfig;
 
+        public static ProcessManager ProcessManager => ProcessManager.GetInstance();
+        public ObservableCollection<ProcessMeta> ProcessMetas { get; } = ProcessManager.ProcessMetas;
 
         public LUXWindow()
         {
@@ -86,7 +58,7 @@ namespace ProjectLUX
             Config.SetWindow(this);
         }
 
-        public ARVRTestType CurrentTestType = ARVRTestType.None;
+        public int CurrentTestType = -1;
         ObjectiveTestResult ObjectiveTestResult { get; set; } = new ObjectiveTestResult();
 
 
@@ -95,7 +67,20 @@ namespace ProjectLUX
         {
             ProjectLUXConfig.Instance.StepIndex = 0;
             ObjectiveTestResult = new ObjectiveTestResult();
-            CurrentTestType = ARVRTestType.None;
+            CurrentTestType = -1;
+
+            if (!Directory.Exists(ProjectLUXConfig.Instance.ResultSavePath))
+            {
+                try
+                {
+                    Directory.CreateDirectory(ProjectLUXConfig.Instance.ResultSavePath);
+                }
+                catch (Exception ex)
+                {
+                    log.Error("创建结果保存目录失败：" + ex.Message);
+                }
+            }
+
             if (string.IsNullOrWhiteSpace(SN))
             {
                 Application.Current.Dispatcher.Invoke(() =>
@@ -116,14 +101,17 @@ namespace ProjectLUX
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                ProjectLUXConfig.Instance.StepIndex = 1;
-                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains(templatename)).Value;
-                if (ProjectLUXConfig.Instance.LUXTestOpen)
+                ProjectLUXConfig.Instance.StepIndex = index;
+                CurrentTestType = index;
+                var temp = TemplateFlow.Params.FirstOrDefault(a => a.Key.Contains(templatename));     
+                if (ProjectLUXConfig.Instance.LUXTestOpen && temp !=null)
                 {
+                    FlowTemplate.SelectedValue = temp.Value;
                     RunTemplate();
                 }
                 else
                 {
+                    log.Error($"cant find {templatename} error");
                     SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                 }
             });
@@ -136,8 +124,7 @@ namespace ProjectLUX
         private Timer timer;
         Stopwatch stopwatch = new Stopwatch();
 
-        public static RecipeManager RecipeManager => RecipeManager.GetInstance();
-        public static RecipeConfig SPECConfig => RecipeManager.RecipeConfig;
+
         LogOutput logOutput;
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -344,8 +331,6 @@ namespace ProjectLUX
             CurrentFlowResult.RunTime = stopwatch.ElapsedMilliseconds;
             logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
 
-            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
-
             if (FlowControlData.EventName == "Completed")
             {
                 CurrentFlowResult.Msg = "Completed";
@@ -384,10 +369,22 @@ namespace ProjectLUX
                     });
                     return;
                 }
+                else
+                {
+                    if (!string.IsNullOrWhiteSpace(ReturnCode))
+                    {
+                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                    }
+                }
                 TryCount = 0;
             }
             else
             {
+                if (!string.IsNullOrWhiteSpace(ReturnCode))
+                {
+                    SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                }
+
                 log.Error("流程运行失败" + FlowControlData.EventName + FlowControlData.Params);
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                 CurrentFlowResult.Msg = FlowControlData.Params;
@@ -405,10 +402,8 @@ namespace ProjectLUX
                         }
                     }
                 }
-
                 logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
                 ViewResultManager.Save(CurrentFlowResult);
-
                 TryCount = 0;
             }
         }
@@ -416,7 +411,6 @@ namespace ProjectLUX
         private void Processing(string SerialNumber)
         {
             MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
-
 
             if (Batch == null)
             {
@@ -430,27 +424,85 @@ namespace ProjectLUX
             result.CreateTime = DateTime.Now;
             result.Result = true;
 
+            try
+            {
+                log.Info($"{result.Model}");
 
+                var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
+                if (meta?.Process != null)
+                {
+                    log.Info($"匹配到自定义流程 {meta.Name} -> {meta.ProcessTypeName}; 使用 IProcess 处理 {result.Model}");
 
+                    bool executed = false;
+                    try
+                    {
+                        var ctx = new IProcessExecutionContext
+                        {
+                            Batch = Batch,
+                            Result = result,
+                            ObjectiveTestResult = ObjectiveTestResult,
+                            FixConfig = ObjectiveTestResultFix,
+                            RecipeConfig = RecipeConfig,
+                            ImageView = ImageView,
+                            Logger = log
+                        };
+                        executed = meta.Process.Execute(ctx);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("自定义 IProcess 执行异常", ex);
+                    }
+                    if (executed)
+                    {
+                        //每次结束都保存
+                        string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{ProjectLUXConfig.Instance.SN}.csv");
+                        ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, path);
 
+                        ViewResultManager.Save(result);
+                        ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
 
+                        if (!string.IsNullOrWhiteSpace(ReturnCode))
+                        {
+                            if(CurrentTestType == 0)
+                            {
+                                log.Info("IsOC");
+                                if(ObjectiveTestResult.OpticCenterTestResult != null)
+                                {
+                                    ReturnCode += $"{ObjectiveTestResult.OpticCenterTestResult.OptCenterRotation.Value},{ObjectiveTestResult.OpticCenterTestResult.OptCenterXTilt.Value},{ObjectiveTestResult.OpticCenterTestResult.OptCenterYTilt.Value}";
+                                }
+                                else
+                                {
+                                    log.Info("ObjectiveTestResult.OpticCenterTestResult null");
+                                }
+                            }
+                            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                        }
+
+                        if (IsTestTypeCompleted())
+                        {
+                            TestCompleted();
+                        }
+                        return; // 已处理，直接返回
+                    }
+                    else
+                    {
+                        log.Warn("自定义 IProcess 执行失败，继续使用内置解析逻辑");
+                    }
+                }
+                else
+                {
+                    log.Info($"匹配到不到自定义流程 {meta.Name} -> {meta.ProcessTypeName};");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("匹配/执行自定义 IProcess 出错，回退内置逻辑", ex);
+            }
             ViewResultManager.Save(result);
-
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
         }
+        private bool IsTestTypeCompleted() => CurrentTestType + 1 >= ProcessMetas.Count;
 
-        private void SwitchPG()
-        {
-            if (SocketManager.GetInstance().TcpClients.Count <= 0 || SocketControl.Current.Stream == null)
-            {
-                log.Info("找不到连接的Socket");
-                return;
-            }
-            log.Info("Socket已经链接 ");
-            //string respString = JsonConvert.SerializeObject(response);
-            //log.Info(respString);
-            //SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
-        }
 
         private void TestCompleted()
         {
@@ -459,6 +511,7 @@ namespace ProjectLUX
                 log.Info("找不到连接的Socket");
                 return;
             }
+
             ObjectiveTestResult.TotalResult = true;
             log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
 
@@ -522,78 +575,88 @@ namespace ProjectLUX
                 {
                     if (File.Exists(result.FileName))
                     {
-                        try
+                        _ = Application.Current.Dispatcher.BeginInvoke(() =>
                         {
-                            var fileInfo = new FileInfo(result.FileName);
-                            log.Debug($"fileInfo.Length{fileInfo.Length}");
-                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                            ImageView.OpenImage(result.FileName);
+                            ImageView.ImageShow.Clear();
+
+                            if (result.FlowStatus != FlowStatus.Completed)
+                                return;
+
+                            var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
+                            if (meta?.Process != null)
                             {
-                                log.Debug("文件可以读取，没有被占用。");
+                                bool executed = false;
+                                try
+                                {
+                                    var ctx = new IProcessExecutionContext
+                                    {
+                                        Result = result,
+                                        ObjectiveTestResult = ObjectiveTestResult,
+                                        FixConfig = ObjectiveTestResultFix,
+                                        RecipeConfig = RecipeConfig,
+                                        ImageView = ImageView,
+                                        Logger = log
+                                    };
+                                    meta.Process.Render(ctx);
+                                }
+                                catch (Exception ex)
+                                {
+                                    log.Error("自定义 IProcess 执行异常", ex);
+                                }
                             }
-                            if (fileInfo.Length > 0)
-                            {
-                                OpenImage(result);
-                            }
-                        }
-                        catch
-                        {
-                            log.Debug("文件还在写入");
-                            await Task.Delay(ProjectLUXConfig.Instance.ViewImageReadDelay);
-                            OpenImage(result);
-                        }
+
+                        });
                     }
                 });
 
             }
         }
 
-        public void OpenImage(ProjectLUXReuslt result)
-        {
-            _ = Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                ImageView.OpenImage(result.FileName);
-                ImageView.ImageShow.Clear();
-
-            });
-
-        }
-
         public void GenoutputText(ProjectLUXReuslt result)
         {
-
             outputText.Background = result.Result ? Brushes.Lime : Brushes.Red;
             outputText.Document.Blocks.Clear(); // 清除之前的内容
 
             string outtext = string.Empty;
-            outtext += $"Model:{result.Model}" + Environment.NewLine;
-            outtext += $"SN:{result.SN}" + Environment.NewLine;
-
-            outtext += $"{result.CreateTime:yyyy/MM//dd HH:mm:ss}" + Environment.NewLine;
-
+            outtext += $"Model:{result.Model}  SN:{result.SN}  {DateTime.Now:yyyy/MM//dd HH:mm:ss}";
             Run run = new Run(outtext);
             run.Foreground = result.Result ? Brushes.Black : Brushes.White;
             run.FontSize += 1;
 
-
-
             var paragraph = new Paragraph();
             paragraph.Inlines.Add(run);
-
             outputText.Document.Blocks.Add(paragraph);
             outtext = string.Empty;
 
-            paragraph = new Paragraph();
 
-            outtext = string.Empty;
+            var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
+            if (meta?.Process != null)
+            {
+                bool executed = false;
+                try
+                {
+                    var ctx = new IProcessExecutionContext
+                    {
+                        Result = result,
+                        ObjectiveTestResult = ObjectiveTestResult,
+                        FixConfig = ObjectiveTestResultFix,
+                        RecipeConfig = RecipeConfig,
+                        ImageView = ImageView,
+                        Logger = log
+                    };
+                    outtext += meta.Process.GenText(ctx);
+                }
+                catch (Exception ex)
+                {
+                    log.Error("自定义 IProcess 执行异常", ex);
+                }
+            }
 
-            outputText.Document.Blocks.Add(paragraph);
-
-
-
-            outtext += Environment.NewLine;
-            outtext += $"Pass/Fail Criteria:" + Environment.NewLine;
-
+            outtext += Environment.NewLine + $"Pass/Fail Criteria:" + Environment.NewLine;
             outtext += result.Result ? "Pass" : "Fail" + Environment.NewLine;
+
+
 
             run = new Run(outtext);
             run.Foreground = result.Result ? Brushes.Black : Brushes.White;
@@ -642,21 +705,16 @@ namespace ProjectLUX
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            string sn = "ssss";
+            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
             ObjectiveTestResult TestResult = new ObjectiveTestResult();
-            TestResult.W255TestResult = new Process.W255.W255TestResult();
-            TestResult.RedTestResult = new Process.Red.RedTestResult();
-            TestResult.BlueTestResult = new Process.Blue.BlueTestResult();
-            TestResult.GreenTestResult = new Process.Green.GreenTestResult();
-            TestResult.MTFHVTestResult = new Process.MTFHV.MTFHVTestResult();
-            TestResult.DistortionTestResult = new Process.Distortion.DistortionTestResult();
-            TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
+            TestResult.W51ARTestResult = new Process.AR.W51AR.W51ARTestResult();
+            TestResult.W255ARTestResult = new Process.W255AR.W255ARTestResult();
+            TestResult.MTFHVARTestResult = new Process.MTFHVAR.MTFHARVTestResult();
+            TestResult.ChessboardARTestResult = new Process.ChessboardAR.ChessboardARTestResult();
+            TestResult.DistortionARTestResult = new Process.DistortionAR.DistortionARTestResult();
             TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
-
-
-
-            string filePath = Path.Combine(ViewResultManager.Config.CsvSavePath, $"ObjectiveTestResults.csv");
-
-            ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, filePath);
+            ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path);
         }
     }
 }

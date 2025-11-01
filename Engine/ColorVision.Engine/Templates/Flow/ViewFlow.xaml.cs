@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1720,CS8602
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.Batch;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes;
@@ -74,13 +75,8 @@ namespace ColorVision.Engine.Services.Flow
                     e.CanExecute = DisplayFlow.flowControl.IsFlowRun;
             }));
 
-            if (Config.UseNewUI)
-            {
-                ThemeManager.Current.CurrentUIThemeChanged += ThemeChanged;
-                ThemeChanged(ThemeManager.Current.CurrentUITheme);
-            }
-
-
+            ThemeManager.Current.CurrentUIThemeChanged += ThemeChanged;
+            ThemeChanged(ThemeManager.Current.CurrentUITheme);
 
         }
 
@@ -152,7 +148,7 @@ namespace ColorVision.Engine.Services.Flow
 
         public void AutoAlignment()
         {
-            STNodeEditorHelper.ApplyTreeLayout(startX: 100, startY: 100, horizontalSpacing: 250, verticalSpacing: 200);
+            STNodeEditorHelper.ApplyTreeLayout(startX: 0, startY: 0, horizontalSpacing: 300, verticalSpacing: 300);
             STNodeEditorHelper.AutoSize();
         }
 
@@ -404,19 +400,20 @@ namespace ColorVision.Engine.Services.Flow
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            var Batch = BatchResultMasterDao.Instance.GetByCode(FlowEngineManager.GetInstance().CurrentFlowMsg.SerialNumber);
-            if (Batch == null)
+            if (FlowEngineManager.Batch != null)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
-                return;
+                Frame frame = new Frame();
+
+                MeasureBatchPage batchDataHistory = new MeasureBatchPage(frame, FlowEngineManager.Batch);
+                Window window = new Window() { Owner = Application.Current.GetActiveWindow() };
+                window.Content = batchDataHistory;
+                window.Show();
             }
-            Frame frame = new Frame();
+            else
+            {
+                MessageBox.Show("请先执行流程");
+            }
 
-            MeasureBatchPage batchDataHistory = new MeasureBatchPage(frame, Batch);
-
-            Window window = new Window() { Owner = Application.Current.GetActiveWindow() };
-            window.Content = batchDataHistory;
-            window.Show();
 
         }
 
@@ -429,6 +426,16 @@ namespace ColorVision.Engine.Services.Flow
 
                 winf1.Visibility = grid.ActualHeight < 200 || grid.ActualWidth < 100 ? Visibility.Collapsed : Visibility.Visible;
             }
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            BatchManager.GetInstance().Edit();
+        }
+
+        private void BatchProcess_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

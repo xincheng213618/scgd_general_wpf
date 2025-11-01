@@ -99,6 +99,11 @@ namespace ColorVision.ImageEditor.Draw
 
         private void PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            if (Keyboard.IsKeyDown(Key.LeftCtrl))
+            {
+                return;
+            }
+
             DrawCanvas.CaptureMouse();
             MouseDownP = e.GetPosition(DrawCanvas);
             IsMouseDown = true;

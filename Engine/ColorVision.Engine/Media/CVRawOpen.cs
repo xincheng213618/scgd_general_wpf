@@ -93,7 +93,6 @@ namespace ColorVision.Engine.Media
 
             imageView.Config.AddProperties("LoadBuffer", LoadBuffer);
 
-
             if (File.Exists(ViewAlgorithmConfig.Instance.ShowDateFilePath))
             {
                 Points.Clear();

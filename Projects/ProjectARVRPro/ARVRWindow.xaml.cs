@@ -80,6 +80,8 @@ namespace ProjectARVRPro
         public static ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = ViewResultManager.ViewResluts;
 
         public static FixConfig ObjectiveTestResultFix => FixManager.GetInstance().FixConfig;
+        public static RecipeManager RecipeManager => RecipeManager.GetInstance();
+        public static RecipeConfig RecipeConfig => RecipeManager.RecipeConfig;
 
         public static ProcessManager ProcessManager => ProcessManager.GetInstance();
         public ObservableCollection<ProcessMeta> ProcessMetas { get; } = ProcessManager.ProcessMetas;
@@ -150,8 +152,7 @@ namespace ProjectARVRPro
         private Timer timer;
         Stopwatch stopwatch = new Stopwatch();
 
-        public static RecipeManager RecipeManager => RecipeManager.GetInstance();
-        public static RecipeConfig recipeConfig => RecipeManager.RecipeConfig;
+
 
 
         private LogOutput? logOutput;
@@ -509,6 +510,7 @@ namespace ProjectARVRPro
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
                 return;
             }
+
             ProjectARVRReuslt result = CurrentFlowResult ?? new ProjectARVRReuslt();
 
             result.BatchId = Batch.Id;
@@ -534,7 +536,7 @@ namespace ProjectARVRPro
                             Result = result,
                             ObjectiveTestResult = ObjectiveTestResult,
                             FixConfig = ObjectiveTestResultFix,
-                            RecipeConfig = recipeConfig,
+                            RecipeConfig = RecipeConfig,
                             ImageView =ImageView,
                             Logger = log
                         };
@@ -697,7 +699,7 @@ namespace ProjectARVRPro
                                         Result = result,
                                         ObjectiveTestResult = ObjectiveTestResult,
                                         FixConfig = ObjectiveTestResultFix,
-                                        RecipeConfig = recipeConfig,
+                                        RecipeConfig = RecipeConfig,
                                         ImageView = ImageView,
                                         Logger = log
                                     };
@@ -744,7 +746,7 @@ namespace ProjectARVRPro
                         Result = result,
                         ObjectiveTestResult = ObjectiveTestResult,
                         FixConfig = ObjectiveTestResultFix,
-                        RecipeConfig = recipeConfig,
+                        RecipeConfig = RecipeConfig,
                         ImageView = ImageView,
                         Logger = log
                     };
@@ -755,8 +757,6 @@ namespace ProjectARVRPro
                     log.Error("自定义 IProcess 执行异常", ex);
                 }
             }
-
-
 
             outtext += Environment.NewLine + $"Pass/Fail Criteria:" + Environment.NewLine;
             outtext += result.Result ? "Pass" : "Fail" + Environment.NewLine;

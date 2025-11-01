@@ -95,7 +95,7 @@ public class POIReviseNode : CVBaseServerNodeIn2Hub
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "参数:", _TemplateName);
+		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", _TemplateName);
 		m_custom_item.Y += 25;
 		m_ctrl_out_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "输出:", _Output);
 		m_custom_item.Y += 25;

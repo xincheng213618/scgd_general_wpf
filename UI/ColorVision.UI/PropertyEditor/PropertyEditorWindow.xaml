@@ -19,11 +19,42 @@
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Border Background="{DynamicResource  SecondaryRegionBrush}" Grid.RowSpan="2" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" />
-        <Grid>
+        <Border Background="{DynamicResource  SecondaryRegionBrush}" Grid.RowSpan="3" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" />
+        
+        <!-- Search Bar -->
+        <Grid Grid.Row="0" Margin="5,5,5,0">
+            <hc:TextBox x:Name="SearchBox" Style="{DynamicResource TextBoxPlus.Small}" 
+                       Padding="20,1,2,1" BorderThickness="1" 
+                       hc:InfoElement.Placeholder="搜索属性..." 
+                       BorderBrush="#CCCEDB" VerticalContentAlignment="Center" 
+                       TextChanged="SearchBox_TextChanged" />
+            <Viewbox Width="12" Height="12" HorizontalAlignment="Left" Margin="4,0,0,0">
+                <Rectangle Width="16" Height="16">
+                    <Rectangle.Resources>
+                        <SolidColorBrush x:Key="canvas" Opacity="0" />
+                        <SolidColorBrush x:Key="light-defaultgrey-10" Color="{DynamicResource defaultgreyColor}" Opacity="0.1" />
+                    </Rectangle.Resources>
+                    <Rectangle.Fill>
+                        <DrawingBrush Stretch="None">
+                            <DrawingBrush.Drawing>
+                                <DrawingGroup>
+                                    <DrawingGroup.Children>
+                                        <GeometryDrawing Brush="{DynamicResource canvas}" Geometry="F1M16,16H0V0H16Z" />
+                                        <GeometryDrawing Brush="{DynamicResource GlobalTextBrush}" Geometry="F1M11.592,10.7l3.854,3.854-.892.892L10.7,11.592a5.5,5.5,0,1,1,.892-.892ZM6.5,11A4.5,4.5,0,1,0,2,6.5,4.5,4.5,0,0,0,6.5,11Z" />
+                                    </DrawingGroup.Children>
+                                </DrawingGroup>
+                            </DrawingBrush.Drawing>
+                        </DrawingBrush>
+                    </Rectangle.Fill>
+                </Rectangle>
+            </Viewbox>
+        </Grid>
+        
+        <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
@@ -39,7 +70,7 @@
 
         </Grid>
 
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="2">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
                 <Button Content="{x:Static properties:Resources.Reset}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Reset_Click" />
                 <Button Content="{x:Static properties:Resources.Close}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Close_Click" Margin="5,0,0,0"/>

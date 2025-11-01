@@ -101,7 +101,7 @@ public class AlgorithmOLEDNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("固定点(FixedLED)", "固定点(FixedLED)", true, DescriptorType = typeof(OLEDNodeDescriptor))]
+	[STNodeProperty("固定点", "固定点", true, DescriptorType = typeof(OLEDNodeDescriptor))]
 	public PointFloat[] FixedLEDPoint
 	{
 		get

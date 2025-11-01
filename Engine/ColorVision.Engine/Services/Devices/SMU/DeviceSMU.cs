@@ -2,13 +2,13 @@
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.UI.Authorizations;
-using ColorVision.UI;
 using System.Windows;
 using System.Windows.Controls;
 using System.ComponentModel;
 using ColorVision.Database;
 using ColorVision.Themes.Controls;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Extension;
 
 namespace ColorVision.Engine.Services.Devices.SMU
 {

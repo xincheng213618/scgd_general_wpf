@@ -52,10 +52,7 @@ namespace ProjectLUX.Services
                     strings.Add(sn);
                     strings.Add("00");
 
-                    if (!Directory.Exists(ProjectLUXConfig.Instance.ResultSavePath))
-                    {
-                        Directory.CreateDirectory(ProjectLUXConfig.Instance.ResultSavePath);
-                    }
+                    ProjectLUXConfig.Instance.SN = sn;
 
                     if (SummaryManager.GetInstance().Summary.MachineNO == "H02")
                     {
@@ -106,6 +103,59 @@ namespace ProjectLUX.Services
                             };
 
                             return string.Join(",", strings) + ";";
+                        }
+                    }
+                    else if (SummaryManager.GetInstance().Summary.MachineNO == "H03AR")
+                    {
+                        if (ProjectWindowInstance.WindowInstance == null) return string.Join(",", strings) + ";";
+
+                        ProjectWindowInstance.WindowInstance.ReturnCode = string.Join(",", strings) + ";";
+                        if (lastTwo == "00")
+                        {
+                            log.Info("拍图窗口握手");
+                            ProjectWindowInstance.WindowInstance.InitTest(sn);
+                        }
+                        else if (lastTwo == "02")
+                        {
+                            log.Info("oc测试 ");
+                            ProjectWindowInstance.WindowInstance.RunTemplate(0, "Optical_Center_Calibrate");
+                            return null;
+                        }
+                        else if (lastTwo == "03")
+                        {
+                            log.Info("测试图例1 White 51 ");
+                            ProjectWindowInstance.WindowInstance.RunTemplate(1, "White51_Test");
+                            return null;
+                        }
+                        else if (lastTwo == "04")
+                        {
+                            log.Info("测试图例1 White Fov ");
+                            ProjectWindowInstance.WindowInstance.RunTemplate(2, "White255_Test");
+                            return null;
+                        }
+                        else if (lastTwo == "05")
+                        {
+                            log.Info("测试图例3 Chessboard");
+                            ProjectWindowInstance.WindowInstance.RunTemplate(3, "Chessboard_ANSI_Test");
+                            return null;
+                        }
+                        else if (lastTwo == "06")
+                        {
+                            log.Info("测试图例7 MTF-4pixel-o.6f");
+                            ProjectWindowInstance.WindowInstance.RunTemplate(4, "MTF_HV_Test");
+                            return null;
+                        }
+                        else if (lastTwo == "07")
+                        {
+                            log.Info("测试图例8 Distortion");
+                            ProjectWindowInstance.WindowInstance.RunTemplate(5, "Distortion_Test");
+                            return null;
+                        }
+                        else if (lastTwo == "08")
+                        {
+                            log.Info("测试图例8 Optic");
+                            ProjectWindowInstance.WindowInstance.RunTemplate(6, "OpticCenter_Test");
+                            return null;
                         }
                     }
                     else
@@ -252,14 +302,9 @@ namespace ProjectLUX.Services
                             TestResult.DistortionTestResult = new Process.Distortion.DistortionTestResult();
                             TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
                             TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
-
                             ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path); return null;
                         }
                     }
-
-
-
-
                     return string.Join(",", strings) + ";";
                 }
                 else

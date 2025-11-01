@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.0.1.28</VersionPrefix>
+		<VersionPrefix>1.0.1.49</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -27,6 +27,7 @@
 
 	<ItemGroup>
 		<Folder Include="Assets\" />
+		<Folder Include="Process\VR\" />
 	</ItemGroup>
 
 	<ItemGroup>

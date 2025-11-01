@@ -462,6 +462,10 @@ public class MQTTHelper
 
 	public async Task PublishAsync_Client(string topic, string msg, bool retained)
 	{
+		if (_MqttClient == null)
+		{
+			return;
+		}
 		new ResultData_MQTT();
 		ResultData_MQTT obj;
 		try

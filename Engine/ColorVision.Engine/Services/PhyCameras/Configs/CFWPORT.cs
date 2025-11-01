@@ -64,9 +64,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
         public List<int> NDRate { get; set; } = new List<int>();
 
-        public List<string> NDCaliNameGroups { get; set; } = new List<string>();
-
-
         public string NDRatesJson
         {
             get => JsonConvert.SerializeObject(NDRate);
@@ -76,6 +73,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
                     NDRate = JsonConvert.DeserializeObject<List<int>>(value);
             }
         }
+
+
+        public List<string> NDCaliNameGroups { get; set; } = new List<string>();
+
+
+
 
         public string NDCaliNameGroupsJson
         {

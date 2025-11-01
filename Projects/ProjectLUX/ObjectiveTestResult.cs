@@ -1,13 +1,18 @@
 ﻿using ColorVision.Common.MVVM;
 using NetTaste;
+using ProjectLUX.Process.AR.W51AR;
 using ProjectLUX.Process.Blue;
 using ProjectLUX.Process.Chessboard;
+using ProjectLUX.Process.ChessboardAR;
 using ProjectLUX.Process.Distortion;
+using ProjectLUX.Process.DistortionAR;
 using ProjectLUX.Process.Green;
 using ProjectLUX.Process.MTFHV;
+using ProjectLUX.Process.MTFHVAR;
 using ProjectLUX.Process.OpticCenter;
 using ProjectLUX.Process.Red;
 using ProjectLUX.Process.W255;
+using ProjectLUX.Process.W255AR;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
@@ -104,7 +109,13 @@ namespace ProjectLUX
     public class ObjectiveTestResult:ViewModelBase
     {
         [DisplayName("W255")]
+        public W51ARTestResult W51ARTestResult { get; set; }
+        [DisplayName("W255")]
+        public W255ARTestResult W255ARTestResult { get; set; }
+
+        [DisplayName("W255")]
         public W255TestResult W255TestResult { get; set; }
+
         [DisplayName("R255")]
         public RedTestResult RedTestResult { get; set; }
 
@@ -113,11 +124,19 @@ namespace ProjectLUX
         [DisplayName("B255")]
         public BlueTestResult BlueTestResult { get; set; }
 
+        [DisplayName("Chessborad_4x4")]
+        public ChessboardARTestResult ChessboardARTestResult { get; set; }
+
         [DisplayName("Chessborad_7x7")]
         public ChessboardTestResult ChessboardTestResult { get; set; }
 
         [DisplayName("MTF")]
+        public MTFHARVTestResult MTFHVARTestResult { get; set; }
+        [DisplayName("MTF")]
         public MTFHVTestResult MTFHVTestResult { get; set; }
+
+        [DisplayName("Distortion")]
+        public DistortionARTestResult DistortionARTestResult { get; set; }
 
         [DisplayName("Distortion")]
         public DistortionTestResult DistortionTestResult { get; set; }

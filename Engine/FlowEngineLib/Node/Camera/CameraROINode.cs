@@ -25,7 +25,7 @@ public class CameraROINode : CVBaseServerNode
 
 	private STNodeEditText<int> m_ctrl_height;
 
-	[STNodeProperty("ROI X", "ROI X", true)]
+	[STNodeProperty("X", "X", true)]
 	public int ROI_X
 	{
 		get
@@ -39,7 +39,7 @@ public class CameraROINode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("ROI Y", "ROI Y", true)]
+	[STNodeProperty("Y", "Y", true)]
 	public int ROI_Y
 	{
 		get
@@ -53,7 +53,7 @@ public class CameraROINode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("ROI Width", "ROI Width", true)]
+	[STNodeProperty("Width", "Width", true)]
 	public int ROI_Width
 	{
 		get
@@ -67,7 +67,7 @@ public class CameraROINode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("ROI Height", "ROI Height", true)]
+	[STNodeProperty("Height", "Height", true)]
 	public int ROI_Height
 	{
 		get
@@ -85,7 +85,7 @@ public class CameraROINode : CVBaseServerNode
 		: base("相机ROI", "Camera", "SVR.Camera.Default", "DEV.Camera.Default")
 	{
 		operatorCode = "SetParam";
-		base.Height = 150;
+		base.Height = 160;
 	}
 
 	protected override void OnCreate()

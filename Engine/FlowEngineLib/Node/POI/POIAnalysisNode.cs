@@ -12,7 +12,7 @@ public class POIAnalysisNode : CVBaseServerNode
 
 	private STNodeEditText<string> m_ctrl_temp;
 
-	[STNodeProperty("模板名称", "参数模板名称", true)]
+	[STNodeProperty("参数模板", "参数模板", true)]
 	public string TemplateName
 	{
 		get
@@ -26,7 +26,7 @@ public class POIAnalysisNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("模板 ID", "参数模板ID", true)]
+	[STNodeProperty("参数模板ID", "参数模板ID", true)]
 	public int TempId
 	{
 		get

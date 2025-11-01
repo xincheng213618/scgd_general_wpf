@@ -21,7 +21,7 @@ internal class ChannelDescriptor : STNodePropertyDescriptor
 		return Channel.From(strText);
 	}
 
-	protected override string GetStringFromValue()
+	protected override string GetStringFromValue(bool isLang = false)
 	{
 		Channel channel = (Channel)GetValue(null);
 		if (channel != null)

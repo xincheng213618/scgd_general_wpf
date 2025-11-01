@@ -28,6 +28,11 @@ namespace ColorVision.ImageEditor
         public ObservableCollection<IImageComponent> IImageComponents { get; set; } = new ObservableCollection<IImageComponent>();
         public Dictionary<string, IImageOpen> IImageOpens { get; set; } = new Dictionary<string, IImageOpen>();
         public ObservableCollection<IDVContextMenu> ContextMenuProviders { get; set; } = new ObservableCollection<IDVContextMenu>();
+        
+        /// <summary>
+        /// Maps tool GuidId to its UI element for visibility control
+        /// </summary>
+        public Dictionary<string, FrameworkElement> ToolUIElements { get; set; } = new Dictionary<string, FrameworkElement>();
 
         public IEditorToolFactory(ImageView imageView, EditorContext context)
         {
@@ -89,6 +94,12 @@ namespace ColorVision.ImageEditor
                     var btn = GenIEditorTool(tool);
                     if (i++ > 0) btn.Margin = margin; // 非第一个才加间距
                     toolBar.Items.Add(btn);
+                    
+                    // Store the UI element for this tool
+                    if (!string.IsNullOrEmpty(tool.GuidId))
+                    {
+                        ToolUIElements[tool.GuidId] = btn;
+                    }
                 }
             }
 

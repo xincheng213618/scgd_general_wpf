@@ -435,5 +435,43 @@ namespace ColorVision.Engine.Templates
         {
             ITemplate.Export(ListView1.SelectedIndex);
         }
+
+        private void SwapTemplateAndUpdateUI(int newIndex, string errorMessage)
+        {
+            int currentIndex = ListView1.SelectedIndex;
+            if (ITemplate.SwapTemplateOrder(currentIndex, newIndex))
+            {
+                ListView1.SelectedIndex = newIndex;
+                HandyControl.Controls.Growl.SuccessGlobal("模板顺序已交换");
+            }
+            else
+            {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), errorMessage, "ColorVision");
+            }
+        }
+
+        private void Button_MoveUp_Click(object sender, RoutedEventArgs e)
+        {
+            if (ListView1.SelectedIndex > 0)
+            {
+                SwapTemplateAndUpdateUI(ListView1.SelectedIndex - 1, "交换失败");
+            }
+            else
+            {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "已是第一个，无法上移", "ColorVision");
+            }
+        }
+
+        private void Button_MoveDown_Click(object sender, RoutedEventArgs e)
+        {
+            if (ListView1.SelectedIndex < ITemplate.Count - 1 && ListView1.SelectedIndex >= 0)
+            {
+                SwapTemplateAndUpdateUI(ListView1.SelectedIndex + 1, "交换失败");
+            }
+            else
+            {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "已是最后一个，无法下移", "ColorVision");
+            }
+        }
     }
 }

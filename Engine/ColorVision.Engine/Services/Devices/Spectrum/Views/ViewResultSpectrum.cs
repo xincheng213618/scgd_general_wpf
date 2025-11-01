@@ -1,16 +1,21 @@
-﻿using System;
-using System.Collections.ObjectModel;
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
+using cvColorVision;
 using Newtonsoft.Json;
 using ScottPlot;
-using ScottPlot.Plottables;
 using ScottPlot.DataSources;
+using ScottPlot.Plottables;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
-using cvColorVision;
+using System.IO;
+using System.Text;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 {
+
+
 
     public class ViewResultSpectrum : ViewModelBase
     {

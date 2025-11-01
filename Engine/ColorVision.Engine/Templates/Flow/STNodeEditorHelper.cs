@@ -28,6 +28,7 @@ using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
 using ColorVision.Engine.Templates.Jsons.BuildPOIAA;
+using ColorVision.Engine.Templates.Jsons.CompoundImg;
 using ColorVision.Engine.Templates.Jsons.Distortion2;
 using ColorVision.Engine.Templates.Jsons.FindCross;
 using ColorVision.Engine.Templates.Jsons.FOV2;
@@ -426,17 +427,16 @@ namespace ColorVision.Engine.Templates.Flow
                     AddStackPanel(name => algorithmNode.DeviceCode = name, algorithmNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                     AddImagePath(name => algorithmNode.ImgFileName = name, algorithmNode.ImgFileName);
 
+                    AddStackPanel(name => algorithmNode.POITempName = name, algorithmNode.POITempName, "POI", new TemplatePoi());
+
                     switch (algorithmNode.Algorithm)
                     {
                         case FlowEngineLib.Algorithm.AlgorithmType.MTF:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "MTF", new TemplateMTF());
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "MTF2", new TemplateMTF2());
-
-                            AddStackPanel(name => algorithmNode.POITempName = name, algorithmNode.POITempName, "POI", new TemplatePoi());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.SFR:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "SFR", new TemplateSFR());
-                            AddStackPanel(name => algorithmNode.POITempName = name, algorithmNode.POITempName, "POI", new TemplatePoi());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.FOV:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "DFOV", new TemplateDFOV());
@@ -454,7 +454,6 @@ namespace ColorVision.Engine.Templates.Flow
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯珠检测", new TemplateLedCheck());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.灯带检测:
-                            AddStackPanel(name => algorithmNode.POITempName = name, algorithmNode.POITempName, "POI", new TemplatePoi());
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯带检测V2", new TemplateLEDStripDetectionV2()); ;
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯带检测", new TemplateLEDStripDetection()); ;
                             break;
@@ -479,6 +478,12 @@ namespace ColorVision.Engine.Templates.Flow
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.图像裁剪:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "图像裁剪", new TemplateImageCropping());
+                            break;
+                        case FlowEngineLib.Algorithm.AlgorithmType.ImageCompound:
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "ImageCompound", new TemplateCompoundImg());
+                            break;
+                        case FlowEngineLib.Algorithm.AlgorithmType.十字计算:
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "十字计算", new TemplateFindCross());
                             break;
                         default:
                             break;

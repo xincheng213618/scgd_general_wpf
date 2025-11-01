@@ -55,7 +55,6 @@ namespace ColorVision
             var renderedMessage = RenderLoggingEvent(loggingEvent);
             Buffer.Append(renderedMessage);
         }
-
         protected override void OnClose()
         {
             base.OnClose();

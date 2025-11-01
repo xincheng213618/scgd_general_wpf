@@ -5,6 +5,7 @@ using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using ProjectLUX.PluginConfig;
+using ProjectLUX.Process;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -20,6 +21,9 @@ namespace ProjectLUX
         public static RecipeManager RecipeManager => RecipeManager.GetInstance();
         public static FixManager FixManager => FixManager.GetInstance();
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
+        public static ProcessManager ProcessManager => ProcessManager.GetInstance();
+        public static LUXWindowConfig WindowConfig => LUXWindowConfig.Instance;
+
 
         [JsonIgnore]
         public RelayCommand OpenTemplateCommand { get; set; }
@@ -181,7 +185,7 @@ namespace ProjectLUX
         public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; OnPropertyChanged(); } }
         private bool _IsAutoUploadSn;
 
-
+        [PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; OnPropertyChanged(); } }
         private string _ResultSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop),"TestReslut");
 
@@ -189,12 +193,10 @@ namespace ProjectLUX
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 300;
 
-
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; OnPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;
 
 
-        public static LUXWindowConfig ProjectKBWindowConfig => LUXWindowConfig.Instance;
 
     }
 }

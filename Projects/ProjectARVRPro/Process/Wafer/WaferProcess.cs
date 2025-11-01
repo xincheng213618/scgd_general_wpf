@@ -1,20 +1,9 @@
 using ColorVision.Database;
-using ColorVision.Engine; // AlgResultMasterDao, MeasureImgResultDao, DeatilCommonDao
-using ColorVision.Engine.Media;
+using ColorVision.Engine; 
 using ColorVision.Engine.Services.Devices.SMU.Dao;
-using ColorVision.Engine.Services.Devices.SMU.Views;
-using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
-using ColorVision.Engine.Templates.Jsons.FOV2;
-using ColorVision.Engine.Templates.Jsons.PoiAnalysis; // PoiAnalysisDetailViewReslut
-using ColorVision.Engine.Templates.POI.AlgorithmImp; // PoiPointResultModel
-using ColorVision.ImageEditor.Draw;
-using CVCommCore.CVAlgorithm;
-using Dm.util;
+using ColorVision.Engine.Templates.POI.AlgorithmImp; 
 using Newtonsoft.Json;
-using System.Collections.Generic;
 using System.IO;
-using System.Windows;
-using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Wafer
 {
@@ -25,7 +14,6 @@ namespace ProjectARVRPro.Process.Wafer
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
             WaferViewTestResult testResult = new WaferViewTestResult();
-
             try
             {
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
@@ -41,7 +29,7 @@ namespace ProjectARVRPro.Process.Wafer
 
                         foreach (var item in poiPoints)
                         {
-                            testResult.PoixyuvDatas.add(new PoiResultCIExyuvData(item));
+                            testResult.PoixyuvDatas.Add(new PoiResultCIExyuvData(item));
                         }
                     }
                 }
@@ -53,11 +41,11 @@ namespace ProjectARVRPro.Process.Wafer
 
                 string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 string filePath = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, $"Wafer_{timeStr}.csv");
-                var rows = new List<string> { "X,Y,Z,x,y,u,v,V,I" };
+                var rows = new List<string> { "X,Y,Z,x,y,u,v,CCT,Wave,V,I" };
 
                 for (int i = 0; i < testResult.PoixyuvDatas.Count;i++)
                 {
-                    rows.Add($"{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.SMUResultModels[i].VResult},{testResult.SMUResultModels[i].IResult}");
+                    rows.Add($"{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave},{testResult.SMUResultModels[i].VResult},{testResult.SMUResultModels[i].IResult}");
                 }
                 File.WriteAllLines(filePath, rows);
                 return true;

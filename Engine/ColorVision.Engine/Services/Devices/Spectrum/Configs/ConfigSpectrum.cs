@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
@@ -72,6 +73,19 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public bool IsAutoDark { get => _IsAutoDark; set { if (value) IsShutterEnable = false; _IsAutoDark = value; OnPropertyChanged(); } }
         private bool _IsAutoDark;
 
+        public bool IsWithND { get => _IsWithND; set { _IsWithND = value; OnPropertyChanged(); } }
+        private bool _IsWithND;
+
+        public string ComPort { get => _ComPort; set { _ComPort = value; OnPropertyChanged(); } }
+        private string _ComPort;
+
+        public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
+        private int _BaudRate;
+
+        [DisplayName("饱和度")]
+        public int Saturation { get => _Saturation; set { _Saturation = value; OnPropertyChanged(); } }
+        private int _Saturation = 80;
+
         public ShutterConfig ShutterCfg { get => _ShutterCfg; set { _ShutterCfg = value; OnPropertyChanged(); } }
         private ShutterConfig _ShutterCfg;
 
@@ -80,7 +94,36 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public SelfAdaptionInitDark SelfAdaptionInitDark { get; set; } = new SelfAdaptionInitDark();
 
         public SetEmissionSP100Config SetEmissionSP100Config { get; set; } = new SetEmissionSP100Config();
+
+        public NDConfig NDConfig { get; set; } = new NDConfig();
     }
+
+
+
+    public class NDConfig : ViewModelBase
+    {
+        public bool IsNDPort { get => _IsNDPort; set { _IsNDPort = value; OnPropertyChanged(); } }
+        private bool _IsNDPort;
+
+        [PropertyEditorType(typeof(TextSerialPortPropertiesEditor))]
+        public string SzComName { get => _szComName; set { _szComName = value; OnPropertyChanged(); } }
+        private string _szComName = "COM1";
+
+        [PropertyEditorType(typeof(TextBaudRatePropertiesEditor))]
+        public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
+        private int _BaudRate = 115200;
+
+        public double NDMaxExpTime { get => _NDMaxExpTime; set { _NDMaxExpTime = value; OnPropertyChanged(); } }
+        private double _NDMaxExpTime;
+
+        public double NDMinExpTime { get => _NDMinExpTime; set { _NDMinExpTime = value; OnPropertyChanged(); } }
+        private double _NDMinExpTime;
+
+        public List<int> NDRate { get; set; } = new List<int>();
+
+        public List<string> NDCaliNameGroups { get; set; } = new List<string>();
+    }
+
 
     [DisplayName("EmissionSP100设置")]
     public class SetEmissionSP100Config : ViewModelBase
