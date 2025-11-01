@@ -15,7 +15,7 @@ namespace ColorVision.Scheduler
         Task PauseAll();
         Task ResumeAll();
         Task Start();
-        Task Stop();
+        Task Shutdown();
         Task StopJob(string jobName, string groupName);
         Task RemoveJob(string jobName, string groupName);
         Task ResumeJob(string jobName, string groupName);
@@ -84,7 +84,7 @@ namespace ColorVision.Scheduler
                 if (!TaskInfos.Any(x => x.JobName == newName))
                     return newName;
             }
-            return jobName + Guid.NewGuid().ToString("N").Substring(0, 6);
+            return jobName + Guid.NewGuid().ToString("N")[..6];
         }
 
         public string GetNewGroupName(string groupName)
@@ -97,7 +97,7 @@ namespace ColorVision.Scheduler
                 if (!TaskInfos.Any(x => x.GroupName == newName))
                     return newName;
             }
-            return groupName + Guid.NewGuid().ToString("N").Substring(0, 6);
+            return groupName + Guid.NewGuid().ToString("N")[..6];
         }
 
         public async Task PauseAll()
@@ -129,7 +129,7 @@ namespace ColorVision.Scheduler
             // 创建调度器
             await Scheduler.Start();
 
-            Listener = new TaskExecutionListener();
+            Listener = new TaskExecutionListener(this);
             Scheduler.ListenerManager.AddJobListener(Listener);
             Jobs = new Dictionary<string, Type>();
 
@@ -236,7 +236,7 @@ namespace ColorVision.Scheduler
             await CreateJob(schedulerInfo);
         }
 
-        private ITrigger BuildTrigger(SchedulerInfo schedulerInfo)
+        private static ITrigger BuildTrigger(SchedulerInfo schedulerInfo)
         {
             var triggerBuilder = TriggerBuilder.Create().WithIdentity($"{schedulerInfo.JobName}-trigger", schedulerInfo.GroupName);
             switch (schedulerInfo.JobStartMode)
@@ -301,7 +301,7 @@ namespace ColorVision.Scheduler
             return triggerBuilder.Build();
         }
 
-        private bool ValidateSchedulerInfo(SchedulerInfo info, out string errorMsg)
+        private static bool ValidateSchedulerInfo(SchedulerInfo info, out string errorMsg)
         {
             if (info.JobType == null)
             {
@@ -350,7 +350,7 @@ namespace ColorVision.Scheduler
             Load();
         }
 
-        public async Task Stop()
+        public async Task Shutdown()
         {
             if (Scheduler != null)
             {

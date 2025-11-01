@@ -140,17 +140,20 @@ namespace ColorVision.Scheduler
             createTask.ShowDialog();
         }
 
-        private void MenuEdit_Click(object sender, RoutedEventArgs e)
+        private async void MenuEdit_Click(object sender, RoutedEventArgs e)
         {
             if (ListViewTask.SelectedItem is SchedulerInfo info)
             {
                 // 深拷贝一份用于编辑
                 var editInfo = JsonConvert.DeserializeObject<SchedulerInfo>(JsonConvert.SerializeObject(info, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All }), new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
-                var win = new CreateTask { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner, SchedulerInfo = editInfo };
-                if (win.ShowDialog() == true)
+                if (editInfo != null)
                 {
-                    // 编辑完成后更新
-                    QuartzSchedulerManager.UpdateJob(editInfo);
+                    var win = new CreateTask { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner, SchedulerInfo = editInfo };
+                    if (win.ShowDialog() == true)
+                    {
+                        // 编辑完成后更新
+                        await QuartzSchedulerManager.UpdateJob(editInfo);
+                    }
                 }
             }
         }
