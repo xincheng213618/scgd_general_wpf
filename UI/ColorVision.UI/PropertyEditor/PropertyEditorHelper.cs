@@ -1,7 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Extension;
-using ColorVision.UI.LogImp;
-using log4net.Core;
+﻿using ColorVision.UI.Extension;
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Reflection;
