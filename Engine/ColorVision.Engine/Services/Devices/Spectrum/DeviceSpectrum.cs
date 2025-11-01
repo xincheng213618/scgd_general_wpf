@@ -49,7 +49,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTSpectrum(this);
-            View = new ViewSpectrum(this);
+            View = new ViewSpectrum();
             View.View.Title = $"光谱仪视图 - {Config.Code}";
             this.SetIconResource("DISpectrumIcon", View.View);
 

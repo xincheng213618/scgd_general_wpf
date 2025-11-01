@@ -758,8 +758,6 @@ namespace ProjectARVRPro
                 }
             }
 
-
-
             outtext += Environment.NewLine + $"Pass/Fail Criteria:" + Environment.NewLine;
             outtext += result.Result ? "Pass" : "Fail" + Environment.NewLine;
 

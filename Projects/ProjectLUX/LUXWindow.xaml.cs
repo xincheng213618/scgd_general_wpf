@@ -463,6 +463,18 @@ namespace ProjectLUX
 
                         if (!string.IsNullOrWhiteSpace(ReturnCode))
                         {
+                            if(CurrentTestType == 0)
+                            {
+                                log.Info("IsOC");
+                                if(ObjectiveTestResult.OpticCenterTestResult != null)
+                                {
+                                    ReturnCode += $"{ObjectiveTestResult.OpticCenterTestResult.OptCenterRotation.Value},{ObjectiveTestResult.OpticCenterTestResult.OptCenterXTilt.Value},{ObjectiveTestResult.OpticCenterTestResult.OptCenterYTilt.Value}";
+                                }
+                                else
+                                {
+                                    log.Info("ObjectiveTestResult.OpticCenterTestResult null");
+                                }
+                            }
                             SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                         }
 
@@ -558,6 +570,7 @@ namespace ProjectLUX
                     log.Info("展示图片报错");
                     log.Error(ex);
                 }
+
                 Task.Run(async () =>
                 {
                     if (File.Exists(result.FileName))
@@ -566,6 +579,32 @@ namespace ProjectLUX
                         {
                             ImageView.OpenImage(result.FileName);
                             ImageView.ImageShow.Clear();
+
+                            if (result.FlowStatus != FlowStatus.Completed)
+                                return;
+
+                            var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
+                            if (meta?.Process != null)
+                            {
+                                bool executed = false;
+                                try
+                                {
+                                    var ctx = new IProcessExecutionContext
+                                    {
+                                        Result = result,
+                                        ObjectiveTestResult = ObjectiveTestResult,
+                                        FixConfig = ObjectiveTestResultFix,
+                                        RecipeConfig = RecipeConfig,
+                                        ImageView = ImageView,
+                                        Logger = log
+                                    };
+                                    meta.Process.Render(ctx);
+                                }
+                                catch (Exception ex)
+                                {
+                                    log.Error("自定义 IProcess 执行异常", ex);
+                                }
+                            }
 
                         });
                     }
@@ -576,40 +615,48 @@ namespace ProjectLUX
 
         public void GenoutputText(ProjectLUXReuslt result)
         {
-
             outputText.Background = result.Result ? Brushes.Lime : Brushes.Red;
             outputText.Document.Blocks.Clear(); // 清除之前的内容
 
             string outtext = string.Empty;
-            outtext += $"Model:{result.Model}" + Environment.NewLine;
-            outtext += $"SN:{result.SN}" + Environment.NewLine;
-
-            outtext += $"{result.CreateTime:yyyy/MM//dd HH:mm:ss}" + Environment.NewLine;
-
+            outtext += $"Model:{result.Model}  SN:{result.SN}  {DateTime.Now:yyyy/MM//dd HH:mm:ss}";
             Run run = new Run(outtext);
             run.Foreground = result.Result ? Brushes.Black : Brushes.White;
             run.FontSize += 1;
 
-
-
             var paragraph = new Paragraph();
             paragraph.Inlines.Add(run);
-
             outputText.Document.Blocks.Add(paragraph);
             outtext = string.Empty;
 
-            paragraph = new Paragraph();
 
-            outtext = string.Empty;
+            var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
+            if (meta?.Process != null)
+            {
+                bool executed = false;
+                try
+                {
+                    var ctx = new IProcessExecutionContext
+                    {
+                        Result = result,
+                        ObjectiveTestResult = ObjectiveTestResult,
+                        FixConfig = ObjectiveTestResultFix,
+                        RecipeConfig = RecipeConfig,
+                        ImageView = ImageView,
+                        Logger = log
+                    };
+                    outtext += meta.Process.GenText(ctx);
+                }
+                catch (Exception ex)
+                {
+                    log.Error("自定义 IProcess 执行异常", ex);
+                }
+            }
 
-            outputText.Document.Blocks.Add(paragraph);
-
-
-
-            outtext += Environment.NewLine;
-            outtext += $"Pass/Fail Criteria:" + Environment.NewLine;
-
+            outtext += Environment.NewLine + $"Pass/Fail Criteria:" + Environment.NewLine;
             outtext += result.Result ? "Pass" : "Fail" + Environment.NewLine;
+
+
 
             run = new Run(outtext);
             run.Foreground = result.Result ? Brushes.Black : Brushes.White;

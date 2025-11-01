@@ -1,15 +1,22 @@
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
+using ColorVision.Engine.Services.Devices.SMU.Views;
+using ColorVision.Engine.Services.Devices.Spectrum.Dao;
+using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using log4net;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 
 namespace ColorVision.Engine.Batch.IVL
 {
     public class IVLProcess : IBatchProcess
     {
+        private static readonly ILog log = LogManager.GetLogger(nameof(IVLProcess));
+
         public bool Process(IBatchContext ctx)
         {
             if (ctx?.Batch == null) return false;
@@ -38,19 +45,40 @@ namespace ColorVision.Engine.Batch.IVL
                 {
                     testResult.SMUResultModels.Add(item);
                 }
-                //ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
 
                 string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string filePath = Path.Combine(config.SavePath, $"ivl_{timeStr}.csv");
+                var rows = new List<string> { "Time,id,X,Y,Z,x,y,u,v,CCT,Wave,V,I" };
 
-                string filePath = Path.Combine(config.SavePath, $"Wafer_{timeStr}.csv");
-
-                var rows = new List<string> { "X,Y,Z,x,y,u,v,CCT,Wave,V,I" };
+                string DateTimeNow = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
                 for (int i = 0; i < testResult.PoixyuvDatas.Count;i++)
                 {
-                    rows.Add($"{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave},{testResult.SMUResultModels[i].VResult},{testResult.SMUResultModels[i].IResult}");
+                    rows.Add($"{DateTimeNow}{i}{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave},{testResult.SMUResultModels[i].VResult},{testResult.SMUResultModels[i].IResult}");
                 }
                 File.WriteAllLines(filePath, rows);
+
+                var list = MySqlControl.GetInstance().DB.Queryable<SpectumResultModel>().Where(x => x.BatchId == ctx.Batch.Id).ToList();
+                ObservableCollection<ViewResultSpectrum> ViewResults = new ObservableCollection<ViewResultSpectrum>();
+                if (list.Count == 0)
+                {
+                    log.Info("找不到光谱仪的数据");
+                }
+                else
+                {
+                    foreach (var item in list)
+                    {
+                        ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(item);
+                        viewResultSpectrum.V = float.NaN;
+                        viewResultSpectrum.I = float.NaN;
+                        ViewResults.Add(viewResultSpectrum);
+                    }
+                    string sprectrumfilePath = Path.Combine(config.SavePath, $"sprectrum_{timeStr}.csv");
+
+                    ViewResults.SaveToCsv(sprectrumfilePath);
+                }
+
+                //ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
                 return true;
             }
             catch (Exception ex)

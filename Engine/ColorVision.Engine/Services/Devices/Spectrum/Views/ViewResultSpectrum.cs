@@ -1,16 +1,102 @@
-﻿using System;
-using System.Collections.ObjectModel;
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
+using cvColorVision;
 using Newtonsoft.Json;
 using ScottPlot;
-using ScottPlot.Plottables;
 using ScottPlot.DataSources;
+using ScottPlot.Plottables;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
-using cvColorVision;
+using System.IO;
+using System.Text;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 {
+
+    public static class ViewResultSpectrumExt
+    {
+        public static void SaveToCsv(this ObservableCollection<ViewResultSpectrum> ViewResultSpectrums , string csv)
+        {
+            var csvBuilder = new StringBuilder();
+
+            List<string> properties = new();
+            properties.Add("序号");
+            properties.Add("批次号");
+            properties.Add("IP");
+            properties.Add("亮度Lv(cd/m2)");
+            properties.Add("蓝光");
+            properties.Add("色度x");
+            properties.Add("色度y");
+            properties.Add("色度u");
+            properties.Add("色度v");
+            properties.Add("相关色温(K)");
+            properties.Add("主波长Ld(nm)");
+            properties.Add("色纯度(%)");
+            properties.Add("峰值波长Lp(nm");
+            properties.Add("显色性指数Ra");
+            properties.Add("半波宽");
+            properties.Add("电压");
+            properties.Add("电流");
+
+            for (int i = 380; i <= 780; i++)
+            {
+                properties.Add(i.ToString());
+            }
+            for (int i = 380; i <= 780; i++)
+            {
+                properties.Add("sp" + i.ToString());
+            }
+            // 写入列头
+            for (int i = 0; i < properties.Count; i++)
+            {
+                // 添加列名
+                csvBuilder.Append(properties[i]);
+
+                // 如果不是最后一列，则添加逗号
+                if (i < properties.Count - 1)
+                    csvBuilder.Append(',');
+            }
+            // 添加换行符
+            csvBuilder.AppendLine();
+            foreach (var result in ViewResultSpectrums)
+            {
+                csvBuilder.Append(result.Id + ",");
+                csvBuilder.Append(result.BatchID + ",");
+                csvBuilder.Append(result.IP + ",");
+                csvBuilder.Append(result.Lv + ",");
+                csvBuilder.Append(result.Blue + ",");
+                csvBuilder.Append(result.fx + ",");
+                csvBuilder.Append(result.fy + ",");
+                csvBuilder.Append(result.fu + ",");
+                csvBuilder.Append(result.fv + ",");
+                csvBuilder.Append(result.fCCT + ",");
+                csvBuilder.Append(result.fLd + ",");
+                csvBuilder.Append(result.fPur + ",");
+                csvBuilder.Append(result.fLp + ",");
+                csvBuilder.Append(result.fRa + ",");
+                csvBuilder.Append(result.fHW + ",");
+                csvBuilder.Append(result.V + ",");
+                csvBuilder.Append(result.I + ",");
+
+                for (int i = 0; i < result.SpectralDatas.Count; i++)
+                {
+                    csvBuilder.Append(result.SpectralDatas[i].AbsoluteSpectrum);
+                    csvBuilder.Append(',');
+                }
+                for (int i = 0; i < result.SpectralDatas.Count; i++)
+                {
+                    csvBuilder.Append(result.SpectralDatas[i].RelativeSpectrum);
+                    if (i < result.SpectralDatas.Count - 1)
+                        csvBuilder.Append(',');
+                }
+                csvBuilder.AppendLine();
+            }
+            File.WriteAllText(csv, csvBuilder.ToString(), Encoding.UTF8);
+
+        }
+    }
 
     public class ViewResultSpectrum : ViewModelBase
     {
