@@ -12,6 +12,7 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using System.ComponentModel;
 using ColorVision.Themes.Controls;
+using ColorVision.Engine.Extension;
 
 namespace ColorVision.Engine.Services.Devices.Calibration
 {

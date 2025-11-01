@@ -6,7 +6,6 @@ using ColorVision.Engine.Messages;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Authorizations;
-using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,6 +16,7 @@ using ColorVision.Themes.Controls.Uploads;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views;
 using System.ComponentModel;
 using ColorVision.Database;
+using ColorVision.Engine.Extension;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {

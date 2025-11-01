@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.Extension;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
@@ -13,7 +14,6 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
-using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using cvColorVision;
 using log4net;

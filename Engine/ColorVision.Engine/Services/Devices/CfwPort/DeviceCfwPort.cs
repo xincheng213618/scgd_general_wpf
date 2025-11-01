@@ -1,8 +1,8 @@
-﻿using ColorVision.UI;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Common.MVVM;
 using ColorVision.UI.Authorizations;
+using ColorVision.Engine.Extension;
 
 namespace ColorVision.Engine.Services.Devices.CfwPort
 {

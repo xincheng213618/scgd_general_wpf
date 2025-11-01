@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8602,CS8603,CS8601
 using ColorVision.Database;
 using ColorVision.Engine.Batch;
+using ColorVision.Engine.Extension;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;

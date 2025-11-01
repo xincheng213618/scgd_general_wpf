@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Database;
+using ColorVision.Engine.Extension;
 
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
