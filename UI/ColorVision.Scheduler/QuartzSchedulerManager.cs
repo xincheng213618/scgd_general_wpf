@@ -15,7 +15,7 @@ namespace ColorVision.Scheduler
         Task PauseAll();
         Task ResumeAll();
         Task Start();
-        Task Stop();
+        Task Shutdown();
         Task StopJob(string jobName, string groupName);
         Task RemoveJob(string jobName, string groupName);
         Task ResumeJob(string jobName, string groupName);
@@ -36,6 +36,8 @@ namespace ColorVision.Scheduler
         private static readonly object _locker = new();
         public static QuartzSchedulerManager GetInstance() { lock (_locker) { return _instance ??= new QuartzSchedulerManager(); } }
         private static readonly string ConfigFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scheduler_tasks.json");
+        private readonly SchedulerLogger _logger;
+        
         public ObservableCollection<SchedulerInfo> TaskInfos { get; set; } = new ObservableCollection<SchedulerInfo>();
 
         public IScheduler Scheduler { get; set; }
@@ -48,28 +50,58 @@ namespace ColorVision.Scheduler
 
         public QuartzSchedulerManager()
         {
+            _logger = new SchedulerLogger("QuartzSchedulerManager");
+            _logger.LogInformation("Initializing QuartzSchedulerManager");
             Load();
             Task.Run(() => Start());
         }
 
         public void Save()
         {
-            var json = JsonConvert.SerializeObject(TaskInfos, Formatting.Indented, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
-            File.WriteAllText(ConfigFile, json);
+            try
+            {
+                _logger.LogDebug($"Saving {TaskInfos.Count} tasks to {ConfigFile}");
+                var json = JsonConvert.SerializeObject(TaskInfos, Formatting.Indented, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
+                File.WriteAllText(ConfigFile, json);
+                _logger.LogInformation("Tasks saved successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Failed to save tasks", ex);
+                MessageBox.Show($"保存任务配置失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         public void Load()
         {
-            if (File.Exists(ConfigFile))
+            try
             {
-                var json = File.ReadAllText(ConfigFile);
-                var list = JsonConvert.DeserializeObject<ObservableCollection<SchedulerInfo>>(json, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
-                if (list != null)
+                if (File.Exists(ConfigFile))
                 {
-                    TaskInfos.Clear();
-                    foreach (var item in list)
-                        TaskInfos.Add(item);
+                    _logger.LogInformation($"Loading tasks from {ConfigFile}");
+                    var json = File.ReadAllText(ConfigFile);
+                    var list = JsonConvert.DeserializeObject<ObservableCollection<SchedulerInfo>>(json, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
+                    if (list != null)
+                    {
+                        TaskInfos.Clear();
+                        foreach (var item in list)
+                            TaskInfos.Add(item);
+                        _logger.LogInformation($"Loaded {TaskInfos.Count} tasks successfully");
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Deserialized task list is null");
+                    }
                 }
+                else
+                {
+                    _logger.LogInformation($"Config file not found: {ConfigFile}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Failed to load tasks", ex);
+                MessageBox.Show($"加载任务配置失败: {ex.Message}\n将使用空配置启动。", "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -84,7 +116,7 @@ namespace ColorVision.Scheduler
                 if (!TaskInfos.Any(x => x.JobName == newName))
                     return newName;
             }
-            return jobName + Guid.NewGuid().ToString("N").Substring(0, 6);
+            return jobName + Guid.NewGuid().ToString("N")[..6];
         }
 
         public string GetNewGroupName(string groupName)
@@ -97,7 +129,7 @@ namespace ColorVision.Scheduler
                 if (!TaskInfos.Any(x => x.GroupName == newName))
                     return newName;
             }
-            return groupName + Guid.NewGuid().ToString("N").Substring(0, 6);
+            return groupName + Guid.NewGuid().ToString("N")[..6];
         }
 
         public async Task PauseAll()
@@ -120,125 +152,233 @@ namespace ColorVision.Scheduler
 
         public async Task Start()
         {
-            Scheduler = await StdSchedulerFactory.GetDefaultScheduler();
-            PauseAllCommand = new RelayCommand(async a => await PauseAll(), a => Scheduler.IsStarted);
-            ResumeAllCommand = new RelayCommand(async a => await ResumeAll(), a => Scheduler.IsStarted);
-            StartCommand = new RelayCommand(async a => await Scheduler.Start(), a => true);
-            ShutdownCommand = new RelayCommand(async a => await Scheduler.Shutdown(), a => Scheduler.IsStarted);
-
-            // 创建调度器
-            await Scheduler.Start();
-
-            Listener = new TaskExecutionListener();
-            Scheduler.ListenerManager.AddJobListener(Listener);
-            Jobs = new Dictionary<string, Type>();
-
-            foreach (var assembly in AssemblyService.Instance.GetAssemblies())
+            try
             {
-                foreach (var type in assembly.GetTypes())
+                _logger.LogInformation("Starting Quartz Scheduler");
+                Scheduler = await StdSchedulerFactory.GetDefaultScheduler();
+                PauseAllCommand = new RelayCommand(async a => await PauseAll(), a => Scheduler.IsStarted);
+                ResumeAllCommand = new RelayCommand(async a => await ResumeAll(), a => Scheduler.IsStarted);
+                StartCommand = new RelayCommand(async a => await Scheduler.Start(), a => true);
+                ShutdownCommand = new RelayCommand(async a => await Scheduler.Shutdown(), a => Scheduler.IsStarted);
+
+                // 创建调度器
+                await Scheduler.Start();
+                _logger.LogInformation("Scheduler started successfully");
+
+                Listener = new TaskExecutionListener(this);
+                Scheduler.ListenerManager.AddJobListener(Listener);
+                Jobs = new Dictionary<string, Type>();
+
+                _logger.LogDebug("Discovering job types from assemblies");
+                foreach (var assembly in AssemblyService.Instance.GetAssemblies())
                 {
-                    if (typeof(IJob).IsAssignableFrom(type) && !type.IsInterface)
+                    foreach (var type in assembly.GetTypes())
                     {
-                        Jobs[type.Name] = type;
+                        if (typeof(IJob).IsAssignableFrom(type) && !type.IsInterface)
+                        {
+                            Jobs[type.Name] = type;
+                        }
                     }
+                }
+                _logger.LogInformation($"Discovered {Jobs.Count} job types");
+
+                //5s 后恢复任务
+                _logger.LogDebug("Waiting 5 seconds before recovering tasks");
+                await Task.Delay(5000);
+                
+                var failedJobs = new List<string>();
+                _logger.LogInformation($"Recovering {TaskInfos.Count} tasks");
+                foreach (var item in TaskInfos)
+                {
+                    try
+                    {
+                        if (item.JobType != null)
+                        {
+                            await CreateJob(item);
+                            _logger.LogDebug($"Recovered task: {item.JobName}({item.GroupName})");
+                        }
+                        else
+                        {
+                            var errorMsg = $"{item.JobName}({item.GroupName}) 类型丢失";
+                            failedJobs.Add(errorMsg);
+                            _logger.LogWarning(errorMsg);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        var errorMsg = $"{item.JobName}({item.GroupName}): {ex.Message}";
+                        failedJobs.Add(errorMsg);
+                        _logger.LogError($"Failed to recover task: {item.JobName}({item.GroupName})", ex);
+                    }
+                }
+                if (failedJobs.Count > 0)
+                {
+                    _logger.LogWarning($"{failedJobs.Count} tasks failed to recover");
+                    MessageBox.Show("以下任务未能恢复：\n" + string.Join("\n", failedJobs), "任务恢复警告");
+                }
+                else
+                {
+                    _logger.LogInformation("All tasks recovered successfully");
                 }
             }
-            //5s 后恢复任务
-            await Task.Delay(5000);
-            var failedJobs = new List<string>();
-            foreach (var item in TaskInfos)
+            catch (Exception ex)
             {
-                try
-                {
-                    if (item.JobType != null)
-                    {
-                        await CreateJob(item);
-                    }
-                    else
-                    {
-                        failedJobs.Add($"{item.JobName}({item.GroupName}) 类型丢失");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    failedJobs.Add($"{item.JobName}({item.GroupName}): {ex.Message}");
-                }
-            }
-            if (failedJobs.Count > 0)
-            {
-                MessageBox.Show("以下任务未能恢复：\n" + string.Join("\n", failedJobs), "任务恢复警告");
+                _logger.LogError("Failed to start scheduler", ex);
+                MessageBox.Show($"调度器启动失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw;
             }
         }
         public async Task StopJob(string jobName, string groupName)
         {
-            JobKey jobKey = new JobKey(jobName, groupName);
-            if (await Scheduler.CheckExists(jobKey))
+            try
             {
-                await Scheduler.PauseJob(jobKey);
+                _logger.LogInformation($"Stopping job: {jobName}({groupName})");
+                JobKey jobKey = new JobKey(jobName, groupName);
+                if (await Scheduler.CheckExists(jobKey))
+                {
+                    await Scheduler.PauseJob(jobKey);
+                    _logger.LogInformation($"Job stopped: {jobName}({groupName})");
+                }
+                else
+                {
+                    _logger.LogWarning($"Job not found: {jobName}({groupName})");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to stop job: {jobName}({groupName})", ex);
+                throw;
             }
         }
 
         public async Task RemoveJob(string jobName, string groupName)
         {
-            JobKey jobKey = new JobKey(jobName, groupName);
-            if (await Scheduler.CheckExists(jobKey))
+            try
             {
-                await Scheduler.DeleteJob(jobKey);
+                _logger.LogInformation($"Removing job: {jobName}({groupName})");
+                JobKey jobKey = new JobKey(jobName, groupName);
+                if (await Scheduler.CheckExists(jobKey))
+                {
+                    await Scheduler.DeleteJob(jobKey);
+                }
+                var info = TaskInfos.FirstOrDefault(x => x.JobName == jobName && x.GroupName == groupName);
+                if (info != null)
+                {
+                    TaskInfos.Remove(info);
+                    SaveTasks();
+                    _logger.LogInformation($"Job removed: {jobName}({groupName})");
+                }
+                else
+                {
+                    _logger.LogWarning($"Job not found in TaskInfos: {jobName}({groupName})");
+                }
             }
-            var info = TaskInfos.FirstOrDefault(x => x.JobName == jobName && x.GroupName == groupName);
-            if (info != null)
+            catch (Exception ex)
             {
-                TaskInfos.Remove(info);
-                SaveTasks();
+                _logger.LogError($"Failed to remove job: {jobName}({groupName})", ex);
+                throw;
             }
         }
+        
         public async Task ResumeJob(string jobName, string groupName)
         {
-            JobKey jobKey = new JobKey(jobName, groupName);
-            if (await Scheduler.CheckExists(jobKey))
+            try
             {
-                await Scheduler.ResumeJob(jobKey);
+                _logger.LogInformation($"Resuming job: {jobName}({groupName})");
+                JobKey jobKey = new JobKey(jobName, groupName);
+                if (await Scheduler.CheckExists(jobKey))
+                {
+                    await Scheduler.ResumeJob(jobKey);
+                    _logger.LogInformation($"Job resumed: {jobName}({groupName})");
+                }
+                else
+                {
+                    _logger.LogWarning($"Job not found: {jobName}({groupName})");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to resume job: {jobName}({groupName})", ex);
+                throw;
             }
         }
 
         public async Task CreateJob(SchedulerInfo schedulerInfo)
         {
-            // 参数校验
-            if (!ValidateSchedulerInfo(schedulerInfo, out string errorMsg))
+            try
             {
-                MessageBox.Show(errorMsg, "参数错误");
-                return;
-            }
-            var selectedJobType = schedulerInfo.JobType;
-            var scheduler = Scheduler;
-            if (scheduler == null)
-                return;
-            var job = JobBuilder.Create(selectedJobType)
-                .WithIdentity(schedulerInfo.JobName, schedulerInfo.GroupName)
-                .Build();
-            ITrigger trigger = BuildTrigger(schedulerInfo);
-            if (trigger != null)
-            {
-                await scheduler.ScheduleJob(job, trigger);
-                schedulerInfo.NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
-                if (!TaskInfos.Contains(schedulerInfo))
+                _logger.LogInformation($"Creating job: {schedulerInfo.JobName}({schedulerInfo.GroupName})");
+                
+                // 参数校验
+                if (!ValidateSchedulerInfo(schedulerInfo, out string errorMsg))
                 {
-                    TaskInfos.Add(schedulerInfo);
-                    SaveTasks();
+                    _logger.LogWarning($"Job validation failed: {errorMsg}");
+                    MessageBox.Show(errorMsg, "参数错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
                 }
+                
+                var selectedJobType = schedulerInfo.JobType;
+                var scheduler = Scheduler;
+                if (scheduler == null)
+                {
+                    _logger.LogError("Scheduler is null");
+                    MessageBox.Show("调度器未初始化", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+                
+                var job = JobBuilder.Create(selectedJobType)
+                    .WithIdentity(schedulerInfo.JobName, schedulerInfo.GroupName)
+                    .Build();
+                ITrigger trigger = BuildTrigger(schedulerInfo);
+                if (trigger != null)
+                {
+                    await scheduler.ScheduleJob(job, trigger);
+                    schedulerInfo.NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
+                    if (!TaskInfos.Contains(schedulerInfo))
+                    {
+                        TaskInfos.Add(schedulerInfo);
+                        SaveTasks();
+                    }
+                    _logger.LogInformation($"Job created successfully: {schedulerInfo.JobName}({schedulerInfo.GroupName})");
+                }
+                else
+                {
+                    _logger.LogError($"Failed to build trigger for job: {schedulerInfo.JobName}");
+                    MessageBox.Show("创建触发器失败", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to create job: {schedulerInfo.JobName}({schedulerInfo.GroupName})", ex);
+                MessageBox.Show($"创建任务失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw;
             }
         }
 
         public async Task UpdateJob(SchedulerInfo schedulerInfo)
         {
-            // 先删除原任务，再创建新任务
-            await RemoveJob(schedulerInfo.JobName, schedulerInfo.GroupName);
-            await CreateJob(schedulerInfo);
+            try
+            {
+                _logger.LogInformation($"Updating job: {schedulerInfo.JobName}({schedulerInfo.GroupName})");
+                // 先删除原任务，再创建新任务
+                await RemoveJob(schedulerInfo.JobName, schedulerInfo.GroupName);
+                await CreateJob(schedulerInfo);
+                _logger.LogInformation($"Job updated successfully: {schedulerInfo.JobName}({schedulerInfo.GroupName})");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to update job: {schedulerInfo.JobName}({schedulerInfo.GroupName})", ex);
+                MessageBox.Show($"更新任务失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw;
+            }
         }
 
-        private ITrigger BuildTrigger(SchedulerInfo schedulerInfo)
+        private static ITrigger BuildTrigger(SchedulerInfo schedulerInfo)
         {
-            var triggerBuilder = TriggerBuilder.Create().WithIdentity($"{schedulerInfo.JobName}-trigger", schedulerInfo.GroupName);
+            var triggerBuilder = TriggerBuilder.Create()
+                .WithIdentity($"{schedulerInfo.JobName}-trigger", schedulerInfo.GroupName)
+                .WithPriority(schedulerInfo.Priority); // 设置优先级
+            
             switch (schedulerInfo.JobStartMode)
             {
                 case JobStartMode.Immediate:
@@ -301,7 +441,7 @@ namespace ColorVision.Scheduler
             return triggerBuilder.Build();
         }
 
-        private bool ValidateSchedulerInfo(SchedulerInfo info, out string errorMsg)
+        private static bool ValidateSchedulerInfo(SchedulerInfo info, out string errorMsg)
         {
             if (info.JobType == null)
             {
@@ -326,11 +466,6 @@ namespace ColorVision.Scheduler
                     return false;
                 }
             }
-            if ((info.Mode == JobExecutionMode.Simple || info.Mode == JobExecutionMode.Interval) && info.Interval.TotalSeconds <= 0)
-            {
-                errorMsg = "间隔时间必须大于0";
-                return false;
-            }
             if (info.RepeatMode == JobRepeatMode.Multiple && info.RepeatCount <= 0)
             {
                 errorMsg = "重复次数必须大于0";
@@ -350,7 +485,7 @@ namespace ColorVision.Scheduler
             Load();
         }
 
-        public async Task Stop()
+        public async Task Shutdown()
         {
             if (Scheduler != null)
             {

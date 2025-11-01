@@ -35,7 +35,6 @@ namespace ColorVision.Engine.Templates.Flow
         public Task Execute(IJobExecutionContext context)
         {
             var schedulerInfo = QuartzSchedulerManager.GetInstance().TaskInfos.First(x => x.JobName == context.JobDetail.Key.Name && x.GroupName == context.JobDetail.Key.Group);
-            schedulerInfo.RunCount++;
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
                 schedulerInfo.Status = SchedulerStatus.Running;

@@ -37,7 +37,7 @@ namespace ColorVision.Scheduler
             }
 
         }
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private async void Button_Click(object sender, RoutedEventArgs e)
         {
             var jobName = SchedulerInfo.JobName;
             var groupName = SchedulerInfo.GroupName;
@@ -52,11 +52,11 @@ namespace ColorVision.Scheduler
             var isEdit = QuartzSchedulerManager.GetInstance().TaskInfos.Any(x => x.JobName == jobName && x.GroupName == groupName);
             if (isEdit)
             {
-                QuartzSchedulerManager.GetInstance().UpdateJob(SchedulerInfo);
+                await QuartzSchedulerManager.GetInstance().UpdateJob(SchedulerInfo);
             }
             else
             {
-                QuartzSchedulerManager.GetInstance().CreateJob(SchedulerInfo);
+                await QuartzSchedulerManager.GetInstance().CreateJob(SchedulerInfo);
             }
             this.DialogResult = true;
             this.Close();
