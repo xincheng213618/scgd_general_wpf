@@ -34,6 +34,8 @@ namespace ColorVision.UI
         public bool IsEdit { get; set; } = true;
 
         public Dictionary<string, List<PropertyInfo>> categoryGroups { get; set; } = new Dictionary<string, List<PropertyInfo>>();
+        
+        private string searchText = string.Empty;
 
 
         public PropertyEditorWindow(object config ,bool isEdit = true)
@@ -122,7 +124,8 @@ namespace ColorVision.UI
                     BorderThickness = new Thickness(1),
                     BorderBrush = (Brush)FindResource("BorderBrush"),
                     CornerRadius = new CornerRadius(5),
-                    Margin = new Thickness(0, 0, 0, 5)
+                    Margin = new Thickness(0, 0, 0, 5),
+                    Tag = categoryGroup.Key  // Tag with category name for search
                 };
                 var stackPanel = new StackPanel { Margin = new Thickness(10,5,10,0) };
                 border.Child = stackPanel;
@@ -191,6 +194,7 @@ namespace ColorVision.UI
                         }
 
                         dockPanel.Margin = new Thickness(0, 0, 0, 5);
+                        dockPanel.Tag = property;  // Tag with PropertyInfo for search
 
                         var VisibleBlindAttr = property.GetCustomAttribute<PropertyVisibilityAttribute>();
                         if (VisibleBlindAttr != null)
@@ -229,6 +233,112 @@ namespace ColorVision.UI
             {
                 obj.BringIntoView();
             }
+        }
+
+        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            searchText = SearchBox.Text?.ToLower() ?? string.Empty;
+            ApplySearchFilter();
+        }
+
+        private void ApplySearchFilter()
+        {
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                // Show all items when search is empty
+                foreach (UIElement child in PropertyPanel.Children)
+                {
+                    child.Visibility = Visibility.Visible;
+                    if (child is Border border && border.Child is StackPanel stackPanel)
+                    {
+                        foreach (UIElement item in stackPanel.Children)
+                        {
+                            item.Visibility = Visibility.Visible;
+                        }
+                    }
+                }
+                
+                // Show all tree view items
+                foreach (TreeViewItem item in treeView.Items)
+                {
+                    item.Visibility = Visibility.Visible;
+                }
+                return;
+            }
+
+            // Apply search filter
+            foreach (UIElement child in PropertyPanel.Children)
+            {
+                if (child is Border border && border.Child is StackPanel stackPanel && border.Tag is string category)
+                {
+                    bool categoryVisible = false;
+                    
+                    // Check if category name matches
+                    if (category.ToLower().Contains(searchText))
+                    {
+                        categoryVisible = true;
+                        // Show all children if category matches
+                        foreach (UIElement item in stackPanel.Children)
+                        {
+                            item.Visibility = Visibility.Visible;
+                        }
+                    }
+                    else
+                    {
+                        // Filter individual properties
+                        foreach (UIElement item in stackPanel.Children)
+                        {
+                            if (item is DockPanel dockPanel && dockPanel.Tag is PropertyInfo property)
+                            {
+                                bool matches = MatchesSearch(property);
+                                item.Visibility = matches ? Visibility.Visible : Visibility.Collapsed;
+                                if (matches) categoryVisible = true;
+                            }
+                            else if (item is TextBlock textBlock)
+                            {
+                                // Keep category header visible
+                                item.Visibility = Visibility.Visible;
+                            }
+                        }
+                    }
+
+                    border.Visibility = categoryVisible ? Visibility.Visible : Visibility.Collapsed;
+                    
+                    // Update corresponding tree view item
+                    foreach (TreeViewItem treeItem in treeView.Items)
+                    {
+                        if (treeItem.Tag == border)
+                        {
+                            treeItem.Visibility = categoryVisible ? Visibility.Visible : Visibility.Collapsed;
+                        }
+                    }
+                }
+            }
+        }
+
+        private bool MatchesSearch(PropertyInfo property)
+        {
+            // Check DisplayName
+            var displayNameAttr = property.GetCustomAttribute<DisplayNameAttribute>();
+            string displayName = displayNameAttr?.DisplayName ?? property.Name;
+            if (displayName.ToLower().Contains(searchText))
+                return true;
+
+            // Check property name
+            if (property.Name.ToLower().Contains(searchText))
+                return true;
+
+            // Check Description
+            var descAttr = property.GetCustomAttribute<DescriptionAttribute>();
+            if (descAttr?.Description != null && descAttr.Description.ToLower().Contains(searchText))
+                return true;
+
+            // Check Category
+            var categoryAttr = property.GetCustomAttribute<CategoryAttribute>();
+            if (categoryAttr?.Category != null && categoryAttr.Category.ToLower().Contains(searchText))
+                return true;
+
+            return false;
         }
     }
 }
