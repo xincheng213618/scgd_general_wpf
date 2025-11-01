@@ -18,6 +18,11 @@
         <!-- Top toolbar -->
         <DockPanel Grid.Row="0">
             <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.CreateTask}" Click="CreateTaskButton_Click" Margin="5"/>
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                <Button Content="导出CSV" Click="ExportCSV_Click" Margin="5" ToolTip="导出任务列表到CSV文件"/>
+                <Button Content="导出JSON" Click="ExportJSON_Click" Margin="5" ToolTip="导出任务配置到JSON文件"/>
+                <Button Content="导出报告" Click="ExportReport_Click" Margin="5" ToolTip="导出执行统计报告"/>
+            </StackPanel>
             <StackPanel Orientation="Horizontal">
                 <Button  Content="{x:Static properties:Resources.Start}" Command="{Binding StartCommand}"  Margin="5"/>
                 <Button  Content="{x:Static properties:Resources.PauseAll}" Command="{Binding PauseAllCommand}"  Margin="5"/>

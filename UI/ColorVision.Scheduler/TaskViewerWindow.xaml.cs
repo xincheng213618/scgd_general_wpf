@@ -1,10 +1,13 @@
 ﻿using ColorVision.Themes;
+using Microsoft.Win32;
 using Newtonsoft.Json;
 using Quartz;
 using Quartz.Impl;
 using Quartz.Impl.Matchers;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -297,6 +300,157 @@ namespace ColorVision.Scheduler
                 StatusFilterComboBox.SelectedIndex = 0;
             
             _taskInfosView?.Refresh();
+        }
+
+        // 导出功能
+        private void ExportCSV_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dialog = new SaveFileDialog
+                {
+                    Filter = "CSV 文件|*.csv",
+                    FileName = $"Tasks_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    var sb = new StringBuilder();
+                    // CSV 头部
+                    sb.AppendLine("任务名称,分组名称,优先级,运行次数,成功次数,失败次数,状态,最后执行时间(ms),平均执行时间(ms),最大执行时间(ms),最小执行时间(ms),下次执行时间,上次执行时间,创建时间");
+
+                    // 数据行
+                    foreach (var task in TaskInfos)
+                    {
+                        sb.AppendLine($"\"{task.JobName}\",\"{task.GroupName}\",{task.Priority},{task.RunCount},{task.SuccessCount},{task.FailureCount},\"{task.Status}\",{task.LastExecutionTimeMs},{task.AverageExecutionTimeMs},{task.MaxExecutionTimeMs},{task.MinExecutionTimeMs},\"{task.NextFireTime}\",\"{task.PreviousFireTime}\",\"{task.CreateTime:yyyy-MM-dd HH:mm:ss}\"");
+                    }
+
+                    File.WriteAllText(dialog.FileName, sb.ToString(), Encoding.UTF8);
+                    MessageBox.Show($"成功导出 {TaskInfos.Count} 个任务到:\n{dialog.FileName}", "导出成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"导出CSV失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ExportJSON_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dialog = new SaveFileDialog
+                {
+                    Filter = "JSON 文件|*.json",
+                    FileName = $"Tasks_{DateTime.Now:yyyyMMdd_HHmmss}.json"
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    var settings = new JsonSerializerSettings
+                    {
+                        Formatting = Formatting.Indented,
+                        TypeNameHandling = TypeNameHandling.Auto,
+                        NullValueHandling = NullValueHandling.Ignore
+                    };
+
+                    var json = JsonConvert.SerializeObject(TaskInfos, settings);
+                    File.WriteAllText(dialog.FileName, json, Encoding.UTF8);
+                    MessageBox.Show($"成功导出 {TaskInfos.Count} 个任务配置到:\n{dialog.FileName}", "导出成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"导出JSON失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ExportReport_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dialog = new SaveFileDialog
+                {
+                    Filter = "文本报告|*.txt|Markdown 报告|*.md",
+                    FileName = $"TaskReport_{DateTime.Now:yyyyMMdd_HHmmss}.txt"
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    var sb = new StringBuilder();
+                    sb.AppendLine("╔════════════════════════════════════════════════════════════════╗");
+                    sb.AppendLine("║        ColorVision.Scheduler 任务执行统计报告                  ║");
+                    sb.AppendLine("╚════════════════════════════════════════════════════════════════╝");
+                    sb.AppendLine();
+                    sb.AppendLine($"生成时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                    sb.AppendLine($"任务总数: {TaskInfos.Count}");
+                    sb.AppendLine();
+
+                    // 总体统计
+                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
+                    sb.AppendLine("总体统计");
+                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
+                    var totalRuns = TaskInfos.Sum(t => t.RunCount);
+                    var totalSuccess = TaskInfos.Sum(t => t.SuccessCount);
+                    var totalFailure = TaskInfos.Sum(t => t.FailureCount);
+                    var avgExecutionTime = TaskInfos.Where(t => t.AverageExecutionTimeMs > 0).Average(t => (double?)t.AverageExecutionTimeMs) ?? 0;
+
+                    sb.AppendLine($"总执行次数: {totalRuns}");
+                    sb.AppendLine($"成功次数: {totalSuccess} ({(totalRuns > 0 ? (totalSuccess * 100.0 / totalRuns).ToString("F2") : "0.00")}%)");
+                    sb.AppendLine($"失败次数: {totalFailure} ({(totalRuns > 0 ? (totalFailure * 100.0 / totalRuns).ToString("F2") : "0.00")}%)");
+                    sb.AppendLine($"平均执行时间: {avgExecutionTime:F2} ms");
+                    sb.AppendLine();
+
+                    // 按状态分组统计
+                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
+                    sb.AppendLine("任务状态分布");
+                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
+                    var statusGroups = TaskInfos.GroupBy(t => t.Status);
+                    foreach (var group in statusGroups)
+                    {
+                        sb.AppendLine($"{group.Key}: {group.Count()} 个任务");
+                    }
+                    sb.AppendLine();
+
+                    // 详细任务列表
+                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
+                    sb.AppendLine("任务详细信息");
+                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
+                    foreach (var task in TaskInfos.OrderByDescending(t => t.RunCount))
+                    {
+                        sb.AppendLine();
+                        sb.AppendLine($"【{task.JobName}】({task.GroupName})");
+                        sb.AppendLine($"  优先级: {task.Priority}");
+                        sb.AppendLine($"  状态: {task.Status}");
+                        sb.AppendLine($"  执行统计: 总计 {task.RunCount} 次 (成功 {task.SuccessCount}, 失败 {task.FailureCount})");
+                        if (task.RunCount > 0)
+                        {
+                            sb.AppendLine($"  执行时间: 最后 {task.LastExecutionTimeMs}ms, 平均 {task.AverageExecutionTimeMs}ms, 最大 {task.MaxExecutionTimeMs}ms, 最小 {task.MinExecutionTimeMs}ms");
+                        }
+                        if (!string.IsNullOrEmpty(task.NextFireTime) && task.NextFireTime != "N/A")
+                        {
+                            sb.AppendLine($"  下次执行: {task.NextFireTime}");
+                        }
+                        if (!string.IsNullOrEmpty(task.PreviousFireTime))
+                        {
+                            sb.AppendLine($"  上次执行: {task.PreviousFireTime}");
+                        }
+                        sb.AppendLine($"  创建时间: {task.CreateTime:yyyy-MM-dd HH:mm:ss}");
+                    }
+
+                    sb.AppendLine();
+                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
+                    sb.AppendLine("报告结束");
+                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
+
+                    File.WriteAllText(dialog.FileName, sb.ToString(), Encoding.UTF8);
+                    MessageBox.Show($"成功生成执行统计报告:\n{dialog.FileName}", "导出成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"生成报告失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }
