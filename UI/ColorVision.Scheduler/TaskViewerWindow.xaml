@@ -34,7 +34,14 @@
         <!-- Search and filter bar -->
         <Border Grid.Row="1" Background="{DynamicResource RegionBrush}" Margin="5,0,5,5" Padding="5" CornerRadius="4">
             <DockPanel>
-                <Button DockPanel.Dock="Right" Content="清除" Click="ClearFilter_Click" Margin="5,0,0,0" Padding="10,2"/>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Content="清除" Click="ClearFilter_Click" Margin="5,0,0,0" Padding="10,2"/>
+                    <Separator Margin="10,0" Style="{StaticResource VerticalSeparator}"/>
+                    <TextBlock Text="批量操作:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                    <Button Content="批量启动" Click="BatchResume_Click" Margin="2" Padding="8,2" ToolTip="启动所有选中的任务"/>
+                    <Button Content="批量暂停" Click="BatchPause_Click" Margin="2" Padding="8,2" ToolTip="暂停所有选中的任务"/>
+                    <Button Content="批量删除" Click="BatchDelete_Click" Margin="2" Padding="8,2" ToolTip="删除所有选中的任务"/>
+                </StackPanel>
                 <TextBlock Text="搜索:" VerticalAlignment="Center" Margin="0,0,5,0"/>
                 <TextBox x:Name="SearchTextBox" 
                          VerticalAlignment="Center"
@@ -55,7 +62,7 @@
             </DockPanel>
         </Border>
 
-        <ListView x:Name="ListViewTask" Grid.Row="2"  Background="Transparent" Margin="5,0,5,5" Padding="2">
+        <ListView x:Name="ListViewTask" Grid.Row="2" Background="Transparent" Margin="5,0,5,5" Padding="2" SelectionMode="Extended">
             <ListView.View>
                 <GridView>
                     <GridView.ColumnHeaderContainerStyle>

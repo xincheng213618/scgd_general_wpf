@@ -452,5 +452,144 @@ namespace ColorVision.Scheduler
                 MessageBox.Show($"生成报告失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        // 批量操作功能
+        private async void BatchResume_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedTasks = ListViewTask.SelectedItems.Cast<SchedulerInfo>().ToList();
+            if (selectedTasks.Count == 0)
+            {
+                MessageBox.Show("请先选择要启动的任务", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                var successCount = 0;
+                var failedTasks = new List<string>();
+
+                foreach (var task in selectedTasks)
+                {
+                    try
+                    {
+                        await QuartzSchedulerManager.ResumeJob(task.JobName, task.GroupName);
+                        task.Status = SchedulerStatus.Ready;
+                        successCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        failedTasks.Add($"{task.JobName}({task.GroupName}): {ex.Message}");
+                    }
+                }
+
+                if (failedTasks.Count > 0)
+                {
+                    MessageBox.Show($"成功启动 {successCount} 个任务\n以下任务启动失败:\n{string.Join("\n", failedTasks)}", 
+                        "部分成功", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+                else
+                {
+                    MessageBox.Show($"成功启动 {successCount} 个任务", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"批量启动失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void BatchPause_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedTasks = ListViewTask.SelectedItems.Cast<SchedulerInfo>().ToList();
+            if (selectedTasks.Count == 0)
+            {
+                MessageBox.Show("请先选择要暂停的任务", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                var successCount = 0;
+                var failedTasks = new List<string>();
+
+                foreach (var task in selectedTasks)
+                {
+                    try
+                    {
+                        await QuartzSchedulerManager.StopJob(task.JobName, task.GroupName);
+                        task.Status = SchedulerStatus.Paused;
+                        successCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        failedTasks.Add($"{task.JobName}({task.GroupName}): {ex.Message}");
+                    }
+                }
+
+                if (failedTasks.Count > 0)
+                {
+                    MessageBox.Show($"成功暂停 {successCount} 个任务\n以下任务暂停失败:\n{string.Join("\n", failedTasks)}", 
+                        "部分成功", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+                else
+                {
+                    MessageBox.Show($"成功暂停 {successCount} 个任务", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"批量暂停失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void BatchDelete_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedTasks = ListViewTask.SelectedItems.Cast<SchedulerInfo>().ToList();
+            if (selectedTasks.Count == 0)
+            {
+                MessageBox.Show("请先选择要删除的任务", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var result = MessageBox.Show($"确定要删除选中的 {selectedTasks.Count} 个任务吗？\n此操作不可撤销！", 
+                "确认删除", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            
+            if (result != MessageBoxResult.Yes)
+                return;
+
+            try
+            {
+                var successCount = 0;
+                var failedTasks = new List<string>();
+
+                foreach (var task in selectedTasks.ToList()) // ToList to avoid modification during iteration
+                {
+                    try
+                    {
+                        await QuartzSchedulerManager.RemoveJob(task.JobName, task.GroupName);
+                        TaskInfos.Remove(task);
+                        successCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        failedTasks.Add($"{task.JobName}({task.GroupName}): {ex.Message}");
+                    }
+                }
+
+                if (failedTasks.Count > 0)
+                {
+                    MessageBox.Show($"成功删除 {successCount} 个任务\n以下任务删除失败:\n{string.Join("\n", failedTasks)}", 
+                        "部分成功", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+                else
+                {
+                    MessageBox.Show($"成功删除 {successCount} 个任务", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"批量删除失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
     }
 }
