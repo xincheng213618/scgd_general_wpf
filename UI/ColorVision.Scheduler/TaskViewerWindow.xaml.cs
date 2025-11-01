@@ -171,8 +171,15 @@ namespace ColorVision.Scheduler
         {
             if (ListViewTask.SelectedItem is SchedulerInfo info)
             {
-                await QuartzSchedulerManager.StopJob(info.JobName, info.GroupName);
-                info.Status = SchedulerStatus.Paused;
+                try
+                {
+                    await QuartzSchedulerManager.StopJob(info.JobName, info.GroupName);
+                    info.Status = SchedulerStatus.Paused;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"暂停任务失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
@@ -180,8 +187,15 @@ namespace ColorVision.Scheduler
         {
             if (ListViewTask.SelectedItem is SchedulerInfo info)
             {
-                await QuartzSchedulerManager.ResumeJob(info.JobName, info.GroupName);
-                info.Status = SchedulerStatus.Ready;
+                try
+                {
+                    await QuartzSchedulerManager.ResumeJob(info.JobName, info.GroupName);
+                    info.Status = SchedulerStatus.Ready;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"恢复任务失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
@@ -189,8 +203,20 @@ namespace ColorVision.Scheduler
         {
             if (ListViewTask.SelectedItem is SchedulerInfo info)
             {
-                await QuartzSchedulerManager.RemoveJob(info.JobName, info.GroupName);
-                TaskInfos.Remove(info);
+                try
+                {
+                    var result = MessageBox.Show($"确定要删除任务 {info.JobName}({info.GroupName}) 吗？", 
+                        "确认删除", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        await QuartzSchedulerManager.RemoveJob(info.JobName, info.GroupName);
+                        TaskInfos.Remove(info);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"删除任务失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
@@ -198,8 +224,16 @@ namespace ColorVision.Scheduler
         {
             if (ListViewTask.SelectedItem is SchedulerInfo info)
             {
-                var jobKey = new Quartz.JobKey(info.JobName, info.GroupName);
-                await QuartzSchedulerManager.Scheduler.TriggerJob(jobKey);
+                try
+                {
+                    var jobKey = new Quartz.JobKey(info.JobName, info.GroupName);
+                    await QuartzSchedulerManager.Scheduler.TriggerJob(jobKey);
+                    MessageBox.Show($"任务 {info.JobName} 已触发执行", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"触发任务失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
     }

@@ -7,10 +7,12 @@ namespace ColorVision.Scheduler
     public class TaskExecutionListener : JobListenerSupport
     {
         private readonly QuartzSchedulerManager _schedulerManager;
+        private readonly SchedulerLogger _logger;
 
         public TaskExecutionListener(QuartzSchedulerManager schedulerManager)
         {
             _schedulerManager = schedulerManager;
+            _logger = new SchedulerLogger("TaskExecutionListener");
         }
 
         public override string Name => "TaskExecutionListener";
@@ -25,6 +27,7 @@ namespace ColorVision.Scheduler
             if (taskInfo != null)
             {
                 taskInfo.Status = SchedulerStatus.Running;
+                _logger.LogInformation($"Job starting: {jobKey.Name}({jobKey.Group})");
             }
             return base.JobToBeExecuted(context, cancellationToken);
         }
@@ -40,6 +43,15 @@ namespace ColorVision.Scheduler
             {
                 taskInfo.RunCount++;
                 taskInfo.Status = SchedulerStatus.Ready;
+                
+                if (jobException != null)
+                {
+                    _logger.LogError($"Job execution failed: {jobKey.Name}({jobKey.Group})", jobException);
+                }
+                else
+                {
+                    _logger.LogInformation($"Job completed: {jobKey.Name}({jobKey.Group}), RunCount: {taskInfo.RunCount}");
+                }
             }
             
             JobExecutedEvent?.Invoke(context);
