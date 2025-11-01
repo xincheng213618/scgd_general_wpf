@@ -36,6 +36,7 @@ namespace ColorVision.UI
         public Dictionary<string, List<PropertyInfo>> categoryGroups { get; set; } = new Dictionary<string, List<PropertyInfo>>();
         
         private string searchText = string.Empty;
+        private Dictionary<Border, TreeViewItem> borderToTreeViewItem = new Dictionary<Border, TreeViewItem>();
 
 
         public PropertyEditorWindow(object config ,bool isEdit = true)
@@ -113,6 +114,7 @@ namespace ColorVision.UI
         public void DisplayProperties(object obj)
         {
             categoryGroups.Clear();
+            borderToTreeViewItem.Clear();
             GenCategoryGroups(obj);
 
 
@@ -216,6 +218,7 @@ namespace ColorVision.UI
                 {
                     TreeViewItem treeViewItem = new TreeViewItem() { Header = categoryGroup.Key, Tag = border };
                     treeView.Items.Add(treeViewItem);
+                    borderToTreeViewItem[border] = treeViewItem;
                     PropertyPanel.Children.Add(border);
                 }
             }
@@ -237,7 +240,7 @@ namespace ColorVision.UI
 
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            searchText = SearchBox.Text?.ToLower() ?? string.Empty;
+            searchText = SearchBox.Text ?? string.Empty;
             ApplySearchFilter();
         }
 
@@ -274,7 +277,7 @@ namespace ColorVision.UI
                     bool categoryVisible = false;
                     
                     // Check if category name matches
-                    if (category.ToLower().Contains(searchText))
+                    if (category.Contains(searchText, StringComparison.OrdinalIgnoreCase))
                     {
                         categoryVisible = true;
                         // Show all children if category matches
@@ -304,13 +307,10 @@ namespace ColorVision.UI
 
                     border.Visibility = categoryVisible ? Visibility.Visible : Visibility.Collapsed;
                     
-                    // Update corresponding tree view item
-                    foreach (TreeViewItem treeItem in treeView.Items)
+                    // Update corresponding tree view item using dictionary
+                    if (borderToTreeViewItem.TryGetValue(border, out TreeViewItem? treeItem))
                     {
-                        if (treeItem.Tag == border)
-                        {
-                            treeItem.Visibility = categoryVisible ? Visibility.Visible : Visibility.Collapsed;
-                        }
+                        treeItem.Visibility = categoryVisible ? Visibility.Visible : Visibility.Collapsed;
                     }
                 }
             }
@@ -321,21 +321,21 @@ namespace ColorVision.UI
             // Check DisplayName
             var displayNameAttr = property.GetCustomAttribute<DisplayNameAttribute>();
             string displayName = displayNameAttr?.DisplayName ?? property.Name;
-            if (displayName.ToLower().Contains(searchText))
+            if (displayName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
                 return true;
 
             // Check property name
-            if (property.Name.ToLower().Contains(searchText))
+            if (property.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
                 return true;
 
             // Check Description
             var descAttr = property.GetCustomAttribute<DescriptionAttribute>();
-            if (descAttr?.Description != null && descAttr.Description.ToLower().Contains(searchText))
+            if (descAttr?.Description != null && descAttr.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase))
                 return true;
 
             // Check Category
             var categoryAttr = property.GetCustomAttribute<CategoryAttribute>();
-            if (categoryAttr?.Category != null && categoryAttr.Category.ToLower().Contains(searchText))
+            if (categoryAttr?.Category != null && categoryAttr.Category.Contains(searchText, StringComparison.OrdinalIgnoreCase))
                 return true;
 
             return false;
