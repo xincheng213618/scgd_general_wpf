@@ -227,6 +227,10 @@ namespace ColorVision.UI
             {
                 treeView.Visibility = Visibility.Collapsed;
             }
+            else
+            {
+                treeView.Visibility = Visibility.Visible;
+            }
         }
 
 
@@ -246,6 +250,10 @@ namespace ColorVision.UI
 
         private void ApplySearchFilter()
         {
+            // Check if dictionary is populated (avoid race condition)
+            if (PropertyPanel.Children.Count == 0)
+                return;
+            
             if (string.IsNullOrWhiteSpace(searchText))
             {
                 // Show all items when search is empty
@@ -261,15 +269,26 @@ namespace ColorVision.UI
                     }
                 }
                 
-                // Show all tree view items
+                // Show all tree view items and restore TreeView visibility
                 foreach (TreeViewItem item in treeView.Items)
                 {
                     item.Visibility = Visibility.Visible;
+                }
+                
+                // Restore TreeView visibility based on item count
+                if (treeView.Items.Count == 1)
+                {
+                    treeView.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    treeView.Visibility = Visibility.Visible;
                 }
                 return;
             }
 
             // Apply search filter
+            int visibleCategories = 0;
             foreach (UIElement child in PropertyPanel.Children)
             {
                 if (child is Border border && border.Child is StackPanel stackPanel && border.Tag is string category)
@@ -306,6 +325,7 @@ namespace ColorVision.UI
                     }
 
                     border.Visibility = categoryVisible ? Visibility.Visible : Visibility.Collapsed;
+                    if (categoryVisible) visibleCategories++;
                     
                     // Update corresponding tree view item using dictionary
                     if (borderToTreeViewItem.TryGetValue(border, out TreeViewItem? treeItem))
@@ -313,6 +333,16 @@ namespace ColorVision.UI
                         treeItem.Visibility = categoryVisible ? Visibility.Visible : Visibility.Collapsed;
                     }
                 }
+            }
+            
+            // Update TreeView visibility based on visible categories during search
+            if (visibleCategories <= 1)
+            {
+                treeView.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                treeView.Visibility = Visibility.Visible;
             }
         }
 
