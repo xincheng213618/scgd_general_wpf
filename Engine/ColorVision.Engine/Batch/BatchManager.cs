@@ -23,7 +23,7 @@ namespace ColorVision.Engine.Batch
         public RelayCommand EditCommand { get; set; }
         public BatchConfig()
         {
-            EditCommand = new RelayCommand(a => BatchManager.GetInstance().Edit());
+            EditCommand = new RelayCommand(a => new PropertyEditorWindow(this).ShowDialog());
         }
 
         [DisplayName("默认保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]

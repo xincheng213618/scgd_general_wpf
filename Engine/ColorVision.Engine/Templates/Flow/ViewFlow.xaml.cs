@@ -400,13 +400,20 @@ namespace ColorVision.Engine.Services.Flow
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            Frame frame = new Frame();
+            if (FlowEngineManager.Batch != null)
+            {
+                Frame frame = new Frame();
 
-            MeasureBatchPage batchDataHistory = new MeasureBatchPage(frame, FlowEngineManager.Batch);
+                MeasureBatchPage batchDataHistory = new MeasureBatchPage(frame, FlowEngineManager.Batch);
+                Window window = new Window() { Owner = Application.Current.GetActiveWindow() };
+                window.Content = batchDataHistory;
+                window.Show();
+            }
+            else
+            {
+                MessageBox.Show("请先执行流程");
+            }
 
-            Window window = new Window() { Owner = Application.Current.GetActiveWindow() };
-            window.Content = batchDataHistory;
-            window.Show();
 
         }
 
