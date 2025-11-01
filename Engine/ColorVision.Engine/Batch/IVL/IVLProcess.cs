@@ -54,7 +54,16 @@ namespace ColorVision.Engine.Batch.IVL
 
                 for (int i = 0; i < testResult.PoixyuvDatas.Count;i++)
                 {
-                    rows.Add($"{DateTimeNow}{i}{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave},{testResult.SMUResultModels[i].VResult},{testResult.SMUResultModels[i].IResult}");
+                    if (testResult.SMUResultModels.Count > i)
+                    {
+                        var SMUResultModel = testResult.SMUResultModels[i];
+                        rows.Add($"{DateTimeNow}{i}{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave},{SMUResultModel.VResult},{SMUResultModel.IResult}");
+                    }
+                    else
+                    {
+                        rows.Add($"{DateTimeNow}{i}{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave},,");
+
+                    }
                 }
                 File.WriteAllLines(filePath, rows);
 
@@ -63,6 +72,8 @@ namespace ColorVision.Engine.Batch.IVL
                 if (list.Count == 0)
                 {
                     log.Info("找不到光谱仪的数据");
+                    string sprectrumfilePath = Path.Combine(config.SavePath, $"sprectrum_{timeStr}.csv");
+                    ViewResults.SaveToCsv(sprectrumfilePath);
                 }
                 else
                 {
@@ -74,7 +85,6 @@ namespace ColorVision.Engine.Batch.IVL
                         ViewResults.Add(viewResultSpectrum);
                     }
                     string sprectrumfilePath = Path.Combine(config.SavePath, $"sprectrum_{timeStr}.csv");
-
                     ViewResults.SaveToCsv(sprectrumfilePath);
                 }
 
@@ -83,6 +93,7 @@ namespace ColorVision.Engine.Batch.IVL
             }
             catch (Exception ex)
             {
+                log.Error(ex);
                 return false;
             }
         }
