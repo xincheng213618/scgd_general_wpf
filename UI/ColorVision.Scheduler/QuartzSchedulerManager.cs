@@ -463,11 +463,6 @@ namespace ColorVision.Scheduler
                     return false;
                 }
             }
-            if ((info.Mode == JobExecutionMode.Simple || info.Mode == JobExecutionMode.Interval) && info.Interval.TotalSeconds <= 0)
-            {
-                errorMsg = "间隔时间必须大于0";
-                return false;
-            }
             if (info.RepeatMode == JobRepeatMode.Multiple && info.RepeatCount <= 0)
             {
                 errorMsg = "重复次数必须大于0";
