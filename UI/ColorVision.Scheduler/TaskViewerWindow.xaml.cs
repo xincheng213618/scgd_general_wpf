@@ -1,11 +1,16 @@
 ﻿using ColorVision.Themes;
+using Microsoft.Win32;
 using Newtonsoft.Json;
 using Quartz;
 using Quartz.Impl;
 using Quartz.Impl.Matchers;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 
 namespace ColorVision.Scheduler
 {
@@ -15,6 +20,7 @@ namespace ColorVision.Scheduler
     public partial class TaskViewerWindow : Window
     {
         public ObservableCollection<SchedulerInfo> TaskInfos { get; set; }
+        private ICollectionView _taskInfosView;
 
         public static QuartzSchedulerManager QuartzSchedulerManager => QuartzSchedulerManager.GetInstance();
 
@@ -23,7 +29,12 @@ namespace ColorVision.Scheduler
             InitializeComponent();
             this.DataContext = QuartzSchedulerManager;
             TaskInfos = QuartzSchedulerManager.GetInstance().TaskInfos;
-            ListViewTask.ItemsSource = TaskInfos;
+            
+            // 使用 CollectionView 以支持过滤
+            _taskInfosView = CollectionViewSource.GetDefaultView(TaskInfos);
+            _taskInfosView.Filter = FilterTasks;
+            ListViewTask.ItemsSource = _taskInfosView;
+            
             LoadTasks();
             // 订阅监听器事件
             var listener = QuartzSchedulerManager.GetInstance().Listener;
@@ -140,17 +151,20 @@ namespace ColorVision.Scheduler
             createTask.ShowDialog();
         }
 
-        private void MenuEdit_Click(object sender, RoutedEventArgs e)
+        private async void MenuEdit_Click(object sender, RoutedEventArgs e)
         {
             if (ListViewTask.SelectedItem is SchedulerInfo info)
             {
                 // 深拷贝一份用于编辑
                 var editInfo = JsonConvert.DeserializeObject<SchedulerInfo>(JsonConvert.SerializeObject(info, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All }), new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
-                var win = new CreateTask { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner, SchedulerInfo = editInfo };
-                if (win.ShowDialog() == true)
+                if (editInfo != null)
                 {
-                    // 编辑完成后更新
-                    QuartzSchedulerManager.UpdateJob(editInfo);
+                    var win = new CreateTask { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner, SchedulerInfo = editInfo };
+                    if (win.ShowDialog() == true)
+                    {
+                        // 编辑完成后更新
+                        await QuartzSchedulerManager.UpdateJob(editInfo);
+                    }
                 }
             }
         }
@@ -168,8 +182,15 @@ namespace ColorVision.Scheduler
         {
             if (ListViewTask.SelectedItem is SchedulerInfo info)
             {
-                await QuartzSchedulerManager.StopJob(info.JobName, info.GroupName);
-                info.Status = SchedulerStatus.Paused;
+                try
+                {
+                    await QuartzSchedulerManager.StopJob(info.JobName, info.GroupName);
+                    info.Status = SchedulerStatus.Paused;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"暂停任务失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
@@ -177,8 +198,15 @@ namespace ColorVision.Scheduler
         {
             if (ListViewTask.SelectedItem is SchedulerInfo info)
             {
-                await QuartzSchedulerManager.ResumeJob(info.JobName, info.GroupName);
-                info.Status = SchedulerStatus.Ready;
+                try
+                {
+                    await QuartzSchedulerManager.ResumeJob(info.JobName, info.GroupName);
+                    info.Status = SchedulerStatus.Ready;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"恢复任务失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
@@ -186,8 +214,20 @@ namespace ColorVision.Scheduler
         {
             if (ListViewTask.SelectedItem is SchedulerInfo info)
             {
-                await QuartzSchedulerManager.RemoveJob(info.JobName, info.GroupName);
-                TaskInfos.Remove(info);
+                try
+                {
+                    var result = MessageBox.Show($"确定要删除任务 {info.JobName}({info.GroupName}) 吗？", 
+                        "确认删除", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        await QuartzSchedulerManager.RemoveJob(info.JobName, info.GroupName);
+                        TaskInfos.Remove(info);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"删除任务失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
@@ -195,8 +235,360 @@ namespace ColorVision.Scheduler
         {
             if (ListViewTask.SelectedItem is SchedulerInfo info)
             {
-                var jobKey = new Quartz.JobKey(info.JobName, info.GroupName);
-                await QuartzSchedulerManager.Scheduler.TriggerJob(jobKey);
+                try
+                {
+                    var jobKey = new Quartz.JobKey(info.JobName, info.GroupName);
+                    await QuartzSchedulerManager.Scheduler.TriggerJob(jobKey);
+                    MessageBox.Show($"任务 {info.JobName} 已触发执行", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"触发任务失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        // 搜索和过滤功能
+        private bool FilterTasks(object obj)
+        {
+            if (obj is not SchedulerInfo task)
+                return false;
+
+            // 搜索文本过滤
+            var searchText = SearchTextBox?.Text?.Trim().ToLowerInvariant() ?? string.Empty;
+            if (!string.IsNullOrEmpty(searchText))
+            {
+                var matchesSearch = task.JobName?.ToLowerInvariant().Contains(searchText, StringComparison.OrdinalIgnoreCase) == true ||
+                                  task.GroupName?.ToLowerInvariant().Contains(searchText, StringComparison.OrdinalIgnoreCase) == true;
+                if (!matchesSearch)
+                    return false;
+            }
+
+            // 状态过滤
+            if (StatusFilterComboBox?.SelectedItem is ComboBoxItem statusItem)
+            {
+                var statusTag = statusItem.Tag?.ToString();
+                if (statusTag != "All")
+                {
+                    if (Enum.TryParse<SchedulerStatus>(statusTag, out var filterStatus))
+                    {
+                        if (task.Status != filterStatus)
+                            return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            _taskInfosView?.Refresh();
+        }
+
+        private void StatusFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            _taskInfosView?.Refresh();
+        }
+
+        private void ClearFilter_Click(object sender, RoutedEventArgs e)
+        {
+            if (SearchTextBox != null)
+                SearchTextBox.Text = string.Empty;
+            
+            if (StatusFilterComboBox != null)
+                StatusFilterComboBox.SelectedIndex = 0;
+            
+            _taskInfosView?.Refresh();
+        }
+
+        // 导出功能
+        private void ExportCSV_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dialog = new SaveFileDialog
+                {
+                    Filter = "CSV 文件|*.csv",
+                    FileName = $"Tasks_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    var sb = new StringBuilder();
+                    // CSV 头部
+                    sb.AppendLine("任务名称,分组名称,优先级,运行次数,成功次数,失败次数,状态,最后执行时间(ms),平均执行时间(ms),最大执行时间(ms),最小执行时间(ms),下次执行时间,上次执行时间,创建时间");
+
+                    // 数据行
+                    foreach (var task in TaskInfos)
+                    {
+                        sb.AppendLine($"\"{task.JobName}\",\"{task.GroupName}\",{task.Priority},{task.RunCount},{task.SuccessCount},{task.FailureCount},\"{task.Status}\",{task.LastExecutionTimeMs},{task.AverageExecutionTimeMs},{task.MaxExecutionTimeMs},{task.MinExecutionTimeMs},\"{task.NextFireTime}\",\"{task.PreviousFireTime}\",\"{task.CreateTime:yyyy-MM-dd HH:mm:ss}\"");
+                    }
+
+                    File.WriteAllText(dialog.FileName, sb.ToString(), Encoding.UTF8);
+                    MessageBox.Show($"成功导出 {TaskInfos.Count} 个任务到:\n{dialog.FileName}", "导出成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"导出CSV失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ExportJSON_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dialog = new SaveFileDialog
+                {
+                    Filter = "JSON 文件|*.json",
+                    FileName = $"Tasks_{DateTime.Now:yyyyMMdd_HHmmss}.json"
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    var settings = new JsonSerializerSettings
+                    {
+                        Formatting = Formatting.Indented,
+                        TypeNameHandling = TypeNameHandling.Auto,
+                        NullValueHandling = NullValueHandling.Ignore
+                    };
+
+                    var json = JsonConvert.SerializeObject(TaskInfos, settings);
+                    File.WriteAllText(dialog.FileName, json, Encoding.UTF8);
+                    MessageBox.Show($"成功导出 {TaskInfos.Count} 个任务配置到:\n{dialog.FileName}", "导出成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"导出JSON失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ExportReport_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dialog = new SaveFileDialog
+                {
+                    Filter = "文本报告|*.txt|Markdown 报告|*.md",
+                    FileName = $"TaskReport_{DateTime.Now:yyyyMMdd_HHmmss}.txt"
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    var sb = new StringBuilder();
+                    sb.AppendLine("╔════════════════════════════════════════════════════════════════╗");
+                    sb.AppendLine("║        ColorVision.Scheduler 任务执行统计报告                  ║");
+                    sb.AppendLine("╚════════════════════════════════════════════════════════════════╝");
+                    sb.AppendLine();
+                    sb.AppendLine($"生成时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                    sb.AppendLine($"任务总数: {TaskInfos.Count}");
+                    sb.AppendLine();
+
+                    // 总体统计
+                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
+                    sb.AppendLine("总体统计");
+                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
+                    var totalRuns = TaskInfos.Sum(t => t.RunCount);
+                    var totalSuccess = TaskInfos.Sum(t => t.SuccessCount);
+                    var totalFailure = TaskInfos.Sum(t => t.FailureCount);
+                    var avgExecutionTime = TaskInfos.Where(t => t.AverageExecutionTimeMs > 0).Average(t => (double?)t.AverageExecutionTimeMs) ?? 0;
+
+                    sb.AppendLine($"总执行次数: {totalRuns}");
+                    sb.AppendLine($"成功次数: {totalSuccess} ({(totalRuns > 0 ? (totalSuccess * 100.0 / totalRuns).ToString("F2") : "0.00")}%)");
+                    sb.AppendLine($"失败次数: {totalFailure} ({(totalRuns > 0 ? (totalFailure * 100.0 / totalRuns).ToString("F2") : "0.00")}%)");
+                    sb.AppendLine($"平均执行时间: {avgExecutionTime:F2} ms");
+                    sb.AppendLine();
+
+                    // 按状态分组统计
+                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
+                    sb.AppendLine("任务状态分布");
+                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
+                    var statusGroups = TaskInfos.GroupBy(t => t.Status);
+                    foreach (var group in statusGroups)
+                    {
+                        sb.AppendLine($"{group.Key}: {group.Count()} 个任务");
+                    }
+                    sb.AppendLine();
+
+                    // 详细任务列表
+                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
+                    sb.AppendLine("任务详细信息");
+                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
+                    foreach (var task in TaskInfos.OrderByDescending(t => t.RunCount))
+                    {
+                        sb.AppendLine();
+                        sb.AppendLine($"【{task.JobName}】({task.GroupName})");
+                        sb.AppendLine($"  优先级: {task.Priority}");
+                        sb.AppendLine($"  状态: {task.Status}");
+                        sb.AppendLine($"  执行统计: 总计 {task.RunCount} 次 (成功 {task.SuccessCount}, 失败 {task.FailureCount})");
+                        if (task.RunCount > 0)
+                        {
+                            sb.AppendLine($"  执行时间: 最后 {task.LastExecutionTimeMs}ms, 平均 {task.AverageExecutionTimeMs}ms, 最大 {task.MaxExecutionTimeMs}ms, 最小 {task.MinExecutionTimeMs}ms");
+                        }
+                        if (!string.IsNullOrEmpty(task.NextFireTime) && task.NextFireTime != "N/A")
+                        {
+                            sb.AppendLine($"  下次执行: {task.NextFireTime}");
+                        }
+                        if (!string.IsNullOrEmpty(task.PreviousFireTime))
+                        {
+                            sb.AppendLine($"  上次执行: {task.PreviousFireTime}");
+                        }
+                        sb.AppendLine($"  创建时间: {task.CreateTime:yyyy-MM-dd HH:mm:ss}");
+                    }
+
+                    sb.AppendLine();
+                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
+                    sb.AppendLine("报告结束");
+                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
+
+                    File.WriteAllText(dialog.FileName, sb.ToString(), Encoding.UTF8);
+                    MessageBox.Show($"成功生成执行统计报告:\n{dialog.FileName}", "导出成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"生成报告失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        // 批量操作功能
+        private async void BatchResume_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedTasks = ListViewTask.SelectedItems.Cast<SchedulerInfo>().ToList();
+            if (selectedTasks.Count == 0)
+            {
+                MessageBox.Show("请先选择要启动的任务", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                var successCount = 0;
+                var failedTasks = new List<string>();
+
+                foreach (var task in selectedTasks)
+                {
+                    try
+                    {
+                        await QuartzSchedulerManager.ResumeJob(task.JobName, task.GroupName);
+                        task.Status = SchedulerStatus.Ready;
+                        successCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        failedTasks.Add($"{task.JobName}({task.GroupName}): {ex.Message}");
+                    }
+                }
+
+                if (failedTasks.Count > 0)
+                {
+                    MessageBox.Show($"成功启动 {successCount} 个任务\n以下任务启动失败:\n{string.Join("\n", failedTasks)}", 
+                        "部分成功", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+                else
+                {
+                    MessageBox.Show($"成功启动 {successCount} 个任务", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"批量启动失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void BatchPause_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedTasks = ListViewTask.SelectedItems.Cast<SchedulerInfo>().ToList();
+            if (selectedTasks.Count == 0)
+            {
+                MessageBox.Show("请先选择要暂停的任务", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                var successCount = 0;
+                var failedTasks = new List<string>();
+
+                foreach (var task in selectedTasks)
+                {
+                    try
+                    {
+                        await QuartzSchedulerManager.StopJob(task.JobName, task.GroupName);
+                        task.Status = SchedulerStatus.Paused;
+                        successCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        failedTasks.Add($"{task.JobName}({task.GroupName}): {ex.Message}");
+                    }
+                }
+
+                if (failedTasks.Count > 0)
+                {
+                    MessageBox.Show($"成功暂停 {successCount} 个任务\n以下任务暂停失败:\n{string.Join("\n", failedTasks)}", 
+                        "部分成功", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+                else
+                {
+                    MessageBox.Show($"成功暂停 {successCount} 个任务", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"批量暂停失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void BatchDelete_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedTasks = ListViewTask.SelectedItems.Cast<SchedulerInfo>().ToList();
+            if (selectedTasks.Count == 0)
+            {
+                MessageBox.Show("请先选择要删除的任务", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var result = MessageBox.Show($"确定要删除选中的 {selectedTasks.Count} 个任务吗？\n此操作不可撤销！", 
+                "确认删除", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            
+            if (result != MessageBoxResult.Yes)
+                return;
+
+            try
+            {
+                var successCount = 0;
+                var failedTasks = new List<string>();
+
+                foreach (var task in selectedTasks.ToList()) // ToList to avoid modification during iteration
+                {
+                    try
+                    {
+                        await QuartzSchedulerManager.RemoveJob(task.JobName, task.GroupName);
+                        TaskInfos.Remove(task);
+                        successCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        failedTasks.Add($"{task.JobName}({task.GroupName}): {ex.Message}");
+                    }
+                }
+
+                if (failedTasks.Count > 0)
+                {
+                    MessageBox.Show($"成功删除 {successCount} 个任务\n以下任务删除失败:\n{string.Join("\n", failedTasks)}", 
+                        "部分成功", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+                else
+                {
+                    MessageBox.Show($"成功删除 {successCount} 个任务", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"批量删除失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }
