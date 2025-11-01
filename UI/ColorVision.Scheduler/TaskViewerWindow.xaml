@@ -11,9 +11,12 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <DockPanel>
+        
+        <!-- Top toolbar -->
+        <DockPanel Grid.Row="0">
             <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.CreateTask}" Click="CreateTaskButton_Click" Margin="5"/>
             <StackPanel Orientation="Horizontal">
                 <Button  Content="{x:Static properties:Resources.Start}" Command="{Binding StartCommand}"  Margin="5"/>
@@ -23,7 +26,31 @@
             </StackPanel>
         </DockPanel>
 
-        <ListView x:Name="ListViewTask" Grid.Row="1"  Background="Transparent" Margin="5,0,5,5" Padding="2">
+        <!-- Search and filter bar -->
+        <Border Grid.Row="1" Background="{DynamicResource RegionBrush}" Margin="5,0,5,5" Padding="5" CornerRadius="4">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="清除" Click="ClearFilter_Click" Margin="5,0,0,0" Padding="10,2"/>
+                <TextBlock Text="搜索:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <TextBox x:Name="SearchTextBox" 
+                         VerticalAlignment="Center"
+                         Margin="0,0,10,0"
+                         MinWidth="200"
+                         TextChanged="SearchTextBox_TextChanged"
+                         ToolTip="输入任务名称或分组名称进行搜索"/>
+                <TextBlock Text="状态:" VerticalAlignment="Center" Margin="10,0,5,0"/>
+                <ComboBox x:Name="StatusFilterComboBox" 
+                          VerticalAlignment="Center"
+                          MinWidth="100"
+                          SelectionChanged="StatusFilter_SelectionChanged">
+                    <ComboBoxItem Content="全部" IsSelected="True" Tag="All"/>
+                    <ComboBoxItem Content="就绪" Tag="Ready"/>
+                    <ComboBoxItem Content="运行中" Tag="Running"/>
+                    <ComboBoxItem Content="已暂停" Tag="Paused"/>
+                </ComboBox>
+            </DockPanel>
+        </Border>
+
+        <ListView x:Name="ListViewTask" Grid.Row="2"  Background="Transparent" Margin="5,0,5,5" Padding="2">
             <ListView.View>
                 <GridView>
                     <GridView.ColumnHeaderContainerStyle>
@@ -50,6 +77,31 @@
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
                                 <TextBlock Text="{Binding RunCount}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="成功/失败">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
+                                <TextBlock>
+                                    <Run Text="{Binding SuccessCount, Mode=OneWay}" Foreground="Green"/>
+                                    <Run Text="/"/>
+                                    <Run Text="{Binding FailureCount, Mode=OneWay}" Foreground="Red"/>
+                                </TextBlock>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="优先级">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
+                                <TextBlock Text="{Binding Priority}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="执行时间(ms)">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
+                                <TextBlock Text="{Binding LastExecutionTimeMs}" ToolTip="{Binding AverageExecutionTimeMs, StringFormat='平均: {0}ms'}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

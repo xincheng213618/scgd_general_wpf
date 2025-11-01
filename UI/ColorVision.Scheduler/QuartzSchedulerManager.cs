@@ -375,7 +375,10 @@ namespace ColorVision.Scheduler
 
         private static ITrigger BuildTrigger(SchedulerInfo schedulerInfo)
         {
-            var triggerBuilder = TriggerBuilder.Create().WithIdentity($"{schedulerInfo.JobName}-trigger", schedulerInfo.GroupName);
+            var triggerBuilder = TriggerBuilder.Create()
+                .WithIdentity($"{schedulerInfo.JobName}-trigger", schedulerInfo.GroupName)
+                .WithPriority(schedulerInfo.Priority); // 设置优先级
+            
             switch (schedulerInfo.JobStartMode)
             {
                 case JobStartMode.Immediate:

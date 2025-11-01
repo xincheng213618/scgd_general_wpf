@@ -4,8 +4,10 @@ using Quartz;
 using Quartz.Impl;
 using Quartz.Impl.Matchers;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 
 namespace ColorVision.Scheduler
 {
@@ -15,6 +17,7 @@ namespace ColorVision.Scheduler
     public partial class TaskViewerWindow : Window
     {
         public ObservableCollection<SchedulerInfo> TaskInfos { get; set; }
+        private ICollectionView _taskInfosView;
 
         public static QuartzSchedulerManager QuartzSchedulerManager => QuartzSchedulerManager.GetInstance();
 
@@ -23,7 +26,12 @@ namespace ColorVision.Scheduler
             InitializeComponent();
             this.DataContext = QuartzSchedulerManager;
             TaskInfos = QuartzSchedulerManager.GetInstance().TaskInfos;
-            ListViewTask.ItemsSource = TaskInfos;
+            
+            // 使用 CollectionView 以支持过滤
+            _taskInfosView = CollectionViewSource.GetDefaultView(TaskInfos);
+            _taskInfosView.Filter = FilterTasks;
+            ListViewTask.ItemsSource = _taskInfosView;
+            
             LoadTasks();
             // 订阅监听器事件
             var listener = QuartzSchedulerManager.GetInstance().Listener;
@@ -235,6 +243,60 @@ namespace ColorVision.Scheduler
                     MessageBox.Show($"触发任务失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
+        }
+
+        // 搜索和过滤功能
+        private bool FilterTasks(object obj)
+        {
+            if (obj is not SchedulerInfo task)
+                return false;
+
+            // 搜索文本过滤
+            var searchText = SearchTextBox?.Text?.Trim().ToLowerInvariant() ?? string.Empty;
+            if (!string.IsNullOrEmpty(searchText))
+            {
+                var matchesSearch = task.JobName?.ToLowerInvariant().Contains(searchText, StringComparison.OrdinalIgnoreCase) == true ||
+                                  task.GroupName?.ToLowerInvariant().Contains(searchText, StringComparison.OrdinalIgnoreCase) == true;
+                if (!matchesSearch)
+                    return false;
+            }
+
+            // 状态过滤
+            if (StatusFilterComboBox?.SelectedItem is ComboBoxItem statusItem)
+            {
+                var statusTag = statusItem.Tag?.ToString();
+                if (statusTag != "All")
+                {
+                    if (Enum.TryParse<SchedulerStatus>(statusTag, out var filterStatus))
+                    {
+                        if (task.Status != filterStatus)
+                            return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            _taskInfosView?.Refresh();
+        }
+
+        private void StatusFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            _taskInfosView?.Refresh();
+        }
+
+        private void ClearFilter_Click(object sender, RoutedEventArgs e)
+        {
+            if (SearchTextBox != null)
+                SearchTextBox.Text = string.Empty;
+            
+            if (StatusFilterComboBox != null)
+                StatusFilterComboBox.SelectedIndex = 0;
+            
+            _taskInfosView?.Refresh();
         }
     }
 }

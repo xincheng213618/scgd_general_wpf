@@ -85,6 +85,23 @@
                     </DockPanel>
                 </StackPanel>
 
+                <!-- 第三阶段新增：优先级和超时设置 -->
+                <Separator Margin="2,10,2,5"/>
+                <TextBlock Text="高级设置" FontWeight="Bold" Margin="2,5,2,2"/>
+                
+                <DockPanel Margin="2">
+                    <TextBlock Text="优先级 (1-10)" Width="100" ToolTip="数值越大优先级越高"/>
+                    <Slider x:Name="PrioritySlider" Minimum="1" Maximum="10" Value="{Binding Priority}" 
+                            Width="150" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,0,10,0"/>
+                    <TextBlock Text="{Binding ElementName=PrioritySlider, Path=Value}" Width="30"/>
+                </DockPanel>
+                
+                <DockPanel Margin="2">
+                    <TextBlock Text="超时时间(秒)" Width="100" ToolTip="0表示无超时限制"/>
+                    <TextBox Text="{Binding TimeoutSeconds}" Style="{StaticResource TextBox.Small}" Width="100"/>
+                    <TextBlock Text="0 = 无限制" Margin="10,0,0,0" Foreground="Gray"/>
+                </DockPanel>
+
             </StackPanel>
         </Border>
 
