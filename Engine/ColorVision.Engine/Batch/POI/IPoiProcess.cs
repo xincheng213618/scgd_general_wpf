@@ -6,6 +6,7 @@ using System.IO;
 
 namespace ColorVision.Engine.Batch.Poi
 {
+    [BatchProcess("POI处理", "处理POI批次数据并导出CIE xyuv数据")]
     public class IPoiProcess : IBatchProcess
     {
         public bool Process(IBatchContext ctx)

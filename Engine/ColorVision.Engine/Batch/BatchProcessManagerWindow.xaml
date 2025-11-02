@@ -6,9 +6,10 @@
         xmlns:local="clr-namespace:ColorVision.Engine.Batch"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:BatchManager}"
-        Title="流程处理配置" Height="450" Width="830" Initialized="Window_Initialized">
+        Title="流程处理配置" Height="450" Width="1000" Initialized="Window_Initialized">
     <Window.Resources>
         <local:TypeNameConverter x:Key="TypeNameConverter"/>
+        <local:ProcessTooltipConverter x:Key="ProcessTooltipConverter"/>
     </Window.Resources>
     <Grid Margin="8">
         <Grid.RowDefinitions>
@@ -43,7 +44,8 @@
                 <ComboBox Grid.Column="5" ItemsSource="{Binding Processes}" SelectedItem="{Binding SelectedProcess}">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}}"/>
+                            <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}}" 
+                                      ToolTip="{Binding Converter={StaticResource ProcessTooltipConverter}}"/>
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
@@ -88,7 +90,8 @@
                 <ComboBox Grid.Column="3" ItemsSource="{Binding Processes}" SelectedItem="{Binding UpdateProcess}">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}}"/>
+                            <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}}" 
+                                      ToolTip="{Binding Converter={StaticResource ProcessTooltipConverter}}"/>
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
@@ -110,7 +113,8 @@
                     <GridView>
                         <GridViewColumn Header="名称" Width="160" DisplayMemberBinding="{Binding Name}"/>
                         <GridViewColumn Header="流程模板" Width="180" DisplayMemberBinding="{Binding TemplateName}"/>
-                        <GridViewColumn Header="处理类" Width="200" DisplayMemberBinding="{Binding ProcessTypeName}"/>
+                        <GridViewColumn Header="处理类" Width="200" DisplayMemberBinding="{Binding ProcessDisplayName}"/>
+                        <GridViewColumn Header="描述" Width="220" DisplayMemberBinding="{Binding ProcessDescription}"/>
                     </GridView>
                 </ListView.View>
             </ListView>

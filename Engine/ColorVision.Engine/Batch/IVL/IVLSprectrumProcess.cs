@@ -14,6 +14,7 @@ using System.Text;
 
 namespace ColorVision.Engine.Batch.IVL
 {
+    [BatchProcess("IVLå…‰è°±å¤„ç†", "ä»…å¤„ç†IVLæ‰¹æ¬¡ä¸­çš„Spectrumæ•°æ®å¹¶å¯¼å‡º")]
     public class IVLSprectrumProcess : IBatchProcess
     {
         private static readonly ILog log = LogManager.GetLogger(nameof(IVLProcess));
@@ -31,7 +32,7 @@ namespace ColorVision.Engine.Batch.IVL
                 ObservableCollection<ViewResultSpectrum> ViewResults = new ObservableCollection<ViewResultSpectrum>();
                 if (list.Count == 0)
                 {
-                    log.Info("ÕÒ²»µ½¹âÆ×ÒÇµÄÊı¾İ");
+                    log.Info("ï¿½Ò²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Çµï¿½ï¿½ï¿½ï¿½ï¿½");
                     string sprectrumfilePath = Path.Combine(config.SavePath, $"SP_IVL_{timeStr}.csv");
                     ViewResults.SaveToCsv(sprectrumfilePath);
                 }

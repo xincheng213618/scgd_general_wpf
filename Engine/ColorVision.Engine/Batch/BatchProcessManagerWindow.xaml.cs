@@ -9,7 +9,30 @@ namespace ColorVision.Engine.Batch
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
+            if (value is IBatchProcess process)
+            {
+                var metadata = BatchProcessMetadata.FromProcess(process);
+                return metadata.DisplayName;
+            }
             return value?.GetType().Name ?? string.Empty;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return Binding.DoNothing;
+        }
+    }
+
+    public class ProcessTooltipConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is IBatchProcess process)
+            {
+                var metadata = BatchProcessMetadata.FromProcess(process);
+                return metadata.GetTooltipText();
+            }
+            return string.Empty;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
