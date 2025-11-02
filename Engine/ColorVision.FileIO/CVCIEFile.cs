@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace ColorVision.FileIO
 {
@@ -27,6 +28,7 @@ namespace ColorVision.FileIO
     /// Represents a ColorVision CIE file structure containing image metadata and data.
     /// Used for CVCIE, CVRAW, and CVSRC file formats.
     /// </summary>
+    [SuppressMessage("Microsoft.Naming", "CA1708:IdentifiersShouldDifferByMoreThanCase", Justification = "Backward compatibility properties with lowercase names")]
     public class CVCIEFile
     {
         /// <summary>File format version.</summary>
@@ -88,38 +90,47 @@ namespace ColorVision.FileIO
         // Backward compatibility: provide lowercase field-like access via properties
         /// <summary>File format version (deprecated - use Version).</summary>
         [Obsolete("Use Version property instead")]
+        [SuppressMessage("Microsoft.Naming", "CA1708:IdentifiersShouldDifferByMoreThanCase", Justification = "Backward compatibility")]
         public uint version { get => Version; set => Version = value; }
 
         /// <summary>Number of rows (deprecated - use Rows).</summary>
         [Obsolete("Use Rows property instead")]
+        [SuppressMessage("Microsoft.Naming", "CA1708:IdentifiersShouldDifferByMoreThanCase", Justification = "Backward compatibility")]
         public int rows { get => Rows; set => Rows = value; }
 
         /// <summary>Number of columns (deprecated - use Cols).</summary>
         [Obsolete("Use Cols property instead")]
+        [SuppressMessage("Microsoft.Naming", "CA1708:IdentifiersShouldDifferByMoreThanCase", Justification = "Backward compatibility")]
         public int cols { get => Cols; set => Cols = value; }
 
         /// <summary>Bits per pixel (deprecated - use Bpp).</summary>
         [Obsolete("Use Bpp property instead")]
+        [SuppressMessage("Microsoft.Naming", "CA1708:IdentifiersShouldDifferByMoreThanCase", Justification = "Backward compatibility")]
         public int bpp { get => Bpp; set => Bpp = value; }
 
         /// <summary>Number of channels (deprecated - use Channels).</summary>
         [Obsolete("Use Channels property instead")]
+        [SuppressMessage("Microsoft.Naming", "CA1708:IdentifiersShouldDifferByMoreThanCase", Justification = "Backward compatibility")]
         public int channels { get => Channels; set => Channels = value; }
 
         /// <summary>Gain value (deprecated - use Gain).</summary>
         [Obsolete("Use Gain property instead")]
+        [SuppressMessage("Microsoft.Naming", "CA1708:IdentifiersShouldDifferByMoreThanCase", Justification = "Backward compatibility")]
         public float gain { get => Gain; set => Gain = value; }
 
         /// <summary>Exposure values (deprecated - use Exp).</summary>
         [Obsolete("Use Exp property instead")]
+        [SuppressMessage("Microsoft.Naming", "CA1708:IdentifiersShouldDifferByMoreThanCase", Justification = "Backward compatibility")]
         public float[] exp { get => Exp; set => Exp = value; }
 
         /// <summary>Source file name (deprecated - use SrcFileName).</summary>
         [Obsolete("Use SrcFileName property instead")]
+        [SuppressMessage("Microsoft.Naming", "CA1708:IdentifiersShouldDifferByMoreThanCase", Justification = "Backward compatibility")]
         public string srcFileName { get => SrcFileName; set => SrcFileName = value; }
 
         /// <summary>Raw data (deprecated - use Data).</summary>
         [Obsolete("Use Data property instead")]
+        [SuppressMessage("Microsoft.Naming", "CA1708:IdentifiersShouldDifferByMoreThanCase", Justification = "Backward compatibility")]
         public byte[] data { get => Data; set => Data = value; }
     }
 }

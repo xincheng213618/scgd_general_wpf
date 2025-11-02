@@ -3,26 +3,90 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace ColorVision.FileIO
 {
     /// <summary>
-    /// 图像通道类型枚举。
+    /// Image channel type enumeration for ColorVision files.
     /// </summary>
     public enum CVImageChannelType
     {
+        /// <summary>Source image (all channels).</summary>
         SRC = 0,
-        RGB_R = 1,
-        RGB_G = 2,
-        RGB_B = 3,
-        CIE_XYZ_X = 10,
-        CIE_XYZ_Y = 11,
-        CIE_XYZ_Z = 12,
-        CIE_Lv = 13,
-        CIE_x = 14,
-        CIE_y = 15,
-        CIE_u = 16,
-        CIE_v = 17
+        
+        /// <summary>RGB Red channel.</summary>
+        RgbR = 1,
+        /// <summary>RGB Green channel.</summary>
+        RgbG = 2,
+        /// <summary>RGB Blue channel.</summary>
+        RgbB = 3,
+        
+        /// <summary>CIE XYZ X component.</summary>
+        CieXyzX = 10,
+        /// <summary>CIE XYZ Y component (luminance).</summary>
+        CieXyzY = 11,
+        /// <summary>CIE XYZ Z component.</summary>
+        CieXyzZ = 12,
+        
+        /// <summary>CIE Lv (luminance value).</summary>
+        CieLv = 13,
+        /// <summary>CIE x chromaticity coordinate.</summary>
+        CieX = 14,
+        /// <summary>CIE y chromaticity coordinate.</summary>
+        CieY = 15,
+        /// <summary>CIE u' chromaticity coordinate.</summary>
+        CieU = 16,
+        /// <summary>CIE v' chromaticity coordinate.</summary>
+        CieV = 17,
+
+        // Backward compatibility - deprecated values
+        /// <summary>RGB Red channel (deprecated - use RgbR).</summary>
+        [Obsolete("Use RgbR instead")]
+        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
+        RGB_R = RgbR,
+        /// <summary>RGB Green channel (deprecated - use RgbG).</summary>
+        [Obsolete("Use RgbG instead")]
+        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
+        RGB_G = RgbG,
+        /// <summary>RGB Blue channel (deprecated - use RgbB).</summary>
+        [Obsolete("Use RgbB instead")]
+        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
+        RGB_B = RgbB,
+        
+        /// <summary>CIE XYZ X component (deprecated - use CieXyzX).</summary>
+        [Obsolete("Use CieXyzX instead")]
+        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
+        CIE_XYZ_X = CieXyzX,
+        /// <summary>CIE XYZ Y component (deprecated - use CieXyzY).</summary>
+        [Obsolete("Use CieXyzY instead")]
+        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
+        CIE_XYZ_Y = CieXyzY,
+        /// <summary>CIE XYZ Z component (deprecated - use CieXyzZ).</summary>
+        [Obsolete("Use CieXyzZ instead")]
+        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
+        CIE_XYZ_Z = CieXyzZ,
+        
+        /// <summary>CIE Lv (deprecated - use CieLv).</summary>
+        [Obsolete("Use CieLv instead")]
+        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
+        CIE_Lv = CieLv,
+        /// <summary>CIE x coordinate (deprecated - use CieX).</summary>
+        [Obsolete("Use CieX instead")]
+        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
+        CIE_x = CieX,
+        /// <summary>CIE y coordinate (deprecated - use CieY).</summary>
+        [Obsolete("Use CieY instead")]
+        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
+        CIE_y = CieY,
+        /// <summary>CIE u' coordinate (deprecated - use CieU).</summary>
+        [Obsolete("Use CieU instead")]
+        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
+        CIE_u = CieU,
+        /// <summary>CIE v' coordinate (deprecated - use CieV).</summary>
+        [Obsolete("Use CieV instead")]
+        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
+        CIE_v = CieV
     }
 
     /// <summary>
@@ -355,16 +419,16 @@ namespace ColorVision.FileIO
                 }
             }
             int channel = -1;
-            CVCIEFile data = default(CVCIEFile);
+            CVCIEFile data = new CVCIEFile();
             switch (channelType)
             {
-                case CVImageChannelType.CIE_XYZ_X:
+                case CVImageChannelType.CieXyzX:
                     channel = 0;
                     break;
-                case CVImageChannelType.CIE_XYZ_Y:
+                case CVImageChannelType.CieXyzY:
                     channel = 1;
                     break;
-                case CVImageChannelType.CIE_XYZ_Z:
+                case CVImageChannelType.CieXyzZ:
                     channel = 2;
                     break;
             }
