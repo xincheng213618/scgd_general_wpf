@@ -12,7 +12,7 @@ namespace ColorVision.FileIO
     /// </summary>
     public enum CVImageChannelType
     {
-        /// <summary>Source image (all channels).</summary>
+        /// <summary>Source image (all Channels).</summary>
         SRC = 0,
         
         /// <summary>RGB Red channel.</summary>
@@ -48,7 +48,7 @@ namespace ColorVision.FileIO
     {
         private const string MagicHeader = "CVCIE";
         private const int HeaderSize = 5;
-        private const int MinimumFileSize = HeaderSize + 4; // Minimum file size to contain the header and version
+        private const int MinimumFileSize = HeaderSize + 4; // Minimum file size to contain the header and Version
         private static readonly Encoding Encoding1 = Encoding.GetEncoding("GBK");
 
         /// <summary>
@@ -521,7 +521,7 @@ namespace ColorVision.FileIO
         /// Writes a CVCIE file with the provided file information.
         /// </summary>
         /// <param name="filePath">The path where the file should be written.</param>
-        /// <param name="fileInfo">The CVCIEFile structure containing the data to write.</param>
+        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
         /// <returns>True if the file was written successfully; otherwise, false.</returns>
         public static bool WriteCIEFile(string filePath, CVCIEFile fileInfo)
         {
@@ -547,7 +547,7 @@ namespace ColorVision.FileIO
                     // Write magic header
                     bw.Write(MagicHeader.ToCharArray());
 
-                    // Write version
+                    // Write Version
                     bw.Write(fileInfo.Version);
 
                     // Write source file name
@@ -559,10 +559,10 @@ namespace ColorVision.FileIO
                         bw.Write(srcFileNameBytes);
                     }
 
-                    // Write gain
+                    // Write Gain
                     bw.Write(fileInfo.Gain);
 
-                    // Write channels and exposure values
+                    // Write Channels and exposure values
                     bw.Write((uint)fileInfo.Channels);
                     if (fileInfo.Exp != null && fileInfo.Exp.Length > 0)
                     {
@@ -570,7 +570,7 @@ namespace ColorVision.FileIO
                         {
                             bw.Write(fileInfo.Exp[i]);
                         }
-                        // Fill remaining channels with 0 if Exp array is shorter
+                        // Fill remaining Channels with 0 if Exp array is shorter
                         for (int i = fileInfo.Exp.Length; i < fileInfo.Channels; i++)
                         {
                             bw.Write(0f);
@@ -578,7 +578,7 @@ namespace ColorVision.FileIO
                     }
                     else
                     {
-                        // No exposure data, write zeros
+                        // No exposure Data, write zeros
                         for (int i = 0; i < fileInfo.Channels; i++)
                         {
                             bw.Write(0f);
@@ -590,7 +590,7 @@ namespace ColorVision.FileIO
                     bw.Write((uint)fileInfo.Cols);
                     bw.Write((uint)fileInfo.Bpp);
 
-                    // Write data
+                    // Write Data
                     if (fileInfo.Data != null && fileInfo.Data.Length > 0)
                     {
                         if (fileInfo.Version == 2)
@@ -605,7 +605,7 @@ namespace ColorVision.FileIO
                     }
                     else
                     {
-                        // No data, write zero length
+                        // No Data, write zero length
                         if (fileInfo.Version == 2)
                         {
                             bw.Write(0L);
@@ -631,9 +631,9 @@ namespace ColorVision.FileIO
         /// <summary>
         /// Writes a CVCIE file to a byte array.
         /// </summary>
-        /// <param name="fileInfo">The CVCIEFile structure containing the data to write.</param>
-        /// <param name="fileData">The output byte array containing the file data.</param>
-        /// <returns>True if the data was written successfully; otherwise, false.</returns>
+        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
+        /// <param name="fileData">The output byte array containing the file Data.</param>
+        /// <returns>True if the Data was written successfully; otherwise, false.</returns>
         public static bool WriteCIEFile(CVCIEFile fileInfo, out byte[] fileData)
         {
             fileData = null;
@@ -658,7 +658,7 @@ namespace ColorVision.FileIO
                     // Write magic header
                     bw.Write(MagicHeader.ToCharArray());
 
-                    // Write version
+                    // Write Version
                     bw.Write(fileInfo.Version);
 
                     // Write source file name
@@ -670,10 +670,10 @@ namespace ColorVision.FileIO
                         bw.Write(srcFileNameBytes);
                     }
 
-                    // Write gain
+                    // Write Gain
                     bw.Write(fileInfo.Gain);
 
-                    // Write channels and exposure values
+                    // Write Channels and exposure values
                     bw.Write((uint)fileInfo.Channels);
                     if (fileInfo.Exp != null && fileInfo.Exp.Length > 0)
                     {
@@ -699,7 +699,7 @@ namespace ColorVision.FileIO
                     bw.Write((uint)fileInfo.Cols);
                     bw.Write((uint)fileInfo.Bpp);
 
-                    // Write data
+                    // Write Data
                     if (fileInfo.Data != null && fileInfo.Data.Length > 0)
                     {
                         if (fileInfo.Version == 2)
@@ -741,7 +741,7 @@ namespace ColorVision.FileIO
         /// Writes a CVRAW file (convenience wrapper for WriteCIEFile).
         /// </summary>
         /// <param name="filePath">The path where the file should be written.</param>
-        /// <param name="fileInfo">The CVCIEFile structure containing the data to write.</param>
+        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
         /// <returns>True if the file was written successfully; otherwise, false.</returns>
         public static bool WriteCVRaw(string filePath, CVCIEFile fileInfo)
         {
@@ -752,7 +752,7 @@ namespace ColorVision.FileIO
         /// Writes a CVCIE file (convenience wrapper for WriteCIEFile).
         /// </summary>
         /// <param name="filePath">The path where the file should be written.</param>
-        /// <param name="fileInfo">The CVCIEFile structure containing the data to write.</param>
+        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
         /// <returns>True if the file was written successfully; otherwise, false.</returns>
         public static bool WriteCVCIE(string filePath, CVCIEFile fileInfo)
         {
@@ -760,18 +760,18 @@ namespace ColorVision.FileIO
         }
 
         /// <summary>
-        /// Writes image data to a file in CVCIE format with specified parameters.
+        /// Writes image Data to a file in CVCIE format with specified parameters.
         /// </summary>
         /// <param name="filePath">The path where the file should be written.</param>
-        /// <param name="data">The raw image data bytes.</param>
-        /// <param name="rows">Number of rows (height).</param>
+        /// <param name="data">The raw image Data bytes.</param>
+        /// <param name="rows">Number of Rows (height).</param>
         /// <param name="cols">Number of columns (width).</param>
         /// <param name="bpp">Bits per pixel.</param>
-        /// <param name="channels">Number of channels.</param>
+        /// <param name="channels">Number of Channels.</param>
         /// <param name="gain">Gain value (default 1.0).</param>
         /// <param name="exp">Exposure values array (optional).</param>
         /// <param name="srcFileName">Source file name (optional).</param>
-        /// <param name="version">File format version (default 1).</param>
+        /// <param name="version">File format Version (default 1).</param>
         /// <returns>True if the file was written successfully; otherwise, false.</returns>
         public static bool WriteCIEFile(string filePath, byte[] data, int rows, int cols, int bpp, int channels, 
             float gain = 1.0f, float[] exp = null, string srcFileName = null, uint version = 1)
@@ -803,7 +803,7 @@ namespace ColorVision.FileIO
         /// Asynchronously reads a CVCIE file from the specified path.
         /// </summary>
         /// <param name="filePath">The path to the file to read.</param>
-        /// <returns>A task that represents the asynchronous read operation. The task result contains a tuple with success status and the CVCIEFile data.</returns>
+        /// <returns>A task that represents the asynchronous read operation. The task result contains a tuple with success status and the CVCIEFile Data.</returns>
         public static async System.Threading.Tasks.Task<(bool success, CVCIEFile fileInfo)> ReadAsync(string filePath)
         {
             return await System.Threading.Tasks.Task.Run(() =>
@@ -816,8 +816,8 @@ namespace ColorVision.FileIO
         /// <summary>
         /// Asynchronously reads a CVCIE file from a byte array.
         /// </summary>
-        /// <param name="fileData">The byte array containing the file data.</param>
-        /// <returns>A task that represents the asynchronous read operation. The task result contains a tuple with success status and the CVCIEFile data.</returns>
+        /// <param name="fileData">The byte array containing the file Data.</param>
+        /// <returns>A task that represents the asynchronous read operation. The task result contains a tuple with success status and the CVCIEFile Data.</returns>
         public static async System.Threading.Tasks.Task<(bool success, CVCIEFile fileInfo)> ReadAsync(byte[] fileData)
         {
             return await System.Threading.Tasks.Task.Run(() =>
@@ -831,7 +831,7 @@ namespace ColorVision.FileIO
         /// Asynchronously writes a CVCIE file to the specified path.
         /// </summary>
         /// <param name="filePath">The path where the file should be written.</param>
-        /// <param name="fileInfo">The CVCIEFile structure containing the data to write.</param>
+        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
         /// <returns>A task that represents the asynchronous write operation. The task result indicates whether the write was successful.</returns>
         public static async System.Threading.Tasks.Task<bool> WriteAsync(string filePath, CVCIEFile fileInfo)
         {
@@ -841,7 +841,7 @@ namespace ColorVision.FileIO
         /// <summary>
         /// Asynchronously writes a CVCIE file to a byte array.
         /// </summary>
-        /// <param name="fileInfo">The CVCIEFile structure containing the data to write.</param>
+        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
         /// <returns>A task that represents the asynchronous write operation. The task result contains a tuple with success status and the byte array.</returns>
         public static async System.Threading.Tasks.Task<(bool success, byte[] fileData)> WriteAsync(CVCIEFile fileInfo)
         {
@@ -856,7 +856,7 @@ namespace ColorVision.FileIO
         /// Asynchronously reads the file header from a CVCIE file.
         /// </summary>
         /// <param name="filePath">The path to the file.</param>
-        /// <returns>A task that represents the asynchronous operation. The task result contains a tuple with the header offset and CVCIEFile data.</returns>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a tuple with the header offset and CVCIEFile Data.</returns>
         public static async System.Threading.Tasks.Task<(int offset, CVCIEFile fileInfo)> ReadHeaderAsync(string filePath)
         {
             return await System.Threading.Tasks.Task.Run(() =>
@@ -870,7 +870,7 @@ namespace ColorVision.FileIO
         /// Asynchronously reads a CVRAW file.
         /// </summary>
         /// <param name="filePath">The path to the file to read.</param>
-        /// <returns>A task that represents the asynchronous read operation. The task result contains a tuple with success status and the CVCIEFile data.</returns>
+        /// <returns>A task that represents the asynchronous read operation. The task result contains a tuple with success status and the CVCIEFile Data.</returns>
         public static async System.Threading.Tasks.Task<(bool success, CVCIEFile fileInfo)> ReadCVRawAsync(string filePath)
         {
             return await ReadAsync(filePath);
@@ -880,7 +880,7 @@ namespace ColorVision.FileIO
         /// Asynchronously reads a CVCIE file.
         /// </summary>
         /// <param name="filePath">The path to the file to read.</param>
-        /// <returns>A task that represents the asynchronous read operation. The task result contains a tuple with success status and the CVCIEFile data.</returns>
+        /// <returns>A task that represents the asynchronous read operation. The task result contains a tuple with success status and the CVCIEFile Data.</returns>
         public static async System.Threading.Tasks.Task<(bool success, CVCIEFile fileInfo)> ReadCVCIEAsync(string filePath)
         {
             return await System.Threading.Tasks.Task.Run(() =>
@@ -894,7 +894,7 @@ namespace ColorVision.FileIO
         /// Asynchronously writes a CVRAW file.
         /// </summary>
         /// <param name="filePath">The path where the file should be written.</param>
-        /// <param name="fileInfo">The CVCIEFile structure containing the data to write.</param>
+        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
         /// <returns>A task that represents the asynchronous write operation. The task result indicates whether the write was successful.</returns>
         public static async System.Threading.Tasks.Task<bool> WriteCVRawAsync(string filePath, CVCIEFile fileInfo)
         {
@@ -905,7 +905,7 @@ namespace ColorVision.FileIO
         /// Asynchronously writes a CVCIE file.
         /// </summary>
         /// <param name="filePath">The path where the file should be written.</param>
-        /// <param name="fileInfo">The CVCIEFile structure containing the data to write.</param>
+        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
         /// <returns>A task that represents the asynchronous write operation. The task result indicates whether the write was successful.</returns>
         public static async System.Threading.Tasks.Task<bool> WriteCVCIEAsync(string filePath, CVCIEFile fileInfo)
         {

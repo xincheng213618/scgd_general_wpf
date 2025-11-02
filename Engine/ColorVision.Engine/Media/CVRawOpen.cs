@@ -85,7 +85,7 @@ namespace ColorVision.Engine.Media
                 var meta = imageView.Config.GetProperties<CVCIEFile>("meta");
                 int index = imageView.Config.GetProperties<int>("index");
                 CVFileUtil.ReadCIEFileData(filePath, ref meta, index);
-                int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(Config.ConvertXYZhandle, (uint)meta.rows, (uint)meta.cols, (uint)meta.bpp, (uint)meta.channels, meta.data);
+                int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(Config.ConvertXYZhandle, (uint)meta.Rows, (uint)meta.Cols, (uint)meta.Bpp, (uint)meta.Channels, meta.Data);
                 log.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
                 imageView.Config.AddProperties("IsBufferSet", true);
 
@@ -222,15 +222,15 @@ namespace ColorVision.Engine.Media
                     }
                     if (layer == "X")
                     {
-                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CIE_XYZ_X).ToWriteableBitmap());
+                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CieXyzX).ToWriteableBitmap());
                     }
                     if (layer == "Y")
                     {
-                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CIE_XYZ_Y).ToWriteableBitmap());
+                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CieXyzY).ToWriteableBitmap());
                     }
                     if (layer == "Z")
                     {
-                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CIE_XYZ_Z).ToWriteableBitmap());
+                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CieXyzZ).ToWriteableBitmap());
 
                     }
                 }
@@ -247,19 +247,19 @@ namespace ColorVision.Engine.Media
 
                     imageView.Config.AddProperties("meta", meta);
                     imageView.Config.AddProperties("index", index);
-                    imageView.Config.AddProperties("Exp", meta.exp);
+                    imageView.Config.AddProperties("Exp", meta.Exp);
 
                     imageView.Config.AddProperties("IsBufferSet",false);
-                    exp = meta.exp;
+                    exp = meta.Exp;
 
                     imageView.ImageViewModel.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
 
-                    if (meta.srcFileName !=null && !File.Exists(meta.srcFileName))
-                        meta.srcFileName = Path.Combine(Path.GetDirectoryName(filePath) ?? string.Empty, meta.srcFileName);
+                    if (meta.SrcFileName !=null && !File.Exists(meta.SrcFileName))
+                        meta.SrcFileName = Path.Combine(Path.GetDirectoryName(filePath) ?? string.Empty, meta.SrcFileName);
 
-                    if (meta.channels ==3)
+                    if (meta.Channels ==3)
                     {
-                        if (File.Exists(meta.srcFileName))
+                        if (File.Exists(meta.SrcFileName))
                         {
                             ComboBoxLayerItems = new List<string>() { "Src", "R", "G", "B", "X", "Y", "Z" };
                         }
@@ -268,9 +268,9 @@ namespace ColorVision.Engine.Media
                             ComboBoxLayerItems = new List<string>() { "Src", "X", "Y", "Z" };
                         }
                     }
-                    else if (meta.channels == 1)
+                    else if (meta.Channels == 1)
                     {
-                        if (File.Exists(meta.srcFileName))
+                        if (File.Exists(meta.SrcFileName))
                         {
                             ComboBoxLayerItems = new List<string>() { "Src", "Y" };
                         }
@@ -289,11 +289,11 @@ namespace ColorVision.Engine.Media
                 }
                 else
                 {
-                    if (meta.channels == 3)
+                    if (meta.Channels == 3)
                     {
                         ComboBoxLayerItems = new List<string>() { "Src", "R", "G", "B" };
                     }
-                    else if (meta.channels == 1)
+                    else if (meta.Channels == 1)
                     {
                         ComboBoxLayerItems = new List<string>() { "Src"};
                     }
@@ -562,19 +562,19 @@ namespace ColorVision.Engine.Media
 
             try
             {
-                await Task.Run(() =>
+                await Task.Run((Action)(() =>
                 {
                     CVCIEFile cVCIEFile = CVFileUtil.OpenLocalCVFile(filePath);
-                    context.Config.AddProperties("Gain", cVCIEFile.gain);
-                    context.Config.AddProperties("exp", cVCIEFile.exp);
+                    context.Config.AddProperties("Gain", (object)cVCIEFile.Gain);
+                    context.Config.AddProperties("exp", cVCIEFile.Exp);
                     context.Config.AddProperties("FileExtType", cVCIEFile.FileExtType);
-                    context.Config.AddProperties("srcFileName", cVCIEFile.srcFileName);
+                    context.Config.AddProperties("srcFileName", cVCIEFile.SrcFileName);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         context.ImageView.OpenImage(cVCIEFile.ToWriteableBitmap());
                         context.ImageView.UpdateZoomAndScale();
                     });
-                });
+                }));
             }
             catch (Exception ex)
             {

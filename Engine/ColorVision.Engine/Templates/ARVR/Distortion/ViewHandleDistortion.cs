@@ -34,7 +34,7 @@ namespace ColorVision.Engine.Templates.Distortion
 
             csvBuilder.AppendLine(string.Join(",", header));
 
-            // Collect data for basic information
+            // Collect Data for basic information
             List<List<string>> basicData = new List<List<string>>();
             foreach (var item in ViewResults)
             {

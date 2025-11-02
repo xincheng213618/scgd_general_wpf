@@ -315,7 +315,7 @@ namespace ColorVision.Update
                 return new Version();
             }
 
-            // If versionString is still null, it means there was an issue with getting the version number
+            // If versionString is still null, it means there was an issue with getting the Version number
             if (versionString == null)
             {
                 throw new InvalidOperationException("Unable to retrieve version number.");

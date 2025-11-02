@@ -145,7 +145,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                         case FileExtType.CIE:
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                //CB_CIEImageFiles.ItemsSource = data.Files;
+                                //CB_CIEImageFiles.ItemsSource = Data.Files;
                                 //CB_CIEImageFiles.SelectedIndex = 0;
                             });
                             break;
