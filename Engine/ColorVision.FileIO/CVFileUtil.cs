@@ -562,5 +562,287 @@ namespace ColorVision.FileIO
             }
             return -2;
         }
+
+        #region Write Methods
+
+        /// <summary>
+        /// Writes a CVCIE file with the provided file information.
+        /// </summary>
+        /// <param name="filePath">The path where the file should be written.</param>
+        /// <param name="fileInfo">The CVCIEFile structure containing the data to write.</param>
+        /// <returns>True if the file was written successfully; otherwise, false.</returns>
+        public static bool WriteCIEFile(string filePath, CVCIEFile fileInfo)
+        {
+            if (string.IsNullOrEmpty(filePath)) return false;
+            if (fileInfo == null) return false;
+
+            try
+            {
+                // Get encoding, fallback to UTF8 if GBK is not available
+                Encoding encoding;
+                try
+                {
+                    encoding = Encoding.GetEncoding("GBK");
+                }
+                catch
+                {
+                    encoding = Encoding.UTF8;
+                }
+
+                using (FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                using (BinaryWriter bw = new BinaryWriter(fs))
+                {
+                    // Write magic header
+                    bw.Write(MagicHeader.ToCharArray());
+
+                    // Write version
+                    bw.Write(fileInfo.Version);
+
+                    // Write source file name
+                    string srcFileName = fileInfo.SrcFileName ?? string.Empty;
+                    byte[] srcFileNameBytes = encoding.GetBytes(srcFileName);
+                    bw.Write(srcFileNameBytes.Length);
+                    if (srcFileNameBytes.Length > 0)
+                    {
+                        bw.Write(srcFileNameBytes);
+                    }
+
+                    // Write gain
+                    bw.Write(fileInfo.Gain);
+
+                    // Write channels and exposure values
+                    bw.Write((uint)fileInfo.Channels);
+                    if (fileInfo.Exp != null && fileInfo.Exp.Length > 0)
+                    {
+                        for (int i = 0; i < Math.Min(fileInfo.Channels, fileInfo.Exp.Length); i++)
+                        {
+                            bw.Write(fileInfo.Exp[i]);
+                        }
+                        // Fill remaining channels with 0 if Exp array is shorter
+                        for (int i = fileInfo.Exp.Length; i < fileInfo.Channels; i++)
+                        {
+                            bw.Write(0f);
+                        }
+                    }
+                    else
+                    {
+                        // No exposure data, write zeros
+                        for (int i = 0; i < fileInfo.Channels; i++)
+                        {
+                            bw.Write(0f);
+                        }
+                    }
+
+                    // Write image dimensions and bit depth
+                    bw.Write((uint)fileInfo.Rows);
+                    bw.Write((uint)fileInfo.Cols);
+                    bw.Write((uint)fileInfo.Bpp);
+
+                    // Write data
+                    if (fileInfo.Data != null && fileInfo.Data.Length > 0)
+                    {
+                        if (fileInfo.Version == 2)
+                        {
+                            bw.Write((long)fileInfo.Data.Length);
+                        }
+                        else
+                        {
+                            bw.Write((int)fileInfo.Data.Length);
+                        }
+                        bw.Write(fileInfo.Data);
+                    }
+                    else
+                    {
+                        // No data, write zero length
+                        if (fileInfo.Version == 2)
+                        {
+                            bw.Write(0L);
+                        }
+                        else
+                        {
+                            bw.Write(0);
+                        }
+                    }
+
+                    bw.Flush();
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[WriteCIEFile] Exception: {ex.Message}");
+                Debug.WriteLine($"[WriteCIEFile] StackTrace: {ex.StackTrace}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Writes a CVCIE file to a byte array.
+        /// </summary>
+        /// <param name="fileInfo">The CVCIEFile structure containing the data to write.</param>
+        /// <param name="fileData">The output byte array containing the file data.</param>
+        /// <returns>True if the data was written successfully; otherwise, false.</returns>
+        public static bool WriteCIEFile(CVCIEFile fileInfo, out byte[] fileData)
+        {
+            fileData = null;
+            if (fileInfo == null) return false;
+
+            try
+            {
+                // Get encoding, fallback to UTF8 if GBK is not available
+                Encoding encoding;
+                try
+                {
+                    encoding = Encoding.GetEncoding("GBK");
+                }
+                catch
+                {
+                    encoding = Encoding.UTF8;
+                }
+
+                using (MemoryStream ms = new MemoryStream())
+                using (BinaryWriter bw = new BinaryWriter(ms))
+                {
+                    // Write magic header
+                    bw.Write(MagicHeader.ToCharArray());
+
+                    // Write version
+                    bw.Write(fileInfo.Version);
+
+                    // Write source file name
+                    string srcFileName = fileInfo.SrcFileName ?? string.Empty;
+                    byte[] srcFileNameBytes = encoding.GetBytes(srcFileName);
+                    bw.Write(srcFileNameBytes.Length);
+                    if (srcFileNameBytes.Length > 0)
+                    {
+                        bw.Write(srcFileNameBytes);
+                    }
+
+                    // Write gain
+                    bw.Write(fileInfo.Gain);
+
+                    // Write channels and exposure values
+                    bw.Write((uint)fileInfo.Channels);
+                    if (fileInfo.Exp != null && fileInfo.Exp.Length > 0)
+                    {
+                        for (int i = 0; i < Math.Min(fileInfo.Channels, fileInfo.Exp.Length); i++)
+                        {
+                            bw.Write(fileInfo.Exp[i]);
+                        }
+                        for (int i = fileInfo.Exp.Length; i < fileInfo.Channels; i++)
+                        {
+                            bw.Write(0f);
+                        }
+                    }
+                    else
+                    {
+                        for (int i = 0; i < fileInfo.Channels; i++)
+                        {
+                            bw.Write(0f);
+                        }
+                    }
+
+                    // Write image dimensions and bit depth
+                    bw.Write((uint)fileInfo.Rows);
+                    bw.Write((uint)fileInfo.Cols);
+                    bw.Write((uint)fileInfo.Bpp);
+
+                    // Write data
+                    if (fileInfo.Data != null && fileInfo.Data.Length > 0)
+                    {
+                        if (fileInfo.Version == 2)
+                        {
+                            bw.Write((long)fileInfo.Data.Length);
+                        }
+                        else
+                        {
+                            bw.Write((int)fileInfo.Data.Length);
+                        }
+                        bw.Write(fileInfo.Data);
+                    }
+                    else
+                    {
+                        if (fileInfo.Version == 2)
+                        {
+                            bw.Write(0L);
+                        }
+                        else
+                        {
+                            bw.Write(0);
+                        }
+                    }
+
+                    bw.Flush();
+                    fileData = ms.ToArray();
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[WriteCIEFile(byte[])] Exception: {ex.Message}");
+                Debug.WriteLine($"[WriteCIEFile(byte[])] StackTrace: {ex.StackTrace}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Writes a CVRAW file (convenience wrapper for WriteCIEFile).
+        /// </summary>
+        /// <param name="filePath">The path where the file should be written.</param>
+        /// <param name="fileInfo">The CVCIEFile structure containing the data to write.</param>
+        /// <returns>True if the file was written successfully; otherwise, false.</returns>
+        public static bool WriteCVRaw(string filePath, CVCIEFile fileInfo)
+        {
+            return WriteCIEFile(filePath, fileInfo);
+        }
+
+        /// <summary>
+        /// Writes a CVCIE file (convenience wrapper for WriteCIEFile).
+        /// </summary>
+        /// <param name="filePath">The path where the file should be written.</param>
+        /// <param name="fileInfo">The CVCIEFile structure containing the data to write.</param>
+        /// <returns>True if the file was written successfully; otherwise, false.</returns>
+        public static bool WriteCVCIE(string filePath, CVCIEFile fileInfo)
+        {
+            return WriteCIEFile(filePath, fileInfo);
+        }
+
+        /// <summary>
+        /// Writes image data to a file in CVCIE format with specified parameters.
+        /// </summary>
+        /// <param name="filePath">The path where the file should be written.</param>
+        /// <param name="data">The raw image data bytes.</param>
+        /// <param name="rows">Number of rows (height).</param>
+        /// <param name="cols">Number of columns (width).</param>
+        /// <param name="bpp">Bits per pixel.</param>
+        /// <param name="channels">Number of channels.</param>
+        /// <param name="gain">Gain value (default 1.0).</param>
+        /// <param name="exp">Exposure values array (optional).</param>
+        /// <param name="srcFileName">Source file name (optional).</param>
+        /// <param name="version">File format version (default 1).</param>
+        /// <returns>True if the file was written successfully; otherwise, false.</returns>
+        public static bool WriteCIEFile(string filePath, byte[] data, int rows, int cols, int bpp, int channels, 
+            float gain = 1.0f, float[] exp = null, string srcFileName = null, uint version = 1)
+        {
+            if (data == null || data.Length == 0) return false;
+
+            CVCIEFile fileInfo = new CVCIEFile
+            {
+                Version = version,
+                FileExtType = CVType.CIE,
+                Rows = rows,
+                Cols = cols,
+                Bpp = bpp,
+                Channels = channels,
+                Gain = gain,
+                Exp = exp ?? new float[channels],
+                SrcFileName = srcFileName,
+                Data = data
+            };
+
+            return WriteCIEFile(filePath, fileInfo);
+        }
+
+        #endregion
     }
 }
