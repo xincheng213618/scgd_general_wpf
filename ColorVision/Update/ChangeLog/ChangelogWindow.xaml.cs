@@ -245,7 +245,7 @@ namespace ColorVision.Update
         }
 
         /// <summary>
-        /// Parse version string to comparable tuple
+        /// Parse Version string to comparable tuple
         /// </summary>
         private (int major, int minor, int build, int revision) ParseVersion(string version)
         {
@@ -264,7 +264,7 @@ namespace ColorVision.Update
         {
             VersionTree.Clear();
 
-            // Group by major version
+            // Group by major Version
             var majorGroups = ChangeLogEntrys
                 .GroupBy(entry =>
                 {
@@ -282,10 +282,10 @@ namespace ColorVision.Update
                 {
                     MajorVersion = majorGroup.Key,
                     DisplayName = $"{majorGroup.Key}.x.x.x ({majorGroup.Count()} versions)",
-                    IsExpanded = majorGroup.Key == latestMajor // Expand latest major version
+                    IsExpanded = majorGroup.Key == latestMajor // Expand latest major Version
                 };
 
-                // Group by minor version within major
+                // Group by minor Version within major
                 var minorGroups = majorGroup
                     .GroupBy(entry =>
                     {
@@ -294,7 +294,7 @@ namespace ColorVision.Update
                     })
                     .OrderByDescending(g => g.Key);
 
-                // Get latest minor version for the latest major version
+                // Get latest minor Version for the latest major Version
                 if (majorGroup.Key == latestMajor)
                 {
                     latestMinor = minorGroups.FirstOrDefault()?.Key ?? -1;
@@ -307,11 +307,11 @@ namespace ColorVision.Update
                         MajorVersion = majorGroup.Key,
                         MinorVersion = minorGroup.Key,
                         DisplayName = $"{majorGroup.Key}.{minorGroup.Key}.x.x ({minorGroup.Count()} versions)",
-                        // Expand latest minor version within latest major version
+                        // Expand latest minor Version within latest major Version
                         IsExpanded = majorGroup.Key == latestMajor && minorGroup.Key == latestMinor
                     };
 
-                    // Add individual entries, sorted numerically by version
+                    // Add individual entries, sorted numerically by Version
                     foreach (var entry in minorGroup.OrderByDescending(e => ParseVersion(e.Version)))
                     {
                         minorNode.Entries.Add(entry);

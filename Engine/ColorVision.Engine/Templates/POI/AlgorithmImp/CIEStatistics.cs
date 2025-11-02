@@ -7,7 +7,7 @@ using System.Linq;
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
     /// <summary>
-    /// Statistics for CIE Y data
+    /// Statistics for CIE Y Data
     /// </summary>
     public class CIEYStatistics
     {
@@ -86,7 +86,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
     }
 
     /// <summary>
-    /// Statistics for CIE xyuv data
+    /// Statistics for CIE xyuv Data
     /// </summary>
     public class CIExyuvStatistics
     {

@@ -29,7 +29,7 @@ namespace ColorVision.Engine.Templates.SFR
 
             var csvBuilder = new StringBuilder();
 
-            // Collect data for basic information
+            // Collect Data for basic information
             List<List<string>> basicData = new List<List<string>>();
             foreach (var item in ViewResults)
             {
@@ -67,7 +67,7 @@ namespace ColorVision.Engine.Templates.SFR
             csvBuilder.AppendLine(string.Join(",", roiWHLine));
             csvBuilder.AppendLine();
 
-            // Collect data for Pdfrequency and PdomainSamplingData
+            // Collect Data for Pdfrequency and PdomainSamplingData
             List<float[]> lists = new List<float[]>();
             int maxLength = 0;
             foreach (var item in ViewResults)
@@ -89,7 +89,7 @@ namespace ColorVision.Engine.Templates.SFR
             }
             csvBuilder.AppendLine(string.Join(", ", dynamicHeaders));
 
-            // Write data rows for Pdfrequency and PdomainSamplingData
+            // Write Data Rows for Pdfrequency and PdomainSamplingData
             for (int i = 0; i < maxLength; i++)
             {
                 List<string> lineValues = new List<string>();
