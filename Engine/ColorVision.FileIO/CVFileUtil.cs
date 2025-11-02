@@ -73,7 +73,7 @@ namespace ColorVision.FileIO
         /// </summary>
         public static int ReadCIEFileHeader(string filePath, out CVCIEFile cvcie)
         {
-            cvcie = default(CVCIEFile);
+            cvcie = new CVCIEFile();
             if (!File.Exists(filePath)) return -1;
             try
             {
@@ -84,20 +84,20 @@ namespace ColorVision.FileIO
                     string fileHeader = new string(br.ReadChars(HeaderSize));
                     if (fileHeader != MagicHeader) return -1;
                     cvcie.FileExtType = filePath.Contains(".cvraw") ? CVType.Raw : filePath.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
-                    uint ver = (cvcie.version = br.ReadUInt32());
+                    uint ver = (cvcie.Version = br.ReadUInt32());
                     if (ver != 1 && ver != 2) return -1;
                     int fileNameLen = br.ReadInt32();
                     if (fileNameLen > 0 && fs.Position + fileNameLen <= fs.Length)
-                        cvcie.srcFileName = new string(br.ReadChars(fileNameLen));
-                    cvcie.gain = br.ReadSingle();
-                    cvcie.channels = (int)br.ReadUInt32();
-                    if (fs.Position + cvcie.channels * 4 > fs.Length) return -1;
-                    cvcie.exp = new float[cvcie.channels];
-                    for (int i = 0; i < cvcie.channels; i++)
-                        cvcie.exp[i] = br.ReadSingle();
-                    cvcie.rows = (int)br.ReadUInt32();
-                    cvcie.cols = (int)br.ReadUInt32();
-                    cvcie.bpp = (int)br.ReadUInt32();
+                        cvcie.SrcFileName = new string(br.ReadChars(fileNameLen));
+                    cvcie.Gain = br.ReadSingle();
+                    cvcie.Channels = (int)br.ReadUInt32();
+                    if (fs.Position + cvcie.Channels * 4 > fs.Length) return -1;
+                    cvcie.Exp = new float[cvcie.Channels];
+                    for (int i = 0; i < cvcie.Channels; i++)
+                        cvcie.Exp[i] = br.ReadSingle();
+                    cvcie.Rows = (int)br.ReadUInt32();
+                    cvcie.Cols = (int)br.ReadUInt32();
+                    cvcie.Bpp = (int)br.ReadUInt32();
                     cvcie.FilePath = filePath;
                     return (int)fs.Position;
                 }
@@ -114,33 +114,41 @@ namespace ColorVision.FileIO
         /// </summary>
         public static int ReadCIEFileHeader(byte[] fileData, out CVCIEFile cvcie)
         {
-            cvcie = default(CVCIEFile);
+            cvcie = new CVCIEFile();
             if (fileData == null || fileData.Length < 9) return -1;
             try
             {
                 string fileHeader = Encoding.ASCII.GetString(fileData, 0, HeaderSize);
                 if (fileHeader != MagicHeader) return -1;
                 int startIndex = HeaderSize;
-                uint version = (cvcie.version = BitConverter.ToUInt32(fileData, startIndex));
+                uint version = (cvcie.Version = BitConverter.ToUInt32(fileData, startIndex));
                 if (version != 1 && version != 2) return -1;
                 startIndex += 4;
                 int fileNameLength = BitConverter.ToInt32(fileData, startIndex);
                 startIndex += 4;
                 if (fileNameLength < 0 || startIndex + fileNameLength > fileData.Length) return -1;
-                cvcie.srcFileName = Encoding1.GetString(fileData, startIndex, fileNameLength);
+                cvcie.SrcFileName = Encoding1.GetString(fileData, startIndex, fileNameLength);
                 startIndex += fileNameLength;
-                if (!TryReadSingle(fileData, ref startIndex, out cvcie.gain)) return -1;
-                if (!TryReadUInt32(fileData, ref startIndex, out cvcie.channels)) return -1;
-                if (startIndex + cvcie.channels * 4 > fileData.Length) return -1;
-                cvcie.exp = new float[cvcie.channels];
-                for (int i = 0; i < cvcie.channels; i++)
+                float gainValue;
+                if (!TryReadSingle(fileData, ref startIndex, out gainValue)) return -1;
+                cvcie.Gain = gainValue;
+                int channelsValue;
+                if (!TryReadUInt32(fileData, ref startIndex, out channelsValue)) return -1;
+                cvcie.Channels = channelsValue;
+                if (startIndex + cvcie.Channels * 4 > fileData.Length) return -1;
+                cvcie.Exp = new float[cvcie.Channels];
+                for (int i = 0; i < cvcie.Channels; i++)
                 {
-                    cvcie.exp[i] = BitConverter.ToSingle(fileData, startIndex);
+                    cvcie.Exp[i] = BitConverter.ToSingle(fileData, startIndex);
                     startIndex += 4;
                 }
-                if (!TryReadUInt32(fileData, ref startIndex, out cvcie.rows)) return -1;
-                if (!TryReadUInt32(fileData, ref startIndex, out cvcie.cols)) return -1;
-                if (!TryReadUInt32(fileData, ref startIndex, out cvcie.bpp)) return -1;
+                int rowsValue, colsValue, bppValue;
+                if (!TryReadUInt32(fileData, ref startIndex, out rowsValue)) return -1;
+                cvcie.Rows = rowsValue;
+                if (!TryReadUInt32(fileData, ref startIndex, out colsValue)) return -1;
+                cvcie.Cols = colsValue;
+                if (!TryReadUInt32(fileData, ref startIndex, out bppValue)) return -1;
+                cvcie.Bpp = bppValue;
                 return startIndex;
             }
             catch (Exception ex)
@@ -162,13 +170,13 @@ namespace ColorVision.FileIO
                 {
                     if (fs.Length < dataStartIndex) return false;
                     fs.Position = dataStartIndex;
-                    uint version = fileInfo.version;
+                    uint version = fileInfo.Version;
                     long dataLen = (version != 2) ? br.ReadInt32() : br.ReadInt64();
                     if (dataLen > 0 && fs.Position + dataLen <= fs.Length)
                     {
                         try
                         {
-                            fileInfo.data = new byte[dataLen];
+                            fileInfo.Data = new byte[dataLen];
                         }
                         catch (OutOfMemoryException oom)
                         {
@@ -180,7 +188,7 @@ namespace ColorVision.FileIO
                         while (totalBytesRead < dataLen)
                         {
                             int bytesToRead = (int)Math.Min(81920L, dataLen - totalBytesRead);
-                            bytesRead = br.Read(fileInfo.data, (int)totalBytesRead, bytesToRead);
+                            bytesRead = br.Read(fileInfo.Data, (int)totalBytesRead, bytesToRead);
                             if (bytesRead == 0) break;
                             totalBytesRead += bytesRead;
                         }
@@ -209,13 +217,13 @@ namespace ColorVision.FileIO
                 {
                     ms.Position = dataStartIndex;
                     if (ms.Length - ms.Position < 4) return false;
-                    uint version = fileInfo.version;
+                    uint version = fileInfo.Version;
                     long dataLen = (version != 2) ? br.ReadInt32() : br.ReadInt64();
                     if (dataLen > 0 && ms.Position + dataLen <= ms.Length)
                     {
                         try
                         {
-                            fileInfo.data = new byte[dataLen];
+                            fileInfo.Data = new byte[dataLen];
                         }
                         catch (OutOfMemoryException oom)
                         {
@@ -227,7 +235,7 @@ namespace ColorVision.FileIO
                         while (totalBytesRead < dataLen)
                         {
                             int bytesToRead = (int)Math.Min(81920L, dataLen - totalBytesRead);
-                            bytesRead = br.Read(fileInfo.data, (int)totalBytesRead, bytesToRead);
+                            bytesRead = br.Read(fileInfo.Data, (int)totalBytesRead, bytesToRead);
                             if (bytesRead == 0) break;
                             totalBytesRead += bytesRead;
                         }
@@ -419,11 +427,11 @@ namespace ColorVision.FileIO
             if (startIndex < 0) return false;
             fileInfo.FilePath = fileName;
 
-            if (!string.IsNullOrEmpty(fileInfo.srcFileName))
+            if (!string.IsNullOrEmpty(fileInfo.SrcFileName))
             {
                 if (CVFileUtil.ReadCVCIESrc(fileName, out CVCIEFile fileInf))
                 {
-                    fileInf.srcFileName = fileInfo.srcFileName;
+                    fileInf.SrcFileName = fileInfo.SrcFileName;
                     fileInfo = fileInf;
                     fileInfo.FilePath = fileName;
                     return true;
@@ -439,21 +447,21 @@ namespace ColorVision.FileIO
             fileOut = new CVCIEFile();
             int index = ReadCIEFileHeader(FileName, out CVCIEFile cvcie);
             if (index < 0) return false;
-            if (!File.Exists(cvcie.srcFileName))
-                cvcie.srcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.srcFileName);
+            if (!File.Exists(cvcie.SrcFileName))
+                cvcie.SrcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.SrcFileName);
 
-            if (File.Exists(cvcie.srcFileName))
+            if (File.Exists(cvcie.SrcFileName))
             {
-                if (IsCIEFile(cvcie.srcFileName))
+                if (IsCIEFile(cvcie.SrcFileName))
                 {
                     fileOut.FileExtType = CVType.Raw;
-                    return Read(cvcie.srcFileName, out fileOut);
+                    return Read(cvcie.SrcFileName, out fileOut);
                 }
                 else
                 {
-                    if (cvcie.srcFileName != null)
+                    if (cvcie.SrcFileName != null)
                     {
-                        fileOut.data = ReadFile(cvcie.srcFileName);
+                        fileOut.Data = ReadFile(cvcie.SrcFileName);
                         fileOut.FileExtType = CVType.Tif;
                         return true;
                     }
@@ -470,16 +478,16 @@ namespace ColorVision.FileIO
             int index = ReadCIEFileHeader(fileName, out fileOut);
             if (index < 0) return -1;
             ReadCIEFileData(fileName, ref fileOut, index);
-            if (fileOut.channels > 1)
+            if (fileOut.Channels > 1)
             {
                 fileOut.FileExtType = CVType.Raw;
-                fileOut.channels = 1;
-                int len = fileOut.cols * fileOut.rows * fileOut.bpp / 8;
+                fileOut.Channels = 1;
+                int len = fileOut.Cols * fileOut.Rows * fileOut.Bpp / 8;
                 try
                 {
                     byte[] data = new byte[len];
-                    Buffer.BlockCopy(fileOut.data, channel * len, data, 0, len);
-                    fileOut.data = data;
+                    Buffer.BlockCopy(fileOut.Data, channel * len, data, 0, len);
+                    fileOut.Data = data;
                 }
                 catch (Exception ex)
                 {
