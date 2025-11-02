@@ -38,6 +38,11 @@ namespace ColorVision.Engine.Batch
         /// </summary>
         public string ShortTypeName { get; }
 
+
+        public BatchProcessMetadata()
+        {
+
+        }
         /// <summary>
         /// Initializes a new instance of the BatchProcessMetadata class.
         /// </summary>
