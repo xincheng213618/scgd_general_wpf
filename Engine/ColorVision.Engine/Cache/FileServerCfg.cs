@@ -2,7 +2,7 @@
 using System;
 using System.ComponentModel;
 
-namespace ColorVision.Engine
+namespace ColorVision.Engine.Cache
 {
     public interface IFileServerCfg
     {
