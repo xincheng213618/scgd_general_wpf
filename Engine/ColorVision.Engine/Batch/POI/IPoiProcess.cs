@@ -6,6 +6,7 @@ using System.IO;
 
 namespace ColorVision.Engine.Batch.Poi
 {
+    [BatchProcess("POI处理", "处理POI批次数据并导出CIE数据")]
     public class IPoiProcess : IBatchProcess
     {
         public bool Process(IBatchContext ctx)
@@ -32,9 +33,22 @@ namespace ColorVision.Engine.Batch.Poi
                             PoiResultCIExyuvDatas.Add(new PoiResultCIExyuvData(item));
                         }
                         string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                        string filePath = Path.Combine(config.SavePath, $"Poi_{timeStr}.csv");
+                        string filePath = Path.Combine(config.SavePath, $"Poi_{master.Id}_{timeStr}.csv");
                         PoiResultCIExyuvDatas.SaveCsv(filePath);
+                    }
+                    if (master.ImgFileType == ViewResultAlgType.POI_Y)
+                    {
+                        var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
 
+                        ObservableCollection<PoiResultCIEYData> PoiResultCIEYDatas = new ObservableCollection<PoiResultCIEYData>();
+
+                        foreach (var item in poiPoints)
+                        {
+                            PoiResultCIEYDatas.Add(new PoiResultCIEYData(item));
+                        }
+                        string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                        string filePath = Path.Combine(config.SavePath, $"PoiY_{master.Id}_{timeStr}.csv");
+                        PoiResultCIEYData.SaveCsv(PoiResultCIEYDatas,filePath);
                     }
                 }
                 return true;
