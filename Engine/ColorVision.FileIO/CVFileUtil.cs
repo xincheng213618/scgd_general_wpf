@@ -39,54 +39,6 @@ namespace ColorVision.FileIO
         CieU = 16,
         /// <summary>CIE v' chromaticity coordinate.</summary>
         CieV = 17,
-
-        // Backward compatibility - deprecated values
-        /// <summary>RGB Red channel (deprecated - use RgbR).</summary>
-        [Obsolete("Use RgbR instead")]
-        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
-        RGB_R = RgbR,
-        /// <summary>RGB Green channel (deprecated - use RgbG).</summary>
-        [Obsolete("Use RgbG instead")]
-        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
-        RGB_G = RgbG,
-        /// <summary>RGB Blue channel (deprecated - use RgbB).</summary>
-        [Obsolete("Use RgbB instead")]
-        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
-        RGB_B = RgbB,
-        
-        /// <summary>CIE XYZ X component (deprecated - use CieXyzX).</summary>
-        [Obsolete("Use CieXyzX instead")]
-        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
-        CIE_XYZ_X = CieXyzX,
-        /// <summary>CIE XYZ Y component (deprecated - use CieXyzY).</summary>
-        [Obsolete("Use CieXyzY instead")]
-        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
-        CIE_XYZ_Y = CieXyzY,
-        /// <summary>CIE XYZ Z component (deprecated - use CieXyzZ).</summary>
-        [Obsolete("Use CieXyzZ instead")]
-        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
-        CIE_XYZ_Z = CieXyzZ,
-        
-        /// <summary>CIE Lv (deprecated - use CieLv).</summary>
-        [Obsolete("Use CieLv instead")]
-        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
-        CIE_Lv = CieLv,
-        /// <summary>CIE x coordinate (deprecated - use CieX).</summary>
-        [Obsolete("Use CieX instead")]
-        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
-        CIE_x = CieX,
-        /// <summary>CIE y coordinate (deprecated - use CieY).</summary>
-        [Obsolete("Use CieY instead")]
-        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
-        CIE_y = CieY,
-        /// <summary>CIE u' coordinate (deprecated - use CieU).</summary>
-        [Obsolete("Use CieU instead")]
-        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
-        CIE_u = CieU,
-        /// <summary>CIE v' coordinate (deprecated - use CieV).</summary>
-        [Obsolete("Use CieV instead")]
-        [SuppressMessage("Microsoft.Naming", "CA1707:IdentifiersShouldNotContainUnderscores", Justification = "Backward compatibility")]
-        CIE_v = CieV
     }
 
     /// <summary>
