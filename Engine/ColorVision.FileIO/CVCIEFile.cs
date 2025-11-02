@@ -27,9 +27,10 @@ namespace ColorVision.FileIO
     /// <summary>
     /// Represents a ColorVision CIE file structure containing image metadata and data.
     /// Used for CVCIE, CVRAW, and CVSRC file formats.
+    /// Implements IDisposable for proper resource management.
     /// </summary>
     [SuppressMessage("Microsoft.Naming", "CA1708:IdentifiersShouldDifferByMoreThanCase", Justification = "Backward compatibility properties with lowercase names")]
-    public class CVCIEFile
+    public class CVCIEFile : IDisposable
     {
         /// <summary>File format version.</summary>
         public uint Version { get; set; }
@@ -86,6 +87,36 @@ namespace ColorVision.FileIO
 
         /// <summary>Full file path of the loaded file.</summary>
         public string FilePath { get; set; }
+
+        // IDisposable implementation
+        private bool _disposed;
+
+        /// <summary>
+        /// Releases the resources used by the CVCIEFile.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases the unmanaged resources used by the CVCIEFile and optionally releases the managed resources.
+        /// </summary>
+        /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    // Clear large data arrays to help GC
+                    Data = null;
+                    Exp = null;
+                }
+                _disposed = true;
+            }
+        }
 
         // Backward compatibility: provide lowercase field-like access via properties
         /// <summary>File format version (deprecated - use Version).</summary>
