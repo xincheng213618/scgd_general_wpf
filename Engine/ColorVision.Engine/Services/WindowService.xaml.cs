@@ -1,6 +1,8 @@
-﻿using ColorVision.Engine.Services.RC;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Themes;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System;
 using System.Windows;
@@ -17,6 +19,13 @@ namespace ColorVision.Engine.Services
         {
             new WindowService() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+    }
+    public class ServicesConfig : ViewModelBase, IConfig
+    {
+        public static ServicesConfig Instance => ConfigService.Instance.GetRequiredService<ServicesConfig>();
+
+        public int ShowType { get; set; }
+
     }
 
     /// <summary>

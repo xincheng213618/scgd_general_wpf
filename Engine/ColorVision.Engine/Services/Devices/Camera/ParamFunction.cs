@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace ColorVision.Engine.Services
+namespace ColorVision.Engine.Services.Devices.Camera
 {
     public class ParamFunction
     {
