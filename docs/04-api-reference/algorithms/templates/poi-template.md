@@ -53,7 +53,7 @@ public class POIPoint
     public PointType Type { get; set; }      // 点类型
     public double Value { get; set; }        // 关联数值
     public string Name { get; set; }         // 点名称
-    public Dictionary<string, object> Properties { get; set; }  // 扩展属性
+    public Dictionary\<string, object> Properties { get; set; }  // 扩展属性
 }
 ```
 
@@ -142,7 +142,7 @@ public class POIPositionFilter : IPOIFilter
 {
     public Rect ValidRegion { get; set; }
     
-    public List<POIPoint> Filter(List<POIPoint> points)
+    public List\<POIPoint> Filter(List\<POIPoint> points)
     {
         return points.Where(p => ValidRegion.Contains(new Point(p.X, p.Y))).ToList();
     }
@@ -156,7 +156,7 @@ public class POIValueFilter : IPOIFilter
     public double MinValue { get; set; }
     public double MaxValue { get; set; }
     
-    public List<POIPoint> Filter(List<POIPoint> points)
+    public List\<POIPoint> Filter(List\<POIPoint> points)
     {
         return points.Where(p => p.Value >= MinValue && p.Value <= MaxValue).ToList();
     }
@@ -169,10 +169,10 @@ public class POIDistanceFilter : IPOIFilter
 {
     public double MinDistance { get; set; }
     
-    public List<POIPoint> Filter(List<POIPoint> points)
+    public List\<POIPoint> Filter(List\<POIPoint> points)
     {
         // 移除距离过近的点
-        var filtered = new List<POIPoint>();
+        var filtered = new List\<POIPoint>();
         foreach (var point in points)
         {
             if (!filtered.Any(p => Distance(p, point) < MinDistance))
@@ -357,7 +357,7 @@ graph TB
 ### 典型工作流
 
 ```csharp
-public async Task<List<POIPoint>> ProcessPOIPipeline(Mat image)
+public async Task<List\<POIPoint>> ProcessPOIPipeline(Mat image)
 {
     // 1. POI检测
     var detector = new POIDetector();
@@ -407,7 +407,7 @@ public class HarrisCornerDetector : IPOIAlgorithm
     public int BlockSize { get; set; } = 3;
     public double K { get; set; } = 0.04;
     
-    public List<POIPoint> Detect(Mat image)
+    public List\<POIPoint> Detect(Mat image)
     {
         Mat corners = new Mat();
         Cv2.CornerHarris(image, corners, BlockSize, 3, K);
@@ -427,7 +427,7 @@ public class ShiTomasiDetector : IPOIAlgorithm
     public double QualityLevel { get; set; } = 0.01;
     public double MinDistance { get; set; } = 10.0;
     
-    public List<POIPoint> Detect(Mat image)
+    public List\<POIPoint> Detect(Mat image)
     {
         var corners = Cv2.GoodFeaturesToTrack(
             image, MaxCorners, QualityLevel, MinDistance);
@@ -446,10 +446,10 @@ public class POIClusterBuilder : IPOIBuilder
     public double ClusterRadius { get; set; }
     public int MinClusterSize { get; set; }
     
-    public List<POIPoint> Build(List<POIPoint> rawPoints)
+    public List\<POIPoint> Build(List\<POIPoint> rawPoints)
     {
-        var clusters = new List<List<POIPoint>>();
-        var visited = new HashSet<int>();
+        var clusters = new List<List\<POIPoint>>();
+        var visited = new HashSet\<int>();
         
         foreach (var point in rawPoints)
         {
@@ -480,7 +480,7 @@ public class POIGridBuilder : IPOIBuilder
     public int GridColumns { get; set; }
     public double GridSpacing { get; set; }
     
-    public List<POIPoint> Build(List<POIPoint> rawPoints)
+    public List\<POIPoint> Build(List\<POIPoint> rawPoints)
     {
         var grid = new POIPoint[GridRows, GridColumns];
         
@@ -508,7 +508,7 @@ public class POIGridBuilder : IPOIBuilder
 public interface IPOIFilter
 {
     string Name { get; }
-    List<POIPoint> Filter(List<POIPoint> points);
+    List\<POIPoint> Filter(List\<POIPoint> points);
 }
 ```
 
@@ -517,14 +517,14 @@ public interface IPOIFilter
 ```csharp
 public class POIFilterChain
 {
-    private List<IPOIFilter> filters = new();
+    private List\<IPOIFilter> filters = new();
     
     public void AddFilter(IPOIFilter filter)
     {
         filters.Add(filter);
     }
     
-    public List<POIPoint> Apply(List<POIPoint> points, POIFilterParam param)
+    public List\<POIPoint> Apply(List\<POIPoint> points, POIFilterParam param)
     {
         var result = points;
         foreach (var filter in filters)
@@ -545,7 +545,7 @@ public class POIBoundaryFilter : IPOIFilter
     public string Name => "边界过滤";
     public Rect Boundary { get; set; }
     
-    public List<POIPoint> Filter(List<POIPoint> points)
+    public List\<POIPoint> Filter(List\<POIPoint> points)
     {
         return points.Where(p => 
             p.X >= Boundary.Left && p.X <= Boundary.Right &&
@@ -562,7 +562,7 @@ public class POIQualityFilter : IPOIFilter
     public string Name => "质量过滤";
     public double MinQuality { get; set; }
     
-    public List<POIPoint> Filter(List<POIPoint> points)
+    public List\<POIPoint> Filter(List\<POIPoint> points)
     {
         return points.Where(p => p.Value >= MinQuality).ToList();
     }
@@ -576,9 +576,9 @@ public class POISparsificationFilter : IPOIFilter
     public string Name => "稀疏化";
     public double MinSpacing { get; set; }
     
-    public List<POIPoint> Filter(List<POIPoint> points)
+    public List\<POIPoint> Filter(List\<POIPoint> points)
     {
-        var result = new List<POIPoint>();
+        var result = new List\<POIPoint>();
         var sortedPoints = points.OrderByDescending(p => p.Value).ToList();
         
         foreach (var point in sortedPoints)
@@ -601,8 +601,8 @@ public class POISparsificationFilter : IPOIFilter
 public class POICameraCalibration
 {
     public CalibrationResult Calibrate(
-        List<List<POIPoint>> imagePoints,    // 图像点（多组）
-        List<List<Point3D>> objectPoints,    // 物理点（多组）
+        List<List\<POIPoint>> imagePoints,    // 图像点（多组）
+        List<List\<Point3D>> objectPoints,    // 物理点（多组）
         Size imageSize)
     {
         // 标定相机内参
@@ -636,8 +636,8 @@ public class POICameraCalibration
 public class POIPerspectiveTransform
 {
     public Mat GetTransformMatrix(
-        List<POIPoint> sourcePoints,
-        List<POIPoint> targetPoints)
+        List\<POIPoint> sourcePoints,
+        List\<POIPoint> targetPoints)
     {
         var src = sourcePoints.Select(p => new Point2f((float)p.X, (float)p.Y)).ToArray();
         var dst = targetPoints.Select(p => new Point2f((float)p.X, (float)p.Y)).ToArray();
@@ -658,7 +658,7 @@ public class POISubPixelRefine
     public int MaxIterations { get; set; } = 30;
     public double Epsilon { get; set; } = 0.001;
     
-    public List<POIPoint> Refine(Mat image, List<POIPoint> points)
+    public List\<POIPoint> Refine(Mat image, List\<POIPoint> points)
     {
         var corners = points.Select(p => new Point2f((float)p.X, (float)p.Y)).ToArray();
         
@@ -695,7 +695,7 @@ public class POIOutlierRemoval
 {
     public double StdDevMultiplier { get; set; } = 3.0;
     
-    public List<POIPoint> RemoveOutliers(List<POIPoint> points)
+    public List\<POIPoint> RemoveOutliers(List\<POIPoint> points)
     {
         // 基于统计方法移除异常点
         var values = points.Select(p => p.Value).ToArray();
@@ -716,7 +716,7 @@ public class POIOutlierRemoval
 ```csharp
 public class POIJsonOutput : IPOIOutput
 {
-    public void Save(List<POIPoint> points, string filePath)
+    public void Save(List\<POIPoint> points, string filePath)
     {
         var output = new
         {
@@ -746,7 +746,7 @@ public class POIJsonOutput : IPOIOutput
 ```csharp
 public class POICsvOutput : IPOIOutput
 {
-    public void Save(List<POIPoint> points, string filePath)
+    public void Save(List\<POIPoint> points, string filePath)
     {
         var csv = new StringBuilder();
         csv.AppendLine("ID,X,Y,Type,Value,Name");
@@ -808,9 +808,9 @@ output.Save(filtered, "poi_result.json");
 ```csharp
 public class CustomPOIDetector : IPOIAlgorithm
 {
-    public List<POIPoint> Detect(Mat image)
+    public List\<POIPoint> Detect(Mat image)
     {
-        var points = new List<POIPoint>();
+        var points = new List\<POIPoint>();
         
         // 自定义检测逻辑
         // 例如：基于颜色的检测
@@ -852,9 +852,9 @@ public class CustomPOIFilter : IPOIFilter
     public string Name => "自定义过滤";
     
     // 自定义条件
-    public Func<POIPoint, bool> Condition { get; set; }
+    public Func\<POIPoint, bool> Condition { get; set; }
     
-    public List<POIPoint> Filter(List<POIPoint> points)
+    public List\<POIPoint> Filter(List\<POIPoint> points)
     {
         return points.Where(p => Condition(p)).ToList();
     }
@@ -911,10 +911,10 @@ filterChain.AddFilter(new POISparsificationFilter { MinSpacing = 15.0 });
 
 ```csharp
 // 使用图像金字塔加速检测
-public List<POIPoint> DetectMultiScale(Mat image)
+public List\<POIPoint> DetectMultiScale(Mat image)
 {
     var pyramid = BuildPyramid(image, 3);  // 3层金字塔
-    var points = new List<POIPoint>();
+    var points = new List\<POIPoint>();
     
     for (int level = 0; level < pyramid.Count; level++)
     {
@@ -937,7 +937,7 @@ public List<POIPoint> DetectMultiScale(Mat image)
 ### 4. 结果验证
 
 ```csharp
-public bool ValidatePOIResult(List<POIPoint> points)
+public bool ValidatePOIResult(List\<POIPoint> points)
 {
     // 检查点数
     if (points.Count == 0)
@@ -970,7 +970,7 @@ public bool ValidatePOIResult(List<POIPoint> points)
 ### 5. 错误处理
 
 ```csharp
-public async Task<POIResult> SafeDetectPOI(Mat image, POIDetectionParam param)
+public async Task\<POIResult> SafeDetectPOI(Mat image, POIDetectionParam param)
 {
     try
     {

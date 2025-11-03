@@ -703,7 +703,7 @@ public class TaskScheduler
     private readonly int _maxDegreeOfParallelism;
     
     public async Task ExecuteParallelAsync(
-        IEnumerable\<Func<Task>\> tasks)
+        IEnumerable\<Func\<Task>\> tasks)
     {
         var options = new ParallelOptions
         {

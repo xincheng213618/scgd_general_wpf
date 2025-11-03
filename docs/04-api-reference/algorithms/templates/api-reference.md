@@ -44,7 +44,7 @@ public class ITemplate
     public bool IsSideHide { get; set; }
     
     // 保存索引列表
-    public List<int> SaveIndex { get; set; }
+    public List\<int> SaveIndex { get; set; }
 }
 ```
 
@@ -200,10 +200,10 @@ public virtual object CreateDefault()
 获取所有模板名称列表。
 
 ```csharp
-public virtual List<string> GetTemplateNames()
+public virtual List\<string> GetTemplateNames()
 ```
 
-**返回值**: List<string> - 模板名称列表
+**返回值**: List\<string> - 模板名称列表
 
 ##### NewCreateFileName(string fileName)
 生成新的唯一文件名。
@@ -242,15 +242,15 @@ public virtual IMysqlCommand? GetMysqlCommand()
 
 **返回值**: IMysqlCommand? - MySQL命令对象，可为null
 
-### ITemplate<T> 泛型模板类
+### ITemplate\<T> 泛型模板类
 
 继承自ITemplate，提供类型安全的模板实现。
 
 ```csharp
-public class ITemplate<T> : ITemplate where T : ParamModBase, new()
+public class ITemplate\<T> : ITemplate where T : ParamModBase, new()
 {
     // 参数集合
-    public ObservableCollection<T> Params { get; set; }
+    public ObservableCollection\<T> Params { get; set; }
     
     // 重写ItemsSource
     public override IEnumerable ItemsSource => Params;
@@ -264,7 +264,7 @@ public class ITemplate<T> : ITemplate where T : ParamModBase, new()
 
 **示例**:
 ```csharp
-public class TemplateMTF : ITemplate<MTFParam>
+public class TemplateMTF : ITemplate\<MTFParam>
 {
     public override string Title => "MTF模板";
     public string Code => "MTF";
@@ -293,7 +293,7 @@ public class ParamModBase : ModelBase
     
     // 详情模型集合
     [Browsable(false)]
-    public ObservableCollection<ModDetailModel> ModDetailModels { get; set; }
+    public ObservableCollection\<ModDetailModel> ModDetailModels { get; set; }
     
     // 创建命令
     [Browsable(false)]
@@ -309,7 +309,7 @@ public class ParamModBase : ModelBase
 public ParamModBase()
 
 // 从数据库模型构造
-public ParamModBase(ModMasterModel modMaster, List<ModDetailModel> detail)
+public ParamModBase(ModMasterModel modMaster, List\<ModDetailModel> detail)
 ```
 
 **示例**:
@@ -318,7 +318,7 @@ public class MTFParam : ParamModBase
 {
     public MTFParam() { }
     
-    public MTFParam(ModMasterModel modMaster, List<ModDetailModel> detail) 
+    public MTFParam(ModMasterModel modMaster, List\<ModDetailModel> detail) 
         : base(modMaster, detail) { }
     
     // 定义参数属性
@@ -337,11 +337,11 @@ public class MTFParam : ParamModBase
 
 #### 方法
 
-##### GetValue<T>
+##### GetValue\<T>
 获取属性值（从数据库参数字典）。
 
 ```csharp
-public T? GetValue<T>(T? storage, [CallerMemberName] string propertyName = "")
+public T? GetValue\<T>(T? storage, [CallerMemberName] string propertyName = "")
 ```
 
 **参数**:
@@ -368,11 +368,11 @@ public double MyValue
 private double _MyValue = 1.0;
 ```
 
-##### SetProperty<T>
+##### SetProperty\<T>
 设置属性值并触发变更通知。
 
 ```csharp
-protected override bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string propertyName = "")
+protected override bool SetProperty\<T>(ref T storage, T value, [CallerMemberName] string propertyName = "")
 ```
 
 **参数**:
@@ -403,11 +403,11 @@ public ModDetailModel? GetParameter(string key)
 获取所有参数详情列表。
 
 ```csharp
-public void GetDetail(List<ModDetailModel> list)
+public void GetDetail(List\<ModDetailModel> list)
 ```
 
 **参数**:
-- `list` (List<ModDetailModel>): 输出列表
+- `list` (List\<ModDetailModel>): 输出列表
 
 **效果**: 将所有参数详情添加到列表中
 
@@ -463,7 +463,7 @@ string str = ModelBase.DoubleArrayToString(new[] { 1.0, 2.5, 3.7 });
 public class TemplateControl
 {
     // 模板注册字典
-    public static Dictionary<string, ITemplate> ITemplateNames { get; set; }
+    public static Dictionary\<string, ITemplate> ITemplateNames { get; set; }
 }
 ```
 
@@ -542,7 +542,7 @@ public class TemplateInitializer : InitializerBase
 {
     public override int Order => 4;
     public override string Name => nameof(TemplateInitializer);
-    public override IEnumerable<string> Dependencies => new List<string>() { nameof(MySqlInitializer) };
+    public override IEnumerable\<string> Dependencies => new List\<string>() { nameof(MySqlInitializer) };
     
     public override async Task InitializeAsync()
     {
@@ -742,7 +742,7 @@ public class SearchProvider : ISearch
 public class SymbolCache
 {
     public static SymbolCache Instance { get; set; }
-    public ConcurrentDictionary<int, SysDictionaryModDetaiModel> Cache { get; set; }
+    public ConcurrentDictionary\<int, SysDictionaryModDetaiModel> Cache { get; set; }
 }
 ```
 
@@ -760,7 +760,7 @@ public class MyAlgorithmParam : ParamModBase
 {
     public MyAlgorithmParam() { }
     
-    public MyAlgorithmParam(ModMasterModel modMaster, List<ModDetailModel> detail) 
+    public MyAlgorithmParam(ModMasterModel modMaster, List\<ModDetailModel> detail) 
         : base(modMaster, detail) { }
     
     [Category("算法参数")]
@@ -783,7 +783,7 @@ public class MyAlgorithmParam : ParamModBase
 }
 
 // 2. 创建模板类
-public class TemplateMyAlgorithm : ITemplate<MyAlgorithmParam>, IITemplateLoad
+public class TemplateMyAlgorithm : ITemplate\<MyAlgorithmParam>, IITemplateLoad
 {
     public override string Title => "我的算法";
     public string Code => "MyAlg";
@@ -791,14 +791,14 @@ public class TemplateMyAlgorithm : ITemplate<MyAlgorithmParam>, IITemplateLoad
     public void Load()
     {
         // 从数据库加载
-        var items = Db.Queryable<ModMasterModel>()
+        var items = Db.Queryable\<ModMasterModel>()
             .Where(a => a.Type == 123)  // 你的类型ID
             .ToList();
             
-        Params = new ObservableCollection<MyAlgorithmParam>();
+        Params = new ObservableCollection\<MyAlgorithmParam>();
         foreach (var item in items)
         {
-            var details = Db.Queryable<ModDetailModel>()
+            var details = Db.Queryable\<ModDetailModel>()
                 .Where(d => d.ModMasterId == item.Id)
                 .ToList();
             Params.Add(new MyAlgorithmParam(item, details));
@@ -872,7 +872,7 @@ public partial class MyAlgorithmEditor : UserControl
 }
 
 // 2. 在模板类中指定自定义控件
-public class TemplateMyAlgorithm : ITemplate<MyAlgorithmParam>
+public class TemplateMyAlgorithm : ITemplate\<MyAlgorithmParam>
 {
     public override UserControl GetCustomControl()
     {

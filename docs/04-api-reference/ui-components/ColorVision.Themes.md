@@ -332,7 +332,7 @@ ColorVision.Themes 在设计时考虑了性能和用户体验，采用了多种�
 ### 1. 资源缓存机制
 
 **实现原理:**
-- 使用 `WeakReference<ResourceDictionary>` 缓存已加载的主题资源
+- 使用 `WeakReference\<ResourceDictionary>` 缓存已加载的主题资源
 - 避免重复加载相同的 XAML 资源文件
 - 使用弱引用避免内存泄漏，当内存紧张时可自动回收
 - 线程安全的缓存访问机制
@@ -340,7 +340,7 @@ ColorVision.Themes 在设计时考虑了性能和用户体验，采用了多种�
 **代码实现:**
 ```csharp
 // ThemeManager 中的资源加载优化
-private readonly Dictionary<string, WeakReference<ResourceDictionary>> _resourceCache = new();
+private readonly Dictionary<string, WeakReference\<ResourceDictionary>> _resourceCache = new();
 private readonly object _cacheLock = new object();
 
 private ResourceDictionary? LoadResourceWithCache(string uri)
@@ -362,7 +362,7 @@ private ResourceDictionary? LoadResourceWithCache(string uri)
         var resource = Application.LoadComponent(new Uri(uri, UriKind.Relative)) as ResourceDictionary;
         if (resource != null)
         {
-            _resourceCache[uri] = new WeakReference<ResourceDictionary>(resource);
+            _resourceCache[uri] = new WeakReference\<ResourceDictionary>(resource);
         }
         return resource;
     }
@@ -416,7 +416,7 @@ private async void DelayedInitialize()
 **资源分层结构:**
 ```csharp
 // 基础资源 - 所有主题共享
-public static List<string> ResourceDictionaryBase = new()
+public static List\<string> ResourceDictionaryBase = new()
 {
     "/ColorVision.Themes;component/Themes/Base.xaml",
     "/ColorVision.Themes;component/Themes/Menu.xaml",
@@ -426,7 +426,7 @@ public static List<string> ResourceDictionaryBase = new()
 };
 
 // 深色主题特定资源
-public static List<string> ResourceDictionaryDark = new()
+public static List\<string> ResourceDictionaryDark = new()
 {
     "/HandyControl;component/themes/basic/colors/colorsdark.xaml",
     "/HandyControl;component/Themes/Theme.xaml",
@@ -436,7 +436,7 @@ public static List<string> ResourceDictionaryDark = new()
 
 **优化的加载方法:**
 ```csharp
-private void LoadThemeResources(Application app, List<string> resources)
+private void LoadThemeResources(Application app, List\<string> resources)
 {
     foreach (var item in resources)
     {
@@ -901,9 +901,9 @@ public class ThemedWindow : Window
 ```xml
 <Window x:Class="MyWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
-    <Window.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
+    \<Window.Resources>
+        \<ResourceDictionary>
+            \<ResourceDictionary.MergedDictionaries>
                 <!-- 引入应用程序主题资源 -->
                 <ResourceDictionary Source="pack://application:,,,/ColorVision.Themes;component/Themes/Dark.xaml"/>
             </ResourceDictionary.MergedDictionaries>
@@ -1008,7 +1008,7 @@ public class ThemeAwareControl : UserControl
 ```xml
 <!-- app.manifest -->
 <application xmlns="urn:schemas-microsoft-com:asm.v3">
-  <windowsSettings>
+  \<windowsSettings>
     <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/pm</dpiAware>
     <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2</dpiAwareness>
   </windowsSettings>
@@ -1091,8 +1091,8 @@ public class ThemeManager
 ```xml
 <!-- 定义全局主题资源 -->
 <Application.Resources>
-    <ResourceDictionary>
-        <ResourceDictionary.MergedDictionaries>
+    \<ResourceDictionary>
+        \<ResourceDictionary.MergedDictionaries>
             <ResourceDictionary Source="pack://application:,,,/ColorVision.Themes;component/Themes/Dark.xaml"/>
         </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
@@ -1146,7 +1146,7 @@ Debug.WriteLine($"Contrast ratio: {ratio:F2}:1"); // 输出: 21.00:1
 ```xml
 <Style TargetType="TextBlock">
     <Setter Property="FontSize" Value="14"/>
-    <Style.Triggers>
+    \<Style.Triggers>
         <!-- 小屏幕 -->
         <DataTrigger Binding="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Window}}" Value="800">
             <Setter Property="FontSize" Value="12"/>
@@ -1224,7 +1224,7 @@ public class ThemeConfig : IConfig
     // 自动加载
     public static ThemeConfig Load()
     {
-        return ConfigHandler.LoadConfig<ThemeConfig>() ?? new ThemeConfig();
+        return ConfigHandler.LoadConfig\<ThemeConfig>() ?? new ThemeConfig();
     }
 }
 
@@ -1247,16 +1247,16 @@ private void OnThemeChanged(Theme newTheme)
 
 **为自定义主题添加文档:**
 ```csharp
-/// <summary>
+/// \<summary>
 /// 应用指定的主题到应用程序
 /// </summary>
 /// <param name="theme">要应用的主题类型</param>
-/// <remarks>
+/// \<remarks>
 /// 该方法会清理现有资源并加载新主题资源。
 /// 如果主题已经是当前主题，则不执行任何操作。
 /// </remarks>
-/// <example>
-/// <code>
+/// \<example>
+/// \<code>
 /// ThemeManager.Current.ApplyTheme(Application.Current, Theme.Dark);
 /// </code>
 /// </example>

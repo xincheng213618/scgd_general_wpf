@@ -100,7 +100,7 @@ public class ITemplate
 }
 ```
 
-**ITemplate<T> 泛型基类**
+**ITemplate\<T> 泛型基类**
 - 基于泛型参数化的模板实现
 - 类型安全的参数管理
 - 数据库操作封装（基于SqlSugar ORM）
@@ -121,9 +121,9 @@ public class ITemplate
 - 实现属性与数据库字段的双向绑定
 
 **关键功能**:
-- 动态参数获取：`GetValue<T>`
-- 参数设置与变更跟踪：`SetProperty<T>`
-- 参数详情获取：`GetDetail(List<ModDetailModel>)`
+- 动态参数获取：`GetValue\<T>`
+- 参数设置与变更跟踪：`SetProperty\<T>`
+- 参数详情获取：`GetDetail(List\<ModDetailModel>)`
 
 #### 3. UI交互层 (UI Interaction Layer)
 
@@ -234,7 +234,7 @@ public class TemplateControl
     public static TemplateControl GetInstance();
     
     // 模板注册表
-    public static Dictionary<string, ITemplate> ITemplateNames { get; set; }
+    public static Dictionary\<string, ITemplate> ITemplateNames { get; set; }
     
     // 添加模板实例
     public static void AddITemplateInstance(string code, ITemplate template);
@@ -370,7 +370,7 @@ public static TemplateControl GetInstance()
 ModelBase实现INotifyPropertyChanged接口，支持数据绑定：
 
 ```csharp
-protected override bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string propertyName = "")
+protected override bool SetProperty\<T>(ref T storage, T value, [CallerMemberName] string propertyName = "")
 {
     storage = value;
     OnPropertyChanged(propertyName);  // 通知观察者
@@ -383,7 +383,7 @@ protected override bool SetProperty<T>(ref T storage, T value, [CallerMemberName
 不同模板类型可以替换不同的参数处理策略，通过泛型实现：
 
 ```csharp
-public class ITemplate<T> : ITemplate where T : ParamModBase, new()
+public class ITemplate\<T> : ITemplate where T : ParamModBase, new()
 {
     // T 作为策略参数
 }
@@ -408,7 +408,7 @@ if (Activator.CreateInstance(type) is IITemplateLoad iITemplateLoad)
    ```csharp
    public class MyParam : ParamModBase
    {
-       public MyParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) 
+       public MyParam(ModMasterModel modMaster, List\<ModDetailModel> modDetails) 
            : base(modMaster, modDetails) { }
        
        public double MyParameter { get => GetValue(_MyParameter); set => SetProperty(ref _MyParameter, value); }
@@ -416,9 +416,9 @@ if (Activator.CreateInstance(type) is IITemplateLoad iITemplateLoad)
    }
    ```
 
-2. **创建模板类**（继承ITemplate<T>）
+2. **创建模板类**（继承ITemplate\<T>）
    ```csharp
-   public class TemplateMyAlgorithm : ITemplate<MyParam>, IITemplateLoad
+   public class TemplateMyAlgorithm : ITemplate\<MyParam>, IITemplateLoad
    {
        public override string Title => "我的算法";
        public string Code => "MyAlg";
@@ -456,7 +456,7 @@ public override UserControl GetCustomControl()
 
 | 扩展点 | 接口/基类 | 用途 |
 |--------|----------|------|
-| 新算法模板 | ITemplate<T> | 添加新的算法参数化模板 |
+| 新算法模板 | ITemplate\<T> | 添加新的算法参数化模板 |
 | 自定义UI | UserControl | 为模板提供专用编辑界面 |
 | 搜索扩展 | ISearch | 扩展模板搜索功能 |
 | 结果处理 | IResultHandleBase | 处理算法执行结果的显示 |

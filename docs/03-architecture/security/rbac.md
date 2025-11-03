@@ -766,7 +766,7 @@ public class PermissionService : IPermissionService
         return permissions.Contains(permission);
     }
     
-    private async Task\<HashSet<string>\> GetUserPermissionsAsync(int userId)
+    private async Task\<HashSet\<string>\> GetUserPermissionsAsync(int userId)
     {
         var query = @"
             SELECT DISTINCT p.Code 

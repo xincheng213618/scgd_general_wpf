@@ -421,8 +421,8 @@ ARVR模板结果通过`IResultHandleBase`处理器进行可视化：
 ```csharp
 public class ViewHandleMTF : IResultHandleBase
 {
-    public override List<ViewResultAlgType> CanHandle => 
-        new List<ViewResultAlgType>() { ViewResultAlgType.MTF };
+    public override List\<ViewResultAlgType> CanHandle => 
+        new List\<ViewResultAlgType>() { ViewResultAlgType.MTF };
     
     public override void Handle(IViewImageA view, ViewResultAlg result)
     {

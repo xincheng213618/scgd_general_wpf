@@ -6,24 +6,24 @@
 
 | 项目目录 | 组件类型 | 主要文档 | 说明 |
 |---------|---------|---------|------|
-| **ColorVision/** | 主程序 | [入门指南](../getting-started/入门指南.md) <br> [主窗口导览](../user-interface-guide/main-window/主窗口导览.md) | WPF应用程序入口 |
+| **ColorVision/** | 主程序 | [入门指南](../getting-started/入门指南.md) \<br> [主窗口导览](../user-interface-guide/main-window/主窗口导览.md) | WPF应用程序入口 |
 | **Engine/** | 核心引擎 | [Engine组件概览](../engine-components/Engine组件概览.md) | 引擎层总入口 |
-| └─ ColorVision.Engine/ | 主引擎 | [ColorVision.Engine](../engine-components/ColorVision.Engine.md) <br> [设备服务概览](../device-management/device-services-overview/设备服务概览.md) <br> [算法引擎与模板](../algorithm-engine-templates/算法引擎与模板.md) | 核心业务逻辑 |
+| └─ ColorVision.Engine/ | 主引擎 | [ColorVision.Engine](../engine-components/ColorVision.Engine.md) \<br> [设备服务概览](../device-management/device-services-overview/设备服务概览.md) \<br> [算法引擎与模板](../algorithm-engine-templates/算法引擎与模板.md) | 核心业务逻辑 |
 | └─ cvColorVision/ | 视觉处理 | [cvColorVision](../engine-components/cvColorVision.md) | C++视觉算法库 |
-| └─ FlowEngineLib/ | 流程引擎 | [FlowEngineLib](../engine-components/FlowEngineLib.md) <br> [流程引擎架构](../architecture/FlowEngineLib-Architecture.md) <br> [流程引擎](../algorithm-engine-templates/flow-engine/流程引擎.md) | 可视化流程编辑器 |
+| └─ FlowEngineLib/ | 流程引擎 | [FlowEngineLib](../engine-components/FlowEngineLib.md) \<br> [流程引擎架构](../architecture/FlowEngineLib-Architecture.md) \<br> [流程引擎](../algorithm-engine-templates/flow-engine/流程引擎.md) | 可视化流程编辑器 |
 | └─ ColorVision.FileIO/ | 文件IO | [ColorVision.FileIO](../engine-components/ColorVision.FileIO.md) | 文件读写处理 |
 | └─ ST.Library.UI/ | UI库 | [ST.Library.UI](../engine-components/ST.Library.UI.md) | UI辅助库 |
 | **UI/** | UI层 | [UI组件概览](../ui-components/UI组件概览.md) | UI层总入口 |
-| └─ ColorVision.UI/ | UI框架 | [ColorVision.UI](../ui-components/ColorVision.UI.md) <br> [属性编辑器](../user-interface-guide/property-editor/属性编辑器.md) <br> [热键系统设计](../ui-components/HotKey系统设计文档.md) | 主UI框架 |
+| └─ ColorVision.UI/ | UI框架 | [ColorVision.UI](../ui-components/ColorVision.UI.md) \<br> [属性编辑器](../user-interface-guide/property-editor/属性编辑器.md) \<br> [热键系统设计](../ui-components/HotKey系统设计文档.md) | 主UI框架 |
 | └─ ColorVision.Common/ | 通用组件 | [ColorVision.Common](../ui-components/ColorVision.Common.md) | 通用UI控件 |
 | └─ ColorVision.Core/ | 核心组件 | [ColorVision.Core](../ui-components/ColorVision.Core.md) | 核心UI组件 |
 | └─ ColorVision.Themes/ | 主题 | [ColorVision.Themes](../ui-components/ColorVision.Themes.md) | 主题和样式 |
-| └─ ColorVision.ImageEditor/ | 图像编辑器 | [ColorVision.ImageEditor](../ui-components/ColorVision.ImageEditor.md) <br> [图像编辑器](../user-interface-guide/image-editor/图像编辑器.md) | 专业图像编辑 |
+| └─ ColorVision.ImageEditor/ | 图像编辑器 | [ColorVision.ImageEditor](../ui-components/ColorVision.ImageEditor.md) \<br> [图像编辑器](../user-interface-guide/image-editor/图像编辑器.md) | 专业图像编辑 |
 | └─ ColorVision.Solution/ | 解决方案 | [ColorVision.Solution](../ui-components/ColorVision.Solution.md) | 工程文件管理 |
 | └─ ColorVision.Scheduler/ | 调度器 | [ColorVision.Scheduler](../ui-components/ColorVision.Scheduler.md) | 任务调度UI |
 | └─ ColorVision.Database/ | 数据库UI | [ColorVision.Database](../ui-components/ColorVision.Database.md) | 数据库界面 |
 | └─ ColorVision.SocketProtocol/ | Socket | [ColorVision.SocketProtocol](../ui-components/ColorVision.SocketProtocol.md) | Socket协议 |
-| **Plugins/** | 插件 | [插件管理](../plugins/plugin-management/插件管理.md) <br> [开发插件指南](../plugins/developing-a-plugin.md) | 插件系统 |
+| **Plugins/** | 插件 | [插件管理](../plugins/plugin-management/插件管理.md) \<br> [开发插件指南](../plugins/developing-a-plugin.md) | 插件系统 |
 | └─ Pattern/ | 图案检测 | [Pattern插件](../plugins/using-standard-plugins/pattern.md) | 图案检测插件 |
 | └─ SystemMonitor/ | 系统监控 | [系统监控插件](../plugins/system-monitor.md) | 性能监控 |
 | └─ EventVWR/ | 事件查看 | [使用标准插件](../plugins/using-standard-plugins/使用标准插件.md) | 事件查看器 |

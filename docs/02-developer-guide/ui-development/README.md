@@ -75,7 +75,7 @@ ColorVision 提供了丰富的自定义控件：
 <UserControl x:Class="YourNamespace.YourView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Grid>
+    \<Grid>
         <!-- UI 元素 -->
     </Grid>
 </UserControl>
@@ -138,10 +138,10 @@ ColorVision 提供专业的图像编辑器组件，支持：
 
 ```csharp
 // 注册服务
-ServiceManager.GetInstance().Add<IYourService, YourService>();
+ServiceManager.GetInstance().Add\<IYourService, YourService>();
 
 // 获取服务
-var service = ServiceManager.GetInstance().GetService<IYourService>();
+var service = ServiceManager.GetInstance().GetService\<IYourService>();
 ```
 
 ### 3. 资源管理

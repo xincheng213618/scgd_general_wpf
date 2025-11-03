@@ -138,7 +138,7 @@ public class TemplateManager
     public async Task SaveTemplateAsync(Template template)
     
     // 加载模板参数
-    public async Task<Dictionary\\<string, object>\> LoadTemplateParametersAsync(int templateId)
+    public async Task\<Dictionary\\<string, object>\> LoadTemplateParametersAsync(int templateId)
 }
 ```
 
@@ -315,17 +315,17 @@ public class ITemplate
     public virtual void Export(int index); // 导出模板
 }
 
-// ITemplate<T> 泛型模板 - 类型安全的参数管理
-public class ITemplate<T> : ITemplate where T : ParamModBase, new()
+// ITemplate\<T> 泛型模板 - 类型安全的参数管理
+public class ITemplate\<T> : ITemplate where T : ParamModBase, new()
 {
-    public ObservableCollection<T> Params { get; set; }
+    public ObservableCollection\<T> Params { get; set; }
 }
 
 // ParamModBase - 参数模型基类
 public class ParamModBase : ModelBase
 {
     public ModMasterModel ModMaster { get; set; }
-    public ObservableCollection<ModDetailModel> ModDetailModels { get; set; }
+    public ObservableCollection\<ModDetailModel> ModDetailModels { get; set; }
 }
 ```
 
@@ -336,7 +336,7 @@ public class ParamModBase : ModelBase
 public class TemplateControl
 {
     // 全局模板注册表
-    public static Dictionary<string, ITemplate> ITemplateNames { get; set; }
+    public static Dictionary\<string, ITemplate> ITemplateNames { get; set; }
     
     // 添加模板实例
     public static void AddITemplateInstance(string code, ITemplate template);
@@ -368,7 +368,7 @@ public class MyAlgorithmParam : ParamModBase
 }
 
 // 2. 创建模板类
-public class TemplateMyAlgorithm : ITemplate<MyAlgorithmParam>
+public class TemplateMyAlgorithm : ITemplate\<MyAlgorithmParam>
 {
     public override string Title => "我的算法";
     public string Code => "MyAlg";
@@ -376,14 +376,14 @@ public class TemplateMyAlgorithm : ITemplate<MyAlgorithmParam>
     public void Load()
     {
         // 从数据库加载参数
-        var items = Db.Queryable<ModMasterModel>()
+        var items = Db.Queryable\<ModMasterModel>()
             .Where(a => a.Type == 123)
             .ToList();
         
-        Params = new ObservableCollection<MyAlgorithmParam>();
+        Params = new ObservableCollection\<MyAlgorithmParam>();
         foreach (var item in items)
         {
-            var details = Db.Queryable<ModDetailModel>()
+            var details = Db.Queryable\<ModDetailModel>()
                 .Where(d => d.ModMasterId == item.Id)
                 .ToList();
             Params.Add(new MyAlgorithmParam(item, details));
@@ -405,7 +405,7 @@ template.Save();
 
 | 扩展点 | 接口/基类 | 用途 |
 |--------|----------|------|
-| 新算法模板 | ITemplate<T> | 添加新的算法参数化模板 |
+| 新算法模板 | ITemplate\<T> | 添加新的算法参数化模板 |
 | 自定义UI | UserControl | 为模板提供专用编辑界面 |
 | 搜索扩展 | ISearch | 扩展模板搜索功能 |
 | 结果处理 | IResultHandleBase | 处理算法执行结果的显示 |

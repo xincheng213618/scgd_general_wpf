@@ -98,7 +98,7 @@ public class LogConfig : ViewModelBase, IConfig
 
 **TypeLevelCacheHelper - 级别缓存优化:**
 - 使用反射扫描 `Level` 类的所有静态属性和字段
-- 缓存扫描结果到 `Dictionary<Type, List<object>>`
+- 缓存扫描结果到 `Dictionary<Type, List\<object>>`
 - 避免重复反射调用，提升性能
 
 ### 2. TextBoxAppender - 自定义日志追加器
@@ -378,7 +378,7 @@ private void Window_Initialized(object sender, EventArgs e)
     // 3. 绑定配置
     this.DataContext = LogConfig.Instance;
     cmlog.ItemsSource = LogConfig.GetAllLevels()
-        .Select(level => new KeyValuePair<Level, string>(level, level.Name));
+        .Select(level => new KeyValuePair\<Level, string>(level, level.Name));
     
     // 4. 加载历史日志
     LoadLogHistory();
@@ -515,7 +515,7 @@ private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
 ```csharp
 private void cmlog_SelectionChanged(object sender, SelectionChangedEventArgs e)
 {
-    var selectedLevel = (KeyValuePair<Level, string>)cmlog.SelectedItem;
+    var selectedLevel = (KeyValuePair\<Level, string>)cmlog.SelectedItem;
     var hierarchy = (Hierarchy)LogManager.GetRepository();
     
     if (selectedLevel.Key != hierarchy.Root.Level)
@@ -530,15 +530,15 @@ private void cmlog_SelectionChanged(object sender, SelectionChangedEventArgs e)
 ### TypeLevelCacheHelper 反射优化
 
 ```csharp
-private static readonly Dictionary<Type, List<object>> _typeLevelCache = new();
+private static readonly Dictionary<Type, List\<object>> _typeLevelCache = new();
 
-public static IReadOnlyList<TLevel> GetAllLevels<TLevel>(Type type)
+public static IReadOnlyList\<TLevel> GetAllLevels\<TLevel>(Type type)
 {
     // 缓存命中，直接返回
     if (_typeLevelCache.TryGetValue(type, out var cached))
-        return cached.Cast<TLevel>().ToList();
+        return cached.Cast\<TLevel>().ToList();
     
-    var levels = new List<TLevel>();
+    var levels = new List\<TLevel>();
     
     // 扫描静态属性
     var props = type.GetProperties(BindingFlags.Static | BindingFlags.Public);
@@ -559,7 +559,7 @@ public static IReadOnlyList<TLevel> GetAllLevels<TLevel>(Type type)
     }
     
     // 缓存结果
-    _typeLevelCache[type] = levels.Cast<object>().ToList();
+    _typeLevelCache[type] = levels.Cast\<object>().ToList();
     return levels;
 }
 ```
@@ -599,12 +599,12 @@ private readonly DispatcherTimer _flushTimer = new DispatcherTimer
 **解决方案**:
 ```csharp
 // TypeLevelCacheHelper.cs
-private static readonly Dictionary<Type, List<object>> _typeLevelCache = new();
+private static readonly Dictionary<Type, List\<object>> _typeLevelCache = new();
 
-public static IReadOnlyList<TLevel> GetAllLevels<TLevel>(Type type)
+public static IReadOnlyList\<TLevel> GetAllLevels\<TLevel>(Type type)
 {
     if (_typeLevelCache.TryGetValue(type, out var cached))
-        return cached.Cast<TLevel>().ToList();  // 缓存命中
+        return cached.Cast\<TLevel>().ToList();  // 缓存命中
     
     // 首次扫描并缓存
     // ...
@@ -835,7 +835,7 @@ config.MaxChars = 100000;
   </appender>
   
   <!-- 根日志器 -->
-  <root>
+  \<root>
     <level value="INFO" />
     <appender-ref ref="ConsoleAppender" />
     <appender-ref ref="RollingFileAppender" />

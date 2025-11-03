@@ -67,13 +67,13 @@ public class MyDeviceService : DeviceService
 ### 2. 注册服务
 
 ```csharp
-ServiceManager.GetInstance().Add<IMyDeviceService, MyDeviceService>();
+ServiceManager.GetInstance().Add\<IMyDeviceService, MyDeviceService>();
 ```
 
 ### 3. 使用服务
 
 ```csharp
-var service = ServiceManager.GetInstance().GetService<IMyDeviceService>();
+var service = ServiceManager.GetInstance().GetService\<IMyDeviceService>();
 await service.StartAsync();
 ```
 

@@ -299,7 +299,7 @@ public class PluginDiscoveryService : IPluginDiscoveryService
     private readonly ILogger _logger;
     private readonly PluginDiscoveryOptions _options;
     
-    public async Task\<IEnumerable<PluginDescriptor>\> DiscoverPluginsAsync()
+    public async Task\<IEnumerable\<PluginDescriptor>\> DiscoverPluginsAsync()
     {
         var plugins = new List\\<PluginDescriptor\>();
         
@@ -313,7 +313,7 @@ public class PluginDiscoveryService : IPluginDiscoveryService
         return await ValidatePluginsAsync(plugins);
     }
     
-    private async Task\<IEnumerable<PluginDescriptor>\> ScanLocalDirectoryAsync(string directory)
+    private async Task\<IEnumerable\<PluginDescriptor>\> ScanLocalDirectoryAsync(string directory)
     {
         var plugins = new List\\<PluginDescriptor\>();
         
@@ -346,7 +346,7 @@ public class PluginDiscoveryService : IPluginDiscoveryService
         return plugins;
     }
     
-    private async Task\<IEnumerable<PluginDescriptor>\> ValidatePluginsAsync(
+    private async Task\<IEnumerable\<PluginDescriptor>\> ValidatePluginsAsync(
         IEnumerable\<PluginDescriptor\> plugins)
     {
         var validPlugins = new List\\<PluginDescriptor\>();

@@ -79,6 +79,6 @@
 
 ## 相关文档
 
-- [系统架构](/introduction/system-architecture/系统架构概览)
-- [故障排除](/troubleshooting/故障排除)
-- [系统监控插件](/plugins/system-monitor)
+- [系统架构](/00-getting-started/introduction/system-architecture)
+- [故障排除](/01-user-guide/troubleshooting/common-issues)
+- [系统监控插件](/04-api-reference/plugins/standard-plugins/system-monitor)

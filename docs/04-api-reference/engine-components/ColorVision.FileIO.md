@@ -633,7 +633,7 @@ public class FileIOExample
             Console.WriteLine($"处理进度: {info.Percentage}% ({info.Completed}/{info.Total})");
         });
         
-        var operations = imagePaths.Select\<string, Func<Task<string>>\>(imagePath => async () =>
+        var operations = imagePaths.Select\<string, Func<Task\<string>>\>(imagePath => async () =>
         {
             // 读取图像
             var imageData = await _fileIOManager.ReadAsync\<ImageFileData\>(imagePath);
@@ -696,7 +696,7 @@ public class FileIOExample
             }
         });
         
-        var operations = files.Select\<string, Func<Task<string>>\>(file => async () =>
+        var operations = files.Select\<string, Func<Task\<string>>\>(file => async () =>
         {
             try
             {
