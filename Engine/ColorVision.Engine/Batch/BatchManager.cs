@@ -95,6 +95,7 @@ namespace ColorVision.Engine.Batch
 
         private void LoadProcesses()
         {
+            var processList = new System.Collections.Generic.List<IBatchProcess>();
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 try
@@ -103,7 +104,7 @@ namespace ColorVision.Engine.Batch
                     {
                         if (Activator.CreateInstance(type) is IBatchProcess process)
                         {
-                            Processes.Add(process);
+                            processList.Add(process);
                         }
                     }
                 }
@@ -111,6 +112,18 @@ namespace ColorVision.Engine.Batch
                 {
                     log.Error(ex);
                 }
+            }
+            
+            // Sort by metadata order, then by display name
+            var sortedProcesses = processList
+                .Select(p => new { Process = p, Metadata = BatchProcessMetadata.FromProcess(p) })
+                .OrderBy(x => x.Metadata.Order)
+                .ThenBy(x => x.Metadata.DisplayName)
+                .Select(x => x.Process);
+            
+            foreach (var process in sortedProcesses)
+            {
+                Processes.Add(process);
             }
         }
 

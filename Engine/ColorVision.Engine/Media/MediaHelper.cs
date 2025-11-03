@@ -20,12 +20,12 @@ namespace ColorVision.Engine.Media
             {
                 if (fileInfo.FileExtType == CVType.Tif)
                 {
-                    src = OpenCvSharp.Cv2.ImDecode(fileInfo.data, OpenCvSharp.ImreadModes.Unchanged);
+                    src = OpenCvSharp.Cv2.ImDecode(fileInfo.Data, OpenCvSharp.ImreadModes.Unchanged);
                 }
                 else if (fileInfo.FileExtType == CVType.Raw || fileInfo.FileExtType == CVType.Src || fileInfo.FileExtType == CVType.CIE)
                 {
-                    src = OpenCvSharp.Mat.FromPixelData(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
-                    if (fileInfo.bpp == 32)
+                    src = OpenCvSharp.Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.Channels), fileInfo.Data);
+                    if (fileInfo.Bpp == 32)
                     {
                         OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
                         dst = new OpenCvSharp.Mat();
@@ -108,29 +108,29 @@ namespace ColorVision.Engine.Media
             {
                 if (fileInfo.FileExtType == CVType.Tif)
                 {
-                    src = OpenCvSharp.Cv2.ImDecode(fileInfo.data, OpenCvSharp.ImreadModes.Unchanged);
+                    src = OpenCvSharp.Cv2.ImDecode(fileInfo.Data, OpenCvSharp.ImreadModes.Unchanged);
                 }
                 else if (fileInfo.FileExtType == CVType.Raw || fileInfo.FileExtType == CVType.Src || fileInfo.FileExtType == CVType.CIE)
                 {
                     if (fileInfo.FileExtType == CVType.CIE)
                     {
-                        int len = (int)(fileInfo.rows * fileInfo.cols * (fileInfo.bpp / 8));
-                        if (fileInfo.channels == 3)
+                        int len = (int)(fileInfo.Rows * fileInfo.Cols * (fileInfo.Bpp / 8));
+                        if (fileInfo.Channels == 3)
                         {
                             byte[] data = new byte[len];
-                            Buffer.BlockCopy(fileInfo.data, len, data, 0, data.Length);
-                            src = OpenCvSharp.Mat.FromPixelData(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, 1), fileInfo.data);
+                            Buffer.BlockCopy(fileInfo.Data, len, data, 0, data.Length);
+                            src = OpenCvSharp.Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, 1), fileInfo.Data);
                         }
                         else
                         {
-                            src = OpenCvSharp.Mat.FromPixelData(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
+                            src = OpenCvSharp.Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.Channels), fileInfo.Data);
                         }
                     }
                     else
                     {
-                        src = OpenCvSharp.Mat.FromPixelData(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
+                        src = OpenCvSharp.Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.Channels), fileInfo.Data);
                     }
-                    if (fileInfo.bpp == 32)
+                    if (fileInfo.Bpp == 32)
                     {
                         OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
                         dst = new OpenCvSharp.Mat();

@@ -3,26 +3,42 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace ColorVision.FileIO
 {
     /// <summary>
-    /// 图像通道类型枚举。
+    /// Image channel type enumeration for ColorVision files.
     /// </summary>
     public enum CVImageChannelType
     {
+        /// <summary>Source image (all Channels).</summary>
         SRC = 0,
-        RGB_R = 1,
-        RGB_G = 2,
-        RGB_B = 3,
-        CIE_XYZ_X = 10,
-        CIE_XYZ_Y = 11,
-        CIE_XYZ_Z = 12,
-        CIE_Lv = 13,
-        CIE_x = 14,
-        CIE_y = 15,
-        CIE_u = 16,
-        CIE_v = 17
+        
+        /// <summary>RGB Red channel.</summary>
+        RgbR = 1,
+        /// <summary>RGB Green channel.</summary>
+        RgbG = 2,
+        /// <summary>RGB Blue channel.</summary>
+        RgbB = 3,
+        
+        /// <summary>CIE XYZ X component.</summary>
+        CieXyzX = 10,
+        /// <summary>CIE XYZ Y component (luminance).</summary>
+        CieXyzY = 11,
+        /// <summary>CIE XYZ Z component.</summary>
+        CieXyzZ = 12,
+        
+        /// <summary>CIE Lv (luminance value).</summary>
+        CieLv = 13,
+        /// <summary>CIE x chromaticity coordinate.</summary>
+        CieX = 14,
+        /// <summary>CIE y chromaticity coordinate.</summary>
+        CieY = 15,
+        /// <summary>CIE u' chromaticity coordinate.</summary>
+        CieU = 16,
+        /// <summary>CIE v' chromaticity coordinate.</summary>
+        CieV = 17,
     }
 
     /// <summary>
@@ -32,7 +48,7 @@ namespace ColorVision.FileIO
     {
         private const string MagicHeader = "CVCIE";
         private const int HeaderSize = 5;
-        private const int MinimumFileSize = HeaderSize + 4; // Minimum file size to contain the header and version
+        private const int MinimumFileSize = HeaderSize + 4; // Minimum file size to contain the header and Version
         private static readonly Encoding Encoding1 = Encoding.GetEncoding("GBK");
 
         /// <summary>
@@ -73,7 +89,7 @@ namespace ColorVision.FileIO
         /// </summary>
         public static int ReadCIEFileHeader(string filePath, out CVCIEFile cvcie)
         {
-            cvcie = default(CVCIEFile);
+            cvcie = new CVCIEFile();
             if (!File.Exists(filePath)) return -1;
             try
             {
@@ -84,20 +100,20 @@ namespace ColorVision.FileIO
                     string fileHeader = new string(br.ReadChars(HeaderSize));
                     if (fileHeader != MagicHeader) return -1;
                     cvcie.FileExtType = filePath.Contains(".cvraw") ? CVType.Raw : filePath.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
-                    uint ver = (cvcie.version = br.ReadUInt32());
+                    uint ver = (cvcie.Version = br.ReadUInt32());
                     if (ver != 1 && ver != 2) return -1;
                     int fileNameLen = br.ReadInt32();
                     if (fileNameLen > 0 && fs.Position + fileNameLen <= fs.Length)
-                        cvcie.srcFileName = new string(br.ReadChars(fileNameLen));
-                    cvcie.gain = br.ReadSingle();
-                    cvcie.channels = (int)br.ReadUInt32();
-                    if (fs.Position + cvcie.channels * 4 > fs.Length) return -1;
-                    cvcie.exp = new float[cvcie.channels];
-                    for (int i = 0; i < cvcie.channels; i++)
-                        cvcie.exp[i] = br.ReadSingle();
-                    cvcie.rows = (int)br.ReadUInt32();
-                    cvcie.cols = (int)br.ReadUInt32();
-                    cvcie.bpp = (int)br.ReadUInt32();
+                        cvcie.SrcFileName = new string(br.ReadChars(fileNameLen));
+                    cvcie.Gain = br.ReadSingle();
+                    cvcie.Channels = (int)br.ReadUInt32();
+                    if (fs.Position + cvcie.Channels * 4 > fs.Length) return -1;
+                    cvcie.Exp = new float[cvcie.Channels];
+                    for (int i = 0; i < cvcie.Channels; i++)
+                        cvcie.Exp[i] = br.ReadSingle();
+                    cvcie.Rows = (int)br.ReadUInt32();
+                    cvcie.Cols = (int)br.ReadUInt32();
+                    cvcie.Bpp = (int)br.ReadUInt32();
                     cvcie.FilePath = filePath;
                     return (int)fs.Position;
                 }
@@ -114,33 +130,41 @@ namespace ColorVision.FileIO
         /// </summary>
         public static int ReadCIEFileHeader(byte[] fileData, out CVCIEFile cvcie)
         {
-            cvcie = default(CVCIEFile);
+            cvcie = new CVCIEFile();
             if (fileData == null || fileData.Length < 9) return -1;
             try
             {
                 string fileHeader = Encoding.ASCII.GetString(fileData, 0, HeaderSize);
                 if (fileHeader != MagicHeader) return -1;
                 int startIndex = HeaderSize;
-                uint version = (cvcie.version = BitConverter.ToUInt32(fileData, startIndex));
+                uint version = (cvcie.Version = BitConverter.ToUInt32(fileData, startIndex));
                 if (version != 1 && version != 2) return -1;
                 startIndex += 4;
                 int fileNameLength = BitConverter.ToInt32(fileData, startIndex);
                 startIndex += 4;
                 if (fileNameLength < 0 || startIndex + fileNameLength > fileData.Length) return -1;
-                cvcie.srcFileName = Encoding1.GetString(fileData, startIndex, fileNameLength);
+                cvcie.SrcFileName = Encoding1.GetString(fileData, startIndex, fileNameLength);
                 startIndex += fileNameLength;
-                if (!TryReadSingle(fileData, ref startIndex, out cvcie.gain)) return -1;
-                if (!TryReadUInt32(fileData, ref startIndex, out cvcie.channels)) return -1;
-                if (startIndex + cvcie.channels * 4 > fileData.Length) return -1;
-                cvcie.exp = new float[cvcie.channels];
-                for (int i = 0; i < cvcie.channels; i++)
+                float gainValue;
+                if (!TryReadSingle(fileData, ref startIndex, out gainValue)) return -1;
+                cvcie.Gain = gainValue;
+                int channelsValue;
+                if (!TryReadUInt32(fileData, ref startIndex, out channelsValue)) return -1;
+                cvcie.Channels = channelsValue;
+                if (startIndex + cvcie.Channels * 4 > fileData.Length) return -1;
+                cvcie.Exp = new float[cvcie.Channels];
+                for (int i = 0; i < cvcie.Channels; i++)
                 {
-                    cvcie.exp[i] = BitConverter.ToSingle(fileData, startIndex);
+                    cvcie.Exp[i] = BitConverter.ToSingle(fileData, startIndex);
                     startIndex += 4;
                 }
-                if (!TryReadUInt32(fileData, ref startIndex, out cvcie.rows)) return -1;
-                if (!TryReadUInt32(fileData, ref startIndex, out cvcie.cols)) return -1;
-                if (!TryReadUInt32(fileData, ref startIndex, out cvcie.bpp)) return -1;
+                int rowsValue, colsValue, bppValue;
+                if (!TryReadUInt32(fileData, ref startIndex, out rowsValue)) return -1;
+                cvcie.Rows = rowsValue;
+                if (!TryReadUInt32(fileData, ref startIndex, out colsValue)) return -1;
+                cvcie.Cols = colsValue;
+                if (!TryReadUInt32(fileData, ref startIndex, out bppValue)) return -1;
+                cvcie.Bpp = bppValue;
                 return startIndex;
             }
             catch (Exception ex)
@@ -162,13 +186,13 @@ namespace ColorVision.FileIO
                 {
                     if (fs.Length < dataStartIndex) return false;
                     fs.Position = dataStartIndex;
-                    uint version = fileInfo.version;
+                    uint version = fileInfo.Version;
                     long dataLen = (version != 2) ? br.ReadInt32() : br.ReadInt64();
                     if (dataLen > 0 && fs.Position + dataLen <= fs.Length)
                     {
                         try
                         {
-                            fileInfo.data = new byte[dataLen];
+                            fileInfo.Data = new byte[dataLen];
                         }
                         catch (OutOfMemoryException oom)
                         {
@@ -180,7 +204,7 @@ namespace ColorVision.FileIO
                         while (totalBytesRead < dataLen)
                         {
                             int bytesToRead = (int)Math.Min(81920L, dataLen - totalBytesRead);
-                            bytesRead = br.Read(fileInfo.data, (int)totalBytesRead, bytesToRead);
+                            bytesRead = br.Read(fileInfo.Data, (int)totalBytesRead, bytesToRead);
                             if (bytesRead == 0) break;
                             totalBytesRead += bytesRead;
                         }
@@ -209,13 +233,13 @@ namespace ColorVision.FileIO
                 {
                     ms.Position = dataStartIndex;
                     if (ms.Length - ms.Position < 4) return false;
-                    uint version = fileInfo.version;
+                    uint version = fileInfo.Version;
                     long dataLen = (version != 2) ? br.ReadInt32() : br.ReadInt64();
                     if (dataLen > 0 && ms.Position + dataLen <= ms.Length)
                     {
                         try
                         {
-                            fileInfo.data = new byte[dataLen];
+                            fileInfo.Data = new byte[dataLen];
                         }
                         catch (OutOfMemoryException oom)
                         {
@@ -227,7 +251,7 @@ namespace ColorVision.FileIO
                         while (totalBytesRead < dataLen)
                         {
                             int bytesToRead = (int)Math.Min(81920L, dataLen - totalBytesRead);
-                            bytesRead = br.Read(fileInfo.data, (int)totalBytesRead, bytesToRead);
+                            bytesRead = br.Read(fileInfo.Data, (int)totalBytesRead, bytesToRead);
                             if (bytesRead == 0) break;
                             totalBytesRead += bytesRead;
                         }
@@ -347,16 +371,16 @@ namespace ColorVision.FileIO
                 }
             }
             int channel = -1;
-            CVCIEFile data = default(CVCIEFile);
+            CVCIEFile data = new CVCIEFile();
             switch (channelType)
             {
-                case CVImageChannelType.CIE_XYZ_X:
+                case CVImageChannelType.CieXyzX:
                     channel = 0;
                     break;
-                case CVImageChannelType.CIE_XYZ_Y:
+                case CVImageChannelType.CieXyzY:
                     channel = 1;
                     break;
-                case CVImageChannelType.CIE_XYZ_Z:
+                case CVImageChannelType.CieXyzZ:
                     channel = 2;
                     break;
             }
@@ -419,11 +443,11 @@ namespace ColorVision.FileIO
             if (startIndex < 0) return false;
             fileInfo.FilePath = fileName;
 
-            if (!string.IsNullOrEmpty(fileInfo.srcFileName))
+            if (!string.IsNullOrEmpty(fileInfo.SrcFileName))
             {
                 if (CVFileUtil.ReadCVCIESrc(fileName, out CVCIEFile fileInf))
                 {
-                    fileInf.srcFileName = fileInfo.srcFileName;
+                    fileInf.SrcFileName = fileInfo.SrcFileName;
                     fileInfo = fileInf;
                     fileInfo.FilePath = fileName;
                     return true;
@@ -439,21 +463,21 @@ namespace ColorVision.FileIO
             fileOut = new CVCIEFile();
             int index = ReadCIEFileHeader(FileName, out CVCIEFile cvcie);
             if (index < 0) return false;
-            if (!File.Exists(cvcie.srcFileName))
-                cvcie.srcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.srcFileName);
+            if (!File.Exists(cvcie.SrcFileName))
+                cvcie.SrcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.SrcFileName);
 
-            if (File.Exists(cvcie.srcFileName))
+            if (File.Exists(cvcie.SrcFileName))
             {
-                if (IsCIEFile(cvcie.srcFileName))
+                if (IsCIEFile(cvcie.SrcFileName))
                 {
                     fileOut.FileExtType = CVType.Raw;
-                    return Read(cvcie.srcFileName, out fileOut);
+                    return Read(cvcie.SrcFileName, out fileOut);
                 }
                 else
                 {
-                    if (cvcie.srcFileName != null)
+                    if (cvcie.SrcFileName != null)
                     {
-                        fileOut.data = ReadFile(cvcie.srcFileName);
+                        fileOut.Data = ReadFile(cvcie.SrcFileName);
                         fileOut.FileExtType = CVType.Tif;
                         return true;
                     }
@@ -470,16 +494,16 @@ namespace ColorVision.FileIO
             int index = ReadCIEFileHeader(fileName, out fileOut);
             if (index < 0) return -1;
             ReadCIEFileData(fileName, ref fileOut, index);
-            if (fileOut.channels > 1)
+            if (fileOut.Channels > 1)
             {
                 fileOut.FileExtType = CVType.Raw;
-                fileOut.channels = 1;
-                int len = fileOut.cols * fileOut.rows * fileOut.bpp / 8;
+                fileOut.Channels = 1;
+                int len = fileOut.Cols * fileOut.Rows * fileOut.Bpp / 8;
                 try
                 {
                     byte[] data = new byte[len];
-                    Buffer.BlockCopy(fileOut.data, channel * len, data, 0, len);
-                    fileOut.data = data;
+                    Buffer.BlockCopy(fileOut.Data, channel * len, data, 0, len);
+                    fileOut.Data = data;
                 }
                 catch (Exception ex)
                 {
@@ -490,5 +514,404 @@ namespace ColorVision.FileIO
             }
             return -2;
         }
+
+        #region Write Methods
+
+        /// <summary>
+        /// Writes a CVCIE file with the provided file information.
+        /// </summary>
+        /// <param name="filePath">The path where the file should be written.</param>
+        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
+        /// <returns>True if the file was written successfully; otherwise, false.</returns>
+        public static bool WriteCIEFile(string filePath, CVCIEFile fileInfo)
+        {
+            if (string.IsNullOrEmpty(filePath)) return false;
+            if (fileInfo == null) return false;
+
+            try
+            {
+                // Get encoding, fallback to UTF8 if GBK is not available
+                Encoding encoding;
+                try
+                {
+                    encoding = Encoding.GetEncoding("GBK");
+                }
+                catch
+                {
+                    encoding = Encoding.UTF8;
+                }
+
+                using (FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                using (BinaryWriter bw = new BinaryWriter(fs))
+                {
+                    // Write magic header
+                    bw.Write(MagicHeader.ToCharArray());
+
+                    // Write Version
+                    bw.Write(fileInfo.Version);
+
+                    // Write source file name
+                    string srcFileName = fileInfo.SrcFileName ?? string.Empty;
+                    byte[] srcFileNameBytes = encoding.GetBytes(srcFileName);
+                    bw.Write(srcFileNameBytes.Length);
+                    if (srcFileNameBytes.Length > 0)
+                    {
+                        bw.Write(srcFileNameBytes);
+                    }
+
+                    // Write Gain
+                    bw.Write(fileInfo.Gain);
+
+                    // Write Channels and exposure values
+                    bw.Write((uint)fileInfo.Channels);
+                    if (fileInfo.Exp != null && fileInfo.Exp.Length > 0)
+                    {
+                        for (int i = 0; i < Math.Min(fileInfo.Channels, fileInfo.Exp.Length); i++)
+                        {
+                            bw.Write(fileInfo.Exp[i]);
+                        }
+                        // Fill remaining Channels with 0 if Exp array is shorter
+                        for (int i = fileInfo.Exp.Length; i < fileInfo.Channels; i++)
+                        {
+                            bw.Write(0f);
+                        }
+                    }
+                    else
+                    {
+                        // No exposure Data, write zeros
+                        for (int i = 0; i < fileInfo.Channels; i++)
+                        {
+                            bw.Write(0f);
+                        }
+                    }
+
+                    // Write image dimensions and bit depth
+                    bw.Write((uint)fileInfo.Rows);
+                    bw.Write((uint)fileInfo.Cols);
+                    bw.Write((uint)fileInfo.Bpp);
+
+                    // Write Data
+                    if (fileInfo.Data != null && fileInfo.Data.Length > 0)
+                    {
+                        if (fileInfo.Version == 2)
+                        {
+                            bw.Write((long)fileInfo.Data.Length);
+                        }
+                        else
+                        {
+                            bw.Write((int)fileInfo.Data.Length);
+                        }
+                        bw.Write(fileInfo.Data);
+                    }
+                    else
+                    {
+                        // No Data, write zero length
+                        if (fileInfo.Version == 2)
+                        {
+                            bw.Write(0L);
+                        }
+                        else
+                        {
+                            bw.Write(0);
+                        }
+                    }
+
+                    bw.Flush();
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[WriteCIEFile] Exception: {ex.Message}");
+                Debug.WriteLine($"[WriteCIEFile] StackTrace: {ex.StackTrace}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Writes a CVCIE file to a byte array.
+        /// </summary>
+        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
+        /// <param name="fileData">The output byte array containing the file Data.</param>
+        /// <returns>True if the Data was written successfully; otherwise, false.</returns>
+        public static bool WriteCIEFile(CVCIEFile fileInfo, out byte[] fileData)
+        {
+            fileData = null;
+            if (fileInfo == null) return false;
+
+            try
+            {
+                // Get encoding, fallback to UTF8 if GBK is not available
+                Encoding encoding;
+                try
+                {
+                    encoding = Encoding.GetEncoding("GBK");
+                }
+                catch
+                {
+                    encoding = Encoding.UTF8;
+                }
+
+                using (MemoryStream ms = new MemoryStream())
+                using (BinaryWriter bw = new BinaryWriter(ms))
+                {
+                    // Write magic header
+                    bw.Write(MagicHeader.ToCharArray());
+
+                    // Write Version
+                    bw.Write(fileInfo.Version);
+
+                    // Write source file name
+                    string srcFileName = fileInfo.SrcFileName ?? string.Empty;
+                    byte[] srcFileNameBytes = encoding.GetBytes(srcFileName);
+                    bw.Write(srcFileNameBytes.Length);
+                    if (srcFileNameBytes.Length > 0)
+                    {
+                        bw.Write(srcFileNameBytes);
+                    }
+
+                    // Write Gain
+                    bw.Write(fileInfo.Gain);
+
+                    // Write Channels and exposure values
+                    bw.Write((uint)fileInfo.Channels);
+                    if (fileInfo.Exp != null && fileInfo.Exp.Length > 0)
+                    {
+                        for (int i = 0; i < Math.Min(fileInfo.Channels, fileInfo.Exp.Length); i++)
+                        {
+                            bw.Write(fileInfo.Exp[i]);
+                        }
+                        for (int i = fileInfo.Exp.Length; i < fileInfo.Channels; i++)
+                        {
+                            bw.Write(0f);
+                        }
+                    }
+                    else
+                    {
+                        for (int i = 0; i < fileInfo.Channels; i++)
+                        {
+                            bw.Write(0f);
+                        }
+                    }
+
+                    // Write image dimensions and bit depth
+                    bw.Write((uint)fileInfo.Rows);
+                    bw.Write((uint)fileInfo.Cols);
+                    bw.Write((uint)fileInfo.Bpp);
+
+                    // Write Data
+                    if (fileInfo.Data != null && fileInfo.Data.Length > 0)
+                    {
+                        if (fileInfo.Version == 2)
+                        {
+                            bw.Write((long)fileInfo.Data.Length);
+                        }
+                        else
+                        {
+                            bw.Write((int)fileInfo.Data.Length);
+                        }
+                        bw.Write(fileInfo.Data);
+                    }
+                    else
+                    {
+                        if (fileInfo.Version == 2)
+                        {
+                            bw.Write(0L);
+                        }
+                        else
+                        {
+                            bw.Write(0);
+                        }
+                    }
+
+                    bw.Flush();
+                    fileData = ms.ToArray();
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[WriteCIEFile(byte[])] Exception: {ex.Message}");
+                Debug.WriteLine($"[WriteCIEFile(byte[])] StackTrace: {ex.StackTrace}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Writes a CVRAW file (convenience wrapper for WriteCIEFile).
+        /// </summary>
+        /// <param name="filePath">The path where the file should be written.</param>
+        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
+        /// <returns>True if the file was written successfully; otherwise, false.</returns>
+        public static bool WriteCVRaw(string filePath, CVCIEFile fileInfo)
+        {
+            return WriteCIEFile(filePath, fileInfo);
+        }
+
+        /// <summary>
+        /// Writes a CVCIE file (convenience wrapper for WriteCIEFile).
+        /// </summary>
+        /// <param name="filePath">The path where the file should be written.</param>
+        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
+        /// <returns>True if the file was written successfully; otherwise, false.</returns>
+        public static bool WriteCVCIE(string filePath, CVCIEFile fileInfo)
+        {
+            return WriteCIEFile(filePath, fileInfo);
+        }
+
+        /// <summary>
+        /// Writes image Data to a file in CVCIE format with specified parameters.
+        /// </summary>
+        /// <param name="filePath">The path where the file should be written.</param>
+        /// <param name="data">The raw image Data bytes.</param>
+        /// <param name="rows">Number of Rows (height).</param>
+        /// <param name="cols">Number of columns (width).</param>
+        /// <param name="bpp">Bits per pixel.</param>
+        /// <param name="channels">Number of Channels.</param>
+        /// <param name="gain">Gain value (default 1.0).</param>
+        /// <param name="exp">Exposure values array (optional).</param>
+        /// <param name="srcFileName">Source file name (optional).</param>
+        /// <param name="version">File format Version (default 1).</param>
+        /// <returns>True if the file was written successfully; otherwise, false.</returns>
+        public static bool WriteCIEFile(string filePath, byte[] data, int rows, int cols, int bpp, int channels, 
+            float gain = 1.0f, float[] exp = null, string srcFileName = null, uint version = 1)
+        {
+            if (data == null || data.Length == 0) return false;
+
+            CVCIEFile fileInfo = new CVCIEFile
+            {
+                Version = version,
+                FileExtType = CVType.CIE,
+                Rows = rows,
+                Cols = cols,
+                Bpp = bpp,
+                Channels = channels,
+                Gain = gain,
+                Exp = exp ?? new float[channels],
+                SrcFileName = srcFileName,
+                Data = data
+            };
+
+            return WriteCIEFile(filePath, fileInfo);
+        }
+
+        #endregion
+
+        #region Async Methods
+
+        /// <summary>
+        /// Asynchronously reads a CVCIE file from the specified path.
+        /// </summary>
+        /// <param name="filePath">The path to the file to read.</param>
+        /// <returns>A task that represents the asynchronous read operation. The task result contains a tuple with success status and the CVCIEFile Data.</returns>
+        public static async System.Threading.Tasks.Task<(bool success, CVCIEFile fileInfo)> ReadAsync(string filePath)
+        {
+            return await System.Threading.Tasks.Task.Run(() =>
+            {
+                bool success = Read(filePath, out CVCIEFile fileInfo);
+                return (success, fileInfo);
+            });
+        }
+
+        /// <summary>
+        /// Asynchronously reads a CVCIE file from a byte array.
+        /// </summary>
+        /// <param name="fileData">The byte array containing the file Data.</param>
+        /// <returns>A task that represents the asynchronous read operation. The task result contains a tuple with success status and the CVCIEFile Data.</returns>
+        public static async System.Threading.Tasks.Task<(bool success, CVCIEFile fileInfo)> ReadAsync(byte[] fileData)
+        {
+            return await System.Threading.Tasks.Task.Run(() =>
+            {
+                bool success = Read(fileData, out CVCIEFile fileInfo);
+                return (success, fileInfo);
+            });
+        }
+
+        /// <summary>
+        /// Asynchronously writes a CVCIE file to the specified path.
+        /// </summary>
+        /// <param name="filePath">The path where the file should be written.</param>
+        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
+        /// <returns>A task that represents the asynchronous write operation. The task result indicates whether the write was successful.</returns>
+        public static async System.Threading.Tasks.Task<bool> WriteAsync(string filePath, CVCIEFile fileInfo)
+        {
+            return await System.Threading.Tasks.Task.Run(() => WriteCIEFile(filePath, fileInfo));
+        }
+
+        /// <summary>
+        /// Asynchronously writes a CVCIE file to a byte array.
+        /// </summary>
+        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
+        /// <returns>A task that represents the asynchronous write operation. The task result contains a tuple with success status and the byte array.</returns>
+        public static async System.Threading.Tasks.Task<(bool success, byte[] fileData)> WriteAsync(CVCIEFile fileInfo)
+        {
+            return await System.Threading.Tasks.Task.Run(() =>
+            {
+                bool success = WriteCIEFile(fileInfo, out byte[] fileData);
+                return (success, fileData);
+            });
+        }
+
+        /// <summary>
+        /// Asynchronously reads the file header from a CVCIE file.
+        /// </summary>
+        /// <param name="filePath">The path to the file.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a tuple with the header offset and CVCIEFile Data.</returns>
+        public static async System.Threading.Tasks.Task<(int offset, CVCIEFile fileInfo)> ReadHeaderAsync(string filePath)
+        {
+            return await System.Threading.Tasks.Task.Run(() =>
+            {
+                int offset = ReadCIEFileHeader(filePath, out CVCIEFile fileInfo);
+                return (offset, fileInfo);
+            });
+        }
+
+        /// <summary>
+        /// Asynchronously reads a CVRAW file.
+        /// </summary>
+        /// <param name="filePath">The path to the file to read.</param>
+        /// <returns>A task that represents the asynchronous read operation. The task result contains a tuple with success status and the CVCIEFile Data.</returns>
+        public static async System.Threading.Tasks.Task<(bool success, CVCIEFile fileInfo)> ReadCVRawAsync(string filePath)
+        {
+            return await ReadAsync(filePath);
+        }
+
+        /// <summary>
+        /// Asynchronously reads a CVCIE file.
+        /// </summary>
+        /// <param name="filePath">The path to the file to read.</param>
+        /// <returns>A task that represents the asynchronous read operation. The task result contains a tuple with success status and the CVCIEFile Data.</returns>
+        public static async System.Threading.Tasks.Task<(bool success, CVCIEFile fileInfo)> ReadCVCIEAsync(string filePath)
+        {
+            return await System.Threading.Tasks.Task.Run(() =>
+            {
+                bool success = ReadCVCIE(filePath, out CVCIEFile fileInfo);
+                return (success, fileInfo);
+            });
+        }
+
+        /// <summary>
+        /// Asynchronously writes a CVRAW file.
+        /// </summary>
+        /// <param name="filePath">The path where the file should be written.</param>
+        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
+        /// <returns>A task that represents the asynchronous write operation. The task result indicates whether the write was successful.</returns>
+        public static async System.Threading.Tasks.Task<bool> WriteCVRawAsync(string filePath, CVCIEFile fileInfo)
+        {
+            return await WriteAsync(filePath, fileInfo);
+        }
+
+        /// <summary>
+        /// Asynchronously writes a CVCIE file.
+        /// </summary>
+        /// <param name="filePath">The path where the file should be written.</param>
+        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
+        /// <returns>A task that represents the asynchronous write operation. The task result indicates whether the write was successful.</returns>
+        public static async System.Threading.Tasks.Task<bool> WriteCVCIEAsync(string filePath, CVCIEFile fileInfo)
+        {
+            return await WriteAsync(filePath, fileInfo);
+        }
+
+        #endregion
     }
 }

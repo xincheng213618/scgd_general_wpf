@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
 using System.Threading.Tasks;
+using ColorVision.Engine.Services.Devices.Camera;
 
 namespace ColorVision.Engine.Services.Devices.PG
 {

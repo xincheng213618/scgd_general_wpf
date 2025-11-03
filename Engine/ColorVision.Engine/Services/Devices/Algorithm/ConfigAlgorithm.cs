@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using ColorVision.Engine.Cache;
+using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {

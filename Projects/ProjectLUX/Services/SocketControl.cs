@@ -2,6 +2,7 @@
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.SocketProtocol;
 using Dm.util;
@@ -12,6 +13,7 @@ using SQLitePCL;
 using SqlSugar;
 using System.IO;
 using System.Net.Sockets;
+using System.Text;
 using System.Windows;
 
 namespace ProjectLUX.Services
@@ -68,16 +70,24 @@ namespace ProjectLUX.Services
                             var rows = new List<string> { "Test_Screen,Test_item,Test_Value,unit,lower_limit,upper_limit,Test_Result" };
                             VIDTestResult vIDTestResult = new VIDTestResult();
                             DeviceCamera deviceCamera = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().FirstOrDefault();
-                            MsgRecord msgRecord = deviceCamera.DService.GetPosition();
+                            DisplayCameraConfig displayCameraConfig = DisplayCameraLocalConfig.Instance.GetDisplayCameraConfig(deviceCamera.Config.Code);
+                            MsgRecord msgRecord = deviceCamera.DService.AutoFocus(TemplateAutoFocus.Params[displayCameraConfig.AutoFocusTemplateIndex].Value);
+   
+                            //MsgRecord msgRecord = deviceCamera.DService.GetPosition();
                             msgRecord.MsgRecordStateChanged += (e) =>
                             {
+                                log.Info("msgRecord");
+
                                 if (e == MsgRecordState.Success)
                                 {
                                     if (msgRecord.MsgReturn.EventName == "GetPosition")
                                     {
                                         vIDTestResult.VID.Value = msgRecord.MsgReturn.Data.VidPos;
                                     }
-
+                                    if (msgRecord.MsgReturn.EventName == "AutoFocus")
+                                    {
+                                        vIDTestResult.VID.Value = msgRecord.MsgReturn.Data.VidPosition;
+                                    }
                                     VIDFixConfig fixConfig = FixManager.GetInstance().FixConfig.GetRequiredService<VIDFixConfig>();
                                     VIDRecipeConfig recipeConfig = RecipeManager.GetInstance().RecipeConfig.GetRequiredService<VIDRecipeConfig>();
 
@@ -87,6 +97,7 @@ namespace ProjectLUX.Services
                                     vIDTestResult.VID.UpLimit = recipeConfig.VID.Max;
                                     ObjectiveTestResultCsvExporter.CollectRows(vIDTestResult, "2pixel_linePair", rows);
                                     File.WriteAllLines(path, rows);
+                                    stream.Write(Encoding.UTF8.GetBytes(string.Join(",", strings) + $";{vIDTestResult.VID.Value}"));
                                 }
                                 else
                                 {
@@ -99,10 +110,11 @@ namespace ProjectLUX.Services
                                     vIDTestResult.VID.UpLimit = recipeConfig.VID.Max;
                                     ObjectiveTestResultCsvExporter.CollectRows(vIDTestResult, "2pixel_linePair", rows);
                                     File.WriteAllLines(path, rows);
+                                    stream.Write(Encoding.UTF8.GetBytes(string.Join(",", strings) + ";0"));
                                 }
                             };
+                            return null;
 
-                            return string.Join(",", strings) + ";";
                         }
                     }
                     else if (SummaryManager.GetInstance().Summary.MachineNO == "H03AR")

@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
+﻿using ColorVision.Engine.Cache;
+
+namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {
     public class ConfigThirdPartyAlgorithms : DeviceServiceConfig
     {

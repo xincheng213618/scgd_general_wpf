@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Services.Devices.Calibration
+﻿using ColorVision.Engine.Cache;
+
+namespace ColorVision.Engine.Services.Devices.Calibration
 {
     public class ConfigCalibration: DeviceServiceConfig, IFileServerCfg
     {

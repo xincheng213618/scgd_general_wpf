@@ -33,214 +33,305 @@ export default withMermaid(
       // Navigation
       nav: [
         { text: '首页', link: '/' },
-        { text: '入门指南', link: '/getting-started/入门指南' },
-        { text: '架构', link: '/introduction/system-architecture/系统架构概览' },
+        { text: '入门指南', link: '/00-getting-started/README' },
+        { text: '用户指南', link: '/01-user-guide/README' },
+        { text: '开发指南', link: '/02-developer-guide/README' },
+        { text: '架构设计', link: '/03-architecture/README' },
         { text: '更新日志', link: 'https://github.com/xincheng213618/scgd_general_wpf/blob/master/CHANGELOG.md' },
-        { text: 'xincheng', link: 'https://xincheng213618.cn/' },
         { text: 'GitHub', link: 'https://github.com/xincheng213618/scgd_general_wpf' }
       ],
       
       // Sidebar navigation
       sidebar: [
         {
-          text: '🚀 入门',
+          text: '📚 快速入门',
           collapsed: false,
           items: [
-            { text: '什么是 ColorVision', link: '/introduction/what-is-colorvision/什么是_ColorVision_' },
-            { text: '主要特性', link: '/introduction/key-features/主要特性' },
-            { text: '入门指南', link: '/getting-started/入门指南' },
-            { text: '快速上手', link: '/getting-started/quick-start/快速上手' },
-            { text: '系统要求', link: '/getting-started/prerequisites/系统要求' },
-            { text: '安装指南', link: '/getting-started/installation/安装_ColorVision' }
+            { text: '什么是 ColorVision', link: '/00-getting-started/what-is-colorvision' },
+            { text: '主要特性', link: '/00-getting-started/introduction/key-features' },
+            { text: '系统架构概览', link: '/00-getting-started/introduction/system-architecture' },
+            { text: '快速开始', link: '/00-getting-started/quick-start' },
+            { text: '系统要求', link: '/00-getting-started/prerequisites' },
+            { text: '安装指南', link: '/00-getting-started/installation' },
+            { text: '首次运行指南', link: '/00-getting-started/first-steps' }
           ]
         },
         {
-          text: '🏗️ 架构与模块',
+          text: '📖 用户指南',
           collapsed: false,
           items: [
-            { text: '系统架构概览', link: '/introduction/system-architecture/系统架构概览' },
-            { text: '架构运行时', link: '/architecture/architecture-runtime' },
-            { text: '组件交互矩阵', link: '/architecture/component-interactions' },
             {
-              text: 'ColorVision.Engine 重构',
+              text: '界面使用',
               collapsed: true,
               items: [
-                { text: '重构项目说明', link: '/architecture/ColorVision.Engine-Refactoring-README' },
-                { text: '执行摘要', link: '/architecture/ColorVision.Engine-Refactoring-Summary' },
-                { text: '架构图表', link: '/architecture/ColorVision.Engine-Refactoring-Diagrams' },
-                { text: '完整技术方案', link: '/architecture/ColorVision.Engine-Refactoring-Plan' },
-                { text: '实施检查清单', link: '/architecture/ColorVision.Engine-Refactoring-Checklist' }
+                { text: '主窗口导览', link: '/01-user-guide/interface/main-window' },
+                { text: '属性编辑器', link: '/01-user-guide/interface/property-editor' },
+                { text: '日志查看器', link: '/01-user-guide/interface/log-viewer' }
               ]
             },
             {
-              text: 'UI组件',
+              text: '图像编辑器',
               collapsed: true,
               items: [
-                { text: 'UI组件概览', link: '/ui-components/UI组件概览' },
-                { text: 'ColorVision.UI', link: '/ui-components/ColorVision.UI' },
-                { text: 'ColorVision.UI.Sort', link: '/ColorVision.UI.Sort' },
-                { text: 'Sort 迁移指南', link: '/Sort-Migration-Guide' },
-                { text: 'ColorVision.Common', link: '/ui-components/ColorVision.Common' },
-                { text: 'ColorVision.Core', link: '/ui-components/ColorVision.Core' },
-                { text: 'ColorVision.Themes', link: '/ui-components/ColorVision.Themes' },
-                { text: 'ColorVision.ImageEditor', link: '/ui-components/ColorVision.ImageEditor' },
-                { text: 'ColorVision.Solution', link: '/ui-components/ColorVision.Solution' },
-                { text: 'ColorVision.Scheduler', link: '/ui-components/ColorVision.Scheduler' },
-                { text: 'ColorVision.Database', link: '/ui-components/ColorVision.Database' },
-                { text: 'ColorVision.SocketProtocol', link: '/ui-components/ColorVision.SocketProtocol' },
-                { text: '热键系统设计', link: '/ui-components/HotKey系统设计文档' }
+                { text: '图像编辑器概览', link: '/01-user-guide/image-editor/overview' }
               ]
             },
             {
-              text: 'Engine组件',
+              text: '设备管理',
               collapsed: true,
               items: [
-                { text: 'Engine组件概览', link: '/engine-components/Engine组件概览' },
-                { text: 'ColorVision.Engine', link: '/engine-components/ColorVision.Engine' },
-                { text: 'ColorVision.FileIO', link: '/engine-components/ColorVision.FileIO' },
-                { text: 'cvColorVision', link: '/engine-components/cvColorVision' },
-                { text: 'FlowEngineLib', link: '/engine-components/FlowEngineLib' },
-                { text: 'ST.Library.UI', link: '/engine-components/ST.Library.UI' }
+                { text: '设备服务概览', link: '/01-user-guide/devices/overview' },
+                { text: '添加与配置设备', link: '/01-user-guide/devices/configuration' },
+                { text: '相机服务', link: '/01-user-guide/devices/camera' },
+                { text: '相机管理', link: '/01-user-guide/devices/camera-management' },
+                { text: '相机参数配置', link: '/01-user-guide/devices/camera-configuration' },
+                { text: '电机服务', link: '/01-user-guide/devices/motor' },
+                { text: '校准服务', link: '/01-user-guide/devices/calibration' },
+                { text: 'SMU 服务', link: '/01-user-guide/devices/smu' },
+                { text: '流程设备服务', link: '/01-user-guide/devices/flow-device' },
+                { text: '文件服务器', link: '/01-user-guide/devices/file-server' }
+              ]
+            },
+            {
+              text: '工作流程',
+              collapsed: true,
+              items: [
+                { text: '工作流程概览', link: '/01-user-guide/workflow/README' },
+                { text: '流程设计', link: '/01-user-guide/workflow/design' },
+                { text: '流程执行与调试', link: '/01-user-guide/workflow/execution' }
+              ]
+            },
+            {
+              text: '数据管理',
+              collapsed: true,
+              items: [
+                { text: '数据管理概览', link: '/01-user-guide/data-management/README' },
+                { text: '数据库操作', link: '/01-user-guide/data-management/database' },
+                { text: '数据导出与导入', link: '/01-user-guide/data-management/export-import' }
+              ]
+            },
+            {
+              text: '故障排查',
+              collapsed: true,
+              items: [
+                { text: '常见问题', link: '/01-user-guide/troubleshooting/common-issues' }
               ]
             }
           ]
         },
         {
-          text: '🔌 插件系统',
-          collapsed: true,
+          text: '👨‍💻 开发指南',
+          collapsed: false,
           items: [
-            { text: '插件管理', link: '/plugins/plugin-management/插件管理' },
-            { text: '使用标准插件', link: '/plugins/using-standard-plugins/使用标准插件' },
-            { text: 'Pattern 插件', link: '/plugins/using-standard-plugins/pattern' },
-            { text: '系统监控插件', link: '/plugins/system-monitor' },
-            { text: '插件生命周期', link: '/plugins/plugin-lifecycle' },
-            { text: '开发插件指南', link: '/plugins/developing-a-plugin' }
-          ]
-        },
-        {
-          text: '⚙️ 流程引擎与算法',
-          collapsed: true,
-          items: [
-            { text: '流程引擎', link: '/algorithm-engine-templates/flow-engine/流程引擎' },
-            { text: '流程引擎概览', link: '/flow-engine/flow-engine-overview' },
-            { text: '状态模型', link: '/flow-engine/state-model' },
-            { text: '扩展点', link: '/flow-engine/extensibility-points' },
             {
-              text: 'FlowEngineLib',
+              text: '核心概念',
               collapsed: true,
               items: [
-                { text: '文档导航', link: '/FlowEngineLib-Documentation-Index' },
-                { text: '架构设计', link: '/architecture/FlowEngineLib-Architecture' },
-                { text: '节点开发指南', link: '/extensibility/FlowEngineLib-NodeDevelopment' },
-                { text: 'API 参考', link: '/api-reference/FlowEngineLib-API' }
-              ]
-            },
-            { text: '算法引擎与模板', link: '/algorithm-engine-templates/算法引擎与模板' },
-            { text: '模板管理', link: '/algorithm-engine-templates/template-management/模板管理' },
-            { text: '基于JSON的通用模板', link: '/algorithm-engine-templates/json-based-templates/基于JSON的通用模板' },
-            { text: '通用算法模块', link: '/algorithm-engine-templates/common-algorithm-primitives/通用算法模块' },
-            {
-              text: 'Templates 架构',
-              collapsed: true,
-              items: [
-                { text: 'Templates分析总结', link: '/algorithm-engine-templates/templates-architecture/Templates分析总结' },
-                { text: 'Templates架构设计', link: '/algorithm-engine-templates/templates-architecture/Templates架构设计' },
-                { text: 'Templates API参考', link: '/algorithm-engine-templates/templates-architecture/Templates-API参考' },
-                { text: 'ARVR模板详解', link: '/algorithm-engine-templates/templates-architecture/ARVR模板详解' },
-                { text: 'POI模板详解', link: '/algorithm-engine-templates/templates-architecture/POI模板详解' }
+                { text: '扩展性概览', link: '/02-developer-guide/core-concepts/extensibility' }
               ]
             },
             {
-              text: 'Templates 优化建议',
+              text: 'UI 开发',
               collapsed: true,
               items: [
-                { text: '上篇：核心架构与设计模式', link: '/algorithm-engine-templates/templates-architecture/Templates优化建议-上篇' },
-                { text: '中篇：模板分类与组织', link: '/algorithm-engine-templates/templates-architecture/Templates优化建议-中篇' },
-                { text: '下篇：性能与扩展性', link: '/algorithm-engine-templates/templates-architecture/Templates优化建议-下篇' }
+                { text: 'UI 开发概览', link: '/02-developer-guide/ui-development/README' },
+                { text: 'XAML 与 MVVM', link: '/02-developer-guide/ui-development/xaml-mvvm' },
+                { text: 'PropertyGrid 系统', link: '/02-developer-guide/ui-development/property-grid' },
+                { text: '自定义控件', link: '/02-developer-guide/ui-development/custom-controls' },
+                { text: 'ImageEditor 集成', link: '/02-developer-guide/ui-development/image-editor-integration' },
+                { text: '主题与样式', link: '/02-developer-guide/ui-development/themes' }
               ]
             },
             {
-              text: '算法库',
+              text: 'Engine 开发',
               collapsed: true,
               items: [
-                { text: '算法概览', link: '/algorithms/overview' },
-                { text: 'Ghost 检测算法', link: '/algorithms/ghost-detection' }
+                { text: 'Engine 开发概览', link: '/02-developer-guide/engine-development/README' },
+                { text: '服务开发', link: '/02-developer-guide/engine-development/services' },
+                { text: '模板系统开发', link: '/02-developer-guide/engine-development/templates' },
+                { text: 'MQTT 消息处理', link: '/02-developer-guide/engine-development/mqtt' },
+                { text: 'OpenCV 集成', link: '/02-developer-guide/engine-development/opencv-integration' }
               ]
             },
             {
-              text: '通用算法原语',
+              text: '插件开发',
               collapsed: true,
               items: [
-                { text: 'ROI (感兴趣区域)', link: '/common-algorithm-primitives/roi-region-of-interest/ROI_(感兴趣区域)' },
-                { text: 'POI (关注点)', link: '/common-algorithm-primitives/poi-point-of-interest/POI_(关注点)' }
+                { text: '插件开发概览', link: '/02-developer-guide/plugin-development/overview' },
+                { text: '插件开发入门', link: '/02-developer-guide/plugin-development/getting-started' },
+                { text: '插件生命周期', link: '/02-developer-guide/plugin-development/lifecycle' }
+              ]
+            },
+            {
+              text: '性能优化',
+              collapsed: true,
+              items: [
+                { text: '性能优化指南', link: '/02-developer-guide/performance/overview' }
+              ]
+            },
+            {
+              text: '部署',
+              collapsed: true,
+              items: [
+                { text: '部署概览', link: '/02-developer-guide/deployment/overview' },
+                { text: '自动更新系统', link: '/02-developer-guide/deployment/auto-update' }
               ]
             }
           ]
         },
         {
-          text: '📱 设备管理',
-          collapsed: true,
+          text: '🏗️ 架构设计',
+          collapsed: false,
           items: [
-            { text: '设备服务概览', link: '/device-management/device-services-overview/设备服务概览' },
-            { text: '添加与配置设备', link: '/device-management/adding-configuring-devices/添加与配置设备' },
+            { text: '架构总览', link: '/03-architecture/README' },
             {
-              text: '专用服务',
+              text: '系统概览',
               collapsed: true,
               items: [
-                { text: '相机服务', link: '/device-management/camera-service/相机服务' },
-                { text: '相机参数配置', link: '/camera-service/camera-configuration/相机参数配置' },
-                { text: '物理相机管理', link: '/camera-service/physical-camera-management/物理相机管理' },
-                { text: '校准服务', link: '/device-management/calibration-service/校准服务' },
-                { text: '电机服务', link: '/device-management/motor-service/电机服务' },
-                { text: '文件服务', link: '/device-management/file-server-service/文件服务' },
-                { text: '流程设备服务', link: '/device-management/flow-device-service/流程设备服务' },
-                { text: '源测量单元 (SMU) 服务', link: '/device-management/source-measure-unit-smu-service/源测量单元_(SMU)_服务' }
+                { text: '系统架构概览', link: '/03-architecture/overview/system-overview' },
+                { text: '架构运行时', link: '/03-architecture/overview/runtime' },
+                { text: '组件交互', link: '/03-architecture/overview/component-interactions' }
+              ]
+            },
+            {
+              text: '组件架构',
+              collapsed: true,
+              items: [
+                { text: 'FlowEngineLib 架构', link: '/03-architecture/components/engine/flow-engine' },
+                { text: 'Templates 架构设计', link: '/03-architecture/components/templates/design' },
+                { text: 'Templates 分析总结', link: '/03-architecture/components/templates/analysis' }
+              ]
+            },
+            {
+              text: '安全与权限',
+              collapsed: true,
+              items: [
+                { text: '安全概览', link: '/03-architecture/security/overview' },
+                { text: 'RBAC 模型', link: '/03-architecture/security/rbac' }
               ]
             }
           ]
         },
         {
-          text: '🖥️ 用户界面',
+          text: '📚 API 参考',
           collapsed: true,
           items: [
-            { text: '主窗口导览', link: '/user-interface-guide/main-window/主窗口导览' },
-            { text: '图像编辑器', link: '/user-interface-guide/image-editor/图像编辑器' },
-            { text: '属性编辑器', link: '/user-interface-guide/property-editor/属性编辑器' },
-            { text: '日志查看器', link: '/user-interface-guide/log-viewer/日志查看器' }
+            {
+              text: 'UI 组件 API',
+              collapsed: true,
+              items: [
+                { text: 'UI 组件概览', link: '/04-api-reference/ui-components/README' },
+                { text: 'ColorVision.UI', link: '/04-api-reference/ui-components/ColorVision.UI' },
+                { text: 'ColorVision.Common', link: '/04-api-reference/ui-components/ColorVision.Common' },
+                { text: 'ColorVision.Core', link: '/04-api-reference/ui-components/ColorVision.Core' },
+                { text: 'ColorVision.Themes', link: '/04-api-reference/ui-components/ColorVision.Themes' },
+                { text: 'ColorVision.ImageEditor', link: '/04-api-reference/ui-components/ColorVision.ImageEditor' },
+                { text: 'ColorVision.Solution', link: '/04-api-reference/ui-components/ColorVision.Solution' },
+                { text: 'ColorVision.Scheduler', link: '/04-api-reference/ui-components/ColorVision.Scheduler' },
+                { text: 'ColorVision.Database', link: '/04-api-reference/ui-components/ColorVision.Database' },
+                { text: 'ColorVision.SocketProtocol', link: '/04-api-reference/ui-components/ColorVision.SocketProtocol' }
+              ]
+            },
+            {
+              text: 'Engine 组件 API',
+              collapsed: true,
+              items: [
+                { text: 'Engine 组件概览', link: '/04-api-reference/engine-components/README' },
+                { text: 'ColorVision.Engine', link: '/04-api-reference/engine-components/ColorVision.Engine' },
+                { text: 'ColorVision.FileIO', link: '/04-api-reference/engine-components/ColorVision.FileIO' },
+                { text: 'cvColorVision', link: '/04-api-reference/engine-components/cvColorVision' },
+                { text: 'FlowEngineLib', link: '/04-api-reference/engine-components/FlowEngineLib' },
+                { text: 'ST.Library.UI', link: '/04-api-reference/engine-components/ST.Library.UI' }
+              ]
+            },
+            {
+              text: '算法 API',
+              collapsed: true,
+              items: [
+                { text: '算法概览', link: '/04-api-reference/algorithms/README' },
+                { text: '算法总览', link: '/04-api-reference/algorithms/overview' },
+                {
+                  text: '检测器',
+                  collapsed: true,
+                  items: [
+                    { text: 'Ghost 检测', link: '/04-api-reference/algorithms/detectors/ghost-detection' }
+                  ]
+                },
+                {
+                  text: '算法原语',
+                  collapsed: true,
+                  items: [
+                    { text: 'ROI（感兴趣区域）', link: '/04-api-reference/algorithms/primitives/roi' },
+                    { text: 'POI（关注点）', link: '/04-api-reference/algorithms/primitives/poi' },
+                    { text: '通用算法模块', link: '/04-api-reference/algorithms/primitives/common-modules' }
+                  ]
+                },
+                {
+                  text: '模板系统',
+                  collapsed: true,
+                  items: [
+                    { text: '流程引擎', link: '/04-api-reference/algorithms/templates/flow-engine' },
+                    { text: '模板管理', link: '/04-api-reference/algorithms/templates/template-management' },
+                    { text: 'POI 模板详解', link: '/04-api-reference/algorithms/templates/poi-template' },
+                    { text: 'ARVR 模板详解', link: '/04-api-reference/algorithms/templates/arvr-template' },
+                    { text: 'JSON 模板', link: '/04-api-reference/algorithms/templates/json-templates' },
+                    { text: 'Templates API 参考', link: '/04-api-reference/algorithms/templates/api-reference' }
+                  ]
+                }
+              ]
+            },
+            {
+              text: '插件 API',
+              collapsed: true,
+              items: [
+                { text: 'Pattern 插件', link: '/04-api-reference/plugins/standard-plugins/pattern' },
+                { text: 'SystemMonitor 插件', link: '/04-api-reference/plugins/standard-plugins/system-monitor' }
+              ]
+            },
+            {
+              text: '扩展点 API',
+              collapsed: true,
+              items: [
+                { text: 'FlowNode 开发', link: '/04-api-reference/extensions/flow-node' }
+              ]
+            }
           ]
         },
         {
-          text: '📚 开发指南',
+          text: '📦 资源文档',
           collapsed: true,
           items: [
-            { text: '故障排除', link: '/troubleshooting/故障排除' },
-            { text: '性能优化指南', link: '/performance/README.md' },
-            { text: '扩展性开发', link: '/extensibility/README.md' },
-            { text: '安全与权限控制', link: '/security/README.md' },
-            { text: 'RBAC 模型', link: '/rbac/rbac-model' },
-            { text: 'API 参考', link: '/developer-guide/api-reference/API_参考' },
-            { text: 'ColorVision API V1.1', link: '/ColorVision API V1.1' },
-          ]
-        },
-        {
-          text: '📦 部署与更新',
-          collapsed: true,
-          items: [
-            { text: '数据存储概览', link: '/data-storage/README.md' },
-            { text: '部署文档', link: '/deployment/README.md' },
-            { text: '更新日志', link: '/changelog/CHANGELOG' },
-            { text: '自动更新', link: '/update/README.md' },
-            { text: '更新日志窗口', link: '/update/changelog-window' },
-            { text: '更新日志窗口对比', link: '/update/changelog-window-comparison' }
-          ]
-        },
-        {
-          text: '📄 其他',
-          collapsed: true,
-          items: [
-            { text: '许可证', link: '/license' },
-            { text: '软件许可协议', link: '/Software License Agreement' },
-            { text: '解决方案文件说明', link: '/Solution' }
+            {
+              text: '项目结构',
+              collapsed: true,
+              items: [
+                { text: '项目结构总览', link: '/05-resources/project-structure/README' },
+                { text: '模块与文档对照', link: '/05-resources/project-structure/module-documentation-map' }
+              ]
+            },
+            {
+              text: '更新日志',
+              collapsed: true,
+              items: [
+                { text: '更新日志窗口', link: '/05-resources/changelog/window' }
+              ]
+            },
+            {
+              text: '法律文档',
+              collapsed: true,
+              items: [
+                { text: 'ColorVision API V1.1', link: '/05-resources/legal/api-v1.1' },
+                { text: '软件许可协议', link: '/05-resources/legal/software-agreement' }
+              ]
+            },
+            {
+              text: '文档模板',
+              collapsed: true,
+              items: [
+                { text: '文档模板', link: '/05-resources/templates/doc-template' }
+              ]
+            },
+            { text: '数据存储说明', link: '/05-resources/data-storage' }
           ]
         }
       ],

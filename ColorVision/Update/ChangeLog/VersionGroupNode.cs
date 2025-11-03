@@ -6,7 +6,7 @@ using System.Windows.Controls;
 namespace ColorVision.Update
 {
     /// <summary>
-    /// Base class for version tree nodes
+    /// Base class for Version tree nodes
     /// </summary>
     public abstract class VersionTreeNode : ViewModelBase
     {
@@ -37,7 +37,7 @@ namespace ColorVision.Update
     }
 
     /// <summary>
-    /// Major version group node (e.g., "1.x.x.x")
+    /// Major Version group node (e.g., "1.x.x.x")
     /// </summary>
     public class MajorVersionNode : VersionTreeNode
     {
@@ -47,7 +47,7 @@ namespace ColorVision.Update
     }
 
     /// <summary>
-    /// Minor version group node (e.g., "1.3.x.x")
+    /// Minor Version group node (e.g., "1.3.x.x")
     /// </summary>
     public class MinorVersionNode : VersionTreeNode
     {

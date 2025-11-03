@@ -127,7 +127,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             {
                 if (e == MsgRecordState.Success)
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "执行结束", "ColorVision");
                 }
                 else
                 {

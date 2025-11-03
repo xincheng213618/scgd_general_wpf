@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Properties;
-using ColorVision.Engine.Services.RC;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Menus;
@@ -119,11 +118,6 @@ namespace ColorVision.Engine.MQTT
                 bool IsConnect = await MQTTControl.GetInstance().TestConnect(MQTTConfig);
                 await Dispatcher.BeginInvoke(() =>
                 {
-                    Task.Run(() =>
-                    {
-                        MqttRCService.GetInstance().QueryServices();
-                        MqttRCService.GetInstance().ReRegist();
-                    });
                     MessageBox1.Show(Application.Current.GetActiveWindow(),$"连接{(IsConnect ? "成功" : "失败")}", "ColorVision");
                 });
             });

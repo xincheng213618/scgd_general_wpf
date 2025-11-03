@@ -43,17 +43,17 @@ namespace ColorVision.Engine.Batch.IVL
             {
                 properties.Add(i.ToString());
             }
-            // Ð´ÈëÁÐÍ·
+            // Ð´ï¿½ï¿½ï¿½ï¿½Í·
             for (int i = 0; i < properties.Count; i++)
             {
-                // Ìí¼ÓÁÐÃû
+                // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
                 csvBuilder.Append(properties[i]);
 
-                // Èç¹û²»ÊÇ×îºóÒ»ÁÐ£¬ÔòÌí¼Ó¶ººÅ
+                // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½Ð£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¶ï¿½ï¿½ï¿½
                 if (i < properties.Count - 1)
                     csvBuilder.Append(',');
             }
-            // Ìí¼Ó»»ÐÐ·û
+            // ï¿½ï¿½ï¿½Ó»ï¿½ï¿½Ð·ï¿½
             csvBuilder.AppendLine();
             foreach (var result in ViewResultSpectrums)
             {
@@ -88,6 +88,7 @@ namespace ColorVision.Engine.Batch.IVL
         }
     }
 
+    [BatchProcess("IVLå®Œæ•´å¤„ç†", "å¤„ç†IVLæ‰¹æ¬¡æ•°æ®ï¼ŒåŒ…å«Cameraå’ŒSpectrumæ•°æ®çš„å¯¼å‡º")]
     public class IVLProcess : IBatchProcess
     {
         private static readonly ILog log = LogManager.GetLogger(nameof(IVLProcess));
@@ -146,7 +147,7 @@ namespace ColorVision.Engine.Batch.IVL
                 ObservableCollection<ViewResultSpectrum> ViewResults = new ObservableCollection<ViewResultSpectrum>();
                 if (list.Count == 0)
                 {
-                    log.Info("ÕÒ²»µ½¹âÆ×ÒÇµÄÊý¾Ý");
+                    log.Info("ï¿½Ò²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Çµï¿½ï¿½ï¿½ï¿½ï¿½");
                     string sprectrumfilePath = Path.Combine(config.SavePath, $"SP_IVL_{timeStr}.csv");
                     ViewResults.SaveToCsv(sprectrumfilePath);
                 }

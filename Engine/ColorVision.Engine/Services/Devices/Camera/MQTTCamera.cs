@@ -41,10 +41,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             //string Msg = "{\"Data\":{\"nPosition\":2311,\"VidPos\":-1127.522865999267},\"Code\":0,\"Message\":\"ok\",\"Version\":\"1.0\",\"ServiceName\":\"RC_local/Camera/SVR.Camera.Default/CMD\",\"DeviceCode\":\"DEV.Camera.Default\",\"EventName\":\"GetPosition\",\"SerialNumber\":\"\",\"MsgID\":\"1c364974-45c4-4e2f-8071-10b3d898e8af\",\"ZIndex\":-1}";
             //msg = JsonConvert.DeserializeObject<MsgReturn>(Msg);
 
-            //string Msg = "{\"Version\":\"1.0\",\"EventName\":\"AutoFocus\",\"ServiceName\":\"RC_local/Camera/SVR.Camera.Default/CMD\",\"DeviceName\":null,\"DeviceCode\":\"DEV.Camera.Default1\",\"SerialNumber\":\"\",\"Code\":0,\"MsgID\":\"ac152c4d-9501-49fe-b082-03110dc26479\",\"data\":{\"Position\":157909,\"VidPosition\":111.15504121214114,\"TotalTime\":23759,\"MasterId\":54,\"MasterResultType\":108,\"MasterValue\":null}}";
+            //string Msg = "{\"Version\":\"1.0\",\"EventName\":\"AutoFocus\",\"ServiceName\":\"RC_local/Camera/SVR.Camera.Default/CMD\",\"DeviceName\":null,\"DeviceCode\":\"DEV.Camera.Default1\",\"SerialNumber\":\"\",\"Code\":0,\"MsgID\":\"ac152c4d-9501-49fe-b082-03110dc26479\",\"Data\":{\"Position\":157909,\"VidPosition\":111.15504121214114,\"TotalTime\":23759,\"MasterId\":54,\"MasterResultType\":108,\"MasterValue\":null}}";
             //msg = JsonConvert.DeserializeObject<MsgReturn>(Msg);
 
-            //string Msg = "{\"Version\":\"1.0\",\"EventName\":\"GetAutoExpTime\",\"ServiceName\":\"RC_local/Camera/SVR.Camera.Default/CMD\",\"DeviceName\":null,\"DeviceCode\":\"DEV.Camera.Default\",\"SerialNumber\":null,\"Code\":0,\"MsgID\":\"21ea4913-3f22-42d7-9946-d85e5b05f2d8\",\"data\":{\"ExpTime\":[{\"result\":28.9528713,\"resultSaturation\":0.0},{\"result\":216.322388,\"resultSaturation\":0.0},{\"result\":2382.22241,\"resultSaturation\":0.0}],\"NDPort\":2}}";
+            //string Msg = "{\"Version\":\"1.0\",\"EventName\":\"GetAutoExpTime\",\"ServiceName\":\"RC_local/Camera/SVR.Camera.Default/CMD\",\"DeviceName\":null,\"DeviceCode\":\"DEV.Camera.Default\",\"SerialNumber\":null,\"Code\":0,\"MsgID\":\"21ea4913-3f22-42d7-9946-d85e5b05f2d8\",\"Data\":{\"ExpTime\":[{\"result\":28.9528713,\"resultSaturation\":0.0},{\"result\":216.322388,\"resultSaturation\":0.0},{\"result\":2382.22241,\"resultSaturation\":0.0}],\"NDPort\":2}}";
             //msg = JsonConvert.DeserializeObject<MsgReturn>(Msg);
 
             if (Config.Code != null && msg.DeviceCode != Config.Code) return;

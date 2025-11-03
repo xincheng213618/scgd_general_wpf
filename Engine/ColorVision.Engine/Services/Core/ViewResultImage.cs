@@ -91,14 +91,14 @@ namespace ColorVision.Engine.Services
                     int index = CVFileUtil.ReadCIEFileHeader(FilePath, out var meta);
                     if (index > 0)
                     {
-                        if (meta.srcFileName != null && !File.Exists(meta.srcFileName))
+                        if (meta.SrcFileName != null && !File.Exists(meta.SrcFileName))
                         {
-                            meta.srcFileName = Path.Combine(Path.GetDirectoryName(FilePath) ?? string.Empty, meta.srcFileName);
+                            meta.SrcFileName = Path.Combine(Path.GetDirectoryName(FilePath) ?? string.Empty, meta.SrcFileName);
 
                         }
                         else
                         {
-                            meta.srcFileName = string.Empty;
+                            meta.SrcFileName = string.Empty;
                         }
                     }
 
@@ -117,11 +117,11 @@ namespace ColorVision.Engine.Services
                         string newFilePath = Path.Combine(savePath, Path.GetFileName(FilePath));
                         File.Copy(FilePath, newFilePath, true);
 
-                        // If srcFileName exists, copy it to the new location as well
-                        if (File.Exists(meta.srcFileName))
+                        // If SrcFileName exists, copy it to the new location as well
+                        if (File.Exists(meta.SrcFileName))
                         {
-                            string newSrcFilePath = Path.Combine(savePath, Path.GetFileName(meta.srcFileName));
-                            File.Copy(meta.srcFileName, newSrcFilePath, true);
+                            string newSrcFilePath = Path.Combine(savePath, Path.GetFileName(meta.SrcFileName));
+                            File.Copy(meta.SrcFileName, newSrcFilePath, true);
                         }
                     }
 
