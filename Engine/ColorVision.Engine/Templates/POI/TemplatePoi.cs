@@ -1,6 +1,7 @@
 ﻿using ColorVision.Database;
 using ColorVision.UI.Extension;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -187,6 +188,92 @@ namespace ColorVision.Engine.Templates.POI
             }
         }
 
+        public override bool SwapTemplateOrder(int index1, int index2)
+        {
+            if (index1 < 0 || index1 >= TemplateParams.Count || index2 < 0 || index2 >= TemplateParams.Count)
+                return false;
+
+            if (index1 == index2)
+                return true;
+
+            try
+            {
+                var template1 = TemplateParams[index1];
+                var template2 = TemplateParams[index2];
+
+                // Get the IDs from database
+                int id1 = template1.Value.Id;
+                int id2 = template2.Value.Id;
+
+                // Swap the IDs in the database using a three-step process to avoid constraint violations
+                // Use int.MinValue plus a hash-based offset incorporating both IDs to minimize collision risk
+                int tempId = int.MinValue + Math.Abs((id1 ^ id2).GetHashCode());
+
+                // Step 1: Move template1 to temporary ID
+                var poiMaster1 = Db.Queryable<PoiMasterModel>().InSingle(id1);
+                if (poiMaster1 != null)
+                {
+                    poiMaster1.Id = tempId;
+                    Db.Updateable(poiMaster1).ExecuteCommand();
+                }
+
+                var poiDetails1 = Db.Queryable<PoiDetailModel>().Where(x => x.Pid == id1).ToList();
+                foreach (var detail in poiDetails1)
+                {
+                    detail.Pid = tempId;
+                }
+                if (poiDetails1.Count > 0)
+                    Db.Updateable(poiDetails1).ExecuteCommand();
+
+                // Step 2: Move template2 to id1
+                var poiMaster2 = Db.Queryable<PoiMasterModel>().InSingle(id2);
+                if (poiMaster2 != null)
+                {
+                    poiMaster2.Id = id1;
+                    Db.Updateable(poiMaster2).ExecuteCommand();
+                }
+
+                var poiDetails2 = Db.Queryable<PoiDetailModel>().Where(x => x.Pid == id2).ToList();
+                foreach (var detail in poiDetails2)
+                {
+                    detail.Pid = id1;
+                }
+                if (poiDetails2.Count > 0)
+                    Db.Updateable(poiDetails2).ExecuteCommand();
+
+                // Step 3: Move template1 from temporary to id2
+                poiMaster1 = Db.Queryable<PoiMasterModel>().InSingle(tempId);
+                if (poiMaster1 != null)
+                {
+                    poiMaster1.Id = id2;
+                    Db.Updateable(poiMaster1).ExecuteCommand();
+                }
+
+                poiDetails1 = Db.Queryable<PoiDetailModel>().Where(x => x.Pid == tempId).ToList();
+                foreach (var detail in poiDetails1)
+                {
+                    detail.Pid = id2;
+                }
+                if (poiDetails1.Count > 0)
+                    Db.Updateable(poiDetails1).ExecuteCommand();
+
+                // Update the in-memory values
+                template1.Value.Id = id2;
+                template2.Value.Id = id1;
+
+                // Swap the items in the ObservableCollection using proper swap
+                var temp = TemplateParams[index1];
+                TemplateParams[index1] = TemplateParams[index2];
+                TemplateParams[index2] = temp;
+
+                return true;
+            }
+            catch (System.Exception)
+            {
+                // Let the caller handle the error display
+                return false;
+            }
+        }
     }
 
 }
