@@ -55,7 +55,15 @@ export default withMermaid(
           ]
         },
         {
-          text: '🏗️ 架构与模块',
+          text: '📂 项目结构',
+          collapsed: false,
+          items: [
+            { text: '项目结构总览', link: '/project-structure/README' },
+            { text: '模块与文档对照', link: '/project-structure/module-documentation-map' }
+          ]
+        },
+        {
+          text: '🏗️ 架构设计',
           collapsed: false,
           items: [
             { text: '系统架构概览', link: '/introduction/system-architecture/系统架构概览' },
@@ -71,38 +79,38 @@ export default withMermaid(
                 { text: '完整技术方案', link: '/architecture/ColorVision.Engine-Refactoring-Plan' },
                 { text: '实施检查清单', link: '/architecture/ColorVision.Engine-Refactoring-Checklist' }
               ]
-            },
-            {
-              text: 'UI组件',
-              collapsed: true,
-              items: [
-                { text: 'UI组件概览', link: '/ui-components/UI组件概览' },
-                { text: 'ColorVision.UI', link: '/ui-components/ColorVision.UI' },
-                { text: 'ColorVision.UI.Sort', link: '/ColorVision.UI.Sort' },
-                { text: 'Sort 迁移指南', link: '/Sort-Migration-Guide' },
-                { text: 'ColorVision.Common', link: '/ui-components/ColorVision.Common' },
-                { text: 'ColorVision.Core', link: '/ui-components/ColorVision.Core' },
-                { text: 'ColorVision.Themes', link: '/ui-components/ColorVision.Themes' },
-                { text: 'ColorVision.ImageEditor', link: '/ui-components/ColorVision.ImageEditor' },
-                { text: 'ColorVision.Solution', link: '/ui-components/ColorVision.Solution' },
-                { text: 'ColorVision.Scheduler', link: '/ui-components/ColorVision.Scheduler' },
-                { text: 'ColorVision.Database', link: '/ui-components/ColorVision.Database' },
-                { text: 'ColorVision.SocketProtocol', link: '/ui-components/ColorVision.SocketProtocol' },
-                { text: '热键系统设计', link: '/ui-components/HotKey系统设计文档' }
-              ]
-            },
-            {
-              text: 'Engine组件',
-              collapsed: true,
-              items: [
-                { text: 'Engine组件概览', link: '/engine-components/Engine组件概览' },
-                { text: 'ColorVision.Engine', link: '/engine-components/ColorVision.Engine' },
-                { text: 'ColorVision.FileIO', link: '/engine-components/ColorVision.FileIO' },
-                { text: 'cvColorVision', link: '/engine-components/cvColorVision' },
-                { text: 'FlowEngineLib', link: '/engine-components/FlowEngineLib' },
-                { text: 'ST.Library.UI', link: '/engine-components/ST.Library.UI' }
-              ]
             }
+          ]
+        },
+        {
+          text: '🖥️ UI 组件',
+          collapsed: true,
+          items: [
+            { text: 'UI组件概览', link: '/ui-components/UI组件概览' },
+            { text: 'ColorVision.UI', link: '/ui-components/ColorVision.UI' },
+            { text: 'ColorVision.UI.Sort', link: '/ColorVision.UI.Sort' },
+            { text: 'Sort 迁移指南', link: '/Sort-Migration-Guide' },
+            { text: 'ColorVision.Common', link: '/ui-components/ColorVision.Common' },
+            { text: 'ColorVision.Core', link: '/ui-components/ColorVision.Core' },
+            { text: 'ColorVision.Themes', link: '/ui-components/ColorVision.Themes' },
+            { text: 'ColorVision.ImageEditor', link: '/ui-components/ColorVision.ImageEditor' },
+            { text: 'ColorVision.Solution', link: '/ui-components/ColorVision.Solution' },
+            { text: 'ColorVision.Scheduler', link: '/ui-components/ColorVision.Scheduler' },
+            { text: 'ColorVision.Database', link: '/ui-components/ColorVision.Database' },
+            { text: 'ColorVision.SocketProtocol', link: '/ui-components/ColorVision.SocketProtocol' },
+            { text: '热键系统设计', link: '/ui-components/HotKey系统设计文档' }
+          ]
+        },
+        {
+          text: '⚙️ Engine 组件',
+          collapsed: true,
+          items: [
+            { text: 'Engine组件概览', link: '/engine-components/Engine组件概览' },
+            { text: 'ColorVision.Engine', link: '/engine-components/ColorVision.Engine' },
+            { text: 'ColorVision.FileIO', link: '/engine-components/ColorVision.FileIO' },
+            { text: 'cvColorVision', link: '/engine-components/cvColorVision' },
+            { text: 'FlowEngineLib', link: '/engine-components/FlowEngineLib' },
+            { text: 'ST.Library.UI', link: '/engine-components/ST.Library.UI' }
           ]
         },
         {
@@ -200,7 +208,7 @@ export default withMermaid(
           ]
         },
         {
-          text: '🖥️ 用户界面',
+          text: '💻 用户界面指南',
           collapsed: true,
           items: [
             { text: '主窗口导览', link: '/user-interface-guide/main-window/主窗口导览' },
@@ -210,7 +218,7 @@ export default withMermaid(
           ]
         },
         {
-          text: '📚 开发指南',
+          text: '👨‍💻 开发指南',
           collapsed: true,
           items: [
             { text: '故障排除', link: '/troubleshooting/故障排除' },
