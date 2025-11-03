@@ -379,3 +379,5 @@ docs/.vitepress/dist
 
 # Temporary build artifacts
 x64/
+README.old.md
+README.old.backup
