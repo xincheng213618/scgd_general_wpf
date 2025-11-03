@@ -25,6 +25,16 @@ namespace ColorVision.Engine.ToolPlugins
         }
     }
 
+    public class SpectrAdjtool : MenuItemBase
+    {
 
+        public override string OwnerGuid => MenuItemConstants.View;
+        public override string Header => "校正文件修正工具";
+        public override int Order => 100;
+        public override void Execute()
+        {
+            Common.Utilities.PlatformHelper.Open("Assets\\Tool\\SpectrAdj.exe");
+        }
+    }
 }
 
