@@ -378,8 +378,8 @@ Title = Lang.Get("AddNode");
 - [改进建议](./改进建议.md) - 项目改进建议和优化方向
 
 ### 相关组件
-- [FlowEngineLib](../../docs/engine-components/FlowEngineLib.md) - 流程引擎库
-- [ColorVision.Engine](../../docs/engine-components/ColorVision.Engine.md) - 主引擎
+- [FlowEngineLib](../../docs/04-api-reference/engine-components/FlowEngineLib.md) - 流程引擎库
+- [ColorVision.Engine](../../docs/04-api-reference/engine-components/ColorVision.Engine.md) - 主引擎
 
 ## 🤝 开发指南
 

@@ -186,9 +186,9 @@ dotnet test
 
 ## 相关文档链接
 
-- [详细架构文档](../../docs/ui-components/ColorVision.Solution.md)
-- [用户界面指南](../../docs/user-interface-guide/)
-- [入门指南](../../docs/getting-started/入门指南.md)
+- [详细架构文档](../../docs/04-api-reference/ui-components/ColorVision.Solution.md)
+- [用户界面指南](../../docs/01-user-guide/)
+- [入门指南](../../docs/00-getting-started/README.md)
 
 ## 技术特性
 

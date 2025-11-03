@@ -113,7 +113,7 @@ dotnet build UI/ColorVision.Themes/ColorVision.Themes.csproj
 
 ## 相关文档链接
 
-- [主题开发指南](../../docs/ui-components/ColorVision.Themes.md)
+- [主题开发指南](../../docs/04-api-reference/ui-components/ColorVision.Themes.md)
 - [UI组件概览](../../docs/ui-components/UI组件概览.md)
 
 ## 维护者
