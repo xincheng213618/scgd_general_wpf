@@ -334,7 +334,7 @@
                                     </Button.Triggers>
                                 </Button>
                             </Grid>
-                            <ComboBox x:Name="ComboxAutoFocus"   d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" SelectedIndex="{Binding AutoFocusTemplateIndex}"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                            <ComboBox x:Name="ComboxAutoFocus"  d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" SelectedIndex="{Binding AutoFocusTemplateIndex}"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                         </DockPanel>
 
                         <DockPanel Margin="0,2">
