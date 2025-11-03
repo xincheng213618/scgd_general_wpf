@@ -8,10 +8,10 @@
 
 ### 阶段一：准备工作 ✓
 
-- [ ] 1.1 备份当前 docs 目录
-- [ ] 1.2 创建新目录结构
-- [ ] 1.3 准备迁移脚本
-- [ ] 1.4 建立文档迁移跟踪表
+- [x] 1.1 备份当前 docs 目录（Git 自动版本控制）
+- [x] 1.2 创建新目录结构（已完成）
+- [ ] 1.3 准备迁移脚本（按需使用）
+- [x] 1.4 建立文档迁移跟踪表（本清单）
 
 ### 阶段二：创建新目录结构
 
@@ -30,24 +30,24 @@ mkdir -p 05-resources
 ```
 
 **任务清单**：
-- [ ] 2.1.1 创建 `00-getting-started/` 目录
-- [ ] 2.1.2 创建 `01-user-guide/` 目录
-- [ ] 2.1.3 创建 `02-developer-guide/` 目录
-- [ ] 2.1.4 创建 `03-architecture/` 目录
-- [ ] 2.1.5 创建 `04-api-reference/` 目录
-- [ ] 2.1.6 创建 `05-resources/` 目录
+- [x] 2.1.1 创建 `00-getting-started/` 目录
+- [x] 2.1.2 创建 `01-user-guide/` 目录
+- [x] 2.1.3 创建 `02-developer-guide/` 目录
+- [x] 2.1.4 创建 `03-architecture/` 目录
+- [x] 2.1.5 创建 `04-api-reference/` 目录
+- [x] 2.1.6 创建 `05-resources/` 目录
 
 #### 2.2 创建二级和三级目录
 
 详见 [完整目录清单](#完整目录创建清单)
 
 **任务清单**：
-- [ ] 2.2.1 创建 `00-getting-started/` 子目录（无）
-- [ ] 2.2.2 创建 `01-user-guide/` 子目录（6个）
-- [ ] 2.2.3 创建 `02-developer-guide/` 子目录（8个）
-- [ ] 2.2.4 创建 `03-architecture/` 子目录（7个）
-- [ ] 2.2.5 创建 `04-api-reference/` 子目录（6个）
-- [ ] 2.2.6 创建 `05-resources/` 子目录（6个）
+- [x] 2.2.1 创建 `00-getting-started/` 子目录（无）
+- [x] 2.2.2 创建 `01-user-guide/` 子目录（6个）
+- [x] 2.2.3 创建 `02-developer-guide/` 子目录（8个）
+- [x] 2.2.4 创建 `03-architecture/` 子目录（7个）
+- [x] 2.2.5 创建 `04-api-reference/` 子目录（6个）
+- [x] 2.2.6 创建 `05-resources/` 子目录（6个）
 
 ### 阶段三：迁移快速入门文档
 
@@ -66,15 +66,15 @@ mkdir -p 05-resources
 | `introduction/key-features/主要特性.md` | 保留或移动 | 待定 | 可能保留在 introduction |
 
 **新增文件**：
-- [ ] 3.1.1 创建 `00-getting-started/first-steps.md`（首次运行指南）
+- [x] 3.1.1 创建 `00-getting-started/first-steps.md`（首次运行指南）
 
 **任务清单**：
-- [ ] 3.1.2 移动并重命名入门指南为 README.md
-- [ ] 3.1.3 合并快速上手相关文档
-- [ ] 3.1.4 合并系统要求文档
-- [ ] 3.1.5 合并安装指南文档
-- [ ] 3.1.6 移动"什么是 ColorVision"
-- [ ] 3.1.7 创建首次运行指南
+- [x] 3.1.2 移动并重命名入门指南为 README.md
+- [x] 3.1.3 合并快速上手相关文档
+- [x] 3.1.4 合并系统要求文档
+- [x] 3.1.5 合并安装指南文档
+- [x] 3.1.6 移动"什么是 ColorVision"
+- [x] 3.1.7 创建首次运行指南
 - [ ] 3.1.8 更新所有内部链接
 
 ### 阶段四：迁移用户指南文档
@@ -590,7 +590,7 @@ mkdir -p 05-resources
 | `project-structure/module-documentation-map.md` | `05-resources/project-structure/module-documentation-map.md` | 移动 |
 
 **任务清单**：
-- [ ] 8.1.1 移动项目结构文档
+- [x] 8.1.1 移动项目结构文档
 - [ ] 8.1.2 更新文档内的链接
 
 #### 8.2 整理更新日志
