@@ -75,9 +75,9 @@ dotnet build Projects/ProjectBlackMura/ProjectBlackMura.csproj
 
 ## 相关文档链接
 
-- [算法引擎文档](../../docs/algorithms/README.md)
+- [算法引擎文档](../../docs/04-api-reference/algorithms/README.md)
 - [插件开发指南](../../docs/plugins/README.md)
-- [测试流程配置](../../docs/engine-components/README.md)
+- [测试流程配置](../../docs/04-api-reference/engine-components/README.md)
 
 ## 维护者
 

@@ -147,8 +147,8 @@ dotnet build Projects/ProjectKB/ProjectKB.csproj
 
 ## 相关文档链接
 
-- [测试流程配置](../../docs/engine-components/README.md)
-- [算法引擎文档](../../docs/algorithms/README.md)
+- [测试流程配置](../../docs/04-api-reference/engine-components/README.md)
+- [算法引擎文档](../../docs/04-api-reference/algorithms/README.md)
 - [MES集成说明](../../docs/integration/mes-integration.md) *(如有)*
 
 ## 维护者

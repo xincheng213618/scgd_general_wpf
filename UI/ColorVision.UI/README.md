@@ -101,8 +101,8 @@ this.MouseLeftButtonDown += (s, e) =>
 
 ## 📚 文档资源
 
-- [详细技术文档](../../docs/ui-components/ColorVision.UI.md)
+- [详细技术文档](../../docs/04-api-reference/ui-components/ColorVision.UI.md)
 - [UI组件概览](../../docs/ui-components/UI组件概览.md)
-- [用户界面指南](../../docs/user-interface-guide/)
-- [主题开发指南](../../docs/ui-components/ColorVision.Themes.md)
+- [用户界面指南](../../docs/01-user-guide/)
+- [主题开发指南](../../docs/04-api-reference/ui-components/ColorVision.Themes.md)
     

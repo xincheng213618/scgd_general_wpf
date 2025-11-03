@@ -79,9 +79,9 @@ dotnet build Projects/ProjectHeyuan/ProjectHeyuan.csproj
 
 ## 相关文档链接
 
-- [项目开发指南](../../docs/extensibility/README.md)
-- [流程引擎文档](../../docs/engine-components/README.md)
-- [客户定制说明](../../docs/getting-started/入门指南.md)
+- [项目开发指南](../../docs/02-developer-guide/core-concepts/extensibility.md)
+- [流程引擎文档](../../docs/04-api-reference/engine-components/README.md)
+- [客户定制说明](../../docs/00-getting-started/README.md)
 
 ## 维护者
 

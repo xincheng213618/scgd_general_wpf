@@ -273,9 +273,9 @@ dotnet build ColorVision.sln
 ## 相关文档
 
 ### 内部文档
-- [算法组件文档](../../docs/algorithms/README.md)
-- [流程引擎使用指南](../../docs/engine-components/ColorVision.Engine.md)
-- [cvColorVision 详细文档](../../docs/engine-components/cvColorVision.md)
+- [算法组件文档](../../docs/04-api-reference/algorithms/README.md)
+- [流程引擎使用指南](../../docs/04-api-reference/engine-components/ColorVision.Engine.md)
+- [cvColorVision 详细文档](../../docs/04-api-reference/engine-components/cvColorVision.md)
 
 ### 外部资源
 - [OpenCV 文档](https://docs.opencv.org/)

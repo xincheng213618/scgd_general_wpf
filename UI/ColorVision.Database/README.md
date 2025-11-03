@@ -52,8 +52,8 @@ dotnet build UI/ColorVision.Database/ColorVision.Database.csproj
 
 ## 相关文档链接
 
-- [数据存储文档](../../docs/data-storage/README.md)
-- [配置管理指南](../../docs/getting-started/入门指南.md)
+- [数据存储文档](../../docs/05-resources/data-storage.md)
+- [配置管理指南](../../docs/00-getting-started/README.md)
 
 ## 维护者
 

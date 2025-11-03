@@ -69,7 +69,7 @@ var result = await engineService.ExecuteFlowAsync(flowTemplate, parameters);
 
 ## 📚 文档资源
 
-- [详细技术文档](../../docs/engine-components/ColorVision.Engine.md)
+- [详细技术文档](../../docs/04-api-reference/engine-components/ColorVision.Engine.md)
 - [流程引擎文档](../../docs/algorithm-engine-templates/flow-engine/流程引擎.md)
 - [设备管理指南](../../docs/device-management/)
 - [API参考文档](../../docs/developer-guide/api-reference/)
