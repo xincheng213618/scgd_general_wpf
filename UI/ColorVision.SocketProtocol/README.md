@@ -85,8 +85,8 @@ var response = serialPort.Read();
 
 ## 相关文档链接
 
-- [设备通信文档](../../docs/engine-components/README.md)
-- [网络通信指南](../../docs/getting-started/入门指南.md)
+- [设备通信文档](../../docs/04-api-reference/engine-components/README.md)
+- [网络通信指南](../../docs/00-getting-started/README.md)
 
 ## 维护者
 

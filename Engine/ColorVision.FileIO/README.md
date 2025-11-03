@@ -61,8 +61,8 @@ dotnet build Engine/ColorVision.FileIO/ColorVision.FileIO.csproj
 
 ## 相关文档链接
 
-- [文件IO组件详细文档](../../docs/engine-components/ColorVision.FileIO.md)
-- [文件格式说明](../../docs/data-storage/README.md)
+- [文件IO组件详细文档](../../docs/04-api-reference/engine-components/ColorVision.FileIO.md)
+- [文件格式说明](../../docs/05-resources/data-storage.md)
 
 ## 维护者
 

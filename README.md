@@ -22,7 +22,7 @@ ColorVision 是一款基于 WPF 的专业视觉检测平台，采用模块化架
 - **📷 设备集成** - 支持多种相机、光谱仪、传感器等设备
 - **🔄 自动更新系统** - 增量更新、签名验证、自动回滚机制
 
-📖 [查看完整特性列表 →](docs/introduction/key-features/主要特性.md)
+📖 [查看完整特性列表 →](docs/00-getting-started/introduction/key-features.md)
 
 ## 🚀 快速开始
 
@@ -45,7 +45,7 @@ dotnet build
 dotnet run --project ColorVision/ColorVision.csproj
 ```
 
-📖 [完整入门指南 →](docs/getting-started/入门指南.md)
+📖 [完整入门指南 →](docs/00-getting-started/README.md)
 
 ## 📁 项目结构
 
@@ -71,37 +71,50 @@ ColorVision/
 └── Scripts/                  # 构建和自动化脚本
 ```
 
-📖 [详细项目结构 →](docs/project-structure/README.md) | [模块文档对照 →](docs/project-structure/module-documentation-map.md)
+📖 [详细项目结构 →](docs/05-resources/project-structure/README.md) | [模块文档对照 →](docs/05-resources/project-structure/module-documentation-map.md)
 
 ## 📚 文档导航
 
-### 快速入门
-- [入门指南](docs/getting-started/入门指南.md) - 新手完整安装和使用指南
-- [快速上手](docs/getting-started/quick-start/快速上手.md) - 快速开始使用
-- [系统要求](docs/getting-started/prerequisites/系统要求.md) - 环境要求和依赖
+### 🚀 快速入门
+- [入门指南](docs/00-getting-started/README.md) - 新手完整安装和使用指南
+- [什么是 ColorVision](docs/00-getting-started/what-is-colorvision.md) - 产品介绍
+- [快速开始](docs/00-getting-started/quick-start.md) - 快速上手教程
+- [系统要求](docs/00-getting-started/prerequisites.md) - 环境要求和依赖
+- [安装指南](docs/00-getting-started/installation.md) - 详细安装步骤
+- [首次运行](docs/00-getting-started/first-steps.md) - 首次运行配置
 
-### 架构与组件
-- [系统架构概览](docs/introduction/system-architecture/系统架构概览.md) - 系统整体架构
-- [项目结构](docs/project-structure/README.md) - 目录结构和模块说明
-- [UI 组件](docs/ui-components/UI组件概览.md) - UI层组件文档
-- [Engine 组件](docs/engine-components/Engine组件概览.md) - Engine层组件文档
+### 📖 用户指南
+- [界面使用](docs/01-user-guide/interface/main-window.md) - 主窗口导览
+- [图像编辑器](docs/01-user-guide/image-editor/overview.md) - 图像编辑功能
+- [设备管理](docs/01-user-guide/devices/overview.md) - 设备服务和集成
+- [工作流程](docs/01-user-guide/workflow/README.md) - 工作流程概览与设计
+- [数据管理](docs/01-user-guide/data-management/README.md) - 数据管理和导出导入
+- [故障排查](docs/01-user-guide/troubleshooting/common-issues.md) - 常见问题和解决方案
 
-### 功能模块
-- [插件开发](docs/plugins/developing-a-plugin.md) - 插件开发指南
-- [设备管理](docs/device-management/device-services-overview/设备服务概览.md) - 设备服务和集成
-- [流程引擎](docs/algorithm-engine-templates/flow-engine/流程引擎.md) - 可视化流程编辑
-- [算法模板](docs/algorithm-engine-templates/算法引擎与模板.md) - 算法引擎与模板系统
+### 🏗️ 架构与组件
+- [系统架构概览](docs/00-getting-started/introduction/system-architecture.md) - 系统整体架构
+- [架构设计详解](docs/03-architecture/README.md) - 详细架构文档
+- [项目结构](docs/05-resources/project-structure/README.md) - 目录结构和模块说明
+- [UI 组件 API](docs/04-api-reference/ui-components/README.md) - UI层组件文档
+- [Engine 组件 API](docs/04-api-reference/engine-components/README.md) - Engine层组件文档
 
-### 开发指南
-- [API 参考](docs/developer-guide/api-reference/API_参考.md) - 开发者API文档
-- [扩展性开发](docs/extensibility/README.md) - 扩展接口和自定义组件
-- [性能优化](docs/performance/README.md) - 性能优化指南
-- [故障排除](docs/troubleshooting/故障排除.md) - 常见问题和解决方案
+### 👨‍💻 开发指南
+- [插件开发](docs/02-developer-guide/plugin-development/overview.md) - 插件开发指南
+- [UI 开发](docs/02-developer-guide/ui-development/README.md) - UI开发概览与MVVM
+- [Engine 开发](docs/02-developer-guide/engine-development/README.md) - Engine开发与服务
+- [扩展性概览](docs/02-developer-guide/core-concepts/extensibility.md) - 扩展接口和自定义组件
+- [性能优化](docs/02-developer-guide/performance/overview.md) - 性能优化指南
 
-### 部署运维
-- [部署文档](docs/deployment/README.md) - 部署和配置
-- [自动更新](docs/update/README.md) - 更新系统说明
-- [数据存储](docs/data-storage/README.md) - 数据库和持久化
+### 📚 API 参考
+- [算法 API](docs/04-api-reference/algorithms/README.md) - 算法接口文档
+- [流程引擎](docs/04-api-reference/algorithms/templates/flow-engine.md) - 可视化流程编辑
+- [模板系统](docs/04-api-reference/algorithms/templates/template-management.md) - 模板管理与使用
+- [插件 API](docs/04-api-reference/plugins/standard-plugins/pattern.md) - 标准插件参考
+
+### 🚀 部署运维
+- [部署文档](docs/02-developer-guide/deployment/overview.md) - 部署和配置
+- [自动更新](docs/02-developer-guide/deployment/auto-update.md) - 更新系统说明
+- [数据存储](docs/05-resources/data-storage.md) - 数据库和持久化
 
 **🌐 在线文档站点**: https://xincheng213618.github.io/scgd_general_wpf/
 

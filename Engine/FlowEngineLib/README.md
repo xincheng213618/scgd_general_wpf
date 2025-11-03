@@ -239,15 +239,15 @@ dotnet test Test/FlowEngineLib.Integration.Tests/
 
 ### 核心文档
 
-- 📘 [FlowEngineLib 详细文档](../../docs/engine-components/FlowEngineLib.md) - 完整API文档和使用指南
+- 📘 [FlowEngineLib 详细文档](../../docs/04-api-reference/engine-components/FlowEngineLib.md) - 完整API文档和使用指南
 - 📗 [流程引擎概述](../../docs/flow-engine/flow-engine-overview.md) - 架构设计和原理说明
-- 📕 [节点开发指南](../../docs/extensibility/README.md) - 自定义节点开发教程
+- 📕 [节点开发指南](../../docs/02-developer-guide/core-concepts/extensibility.md) - 自定义节点开发教程
 - 📙 [流程引擎中文文档](../../docs/algorithm-engine-templates/flow-engine/流程引擎.md) - 详细的中文技术文档
 
 ### 相关组件
 
 - [ST.Library.UI](../../docs/engine-components/ST.Library.UI.md) - 节点编辑器UI库
-- [ColorVision.Engine](../../docs/engine-components/ColorVision.Engine.md) - 引擎核心库
+- [ColorVision.Engine](../../docs/04-api-reference/engine-components/ColorVision.Engine.md) - 引擎核心库
 - [Engine组件概览](../../docs/engine-components/Engine组件概览.md) - 整体架构说明
 
 ## 🤝 贡献指南
@@ -296,4 +296,4 @@ dotnet test Test/FlowEngineLib.Integration.Tests/
 **最后更新**: 2024年
 **文档版本**: 1.0
 
-> 💡 提示：本README提供快速入门指南，详细文档请查看 [FlowEngineLib完整文档](../../docs/engine-components/FlowEngineLib.md)
+> 💡 提示：本README提供快速入门指南，详细文档请查看 [FlowEngineLib完整文档](../../docs/04-api-reference/engine-components/FlowEngineLib.md)

@@ -98,8 +98,8 @@ dotnet build UI/ColorVision.Common/ColorVision.Common.csproj
 
 ## 相关文档链接
 
-- [架构设计文档](../../docs/architecture/README.md)
-- [扩展开发指南](../../docs/extensibility/README.md)
+- [架构设计文档](../../docs/03-architecture/README.md)
+- [扩展开发指南](../../docs/02-developer-guide/core-concepts/extensibility.md)
 
 ## 维护者
 

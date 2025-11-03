@@ -124,8 +124,8 @@ dotnet build Projects/ProjectARVRLite/ProjectARVRLite.csproj
 ## 相关文档链接
 
 - [ARVR测试规范](../../docs/testing/ARVR-testing.md)
-- [流程引擎文档](../../docs/engine-components/README.md)
-- [算法引擎文档](../../docs/algorithms/README.md)
+- [流程引擎文档](../../docs/04-api-reference/engine-components/README.md)
+- [算法引擎文档](../../docs/04-api-reference/algorithms/README.md)
 
 ## 维护者
 

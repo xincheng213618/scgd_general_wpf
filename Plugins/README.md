@@ -13,7 +13,10 @@ ColorVision 插件目录，包含系统扩展插件和第三方功能模块。
 
 ## 插件开发指南
 
-详细的插件开发文档请参考：[插件开发指南](../docs/plugins/README.md)
+详细的插件开发文档请参考：
+- [插件开发概览](../docs/02-developer-guide/plugin-development/overview.md)
+- [插件开发入门](../docs/02-developer-guide/plugin-development/getting-started.md)
+- [插件生命周期](../docs/02-developer-guide/plugin-development/lifecycle.md)
 
 ## 维护者
 

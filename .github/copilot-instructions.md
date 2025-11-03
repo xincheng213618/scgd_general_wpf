@@ -30,12 +30,12 @@ Be immediately productive in this Windows-only WPF repo (net8.0-windows, x64). F
 
 ## Plugin workflow (quick)
 - Class Library `net8.0-windows`; add `<UseWPF>true</UseWPF>` if UI.
-- Implement plugin entry (`IPlugin`/`IPluginBase` patterns; see `docs/extensibility/README.md`, `Plugins/**`).
+- Implement plugin entry (`IPlugin`/`IPluginBase` patterns; see `docs/02-developer-guide/plugin-development/overview.md`, `Plugins/**`).
 - Post-build copy to `ColorVision/bin/<Config>/net8.0-windows/Plugins/<Name>/` so the app auto-discovers it.
 
 ## References
 - Root: `README.md` (arch/features/plugins/property editor examples)
-- Arch: `docs/architecture/README.md`  • Ext: `docs/extensibility/README.md`
+- Arch: `docs/03-architecture/README.md`  • Ext: `docs/02-developer-guide/core-concepts/extensibility.md`
 - Updater: `ColorVisionSetup/` (.NET Framework 4.8) — orthogonal to Engine/UI
 - Projects: `ColorVision/ColorVision.csproj`, `Engine/ColorVision.Engine/ColorVision.Engine.csproj`
 

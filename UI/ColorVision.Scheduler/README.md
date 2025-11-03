@@ -65,7 +65,7 @@ dotnet build UI/ColorVision.Scheduler/ColorVision.Scheduler.csproj
 ## 相关文档链接
 
 - [任务调度使用指南](../../docs/ui-components/UI组件概览.md)
-- [入门指南](../../docs/getting-started/入门指南.md)
+- [入门指南](../../docs/00-getting-started/README.md)
 
 ## 维护者
 
