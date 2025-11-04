@@ -105,10 +105,10 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
 
             var SFRDetailViewResluts = result.ViewResults.ToSpecificViewResults<SFRDetailViewReslut>();
             var csvBuilder = new StringBuilder();
-            csvBuilder.AppendLine($"name,x,y,w,h,sfrValue");
+            csvBuilder.AppendLine($"name,x,y,w,h,sfrValue,id");
             if (SFRDetailViewResluts.Count == 1)
             {
-                var resultChilds = SFRDetailViewResluts[0].SFRResult.resultChild;
+                var resultChilds = SFRDetailViewResluts[0].SFRResult?.resultChild;
                 if (resultChilds != null)
                 {
 
@@ -190,8 +190,8 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
                                 Name = item.name,
                                 PixX = item.x,
                                 PixY = item.y,
-                                PixHeight =item.w,
-                                PixWidth = item.h,
+                                PixHeight = item.h,
+                                PixWidth = item.w,
                                 PointType = GraphicTypes.Rect,
                                 Id = item.id
                             };
@@ -224,7 +224,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
                 if (result.ViewResults[0] is SFRDetailViewReslut sfrDetailViewReslut)
                 {
                     int id = 0;
-                    if (sfrDetailViewReslut.SFRResult.result.Count != 0)
+                    if (sfrDetailViewReslut.SFRResult?.result?.Count > 0)
                     {
                         foreach (var item in sfrDetailViewReslut.SFRResult.result)
                         {
