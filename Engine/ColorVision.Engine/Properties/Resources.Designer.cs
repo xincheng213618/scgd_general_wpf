@@ -1825,6 +1825,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 还原点创建成功 的本地化字符串。
+        /// </summary>
+        public static string RestorePointCreatedSuccessfully {
+            get {
+                return ResourceManager.GetString("RestorePointCreatedSuccessfully", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 结果 的本地化字符串。
         /// </summary>
         public static string Result {
@@ -2253,6 +2262,15 @@ namespace ColorVision.Engine.Properties {
         public static string Upload {
             get {
                 return ResourceManager.GetString("Upload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 上传校正文件 的本地化字符串。
+        /// </summary>
+        public static string UploadCalibrationFiles {
+            get {
+                return ResourceManager.GetString("UploadCalibrationFiles", resourceCulture);
             }
         }
         

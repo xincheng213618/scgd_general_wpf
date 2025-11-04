@@ -891,4 +891,10 @@
   <data name="UseHDR" xml:space="preserve">
     <value>啟用HDR</value>
   </data>
+  <data name="UploadCalibrationFiles" xml:space="preserve">
+    <value>上傳校正文件</value>
+  </data>
+  <data name="RestorePointCreatedSuccessfully" xml:space="preserve">
+    <value>還原點建立成功</value>
+  </data>
 </root>

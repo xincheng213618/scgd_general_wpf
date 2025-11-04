@@ -891,4 +891,10 @@
   <data name="UseHDR" xml:space="preserve">
     <value>HDR 활성화</value>
   </data>
+  <data name="UploadCalibrationFiles" xml:space="preserve">
+    <value>교정 파일 업로드</value>
+  </data>
+  <data name="RestorePointCreatedSuccessfully" xml:space="preserve">
+    <value>복원 지점이 성공적으로 생성되었습니다.</value>
+  </data>
 </root>

@@ -891,4 +891,10 @@
   <data name="UseHDR" xml:space="preserve">
     <value>HDRを有効にする</value>
   </data>
+  <data name="UploadCalibrationFiles" xml:space="preserve">
+    <value>キャリブレーションファイルをアップロード</value>
+  </data>
+  <data name="RestorePointCreatedSuccessfully" xml:space="preserve">
+    <value>復元ポイントが正常に作成されました</value>
+  </data>
 </root>

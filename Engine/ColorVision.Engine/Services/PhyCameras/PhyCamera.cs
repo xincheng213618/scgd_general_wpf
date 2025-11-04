@@ -54,7 +54,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public ConfigPhyCamera Config { get; set; }
 
-        [CommandDisplay("上传校正文件",Order =100)]
+        [CommandDisplay("UploadCalibrationFiles", Order =100)]
         public RelayCommand UploadCalibrationCommand { get; set; }
         [CommandDisplay("校正模板管理",Order =102)]
         public RelayCommand CalibrationEditCommand { get; set; }
@@ -229,7 +229,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             string entryName1 = Path.Combine(ResotrePath, "Calibration.cfg");
             File.WriteAllText(entryName1, json1);
 
-            MessageBox.Show(Application.Current.GetActiveWindow(), "还原点创建成功");
+            MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.RestorePointCreatedSuccessfully);
         }
 
         public void LoadResotre()

@@ -891,4 +891,10 @@
   <data name="UseHDR" xml:space="preserve">
     <value>Activer le HDR</value>
   </data>
+  <data name="UploadCalibrationFiles" xml:space="preserve">
+    <value>Télécharger le fichier d'étalonnage</value>
+  </data>
+  <data name="RestorePointCreatedSuccessfully" xml:space="preserve">
+    <value>Point de restauration créé avec succès</value>
+  </data>
 </root>
