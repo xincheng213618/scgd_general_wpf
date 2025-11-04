@@ -21,122 +21,93 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.Jsons.SFR2
 {
-    public class SFRItem
+    public class SFR2Curve
     {
-        public string name { get; set; }
-        public double? sfrValue { get; set; }
-        public int x { get; set; }
-        public int y { get; set; }
-        public int w { get; set; }
-        public int h { get; set; }
+        public List<double> domainSamplingData { get; set; }
+        public List<double> frequency { get; set; }
         public int id { get; set; }
     }
 
-    // 对应 resultChild.childRects
-    public class ChildRect
-    {
-        public int h { get; set; }
-        public int id { get; set; }
-        public double? sfrValue { get; set; }
-        public int w { get; set; }
-        public int x { get; set; }
-        public int y { get; set; }
-    }
-
-    // 对应 resultChild 每一项
-    public class ResultChildItem
+    public class SFR2ResultItem
     {
         public string name { get; set; }
-        public double Average { get; set; }
-        public double horizontalAverage { get; set; }
-        public double verticalAverage { get; set; }
-        public List<ChildRect> childRects { get; set; }
+        public List<SFR2Curve> data { get; set; }
     }
 
-    public class SFRResult
+    public class SFR2ResultFile
     {
-        public List<SFRItem> result { get; set; }
-        public List<ResultChildItem> resultChild { get; set; }
+        public List<SFR2ResultItem> result { get; set; }
     }
 
+    // 用于列表展示的汇总行（从每条曲线选一个代表频点）
+    public class SFR2CurveSummary
+    {
+        public string name { get; set; }
+        public int id { get; set; }
+        public double frequency { get; set; }
+        public double value { get; set; }
+    }
 
     public class SFRDetailViewReslut : IViewResult
     {
         public DetailCommonModel DetailCommonModel { get; set; }
 
-        public SFRDetailViewReslut()
-        {
-
-        }
+        public SFRDetailViewReslut() { }
 
         public SFRDetailViewReslut(DetailCommonModel detailCommonModel)
         {
             DetailCommonModel = detailCommonModel;
-
             var restfile = JsonConvert.DeserializeObject<ResultFile>(detailCommonModel.ResultJson);
             ResultFileName = restfile?.ResultFileName;
 
             if (File.Exists(ResultFileName))
             {
-                SFRResult = JsonConvert.DeserializeObject<SFRResult>(File.ReadAllText(ResultFileName));
+                var json = File.ReadAllText(ResultFileName);
+                SFR2Result = JsonConvert.DeserializeObject<SFR2ResultFile>(json);
             }
-
         }
-        public string? ResultFileName { get; set; }
-        public SFRResult? SFRResult { get; set; }
-    }
 
+        public string? ResultFileName { get; set; }
+        public SFR2ResultFile? SFR2Result { get; set; }
+        public bool HasResult => SFR2Result?.result != null && SFR2Result.result.Count > 0;
+    }
 
     public class ViewHandleSFR2 : IResultHandleBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleSFR2));
 
-        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.SFR};
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.SFR };
         public override bool CanHandle1(ViewResultAlg result)
         {
             if (result.Version != "2.0") return false;
             return base.CanHandle1(result);
         }
 
-
         public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             string filePath = selectedPath + "//" + result.Batch + result.ResultType + ".csv";
 
-            var SFRDetailViewResluts = result.ViewResults.ToSpecificViewResults<SFRDetailViewReslut>();
+            var detailResults = result.ViewResults.ToSpecificViewResults<SFRDetailViewReslut>();
             var csvBuilder = new StringBuilder();
-            csvBuilder.AppendLine($"name,x,y,w,h,sfrValue,id");
-            if (SFRDetailViewResluts.Count == 1)
+
+            if (detailResults.Count == 1)
             {
-                var resultChilds = SFRDetailViewResluts[0].SFRResult?.resultChild;
-                if (resultChilds != null)
-                {
+                var viewRes = detailResults[0];
+                csvBuilder.AppendLine("name,id,frequency,value");
 
-                    foreach (var child in resultChilds)
+                if (viewRes.HasResult)
+                {
+                    foreach (var point in viewRes.SFR2Result.result)
                     {
-                        // child.name 这一组的 name
-                        if (child.childRects != null && child.childRects.Count > 0)
+                        if (point?.data == null) continue;
+                        foreach (var curve in point.data)
                         {
-                            foreach (var rect in child.childRects)
+                            if (curve?.frequency == null || curve?.domainSamplingData == null) continue;
+                            int n = System.Math.Min(curve.frequency.Count, curve.domainSamplingData.Count);
+                            for (int i = 0; i < n; i++)
                             {
-                                csvBuilder.AppendLine($"{child.name},{rect.x},{rect.y},{rect.w},{rect.h},{rect.sfrValue},{rect.id}");
+                                csvBuilder.AppendLine($"{point.name},{curve.id},{curve.frequency[i]},{curve.domainSamplingData[i]}");
                             }
-                        }
-                        // 如果你还需要写入平均值，可以单独加一行（如不需要可移除）
-                        csvBuilder.AppendLine($"{child.name},,,,HorizontalAverage,{child.horizontalAverage}");
-                        csvBuilder.AppendLine($"{child.name},,,,verticalAverage,{child.verticalAverage}");
-                        csvBuilder.AppendLine($"{child.name},,,,Average,{child.Average}");
-
-                    }
-                }
-                else
-                {
-                    var sfrs = SFRDetailViewResluts[0].SFRResult?.result;
-                    if (sfrs != null)
-                    {
-                        foreach (var item in sfrs)
-                        {
-                            csvBuilder.AppendLine($"{item.name},{item.x},{item.y},{item.w},{item.h},{item.sfrValue}");
                         }
                     }
                 }
@@ -144,7 +115,6 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
                 File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
             }
         }
-
 
         public override void Load(IViewImageA view, ViewResultAlg result)
         {
@@ -160,7 +130,6 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
                     RelayCommand SelectrelayCommand = new RelayCommand(a =>
                     {
                         PlatformHelper.OpenFolderAndSelectFile(sfrresult.ResultFileName);
-
                     }, a => File.Exists(sfrresult.ResultFileName));
 
                     RelayCommand OpenrelayCommand = new RelayCommand(a =>
@@ -169,45 +138,10 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
                         avalonEditWindow.ShowDialog();
                     }, a => File.Exists(sfrresult.ResultFileName));
 
-
                     result.ContextMenu.Items.Add(new MenuItem() { Header = "选中2.0结果集", Command = SelectrelayCommand });
                     result.ContextMenu.Items.Add(new MenuItem() { Header = "打开2.0结果集", Command = OpenrelayCommand });
 
-
-
-                    void ExportToPoi()
-                    {
-                        int old1 = TemplatePoi.Params.Count;
-                        TemplatePoi templatePoi1 = new TemplatePoi();
-                        templatePoi1.ImportTemp = new PoiParam() { Name = templatePoi1.NewCreateFileName("poi") };
-                        templatePoi1.ImportTemp.Height = 400;
-                        templatePoi1.ImportTemp.Width = 300;
-                        templatePoi1.ImportTemp.PoiConfig.BackgroundFilePath = result.FilePath;
-                        foreach (var item in sfrresult.SFRResult.result)
-                        {
-                            PoiPoint poiPoint = new PoiPoint()
-                            {
-                                Name = item.name,
-                                PixX = item.x,
-                                PixY = item.y,
-                                PixHeight = item.h,
-                                PixWidth = item.w,
-                                PointType = GraphicTypes.Rect,
-                                Id = item.id
-                            };
-                            templatePoi1.ImportTemp.PoiPoints.Add(poiPoint);
-                        }
-
-
-                        templatePoi1.OpenCreate();
-                        int next1 = TemplatePoi.Params.Count;
-                        if (next1 == old1 + 1)
-                        {
-                            new EditPoiParam(TemplatePoi.Params[next1 - 1].Value).ShowDialog();
-                        }
-                    }
-                    RelayCommand ExportToPoiCommand = new RelayCommand(a => ExportToPoi());
-                    result.ContextMenu.Items.Add(new MenuItem() { Header = "创建到POI", Command = ExportToPoiCommand });
+                    // 仅新版，无位置信息，不提供 POI 导出菜单
                 }
 
                 result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmSFR2), ImageFilePath = result.FilePath })) });
@@ -219,51 +153,59 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
 
-            if (result.ViewResults.Count == 1)
+            if (result.ViewResults.Count == 1 && result.ViewResults[0] is SFRDetailViewReslut sfrDetailViewReslut)
             {
-                if (result.ViewResults[0] is SFRDetailViewReslut sfrDetailViewReslut)
+                // 新版结果无位置信息，不绘制矩形
+                // 在列表中展示每条曲线在接近 0.5 的频点的值（可按需调整 target）
+                if (view.ListView.View is GridView gridView)
                 {
-                    int id = 0;
-                    if (sfrDetailViewReslut.SFRResult?.result?.Count > 0)
+                    view.LeftGridViewColumnVisibilitys.Clear();
+                    gridView.Columns.Clear();
+
+                    var rows = new List<SFR2CurveSummary>();
+                    if (sfrDetailViewReslut.HasResult)
                     {
-                        foreach (var item in sfrDetailViewReslut.SFRResult.result)
+                        foreach (var p in sfrDetailViewReslut.SFR2Result.result)
                         {
-                            id++;
-                            DVRectangleText Rectangle = new();
-                            Rectangle.Attribute.Rect = new Rect(item.x,item.y,item.w,item.h);
-                            Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                            Rectangle.Attribute.Id = id;
-                            Rectangle.Attribute.Text = item.name;
-                            Rectangle.Attribute.Msg = item.sfrValue.ToString();
-                            Rectangle.Render();
-                            view.ImageView.AddVisual(Rectangle);
+                            if (p?.data == null) continue;
+                            foreach (var curve in p.data)
+                            {
+                                if (curve?.frequency == null || curve?.domainSamplingData == null) continue;
+                                if (curve.frequency.Count == 0 || curve.domainSamplingData.Count == 0) continue;
+
+                                double target = 0.5; // 选择接近 0.5 的频点
+                                int idx = 0;
+                                double minDiff = double.MaxValue;
+                                int n = System.Math.Min(curve.frequency.Count, curve.domainSamplingData.Count);
+                                for (int i = 0; i < n; i++)
+                                {
+                                    double diff = System.Math.Abs(curve.frequency[i] - target);
+                                    if (diff < minDiff)
+                                    {
+                                        minDiff = diff;
+                                        idx = i;
+                                    }
+                                }
+
+                                rows.Add(new SFR2CurveSummary
+                                {
+                                    name = p.name,
+                                    id = curve.id,
+                                    frequency = curve.frequency[idx],
+                                    value = curve.domainSamplingData[idx]
+                                });
+                            }
                         }
                     }
 
-                    List<string> header = new() { "name", "x","y","w","h","sfrvalue" };
-                    List<string> bdHeader = new() { "name", "x", "y", "w", "h", "sfrValue" };
+                    var header = new List<string> { "name", "id", "frequency", "value" };
+                    var bdHeader = new List<string> { "name", "id", "frequency", "value" };
+                    for (int i = 0; i < header.Count; i++)
+                        gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
 
-                    if (view.ListView.View is GridView gridView)
-                    {
-                        view.LeftGridViewColumnVisibilitys.Clear();
-                        gridView.Columns.Clear();
-                        for (int i = 0; i < header.Count; i++)
-                            gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                        view.ListView.ItemsSource = sfrDetailViewReslut?.SFRResult?.result;
-                    }
+                    view.ListView.ItemsSource = rows;
                 }
             }
-            else
-            {
-
-            }
-
-
-
         }
-
-
-
     }
 }
