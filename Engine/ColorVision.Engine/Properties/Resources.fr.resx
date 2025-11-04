@@ -864,4 +864,31 @@
   <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
     <value>Paramètres du modèle d'algorithme lié à la mise au point</value>
   </data>
+  <data name="Service" xml:space="preserve">
+    <value>Servir</value>
+  </data>
+  <data name="RefreshDeviceList" xml:space="preserve">
+    <value>Actualiser la liste des appareils</value>
+  </data>
+  <data name="UnauthorizedOrCameraLicenseExpiredz" xml:space="preserve">
+    <value>Licence d'appareil photo non autorisée ou expirée</value>
+  </data>
+  <data name="PleaseConfigureCameraIDFirst" xml:space="preserve">
+    <value>Veuillez d'abord configurer l'identifiant de la caméra.</value>
+  </data>
+  <data name="CheckCameraTemperature" xml:space="preserve">
+    <value>Vérifiez les données de température de la caméra</value>
+  </data>
+  <data name="SaveCurrentExposureAndOtherParameters" xml:space="preserve">
+    <value>Enregistrer l'exposition actuelle et d'autres paramètres</value>
+  </data>
+  <data name="AverageTimes" xml:space="preserve">
+    <value>Nombre moyen de fois</value>
+  </data>
+  <data name="Flip" xml:space="preserve">
+    <value>Retourner</value>
+  </data>
+  <data name="UseHDR" xml:space="preserve">
+    <value>Activer le HDR</value>
+  </data>
 </root>

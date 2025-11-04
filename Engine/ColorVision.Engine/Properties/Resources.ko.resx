@@ -864,4 +864,31 @@
   <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
     <value>포커스 관련 알고리즘 템플릿 설정</value>
   </data>
+  <data name="Service" xml:space="preserve">
+    <value>제공하다</value>
+  </data>
+  <data name="RefreshDeviceList" xml:space="preserve">
+    <value>장치 목록 새로 고침</value>
+  </data>
+  <data name="UnauthorizedOrCameraLicenseExpiredz" xml:space="preserve">
+    <value>허가받지 않았거나 만료된 카메라 라이센스</value>
+  </data>
+  <data name="PleaseConfigureCameraIDFirst" xml:space="preserve">
+    <value>먼저 카메라 ID를 구성하세요.</value>
+  </data>
+  <data name="CheckCameraTemperature" xml:space="preserve">
+    <value>카메라의 온도 데이터를 확인하세요</value>
+  </data>
+  <data name="SaveCurrentExposureAndOtherParameters" xml:space="preserve">
+    <value>현재 노출 및 기타 매개변수를 저장합니다.</value>
+  </data>
+  <data name="AverageTimes" xml:space="preserve">
+    <value>평균 횟수</value>
+  </data>
+  <data name="Flip" xml:space="preserve">
+    <value>튀기다</value>
+  </data>
+  <data name="UseHDR" xml:space="preserve">
+    <value>HDR 활성화</value>
+  </data>
 </root>

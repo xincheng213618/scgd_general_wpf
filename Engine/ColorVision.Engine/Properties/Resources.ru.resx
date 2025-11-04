@@ -864,4 +864,31 @@
   <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
     <value>Настройки шаблона алгоритма, связанные с фокусом</value>
   </data>
+  <data name="Service" xml:space="preserve">
+    <value>Служить</value>
+  </data>
+  <data name="RefreshDeviceList" xml:space="preserve">
+    <value>Обновить список устройств</value>
+  </data>
+  <data name="UnauthorizedOrCameraLicenseExpiredz" xml:space="preserve">
+    <value>Несанкционированная или просроченная лицензия на камеру</value>
+  </data>
+  <data name="PleaseConfigureCameraIDFirst" xml:space="preserve">
+    <value>Сначала настройте идентификатор камеры.</value>
+  </data>
+  <data name="CheckCameraTemperature" xml:space="preserve">
+    <value>Проверьте данные о температуре камеры</value>
+  </data>
+  <data name="SaveCurrentExposureAndOtherParameters" xml:space="preserve">
+    <value>Сохранить текущую экспозицию и другие параметры</value>
+  </data>
+  <data name="AverageTimes" xml:space="preserve">
+    <value>Среднее количество раз</value>
+  </data>
+  <data name="Flip" xml:space="preserve">
+    <value>Подбросить</value>
+  </data>
+  <data name="UseHDR" xml:space="preserve">
+    <value>Включить HDR</value>
+  </data>
 </root>

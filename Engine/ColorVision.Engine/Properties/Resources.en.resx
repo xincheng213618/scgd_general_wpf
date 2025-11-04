@@ -864,4 +864,31 @@
   <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
     <value>Point of Interst Algorithm template settings</value>
   </data>
+  <data name="Service" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="RefreshDeviceList" xml:space="preserve">
+    <value>Refresh device list</value>
+  </data>
+  <data name="UnauthorizedOrCameraLicenseExpiredz" xml:space="preserve">
+    <value>Unauthorized or expired camera license</value>
+  </data>
+  <data name="PleaseConfigureCameraIDFirst" xml:space="preserve">
+    <value>Please configure the camera ID first.</value>
+  </data>
+  <data name="CheckCameraTemperature" xml:space="preserve">
+    <value>Check the camera's temperature</value>
+  </data>
+  <data name="SaveCurrentExposureAndOtherParameters" xml:space="preserve">
+    <value>Save current exposure and other parameters</value>
+  </data>
+  <data name="AverageTimes" xml:space="preserve">
+    <value>Average times</value>
+  </data>
+  <data name="Flip" xml:space="preserve">
+    <value>Flip</value>
+  </data>
+  <data name="UseHDR" xml:space="preserve">
+    <value>Enable HDR</value>
+  </data>
 </root>

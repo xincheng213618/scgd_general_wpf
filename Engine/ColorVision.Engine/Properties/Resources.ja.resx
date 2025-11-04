@@ -864,4 +864,31 @@
   <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
     <value>フォーカス関連のアルゴリズムテンプレート設定</value>
   </data>
+  <data name="Service" xml:space="preserve">
+    <value>仕える</value>
+  </data>
+  <data name="RefreshDeviceList" xml:space="preserve">
+    <value>デバイスリストを更新</value>
+  </data>
+  <data name="UnauthorizedOrCameraLicenseExpiredz" xml:space="preserve">
+    <value>不正または期限切れのカメラライセンス</value>
+  </data>
+  <data name="PleaseConfigureCameraIDFirst" xml:space="preserve">
+    <value>最初にカメラIDを設定してください。</value>
+  </data>
+  <data name="CheckCameraTemperature" xml:space="preserve">
+    <value>カメラの温度データを確認する</value>
+  </data>
+  <data name="SaveCurrentExposureAndOtherParameters" xml:space="preserve">
+    <value>現在の露出やその他のパラメータを保存する</value>
+  </data>
+  <data name="AverageTimes" xml:space="preserve">
+    <value>平均回数</value>
+  </data>
+  <data name="Flip" xml:space="preserve">
+    <value>フリップ</value>
+  </data>
+  <data name="UseHDR" xml:space="preserve">
+    <value>HDRを有効にする</value>
+  </data>
 </root>

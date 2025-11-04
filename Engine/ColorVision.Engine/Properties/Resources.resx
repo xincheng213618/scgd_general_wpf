@@ -844,4 +844,31 @@
   <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
     <value>关注点相关算法模板设置</value>
   </data>
+  <data name="Service" xml:space="preserve">
+    <value>服务</value>
+  </data>
+  <data name="RefreshDeviceList" xml:space="preserve">
+    <value>刷新设备列表</value>
+  </data>
+  <data name="UnauthorizedOrCameraLicenseExpiredz" xml:space="preserve">
+    <value>未授权或者相机许可证过期</value>
+  </data>
+  <data name="PleaseConfigureCameraIDFirst" xml:space="preserve">
+    <value>请先配置相机ID</value>
+  </data>
+  <data name="CheckCameraTemperature" xml:space="preserve">
+    <value>查看相机的温度数据</value>
+  </data>
+  <data name="SaveCurrentExposureAndOtherParameters" xml:space="preserve">
+    <value>保存当前的曝光等参数</value>
+  </data>
+  <data name="AverageTimes" xml:space="preserve">
+    <value>平均次数</value>
+  </data>
+  <data name="Flip" xml:space="preserve">
+    <value>翻转</value>
+  </data>
+  <data name="UseHDR" xml:space="preserve">
+    <value>启用HDR</value>
+  </data>
 </root>

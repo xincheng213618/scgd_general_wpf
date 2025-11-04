@@ -70,11 +70,11 @@ namespace ColorVision.Engine.Services
                 bool exists = !string.IsNullOrEmpty(FilePath) && File.Exists(FilePath);
                 if (!exists)
                 {
-                    var parts = FilePath.Split([';'], StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).ToArray();
-                    if (parts.Length >= 2)
-                    {
-                        exists = true;
-                    }
+                    //var parts = FilePath.Split([';'], StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).ToArray();
+                    //if (parts.Length >= 2)
+                    //{
+                    //    exists = true;
+                    //}
                 }
 
                 Application.Current.Dispatcher.BeginInvoke(() =>

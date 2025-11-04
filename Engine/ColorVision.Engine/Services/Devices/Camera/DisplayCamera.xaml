@@ -61,12 +61,12 @@
                     </TextBlock.RenderTransform>
                 </TextBlock>
             </Button>
-            <Grid  DockPanel.Dock="Right"  ToolTip="查看相机的温度数据">
+            <Grid  DockPanel.Dock="Right"  ToolTip="{x:Static properties:Resources.CheckCameraTemperature}">
                 <Image Source="{DynamicResource DITemperature}" Stretch="Uniform" Height="18"/>
                 <Button   Background="Transparent" BorderThickness="0" Command="{Binding FetchLatestTemperatureCommand}"/>
             </Grid>
 
-            <Grid  DockPanel.Dock="Right" ToolTip="保存当前的曝光等参数">
+            <Grid  DockPanel.Dock="Right" ToolTip="{x:Static properties:Resources.SaveCurrentExposureAndOtherParameters}">
                 <Image Source="{DynamicResource DrawingImageSave}" Stretch="Uniform" Height="18">
                     <Image.RenderTransform>
                         <ScaleTransform x:Name="ScaleTransform"/>
@@ -100,17 +100,17 @@
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="3">
                 <DockPanel x:Name="TextBlockUnknow" Margin="0,0,0,3" >
-                    <Button Content="刷新设备列表" Command="{Binding  RefreshDeviceIdCommand}"  Margin="0,0,3,0" />
+                    <Button Content="{x:Static properties:Resources.RefreshDeviceList}" Command="{Binding  RefreshDeviceIdCommand}"  Margin="0,0,3,0" />
                     <TextBlock  Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
                 </DockPanel>
 
                 <DockPanel x:Name="ButtonUnauthorized" Margin="0,0,0,3" >
-                    <Button Content="刷新设备列表" Command="{Binding  RefreshDeviceIdCommand}"  Margin="0,0,3,0" />
-                    <Button Content="未授权或者相机许可证过期" Command="{Binding PhyCamera.UploadLicenseCommand}"  />
+                    <Button Content="{x:Static properties:Resources.RefreshDeviceList}" Command="{Binding  RefreshDeviceIdCommand}"  Margin="0,0,3,0" />
+                    <Button Content="{x:Static properties:Resources.UnauthorizedOrCameraLicenseExpiredz}" Command="{Binding PhyCamera.UploadLicenseCommand}"  />
                 </DockPanel>
                 <DockPanel x:Name="ButtonInit" Margin="0,0,0,3" >
-                    <Button Content="刷新设备列表" Command="{Binding  RefreshDeviceIdCommand}" Margin="0,0,3,0"/>
-                    <Button Content="请先配置相机ID" Command="{Binding EditCommand}"/>
+                    <Button Content="{x:Static properties:Resources.RefreshDeviceList}" Command="{Binding  RefreshDeviceIdCommand}" Margin="0,0,3,0"/>
+                    <Button Content="{x:Static properties:Resources.PleaseConfigureCameraIDFirst}" Command="{Binding EditCommand}"/>
                 </DockPanel>
                 <Button x:Name="ButtonOffline" Margin="0,0,0,3" Visibility="Collapsed" Content="{x:Static properties:Resources.DeviceOffline}" Foreground="White" Background="Red" Click="CameraOffline_Click"/>
                 <DockPanel x:Name="ButtonOpen"  Margin="0,0,0,3">
@@ -191,9 +191,9 @@
                             </StackPanel>
                         </StackPanel>
                         <StackPanel Margin="0,0,0,3" Orientation="Horizontal">
-                            <TextBlock  Text="平均次数" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="50" />
+                            <TextBlock  Text="{x:Static properties:Resources.AverageTimes}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="50" />
                             <TextBox DockPanel.Dock="Right" Text="{Binding Config.AvgCount}" HorizontalAlignment="Left" Width="100"  Margin="0,0,10,0"  />
-                            <TextBlock  Text="翻转" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="30" />
+                            <TextBlock  Text="{x:Static properties:Resources.Flip}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="30" />
                             <ComboBox x:Name="CBFilp" SelectedValue="{Binding Config.FlipMode}"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  Width="70" />
                         </StackPanel>
 
@@ -216,7 +216,7 @@
                                     </Button.Triggers>
                                 </Button>
                             </Grid>
-                            <TextBlock  Text="启用HDR" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="50" />
+                            <TextBlock  Text="{x:Static properties:Resources.UseHDR}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="50" />
                             <ComboBox x:Name="ComboBoxHDRTemplate" d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" SelectedIndex="{Binding HDRTemplateIndex}" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key"/>
                            
                         </DockPanel>
