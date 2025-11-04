@@ -897,4 +897,58 @@
   <data name="RestorePointCreatedSuccessfully" xml:space="preserve">
     <value>還原點建立成功</value>
   </data>
+  <data name="ChangeNDPort" xml:space="preserve">
+    <value>調整NDPort</value>
+  </data>
+  <data name="AutoFocus" xml:space="preserve">
+    <value>自動對焦</value>
+  </data>
+  <data name="Move" xml:space="preserve">
+    <value>移動</value>
+  </data>
+  <data name="AbsolutePosition" xml:space="preserve">
+    <value>絕對位置</value>
+  </data>
+  <data name="AdjustAperture" xml:space="preserve">
+    <value>調整光圈</value>
+  </data>
+  <data name="ApertureF" xml:space="preserve">
+    <value>光圈F</value>
+  </data>
+  <data name="HomePosition" xml:space="preserve">
+    <value>返回原點</value>
+  </data>
+  <data name="CurrentPosition" xml:space="preserve">
+    <value>目前位置：</value>
+  </data>
+  <data name="AcquirePosition" xml:space="preserve">
+    <value>取得位置</value>
+  </data>
+  <data name="ResourceInformation" xml:space="preserve">
+    <value>資源資訊</value>
+  </data>
+  <data name="FrameDisplayName" xml:space="preserve">
+    <value>介面展示名稱</value>
+  </data>
+  <data name="HeartbeatTime" xml:space="preserve">
+    <value>心跳時間</value>
+  </data>
+  <data name="DeviceAutoConnect" xml:space="preserve">
+    <value>裝置自動連接</value>
+  </data>
+  <data name="ApplySettings" xml:space="preserve">
+    <value>應用參數</value>
+  </data>
+  <data name="FileCache" xml:space="preserve">
+    <value>文件快取:</value>
+  </data>
+  <data name="CVCIEFileSave" xml:space="preserve">
+    <value>CVCIE檔案儲存:</value>
+  </data>
+  <data name="SendChannel" xml:space="preserve">
+    <value>發送頻道:</value>
+  </data>
+  <data name="BindPhysicalCameraCode" xml:space="preserve">
+    <value>綁定實體相機代碼</value>
+  </data>
 </root>

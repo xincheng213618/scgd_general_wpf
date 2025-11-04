@@ -897,4 +897,58 @@
   <data name="RestorePointCreatedSuccessfully" xml:space="preserve">
     <value>Точка восстановления успешно создана</value>
   </data>
+  <data name="ChangeNDPort" xml:space="preserve">
+    <value>Настройте NDPort</value>
+  </data>
+  <data name="AutoFocus" xml:space="preserve">
+    <value>Автофокус</value>
+  </data>
+  <data name="Move" xml:space="preserve">
+    <value>двигаться</value>
+  </data>
+  <data name="AbsolutePosition" xml:space="preserve">
+    <value>Абсолютное положение</value>
+  </data>
+  <data name="AdjustAperture" xml:space="preserve">
+    <value>Отрегулируйте диафрагму</value>
+  </data>
+  <data name="ApertureF" xml:space="preserve">
+    <value>Диафрагма F</value>
+  </data>
+  <data name="HomePosition" xml:space="preserve">
+    <value>Вернуться к источнику</value>
+  </data>
+  <data name="CurrentPosition" xml:space="preserve">
+    <value>Текущее местоположение:</value>
+  </data>
+  <data name="AcquirePosition" xml:space="preserve">
+    <value>Получить местоположение</value>
+  </data>
+  <data name="ResourceInformation" xml:space="preserve">
+    <value>Информация о ресурсах</value>
+  </data>
+  <data name="FrameDisplayName" xml:space="preserve">
+    <value>Отображаемое имя интерфейса</value>
+  </data>
+  <data name="HeartbeatTime" xml:space="preserve">
+    <value>Время сердцебиения</value>
+  </data>
+  <data name="DeviceAutoConnect" xml:space="preserve">
+    <value>Автоматическое подключение устройства</value>
+  </data>
+  <data name="ApplySettings" xml:space="preserve">
+    <value>Параметры приложения</value>
+  </data>
+  <data name="FileCache" xml:space="preserve">
+    <value>Файловый кэш:</value>
+  </data>
+  <data name="CVCIEFileSave" xml:space="preserve">
+    <value>Сохранение CVCIE-файлов:</value>
+  </data>
+  <data name="SendChannel" xml:space="preserve">
+    <value>Канал передачи:</value>
+  </data>
+  <data name="BindPhysicalCameraCode" xml:space="preserve">
+    <value>Код для привязки физических камер</value>
+  </data>
 </root>

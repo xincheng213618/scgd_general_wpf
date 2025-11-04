@@ -897,4 +897,58 @@
   <data name="RestorePointCreatedSuccessfully" xml:space="preserve">
     <value>Restore point created successfully</value>
   </data>
+  <data name="ChangeNDPort" xml:space="preserve">
+    <value>Change NDPort</value>
+  </data>
+  <data name="AutoFocus" xml:space="preserve">
+    <value>Autofocus</value>
+  </data>
+  <data name="Move" xml:space="preserve">
+    <value>move</value>
+  </data>
+  <data name="AbsolutePosition" xml:space="preserve">
+    <value>Absolute position</value>
+  </data>
+  <data name="AdjustAperture" xml:space="preserve">
+    <value>Adjust aperture</value>
+  </data>
+  <data name="ApertureF" xml:space="preserve">
+    <value>Aperture F</value>
+  </data>
+  <data name="HomePosition" xml:space="preserve">
+    <value>Return to Home Position</value>
+  </data>
+  <data name="CurrentPosition" xml:space="preserve">
+    <value>Current Position:</value>
+  </data>
+  <data name="AcquirePosition" xml:space="preserve">
+    <value>Acquire Position</value>
+  </data>
+  <data name="ResourceInformation" xml:space="preserve">
+    <value>Resource Information</value>
+  </data>
+  <data name="FrameDisplayName" xml:space="preserve">
+    <value>Frame display name</value>
+  </data>
+  <data name="HeartbeatTime" xml:space="preserve">
+    <value>Heartbeat Time</value>
+  </data>
+  <data name="DeviceAutoConnect" xml:space="preserve">
+    <value>Automatic device connection</value>
+  </data>
+  <data name="ApplySettings" xml:space="preserve">
+    <value>Apply Settings</value>
+  </data>
+  <data name="FileCache" xml:space="preserve">
+    <value>File cache:</value>
+  </data>
+  <data name="CVCIEFileSave" xml:space="preserve">
+    <value>Saving CVCIE files:</value>
+  </data>
+  <data name="SendChannel" xml:space="preserve">
+    <value>Transmit channel:</value>
+  </data>
+  <data name="BindPhysicalCameraCode" xml:space="preserve">
+    <value>Bind physical camera code</value>
+  </data>
 </root>

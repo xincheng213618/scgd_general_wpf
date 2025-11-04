@@ -897,4 +897,58 @@
   <data name="RestorePointCreatedSuccessfully" xml:space="preserve">
     <value>Point de restauration créé avec succès</value>
   </data>
+  <data name="ChangeNDPort" xml:space="preserve">
+    <value>Ajuster NDPort</value>
+  </data>
+  <data name="AutoFocus" xml:space="preserve">
+    <value>Mise au point automatique</value>
+  </data>
+  <data name="Move" xml:space="preserve">
+    <value>se déplacer</value>
+  </data>
+  <data name="AbsolutePosition" xml:space="preserve">
+    <value>position absolue</value>
+  </data>
+  <data name="AdjustAperture" xml:space="preserve">
+    <value>Régler l'ouverture</value>
+  </data>
+  <data name="ApertureF" xml:space="preserve">
+    <value>Ouverture F</value>
+  </data>
+  <data name="HomePosition" xml:space="preserve">
+    <value>Retour à l'origine</value>
+  </data>
+  <data name="CurrentPosition" xml:space="preserve">
+    <value>Emplacement actuel :</value>
+  </data>
+  <data name="AcquirePosition" xml:space="preserve">
+    <value>Obtenir l'emplacement</value>
+  </data>
+  <data name="ResourceInformation" xml:space="preserve">
+    <value>Informations sur les ressources</value>
+  </data>
+  <data name="FrameDisplayName" xml:space="preserve">
+    <value>Nom d'affichage de l'interface</value>
+  </data>
+  <data name="HeartbeatTime" xml:space="preserve">
+    <value>Temps de battement cardiaque</value>
+  </data>
+  <data name="DeviceAutoConnect" xml:space="preserve">
+    <value>Connexion automatique de l'appareil</value>
+  </data>
+  <data name="ApplySettings" xml:space="preserve">
+    <value>Paramètres de l'application</value>
+  </data>
+  <data name="FileCache" xml:space="preserve">
+    <value>Cache de fichiers :</value>
+  </data>
+  <data name="CVCIEFileSave" xml:space="preserve">
+    <value>Enregistrement des fichiers CVCIE :</value>
+  </data>
+  <data name="SendChannel" xml:space="preserve">
+    <value>Canal de transmission :</value>
+  </data>
+  <data name="BindPhysicalCameraCode" xml:space="preserve">
+    <value>Code pour la liaison des caméras physiques</value>
+  </data>
 </root>

@@ -897,4 +897,58 @@
   <data name="RestorePointCreatedSuccessfully" xml:space="preserve">
     <value>복원 지점이 성공적으로 생성되었습니다.</value>
   </data>
+  <data name="ChangeNDPort" xml:space="preserve">
+    <value>NDPort 조정</value>
+  </data>
+  <data name="AutoFocus" xml:space="preserve">
+    <value>자동 초점</value>
+  </data>
+  <data name="Move" xml:space="preserve">
+    <value>이동하다</value>
+  </data>
+  <data name="AbsolutePosition" xml:space="preserve">
+    <value>절대 위치</value>
+  </data>
+  <data name="AdjustAperture" xml:space="preserve">
+    <value>조리개 조정</value>
+  </data>
+  <data name="ApertureF" xml:space="preserve">
+    <value>조리개 F</value>
+  </data>
+  <data name="HomePosition" xml:space="preserve">
+    <value>원점으로 돌아가기</value>
+  </data>
+  <data name="CurrentPosition" xml:space="preserve">
+    <value>현재 위치:</value>
+  </data>
+  <data name="AcquirePosition" xml:space="preserve">
+    <value>위치 가져오기</value>
+  </data>
+  <data name="ResourceInformation" xml:space="preserve">
+    <value>리소스 정보</value>
+  </data>
+  <data name="FrameDisplayName" xml:space="preserve">
+    <value>인터페이스 표시 이름</value>
+  </data>
+  <data name="HeartbeatTime" xml:space="preserve">
+    <value>심장 박동 시간</value>
+  </data>
+  <data name="DeviceAutoConnect" xml:space="preserve">
+    <value>자동 장치 연결</value>
+  </data>
+  <data name="ApplySettings" xml:space="preserve">
+    <value>응용 프로그램 매개 변수</value>
+  </data>
+  <data name="FileCache" xml:space="preserve">
+    <value>파일 캐시:</value>
+  </data>
+  <data name="CVCIEFileSave" xml:space="preserve">
+    <value>CVCIE 파일 저장:</value>
+  </data>
+  <data name="SendChannel" xml:space="preserve">
+    <value>전송 채널:</value>
+  </data>
+  <data name="BindPhysicalCameraCode" xml:space="preserve">
+    <value>물리적 카메라 바인딩을 위한 코드</value>
+  </data>
 </root>
