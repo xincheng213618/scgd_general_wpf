@@ -19,7 +19,7 @@ namespace ColorVision.ImageEditor
 
         public ImageViewModel ImageViewModel { get; set; }
 
-        public ImageViewConfig Config { get; init; }  = new ImageViewConfig();
+        public ImageViewConfig Config { get; set; }  = new ImageViewConfig();
 
         public DrawCanvas DrawCanvas { get; set; }
 
