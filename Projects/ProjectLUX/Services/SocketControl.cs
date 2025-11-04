@@ -122,7 +122,7 @@ namespace ProjectLUX.Services
                         if (ProjectWindowInstance.WindowInstance == null) return string.Join(",", strings) + ";";
 
                         ProjectWindowInstance.WindowInstance.ReturnCode = string.Join(",", strings) + ";";
-                        if (lastTwo == "00")
+                        if (lastTwo == "")
                         {
                             log.Info("拍图窗口握手");
                             ProjectWindowInstance.WindowInstance.InitTest(sn);
@@ -130,6 +130,8 @@ namespace ProjectLUX.Services
                         else if (lastTwo == "02")
                         {
                             log.Info("oc测试 ");
+                            strings.RemoveAt(2);
+                            ProjectWindowInstance.WindowInstance.ReturnCode = string.Join(",", strings);
                             ProjectWindowInstance.WindowInstance.RunTemplate(0, "Optical_Center_Calibrate");
                             return null;
                         }

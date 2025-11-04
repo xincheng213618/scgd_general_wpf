@@ -468,7 +468,7 @@ namespace ProjectLUX
                                 log.Info("IsOC");
                                 if(ObjectiveTestResult.OpticCenterTestResult != null)
                                 {
-                                    ReturnCode += $"{ObjectiveTestResult.OpticCenterTestResult.OptCenterRotation.Value},{ObjectiveTestResult.OpticCenterTestResult.OptCenterXTilt.Value},{ObjectiveTestResult.OpticCenterTestResult.OptCenterYTilt.Value}";
+                                    ReturnCode += $",{ObjectiveTestResult.OpticCenterTestResult.OptCenterRotation.Value},{ObjectiveTestResult.OpticCenterTestResult.OptCenterXTilt.Value},{ObjectiveTestResult.OpticCenterTestResult.OptCenterYTilt.Value},00;";
                                 }
                                 else
                                 {
