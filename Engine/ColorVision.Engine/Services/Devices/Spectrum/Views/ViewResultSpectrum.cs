@@ -36,56 +36,64 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         public void Gen()
         {
-
-            IP = Math.Round(fIp / 65535 * 100, 2).ToString() + "%";
-            Lv = (fPh / 1).ToString();
-
-            double sum1 = 0, sum2 = 0;
-            for (int i = 35; i <= 75; i++)
-                sum1 += fPL[i * 10];
-            for (int i = 20; i <= 120; i++)
-                sum2 += fPL[i * 10];
-            Blue = Math.Round(sum1 / sum2 * 100, 2).ToString();
-            for (int i = 0; i <= (780 - 380) * 10; i += 10)
+            try
             {
-                SpectralData SpectralData = new();
-                SpectralData.Wavelength = i / 10 + 380;
-                SpectralData.RelativeSpectrum = fPL[i] > 0 ? fPL[i] : 0;
-                SpectralData.AbsoluteSpectrum = fPL[i] * fPlambda;
-                SpectralDatas.Add(SpectralData);
+                IP = Math.Round(fIp / 65535 * 100, 2).ToString() + "%";
+                Lv = (fPh / 1).ToString();
+
+                double sum1 = 0, sum2 = 0;
+                for (int i = 35; i <= 75; i++)
+                    sum1 += fPL[i * 10];
+                for (int i = 20; i <= 120; i++)
+                    sum2 += fPL[i * 10];
+                Blue = Math.Round(sum1 / sum2 * 100, 2).ToString();
+                for (int i = 0; i <= (780 - 380) * 10; i += 10)
+                {
+                    SpectralData SpectralData = new();
+                    SpectralData.Wavelength = i / 10 + 380;
+                    SpectralData.RelativeSpectrum = fPL[i] > 0 ? fPL[i] : 0;
+                    SpectralData.AbsoluteSpectrum = fPL[i] * fPlambda;
+                    SpectralDatas.Add(SpectralData);
+                }
+
+                fSpect1 = 380;
+                fSpect2 = 780;
+                double[] xs = new double[fPL.Length];
+                double[] ys = new double[fPL.Length];
+                double[] ysAbsolute = new double[fPL.Length];
+                for (int i = 0; i < fPL.Length; i++)
+                {
+                    xs[i] = ((double)fSpect1 + Math.Round(fInterval, 1) * i);
+                    ys[i] = fPL[i];
+                    ysAbsolute[i] = fPL[i] * fPlambda;
+                }
+
+                ScatterSourceDoubleArray source = new(xs, ys);
+                ScatterPlot = new Scatter(source)
+                {
+                    Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod),
+                    LineWidth = 1,
+                    MarkerSize = 1,
+                    LegendText = string.Empty,
+                    MarkerShape = MarkerShape.None,
+                };
+
+                ScatterSourceDoubleArray sourceAbsolute = new(xs, ysAbsolute);
+                AbsoluteScatterPlot = new Scatter(sourceAbsolute)
+                {
+                    Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod),
+                    LineWidth = 1,
+                    MarkerSize = 1,
+                    LegendText = string.Empty,
+                    MarkerShape = MarkerShape.None,
+                };
+
+            }
+            catch(Exception ex)
+            {
+                
             }
 
-            fSpect1 = 380;
-            fSpect2 = 780;
-            double[] xs = new double[fPL.Length];
-            double[] ys = new double[fPL.Length];
-            double[] ysAbsolute = new double[fPL.Length];
-            for (int i = 0; i < fPL.Length; i++)
-            {
-                xs[i] = ((double)fSpect1 + Math.Round(fInterval, 1) * i);
-                ys[i] = fPL[i];
-                ysAbsolute[i] = fPL[i] * fPlambda;
-            }
-
-            ScatterSourceDoubleArray source = new(xs, ys);
-            ScatterPlot = new Scatter(source)
-            {
-                Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod),
-                LineWidth = 1,
-                MarkerSize = 1,
-                LegendText = string.Empty,
-                MarkerShape = MarkerShape.None,
-            };
-
-            ScatterSourceDoubleArray sourceAbsolute = new(xs, ysAbsolute);
-            AbsoluteScatterPlot = new Scatter(sourceAbsolute)
-            {
-                Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod),
-                LineWidth = 1,
-                MarkerSize = 1,
-                LegendText = string.Empty,
-                MarkerShape = MarkerShape.None,
-            };
         }
 
         public ViewResultSpectrum(SpectumResultModel item)
@@ -117,6 +125,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             fInterval = item.fInterval ?? 0;
             fPL = JsonConvert.DeserializeObject<float[]>(item.fPL ?? string.Empty) ?? Array.Empty<float>();
             fRi = JsonConvert.DeserializeObject<float[]>(item.fRi ?? string.Empty) ?? Array.Empty<float>();
+
 
             Gen();
         }
