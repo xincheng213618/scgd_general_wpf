@@ -37,7 +37,7 @@ namespace ColorVision.Engine.Batch.IVL
             properties.Add("Dominant Wavelength(nm)");
             properties.Add("Saturation(%)");
             properties.Add("Peak Wavelength(nm)");
-            properties.Add("CRI/Ra");
+            //properties.Add("CRI/Ra");
             properties.Add("FWHM");
 
             for (int i = 380; i <= 780; i++)
@@ -73,7 +73,7 @@ namespace ColorVision.Engine.Batch.IVL
                 csvBuilder.Append(result.fLd + ",");
                 csvBuilder.Append(result.fPur + ",");
                 csvBuilder.Append(result.fLp + ",");
-                csvBuilder.Append(result.fRa + ",");
+                //csvBuilder.Append(result.fRa + ",");
                 csvBuilder.Append(result.fHW + ",");
 
 
