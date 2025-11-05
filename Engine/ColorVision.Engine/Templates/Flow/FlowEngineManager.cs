@@ -86,7 +86,6 @@ namespace ColorVision.Engine.Templates.Flow
 
         public int TemplateFlowParamsIndex { get => Config.TemplateFlowParamsIndex; set { Config.TemplateFlowParamsIndex = value; OnPropertyChanged(); } }
 
-        public int TemplateLargeFlowParamsIndex { get => Config.TemplateLargeFlowParamsIndex; set { Config.TemplateLargeFlowParamsIndex = value; OnPropertyChanged(); } }
         public ContextMenu ContextMenu { get; set; }
 
         public RelayCommand EditFlowCommand { get; set; }
