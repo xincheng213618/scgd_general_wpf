@@ -137,7 +137,7 @@
     <value>您必须重新启动才能使用新的语言设置</value>
   </data>
   <data name="en" xml:space="preserve">
-    <value>英语</value>
+    <value>(English)英语</value>
   </data>
   <data name="fr" xml:space="preserve">
     <value>法语</value>

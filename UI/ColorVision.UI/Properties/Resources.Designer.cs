@@ -61,11 +61,47 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 所有文件 (*.*)|*.* 的本地化字符串。
+        /// </summary>
+        public static string AllFiles {
+            get {
+                return ResourceManager.GetString("AllFiles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Application.Current 未初始化 的本地化字符串。
+        /// </summary>
+        public static string ApplicationCurrentNotInitialized {
+            get {
+                return ResourceManager.GetString("ApplicationCurrentNotInitialized", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 升序 的本地化字符串。
+        /// </summary>
+        public static string Ascending {
+            get {
+                return ResourceManager.GetString("Ascending", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 自动调整列宽 的本地化字符串。
         /// </summary>
         public static string AutoAdjustColumnWidth {
             get {
                 return ResourceManager.GetString("AutoAdjustColumnWidth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 超过则自动清理旧备份 的本地化字符串。
+        /// </summary>
+        public static string AutoCleanOldBackups {
+            get {
+                return ResourceManager.GetString("AutoCleanOldBackups", resourceCulture);
             }
         }
         
@@ -97,6 +133,78 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 备份配置文件失败 的本地化字符串。
+        /// </summary>
+        public static string BackupConfigFileFailed {
+            get {
+                return ResourceManager.GetString("BackupConfigFileFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 baseDir 不能为空 的本地化字符串。
+        /// </summary>
+        public static string BaseDirCannotBeEmpty {
+            get {
+                return ResourceManager.GetString("BaseDirCannotBeEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 batchFilePath 不能为空 的本地化字符串。
+        /// </summary>
+        public static string BatchFilePathCannotBeEmpty {
+            get {
+                return ResourceManager.GetString("BatchFilePathCannotBeEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 bool2VisibilityConverter 资源未找到 的本地化字符串。
+        /// </summary>
+        public static string Bool2VisibilityConverterNotFound {
+            get {
+                return ResourceManager.GetString("Bool2VisibilityConverterNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在检测是否支持CUDA 的本地化字符串。
+        /// </summary>
+        public static string CheckingCUDASupport {
+            get {
+                return ResourceManager.GetString("CheckingCUDASupport", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在检索是否存在附加项目 的本地化字符串。
+        /// </summary>
+        public static string CheckingForAdditionalProjects {
+            get {
+                return ResourceManager.GetString("CheckingForAdditionalProjects", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 检测插件更新 的本地化字符串。
+        /// </summary>
+        public static string CheckPluginUpdates {
+            get {
+                return ResourceManager.GetString("CheckPluginUpdates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清理备份文件失败 的本地化字符串。
+        /// </summary>
+        public static string CleanupBackupFailed {
+            get {
+                return ResourceManager.GetString("CleanupBackupFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 清除 的本地化字符串。
         /// </summary>
         public static string Clear {
@@ -111,6 +219,51 @@ namespace ColorVision.UI.Properties {
         public static string Close {
             get {
                 return ResourceManager.GetString("Close", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 配置文件异常,已经重置 的本地化字符串。
+        /// </summary>
+        public static string ConfigFileResetDueToError {
+            get {
+                return ResourceManager.GetString("ConfigFileResetDueToError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 配置文件已从最近备份恢复 的本地化字符串。
+        /// </summary>
+        public static string ConfigFileRestored {
+            get {
+                return ResourceManager.GetString("ConfigFileRestored", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 配置相关参数 的本地化字符串。
+        /// </summary>
+        public static string ConfigurationParameters {
+            get {
+                return ResourceManager.GetString("ConfigurationParameters", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 是否确认删除插件{0} 的本地化字符串。
+        /// </summary>
+        public static string ConfirmDeletePlugin {
+            get {
+                return ResourceManager.GetString("ConfirmDeletePlugin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 是否更新 的本地化字符串。
+        /// </summary>
+        public static string ConfirmUpdate {
+            get {
+                return ResourceManager.GetString("ConfirmUpdate", resourceCulture);
             }
         }
         
@@ -133,11 +286,200 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 英语 的本地化字符串。
+        ///   查找类似 检查依赖 {0} 版本时发生异常: {1} 的本地化字符串。
+        /// </summary>
+        public static string DependencyCheckException {
+            get {
+                return ResourceManager.GetString("DependencyCheckException", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 依赖 {0} 未找到对应的dll: {1} 的本地化字符串。
+        /// </summary>
+        public static string DependencyDllNotFound {
+            get {
+                return ResourceManager.GetString("DependencyDllNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 依赖 {0} 版本不足，要求: {1}，实际: {2} 的本地化字符串。
+        /// </summary>
+        public static string DependencyVersionInsufficient {
+            get {
+                return ResourceManager.GetString("DependencyVersionInsufficient", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 降序 的本地化字符串。
+        /// </summary>
+        public static string Descending {
+            get {
+                return ResourceManager.GetString("Descending", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下载 的本地化字符串。
+        /// </summary>
+        public static string Download {
+            get {
+                return ResourceManager.GetString("Download", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 echo 正在备份当前版本... 的本地化字符串。
+        /// </summary>
+        public static string EchoBackingUpCurrentVersion {
+            get {
+                return ResourceManager.GetString("EchoBackingUpCurrentVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似   echo 备份完成。 的本地化字符串。
+        /// </summary>
+        public static string EchoBackupComplete {
+            get {
+                return ResourceManager.GetString("EchoBackupComplete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似   echo 备份到：%BKDIR% 的本地化字符串。
+        /// </summary>
+        public static string EchoBackupTo {
+            get {
+                return ResourceManager.GetString("EchoBackupTo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 echo 复制完成。 的本地化字符串。
+        /// </summary>
+        public static string EchoCopyComplete {
+            get {
+                return ResourceManager.GetString("EchoCopyComplete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 echo 正在重新启动程序... 的本地化字符串。
+        /// </summary>
+        public static string EchoRestartingProgram {
+            get {
+                return ResourceManager.GetString("EchoRestartingProgram", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似      echo Robocopy 失败，错误码 !RC! ，尝试使用 XCOPY 回退... 的本地化字符串。
+        /// </summary>
+        public static string EchoRobocopyFailed {
+            get {
+                return ResourceManager.GetString("EchoRobocopyFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似   echo 未找到 Robocopy，回退到 XCOPY... 的本地化字符串。
+        /// </summary>
+        public static string EchoRobocopyNotFound {
+            get {
+                return ResourceManager.GetString("EchoRobocopyNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 echo 安排延迟清理临时目录与脚本... 的本地化字符串。
+        /// </summary>
+        public static string EchoSchedulingCleanup {
+            get {
+                return ResourceManager.GetString("EchoSchedulingCleanup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 echo 开始复制新版本文件... 的本地化字符串。
+        /// </summary>
+        public static string EchoStartCopyingFiles {
+            get {
+                return ResourceManager.GetString("EchoStartCopyingFiles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似   echo 目标目录不存在，跳过备份。 的本地化字符串。
+        /// </summary>
+        public static string EchoTargetDirNotExist {
+            get {
+                return ResourceManager.GetString("EchoTargetDirNotExist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 echo 正在结束进程: {0} 的本地化字符串。
+        /// </summary>
+        public static string EchoTerminatingProcess {
+            get {
+                return ResourceManager.GetString("EchoTerminatingProcess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 echo 更新完成。（清理在后台进行） 的本地化字符串。
+        /// </summary>
+        public static string EchoUpdateComplete {
+            get {
+                return ResourceManager.GetString("EchoUpdateComplete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 echo 使用 XCOPY 回退复制... 的本地化字符串。
+        /// </summary>
+        public static string EchoUsingXCOPY {
+            get {
+                return ResourceManager.GetString("EchoUsingXCOPY", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似   echo XCOPY 复制失败，更新中止。 的本地化字符串。
+        /// </summary>
+        public static string EchoXCOPYFailed {
+            get {
+                return ResourceManager.GetString("EchoXCOPYFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 (English)英语 的本地化字符串。
         /// </summary>
         public static string en {
             get {
                 return ResourceManager.GetString("en", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 是否启用CUDA 的本地化字符串。
+        /// </summary>
+        public static string EnableCUDA {
+            get {
+                return ResourceManager.GetString("EnableCUDA", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 是否启用定时备份 的本地化字符串。
+        /// </summary>
+        public static string EnableScheduledBackup {
+            get {
+                return ResourceManager.GetString("EnableScheduledBackup", resourceCulture);
             }
         }
         
@@ -151,11 +493,38 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 执行 的本地化字符串。
+        /// </summary>
+        public static string Execute {
+            get {
+                return ResourceManager.GetString("Execute", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 exeName 不能为空 的本地化字符串。
+        /// </summary>
+        public static string ExeNameCannotBeEmpty {
+            get {
+                return ResourceManager.GetString("ExeNameCannotBeEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 过滤器支持正则 的本地化字符串。
         /// </summary>
         public static string FilterSupportsRegex {
             get {
                 return ResourceManager.GetString("FilterSupportsRegex", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 找到项目{0}，{1}，是否下载 的本地化字符串。
+        /// </summary>
+        public static string FoundProjectDownloadConfirm {
+            get {
+                return ResourceManager.GetString("FoundProjectDownloadConfirm", resourceCulture);
             }
         }
         
@@ -286,6 +655,24 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 加载了没有manifest的插件: {0} 的本地化字符串。
+        /// </summary>
+        public static string LoadedPluginWithoutManifest {
+            get {
+                return ResourceManager.GetString("LoadedPluginWithoutManifest", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 加载插件: {0} 的本地化字符串。
+        /// </summary>
+        public static string LoadingPlugin {
+            get {
+                return ResourceManager.GetString("LoadingPlugin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 日志 的本地化字符串。
         /// </summary>
         public static string Log {
@@ -300,6 +687,15 @@ namespace ColorVision.UI.Properties {
         public static string LogLevel {
             get {
                 return ResourceManager.GetString("LogLevel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最大备份数量 的本地化字符串。
+        /// </summary>
+        public static string MaxBackupCount {
+            get {
+                return ResourceManager.GetString("MaxBackupCount", resourceCulture);
             }
         }
         
@@ -484,6 +880,24 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 没有配置本地的log4输出 的本地化字符串。
+        /// </summary>
+        public static string NoLocalLog4Output {
+            get {
+                return ResourceManager.GetString("NoLocalLog4Output", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 在线Cron表达式生成器 的本地化字符串。
+        /// </summary>
+        public static string OnlineCronGenerator {
+            get {
+                return ResourceManager.GetString("OnlineCronGenerator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 打开配置文件 的本地化字符串。
         /// </summary>
         public static string OpenConfigFile {
@@ -498,6 +912,24 @@ namespace ColorVision.UI.Properties {
         public static string OpenConfigFolder {
             get {
                 return ResourceManager.GetString("OpenConfigFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开所在文件夹 的本地化字符串。
+        /// </summary>
+        public static string OpenContainingFolder {
+            get {
+                return ResourceManager.GetString("OpenContainingFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开文件夹 的本地化字符串。
+        /// </summary>
+        public static string OpenFolder {
+            get {
+                return ResourceManager.GetString("OpenFolder", resourceCulture);
             }
         }
         
@@ -520,11 +952,38 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 插件DLL不存在: {0} 的本地化字符串。
+        /// </summary>
+        public static string PluginDllNotFound {
+            get {
+                return ResourceManager.GetString("PluginDllNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 加载插件或manifest错误：{0} 的本地化字符串。
+        /// </summary>
+        public static string PluginLoadError {
+            get {
+                return ResourceManager.GetString("PluginLoadError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 插件管理器窗口 的本地化字符串。
         /// </summary>
         public static string PluginManagerWindow {
             get {
                 return ResourceManager.GetString("PluginManagerWindow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 插件 {0} 缺少唯一Id，已跳过 的本地化字符串。
+        /// </summary>
+        public static string PluginMissingId {
+            get {
+                return ResourceManager.GetString("PluginMissingId", resourceCulture);
             }
         }
         
@@ -538,11 +997,47 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 找不到项目{0} 的本地化字符串。
+        /// </summary>
+        public static string ProjectNotFound {
+            get {
+                return ResourceManager.GetString("ProjectNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似   rem Robocopy 0-7 视为成功 的本地化字符串。
+        /// </summary>
+        public static string RemRobocopySuccess {
+            get {
+                return ResourceManager.GetString("RemRobocopySuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 rem STAGE 指向临时目录中解压出的 ColorVision 内容根 的本地化字符串。
+        /// </summary>
+        public static string RemStagePointsToTemp {
+            get {
+                return ResourceManager.GetString("RemStagePointsToTemp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 重置 的本地化字符串。
         /// </summary>
         public static string Reset {
             get {
                 return ResourceManager.GetString("Reset", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 恢复配置文件失败 的本地化字符串。
+        /// </summary>
+        public static string RestoreConfigFileFailed {
+            get {
+                return ResourceManager.GetString("RestoreConfigFileFailed", resourceCulture);
             }
         }
         
@@ -556,11 +1051,38 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 保存单个配置 {0} 失败 的本地化字符串。
+        /// </summary>
+        public static string SaveSingleConfigFailed {
+            get {
+                return ResourceManager.GetString("SaveSingleConfigFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 搜索 的本地化字符串。
         /// </summary>
         public static string Search {
             get {
                 return ResourceManager.GetString("Search", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 智能排序 (升序) 的本地化字符串。
+        /// </summary>
+        public static string SmartSortAscending {
+            get {
+                return ResourceManager.GetString("SmartSortAscending", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 智能排序 (降序) 的本地化字符串。
+        /// </summary>
+        public static string SmartSortDescending {
+            get {
+                return ResourceManager.GetString("SmartSortDescending", resourceCulture);
             }
         }
         
@@ -574,6 +1096,24 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 按 {0} 排序 的本地化字符串。
+        /// </summary>
+        public static string SortByColumn {
+            get {
+                return ResourceManager.GetString("SortByColumn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 排序选项 的本地化字符串。
+        /// </summary>
+        public static string SortOptions {
+            get {
+                return ResourceManager.GetString("SortOptions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 剩余时间： 的本地化字符串。
         /// </summary>
         public static string TimeLeft {
@@ -583,11 +1123,29 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 不支持的文件格式 的本地化字符串。
+        /// </summary>
+        public static string UnsupportedFileFormat {
+            get {
+                return ResourceManager.GetString("UnsupportedFileFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 更新 的本地化字符串。
         /// </summary>
         public static string Update {
             get {
                 return ResourceManager.GetString("Update", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新Log4Net 日志级别： 的本地化字符串。
+        /// </summary>
+        public static string UpdateLog4NetLevel {
+            get {
+                return ResourceManager.GetString("UpdateLog4NetLevel", resourceCulture);
             }
         }
         
@@ -610,6 +1168,42 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 视图模式1 的本地化字符串。
+        /// </summary>
+        public static string ViewMode1 {
+            get {
+                return ResourceManager.GetString("ViewMode1", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 视图模式2 的本地化字符串。
+        /// </summary>
+        public static string ViewMode2 {
+            get {
+                return ResourceManager.GetString("ViewMode2", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 视图模式4 的本地化字符串。
+        /// </summary>
+        public static string ViewMode4 {
+            get {
+                return ResourceManager.GetString("ViewMode4", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 视图模式9 的本地化字符串。
+        /// </summary>
+        public static string ViewMode9 {
+            get {
+                return ResourceManager.GetString("ViewMode9", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 隐藏 的本地化字符串。
         /// </summary>
         public static string WindowHidden {
@@ -624,6 +1218,15 @@ namespace ColorVision.UI.Properties {
         public static string WindowSingle {
             get {
                 return ResourceManager.GetString("WindowSingle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 写入配置文件 {0} 失败 的本地化字符串。
+        /// </summary>
+        public static string WriteConfigFileFailed {
+            get {
+                return ResourceManager.GetString("WriteConfigFileFailed", resourceCulture);
             }
         }
         
@@ -644,73 +1247,5 @@ namespace ColorVision.UI.Properties {
                 return ResourceManager.GetString("zh-Hant", resourceCulture);
             }
         }
-        
-        public static string NoLocalLog4Output => ResourceManager.GetString("NoLocalLog4Output", resourceCulture);
-        public static string UpdateLog4NetLevel => ResourceManager.GetString("UpdateLog4NetLevel", resourceCulture);
-        public static string ViewMode1 => ResourceManager.GetString("ViewMode1", resourceCulture);
-        public static string ViewMode2 => ResourceManager.GetString("ViewMode2", resourceCulture);
-        public static string ViewMode4 => ResourceManager.GetString("ViewMode4", resourceCulture);
-        public static string ViewMode9 => ResourceManager.GetString("ViewMode9", resourceCulture);
-        public static string CheckPluginUpdates => ResourceManager.GetString("CheckPluginUpdates", resourceCulture);
-        public static string CheckingForAdditionalProjects => ResourceManager.GetString("CheckingForAdditionalProjects", resourceCulture);
-        public static string Download => ResourceManager.GetString("Download", resourceCulture);
-        public static string ProjectNotFound => ResourceManager.GetString("ProjectNotFound", resourceCulture);
-        public static string FoundProjectDownloadConfirm => ResourceManager.GetString("FoundProjectDownloadConfirm", resourceCulture);
-        public static string AllFiles => ResourceManager.GetString("AllFiles", resourceCulture);
-        public static string UnsupportedFileFormat => ResourceManager.GetString("UnsupportedFileFormat", resourceCulture);
-        public static string SortOptions => ResourceManager.GetString("SortOptions", resourceCulture);
-        public static string SmartSortAscending => ResourceManager.GetString("SmartSortAscending", resourceCulture);
-        public static string SmartSortDescending => ResourceManager.GetString("SmartSortDescending", resourceCulture);
-        public static string SortByColumn => ResourceManager.GetString("SortByColumn", resourceCulture);
-        public static string Ascending => ResourceManager.GetString("Ascending", resourceCulture);
-        public static string Descending => ResourceManager.GetString("Descending", resourceCulture);
-        public static string ConfirmUpdate => ResourceManager.GetString("ConfirmUpdate", resourceCulture);
-        public static string ConfirmDeletePlugin => ResourceManager.GetString("ConfirmDeletePlugin", resourceCulture);
-        public static string EnableCUDA => ResourceManager.GetString("EnableCUDA", resourceCulture);
-        public static string CheckingCUDASupport => ResourceManager.GetString("CheckingCUDASupport", resourceCulture);
-        public static string ConfigurationParameters => ResourceManager.GetString("ConfigurationParameters", resourceCulture);
-        public static string EnableScheduledBackup => ResourceManager.GetString("EnableScheduledBackup", resourceCulture);
-        public static string MaxBackupCount => ResourceManager.GetString("MaxBackupCount", resourceCulture);
-        public static string AutoCleanOldBackups => ResourceManager.GetString("AutoCleanOldBackups", resourceCulture);
-        public static string ConfigFileResetDueToError => ResourceManager.GetString("ConfigFileResetDueToError", resourceCulture);
-        public static string ConfigFileRestored => ResourceManager.GetString("ConfigFileRestored", resourceCulture);
-        public static string RestoreConfigFileFailed => ResourceManager.GetString("RestoreConfigFileFailed", resourceCulture);
-        public static string BackupConfigFileFailed => ResourceManager.GetString("BackupConfigFileFailed", resourceCulture);
-        public static string CleanupBackupFailed => ResourceManager.GetString("CleanupBackupFailed", resourceCulture);
-        public static string SaveSingleConfigFailed => ResourceManager.GetString("SaveSingleConfigFailed", resourceCulture);
-        public static string WriteConfigFileFailed => ResourceManager.GetString("WriteConfigFileFailed", resourceCulture);
-        public static string Execute => ResourceManager.GetString("Execute", resourceCulture);
-        public static string OpenContainingFolder => ResourceManager.GetString("OpenContainingFolder", resourceCulture);
-        public static string OpenFolder => ResourceManager.GetString("OpenFolder", resourceCulture);
-        public static string OnlineCronGenerator => ResourceManager.GetString("OnlineCronGenerator", resourceCulture);
-        public static string PluginMissingId => ResourceManager.GetString("PluginMissingId", resourceCulture);
-        public static string DependencyDllNotFound => ResourceManager.GetString("DependencyDllNotFound", resourceCulture);
-        public static string DependencyVersionInsufficient => ResourceManager.GetString("DependencyVersionInsufficient", resourceCulture);
-        public static string DependencyCheckException => ResourceManager.GetString("DependencyCheckException", resourceCulture);
-        public static string LoadingPlugin => ResourceManager.GetString("LoadingPlugin", resourceCulture);
-        public static string PluginDllNotFound => ResourceManager.GetString("PluginDllNotFound", resourceCulture);
-        public static string LoadedPluginWithoutManifest => ResourceManager.GetString("LoadedPluginWithoutManifest", resourceCulture);
-        public static string PluginLoadError => ResourceManager.GetString("PluginLoadError", resourceCulture);
-        public static string BatchFilePathCannotBeEmpty => ResourceManager.GetString("BatchFilePathCannotBeEmpty", resourceCulture);
-        public static string BaseDirCannotBeEmpty => ResourceManager.GetString("BaseDirCannotBeEmpty", resourceCulture);
-        public static string ExeNameCannotBeEmpty => ResourceManager.GetString("ExeNameCannotBeEmpty", resourceCulture);
-        public static string EchoTerminatingProcess => ResourceManager.GetString("EchoTerminatingProcess", resourceCulture);
-        public static string EchoStartCopyingFiles => ResourceManager.GetString("EchoStartCopyingFiles", resourceCulture);
-        public static string RemStagePointsToTemp => ResourceManager.GetString("RemStagePointsToTemp", resourceCulture);
-        public static string EchoBackingUpCurrentVersion => ResourceManager.GetString("EchoBackingUpCurrentVersion", resourceCulture);
-        public static string EchoTargetDirNotExist => ResourceManager.GetString("EchoTargetDirNotExist", resourceCulture);
-        public static string EchoBackupTo => ResourceManager.GetString("EchoBackupTo", resourceCulture);
-        public static string EchoBackupComplete => ResourceManager.GetString("EchoBackupComplete", resourceCulture);
-        public static string RemRobocopySuccess => ResourceManager.GetString("RemRobocopySuccess", resourceCulture);
-        public static string EchoRobocopyFailed => ResourceManager.GetString("EchoRobocopyFailed", resourceCulture);
-        public static string EchoRobocopyNotFound => ResourceManager.GetString("EchoRobocopyNotFound", resourceCulture);
-        public static string EchoUsingXCOPY => ResourceManager.GetString("EchoUsingXCOPY", resourceCulture);
-        public static string EchoXCOPYFailed => ResourceManager.GetString("EchoXCOPYFailed", resourceCulture);
-        public static string EchoCopyComplete => ResourceManager.GetString("EchoCopyComplete", resourceCulture);
-        public static string EchoRestartingProgram => ResourceManager.GetString("EchoRestartingProgram", resourceCulture);
-        public static string EchoSchedulingCleanup => ResourceManager.GetString("EchoSchedulingCleanup", resourceCulture);
-        public static string EchoUpdateComplete => ResourceManager.GetString("EchoUpdateComplete", resourceCulture);
-        public static string ApplicationCurrentNotInitialized => ResourceManager.GetString("ApplicationCurrentNotInitialized", resourceCulture);
-        public static string Bool2VisibilityConverterNotFound => ResourceManager.GetString("Bool2VisibilityConverterNotFound", resourceCulture);
     }
 }

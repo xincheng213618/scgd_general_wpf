@@ -1,17 +1,11 @@
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
-using ColorVision.Engine.Services.Devices.SMU.Views;
-using ColorVision.Engine.Services.Devices.Spectrum.Dao;
-using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using log4net;
-using Newtonsoft.Json;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
-using System.Text;
 
 namespace ColorVision.Engine.Batch.IVL
 {
