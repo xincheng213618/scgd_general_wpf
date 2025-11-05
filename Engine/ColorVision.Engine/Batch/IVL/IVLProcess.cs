@@ -120,19 +120,18 @@ namespace ColorVision.Engine.Batch.IVL
                 }
 
 
-                using (var DB = new SqlSugarClient(new ConnectionConfig
+
+                var DB = new SqlSugarClient(new ConnectionConfig
                 {
                     ConnectionString = MySqlControl.GetConnectionString(),
                     DbType = SqlSugar.DbType.MySql,
                     IsAutoCloseConnection = true
-                }))
+                });
+                foreach (var item in DB.Queryable<SMUResultModel>().Where(x => x.Batchid == ctx.Batch.Id).ToList())
                 {
-                    foreach (var item in DB.Queryable<SMUResultModel>().Where(x => x.Batchid == ctx.Batch.Id).ToList())
-                    {
-                        testResult.SMUResultModels.Add(item);
-                    }
+                    testResult.SMUResultModels.Add(item);
                 }
-
+                DB.Dispose();
                 string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 string filePath = Path.Combine(config.SavePath, $"Camera_IVL_{timeStr}.csv");
                 var rows = new List<string> { "Time,Meas_id,POI_id,Voltage(V),Current(mA),Lv(cd/m2),X,Y,Z,cx,cy,u',v',CCT(K),Dominant Wavelength" };
@@ -155,15 +154,15 @@ namespace ColorVision.Engine.Batch.IVL
                 File.WriteAllLines(filePath, rows);
 
 
-                var DB = new SqlSugarClient(new ConnectionConfig
+                var DB1 = new SqlSugarClient(new ConnectionConfig
                 {
                     ConnectionString = MySqlControl.GetConnectionString(),
                     DbType = SqlSugar.DbType.MySql,
                     IsAutoCloseConnection = true
                 });
 
-                var list = DB.Queryable<SpectumResultModel>().Where(x => x.BatchId == ctx.Batch.Id).ToList();
-                DB.Dispose();
+                var list = DB1.Queryable<SpectumResultModel>().Where(x => x.BatchId == ctx.Batch.Id).ToList();
+                DB1.Dispose();
                 ObservableCollection<ViewResultSpectrum> ViewResults = new ObservableCollection<ViewResultSpectrum>();
                 if (list.Count == 0)
                 {
