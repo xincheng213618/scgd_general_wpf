@@ -28,7 +28,9 @@ namespace ColorVision.Engine.Services
         public override void Save()
         {
             SysResourceModel.Name = Name;
-            MySqlControl.GetInstance().DB.Updateable(SysResourceModel).ExecuteCommand();
+            var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
+            DB.Updateable(SysResourceModel).ExecuteCommand();
+            DB.Dispose();
         }
 
         public override void Delete()

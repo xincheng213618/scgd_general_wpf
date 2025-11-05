@@ -1,6 +1,7 @@
 ﻿using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.MQTT;
+using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
@@ -9,6 +10,7 @@ using MQTTMessageLib.Spectrum;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -68,7 +70,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                             if (msg !=null && msg.Data != null && msg?.Data?.MasterId != null && msg?.Data?.MasterId > 0)
                             {
                                 int masterId = msg.Data?.MasterId;
-                                SpectumResultModel model = MySqlControl.GetInstance().DB.Queryable<SpectumResultModel>().Where(x => x.Id == masterId).First();
+                                var DB = new SqlSugarClient(new ConnectionConfig
+                                {
+                                    ConnectionString = MySqlControl.GetConnectionString(),
+                                    DbType = SqlSugar.DbType.MySql,
+                                    IsAutoCloseConnection = true
+                                });
+                                SpectumResultModel model = DB.Queryable<SpectumResultModel>().Where(x => x.Id == masterId).First();
+                                DB.Dispose();
                                 if (model != null)
                                 {
                                     ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
