@@ -145,7 +145,7 @@ namespace ProjectARVRPro.Process.MTFHV
         /// <summary>
         /// MTF_HV_V ×óÏÂ_0.8F ²âÊÔÏî
         /// </summary>
-        public ObjectiveTestItem MTF_HV_V_LeftDown_0_8F { get; set; }
+        public ObjectiveTestItem MTF_HV_V_LeftDown_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_V_LeftDown_0_8F", Unit = "%" };
 
     }
 }

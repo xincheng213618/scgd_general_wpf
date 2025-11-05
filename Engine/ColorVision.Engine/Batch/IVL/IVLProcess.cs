@@ -6,6 +6,7 @@ using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using log4net;
 using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -117,9 +118,19 @@ namespace ColorVision.Engine.Batch.IVL
                         }
                     }
                 }
-                foreach (var item in MySqlControl.GetInstance().DB.Queryable<SMUResultModel>().Where(x=>x.Batchid == ctx.Batch.Id).ToList())
+
+
+                using (var DB = new SqlSugarClient(new ConnectionConfig
                 {
-                    testResult.SMUResultModels.Add(item);
+                    ConnectionString = MySqlControl.GetConnectionString(),
+                    DbType = SqlSugar.DbType.MySql,
+                    IsAutoCloseConnection = true
+                }))
+                {
+                    foreach (var item in DB.Queryable<SMUResultModel>().Where(x => x.Batchid == ctx.Batch.Id).ToList())
+                    {
+                        testResult.SMUResultModels.Add(item);
+                    }
                 }
 
                 string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -143,7 +154,16 @@ namespace ColorVision.Engine.Batch.IVL
                 }
                 File.WriteAllLines(filePath, rows);
 
-                var list = MySqlControl.GetInstance().DB.Queryable<SpectumResultModel>().Where(x => x.BatchId == ctx.Batch.Id).ToList();
+
+                var DB = new SqlSugarClient(new ConnectionConfig
+                {
+                    ConnectionString = MySqlControl.GetConnectionString(),
+                    DbType = SqlSugar.DbType.MySql,
+                    IsAutoCloseConnection = true
+                });
+
+                var list = DB.Queryable<SpectumResultModel>().Where(x => x.BatchId == ctx.Batch.Id).ToList();
+                DB.Dispose();
                 ObservableCollection<ViewResultSpectrum> ViewResults = new ObservableCollection<ViewResultSpectrum>();
                 if (list.Count == 0)
                 {

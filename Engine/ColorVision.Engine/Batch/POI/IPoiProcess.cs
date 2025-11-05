@@ -16,8 +16,8 @@ namespace ColorVision.Engine.Batch.Poi
             try
             {
                 //var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
-                ////if (values.Count > 0)
-                //    //ctx.Result.FileName = values[0].FileUrl;
+                //if (values.Count > 0)
+                //    ctx.FileName = values[0].FileUrl;
 
                 var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 foreach (var master in masters)
