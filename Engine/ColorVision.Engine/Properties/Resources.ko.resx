@@ -780,6 +780,9 @@
   <data name="DefaultValue" xml:space="preserve">
     <value>기본값</value>
   </data>
+  <data name="Symbol" xml:space="preserve">
+    <value>상징</value>
+  </data>
   <data name="AddressCode" xml:space="preserve">
     <value>주소코드</value>
   </data>
@@ -788,9 +791,6 @@
   </data>
   <data name="IsEnable" xml:space="preserve">
     <value>활성화되어 있습니까?</value>
-  </data>
-  <data name="Symbol" xml:space="preserve">
-    <value>상징</value>
   </data>
   <data name="MenuEngine" xml:space="preserve">
     <value>엔진(_N)</value>
@@ -959,5 +959,38 @@
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
     <value>프로세스 결과 관리</value>
+  </data>
+  <data name="ParsingManagement" xml:space="preserve">
+    <value>파싱 관리</value>
+  </data>
+  <data name="Parsing" xml:space="preserve">
+    <value>분석</value>
+  </data>
+  <data name="XStaticPropertiesResourcesParsing" xml:space="preserve">
+    <value>{x:정적 속성:리소스.파싱}</value>
+  </data>
+  <data name="Camera" xml:space="preserve">
+    <value>카메라</value>
+  </data>
+  <data name="HdrTemplate" xml:space="preserve">
+    <value>HDR 템플릿</value>
+  </data>
+  <data name="CameraParameterTemplate" xml:space="preserve">
+    <value>카메라 매개변수 템플릿</value>
+  </data>
+  <data name="AutoFocusTemplate" xml:space="preserve">
+    <value>자동 초점 템플릿</value>
+  </data>
+  <data name="POITemplateSettings" xml:space="preserve">
+    <value>포커스 관련 알고리즘 템플릿 설정</value>
+  </data>
+  <data name="POIFilterTemplateSettings" xml:space="preserve">
+    <value>POI 필터 템플릿 설정</value>
+  </data>
+  <data name="POICorrectionTemplateSettings" xml:space="preserve">
+    <value>POI 수정 템플릿 설정</value>
+  </data>
+  <data name="ApplicationPropertyTemplate" xml:space="preserve">
+    <value>애플리케이션 속성 템플릿</value>
   </data>
 </root>

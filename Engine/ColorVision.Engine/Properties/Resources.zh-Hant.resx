@@ -780,6 +780,9 @@
   <data name="DefaultValue" xml:space="preserve">
     <value>預設值</value>
   </data>
+  <data name="Symbol" xml:space="preserve">
+    <value>象徵</value>
+  </data>
   <data name="AddressCode" xml:space="preserve">
     <value>地址代碼</value>
   </data>
@@ -788,9 +791,6 @@
   </data>
   <data name="IsEnable" xml:space="preserve">
     <value>是否啟用</value>
-  </data>
-  <data name="Symbol" xml:space="preserve">
-    <value>象徵</value>
   </data>
   <data name="MenuEngine" xml:space="preserve">
     <value>引擎(_N)</value>
@@ -959,5 +959,38 @@
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
     <value>流程結果管理</value>
+  </data>
+  <data name="ParsingManagement" xml:space="preserve">
+    <value>解析管理</value>
+  </data>
+  <data name="Parsing" xml:space="preserve">
+    <value>解析</value>
+  </data>
+  <data name="XStaticPropertiesResourcesParsing" xml:space="preserve">
+    <value>{x:Static properties:Resources.Parsing}</value>
+  </data>
+  <data name="Camera" xml:space="preserve">
+    <value>相機</value>
+  </data>
+  <data name="HdrTemplate" xml:space="preserve">
+    <value>HDR模板</value>
+  </data>
+  <data name="CameraParameterTemplate" xml:space="preserve">
+    <value>相機參數模板</value>
+  </data>
+  <data name="AutoFocusTemplate" xml:space="preserve">
+    <value>自動對焦模板</value>
+  </data>
+  <data name="POITemplateSettings" xml:space="preserve">
+    <value>關注點相關演算法模版設置</value>
+  </data>
+  <data name="POIFilterTemplateSettings" xml:space="preserve">
+    <value>POI過濾模板設置</value>
+  </data>
+  <data name="POICorrectionTemplateSettings" xml:space="preserve">
+    <value>Poi修正模板設定</value>
+  </data>
+  <data name="ApplicationPropertyTemplate" xml:space="preserve">
+    <value>應用程式屬性模板</value>
   </data>
 </root>

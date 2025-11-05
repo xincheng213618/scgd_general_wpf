@@ -780,6 +780,9 @@
   <data name="DefaultValue" xml:space="preserve">
     <value>Значение по умолчанию</value>
   </data>
+  <data name="Symbol" xml:space="preserve">
+    <value>Символ</value>
+  </data>
   <data name="AddressCode" xml:space="preserve">
     <value>АдресКод</value>
   </data>
@@ -788,9 +791,6 @@
   </data>
   <data name="IsEnable" xml:space="preserve">
     <value>IsEnable</value>
-  </data>
-  <data name="Symbol" xml:space="preserve">
-    <value>Символ</value>
   </data>
   <data name="MenuEngine" xml:space="preserve">
     <value>Двигатель (Н)</value>
@@ -959,5 +959,38 @@
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
     <value>Управление результатами процесса</value>
+  </data>
+  <data name="ParsingManagement" xml:space="preserve">
+    <value>Управление анализом</value>
+  </data>
+  <data name="Parsing" xml:space="preserve">
+    <value>Анализ</value>
+  </data>
+  <data name="XStaticPropertiesResourcesParsing" xml:space="preserve">
+    <value>{x:Статические свойства:Ресурсы.Анализ}</value>
+  </data>
+  <data name="Camera" xml:space="preserve">
+    <value>камера</value>
+  </data>
+  <data name="HdrTemplate" xml:space="preserve">
+    <value>HDR-шаблон</value>
+  </data>
+  <data name="CameraParameterTemplate" xml:space="preserve">
+    <value>Шаблон параметров камеры</value>
+  </data>
+  <data name="AutoFocusTemplate" xml:space="preserve">
+    <value>Шаблон автофокуса</value>
+  </data>
+  <data name="POITemplateSettings" xml:space="preserve">
+    <value>Настройки шаблона алгоритма, связанные с фокусом</value>
+  </data>
+  <data name="POIFilterTemplateSettings" xml:space="preserve">
+    <value>Настройки шаблона фильтра POI</value>
+  </data>
+  <data name="POICorrectionTemplateSettings" xml:space="preserve">
+    <value>Настройки шаблона модификации Poi</value>
+  </data>
+  <data name="ApplicationPropertyTemplate" xml:space="preserve">
+    <value>Шаблон свойств приложения</value>
   </data>
 </root>

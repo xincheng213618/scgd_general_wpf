@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam
         public override string OwnerGuid => nameof(MenuItemCamera);
 
         public override int Order => 22;
-        public override string Header => "相机参数模板";   
+        public override string Header => ColorVision.Engine.Properties.Resources.CameraParameterTemplate;   
 
         public override void Execute()
         {

@@ -780,6 +780,9 @@
   <data name="DefaultValue" xml:space="preserve">
     <value>Valeur par défaut</value>
   </data>
+  <data name="Symbol" xml:space="preserve">
+    <value>Symbole</value>
+  </data>
   <data name="AddressCode" xml:space="preserve">
     <value>Code d'adresse</value>
   </data>
@@ -788,9 +791,6 @@
   </data>
   <data name="IsEnable" xml:space="preserve">
     <value>Est-ce qu'il est activé</value>
-  </data>
-  <data name="Symbol" xml:space="preserve">
-    <value>Symbole</value>
   </data>
   <data name="MenuEngine" xml:space="preserve">
     <value>Moteur (_N)</value>
@@ -959,5 +959,38 @@
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
     <value>Gestion des résultats des processus</value>
+  </data>
+  <data name="ParsingManagement" xml:space="preserve">
+    <value>Gestion de l'analyse syntaxique</value>
+  </data>
+  <data name="Parsing" xml:space="preserve">
+    <value>Analyse</value>
+  </data>
+  <data name="XStaticPropertiesResourcesParsing" xml:space="preserve">
+    <value>{x:Propriétés statiques:Ressources.Analyse}</value>
+  </data>
+  <data name="Camera" xml:space="preserve">
+    <value>caméra</value>
+  </data>
+  <data name="HdrTemplate" xml:space="preserve">
+    <value>Modèle HDR</value>
+  </data>
+  <data name="CameraParameterTemplate" xml:space="preserve">
+    <value>Modèle de paramètres de caméra</value>
+  </data>
+  <data name="AutoFocusTemplate" xml:space="preserve">
+    <value>Modèle de mise au point automatique</value>
+  </data>
+  <data name="POITemplateSettings" xml:space="preserve">
+    <value>Paramètres du modèle d'algorithme liés à la mise au point</value>
+  </data>
+  <data name="POIFilterTemplateSettings" xml:space="preserve">
+    <value>paramètres du modèle de filtre POI</value>
+  </data>
+  <data name="POICorrectionTemplateSettings" xml:space="preserve">
+    <value>Paramètres du modèle de modification Poi</value>
+  </data>
+  <data name="ApplicationPropertyTemplate" xml:space="preserve">
+    <value>Modèle de propriété d'application</value>
   </data>
 </root>

@@ -90,8 +90,8 @@
                         <Button Content="{x:Static properties:Resources.FlowResultManagement}"  Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"/>
                     </StackPanel>
                     <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
-                        <Button Content="解析管理" Click="Button_Click_1"/>
-                        <Button Content="解析" Click="BatchProcess_Click"/>
+                        <Button Content="{x:Static properties:Resources.ParsingManagement}" Click="Button_Click_1"/>
+                        <Button Content="{x:Static properties:Resources.Parsing}" Click="BatchProcess_Click"/>
                     </StackPanel>
                     <ProgressBar x:Name="ProgressBar1" Maximum="100"/>
                     <TextBox x:FieldModifier="public"  x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Height="105" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" Margin="0,0,0,5" />

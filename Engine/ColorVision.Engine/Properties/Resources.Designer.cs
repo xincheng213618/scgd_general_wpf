@@ -187,6 +187,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 应用属性模板 的本地化字符串。
+        /// </summary>
+        public static string ApplicationPropertyTemplate {
+            get {
+                return ResourceManager.GetString("ApplicationPropertyTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 应用参数 的本地化字符串。
         /// </summary>
         public static string ApplySettings {
@@ -219,6 +228,15 @@ namespace ColorVision.Engine.Properties {
         public static string AutoFocus {
             get {
                 return ResourceManager.GetString("AutoFocus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 自动聚焦模板 的本地化字符串。
+        /// </summary>
+        public static string AutoFocusTemplate {
+            get {
+                return ResourceManager.GetString("AutoFocusTemplate", resourceCulture);
             }
         }
         
@@ -309,6 +327,24 @@ namespace ColorVision.Engine.Properties {
         public static string CalibrationCorrection {
             get {
                 return ResourceManager.GetString("CalibrationCorrection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 相机 的本地化字符串。
+        /// </summary>
+        public static string Camera {
+            get {
+                return ResourceManager.GetString("Camera", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 相机参数模板 的本地化字符串。
+        /// </summary>
+        public static string CameraParameterTemplate {
+            get {
+                return ResourceManager.GetString("CameraParameterTemplate", resourceCulture);
             }
         }
         
@@ -975,6 +1011,15 @@ namespace ColorVision.Engine.Properties {
         public static string GhostShadow {
             get {
                 return ResourceManager.GetString("GhostShadow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 HDR模板 的本地化字符串。
+        /// </summary>
+        public static string HdrTemplate {
+            get {
+                return ResourceManager.GetString("HdrTemplate", resourceCulture);
             }
         }
         
@@ -1771,6 +1816,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 解析 的本地化字符串。
+        /// </summary>
+        public static string Parsing {
+            get {
+                return ResourceManager.GetString("Parsing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 解析管理 的本地化字符串。
+        /// </summary>
+        public static string ParsingManagement {
+            get {
+                return ResourceManager.GetString("ParsingManagement", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 密码 的本地化字符串。
         /// </summary>
         public static string Password {
@@ -1807,6 +1870,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 Poi修正模板设置 的本地化字符串。
+        /// </summary>
+        public static string POICorrectionTemplateSettings {
+            get {
+                return ResourceManager.GetString("POICorrectionTemplateSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 POI过滤模板设置 的本地化字符串。
+        /// </summary>
+        public static string POIFilterTemplateSettings {
+            get {
+                return ResourceManager.GetString("POIFilterTemplateSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 关注点相关算法模板设置 的本地化字符串。
         /// </summary>
         public static string PointOfInterestAlgorithmTemplateSettings {
@@ -1821,6 +1902,15 @@ namespace ColorVision.Engine.Properties {
         public static string PointOfInterestTemplete {
             get {
                 return ResourceManager.GetString("PointOfInterestTemplete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关注点相关算法模版设置 的本地化字符串。
+        /// </summary>
+        public static string POITemplateSettings {
+            get {
+                return ResourceManager.GetString("POITemplateSettings", resourceCulture);
             }
         }
         
@@ -2586,6 +2676,15 @@ namespace ColorVision.Engine.Properties {
         public static string WorkflowEngineDebugWindow {
             get {
                 return ResourceManager.GetString("WorkflowEngineDebugWindow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 {x:Static properties:Resources.Parsing} 的本地化字符串。
+        /// </summary>
+        public static string XStaticPropertiesResourcesParsing {
+            get {
+                return ResourceManager.GetString("XStaticPropertiesResourcesParsing", resourceCulture);
             }
         }
     }
