@@ -37,7 +37,12 @@ namespace ColorVision.Engine.Batch.IVL
                     IsAutoCloseConnection = true
                 });
 
+                foreach (var item in DB.Queryable<SMUResultModel>().Where(x => x.Batchid == ctx.Batch.Id).ToList())
+                {
+                    testResult.SMUResultModels.Add(item);
+                }
                 var list = DB.Queryable<SpectumResultModel>().Where(x => x.BatchId == ctx.Batch.Id).ToList();
+
                 DB.Dispose();
                 ObservableCollection<ViewResultSpectrum> ViewResults = new ObservableCollection<ViewResultSpectrum>();
                 if (list.Count == 0)
@@ -63,7 +68,7 @@ namespace ColorVision.Engine.Batch.IVL
                             viewResultSpectrum.V = float.NaN;
                             viewResultSpectrum.I = float.NaN;
                         }
-
+                        i++;
                         ViewResults.Add(viewResultSpectrum);
                     }
                     string sprectrumfilePath = Path.Combine(config.SavePath, $"SP_IVL_{timeStr}.csv");

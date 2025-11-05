@@ -187,7 +187,7 @@ namespace ColorVision.Engine.Batch.IVL
                             viewResultSpectrum.V = float.NaN;
                             viewResultSpectrum.I = float.NaN;
                         }
- 
+                        i++;
                         ViewResults.Add(viewResultSpectrum);
                     }
                     string sprectrumfilePath = Path.Combine(config.SavePath, $"SP_IVL_{timeStr}.csv");

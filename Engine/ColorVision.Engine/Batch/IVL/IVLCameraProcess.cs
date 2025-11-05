@@ -46,18 +46,17 @@ namespace ColorVision.Engine.Batch.IVL
                     }
                 }
 
-                using (var DB = new SqlSugarClient(new ConnectionConfig
+                var DB = new SqlSugarClient(new ConnectionConfig
                 {
                     ConnectionString = MySqlControl.GetConnectionString(),
                     DbType = SqlSugar.DbType.MySql,
                     IsAutoCloseConnection = true
-                }))
+                });
+                foreach (var item in DB.Queryable<SMUResultModel>().Where(x => x.Batchid == ctx.Batch.Id).ToList())
                 {
-                    foreach (var item in DB.Queryable<SMUResultModel>().Where(x => x.Batchid == ctx.Batch.Id).ToList())
-                    {
-                        testResult.SMUResultModels.Add(item);
-                    }
+                    testResult.SMUResultModels.Add(item);
                 }
+                DB.Dispose();
 
                 string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 string filePath = Path.Combine(config.SavePath, $"Camera_IVL_{timeStr}.csv");
