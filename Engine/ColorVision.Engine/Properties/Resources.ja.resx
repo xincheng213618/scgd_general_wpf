@@ -966,9 +966,6 @@
   <data name="Parsing" xml:space="preserve">
     <value>分析</value>
   </data>
-  <data name="XStaticPropertiesResourcesParsing" xml:space="preserve">
-    <value>{x:静的プロパティ:Resources.Parsing}</value>
-  </data>
   <data name="Camera" xml:space="preserve">
     <value>カメラ</value>
   </data>

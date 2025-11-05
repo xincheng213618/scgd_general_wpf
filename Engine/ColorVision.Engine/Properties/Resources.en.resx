@@ -966,9 +966,6 @@
   <data name="Parsing" xml:space="preserve">
     <value>Parsing</value>
   </data>
-  <data name="XStaticPropertiesResourcesParsing" xml:space="preserve">
-    <value>Parsing</value>
-  </data>
   <data name="Camera" xml:space="preserve">
     <value>Camera</value>
   </data>
