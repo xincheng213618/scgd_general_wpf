@@ -32,8 +32,10 @@ namespace ColorVision.Engine.Batch.Poi
                         {
                             PoiResultCIExyuvDatas.Add(new PoiResultCIExyuvData(item));
                         }
+
                         string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                         string filePath = Path.Combine(config.SavePath, $"Poi_{master.Id}_{timeStr}.csv");
+
                         PoiResultCIExyuvDatas.SaveCsv(filePath);
                     }
                     if (master.ImgFileType == ViewResultAlgType.POI_Y)
