@@ -141,6 +141,16 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
                     result.ContextMenu.Items.Add(new MenuItem() { Header = "选中2.0结果集", Command = SelectrelayCommand });
                     result.ContextMenu.Items.Add(new MenuItem() { Header = "打开2.0结果集", Command = OpenrelayCommand });
 
+                    RelayCommand sfrwindowCommand = new RelayCommand(a =>
+                    {
+                        var win = new Sfr2PlotWindow(sfrresult.ResultFileName); 
+                        win.Owner = Application.Current.GetActiveWindow(); 
+                        win.Show();
+                    }, a => sfrresult.HasResult);
+
+                    result.ContextMenu.Items.Add(new MenuItem() { Header = "SFR窗口预览", Command = sfrwindowCommand });
+
+
                     // 仅新版，无位置信息，不提供 POI 导出菜单
                 }
 
