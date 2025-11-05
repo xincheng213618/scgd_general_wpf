@@ -48,11 +48,16 @@ namespace ProjectARVRPro.Process.MTFHV
         public RecipeBase MTF_HV_V_RightDown_0_3F { get => _MTF_HV_V_RightDown_0_3F; set { _MTF_HV_V_RightDown_0_3F = value; OnPropertyChanged(); } }
         private RecipeBase _MTF_HV_V_RightDown_0_3F = new RecipeBase(0.5, 0);
 
-
+        
 
         [Category("MTF_HV")]
         public RecipeBase MTF_HV_H_LeftDown_0_3F { get => _MTF_HV_H_LeftDown_0_3F; set { _MTF_HV_H_LeftDown_0_3F = value; OnPropertyChanged(); } }
         private RecipeBase _MTF_HV_H_LeftDown_0_3F = new RecipeBase(0.5, 0);
+
+        [Category("MTF_HV")]
+        public RecipeBase MTF_HV_V_LeftDown_0_3F { get => _MTF_HV_V_LeftDown_0_3F; set { _MTF_HV_V_LeftDown_0_3F = value; OnPropertyChanged(); } }
+        private RecipeBase _MTF_HV_V_LeftDown_0_3F = new RecipeBase(0.5, 0);
+
 
         [Category("MTF_HV")]
         public RecipeBase MTF_HV_H_LeftUp_0_6F { get => _MTF_HV_H_LeftUp_0_6F; set { _MTF_HV_H_LeftUp_0_6F = value; OnPropertyChanged(); } }

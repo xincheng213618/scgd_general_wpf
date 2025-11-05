@@ -125,8 +125,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             fInterval = item.fInterval ?? 0;
             fPL = JsonConvert.DeserializeObject<float[]>(item.fPL ?? string.Empty) ?? Array.Empty<float>();
             fRi = JsonConvert.DeserializeObject<float[]>(item.fRi ?? string.Empty) ?? Array.Empty<float>();
-
-
             Gen();
         }
 
