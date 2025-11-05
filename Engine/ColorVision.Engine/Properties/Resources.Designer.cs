@@ -925,6 +925,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 流程结果管理 的本地化字符串。
+        /// </summary>
+        public static string FlowResultManagement {
+            get {
+                return ResourceManager.GetString("FlowResultManagement", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 流程模板 的本地化字符串。
+        /// </summary>
+        public static string FlowTemplate {
+            get {
+                return ResourceManager.GetString("FlowTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 关注点 的本地化字符串。
         /// </summary>
         public static string FocusPoint {
@@ -2046,6 +2064,15 @@ namespace ColorVision.Engine.Properties {
         public static string SearchLimit {
             get {
                 return ResourceManager.GetString("SearchLimit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查询结果 的本地化字符串。
+        /// </summary>
+        public static string SearchResults {
+            get {
+                return ResourceManager.GetString("SearchResults", resourceCulture);
             }
         }
         

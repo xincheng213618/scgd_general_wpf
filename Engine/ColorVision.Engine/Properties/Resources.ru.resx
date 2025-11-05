@@ -951,4 +951,13 @@
   <data name="BindPhysicalCameraCode" xml:space="preserve">
     <value>Код для привязки физических камер</value>
   </data>
+  <data name="FlowTemplate" xml:space="preserve">
+    <value>Шаблон процесса</value>
+  </data>
+  <data name="SearchResults" xml:space="preserve">
+    <value>Результаты запроса</value>
+  </data>
+  <data name="FlowResultManagement" xml:space="preserve">
+    <value>Управление результатами процесса</value>
+  </data>
 </root>

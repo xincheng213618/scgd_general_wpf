@@ -951,4 +951,13 @@
   <data name="BindPhysicalCameraCode" xml:space="preserve">
     <value>Code pour la liaison des caméras physiques</value>
   </data>
+  <data name="FlowTemplate" xml:space="preserve">
+    <value>Modèle de processus</value>
+  </data>
+  <data name="SearchResults" xml:space="preserve">
+    <value>Résultats de la requête</value>
+  </data>
+  <data name="FlowResultManagement" xml:space="preserve">
+    <value>Gestion des résultats des processus</value>
+  </data>
 </root>

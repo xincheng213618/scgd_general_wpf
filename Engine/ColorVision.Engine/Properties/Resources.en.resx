@@ -951,4 +951,13 @@
   <data name="BindPhysicalCameraCode" xml:space="preserve">
     <value>Bind physical camera code</value>
   </data>
+  <data name="FlowTemplate" xml:space="preserve">
+    <value>Process Template</value>
+  </data>
+  <data name="SearchResults" xml:space="preserve">
+    <value>Query results</value>
+  </data>
+  <data name="FlowResultManagement" xml:space="preserve">
+    <value>Process Result Management</value>
+  </data>
 </root>

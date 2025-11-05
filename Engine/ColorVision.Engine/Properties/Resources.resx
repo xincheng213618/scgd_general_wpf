@@ -931,4 +931,13 @@
   <data name="BindPhysicalCameraCode" xml:space="preserve">
     <value>绑定物理相机代码</value>
   </data>
+  <data name="FlowTemplate" xml:space="preserve">
+    <value>流程模板</value>
+  </data>
+  <data name="SearchResults" xml:space="preserve">
+    <value>查询结果</value>
+  </data>
+  <data name="FlowResultManagement" xml:space="preserve">
+    <value>流程结果管理</value>
+  </data>
 </root>
