@@ -777,20 +777,20 @@
   <data name="UnknownStatus" xml:space="preserve">
     <value>Unknown Status</value>
   </data>
+  <data name="DefaultValue" xml:space="preserve">
+    <value>DefaultValue</value>
+  </data>
+  <data name="Symbol" xml:space="preserve">
+    <value>Symbol</value>
+  </data>
   <data name="AddressCode" xml:space="preserve">
     <value>AddressCode</value>
   </data>
   <data name="CreateDate" xml:space="preserve">
     <value>CreateDate</value>
   </data>
-  <data name="DefaultValue" xml:space="preserve">
-    <value>DefaultValue</value>
-  </data>
   <data name="IsEnable" xml:space="preserve">
     <value>IsEnable</value>
-  </data>
-  <data name="Symbol" xml:space="preserve">
-    <value>Symbol</value>
   </data>
   <data name="MenuEngine" xml:space="preserve">
     <value>E_ngine</value>
@@ -959,5 +959,38 @@
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
     <value>Process Result Management</value>
+  </data>
+  <data name="ParsingManagement" xml:space="preserve">
+    <value>ParsingManagement</value>
+  </data>
+  <data name="Parsing" xml:space="preserve">
+    <value>Parsing</value>
+  </data>
+  <data name="XStaticPropertiesResourcesParsing" xml:space="preserve">
+    <value>Parsing</value>
+  </data>
+  <data name="Camera" xml:space="preserve">
+    <value>Camera</value>
+  </data>
+  <data name="HdrTemplate" xml:space="preserve">
+    <value>HdrTemplate</value>
+  </data>
+  <data name="CameraParameterTemplate" xml:space="preserve">
+    <value>CameraParameterTemplate</value>
+  </data>
+  <data name="AutoFocusTemplate" xml:space="preserve">
+    <value>AutoFocusTemplate</value>
+  </data>
+  <data name="POITemplateSettings" xml:space="preserve">
+    <value>POITemplateSettings</value>
+  </data>
+  <data name="POIFilterTemplateSettings" xml:space="preserve">
+    <value>PoiFilterTemplateSettings</value>
+  </data>
+  <data name="POICorrectionTemplateSettings" xml:space="preserve">
+    <value>POICorrectionTemplateSettings</value>
+  </data>
+  <data name="ApplicationPropertyTemplate" xml:space="preserve">
+    <value>ApplicationPropertyTemplate</value>
   </data>
 </root>

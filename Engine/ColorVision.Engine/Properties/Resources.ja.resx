@@ -537,6 +537,18 @@
   <data name="Failure" xml:space="preserve">
     <value>失敗</value>
   </data>
+  <data name="ExposureR" xml:space="preserve">
+    <value>露出R</value>
+  </data>
+  <data name="ExposureG" xml:space="preserve">
+    <value>露出G</value>
+  </data>
+  <data name="ExposureB" xml:space="preserve">
+    <value>露出B</value>
+  </data>
+  <data name="Exposure" xml:space="preserve">
+    <value>露出</value>
+  </data>
   <data name="Export" xml:space="preserve">
     <value>輸出</value>
   </data>
@@ -768,6 +780,9 @@
   <data name="DefaultValue" xml:space="preserve">
     <value>デフォルト値</value>
   </data>
+  <data name="Symbol" xml:space="preserve">
+    <value>シンボル</value>
+  </data>
   <data name="AddressCode" xml:space="preserve">
     <value>住所コード</value>
   </data>
@@ -776,9 +791,6 @@
   </data>
   <data name="IsEnable" xml:space="preserve">
     <value>有効</value>
-  </data>
-  <data name="Symbol" xml:space="preserve">
-    <value>シンボル</value>
   </data>
   <data name="MenuEngine" xml:space="preserve">
     <value>エンジン（_N）</value>
@@ -803,18 +815,6 @@
   </data>
   <data name="Copy" xml:space="preserve">
     <value>コピー</value>
-  </data>
-  <data name="ExposureR" xml:space="preserve">
-    <value>露出R</value>
-  </data>
-  <data name="ExposureG" xml:space="preserve">
-    <value>露出G</value>
-  </data>
-  <data name="ExposureB" xml:space="preserve">
-    <value>露出B</value>
-  </data>
-  <data name="Exposure" xml:space="preserve">
-    <value>露出</value>
   </data>
   <data name="Lock" xml:space="preserve">
     <value>ロックする</value>
@@ -959,5 +959,38 @@
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
     <value>プロセス結果管理</value>
+  </data>
+  <data name="ParsingManagement" xml:space="preserve">
+    <value>解析管理</value>
+  </data>
+  <data name="Parsing" xml:space="preserve">
+    <value>分析</value>
+  </data>
+  <data name="XStaticPropertiesResourcesParsing" xml:space="preserve">
+    <value>{x:静的プロパティ:Resources.Parsing}</value>
+  </data>
+  <data name="Camera" xml:space="preserve">
+    <value>カメラ</value>
+  </data>
+  <data name="HdrTemplate" xml:space="preserve">
+    <value>HDRテンプレート</value>
+  </data>
+  <data name="CameraParameterTemplate" xml:space="preserve">
+    <value>カメラパラメータテンプレート</value>
+  </data>
+  <data name="AutoFocusTemplate" xml:space="preserve">
+    <value>オートフォーカステンプレート</value>
+  </data>
+  <data name="POITemplateSettings" xml:space="preserve">
+    <value>フォーカス関連のアルゴリズムテンプレート設定</value>
+  </data>
+  <data name="POIFilterTemplateSettings" xml:space="preserve">
+    <value>POIフィルターテンプレートの設定</value>
+  </data>
+  <data name="POICorrectionTemplateSettings" xml:space="preserve">
+    <value>Poi変更テンプレート設定</value>
+  </data>
+  <data name="ApplicationPropertyTemplate" xml:space="preserve">
+    <value>アプリケーションプロパティテンプレート</value>
   </data>
 </root>
