@@ -864,4 +864,91 @@
   <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
     <value>フォーカス関連のアルゴリズムテンプレート設定</value>
   </data>
+  <data name="Service" xml:space="preserve">
+    <value>仕える</value>
+  </data>
+  <data name="RefreshDeviceList" xml:space="preserve">
+    <value>デバイスリストを更新</value>
+  </data>
+  <data name="UnauthorizedOrCameraLicenseExpiredz" xml:space="preserve">
+    <value>不正または期限切れのカメラライセンス</value>
+  </data>
+  <data name="PleaseConfigureCameraIDFirst" xml:space="preserve">
+    <value>最初にカメラIDを設定してください。</value>
+  </data>
+  <data name="CheckCameraTemperature" xml:space="preserve">
+    <value>カメラの温度データを確認する</value>
+  </data>
+  <data name="SaveCurrentExposureAndOtherParameters" xml:space="preserve">
+    <value>現在の露出やその他のパラメータを保存する</value>
+  </data>
+  <data name="AverageTimes" xml:space="preserve">
+    <value>平均回数</value>
+  </data>
+  <data name="Flip" xml:space="preserve">
+    <value>フリップ</value>
+  </data>
+  <data name="UseHDR" xml:space="preserve">
+    <value>HDRを有効にする</value>
+  </data>
+  <data name="UploadCalibrationFiles" xml:space="preserve">
+    <value>キャリブレーションファイルをアップロード</value>
+  </data>
+  <data name="RestorePointCreatedSuccessfully" xml:space="preserve">
+    <value>復元ポイントが正常に作成されました</value>
+  </data>
+  <data name="ChangeNDPort" xml:space="preserve">
+    <value>NDPortを調整する</value>
+  </data>
+  <data name="AutoFocus" xml:space="preserve">
+    <value>オートフォーカス</value>
+  </data>
+  <data name="Move" xml:space="preserve">
+    <value>動く</value>
+  </data>
+  <data name="AbsolutePosition" xml:space="preserve">
+    <value>絶対位置</value>
+  </data>
+  <data name="AdjustAperture" xml:space="preserve">
+    <value>絞りを調整する</value>
+  </data>
+  <data name="ApertureF" xml:space="preserve">
+    <value>絞りF</value>
+  </data>
+  <data name="HomePosition" xml:space="preserve">
+    <value>原点回帰</value>
+  </data>
+  <data name="CurrentPosition" xml:space="preserve">
+    <value>現在の場所:</value>
+  </data>
+  <data name="AcquirePosition" xml:space="preserve">
+    <value>位置情報を取得</value>
+  </data>
+  <data name="ResourceInformation" xml:space="preserve">
+    <value>リソース情報</value>
+  </data>
+  <data name="FrameDisplayName" xml:space="preserve">
+    <value>インターフェース表示名</value>
+  </data>
+  <data name="HeartbeatTime" xml:space="preserve">
+    <value>ハートビートタイム</value>
+  </data>
+  <data name="DeviceAutoConnect" xml:space="preserve">
+    <value>自動デバイス接続</value>
+  </data>
+  <data name="ApplySettings" xml:space="preserve">
+    <value>アプリケーションパラメータ</value>
+  </data>
+  <data name="FileCache" xml:space="preserve">
+    <value>ファイルキャッシュ:</value>
+  </data>
+  <data name="CVCIEFileSave" xml:space="preserve">
+    <value>CVCIE ファイルの保存:</value>
+  </data>
+  <data name="SendChannel" xml:space="preserve">
+    <value>送信チャンネル:</value>
+  </data>
+  <data name="BindPhysicalCameraCode" xml:space="preserve">
+    <value>物理カメラをバインドするためのコード</value>
+  </data>
 </root>

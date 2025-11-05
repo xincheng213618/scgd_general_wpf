@@ -864,4 +864,91 @@
   <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
     <value>Point of Interst Algorithm template settings</value>
   </data>
+  <data name="Service" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="RefreshDeviceList" xml:space="preserve">
+    <value>Refresh device list</value>
+  </data>
+  <data name="UnauthorizedOrCameraLicenseExpiredz" xml:space="preserve">
+    <value>Unauthorized or expired camera license</value>
+  </data>
+  <data name="PleaseConfigureCameraIDFirst" xml:space="preserve">
+    <value>Please configure the camera ID first.</value>
+  </data>
+  <data name="CheckCameraTemperature" xml:space="preserve">
+    <value>Check the camera's temperature</value>
+  </data>
+  <data name="SaveCurrentExposureAndOtherParameters" xml:space="preserve">
+    <value>Save current exposure and other parameters</value>
+  </data>
+  <data name="AverageTimes" xml:space="preserve">
+    <value>Average times</value>
+  </data>
+  <data name="Flip" xml:space="preserve">
+    <value>Flip</value>
+  </data>
+  <data name="UseHDR" xml:space="preserve">
+    <value>Enable HDR</value>
+  </data>
+  <data name="UploadCalibrationFiles" xml:space="preserve">
+    <value>Upload calibration file</value>
+  </data>
+  <data name="RestorePointCreatedSuccessfully" xml:space="preserve">
+    <value>Restore point created successfully</value>
+  </data>
+  <data name="ChangeNDPort" xml:space="preserve">
+    <value>Change NDPort</value>
+  </data>
+  <data name="AutoFocus" xml:space="preserve">
+    <value>Autofocus</value>
+  </data>
+  <data name="Move" xml:space="preserve">
+    <value>move</value>
+  </data>
+  <data name="AbsolutePosition" xml:space="preserve">
+    <value>Absolute position</value>
+  </data>
+  <data name="AdjustAperture" xml:space="preserve">
+    <value>Adjust aperture</value>
+  </data>
+  <data name="ApertureF" xml:space="preserve">
+    <value>Aperture F</value>
+  </data>
+  <data name="HomePosition" xml:space="preserve">
+    <value>Return to Home Position</value>
+  </data>
+  <data name="CurrentPosition" xml:space="preserve">
+    <value>Current Position:</value>
+  </data>
+  <data name="AcquirePosition" xml:space="preserve">
+    <value>Acquire Position</value>
+  </data>
+  <data name="ResourceInformation" xml:space="preserve">
+    <value>Resource Information</value>
+  </data>
+  <data name="FrameDisplayName" xml:space="preserve">
+    <value>Frame display name</value>
+  </data>
+  <data name="HeartbeatTime" xml:space="preserve">
+    <value>Heartbeat Time</value>
+  </data>
+  <data name="DeviceAutoConnect" xml:space="preserve">
+    <value>Automatic device connection</value>
+  </data>
+  <data name="ApplySettings" xml:space="preserve">
+    <value>Apply Settings</value>
+  </data>
+  <data name="FileCache" xml:space="preserve">
+    <value>File cache:</value>
+  </data>
+  <data name="CVCIEFileSave" xml:space="preserve">
+    <value>Saving CVCIE files:</value>
+  </data>
+  <data name="SendChannel" xml:space="preserve">
+    <value>Transmit channel:</value>
+  </data>
+  <data name="BindPhysicalCameraCode" xml:space="preserve">
+    <value>Bind physical camera code</value>
+  </data>
 </root>
