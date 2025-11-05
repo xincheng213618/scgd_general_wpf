@@ -86,31 +86,30 @@ namespace ProjectLUX.Process.ChessboardAR
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };
                             testResult.PoixyuvDatas.Add(poi);
                         }
-                        double AverageWhiteLunimance = 0;
-                        double AverageBlackLunimance = 0;
-
-                        for (int i = 0; i < 16; i+=2)
+                        var luminanceValues = new List<double>();
+                        for (int i = 0; i < 16; i++)
                         {
                             var poi = new PoiResultCIExyuvData(poiPoints[i]);
-                            AverageWhiteLunimance += poi.Y;
+                            luminanceValues.Add(poi.Y);
                         }
-                        AverageWhiteLunimance /= 8.0;
 
-                        for (int i = 1; i < 16; i += 2)
-                        {
-                            var poi = new PoiResultCIExyuvData(poiPoints[i]);
-                            AverageBlackLunimance += poi.Y;
-                        }
-                        AverageBlackLunimance /= 8.0;
+                        // Sort the luminance values in ascending order
+                        luminanceValues.Sort();
 
-                        testResult.AverageWhiteLunimance.Value = AverageWhiteLunimance;
+                        // The first 8 values are the dimmest (black)
+                        double averageBlackLuminance = luminanceValues.Take(8).Average();
+
+                        // The last 8 values are the brightest (white)
+                        double averageWhiteLuminance = luminanceValues.Skip(8).Take(8).Average();
+
+                        testResult.AverageWhiteLunimance.Value = averageWhiteLuminance;
                         testResult.AverageWhiteLunimance.Value *= fixConfig.AverageWhiteLunimance;
                         testResult.AverageWhiteLunimance.TestValue = testResult.AverageWhiteLunimance.Value.ToString("F3");
                         testResult.AverageWhiteLunimance.LowLimit *= recipeConfig.AverageWhiteLunimance.Min;
                         testResult.AverageWhiteLunimance.UpLimit *= recipeConfig.AverageWhiteLunimance.Max;
                         ctx.Result.Result &= testResult.AverageWhiteLunimance.TestResult;
 
-                        testResult.AverageBlackLunimance.Value = AverageBlackLunimance;
+                        testResult.AverageBlackLunimance.Value = averageBlackLuminance;
                         testResult.AverageBlackLunimance.Value *= fixConfig.AverageBlackLunimance;
                         testResult.AverageBlackLunimance.TestValue = testResult.AverageBlackLunimance.Value.ToString("F3");
                         testResult.AverageBlackLunimance.LowLimit *= recipeConfig.AverageBlackLunimance.Min;
