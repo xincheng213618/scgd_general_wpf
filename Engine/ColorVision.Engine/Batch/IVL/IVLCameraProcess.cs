@@ -47,7 +47,7 @@ namespace ColorVision.Engine.Batch.IVL
                     DbType = SqlSugar.DbType.MySql,
                     IsAutoCloseConnection = true
                 });
-                foreach (var item in DB.Queryable<SMUResultModel>().Where(x => x.Batchid == ctx.Batch.Id).ToList())
+                foreach (var item in DB.Queryable<SMUResultModel>().Where(x => x.BatchId == ctx.Batch.Id).ToList())
                 {
                     testResult.SMUResultModels.Add(item);
                 }

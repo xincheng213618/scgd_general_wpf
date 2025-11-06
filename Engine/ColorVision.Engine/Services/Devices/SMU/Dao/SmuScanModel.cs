@@ -46,10 +46,4 @@ namespace ColorVision.Engine.Services.Devices.SMU.Dao
         [SugarColumn(ColumnName = "create_date", IsNullable = false, ColumnDescription = "创建日期")]
         public DateTime CreateDate { get; set; }
     }
-
-    public class MRSmuScanDao : BaseTableDao<SmuScanModel>
-    {
-        public static MRSmuScanDao Instance { get; set; } = new MRSmuScanDao();
-
-    }
 }
