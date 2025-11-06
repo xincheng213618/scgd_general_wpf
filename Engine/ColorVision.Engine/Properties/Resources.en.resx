@@ -1317,4 +1317,25 @@
   <data name="QueryMethods" xml:space="preserve">
     <value>Query methods</value>
   </data>
+  <data name="MaxNumber" xml:space="preserve">
+    <value>Max Number</value>
+  </data>
+  <data name="CalibrationViewSettings" xml:space="preserve">
+    <value>Calibration View Settings</value>
+  </data>
+  <data name="ShowList" xml:space="preserve">
+    <value>Show list</value>
+  </data>
+  <data name="ListHeight" xml:space="preserve">
+    <value>List height</value>
+  </data>
+  <data name="EditCalibration" xml:space="preserve">
+    <value>Edit Calibration file</value>
+  </data>
+  <data name="BeforeCalibrationSetupPhysicalCamera" xml:space="preserve">
+    <value>Before using the calibration, please configure the corresponding physical camera.</value>
+  </data>
+  <data name="FileSavePath" xml:space="preserve">
+    <value>File save path</value>
+  </data>
 </root>

@@ -1317,4 +1317,25 @@
   <data name="QueryMethods" xml:space="preserve">
     <value>查詢方法</value>
   </data>
+  <data name="MaxNumber" xml:space="preserve">
+    <value>最大數量</value>
+  </data>
+  <data name="CalibrationViewSettings" xml:space="preserve">
+    <value>校正視圖配置</value>
+  </data>
+  <data name="ShowList" xml:space="preserve">
+    <value>顯示清單</value>
+  </data>
+  <data name="ListHeight" xml:space="preserve">
+    <value>列表高度</value>
+  </data>
+  <data name="EditCalibration" xml:space="preserve">
+    <value>編輯校正文件</value>
+  </data>
+  <data name="BeforeCalibrationSetupPhysicalCamera" xml:space="preserve">
+    <value>使用校正前，請先配置對映的實體相機</value>
+  </data>
+  <data name="FileSavePath" xml:space="preserve">
+    <value>文件保存路徑</value>
+  </data>
 </root>
