@@ -1230,4 +1230,7 @@
   <data name="SMUAddr" xml:space="preserve">
     <value>來源表位址</value>
   </data>
+  <data name="QueryMethods" xml:space="preserve">
+    <value>查詢方法</value>
+  </data>
 </root>

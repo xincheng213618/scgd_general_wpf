@@ -1230,4 +1230,7 @@
   <data name="SMUAddr" xml:space="preserve">
     <value>Адрес исходной таблицы</value>
   </data>
+  <data name="QueryMethods" xml:space="preserve">
+    <value>Методы запроса</value>
+  </data>
 </root>

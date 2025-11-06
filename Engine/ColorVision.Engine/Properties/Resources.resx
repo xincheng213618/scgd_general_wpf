@@ -1230,4 +1230,7 @@
   <data name="SMUAddr" xml:space="preserve">
     <value>源表地址</value>
   </data>
+  <data name="QueryMethods" xml:space="preserve">
+    <value>查询方法</value>
+  </data>
 </root>

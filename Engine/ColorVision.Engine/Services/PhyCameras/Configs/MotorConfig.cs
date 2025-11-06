@@ -41,7 +41,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
     {
 
 
-        [DisplayName("查询方法")]
+        [DisplayName("QueryMethods")]
         public FindFuncModel FindFuncModel { get => _FindFuncModel; set { _FindFuncModel = value; OnPropertyChanged(); } }
         private FindFuncModel _FindFuncModel;
 

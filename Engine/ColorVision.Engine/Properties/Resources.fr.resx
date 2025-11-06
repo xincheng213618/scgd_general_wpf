@@ -1230,4 +1230,7 @@
   <data name="SMUAddr" xml:space="preserve">
     <value>Adresse de la table source</value>
   </data>
+  <data name="QueryMethods" xml:space="preserve">
+    <value>Méthodes de requête</value>
+  </data>
 </root>

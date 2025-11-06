@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Batch.IVL
 
                 string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 string filePath = Path.Combine(config.SavePath, $"Camera_IVL_{timeStr}.csv");
-                var rows = new List<string> { "Time,Meas_id,POI_id,Voltage(V),Current(mA),Lv(cd/m2),X,Y,Z,cx,cy,u',v',CCT(K),Dominant Wavelength" };
+                var rows = new List<string> { "Time,Meas_id,PoiName,Voltage(V),Current(mA),Lv(cd/m2),X,Y,Z,cx,cy,u',v',CCT(K),Dominant Wavelength" };
 
                 string DateTimeNow = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
@@ -66,11 +66,11 @@ namespace ColorVision.Engine.Batch.IVL
                     if (testResult.SMUResultModels.Count > z )
                     {
                         var SMUResultModel = testResult.SMUResultModels[z];
-                        rows.Add($"{DateTimeNow},{i},{testResult.PoixyuvDatas[i].POIPointResultModel.Id},{SMUResultModel.VResult},{SMUResultModel.IResult},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
+                        rows.Add($"{DateTimeNow},{i},{testResult.PoixyuvDatas[i].POIPointResultModel.PoiName},{SMUResultModel.VResult},{SMUResultModel.IResult},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
                     }
                     else
                     {
-                        rows.Add($"{DateTimeNow},{i},{testResult.PoixyuvDatas[i].POIPointResultModel.Id},,,{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
+                        rows.Add($"{DateTimeNow},{i},{testResult.PoixyuvDatas[i].POIPointResultModel.PoiName},,,{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
 
                     }
                 }

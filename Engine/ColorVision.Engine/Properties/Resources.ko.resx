@@ -1230,4 +1230,7 @@
   <data name="SMUAddr" xml:space="preserve">
     <value>소스 테이블 주소</value>
   </data>
+  <data name="QueryMethods" xml:space="preserve">
+    <value>쿼리 방법</value>
+  </data>
 </root>

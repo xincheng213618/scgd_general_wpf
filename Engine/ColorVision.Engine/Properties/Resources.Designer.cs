@@ -77,13 +77,6 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("AADetect", resourceCulture);
             }
         }
-        public static string CategoryModel
-        {
-            get
-            {
-                return ResourceManager.GetString("CategoryModel", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 AA补点 的本地化字符串。
@@ -487,6 +480,24 @@ namespace ColorVision.Engine.Properties {
         public static string Capture {
             get {
                 return ResourceManager.GetString("Capture", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 拍照 的本地化字符串。
+        /// </summary>
+        public static string CaptureImage {
+            get {
+                return ResourceManager.GetString("CaptureImage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 类别型号 的本地化字符串。
+        /// </summary>
+        public static string CategoryModel {
+            get {
+                return ResourceManager.GetString("CategoryModel", resourceCulture);
             }
         }
         
@@ -948,13 +959,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("DeviceAddr", resourceCulture);
             }
         }
-        public static string CaptureImage
-        {
-            get
-            {
-                return ResourceManager.GetString("CaptureImage", resourceCulture);
-            }
-        }
+        
         /// <summary>
         ///   查找类似 设备自动连接 的本地化字符串。
         /// </summary>
@@ -2482,6 +2487,15 @@ namespace ColorVision.Engine.Properties {
         public static string Property {
             get {
                 return ResourceManager.GetString("Property", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查询方法 的本地化字符串。
+        /// </summary>
+        public static string QueryMethods {
+            get {
+                return ResourceManager.GetString("QueryMethods", resourceCulture);
             }
         }
         
