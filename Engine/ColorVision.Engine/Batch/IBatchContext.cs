@@ -7,6 +7,11 @@
     public class IBatchContext
     {
         /// <summary>
+        /// Gets or sets the name of the flow associated with this instance.
+        /// </summary>
+        public string FlowName { get; set; }
+
+        /// <summary>
         /// Gets or sets the batch configuration settings used for processing operations.
         /// </summary>
         public BatchConfig Config { get; set; } = BatchConfig.Instance;
