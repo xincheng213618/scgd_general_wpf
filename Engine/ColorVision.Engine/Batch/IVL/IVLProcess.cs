@@ -100,12 +100,13 @@ namespace ColorVision.Engine.Batch.IVL
                 //if (values.Count > 0)
                     //ctx.Result.FileName = values[0].FileUrl;
                 var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                int cout = 0;
                 foreach (var master in masters)
                 {
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
-
+                        cout = poiPoints.Count;
                         foreach (var item in poiPoints)
                         {
                             testResult.PoixyuvDatas.Add(new PoiResultCIExyuvData(item));
@@ -130,11 +131,14 @@ namespace ColorVision.Engine.Batch.IVL
 
                 string DateTimeNow = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
+                int z = 0;
+
                 for (int i = 0; i < testResult.PoixyuvDatas.Count;i++)
                 {
-                    if (testResult.SMUResultModels.Count > i)
+                    z = i / cout;
+                    if (testResult.SMUResultModels.Count > z*cout)
                     {
-                        var SMUResultModel = testResult.SMUResultModels[i];
+                        var SMUResultModel = testResult.SMUResultModels[z];
                         rows.Add($"{DateTimeNow},{i},{testResult.PoixyuvDatas[i].Id},{SMUResultModel.VResult},{SMUResultModel.IResult},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
                     }
                     else
