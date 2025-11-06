@@ -1317,6 +1317,27 @@
   <data name="QuaryMethods" xml:space="preserve">
     <value>Методы запроса</value>
   </data>
+  <data name="MaxNumber" xml:space="preserve">
+    <value>Максимальное количество</value>
+  </data>
+  <data name="CalibrationViewSettings" xml:space="preserve">
+    <value>Правильная конфигурация представления</value>
+  </data>
+  <data name="ShowList" xml:space="preserve">
+    <value>Показать список</value>
+  </data>
+  <data name="ListHeight" xml:space="preserve">
+    <value>Высота списка</value>
+  </data>
+  <data name="EditCalibration" xml:space="preserve">
+    <value>Редактировать файл исправлений</value>
+  </data>
+  <data name="BeforeCalibrationSetupPhysicalCamera" xml:space="preserve">
+    <value>Перед использованием калибровки настройте соответствующую физическую камеру.</value>
+  </data>
+  <data name="FileSavePath" xml:space="preserve">
+    <value>Путь сохранения файла</value>
+  </data>
   <data name="MotorAcceleration" xml:space="preserve">
     <value>Ускорение двигателя</value>
   </data>

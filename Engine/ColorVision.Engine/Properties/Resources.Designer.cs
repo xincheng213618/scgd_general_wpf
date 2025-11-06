@@ -439,6 +439,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 在使用校正前，请先配置对映的物理相机 的本地化字符串。
+        /// </summary>
+        public static string BeforeCalibrationSetupPhysicalCamera {
+            get {
+                return ResourceManager.GetString("BeforeCalibrationSetupPhysicalCamera", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 绑定物理相机代码 的本地化字符串。
         /// </summary>
         public static string BindPhysicalCameraCode {
@@ -534,6 +543,15 @@ namespace ColorVision.Engine.Properties {
         public static string CalibrationGroupManagement {
             get {
                 return ResourceManager.GetString("CalibrationGroupManagement", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 校正视图配置 的本地化字符串。
+        /// </summary>
+        public static string CalibrationViewSettings {
+            get {
+                return ResourceManager.GetString("CalibrationViewSettings", resourceCulture);
             }
         }
         
@@ -1366,15 +1384,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 编辑校正文件 的本地化字符串。
-        /// </summary>
-        public static string EditCalibrationFile {
-            get {
-                return ResourceManager.GetString("EditCalibrationFile", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 编辑默认算法字典 的本地化字符串。
         /// </summary>
         public static string EditDefaultAlgorithmDictionary {
@@ -2050,6 +2059,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 列表高度 的本地化字符串。
+        /// </summary>
+        public static string ListHeight {
+            get {
+                return ResourceManager.GetString("ListHeight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 加载 的本地化字符串。
         /// </summary>
         public static string Loading {
@@ -2136,6 +2154,15 @@ namespace ColorVision.Engine.Properties {
         public static string MaxIntegrationTime_Ms {
             get {
                 return ResourceManager.GetString("MaxIntegrationTime_Ms", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最大数量 的本地化字符串。
+        /// </summary>
+        public static string MaxNumber {
+            get {
+                return ResourceManager.GetString("MaxNumber", resourceCulture);
             }
         }
         
@@ -3567,6 +3594,15 @@ namespace ColorVision.Engine.Properties {
         public static string Shape {
             get {
                 return ResourceManager.GetString("Shape", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显示列表 的本地化字符串。
+        /// </summary>
+        public static string ShowList {
+            get {
+                return ResourceManager.GetString("ShowList", resourceCulture);
             }
         }
         

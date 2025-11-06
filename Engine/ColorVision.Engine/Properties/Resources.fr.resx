@@ -613,7 +613,8 @@
     <value>La version actuelle est déjà la dernière version</value>
   </data>
   <data name="CurrentSpeed" xml:space="preserve">
-    <value>Vitesse actuelle:</value>
+    <value>AdaptiveZeroCalibration
+</value>
   </data>
   <data name="CreateTime" xml:space="preserve">
     <value>mesurer le temps</value>
@@ -1467,17 +1468,23 @@
   <data name="CaliberationParamSet" xml:space="preserve">
     <value>Paramètres d'étalonnage</value>
   </data>
-  <data name="TemperatureDataNotFound" xml:space="preserve">
-    <value>Aucune donnée de température correspondante trouvée</value>
+  <data name="MaxNumber" xml:space="preserve">
+    <value>quantité maximale</value>
   </data>
-  <data name="ErrorQueryingTemperatureData" xml:space="preserve">
-    <value>Une erreur s'est produite lors de la requête des données de température.</value>
+  <data name="CalibrationViewSettings" xml:space="preserve">
+    <value>Configuration d'affichage correcte</value>
   </data>
-  <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
-    <value>Souhaitez-vous enregistrer la configuration d'exposition actuelle ?</value>
+  <data name="ShowList" xml:space="preserve">
+    <value>Afficher la liste</value>
   </data>
-  <data name="EditCalibrationFile" xml:space="preserve">
+  <data name="ListHeight" xml:space="preserve">
+    <value>Hauteur de la liste</value>
+  </data>
+  <data name="EditCalibration" xml:space="preserve">
     <value>Fichier de correction de modification</value>
+  </data>
+  <data name="BeforeCalibrationSetupPhysicalCamera" xml:space="preserve">
+    <value>Avant d'utiliser l'étalonnage, veuillez configurer la caméra physique correspondante.</value>
   </data>
   <data name="FileSavePath" xml:space="preserve">
     <value>chemin d'enregistrement du fichier</value>
