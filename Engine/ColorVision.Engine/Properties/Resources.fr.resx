@@ -1230,4 +1230,82 @@
   <data name="SMUAddr" xml:space="preserve">
     <value>Adresse de la table source</value>
   </data>
+  <data name="IntegrationTime" xml:space="preserve">
+    <value>Points Temps</value>
+  </data>
+  <data name="AutoIntegra" xml:space="preserve">
+    <value>Points automatiques</value>
+  </data>
+  <data name="AutoZeroCalibration" xml:space="preserve">
+    <value>Mise à zéro automatique</value>
+  </data>
+  <data name="AdaptiveZeroCalibration" xml:space="preserve">
+    <value>Mise à zéro adaptative</value>
+  </data>
+  <data name="SingleTest" xml:space="preserve">
+    <value>Test unique</value>
+  </data>
+  <data name="AutoTest" xml:space="preserve">
+    <value>Tests automatisés</value>
+  </data>
+  <data name="SingleZeroCalibration" xml:space="preserve">
+    <value>Mise à zéro unique</value>
+  </data>
+  <data name="DelayMs" xml:space="preserve">
+    <value>Délai (ms)</value>
+  </data>
+  <data name="SpectrumInfo" xml:space="preserve">
+    <value>Informations sur le spectromètre</value>
+  </data>
+  <data name="AutoTestInterval_Ms" xml:space="preserve">
+    <value>Intervalle de test automatique (ms)</value>
+  </data>
+  <data name="MaxIntegrationTime_Ms" xml:space="preserve">
+    <value>Temps d'intégration maximal (ms)</value>
+  </data>
+  <data name="StartIntegrationTime_Ms" xml:space="preserve">
+    <value>Temps d'intégration initial (ms)</value>
+  </data>
+  <data name="OpenCmd" xml:space="preserve">
+    <value>Ouvrir la commande</value>
+  </data>
+  <data name="CloseCmd" xml:space="preserve">
+    <value>Fermer la commande</value>
+  </data>
+  <data name="Filecfg" xml:space="preserve">
+    <value>Configuration des fichiers</value>
+  </data>
+  <data name="CalibrationFile" xml:space="preserve">
+    <value>Documents de correction</value>
+  </data>
+  <data name="CameraType" xml:space="preserve">
+    <value>Modèle d'appareil photo</value>
+  </data>
+  <data name="CamreaMode" xml:space="preserve">
+    <value>Mode caméra</value>
+  </data>
+  <data name="DefaultCaptureMode" xml:space="preserve">
+    <value>Mode de récupération d'images par défaut</value>
+  </data>
+  <data name="DefaultChannelCount" xml:space="preserve">
+    <value>Nombre de canaux par défaut</value>
+  </data>
+  <data name="DefaultImageBits" xml:space="preserve">
+    <value>Profondeur de bits d'image par défaut</value>
+  </data>
+  <data name="FilterWheel" xml:space="preserve">
+    <value>roue à filtres de couleur</value>
+  </data>
+  <data name="EnableSerialPort" xml:space="preserve">
+    <value>Activer la transmission par port série</value>
+  </data>
+  <data name="FilterWheelNum" xml:space="preserve">
+    <value>Nombre de filtres de couleur</value>
+  </data>
+  <data name="RegistryCenterConfig" xml:space="preserve">
+    <value>Configuration du centre d'inscription</value>
+  </data>
+  <data name="RCName" xml:space="preserve">
+    <value>Nom du centre d'inscription</value>
+  </data>
 </root>

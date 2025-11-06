@@ -1230,4 +1230,88 @@
   <data name="SMUAddr" xml:space="preserve">
     <value>源表地址</value>
   </data>
+  <data name="IntegrationTime" xml:space="preserve">
+    <value>积分时间</value>
+  </data>
+  <data name="AutoIntegra" xml:space="preserve">
+    <value>自动积分</value>
+  </data>
+  <data name="AutoZeroCalibration" xml:space="preserve">
+    <value>自动校零</value>
+  </data>
+  <data name="AdaptiveZeroCalibration" xml:space="preserve">
+    <value>自适应校零</value>
+  </data>
+  <data name="SingleTest" xml:space="preserve">
+    <value>单次测试</value>
+  </data>
+  <data name="AutoTest" xml:space="preserve">
+    <value>自动测试</value>
+  </data>
+  <data name="SingleZeroCalibration" xml:space="preserve">
+    <value>单次校零</value>
+  </data>
+  <data name="DelayMs" xml:space="preserve">
+    <value>延时(ms)</value>
+  </data>
+  <data name="SpectrumInfo" xml:space="preserve">
+    <value>光谱仪信息</value>
+  </data>
+  <data name="AutoTestInterval_Ms" xml:space="preserve">
+    <value>自动测试间隔(ms)</value>
+  </data>
+  <data name="MaxIntegrationTime_Ms" xml:space="preserve">
+    <value>最大积分时间(ms)</value>
+  </data>
+  <data name="StartIntegrationTime_Ms" xml:space="preserve">
+    <value>起始积分时间(ms)</value>
+  </data>
+  <data name="OpenCmd" xml:space="preserve">
+    <value>打开命令</value>
+  </data>
+  <data name="CloseCmd" xml:space="preserve">
+    <value>关闭命令</value>
+  </data>
+  <data name="Filecfg" xml:space="preserve">
+    <value>文件配置</value>
+  </data>
+  <data name="CalibrationFile" xml:space="preserve">
+    <value>校正文件</value>
+  </data>
+  <data name="CameraType" xml:space="preserve">
+    <value>相机型号</value>
+  </data>
+  <data name="CamreaMode" xml:space="preserve">
+    <value>相机模式</value>
+  </data>
+  <data name="DefaultCaptureMode" xml:space="preserve">
+    <value>默认取图模式</value>
+  </data>
+  <data name="DefaultChannelCount" xml:space="preserve">
+    <value>默认通道数</value>
+  </data>
+  <data name="DefaultImageBits" xml:space="preserve">
+    <value>默认图像位数</value>
+  </data>
+  <data name="FilterWheel" xml:space="preserve">
+    <value>滤色轮</value>
+  </data>
+  <data name="EnableSerialPort" xml:space="preserve">
+    <value>启用串口发送</value>
+  </data>
+  <data name="FilterWheelNum" xml:space="preserve">
+    <value>滤色轮数量</value>
+  </data>
+  <data name="RegistryCenterConfig" xml:space="preserve">
+    <value>注册中心配置</value>
+  </data>
+  <data name="RCName" xml:space="preserve">
+    <value>注册中心名称</value>
+  </data>
+  <data name="RCConnecteCfg" xml:space="preserve">
+    <value>注册中心连接配置</value>
+  </data>
+  <data name="ServiceCode" xml:space="preserve">
+    <value>服务代码</value>
+  </data>
 </root>

@@ -24,34 +24,34 @@
         <ScrollViewer x:Name="EditContent" d:DataContext="{d:DesignInstance config:ConfigPhyCamera}">
             <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5">
                 <StackPanel x:Name="StackPanelInfo" Margin="5,0">
-                    <GroupBox Header="配置信息" Margin="0,5">
+                    <GroupBox Header="{x:Static properties:Resources.ConfigerInfo}" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="相机型号" Width="120"/>
+                                <TextBlock Text="{x:Static properties:Resources.CameraType}" Width="120"/>
                                 <hc:ComboBox x:Name="ComboxCameraModel"  SelectedValue="{Binding CameraModel}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
                             </DockPanel>
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="相机模式" Width="120"/>
+                                <TextBlock Text="{x:Static properties:Resources.CamreaMode}" Width="120"/>
                                 <hc:ComboBox x:Name="ComboxCameraMode"  SelectedValue="{Binding CameraMode}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
                             </DockPanel>
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="默认取图模式" Width="120"/>
+                                <TextBlock Text="{x:Static properties:Resources.DefaultCaptureMode}" Width="120"/>
                                 <ComboBox  x:Name="ComboxCameraTakeImageMode"  SelectedValue="{Binding TakeImageMode}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  />
                             </DockPanel>
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="默认通道数" Width="120"/>
+                                <TextBlock Text="{x:Static properties:Resources.DefaultChannelCount}" Width="120"/>
                                 <hc:ComboBox  x:Name="ComboxCameraChannel"   SelectedValue="{Binding Channel}"   SelectedValuePath="Key"  DisplayMemberPath="Value"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="默认图像位数" Width="120"/>
+                                <TextBlock Text="{x:Static properties:Resources.DefaultImageBits}" Width="120"/>
                                 <ComboBox  x:Name="ComboxCameraImageBpp"    SelectedValue="{Binding ImageBpp}"  SelectedValuePath="Key"  DisplayMemberPath="Value" />
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
-                    <GroupBox Header="滤色轮" Margin="0,5">
+                    <GroupBox Header="{x:Static properties:Resources.FilterWheel}" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="启用:" Width="120"/>
+                                <TextBlock Text="{x:Static properties:Resources.IsEnable}" Width="120"/>
                                 <ui:ToggleSwitch IsChecked="{Binding CFW.IsUseCFW}"/>
                             </DockPanel>
 
@@ -80,23 +80,23 @@
                                     <TextBox Text="{Binding CFW.NDCaliNameGroupsJson}"/>
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
-                                    <TextBlock Text="启用串口发送:" Width="120"/>
+                                    <TextBlock Text="{x:Static properties:Resources.EnableSerialPort}" Width="120"/>
                                     <ui:ToggleSwitch IsChecked="{Binding CFW.IsCOM}"/>
                                 </DockPanel>
 
 
                                 <StackPanel  Visibility="{Binding CFW.IsCOM,Converter={StaticResource bool2VisibilityConverter}}" >
                                     <DockPanel Margin="0,2">
-                                        <TextBlock Text="串口:" Width="120"/>
+                                        <TextBlock Text="{x:Static properties:Resources.Serial}" Width="120"/>
                                         <hc:ComboBox  x:Name="TextSerial1" IsEditable="True" Text="{Binding CFW.SzComName}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                                     </DockPanel>
                                     <DockPanel Margin="0,2">
-                                        <TextBlock Text="波特率:" Width="120"/>
+                                        <TextBlock Text="{x:Static properties:Resources.BaudRate}" Width="120"/>
                                         <hc:ComboBox  x:Name="TextBaudRate1" IsEditable="True" Text="{Binding CFW.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                                     </DockPanel>
                                 </StackPanel>
                                 <DockPanel Margin="0,2">
-                                    <TextBlock Text="滤色轮数量:" Width="120"/>
+                                    <TextBlock Text="{x:Static properties:Resources.FilterWheelNum}" Width="120"/>
                                     <hc:NumericUpDown Value="{Binding CFW.CFWNum}" Minimum="0"/>
                                 </DockPanel>
                                 <UniformGrid Columns="3" Rows="1">

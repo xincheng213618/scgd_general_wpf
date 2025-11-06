@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras"
-        xmlns:resx="clr-namespace:ColorVision.Engine.Properties"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties" 
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
@@ -26,53 +26,53 @@
         </Border>
         <ScrollViewer Grid.Row="1" Margin="0,5,0,5">
             <StackPanel  x:Name="StackPanelInfo" Margin="0,5" >
-                <GroupBox Header="配置信息" Margin="0,5">
+                <GroupBox Header="{x:Static properties:Resources.ConfigerInfo}" Margin="0,5">
                     <StackPanel Margin="5">
                         <DockPanel Margin="0,2">
-                            <TextBlock Text="相机型号" Width="120"/>
+                            <TextBlock Text="{x:Static properties:Resources.CameraType}" Width="120"/>
                             <hc:ComboBox x:Name="ComboxCameraModel"  SelectedValue="{Binding CreateConfig.CameraModel}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
                         </DockPanel>
                         <DockPanel Margin="0,2">
-                            <TextBlock Text="相机模式" Width="120"/>
+                            <TextBlock Text="{x:Static properties:Resources.CamreaMode}" Width="120"/>
                             <hc:ComboBox x:Name="ComboxCameraMode"  SelectedValue="{Binding CreateConfig.CameraMode}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
                         </DockPanel>
                         <DockPanel Margin="0,2">
-                            <TextBlock Text="默认取图模式" Width="120"/>
+                            <TextBlock Text="{x:Static properties:Resources.DefaultCaptureMode}" Width="120"/>
                             <ComboBox  x:Name="ComboxCameraTakeImageMode"  SelectedValue="{Binding CreateConfig.TakeImageMode}"  SelectedValuePath="Key"  DisplayMemberPath="Value" />
                         </DockPanel>
                         <DockPanel Margin="0,2">
-                            <TextBlock Text="默认通道数" Width="120"/>
+                            <TextBlock Text="{x:Static properties:Resources.DefaultChannelCount}" Width="120"/>
                             <hc:ComboBox  x:Name="ComboxCameraChannel"   SelectedValue="{Binding CreateConfig.Channel}"   SelectedValuePath="Key"  DisplayMemberPath="Value" />
                         </DockPanel>
                         <DockPanel Margin="0,2">
-                            <TextBlock Text="默认图像位数" Width="120"/>
+                            <TextBlock Text="{x:Static properties:Resources.DefaultImageBits}" Width="120"/>
                             <ComboBox  x:Name="ComboxCameraImageBpp"    SelectedValue="{Binding CreateConfig.ImageBpp}"  SelectedValuePath="Key"  DisplayMemberPath="Value"/>
                         </DockPanel>
                     </StackPanel>
                 </GroupBox>
-                <GroupBox Header="滤色轮" Margin="0,5" >
+                <GroupBox Header="{x:Static properties:Resources.FilterWheel}" Margin="0,5" >
                     <StackPanel Margin="5">
                         <DockPanel Margin="0,2">
-                            <TextBlock Text="启用:" Width="120"/>
+                            <TextBlock Text="{x:Static properties:Resources.IsEnable}" Width="120"/>
                             <ui:ToggleSwitch IsChecked="{Binding CreateConfig.CFW.IsUseCFW}"/>
                         </DockPanel>
                         <StackPanel  Visibility="{Binding CreateConfig.CFW.IsUseCFW,Converter={StaticResource bool2VisibilityConverter}}">
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="启用串口发送:" Width="120"/>
+                                <TextBlock Text="{x:Static properties:Resources.EnableSerialPort}" Width="120"/>
                                 <ui:ToggleSwitch IsChecked="{Binding CreateConfig.CFW.IsCOM}"/>
                             </DockPanel>
                             <StackPanel  Visibility="{Binding CreateConfig.CFW.IsCOM,Converter={StaticResource bool2VisibilityConverter}}" >
                                 <DockPanel Margin="0,2">
-                                    <TextBlock Text="串口:" Width="120"/>
+                                    <TextBlock Text="{x:Static properties:Resources.Serial}" Width="120"/>
                                     <hc:ComboBox  x:Name="TextSerial1" IsEditable="True" Text="{Binding CreateConfig.CFW.SzComName}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
-                                    <TextBlock Text="波特率:" Width="120"/>
+                                    <TextBlock Text="{x:Static properties:Resources.BaudRate}" Width="120"/>
                                     <hc:ComboBox  x:Name="TextBaudRate1" IsEditable="True" Text="{Binding CreateConfig.CFW.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                                 </DockPanel>
                             </StackPanel>
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="滤色轮数量:" Width="120"/>
+                                <TextBlock Text="{x:Static properties:Resources.FilterWheelNum}" Width="120"/>
                                 <hc:NumericUpDown Value="{Binding CreateConfig.CFW.CFWNum}" Minimum="0"/>
                             </DockPanel>
                             <UniformGrid Columns="3" Rows="1">
@@ -140,7 +140,7 @@
 
         </ScrollViewer>
         <Grid Grid.Row="2">
-            <Button  Content="{x:Static resx:Resources.Submit}" Height="30" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click"  />
+            <Button  Content="{x:Static properties:Resources.Submit}" Height="30" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click"  />
         </Grid>
 
     </Grid>

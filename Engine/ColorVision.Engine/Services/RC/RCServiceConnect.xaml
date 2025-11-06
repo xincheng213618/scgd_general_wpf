@@ -7,7 +7,7 @@
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         xmlns:hc ="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
-        Title="注册中心连接配置" Background="{DynamicResource GlobalBackground}" Height="500" Width="400" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.RCConnecteCfg}" Background="{DynamicResource GlobalBackground}" Height="500" Width="400" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -68,18 +68,18 @@
                 <Border Grid.Column="1"  Background="{DynamicResource  GlobalBorderBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"  Margin="5" CornerRadius="10,10,3,3">
                     <Grid x:Name="GridRCService" Margin="5,5,10,5"  d:DataContext="{d:DesignInstance local:RCServiceConfig}">
                         <StackPanel>
-                            <TextBlock Text="注册中心配置" HorizontalAlignment="Center" Margin="15" FontSize="17"/>
+                            <TextBlock Text="{x:Static properties:Resources.RegistryCenterConfig}" HorizontalAlignment="Center" Margin="15" FontSize="17"/>
                             <DockPanel Margin="5">
-                                <TextBlock Text="连接名" VerticalAlignment="Center" Width="120"/>
-                                <TextBox  ToolTip="连接名"  VerticalAlignment="Center" TextWrapping="Wrap" Text="{Binding Name}"  BorderThickness="0,0,0,1" />
+                                <TextBlock Text="{x:Static properties:Resources.ConnectionName}" VerticalAlignment="Center" Width="120"/>
+                                <TextBox  ToolTip="{x:Static properties:Resources.ConnectionName}"  VerticalAlignment="Center" TextWrapping="Wrap" Text="{Binding Name}"  BorderThickness="0,0,0,1" />
                             </DockPanel>
                             <DockPanel Margin="5,2">
                                 <TextBlock Text=""  Width="120"/>
                             </DockPanel>
 
                             <DockPanel Margin="5,2">
-                                <TextBlock Text="注册中心" VerticalAlignment="Center" Width="120"/>
-                                <TextBox ToolTip="注册中心名称"  VerticalAlignment="Center"  Text="{Binding RCName}" BorderThickness="0,0,0,1" />
+                                <TextBlock Text="{x:Static properties:Resources.RegistryCenter}" VerticalAlignment="Center" Width="120"/>
+                                <TextBox ToolTip="{x:Static properties:Resources.RCName}"  VerticalAlignment="Center"  Text="{Binding RCName}" BorderThickness="0,0,0,1" />
                             </DockPanel>
                             
                             <DockPanel Margin="5,2">
