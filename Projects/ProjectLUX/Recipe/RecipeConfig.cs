@@ -1,11 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using System.ComponentModel;
 
 namespace ProjectLUX
 {
     [DisplayName("ARVR上下限判定")]
-    public class RecipeConfig : ViewModelBase, IRecipe
+    public class RecipeConfig : ViewModelBase
     {
         public RecipeConfig()
         {
