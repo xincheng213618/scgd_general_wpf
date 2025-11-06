@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using ProjectARVRPro.PluginConfig;
@@ -29,10 +28,6 @@ namespace ProjectARVRPro
         [JsonIgnore]
         public RelayCommand OpenFlowEngineToolCommand { get; set; }
         [JsonIgnore]
-        public RelayCommand OpenTemplateLargeCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand OpenEditLargeCommand { get; set; }
-        [JsonIgnore]
         public RelayCommand OpenLogCommand { get; set; }
         [JsonIgnore]
         public RelayCommand OpenConfigCommand { get; set; }
@@ -50,9 +45,6 @@ namespace ProjectARVRPro
             OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
             TemplateItemSource = TemplateFlow.Params;
 
-            OpenTemplateLargeCommand = new RelayCommand(a => OpenTemplateLarge());
-            OpenEditLargeCommand = new RelayCommand(a => OpenEditLargeFlow());
-            TemplateLargeItemSource = TemplateLargeFlow.Params;
             OpenLogCommand = new RelayCommand(a => OpenLog());
             OpenConfigCommand = new RelayCommand(a => OpenConfig());
             OpenChangeLogCommand = new RelayCommand(a => OpenChangeLog());
@@ -150,19 +142,6 @@ namespace ProjectARVRPro
             new FlowEngineToolWindow(TemplateFlow.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
-        [JsonIgnore]
-        public ObservableCollection<TemplateModel<TJLargeFlowParam>> TemplateLargeItemSource { get => _TemplateLargeItemSource; set { _TemplateLargeItemSource = value; OnPropertyChanged(); } }
-        private ObservableCollection<TemplateModel<TJLargeFlowParam>> _TemplateLargeItemSource;
-        public int TemplateLargeSelectedIndex { get => _TemplateLargeSelectedIndex; set { _TemplateLargeSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplateLargeSelectedIndex;
-        public void OpenTemplateLarge()
-        {
-            new TemplateEditorWindow(new TemplateLargeFlow(), TemplateLargeSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-        public void OpenEditLargeFlow()
-        {
-            new EditLargeFlow(TemplateLargeFlow.Params[TemplateLargeSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
 
         public event EventHandler<string> SNChanged;
 
