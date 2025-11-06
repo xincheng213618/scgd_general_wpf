@@ -39,6 +39,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
     [DisplayName("电机配置")]
     public class MotorConfigBase: ViewModelBase
     {
+        
 
         [DisplayName("QueryMethods")]
         public FindFuncModel FindFuncModel { get => _FindFuncModel; set { _FindFuncModel = value; OnPropertyChanged(); } }
