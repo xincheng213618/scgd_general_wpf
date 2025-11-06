@@ -22,6 +22,8 @@ public class AlgorithmFindLEDNode : CVBaseServerNode
 
 	private string _OutputFileName;
 
+	private string _ImgPosResultFile;
+
 	private STNodeEditText<string> m_ctrl_temp;
 
 	private STNodeEditText<CVOLED_COLOR> m_ctrl_color;
@@ -120,6 +122,19 @@ public class AlgorithmFindLEDNode : CVBaseServerNode
 		}
 	}
 
+	[STNodeProperty("定位输出", "定位输出", true)]
+	public string ImgPosResultFile
+	{
+		get
+		{
+			return _ImgPosResultFile;
+		}
+		set
+		{
+			_ImgPosResultFile = value;
+		}
+	}
+
 	private void setTempName()
 	{
 		m_ctrl_temp.Value = $"{_TempId}:{_TempName}";
@@ -131,6 +146,7 @@ public class AlgorithmFindLEDNode : CVBaseServerNode
 		operatorCode = "FindLED";
 		_TempName = "";
 		_TempId = -1;
+		_ImgPosResultFile = "ImgPos.tif";
 		_OutputFileName = "pos.csv";
 		_FixedLEDPoint = new PointFloat[4]
 		{
@@ -170,6 +186,7 @@ public class AlgorithmFindLEDNode : CVBaseServerNode
 	{
 		AlgorithmOLEDParam algorithmOLEDParam = null;
 		algorithmOLEDParam = new AlgorithmOLEDParam(_Color, _OutputFileName);
+		algorithmOLEDParam.ImgPosResultFile = _ImgPosResultFile;
 		algorithmOLEDParam.ImgFileName = _ImgFileName;
 		algorithmOLEDParam.FileType = GetImageFileType(_ImgFileName);
 		algorithmOLEDParam.FixedLEDPoint = _FixedLEDPoint;

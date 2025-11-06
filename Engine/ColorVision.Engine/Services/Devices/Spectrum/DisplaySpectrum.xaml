@@ -108,6 +108,11 @@
                                 </Button>
 
                             </DockPanel>
+                            <DockPanel Margin="0,2" Visibility="{Binding Config.IsWithND,Converter={StaticResource bool2VisibilityConverter}}">
+                                <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resources.ChangeNDPort}"  Click="NDport_Click" />
+                                <TextBlock Text="NDPort" />
+                                <TextBox Text="{Binding DisplaySpectrumConfig.PortNum}"  BorderThickness="0,0,0,1" Margin="5,0"/>
+                            </DockPanel>
                         </StackPanel>
                         <GroupBox Header="Shutter" Margin="0,0,0,5" Visibility="{Binding Config.IsShutterEnable,Converter={StaticResource bool2VisibilityConverter}}">
                             <StackPanel Margin="5">

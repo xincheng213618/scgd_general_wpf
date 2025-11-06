@@ -13,7 +13,7 @@ namespace ColorVision.Engine
     public class MenuStartExecutionCommand : MenuItemBase
     {
         public override string OwnerGuid => EngineCommands.EngineGuidId;
-        public override string Header => ColorVision.Engine.Properties.Resources.StartExecition+"(_S)";
+        public override string Header => ColorVision.Engine.Properties.Resources.StartExecition;
         public override int Order => 99;
 
         public override ICommand Command => EngineCommands.StartExecutionCommand;
@@ -25,7 +25,7 @@ namespace ColorVision.Engine
     public class MenuStopExecutionCommand : MenuItemBase
     {
         public override string OwnerGuid => EngineCommands.EngineGuidId;
-        public override string Header => ColorVision.Engine.Properties.Resources.StopExecution+"(_S)";
+        public override string Header => ColorVision.Engine.Properties.Resources.StopExecution;
         public override int Order => 99;
         public override ICommand Command => EngineCommands.StopExecutionCommand;
         public override object? Icon => MenuItemIcon.TryFindResource("DIRunPaused");
@@ -36,7 +36,7 @@ namespace ColorVision.Engine
     {
         public override string OwnerGuid => EngineCommands.EngineGuidId;
 
-        public override string Header => ColorVision.Engine.Properties.Resources.CaptureImage+"(_S)";
+        public override string Header => ColorVision.Engine.Properties.Resources.CaptureImage;
         public override int Order => 99;
 
         public override ICommand Command => EngineCommands.TakePhotoCommand;
@@ -51,12 +51,11 @@ namespace ColorVision.Engine
         /// <summary>
         /// 开始执行
         /// </summary>
-        public static RoutedUICommand StartExecutionCommand { get; set; } = new RoutedUICommand("开始执行(_S)", "开始执行(_S)", typeof(EngineCommands), new InputGestureCollection(new[] { new KeyGesture(Key.F6, ModifierKeys.None, "F6") }));
-        public static RoutedUICommand StopExecutionCommand { get; set; } = new RoutedUICommand("停止执行(_S)", "停止执行(_S)", typeof(EngineCommands), new InputGestureCollection(new[] { new KeyGesture(Key.F7, ModifierKeys.None, "F7") }));
-
+        public static RoutedUICommand StartExecutionCommand { get; set; } = new RoutedUICommand(ColorVision.Engine.Properties.Resources.StartExecition, ColorVision.Engine.Properties.Resources.StartExecition, typeof(EngineCommands), new InputGestureCollection(new[] { new KeyGesture(Key.F6, ModifierKeys.None, "F6") }));
+        public static RoutedUICommand StopExecutionCommand { get; set; } = new RoutedUICommand(ColorVision.Engine.Properties.Resources.StopExecution, ColorVision.Engine.Properties.Resources.StopExecution, typeof(EngineCommands), new InputGestureCollection(new[] { new KeyGesture(Key.F7, ModifierKeys.None, "F7") }));
         /// <summary>
         /// 拍照
         /// </summary>
-        public static RoutedUICommand TakePhotoCommand { get; set; } = new RoutedUICommand("拍照(_P)", "拍照(_P)", typeof(EngineCommands), new InputGestureCollection(new[] { new KeyGesture(Key.T, ModifierKeys.Control, "Crtl+T") }));
+        public static RoutedUICommand TakePhotoCommand { get; set; } = new RoutedUICommand(ColorVision.Engine.Properties.Resources.CaptureImage, ColorVision.Engine.Properties.Resources.CaptureImage, typeof(EngineCommands), new InputGestureCollection(new[] { new KeyGesture(Key.T, ModifierKeys.Control, "Crtl+T") }));
     }
 }

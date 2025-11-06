@@ -26,8 +26,15 @@ using ColorVision.Engine.Extension;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
+    public class DisplaySpectrumConfig : ViewModelBase
+    {
+        public int PortNum { get => _PortNum; set { _PortNum = value; OnPropertyChanged(); } }
+        private int _PortNum = 1;
+    }
+
     public class DeviceSpectrum : DeviceService<ConfigSpectrum>
     {
+        public DisplaySpectrumConfig DisplaySpectrumConfig { get; set; } = new DisplaySpectrumConfig();
         public MQTTSpectrum DService { get; set; }
         public ViewSpectrum View { get; set; }
         public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; } = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();

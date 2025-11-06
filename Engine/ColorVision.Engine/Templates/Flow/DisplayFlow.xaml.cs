@@ -273,6 +273,7 @@ namespace ColorVision.Engine.Templates.Flow
                         var ctx = new IBatchContext
                         {
                             Batch = batch,
+                            FlowName = FlowName,
                         };
                         executed = meta.BatchProcess.Process(ctx);
                     }

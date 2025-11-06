@@ -42,17 +42,13 @@ namespace ColorVision.Engine.Batch.IVL
             {
                 properties.Add(i.ToString());
             }
-            // д����ͷ
             for (int i = 0; i < properties.Count; i++)
             {
-                // ��������
                 csvBuilder.Append(properties[i]);
 
-                // ����������һ�У������Ӷ���
                 if (i < properties.Count - 1)
                     csvBuilder.Append(',');
             }
-            // ���ӻ��з�
             csvBuilder.AppendLine();
             foreach (var result in ViewResultSpectrums)
             {
@@ -116,8 +112,6 @@ namespace ColorVision.Engine.Batch.IVL
                         }
                     }
                 }
-
-
 
                 var DB = new SqlSugarClient(new ConnectionConfig
                 {

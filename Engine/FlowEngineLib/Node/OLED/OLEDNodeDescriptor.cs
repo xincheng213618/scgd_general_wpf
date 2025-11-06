@@ -27,7 +27,7 @@ public class OLEDNodeDescriptor : STNodePropertyDescriptor
 		PointFloat[] array = (PointFloat[])GetValue(null);
 		if (array != null)
 		{
-			return JsonConvert.SerializeObject(array);
+			return JsonConvert.SerializeObject((object)array);
 		}
 		return "[]";
 	}

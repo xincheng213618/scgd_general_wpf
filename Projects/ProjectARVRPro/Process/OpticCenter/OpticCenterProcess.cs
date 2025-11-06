@@ -87,7 +87,7 @@ namespace ProjectARVRPro.Process.OpticCenter
         {
             var result = ctx.Result;
             string outtext = string.Empty;
-            outtext += $"光轴校准 + Environment.NewLine";
+            outtext += $"光轴校准" + Environment.NewLine;
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
             OpticCenterTestResult testResult = JsonConvert.DeserializeObject<OpticCenterTestResult>(ctx.Result.ViewResultJson);

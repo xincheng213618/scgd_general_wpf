@@ -95,7 +95,7 @@ internal class BaseSimulator : STNode
 		}
 		else if (finish != null)
 		{
-			_MQTTHelper.PublishAsync_Client(mqAction.Topic, JsonConvert.SerializeObject(finish), retained: false);
+			_MQTTHelper.PublishAsync_Client(mqAction.Topic, JsonConvert.SerializeObject((object)finish), retained: false);
 		}
 	}
 
@@ -106,7 +106,7 @@ internal class BaseSimulator : STNode
 		obj.Dispose();
 		if (finish != null)
 		{
-			_MQTTHelper.PublishAsync_Client(mqAction.Topic, JsonConvert.SerializeObject(finish), retained: false);
+			_MQTTHelper.PublishAsync_Client(mqAction.Topic, JsonConvert.SerializeObject((object)finish), retained: false);
 		}
 	}
 

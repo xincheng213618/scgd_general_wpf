@@ -128,7 +128,7 @@
     <value>简体中文</value>
   </data>
   <data name="zh-Hant" xml:space="preserve">
-    <value>繁体中文</value>
+    <value>繁體中文（繁体中文）</value>
   </data>
   <data name="UseSystem" xml:space="preserve">
     <value>跟随系统</value>
@@ -137,19 +137,19 @@
     <value>您必须重新启动才能使用新的语言设置</value>
   </data>
   <data name="en" xml:space="preserve">
-    <value>(English)英语</value>
+    <value>English（英语）</value>
   </data>
   <data name="fr" xml:space="preserve">
-    <value>法语</value>
+    <value>Français（法语）</value>
   </data>
   <data name="ja" xml:space="preserve">
-    <value>日语</value>
+    <value>日本語（日语）</value>
   </data>
   <data name="ko" xml:space="preserve">
-    <value>韩语</value>
+    <value>한국어（韩语）</value>
   </data>
   <data name="ru" xml:space="preserve">
-    <value>俄语</value>
+    <value>Русский（俄语）</value>
   </data>
   <data name="MenuOptions" xml:space="preserve">
     <value>选项(_O)</value>

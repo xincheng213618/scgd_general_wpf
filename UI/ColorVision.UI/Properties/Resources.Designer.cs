@@ -484,7 +484,7 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 (English)英语 的本地化字符串。
+        ///   查找类似 English（英语） 的本地化字符串。
         /// </summary>
         public static string en {
             get {
@@ -556,7 +556,7 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 法语 的本地化字符串。
+        ///   查找类似 Français（法语） 的本地化字符串。
         /// </summary>
         public static string fr {
             get {
@@ -655,7 +655,7 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 日语 的本地化字符串。
+        ///   查找类似 日本語（日语） 的本地化字符串。
         /// </summary>
         public static string ja {
             get {
@@ -664,7 +664,7 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 韩语 的本地化字符串。
+        ///   查找类似 한국어（韩语） 的本地化字符串。
         /// </summary>
         public static string ko {
             get {
@@ -1087,7 +1087,7 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 俄语 的本地化字符串。
+        ///   查找类似 Русский（俄语） 的本地化字符串。
         /// </summary>
         public static string ru {
             get {
@@ -1285,7 +1285,7 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 繁体中文 的本地化字符串。
+        ///   查找类似 繁體中文（繁体中文） 的本地化字符串。
         /// </summary>
         public static string zh_Hant {
             get {
