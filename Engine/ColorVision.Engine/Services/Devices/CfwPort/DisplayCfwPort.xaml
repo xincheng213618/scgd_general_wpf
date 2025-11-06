@@ -56,14 +56,14 @@
                 </DockPanel>
 
                 <DockPanel x:Name="ButtonUnauthorized" Margin="0,0,0,3" >
-                    <Button Content="未授权或者许可证过期"  Command="{Binding EditCommand}"/>
+                    <Button Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}"  Command="{Binding EditCommand}"/>
                 </DockPanel>
                 <DockPanel x:Name="ButtonInit" Margin="0,0,0,3" >
-                    <Button Content="请先配置SN" Command="{Binding EditCommand}"/>
+                    <Button Content="{x:Static properties:Resources.SetSnFirst}" Command="{Binding EditCommand}"/>
                 </DockPanel>
-                <Button x:Name="ButtonOffline" Margin="0,0,0,3" Visibility="Collapsed" Content="设备离线" Foreground="White" Background="Red" Click="CameraOffline_Click"/>
-                <Button  x:Name="ButtonOpen" Margin="0,2" Content="连接"  Click="Open_Click"/>
-                <Button  x:Name="ButtonClose" Margin="0,2" Content="关闭"  Click="Close_Click" Visibility="Collapsed"/>
+                <Button x:Name="ButtonOffline" Margin="0,0,0,3" Visibility="Collapsed" Content="{x:Static properties:Resources.DeviceOffline}" Foreground="White" Background="Red" Click="CameraOffline_Click"/>
+                <Button  x:Name="ButtonOpen" Margin="0,2" Content="{x:Static properties:Resources.Connect}"  Click="Open_Click"/>
+                <Button  x:Name="ButtonClose" Margin="0,2" Content="{x:Static properties:Resources.Close}"  Click="Close_Click" Visibility="Collapsed"/>
                 <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,3">
                     <DockPanel Margin="0,2">
                         <Button DockPanel.Dock="Right" Content="SetPort"  Click="SetPort_Click" />

@@ -1104,4 +1104,43 @@
   <data name="LightBandDetection" xml:space="preserve">
     <value>LED strip testing</value>
   </data>
+  <data name="IntegratedQuery" xml:space="preserve">
+    <value>Comprehensive Inquiry</value>
+  </data>
+  <data name="ArchiveQuery" xml:space="preserve">
+    <value>Archive Query</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>Move up</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>Move down</value>
+  </data>
+  <data name="CreateCopy" xml:space="preserve">
+    <value>Create a copy</value>
+  </data>
+  <data name="CreateSample" xml:space="preserve">
+    <value>Create as a sample</value>
+  </data>
+  <data name="WorkflowEngineTemplateManagement" xml:space="preserve">
+    <value>Workflow Engine Template Management</value>
+  </data>
+  <data name="PhysicalCamera" xml:space="preserve">
+    <value>Physical Camera Code</value>
+  </data>
+  <data name="SetSnFirst" xml:space="preserve">
+    <value>Please configure SN first.</value>
+  </data>
+  <data name="Connect" xml:space="preserve">
+    <value>connect</value>
+  </data>
+  <data name="StartExecition" xml:space="preserve">
+    <value>Start execution</value>
+  </data>
+  <data name="StopExecution" xml:space="preserve">
+    <value>Stop execution</value>
+  </data>
+  <data name="CaptureImage" xml:space="preserve">
+    <value>CaptureImage</value>
+  </data>
 </root>

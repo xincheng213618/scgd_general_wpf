@@ -1104,4 +1104,43 @@
   <data name="LightBandDetection" xml:space="preserve">
     <value>LEDストリップテスト</value>
   </data>
+  <data name="IntegratedQuery" xml:space="preserve">
+    <value>包括的な調査</value>
+  </data>
+  <data name="ArchiveQuery" xml:space="preserve">
+    <value>アーカイブクエリ</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>上に移動</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>下に移動</value>
+  </data>
+  <data name="CreateCopy" xml:space="preserve">
+    <value>コピーを作成する</value>
+  </data>
+  <data name="CreateSample" xml:space="preserve">
+    <value>サンプルとして作成</value>
+  </data>
+  <data name="WorkflowEngineTemplateManagement" xml:space="preserve">
+    <value>ワークフローエンジンテンプレート管理</value>
+  </data>
+  <data name="PhysicalCamera" xml:space="preserve">
+    <value>物理カメラコード</value>
+  </data>
+  <data name="SetSnFirst" xml:space="preserve">
+    <value>まずSNを設定してください。</value>
+  </data>
+  <data name="Connect" xml:space="preserve">
+    <value>接続する</value>
+  </data>
+  <data name="StartExecition" xml:space="preserve">
+    <value>実行を開始</value>
+  </data>
+  <data name="StopExecution" xml:space="preserve">
+    <value>実行を停止</value>
+  </data>
+  <data name="CaptureImage" xml:space="preserve">
+    <value>写真</value>
+  </data>
 </root>

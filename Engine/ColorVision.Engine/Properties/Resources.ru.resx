@@ -1104,4 +1104,43 @@
   <data name="LightBandDetection" xml:space="preserve">
     <value>Тестирование светодиодных лент</value>
   </data>
+  <data name="IntegratedQuery" xml:space="preserve">
+    <value>Комплексное расследование</value>
+  </data>
+  <data name="ArchiveQuery" xml:space="preserve">
+    <value>Архивный запрос</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>Двигаться вверх</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>Двигаться вниз</value>
+  </data>
+  <data name="CreateCopy" xml:space="preserve">
+    <value>Создать копию</value>
+  </data>
+  <data name="CreateSample" xml:space="preserve">
+    <value>Создать как образец</value>
+  </data>
+  <data name="WorkflowEngineTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами Workflow Engine</value>
+  </data>
+  <data name="PhysicalCamera" xml:space="preserve">
+    <value>Физический код камеры</value>
+  </data>
+  <data name="SetSnFirst" xml:space="preserve">
+    <value>Сначала настройте серийный номер.</value>
+  </data>
+  <data name="Connect" xml:space="preserve">
+    <value>соединять</value>
+  </data>
+  <data name="StartExecition" xml:space="preserve">
+    <value>Начать выполнение</value>
+  </data>
+  <data name="StopExecution" xml:space="preserve">
+    <value>Остановить казнь</value>
+  </data>
+  <data name="CaptureImage" xml:space="preserve">
+    <value>Фотография</value>
+  </data>
 </root>

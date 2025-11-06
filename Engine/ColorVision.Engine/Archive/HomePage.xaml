@@ -6,6 +6,7 @@
       xmlns:local="clr-namespace:ColorVision.Engine.Archive"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
+      xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
       Title="HomePage" Loaded="Page_Loaded" Initialized="Page_Initialized">
     <Page.Resources>
         <Style TargetType="TextBlock" >
@@ -22,7 +23,7 @@
                     </Grid.RowDefinitions>
                     <Image Source="/ColorVision.Engine;component/Assets/Image/background0.png"/>
                     <Image Source="/ColorVision.Engine;component/Assets/Image/综合查询.png" Margin="30"/>
-                    <TextBlock Grid.Row="1" Text="综合查询" HorizontalAlignment="Center" FontSize="18"/>
+                    <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.IntegratedQuery}" HorizontalAlignment="Center" FontSize="18"/>
                 </Grid>
             </UserControl>
             <UserControl Width="200" MouseLeftButtonUp="UserControl_MouseLeftButtonUp" Tag="ArchivePage">
@@ -33,7 +34,7 @@
                     </Grid.RowDefinitions>
                     <Image Source="/ColorVision.Engine;component/Assets/Image/background0.png"/>
                     <Image Source="/ColorVision.Engine;component/Assets/Image/归档查询.png" Margin="50"/>
-                    <TextBlock Grid.Row="1" Text="归档查询" HorizontalAlignment="Center" FontSize="18"/>
+                    <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.ArchiveQuery}" HorizontalAlignment="Center" FontSize="18"/>
                 </Grid>
             </UserControl>
         </UniformGrid>

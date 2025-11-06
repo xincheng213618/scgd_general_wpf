@@ -34,7 +34,7 @@ namespace ColorVision.Engine.Templates.Flow
         public TemplateFlow()
         {
             IsSideHide = true;
-            Title = "流程引擎模板管理";
+            Title = ColorVision.Engine.Properties.Resources.WorkflowEngineTemplateManagement;
             Code = "flow";
             TemplateParams = Params;
         }
