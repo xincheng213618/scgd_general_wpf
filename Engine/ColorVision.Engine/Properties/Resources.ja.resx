@@ -1230,7 +1230,82 @@
   <data name="SMUAddr" xml:space="preserve">
     <value>ソーステーブルアドレス</value>
   </data>
-  <data name="QueryMethods" xml:space="preserve">
-    <value>クエリメソッド</value>
+  <data name="IntegrationTime" xml:space="preserve">
+    <value>ポイント時間</value>
+  </data>
+  <data name="AutoIntegra" xml:space="preserve">
+    <value>自動ポイント</value>
+  </data>
+  <data name="AutoZeroCalibration" xml:space="preserve">
+    <value>自動ゼロ設定</value>
+  </data>
+  <data name="AdaptiveZeroCalibration" xml:space="preserve">
+    <value>アダプティブゼロイング</value>
+  </data>
+  <data name="SingleTest" xml:space="preserve">
+    <value>単一テスト</value>
+  </data>
+  <data name="AutoTest" xml:space="preserve">
+    <value>自動テスト</value>
+  </data>
+  <data name="SingleZeroCalibration" xml:space="preserve">
+    <value>シングルゼロ</value>
+  </data>
+  <data name="DelayMs" xml:space="preserve">
+    <value>遅延（ミリ秒）</value>
+  </data>
+  <data name="SpectrumInfo" xml:space="preserve">
+    <value>分光計情報</value>
+  </data>
+  <data name="AutoTestInterval_Ms" xml:space="preserve">
+    <value>自動テスト間隔（ミリ秒）</value>
+  </data>
+  <data name="MaxIntegrationTime_Ms" xml:space="preserve">
+    <value>最大積分時間（ミリ秒）</value>
+  </data>
+  <data name="StartIntegrationTime_Ms" xml:space="preserve">
+    <value>開始積分時間（ミリ秒）</value>
+  </data>
+  <data name="OpenCmd" xml:space="preserve">
+    <value>開くコマンド</value>
+  </data>
+  <data name="CloseCmd" xml:space="preserve">
+    <value>閉じるコマンド</value>
+  </data>
+  <data name="Filecfg" xml:space="preserve">
+    <value>ファイル構成</value>
+  </data>
+  <data name="CalibrationFile" xml:space="preserve">
+    <value>訂正文書</value>
+  </data>
+  <data name="CameraType" xml:space="preserve">
+    <value>カメラモデル</value>
+  </data>
+  <data name="CamreaMode" xml:space="preserve">
+    <value>カメラモード</value>
+  </data>
+  <data name="DefaultCaptureMode" xml:space="preserve">
+    <value>デフォルトの画像取得モード</value>
+  </data>
+  <data name="DefaultChannelCount" xml:space="preserve">
+    <value>デフォルトのチャンネル数</value>
+  </data>
+  <data name="DefaultImageBits" xml:space="preserve">
+    <value>デフォルトの画像ビット深度</value>
+  </data>
+  <data name="FilterWheel" xml:space="preserve">
+    <value>カラーフィルターホイール</value>
+  </data>
+  <data name="EnableSerialPort" xml:space="preserve">
+    <value>シリアルポート送信を有効にする</value>
+  </data>
+  <data name="FilterWheelNum" xml:space="preserve">
+    <value>カラーフィルターの数</value>
+  </data>
+  <data name="RegistryCenterConfig" xml:space="preserve">
+    <value>登録センターの構成</value>
+  </data>
+  <data name="RCName" xml:space="preserve">
+    <value>登録センター名</value>
   </data>
 </root>

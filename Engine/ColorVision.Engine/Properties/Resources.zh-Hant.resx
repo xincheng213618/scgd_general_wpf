@@ -1230,7 +1230,82 @@
   <data name="SMUAddr" xml:space="preserve">
     <value>來源表位址</value>
   </data>
-  <data name="QueryMethods" xml:space="preserve">
-    <value>查詢方法</value>
+  <data name="IntegrationTime" xml:space="preserve">
+    <value>積分時間</value>
+  </data>
+  <data name="AutoIntegra" xml:space="preserve">
+    <value>自動積分</value>
+  </data>
+  <data name="AutoZeroCalibration" xml:space="preserve">
+    <value>自動校零</value>
+  </data>
+  <data name="AdaptiveZeroCalibration" xml:space="preserve">
+    <value>自適應校零</value>
+  </data>
+  <data name="SingleTest" xml:space="preserve">
+    <value>單次測試</value>
+  </data>
+  <data name="AutoTest" xml:space="preserve">
+    <value>自動測試</value>
+  </data>
+  <data name="SingleZeroCalibration" xml:space="preserve">
+    <value>單次校零</value>
+  </data>
+  <data name="DelayMs" xml:space="preserve">
+    <value>延時(ms)</value>
+  </data>
+  <data name="SpectrumInfo" xml:space="preserve">
+    <value>光譜儀資訊</value>
+  </data>
+  <data name="AutoTestInterval_Ms" xml:space="preserve">
+    <value>自動測試間隔(ms)</value>
+  </data>
+  <data name="MaxIntegrationTime_Ms" xml:space="preserve">
+    <value>最大積分時間(ms)</value>
+  </data>
+  <data name="StartIntegrationTime_Ms" xml:space="preserve">
+    <value>起始積分時間(ms)</value>
+  </data>
+  <data name="OpenCmd" xml:space="preserve">
+    <value>打開命令</value>
+  </data>
+  <data name="CloseCmd" xml:space="preserve">
+    <value>關閉命令</value>
+  </data>
+  <data name="Filecfg" xml:space="preserve">
+    <value>文件配置</value>
+  </data>
+  <data name="CalibrationFile" xml:space="preserve">
+    <value>校正文件</value>
+  </data>
+  <data name="CameraType" xml:space="preserve">
+    <value>相機型號</value>
+  </data>
+  <data name="CamreaMode" xml:space="preserve">
+    <value>相機模式</value>
+  </data>
+  <data name="DefaultCaptureMode" xml:space="preserve">
+    <value>預設取圖模式</value>
+  </data>
+  <data name="DefaultChannelCount" xml:space="preserve">
+    <value>預設通道數</value>
+  </data>
+  <data name="DefaultImageBits" xml:space="preserve">
+    <value>預設影像位數</value>
+  </data>
+  <data name="FilterWheel" xml:space="preserve">
+    <value>濾色輪</value>
+  </data>
+  <data name="EnableSerialPort" xml:space="preserve">
+    <value>啟用串口發送</value>
+  </data>
+  <data name="FilterWheelNum" xml:space="preserve">
+    <value>濾色輪數量</value>
+  </data>
+  <data name="RegistryCenterConfig" xml:space="preserve">
+    <value>註冊中心配置</value>
+  </data>
+  <data name="RCName" xml:space="preserve">
+    <value>註冊中心名稱</value>
   </data>
 </root>

@@ -6,6 +6,7 @@
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Spectrum"
              mc:Ignorable="d" 
              xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties" 
              d:DataContext="{d:DesignInstance Type=local:SpectrumResourceParam}"
              d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized">
     <UserControl.Resources>
@@ -17,11 +18,11 @@
     </UserControl.Resources>
     <StackPanel Margin="5">
         <DockPanel  Margin="0,0,0,5">
-            <TextBlock DockPanel.Dock="Left" Text="校正文件"  Width="80" />
+            <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.CalibrationFile}"  Width="80" />
             <hc:ComboBox x:Name="ComboBoxList" Text="{Binding ResourceMode}" DisplayMemberPath="Name" SelectionChanged="ComboBox_SelectionChanged" />
         </DockPanel>
         <DockPanel  Margin="0,0,0,5">
-            <TextBlock DockPanel.Dock="Left" Text="名称" Width="80" />
+            <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.Name}" Width="80" />
             <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding IsSelected}"   Margin="5,0"/>
             <TextBox Text="{Binding  ResourceName}"/>
         </DockPanel>
