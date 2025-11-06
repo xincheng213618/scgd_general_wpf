@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Services
         [CommandDisplayAttribute("ModifyConfiguration",Order =-3)]
         public RelayCommand EditCommand { get; set; }
 
-        [CommandDisplay("文件保存路径",Order =-1)]
+        [CommandDisplay("FileSavePath",Order =-1)]
         public RelayCommand UpdateFilecfgCommand { get; set; }
 
         public virtual ImageSource Icon { get; set; }

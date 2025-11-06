@@ -1467,4 +1467,19 @@
   <data name="CaliberationParamSet" xml:space="preserve">
     <value>校正參數設定</value>
   </data>
+  <data name="TemperatureDataNotFound" xml:space="preserve">
+    <value>查詢不到對應的溫度數據</value>
+  </data>
+  <data name="ErrorQueryingTemperatureData" xml:space="preserve">
+    <value>查詢溫度資料時發生錯誤</value>
+  </data>
+  <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
+    <value>是否儲存目前介面的曝光配置</value>
+  </data>
+  <data name="EditCalibrationFile" xml:space="preserve">
+    <value>編輯校正文件</value>
+  </data>
+  <data name="FileSavePath" xml:space="preserve">
+    <value>文件保存路徑</value>
+  </data>
 </root>

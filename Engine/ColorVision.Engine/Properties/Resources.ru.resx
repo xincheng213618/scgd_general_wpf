@@ -1467,4 +1467,19 @@
   <data name="CaliberationParamSet" xml:space="preserve">
     <value>Настройки параметров калибровки</value>
   </data>
+  <data name="TemperatureDataNotFound" xml:space="preserve">
+    <value>Соответствующие данные по температуре не найдены.</value>
+  </data>
+  <data name="ErrorQueryingTemperatureData" xml:space="preserve">
+    <value>Произошла ошибка при запросе данных о температуре.</value>
+  </data>
+  <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
+    <value>Хотите сохранить текущую конфигурацию экспозиции?</value>
+  </data>
+  <data name="EditCalibrationFile" xml:space="preserve">
+    <value>Редактировать файл исправлений</value>
+  </data>
+  <data name="FileSavePath" xml:space="preserve">
+    <value>Путь сохранения файла</value>
+  </data>
 </root>

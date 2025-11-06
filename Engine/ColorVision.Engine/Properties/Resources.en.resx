@@ -1456,7 +1456,7 @@
     <value>Caliberation File Management</value>
   </data>
   <data name="UploadCalibrationGroup" xml:space="preserve">
-    <value>Upload caliberation group</value>
+    <value>Upload calibration group</value>
   </data>
   <data name="CalibrationGroupManagement" xml:space="preserve">
     <value>Calibration Group Management</value>
@@ -1466,5 +1466,20 @@
   </data>
   <data name="CaliberationParamSet" xml:space="preserve">
     <value>Calibration parameter settings</value>
+  </data>
+  <data name="TemperatureDataNotFound" xml:space="preserve">
+    <value>No corresponding temperature data found</value>
+  </data>
+  <data name="ErrorQueryingTemperatureData" xml:space="preserve">
+    <value>An error occurred while querying temperature data.</value>
+  </data>
+  <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
+    <value>Do you want to save the current exposure configuration?</value>
+  </data>
+  <data name="EditCalibrationFile" xml:space="preserve">
+    <value>Edit calibration file</value>
+  </data>
+  <data name="FileSavePath" xml:space="preserve">
+    <value>File save path</value>
   </data>
 </root>
