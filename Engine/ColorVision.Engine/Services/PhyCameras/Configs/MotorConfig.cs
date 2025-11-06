@@ -39,7 +39,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
     [DisplayName("MotorConfig")]
     public class MotorConfigBase: ViewModelBase
     {
-
+        
 
         [DisplayName("QuaryMethods")]
         public FindFuncModel FindFuncModel { get => _FindFuncModel; set { _FindFuncModel = value; OnPropertyChanged(); } }
