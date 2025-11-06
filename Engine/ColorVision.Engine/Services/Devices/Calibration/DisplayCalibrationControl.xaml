@@ -51,13 +51,13 @@
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}"  Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel  Margin="5">
                 <TextBlock x:Name="TextBlockUnknow" Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
-                <TextBlock x:Name="TextBlockUnInit" Text="服务已经关闭"  HorizontalAlignment="Center"/>
-                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="未授权或者相机许可证过期" Command="{Binding EditCommand}"/>
+                <TextBlock x:Name="TextBlockUnInit" Text="{x:Static properties:Resources.SeviceClosed}"  HorizontalAlignment="Center"/>
+                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="{x:Static properties:Resources.UnauthorizedOrCameraLicenseExpiredz}" Command="{Binding EditCommand}"/>
                 <StackPanel x:Name="StackPanelContent">
                     <TabControl BorderThickness="0" Background="Transparent">
                         <TabItem x:Name="RadioLocal" Background="Transparent" Header="{x:Static properties:Resources.Local}" >
                             <StackPanel Orientation="Horizontal" Margin="0,2">
-                                <TextBlock Text="文件" Margin="10,0,0,0" Width="40"/>
+                                <TextBlock Text="{x:Static properties:Resources.File}" Margin="10,0,0,0" Width="40"/>
                                 <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}"  Width="150" Text="" Margin="0,0,2,0" HorizontalAlignment="Left" />
                                 <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open_File" />
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_OpenLocal_Click" />

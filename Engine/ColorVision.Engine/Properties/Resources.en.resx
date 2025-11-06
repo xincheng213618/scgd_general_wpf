@@ -931,7 +931,7 @@
     <value>Frame display name</value>
   </data>
   <data name="HeartbeatTime" xml:space="preserve">
-    <value>Heartbeat Time</value>
+    <value>Heartbeat Time(ms)</value>
   </data>
   <data name="DeviceAutoConnect" xml:space="preserve">
     <value>Automatic device connection</value>
@@ -1142,5 +1142,92 @@
   </data>
   <data name="CaptureImage" xml:space="preserve">
     <value>CaptureImage</value>
+  </data>
+  <data name="SeviceClosed" xml:space="preserve">
+    <value>The service has been shut down.</value>
+  </data>
+  <data name="DataDirectoryServiceConfig" xml:space="preserve">
+    <value>Data directory service configuration</value>
+  </data>
+  <data name="ServiceCach" xml:space="preserve">
+    <value>Service caching</value>
+  </data>
+  <data name="ConfigerInfo" xml:space="preserve">
+    <value>Configuration information</value>
+  </data>
+  <data name="FileDirectory" xml:space="preserve">
+    <value>File Directory</value>
+  </data>
+  <data name="Aperture" xml:space="preserve">
+    <value>Aperture F</value>
+  </data>
+  <data name="DataBaseConfig1" xml:space="preserve">
+    <value>Database configuration (if configuration fails)</value>
+  </data>
+  <data name="offline" xml:space="preserve">
+    <value>Offline</value>
+  </data>
+  <data name="CommunicationType" xml:space="preserve">
+    <value>Communication methods</value>
+  </data>
+  <data name="CategoryModel" xml:space="preserve">
+    <value>Category Model</value>
+  </data>
+  <data name="SerialPortCom" xml:space="preserve">
+    <value>Serial communication</value>
+  </data>
+  <data name="PowerOn" xml:space="preserve">
+    <value>Power on</value>
+  </data>
+  <data name="PowerOff" xml:space="preserve">
+    <value>Power off</value>
+  </data>
+  <data name="Up" xml:space="preserve">
+    <value>superior</value>
+  </data>
+  <data name="Down" xml:space="preserve">
+    <value>Down</value>
+  </data>
+  <data name="Switch" xml:space="preserve">
+    <value>Switch</value>
+  </data>
+  <data name="PGCommand" xml:space="preserve">
+    <value>Screen commands</value>
+  </data>
+  <data name="Unregistered" xml:space="preserve">
+    <value>Unregistered</value>
+  </data>
+  <data name="ExecteTemplate" xml:space="preserve">
+    <value>Execution template</value>
+  </data>
+  <data name="CommandType" xml:space="preserve">
+    <value>Instruction type</value>
+  </data>
+  <data name="SendCmd" xml:space="preserve">
+    <value>Send command</value>
+  </data>
+  <data name="RevCmd" xml:space="preserve">
+    <value>Return instruction</value>
+  </data>
+  <data name="SensorCfgInfo" xml:space="preserve">
+    <value>Sensor configuration information</value>
+  </data>
+  <data name="IPAddress" xml:space="preserve">
+    <value>IP address</value>
+  </data>
+  <data name="Serial" xml:space="preserve">
+    <value>serial port</value>
+  </data>
+  <data name="BaudRate" xml:space="preserve">
+    <value>baud rate</value>
+  </data>
+  <data name="DeviceType" xml:space="preserve">
+    <value>Equipment type</value>
+  </data>
+  <data name="DeviceAddr" xml:space="preserve">
+    <value>Device address</value>
+  </data>
+  <data name="SMUAddr" xml:space="preserve">
+    <value>Source table address</value>
   </data>
 </root>
