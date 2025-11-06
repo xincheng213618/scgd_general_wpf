@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Properties {
     // 类通过类似于 ResGen 或 Visual Studio 的工具自动生成的。
     // 若要添加或移除成员，请编辑 .ResX 文件，然后重新运行 ResGen
     // (以 /str 作为命令选项)，或重新生成 VS 项目。
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -2707,6 +2707,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 亚像素级灯珠检测 的本地化字符串。
+        /// </summary>
+        public static string subPixelDetect {
+            get {
+                return ResourceManager.GetString("subPixelDetect", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 订阅 的本地化字符串。
         /// </summary>
         public static string Subscribe {
@@ -3039,42 +3048,117 @@ namespace ColorVision.Engine.Properties {
             }
         }
 
-        public static string MoveUp
+        public static string UnauthorizedOrLicenseExpired
         {
             get
             {
-                return ResourceManager.GetString("MoveUp", resourceCulture);
+                return ResourceManager.GetString("UnauthorizedOrLicenseExpired", resourceCulture);
             }
         }
 
-        public static string MoveDown
+        public static string ColorTemperatureWavelength
         {
             get
             {
-                return ResourceManager.GetString("MoveDown", resourceCulture);
+                return ResourceManager.GetString("ColorTemperatureWavelength", resourceCulture);
             }
         }
-        public static string CreateCopy
+
+        public static string DataDirectory
         {
             get
             {
-                return ResourceManager.GetString("CreateCopy", resourceCulture);
+                return ResourceManager.GetString("DataDirectory", resourceCulture);
             }
         }
-        public static string CreateSample
+
+        public static string PortAddress
         {
             get
             {
-                return ResourceManager.GetString("CreateSample", resourceCulture);
+                return ResourceManager.GetString("PortAddress", resourceCulture);
             }
         }
-        public static string WorkflowEngineTemplateManagement
+
+        public static string PortRange
         {
             get
             {
-                return ResourceManager.GetString("WorkflowEngineTemplateManagement", resourceCulture);
+                return ResourceManager.GetString("PortRange", resourceCulture);
             }
         }
-        
+
+        public static string RetentionDays
+        {
+            get
+            {
+                return ResourceManager.GetString("RetentionDays", resourceCulture);
+            }
+        }
+        public static string CreateProcessMeta
+        {
+            get
+            {
+                return ResourceManager.GetString("CreateProcessMeta", resourceCulture);
+            }
+        }
+
+        public static string DistortionEvaluation
+        {
+            get
+            {
+                return ResourceManager.GetString("DistortionEvaluation", resourceCulture);
+            }
+        }
+        public static string DataLoad
+        {
+            get
+            {
+                return ResourceManager.GetString("DataLoad", resourceCulture);
+            }
+        }
+        public static string AADetect
+        {
+            get
+            {
+                return ResourceManager.GetString("AADetect", resourceCulture);
+            }
+        }
+        public static string KBDetect
+        {
+            get
+            {
+                return ResourceManager.GetString("KBDetect", resourceCulture);
+            }
+        }
+        public static string LightBandDetection
+        {
+            get
+            {
+                return ResourceManager.GetString("LightBandDetection", resourceCulture);
+            }
+        }
+        public static string SFRFindRoi
+        {
+            get
+            {
+                return ResourceManager.GetString("SFRFindRoi", resourceCulture);
+            }
+        }
+        public static string StereoFusion
+        {
+            get
+            {
+                return ResourceManager.GetString("StereoFusion", resourceCulture);
+            }
+        }
+
+        public static string subPixelDetect
+        {
+            get
+            {
+                return ResourceManager.GetString("subPixelDetect", resourceCulture);
+            }
+        }
     }
 }
