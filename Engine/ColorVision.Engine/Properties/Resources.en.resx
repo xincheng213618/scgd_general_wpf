@@ -1231,7 +1231,7 @@
     <value>Source table address</value>
   </data>
   <data name="IntegrationTime" xml:space="preserve">
-    <value>Points Time</value>
+    <value>Integration Time</value>
   </data>
   <data name="AutoIntegra" xml:space="preserve">
     <value>Automatic points</value>

@@ -613,7 +613,8 @@
     <value>La version actuelle est déjà la dernière version</value>
   </data>
   <data name="CurrentSpeed" xml:space="preserve">
-    <value>Vitesse actuelle:</value>
+    <value>AdaptiveZeroCalibration
+</value>
   </data>
   <data name="CreateTime" xml:space="preserve">
     <value>mesurer le temps</value>
