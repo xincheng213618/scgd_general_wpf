@@ -1143,4 +1143,91 @@
   <data name="CaptureImage" xml:space="preserve">
     <value>Photographier</value>
   </data>
+  <data name="SeviceClosed" xml:space="preserve">
+    <value>Le service a été interrompu.</value>
+  </data>
+  <data name="DataDirectoryServiceConfig" xml:space="preserve">
+    <value>configuration du service d'annuaire de données</value>
+  </data>
+  <data name="ServiceCach" xml:space="preserve">
+    <value>Mise en cache du service</value>
+  </data>
+  <data name="ConfigerInfo" xml:space="preserve">
+    <value>Informations de configuration</value>
+  </data>
+  <data name="FileDirectory" xml:space="preserve">
+    <value>Répertoire de fichiers</value>
+  </data>
+  <data name="Aperture" xml:space="preserve">
+    <value>Ouverture F</value>
+  </data>
+  <data name="DataBaseConfig1" xml:space="preserve">
+    <value>Configuration de la base de données (en cas d'échec de la configuration)</value>
+  </data>
+  <data name="offline" xml:space="preserve">
+    <value>Hors ligne</value>
+  </data>
+  <data name="CommunicationType" xml:space="preserve">
+    <value>Méthodes de communication</value>
+  </data>
+  <data name="CategoryModel" xml:space="preserve">
+    <value>Modèle de catégorie</value>
+  </data>
+  <data name="SerialPortCom" xml:space="preserve">
+    <value>Communication en série</value>
+  </data>
+  <data name="PowerOn" xml:space="preserve">
+    <value>Mise sous tension</value>
+  </data>
+  <data name="PowerOff" xml:space="preserve">
+    <value>Mise hors tension</value>
+  </data>
+  <data name="Up" xml:space="preserve">
+    <value>supérieur</value>
+  </data>
+  <data name="Down" xml:space="preserve">
+    <value>Vers le bas</value>
+  </data>
+  <data name="Switch" xml:space="preserve">
+    <value>Changer</value>
+  </data>
+  <data name="PGCommand" xml:space="preserve">
+    <value>Commandes à l'écran</value>
+  </data>
+  <data name="Unregistered" xml:space="preserve">
+    <value>Non enregistré</value>
+  </data>
+  <data name="ExecteTemplate" xml:space="preserve">
+    <value>Modèle d'exécution</value>
+  </data>
+  <data name="CommandType" xml:space="preserve">
+    <value>Type d'instruction</value>
+  </data>
+  <data name="SendCmd" xml:space="preserve">
+    <value>Envoyer la commande</value>
+  </data>
+  <data name="RevCmd" xml:space="preserve">
+    <value>Instructions de retour</value>
+  </data>
+  <data name="SensorCfgInfo" xml:space="preserve">
+    <value>Informations sur la configuration du capteur</value>
+  </data>
+  <data name="IPAddress" xml:space="preserve">
+    <value>Adresse IP</value>
+  </data>
+  <data name="Serial" xml:space="preserve">
+    <value>port série</value>
+  </data>
+  <data name="BaudRate" xml:space="preserve">
+    <value>débit en bauds</value>
+  </data>
+  <data name="DeviceType" xml:space="preserve">
+    <value>Type d'équipement</value>
+  </data>
+  <data name="DeviceAddr" xml:space="preserve">
+    <value>Adresse du périphérique</value>
+  </data>
+  <data name="SMUAddr" xml:space="preserve">
+    <value>Adresse de la table source</value>
+  </data>
 </root>

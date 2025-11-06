@@ -1143,4 +1143,91 @@
   <data name="CaptureImage" xml:space="preserve">
     <value>写真</value>
   </data>
+  <data name="SeviceClosed" xml:space="preserve">
+    <value>サービスは停止されました。</value>
+  </data>
+  <data name="DataDirectoryServiceConfig" xml:space="preserve">
+    <value>データディレクトリサービスの構成</value>
+  </data>
+  <data name="ServiceCach" xml:space="preserve">
+    <value>サービスキャッシュ</value>
+  </data>
+  <data name="ConfigerInfo" xml:space="preserve">
+    <value>構成情報</value>
+  </data>
+  <data name="FileDirectory" xml:space="preserve">
+    <value>ファイルディレクトリ</value>
+  </data>
+  <data name="Aperture" xml:space="preserve">
+    <value>絞りF</value>
+  </data>
+  <data name="DataBaseConfig1" xml:space="preserve">
+    <value>データベース構成（構成に失敗した場合）</value>
+  </data>
+  <data name="offline" xml:space="preserve">
+    <value>オフライン</value>
+  </data>
+  <data name="CommunicationType" xml:space="preserve">
+    <value>コミュニケーション方法</value>
+  </data>
+  <data name="CategoryModel" xml:space="preserve">
+    <value>カテゴリモデル</value>
+  </data>
+  <data name="SerialPortCom" xml:space="preserve">
+    <value>シリアル通信</value>
+  </data>
+  <data name="PowerOn" xml:space="preserve">
+    <value>電源オン</value>
+  </data>
+  <data name="PowerOff" xml:space="preserve">
+    <value>電源オフ</value>
+  </data>
+  <data name="Up" xml:space="preserve">
+    <value>優れた</value>
+  </data>
+  <data name="Down" xml:space="preserve">
+    <value>下</value>
+  </data>
+  <data name="Switch" xml:space="preserve">
+    <value>スイッチ</value>
+  </data>
+  <data name="PGCommand" xml:space="preserve">
+    <value>画面コマンド</value>
+  </data>
+  <data name="Unregistered" xml:space="preserve">
+    <value>未登録</value>
+  </data>
+  <data name="ExecteTemplate" xml:space="preserve">
+    <value>実行テンプレート</value>
+  </data>
+  <data name="CommandType" xml:space="preserve">
+    <value>命令タイプ</value>
+  </data>
+  <data name="SendCmd" xml:space="preserve">
+    <value>コマンドを送信</value>
+  </data>
+  <data name="RevCmd" xml:space="preserve">
+    <value>返品指示</value>
+  </data>
+  <data name="SensorCfgInfo" xml:space="preserve">
+    <value>センサー構成情報</value>
+  </data>
+  <data name="IPAddress" xml:space="preserve">
+    <value>IPアドレス</value>
+  </data>
+  <data name="Serial" xml:space="preserve">
+    <value>シリアルポート</value>
+  </data>
+  <data name="BaudRate" xml:space="preserve">
+    <value>ボーレート</value>
+  </data>
+  <data name="DeviceType" xml:space="preserve">
+    <value>機器の種類</value>
+  </data>
+  <data name="DeviceAddr" xml:space="preserve">
+    <value>デバイスアドレス</value>
+  </data>
+  <data name="SMUAddr" xml:space="preserve">
+    <value>ソーステーブルアドレス</value>
+  </data>
 </root>

@@ -931,7 +931,7 @@
     <value>界面展示名称</value>
   </data>
   <data name="HeartbeatTime" xml:space="preserve">
-    <value>心跳时间</value>
+    <value>心跳时间(ms)</value>
   </data>
   <data name="DeviceAutoConnect" xml:space="preserve">
     <value>设备自动连接</value>
@@ -1142,5 +1142,92 @@
   </data>
   <data name="CaptureImage" xml:space="preserve">
     <value>拍照</value>
+  </data>
+  <data name="SeviceClosed" xml:space="preserve">
+    <value>服务已经关闭</value>
+  </data>
+  <data name="DataDirectoryServiceConfig" xml:space="preserve">
+    <value>数据目录服务配置</value>
+  </data>
+  <data name="ServiceCach" xml:space="preserve">
+    <value>服务缓存</value>
+  </data>
+  <data name="ConfigerInfo" xml:space="preserve">
+    <value>配置信息</value>
+  </data>
+  <data name="FileDirectory" xml:space="preserve">
+    <value>文件目录</value>
+  </data>
+  <data name="Aperture" xml:space="preserve">
+    <value>光圈F</value>
+  </data>
+  <data name="DataBaseConfig1" xml:space="preserve">
+    <value>数据库配置(如果出现无法配置的情况)</value>
+  </data>
+  <data name="offline" xml:space="preserve">
+    <value>离线</value>
+  </data>
+  <data name="CommunicationType" xml:space="preserve">
+    <value>通讯方式</value>
+  </data>
+  <data name="CategoryModel" xml:space="preserve">
+    <value>类别型号</value>
+  </data>
+  <data name="SerialPortCom" xml:space="preserve">
+    <value>串口通讯</value>
+  </data>
+  <data name="PowerOn" xml:space="preserve">
+    <value>上电</value>
+  </data>
+  <data name="PowerOff" xml:space="preserve">
+    <value>下电</value>
+  </data>
+  <data name="Up" xml:space="preserve">
+    <value>上</value>
+  </data>
+  <data name="Down" xml:space="preserve">
+    <value>下</value>
+  </data>
+  <data name="Switch" xml:space="preserve">
+    <value>切换</value>
+  </data>
+  <data name="PGCommand" xml:space="preserve">
+    <value>画面指令</value>
+  </data>
+  <data name="Unregistered" xml:space="preserve">
+    <value>未注册</value>
+  </data>
+  <data name="ExecteTemplate" xml:space="preserve">
+    <value>执行模板</value>
+  </data>
+  <data name="CommandType" xml:space="preserve">
+    <value>指令类型</value>
+  </data>
+  <data name="SendCmd" xml:space="preserve">
+    <value>发送指令</value>
+  </data>
+  <data name="RevCmd" xml:space="preserve">
+    <value>返回指令</value>
+  </data>
+  <data name="SensorCfgInfo" xml:space="preserve">
+    <value>传感器配置信息</value>
+  </data>
+  <data name="IPAddress" xml:space="preserve">
+    <value>IP地址</value>
+  </data>
+  <data name="Serial" xml:space="preserve">
+    <value>串口</value>
+  </data>
+  <data name="BaudRate" xml:space="preserve">
+    <value>波特率</value>
+  </data>
+  <data name="DeviceType" xml:space="preserve">
+    <value>设备类型</value>
+  </data>
+  <data name="DeviceAddr" xml:space="preserve">
+    <value>设备地址</value>
+  </data>
+  <data name="SMUAddr" xml:space="preserve">
+    <value>源表地址</value>
   </data>
 </root>
