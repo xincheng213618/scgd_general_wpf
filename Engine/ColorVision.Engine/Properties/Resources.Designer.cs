@@ -2707,15 +2707,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 亚像素级灯珠检测 的本地化字符串。
-        /// </summary>
-        public static string subPixelDetect {
-            get {
-                return ResourceManager.GetString("subPixelDetect", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 订阅 的本地化字符串。
         /// </summary>
         public static string Subscribe {
@@ -3047,118 +3038,41 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("WorkflowEngineDebugWindow", resourceCulture);
             }
         }
-
-        public static string UnauthorizedOrLicenseExpired
+        public static string CreateCopy
         {
             get
             {
-                return ResourceManager.GetString("UnauthorizedOrLicenseExpired", resourceCulture);
+                return ResourceManager.GetString("CreateCopy", resourceCulture);
             }
         }
-
-        public static string ColorTemperatureWavelength
+        public static string CreateSample
         {
             get
             {
-                return ResourceManager.GetString("ColorTemperatureWavelength", resourceCulture);
+                return ResourceManager.GetString("CreateSample", resourceCulture);
             }
         }
-
-        public static string DataDirectory
+        public static string MoveUp
         {
             get
             {
-                return ResourceManager.GetString("DataDirectory", resourceCulture);
+                return ResourceManager.GetString("MoveUp", resourceCulture);
             }
         }
-
-        public static string PortAddress
+        public static string MoveDown
         {
             get
             {
-                return ResourceManager.GetString("PortAddress", resourceCulture);
+                return ResourceManager.GetString("MoveDown", resourceCulture);
             }
         }
-
-        public static string PortRange
+        public static string WorkflowEngineTemplateManagement
         {
             get
             {
-                return ResourceManager.GetString("PortRange", resourceCulture);
+                return ResourceManager.GetString("WorkflowEngineTemplateManagement", resourceCulture);
             }
         }
-
-        public static string RetentionDays
-        {
-            get
-            {
-                return ResourceManager.GetString("RetentionDays", resourceCulture);
-            }
-        }
-        public static string CreateProcessMeta
-        {
-            get
-            {
-                return ResourceManager.GetString("CreateProcessMeta", resourceCulture);
-            }
-        }
-
-        public static string DistortionEvaluation
-        {
-            get
-            {
-                return ResourceManager.GetString("DistortionEvaluation", resourceCulture);
-            }
-        }
-        public static string DataLoad
-        {
-            get
-            {
-                return ResourceManager.GetString("DataLoad", resourceCulture);
-            }
-        }
-        public static string AADetect
-        {
-            get
-            {
-                return ResourceManager.GetString("AADetect", resourceCulture);
-            }
-        }
-        public static string KBDetect
-        {
-            get
-            {
-                return ResourceManager.GetString("KBDetect", resourceCulture);
-            }
-        }
-        public static string LightBandDetection
-        {
-            get
-            {
-                return ResourceManager.GetString("LightBandDetection", resourceCulture);
-            }
-        }
-        public static string SFRFindRoi
-        {
-            get
-            {
-                return ResourceManager.GetString("SFRFindRoi", resourceCulture);
-            }
-        }
-        public static string StereoFusion
-        {
-            get
-            {
-                return ResourceManager.GetString("StereoFusion", resourceCulture);
-            }
-        }
-
-        public static string subPixelDetect
-        {
-            get
-            {
-                return ResourceManager.GetString("subPixelDetect", resourceCulture);
-            }
-        }
+        
     }
 }
