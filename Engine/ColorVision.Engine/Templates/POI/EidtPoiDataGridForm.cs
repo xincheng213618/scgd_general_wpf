@@ -99,7 +99,15 @@ namespace ColorVision.Engine.Templates.POI
             {
                 if (i< DrawingVisualLists.Count)
                 {
-                    CreateOrUpdateDrawingVisual(row, DrawingVisualLists[i]);
+                    try
+                    {
+                        CreateOrUpdateDrawingVisual(row, DrawingVisualLists[i]);
+                    }
+                    catch (Exception ex)
+                    {
+
+                    }
+
                 }
                 i++;
             }
