@@ -439,7 +439,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 在使用校正前，请先配置对映的物理相机 的本地化字符串。
+        ///   查找类似 使用校正前，请先配置相机 的本地化字符串。
         /// </summary>
         public static string BeforeCalibrationSetupPhysicalCamera {
             get {
@@ -1380,6 +1380,15 @@ namespace ColorVision.Engine.Properties {
         public static string Edit {
             get {
                 return ResourceManager.GetString("Edit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 编辑矫正文件 的本地化字符串。
+        /// </summary>
+        public static string EditCalibration {
+            get {
+                return ResourceManager.GetString("EditCalibration", resourceCulture);
             }
         }
         
@@ -3823,7 +3832,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 查询不到对应的温度数据 的本地化字符串。
+        ///   查找类似 未获得温度数据 的本地化字符串。
         /// </summary>
         public static string TemperatureDataNotFound {
             get {

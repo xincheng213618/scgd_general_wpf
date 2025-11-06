@@ -1488,4 +1488,13 @@
   <data name="FileSavePath" xml:space="preserve">
     <value>File save path</value>
   </data>
+  <data name="TemperatureDataNotFound" xml:space="preserve">
+    <value>Temperature data not obtained</value>
+  </data>
+  <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
+    <value>Do you want to save the current exposure configuration?</value>
+  </data>
+  <data name="ErrorQueryingTemperatureData" xml:space="preserve">
+    <value>An error occurred while querying temperature data.</value>
+  </data>
 </root>

@@ -1497,10 +1497,4 @@
   <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
     <value>Хотите сохранить текущую конфигурацию экспозиции?</value>
   </data>
-  <data name="EditCalibrationFile" xml:space="preserve">
-    <value>Редактировать файл исправлений</value>
-  </data>
-  <data name="FileSavePath" xml:space="preserve">
-    <value>Путь сохранения файла</value>
-  </data>
 </root>

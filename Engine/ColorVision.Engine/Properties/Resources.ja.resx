@@ -1497,10 +1497,4 @@
   <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
     <value>現在の露出設定を保存しますか?</value>
   </data>
-  <data name="EditCalibrationFile" xml:space="preserve">
-    <value>修正ファイルを編集する</value>
-  </data>
-  <data name="FileSavePath" xml:space="preserve">
-    <value>ファイルの保存パス</value>
-  </data>
 </root>

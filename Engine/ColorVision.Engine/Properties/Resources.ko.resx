@@ -1488,4 +1488,13 @@
   <data name="FileSavePath" xml:space="preserve">
     <value>파일 저장 경로</value>
   </data>
+  <data name="TemperatureDataNotFound" xml:space="preserve">
+    <value>온도 데이터를 얻지 못했습니다</value>
+  </data>
+  <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
+    <value>현재 노출 구성을 저장하시겠습니까?</value>
+  </data>
+  <data name="ErrorQueryingTemperatureData" xml:space="preserve">
+    <value>온도 데이터를 쿼리하는 동안 오류가 발생했습니다.</value>
+  </data>
 </root>
