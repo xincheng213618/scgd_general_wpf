@@ -455,7 +455,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 ViewResults.Add(viewResultSMU);
             }
 
-            foreach (var item in MRSmuScanDao.Instance.GetAll())
+            foreach (var item in SmuScanModel.Instance.GetAll())
             {
                 ViewResultSMU viewResultSMU = new ViewResultSMU(item);
                 ViewResults.Add(viewResultSMU);
