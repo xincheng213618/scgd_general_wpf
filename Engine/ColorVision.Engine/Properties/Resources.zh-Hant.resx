@@ -1488,4 +1488,13 @@
   <data name="FileSavePath" xml:space="preserve">
     <value>文件保存路徑</value>
   </data>
+  <data name="TemperatureDataNotFound" xml:space="preserve">
+    <value>未獲得溫度數據</value>
+  </data>
+  <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
+    <value>是否儲存目前介面的曝光配置</value>
+  </data>
+  <data name="ErrorQueryingTemperatureData" xml:space="preserve">
+    <value>查詢溫度資料時發生錯誤</value>
+  </data>
 </root>

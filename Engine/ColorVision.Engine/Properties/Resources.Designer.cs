@@ -439,7 +439,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 在使用校正前，请先配置对映的物理相机 的本地化字符串。
+        ///   查找类似 使用校正前，请先配置相机 的本地化字符串。
         /// </summary>
         public static string BeforeCalibrationSetupPhysicalCamera {
             get {
@@ -1384,7 +1384,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 编辑校正文件 的本地化字符串。
+        ///   查找类似 编辑矫正文件 的本地化字符串。
         /// </summary>
         public static string EditCalibration {
             get {
@@ -1452,6 +1452,15 @@ namespace ColorVision.Engine.Properties {
         public static string ErrorOccurred {
             get {
                 return ResourceManager.GetString("ErrorOccurred", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查询温度数据时发生错误 的本地化字符串。
+        /// </summary>
+        public static string ErrorQueryingTemperatureData {
+            get {
+                return ResourceManager.GetString("ErrorQueryingTemperatureData", resourceCulture);
             }
         }
         
@@ -1596,6 +1605,15 @@ namespace ColorVision.Engine.Properties {
         public static string FileDirectory {
             get {
                 return ResourceManager.GetString("FileDirectory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文件保存路径 的本地化字符串。
+        /// </summary>
+        public static string FileSavePath {
+            get {
+                return ResourceManager.GetString("FileSavePath", resourceCulture);
             }
         }
         
@@ -3112,15 +3130,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 查询方法 的本地化字符串。
-        /// </summary>
-        public static string QueryMethods {
-            get {
-                return ResourceManager.GetString("QueryMethods", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 快速预览 的本地化字符串。
         /// </summary>
         public static string QuickPreview {
@@ -3324,6 +3333,15 @@ namespace ColorVision.Engine.Properties {
         public static string SaveCurrentExposureAndOtherParameters {
             get {
                 return ResourceManager.GetString("SaveCurrentExposureAndOtherParameters", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 是否保存当前界面的曝光配置 的本地化字符串。
+        /// </summary>
+        public static string SaveCurrentExposureConfigPrompt {
+            get {
+                return ResourceManager.GetString("SaveCurrentExposureConfigPrompt", resourceCulture);
             }
         }
         
@@ -3810,6 +3828,15 @@ namespace ColorVision.Engine.Properties {
         public static string TemperatureCtrl {
             get {
                 return ResourceManager.GetString("TemperatureCtrl", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 未获得温度数据 的本地化字符串。
+        /// </summary>
+        public static string TemperatureDataNotFound {
+            get {
+                return ResourceManager.GetString("TemperatureDataNotFound", resourceCulture);
             }
         }
         

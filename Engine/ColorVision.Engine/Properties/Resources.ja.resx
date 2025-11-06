@@ -1488,4 +1488,13 @@
   <data name="CaliberationParamSet" xml:space="preserve">
     <value>キャリブレーションパラメータ設定</value>
   </data>
+  <data name="TemperatureDataNotFound" xml:space="preserve">
+    <value>対応する温度データが見つかりません</value>
+  </data>
+  <data name="ErrorQueryingTemperatureData" xml:space="preserve">
+    <value>温度データの照会中にエラーが発生しました。</value>
+  </data>
+  <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
+    <value>現在の露出設定を保存しますか?</value>
+  </data>
 </root>

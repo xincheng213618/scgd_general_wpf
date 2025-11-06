@@ -76,7 +76,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             EditCameraExpousureCommand = new RelayCommand(A => EditCameraExpousure());
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
         }
-        [CommandDisplay("编辑校正文件")]
+        [CommandDisplay("EditCalibrationFile")]
         public RelayCommand EditCalibrationCommand { get; set; }
 
         public void EditCalibration()
@@ -323,7 +323,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public void SaveDis()
         {
-            if (MessageBox1.Show(Application.Current.GetActiveWindow(), "是否保存当前界面的曝光配置", "ColorVison", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.SaveCurrentExposureConfigPrompt, "ColorVison", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
             SaveConfig();
         }
 
@@ -367,12 +367,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
                 else
                 {
-                    MessageBox1.Show(Application.Current.MainWindow, "查询不到对应的温度数据");
+                    MessageBox1.Show(Application.Current.MainWindow, ColorVision.Engine.Properties.Resources.TemperatureDataNotFound);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox1.Show(Application.Current.MainWindow, "查询温度数据时发生错误：" + ex.Message);
+                MessageBox1.Show(Application.Current.MainWindow, ColorVision.Engine.Properties.Resources.ErrorQueryingTemperatureData+" : " + ex.Message);
             }
         }
 

@@ -1489,4 +1489,13 @@
   <data name="FileSavePath" xml:space="preserve">
     <value>chemin d'enregistrement du fichier</value>
   </data>
+  <data name="TemperatureDataNotFound" xml:space="preserve">
+    <value>Données de température non obtenues</value>
+  </data>
+  <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
+    <value>Souhaitez-vous enregistrer la configuration d'exposition actuelle ?</value>
+  </data>
+  <data name="ErrorQueryingTemperatureData" xml:space="preserve">
+    <value>Une erreur s'est produite lors de la requête des données de température.</value>
+  </data>
 </root>
