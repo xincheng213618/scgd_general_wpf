@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Archive.Dao
         public override string GuidId => nameof(MenuArchive);
 
         public override int Order => 5;
-        public override string Header => "归档";
+        public override string Header => ColorVision.Engine.Properties.Resources.Archive;
     }
 
 
@@ -23,14 +23,14 @@ namespace ColorVision.Engine.Archive.Dao
     {
         public override string OwnerGuid => nameof(MenuArchive);
 
-        public override string Header => "归档服务器配置";
+        public override string Header => ColorVision.Engine.Properties.Resources.ArchiveServerConfig;
 
         public override void Execute()
         {
             GlobleCfgdModel globleCfgdModel = GlobleCfgdDao.Instance.GetArchDB();
             if (globleCfgdModel == null)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到归档服务器配置，正在重置", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ArchiveServerConfigNotFound_Resetting, "ColorVision");
                 string sql = "INSERT INTO `cv`.`t_scgd_sys_globle_cfg` (`id`, `code`, `name`, `cfg_type`, `cfg_value`, `is_deleted`, `is_enabled`, `remark`, `tenant_id`) VALUES (3, 'arch_db', '归档服务数据库', 10, '{\\\"Name\\\":null,\\\"Host\\\":\\\"localhost\\\",\\\"Port\\\":3306,\\\"UserName\\\":\\\"cv\\\",\\\"UserPwd\\\":\\\"9p9DMdywXwaTbAXt0oJkUnAb\\\",\\\"Database\\\":\\\"color_vision_arch_2025\\\"}', 0, 1, NULL, 0);\r\n";
                 MySqlControl.GetInstance().ExecuteNonQuery(sql);
                 globleCfgdModel = GlobleCfgdDao.Instance.GetArchDB();
@@ -46,7 +46,7 @@ namespace ColorVision.Engine.Archive.Dao
     {
         public override string OwnerGuid => nameof(MenuArchive);
 
-        public override string Header => "归档配置";
+        public override string Header => ColorVision.Engine.Properties.Resources.ArchiveConfiguration;
 
         public override void Execute()
         {
@@ -56,13 +56,13 @@ namespace ColorVision.Engine.Archive.Dao
             SysConfigRcModel sysConfigRcModel = SysConfigRcDao.Instance.GetByCode(RCSetting.Instance.Config.RCName);
             if (sysConfigRcModel == null)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到RC配置信息", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.RcConfigInfoNotFound, "ColorVision");
                 return;
             }
             ConfigArchivedModel configArchivedModel = ConfigArchivedDao.Instance.GetById(sysConfigRcModel.ArchivedId);
             if (configArchivedModel == null)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到归档配置信息", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ArchiveConfigInfoNotFound, "ColorVision");
                 return;
             }
             PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(configArchivedModel, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };

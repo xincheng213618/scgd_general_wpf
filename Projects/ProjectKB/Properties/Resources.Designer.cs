@@ -115,6 +115,15 @@ namespace ProjectKB.Properties {
         }
         
         /// <summary>
+        ///   查找类似 键盘测试 的本地化字符串。
+        /// </summary>
+        public static string KBDetect {
+            get {
+                return ResourceManager.GetString("KBDetect", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 文件(_F) 的本地化字符串。
         /// </summary>
         public static string MenuFile {

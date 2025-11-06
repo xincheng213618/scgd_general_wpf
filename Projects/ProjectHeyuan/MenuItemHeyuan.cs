@@ -11,7 +11,7 @@ namespace ColorVision.Projects.ProjectHeyuan
 
     public class PluginHeyuan : IFeatureLauncherBase
     {
-        public override string? Header => "河源精电";
+        public override string? Header => "HeYuan";
         public override string? UpdateUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/ProjectHeyuan";
 
         public override void Execute()
@@ -40,7 +40,7 @@ namespace ColorVision.Projects.ProjectHeyuan
         public override string GuidId => "HeYuan";
 
         public override int Order => 100;
-        public override string Header => "河源精电";
+        public override string Header => "HeYuan";
 
 
         public override void Execute()

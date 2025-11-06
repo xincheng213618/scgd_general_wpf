@@ -147,4 +147,7 @@
   <data name="CopyConfigurationFile" xml:space="preserve">
     <value>구성 파일 복사</value>
   </data>
+  <data name="KBDetect" xml:space="preserve">
+    <value>키보드 테스트</value>
+  </data>
 </root>

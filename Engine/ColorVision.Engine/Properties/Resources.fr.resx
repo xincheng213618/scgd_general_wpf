@@ -990,4 +990,118 @@
   <data name="ApplicationPropertyTemplate" xml:space="preserve">
     <value>Modèle de propriété d'application</value>
   </data>
+  <data name="POIPlacementTemplateSettings" xml:space="preserve">
+    <value>Paramètres du modèle de mise en page Poi</value>
+  </data>
+  <data name="POIAnalysis" xml:space="preserve">
+    <value>Analyse des points d'intérêt</value>
+  </data>
+  <data name="FindAARegion" xml:space="preserve">
+    <value>Recherche de la zone AA</value>
+  </data>
+  <data name="POIFileOutputTemplateSettings" xml:space="preserve">
+    <value>paramètres du modèle de sortie de fichier POI</value>
+  </data>
+  <data name="POICalibrationCorrectionTemplateSettings" xml:space="preserve">
+    <value>Paramètres du modèle d'étalonnage de la correction POI</value>
+  </data>
+  <data name="TemplateMatching" xml:space="preserve">
+    <value>Correspondance de modèles</value>
+  </data>
+  <data name="LightBarDetectionV2" xml:space="preserve">
+    <value>Détection de bande LED V2</value>
+  </data>
+  <data name="GhostingDetection2_0" xml:space="preserve">
+    <value>Fantôme 2.0</value>
+  </data>
+  <data name="CrossCalculation" xml:space="preserve">
+    <value>Calcul en forme de croix</value>
+  </data>
+  <data name="DistortionDetection2_0" xml:space="preserve">
+    <value>Détection de distorsion 2.0</value>
+  </data>
+  <data name="ImageStitching" xml:space="preserve">
+    <value>Assemblage d'images</value>
+  </data>
+  <data name="AAPointFilling" xml:space="preserve">
+    <value>Points supplémentaires AA</value>
+  </data>
+  <data name="AACropTemplateManagement" xml:space="preserve">
+    <value>Gestion des gabarits de découpe de la zone émettrice de lumière</value>
+  </data>
+  <data name="EditDefaultSensorDictionary" xml:space="preserve">
+    <value>Modifier le dictionnaire de capteurs par défaut</value>
+  </data>
+  <data name="CacheManagement" xml:space="preserve">
+    <value>Gestion du cache</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>Archive</value>
+  </data>
+  <data name="ArchiveServerConfig" xml:space="preserve">
+    <value>configuration du serveur d'archives</value>
+  </data>
+  <data name="ArchiveServerConfigNotFound_Resetting" xml:space="preserve">
+    <value>Configuration du serveur d'archivage introuvable, réinitialisation en cours</value>
+  </data>
+  <data name="ArchiveConfiguration" xml:space="preserve">
+    <value>Configuration d'archive</value>
+  </data>
+  <data name="RcConfigInfoNotFound" xml:space="preserve">
+    <value>Informations de configuration RC introuvables</value>
+  </data>
+  <data name="ArchiveConfigInfoNotFound" xml:space="preserve">
+    <value>Informations de configuration d'archive introuvables</value>
+  </data>
+  <data name="EditDefaultAlgorithmDictionary" xml:space="preserve">
+    <value>Modifier le dictionnaire d'algorithmes par défaut</value>
+  </data>
+  <data name="UnauthorizedOrLicenseExpired" xml:space="preserve">
+    <value>Licence non autorisée ou expirée</value>
+  </data>
+  <data name="ColorTemperatureWavelength" xml:space="preserve">
+    <value>longueur d'onde de la température de couleur</value>
+  </data>
+  <data name="DataDirectory" xml:space="preserve">
+    <value>Catalogue de données</value>
+  </data>
+  <data name="PortAddress" xml:space="preserve">
+    <value>adresse du port</value>
+  </data>
+  <data name="PortRange" xml:space="preserve">
+    <value>Port range</value>
+  </data>
+  <data name="RetentionDays" xml:space="preserve">
+    <value>Jours de stockage</value>
+  </data>
+  <data name="CreateProcessMeta" xml:space="preserve">
+    <value>Créer ProcessMeta</value>
+  </data>
+  <data name="DistortionEvaluation" xml:space="preserve">
+    <value>Évaluation de la distorsion</value>
+  </data>
+  <data name="DataLoad" xml:space="preserve">
+    <value>Chargement des données</value>
+  </data>
+  <data name="AADetect" xml:space="preserve">
+    <value>Détection des zones luminescentes</value>
+  </data>
+  <data name="StereoFusion" xml:space="preserve">
+    <value>Fusion binoculaire</value>
+  </data>
+  <data name="KBDetect" xml:space="preserve">
+    <value>Détection du clavier</value>
+  </data>
+  <data name="subPixelDetect" xml:space="preserve">
+    <value>Détection de LED au niveau du sous-pixel</value>
+  </data>
+  <data name="SFRFindRoi" xml:space="preserve">
+    <value>Recherche SFRROI</value>
+  </data>
+  <data name="PixelLedDetect" xml:space="preserve">
+    <value>Détection de LED au niveau du pixel</value>
+  </data>
+  <data name="LightBandDetection" xml:space="preserve">
+    <value>test de bande LED</value>
+  </data>
 </root>

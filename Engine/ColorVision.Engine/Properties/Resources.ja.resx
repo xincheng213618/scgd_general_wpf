@@ -990,4 +990,118 @@
   <data name="ApplicationPropertyTemplate" xml:space="preserve">
     <value>アプリケーションプロパティテンプレート</value>
   </data>
+  <data name="POIPlacementTemplateSettings" xml:space="preserve">
+    <value>Poiレイアウトテンプレートの設定</value>
+  </data>
+  <data name="POIAnalysis" xml:space="preserve">
+    <value>POI分析</value>
+  </data>
+  <data name="FindAARegion" xml:space="preserve">
+    <value>エリアAAを探しています</value>
+  </data>
+  <data name="POIFileOutputTemplateSettings" xml:space="preserve">
+    <value>POIファイル出力テンプレート設定</value>
+  </data>
+  <data name="POICalibrationCorrectionTemplateSettings" xml:space="preserve">
+    <value>Poi補正キャリブレーションパラメータテンプレート設定</value>
+  </data>
+  <data name="TemplateMatching" xml:space="preserve">
+    <value>テンプレートマッチング</value>
+  </data>
+  <data name="LightBarDetectionV2" xml:space="preserve">
+    <value>LEDストリップ検出V2</value>
+  </data>
+  <data name="GhostingDetection2_0" xml:space="preserve">
+    <value>ゴースト2.0</value>
+  </data>
+  <data name="CrossCalculation" xml:space="preserve">
+    <value>十字形の計算</value>
+  </data>
+  <data name="DistortionDetection2_0" xml:space="preserve">
+    <value>歪み検出2.0</value>
+  </data>
+  <data name="ImageStitching" xml:space="preserve">
+    <value>画像のステッチ</value>
+  </data>
+  <data name="AAPointFilling" xml:space="preserve">
+    <value>AA補足ポイント</value>
+  </data>
+  <data name="AACropTemplateManagement" xml:space="preserve">
+    <value>発光領域カッティングテンプレートの管理</value>
+  </data>
+  <data name="EditDefaultSensorDictionary" xml:space="preserve">
+    <value>デフォルトのセンサー辞書を編集する</value>
+  </data>
+  <data name="CacheManagement" xml:space="preserve">
+    <value>キャッシュ管理</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>アーカイブ</value>
+  </data>
+  <data name="ArchiveServerConfig" xml:space="preserve">
+    <value>アーカイブサーバーの構成</value>
+  </data>
+  <data name="ArchiveServerConfigNotFound_Resetting" xml:space="preserve">
+    <value>アーカイブサーバーの構成が見つかりません。リセットします</value>
+  </data>
+  <data name="ArchiveConfiguration" xml:space="preserve">
+    <value>アーカイブ構成</value>
+  </data>
+  <data name="RcConfigInfoNotFound" xml:space="preserve">
+    <value>RC構成情報が見つかりません</value>
+  </data>
+  <data name="ArchiveConfigInfoNotFound" xml:space="preserve">
+    <value>アーカイブ構成情報が見つかりません</value>
+  </data>
+  <data name="EditDefaultAlgorithmDictionary" xml:space="preserve">
+    <value>デフォルトのアルゴリズム辞書を編集する</value>
+  </data>
+  <data name="UnauthorizedOrLicenseExpired" xml:space="preserve">
+    <value>不正または期限切れのライセンス</value>
+  </data>
+  <data name="ColorTemperatureWavelength" xml:space="preserve">
+    <value>色温度波長</value>
+  </data>
+  <data name="DataDirectory" xml:space="preserve">
+    <value>データカタログ</value>
+  </data>
+  <data name="PortAddress" xml:space="preserve">
+    <value>ポートアドレス</value>
+  </data>
+  <data name="PortRange" xml:space="preserve">
+    <value>ポート範囲</value>
+  </data>
+  <data name="RetentionDays" xml:space="preserve">
+    <value>保管日数</value>
+  </data>
+  <data name="CreateProcessMeta" xml:space="preserve">
+    <value>プロセスメタを作成する</value>
+  </data>
+  <data name="DistortionEvaluation" xml:space="preserve">
+    <value>歪み評価</value>
+  </data>
+  <data name="DataLoad" xml:space="preserve">
+    <value>データの読み込み</value>
+  </data>
+  <data name="AADetect" xml:space="preserve">
+    <value>発光領域の検出</value>
+  </data>
+  <data name="StereoFusion" xml:space="preserve">
+    <value>両眼融合</value>
+  </data>
+  <data name="KBDetect" xml:space="preserve">
+    <value>キーボード検出</value>
+  </data>
+  <data name="subPixelDetect" xml:space="preserve">
+    <value>サブピクセルレベルのLED検出</value>
+  </data>
+  <data name="SFRFindRoi" xml:space="preserve">
+    <value>SFRROI検索</value>
+  </data>
+  <data name="PixelLedDetect" xml:space="preserve">
+    <value>ピクセルレベルのLED検出</value>
+  </data>
+  <data name="LightBandDetection" xml:space="preserve">
+    <value>LEDストリップテスト</value>
+  </data>
 </root>

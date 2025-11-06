@@ -171,4 +171,10 @@
   <data name="Invert" xml:space="preserve">
     <value>反転</value>
   </data>
+  <data name="SectionalDrawing" xml:space="preserve">
+    <value>断面</value>
+  </data>
+  <data name="ImageAlgorithm" xml:space="preserve">
+    <value>画像アルゴリズム</value>
+  </data>
 </root>

@@ -4,7 +4,7 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
 {
     public class ExportLEDStripDetectionParam : MenuITemplateAlgorithmBase
     {
-        public override string Header => "灯带检测";
+        public override string Header => ColorVision.Engine.Properties.Resources.LightBandDetection;
         public override int Order => 41326;
         public override ITemplate Template => new TemplateLEDStripDetection();
     }

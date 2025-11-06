@@ -9,7 +9,7 @@ namespace ColorVision.UI.Dump
     {
         public override string OwnerGuid => MenuItemConstants.Help;
         public override int Order => 10000;
-        public override string Header => "转储文件设置";
+        public override string Header => Properties.Resources.DumpFileSettings;
     }
 
 

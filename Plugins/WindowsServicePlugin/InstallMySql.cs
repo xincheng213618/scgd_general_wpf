@@ -10,16 +10,16 @@ namespace WindowsServicePlugin
     {
 
         public override int Order => 99;
-        public override string Header => "下载MySql";
+        public override string Header => ColorVision.UI.Properties.Resources.DownLoadMySql;
 
-        public override string Description => "下载mysql-5.7.37-winx64压缩包到本地，后续可以在管理工具中选择并安装";
+        public override string Description => "Download mysql-5.7.37-winx64.ziplocally to install later through management tools";
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
 
         public InstallMySql()
         {
             DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = "下载mysql-5.7.37-winx64";
+            DownloadFile.DownloadTile = "Download mysql-5.7.37-winx64";
         }
 
         private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/Mysql/mysql-5.7.37-winx64.zip";

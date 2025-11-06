@@ -243,4 +243,43 @@
   <data name="Delete" xml:space="preserve">
     <value>消去</value>
   </data>
+  <data name="Previous" xml:space="preserve">
+    <value>前のステップ</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>次のステップ</value>
+  </data>
+  <data name="Finish" xml:space="preserve">
+    <value>仕上げる</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>ダンプファイルの設定</value>
+  </data>
+  <data name="OpenBeyondCompare" xml:space="preserve">
+    <value>BeyondCompareを開く</value>
+  </data>
+  <data name="DownLoadBeyondCompare" xml:space="preserve">
+    <value>BeyondCompareをダウンロード</value>
+  </data>
+  <data name="Win10ClassicDesktopMenu" xml:space="preserve">
+    <value>Windows 10 デスクトップのクラシックメニュー</value>
+  </data>
+  <data name="SaveConfiguration" xml:space="preserve">
+    <value>設定を保存</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>設定フォルダを開く</value>
+  </data>
+  <data name="ConfigurationManagement" xml:space="preserve">
+    <value>構成管理ウィンドウ</value>
+  </data>
+  <data name="BlackMuraDetect" xml:space="preserve">
+    <value>ブラックムラ検出</value>
+  </data>
+  <data name="KBDetect" xml:space="preserve">
+    <value>キーボードテスト</value>
+  </data>
+  <data name="SectionalDrawing" xml:space="preserve">
+    <value>断面</value>
+  </data>
 </root>

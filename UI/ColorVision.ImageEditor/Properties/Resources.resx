@@ -151,4 +151,10 @@
   <data name="Invert" xml:space="preserve">
     <value>反相</value>
   </data>
+  <data name="SectionalDrawing" xml:space="preserve">
+    <value>切面图</value>
+  </data>
+  <data name="ImageAlgorithm" xml:space="preserve">
+    <value>图像算法</value>
+  </data>
 </root>

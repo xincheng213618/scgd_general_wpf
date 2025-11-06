@@ -141,4 +141,19 @@
   <data name="Service" xml:space="preserve">
     <value>Service</value>
   </data>
+  <data name="BCompareNotFound_DownloadPrompt" xml:space="preserve">
+    <value>BCompare introuvable, voulez-vous le télécharger ?</value>
+  </data>
+  <data name="DownLoadBeyondCompare" xml:space="preserve">
+    <value>Télécharger BeyondCompare</value>
+  </data>
+  <data name="OpenBeyondCompare" xml:space="preserve">
+    <value>Ouvrir BeyondCompare</value>
+  </data>
+  <data name="InstallMqtt" xml:space="preserve">
+    <value>Installer MQTT</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>Paramètres du fichier de sauvegarde</value>
+  </data>
 </root>

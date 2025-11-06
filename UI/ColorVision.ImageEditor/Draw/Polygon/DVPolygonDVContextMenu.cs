@@ -17,7 +17,7 @@ namespace ColorVision.ImageEditor.Draw.Polygon
             List<MenuItem> MenuItems = new List<MenuItem>();
             if (obj is DVPolygon dvPolygon)
             {
-                MenuItem menuItem = new() { Header = "切面图" };
+                MenuItem menuItem = new() { Header = ColorVision.ImageEditor.Properties.Resources.SectionalDrawing };
                 menuItem.Click += (s, e) =>
                 {
                     if (dvPolygon.Points == null || dvPolygon.Points.Count < 2)

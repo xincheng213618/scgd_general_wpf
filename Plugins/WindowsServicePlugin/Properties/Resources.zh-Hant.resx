@@ -141,4 +141,19 @@
   <data name="Service" xml:space="preserve">
     <value>服務</value>
   </data>
+  <data name="BCompareNotFound_DownloadPrompt" xml:space="preserve">
+    <value>找不到BCompare，是否下載</value>
+  </data>
+  <data name="DownLoadBeyondCompare" xml:space="preserve">
+    <value>下載BeyondCompare</value>
+  </data>
+  <data name="OpenBeyondCompare" xml:space="preserve">
+    <value>打開BeyondCompare</value>
+  </data>
+  <data name="InstallMqtt" xml:space="preserve">
+    <value>安裝MQTT</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>轉儲文件設定</value>
+  </data>
 </root>

@@ -107,7 +107,7 @@ namespace ColorVision
             {
                 list.Add(new ConfigSettingMetadata
                 {
-                    Name = "Win10桌面经典菜单",
+                    Name = ColorVision.Properties.Resources.Win10ClassicDesktopMenu,
                     Description = "",
                     Order = 15,
                     Type = ConfigSettingType.Bool,

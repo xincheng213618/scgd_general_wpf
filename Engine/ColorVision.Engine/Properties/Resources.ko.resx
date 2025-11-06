@@ -990,4 +990,118 @@
   <data name="ApplicationPropertyTemplate" xml:space="preserve">
     <value>애플리케이션 속성 템플릿</value>
   </data>
+  <data name="POIPlacementTemplateSettings" xml:space="preserve">
+    <value>Poi 레이아웃 템플릿 설정</value>
+  </data>
+  <data name="POIAnalysis" xml:space="preserve">
+    <value>POI 분석</value>
+  </data>
+  <data name="FindAARegion" xml:space="preserve">
+    <value>AA 지역을 찾고 있습니다</value>
+  </data>
+  <data name="POIFileOutputTemplateSettings" xml:space="preserve">
+    <value>POI 파일 출력 템플릿 설정</value>
+  </data>
+  <data name="POICalibrationCorrectionTemplateSettings" xml:space="preserve">
+    <value>POI 보정 교정 매개변수 템플릿 설정</value>
+  </data>
+  <data name="TemplateMatching" xml:space="preserve">
+    <value>템플릿 매칭</value>
+  </data>
+  <data name="LightBarDetectionV2" xml:space="preserve">
+    <value>LED 스트립 감지 V2</value>
+  </data>
+  <data name="GhostingDetection2_0" xml:space="preserve">
+    <value>고스트 2.0</value>
+  </data>
+  <data name="CrossCalculation" xml:space="preserve">
+    <value>십자가 모양 계산</value>
+  </data>
+  <data name="DistortionDetection2_0" xml:space="preserve">
+    <value>왜곡 감지 2.0</value>
+  </data>
+  <data name="ImageStitching" xml:space="preserve">
+    <value>이미지 스티칭</value>
+  </data>
+  <data name="AAPointFilling" xml:space="preserve">
+    <value>AA 보충 포인트</value>
+  </data>
+  <data name="AACropTemplateManagement" xml:space="preserve">
+    <value>발광 영역 절단 템플릿 관리</value>
+  </data>
+  <data name="EditDefaultSensorDictionary" xml:space="preserve">
+    <value>기본 센서 사전 편집</value>
+  </data>
+  <data name="CacheManagement" xml:space="preserve">
+    <value>캐시 관리</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>보관소</value>
+  </data>
+  <data name="ArchiveServerConfig" xml:space="preserve">
+    <value>아카이브 서버 구성</value>
+  </data>
+  <data name="ArchiveServerConfigNotFound_Resetting" xml:space="preserve">
+    <value>보관 서버 구성을 찾을 수 없습니다. 재설정 중입니다.</value>
+  </data>
+  <data name="ArchiveConfiguration" xml:space="preserve">
+    <value>아카이브 구성</value>
+  </data>
+  <data name="RcConfigInfoNotFound" xml:space="preserve">
+    <value>RC 구성 정보를 찾을 수 없습니다.</value>
+  </data>
+  <data name="ArchiveConfigInfoNotFound" xml:space="preserve">
+    <value>아카이브 구성 정보를 찾을 수 없습니다.</value>
+  </data>
+  <data name="EditDefaultAlgorithmDictionary" xml:space="preserve">
+    <value>기본 알고리즘 사전 편집</value>
+  </data>
+  <data name="UnauthorizedOrLicenseExpired" xml:space="preserve">
+    <value>허가받지 않았거나 만료된 라이센스</value>
+  </data>
+  <data name="ColorTemperatureWavelength" xml:space="preserve">
+    <value>색온도 파장</value>
+  </data>
+  <data name="DataDirectory" xml:space="preserve">
+    <value>데이터 카탈로그</value>
+  </data>
+  <data name="PortAddress" xml:space="preserve">
+    <value>포트 주소</value>
+  </data>
+  <data name="PortRange" xml:space="preserve">
+    <value>포트 범위</value>
+  </data>
+  <data name="RetentionDays" xml:space="preserve">
+    <value>보관일</value>
+  </data>
+  <data name="CreateProcessMeta" xml:space="preserve">
+    <value>ProcessMeta 생성</value>
+  </data>
+  <data name="DistortionEvaluation" xml:space="preserve">
+    <value>왜곡 평가</value>
+  </data>
+  <data name="DataLoad" xml:space="preserve">
+    <value>데이터 로딩 중</value>
+  </data>
+  <data name="AADetect" xml:space="preserve">
+    <value>발광 영역 감지</value>
+  </data>
+  <data name="StereoFusion" xml:space="preserve">
+    <value>쌍안경 융합</value>
+  </data>
+  <data name="KBDetect" xml:space="preserve">
+    <value>키보드 감지</value>
+  </data>
+  <data name="subPixelDetect" xml:space="preserve">
+    <value>서브픽셀 수준 LED 감지</value>
+  </data>
+  <data name="SFRFindRoi" xml:space="preserve">
+    <value>SFRROI 검색</value>
+  </data>
+  <data name="PixelLedDetect" xml:space="preserve">
+    <value>픽셀 수준 LED 감지</value>
+  </data>
+  <data name="LightBandDetection" xml:space="preserve">
+    <value>LED 스트립 테스트</value>
+  </data>
 </root>

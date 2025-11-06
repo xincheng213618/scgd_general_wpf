@@ -990,4 +990,118 @@
   <data name="ApplicationPropertyTemplate" xml:space="preserve">
     <value>Шаблон свойств приложения</value>
   </data>
+  <data name="POIPlacementTemplateSettings" xml:space="preserve">
+    <value>Настройки шаблона макета Poi</value>
+  </data>
+  <data name="POIAnalysis" xml:space="preserve">
+    <value>Анализ POI</value>
+  </data>
+  <data name="FindAARegion" xml:space="preserve">
+    <value>Ищу район АА</value>
+  </data>
+  <data name="POIFileOutputTemplateSettings" xml:space="preserve">
+    <value>Настройки шаблона вывода файла POI</value>
+  </data>
+  <data name="POICalibrationCorrectionTemplateSettings" xml:space="preserve">
+    <value>Настройки шаблона параметров калибровки коррекции Poi</value>
+  </data>
+  <data name="TemplateMatching" xml:space="preserve">
+    <value>Сопоставление шаблонов</value>
+  </data>
+  <data name="LightBarDetectionV2" xml:space="preserve">
+    <value>Обнаружение светодиодной ленты V2</value>
+  </data>
+  <data name="GhostingDetection2_0" xml:space="preserve">
+    <value>Призрак 2.0</value>
+  </data>
+  <data name="CrossCalculation" xml:space="preserve">
+    <value>Крестообразный расчет</value>
+  </data>
+  <data name="DistortionDetection2_0" xml:space="preserve">
+    <value>Обнаружение искажений 2.0</value>
+  </data>
+  <data name="ImageStitching" xml:space="preserve">
+    <value>Сшивание изображений</value>
+  </data>
+  <data name="AAPointFilling" xml:space="preserve">
+    <value>Дополнительные баллы АА</value>
+  </data>
+  <data name="AACropTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами резки светоизлучающих зон</value>
+  </data>
+  <data name="EditDefaultSensorDictionary" xml:space="preserve">
+    <value>Редактировать словарь датчиков по умолчанию</value>
+  </data>
+  <data name="CacheManagement" xml:space="preserve">
+    <value>Управление кэшем</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>Архив</value>
+  </data>
+  <data name="ArchiveServerConfig" xml:space="preserve">
+    <value>Конфигурация архивного сервера</value>
+  </data>
+  <data name="ArchiveServerConfigNotFound_Resetting" xml:space="preserve">
+    <value>Конфигурация архивного сервера не найдена, выполняется сброс</value>
+  </data>
+  <data name="ArchiveConfiguration" xml:space="preserve">
+    <value>Конфигурация архива</value>
+  </data>
+  <data name="RcConfigInfoNotFound" xml:space="preserve">
+    <value>Информация о конфигурации RC не найдена</value>
+  </data>
+  <data name="ArchiveConfigInfoNotFound" xml:space="preserve">
+    <value>Информация о конфигурации архива не найдена</value>
+  </data>
+  <data name="EditDefaultAlgorithmDictionary" xml:space="preserve">
+    <value>Редактировать словарь алгоритмов по умолчанию</value>
+  </data>
+  <data name="UnauthorizedOrLicenseExpired" xml:space="preserve">
+    <value>Несанкционированная или просроченная лицензия</value>
+  </data>
+  <data name="ColorTemperatureWavelength" xml:space="preserve">
+    <value>Длина волны цветовой температуры</value>
+  </data>
+  <data name="DataDirectory" xml:space="preserve">
+    <value>Каталог данных</value>
+  </data>
+  <data name="PortAddress" xml:space="preserve">
+    <value>адрес порта</value>
+  </data>
+  <data name="PortRange" xml:space="preserve">
+    <value>Диапазон портов</value>
+  </data>
+  <data name="RetentionDays" xml:space="preserve">
+    <value>Дни хранения</value>
+  </data>
+  <data name="CreateProcessMeta" xml:space="preserve">
+    <value>Создать ProcessMeta</value>
+  </data>
+  <data name="DistortionEvaluation" xml:space="preserve">
+    <value>Оценка искажений</value>
+  </data>
+  <data name="DataLoad" xml:space="preserve">
+    <value>Загрузка данных</value>
+  </data>
+  <data name="AADetect" xml:space="preserve">
+    <value>Обнаружение люминесцирующих областей</value>
+  </data>
+  <data name="StereoFusion" xml:space="preserve">
+    <value>Бинокулярное слияние</value>
+  </data>
+  <data name="KBDetect" xml:space="preserve">
+    <value>Распознавание клавиатуры</value>
+  </data>
+  <data name="subPixelDetect" xml:space="preserve">
+    <value>Обнаружение светодиодов на уровне субпикселей</value>
+  </data>
+  <data name="SFRFindRoi" xml:space="preserve">
+    <value>Поиск SFRROI</value>
+  </data>
+  <data name="PixelLedDetect" xml:space="preserve">
+    <value>Обнаружение светодиодов на уровне пикселей</value>
+  </data>
+  <data name="LightBandDetection" xml:space="preserve">
+    <value>Тестирование светодиодных лент</value>
+  </data>
 </root>

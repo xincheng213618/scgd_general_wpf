@@ -243,4 +243,43 @@
   <data name="Delete" xml:space="preserve">
     <value>삭제</value>
   </data>
+  <data name="Previous" xml:space="preserve">
+    <value>이전 단계</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>다음 단계</value>
+  </data>
+  <data name="Finish" xml:space="preserve">
+    <value>마치다</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>덤프 파일 설정</value>
+  </data>
+  <data name="OpenBeyondCompare" xml:space="preserve">
+    <value>BeyondCompare 열기</value>
+  </data>
+  <data name="DownLoadBeyondCompare" xml:space="preserve">
+    <value>BeyondCompare 다운로드</value>
+  </data>
+  <data name="Win10ClassicDesktopMenu" xml:space="preserve">
+    <value>Windows 10 데스크톱 클래식 메뉴</value>
+  </data>
+  <data name="SaveConfiguration" xml:space="preserve">
+    <value>구성 저장</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>구성 폴더를 엽니다</value>
+  </data>
+  <data name="ConfigurationManagement" xml:space="preserve">
+    <value>구성 관리 창</value>
+  </data>
+  <data name="BlackMuraDetect" xml:space="preserve">
+    <value>BlackMura 감지</value>
+  </data>
+  <data name="KBDetect" xml:space="preserve">
+    <value>키보드 테스트</value>
+  </data>
+  <data name="SectionalDrawing" xml:space="preserve">
+    <value>횡단면</value>
+  </data>
 </root>

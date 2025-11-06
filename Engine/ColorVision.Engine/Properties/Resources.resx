@@ -966,9 +966,6 @@
   <data name="Parsing" xml:space="preserve">
     <value>解析</value>
   </data>
-  <data name="XStaticPropertiesResourcesParsing" xml:space="preserve">
-    <value>{x:Static properties:Resources.Parsing}</value>
-  </data>
   <data name="Camera" xml:space="preserve">
     <value>相机</value>
   </data>
@@ -992,5 +989,119 @@
   </data>
   <data name="ApplicationPropertyTemplate" xml:space="preserve">
     <value>应用属性模板</value>
+  </data>
+  <data name="POIPlacementTemplateSettings" xml:space="preserve">
+    <value>Poi布点模板设置</value>
+  </data>
+  <data name="POIAnalysis" xml:space="preserve">
+    <value>POI分析</value>
+  </data>
+  <data name="FindAARegion" xml:space="preserve">
+    <value>寻找AA区</value>
+  </data>
+  <data name="POIFileOutputTemplateSettings" xml:space="preserve">
+    <value>Poi文件输出模板设置</value>
+  </data>
+  <data name="POICalibrationCorrectionTemplateSettings" xml:space="preserve">
+    <value>Poi修正标定参数模板设置</value>
+  </data>
+  <data name="TemplateMatching" xml:space="preserve">
+    <value>模板匹配</value>
+  </data>
+  <data name="LightBarDetectionV2" xml:space="preserve">
+    <value>灯条检测V2</value>
+  </data>
+  <data name="GhostingDetection2_0" xml:space="preserve">
+    <value>鬼影2.0</value>
+  </data>
+  <data name="CrossCalculation" xml:space="preserve">
+    <value>十字计算</value>
+  </data>
+  <data name="DistortionDetection2_0" xml:space="preserve">
+    <value>畸变检测2.0</value>
+  </data>
+  <data name="ImageStitching" xml:space="preserve">
+    <value>图像拼接</value>
+  </data>
+  <data name="AAPointFilling" xml:space="preserve">
+    <value>AA补点</value>
+  </data>
+  <data name="AACropTemplateManagement" xml:space="preserve">
+    <value>发光区裁剪模板管理</value>
+  </data>
+  <data name="EditDefaultSensorDictionary" xml:space="preserve">
+    <value>编辑默认传感器字典</value>
+  </data>
+  <data name="CacheManagement" xml:space="preserve">
+    <value>缓存管理</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>归档</value>
+  </data>
+  <data name="ArchiveServerConfig" xml:space="preserve">
+    <value>归档服务器配置</value>
+  </data>
+  <data name="ArchiveServerConfigNotFound_Resetting" xml:space="preserve">
+    <value>找不到归档服务器配置，正在重置</value>
+  </data>
+  <data name="ArchiveConfiguration" xml:space="preserve">
+    <value>归档配置</value>
+  </data>
+  <data name="RcConfigInfoNotFound" xml:space="preserve">
+    <value>找不到RC配置信息</value>
+  </data>
+  <data name="ArchiveConfigInfoNotFound" xml:space="preserve">
+    <value>找不到归档配置信息</value>
+  </data>
+  <data name="EditDefaultAlgorithmDictionary" xml:space="preserve">
+    <value>编辑默认算法字典</value>
+  </data>
+  <data name="UnauthorizedOrLicenseExpired" xml:space="preserve">
+    <value>未授权或者许可证过期</value>
+  </data>
+  <data name="ColorTemperatureWavelength" xml:space="preserve">
+    <value>色温波长</value>
+  </data>
+  <data name="DataDirectory" xml:space="preserve">
+    <value>数据目录</value>
+  </data>
+  <data name="PortAddress" xml:space="preserve">
+    <value>端口地址</value>
+  </data>
+  <data name="PortRange" xml:space="preserve">
+    <value>端口范围</value>
+  </data>
+  <data name="RetentionDays" xml:space="preserve">
+    <value>保存天数</value>
+  </data>
+  <data name="CreateProcessMeta" xml:space="preserve">
+    <value>创建 ProcessMeta</value>
+  </data>
+  <data name="DistortionEvaluation" xml:space="preserve">
+    <value>畸变评价</value>
+  </data>
+  <data name="DataLoad" xml:space="preserve">
+    <value>数据加载</value>
+  </data>
+  <data name="AADetect" xml:space="preserve">
+    <value>发光区检测</value>
+  </data>
+  <data name="StereoFusion" xml:space="preserve">
+    <value>双目融合</value>
+  </data>
+  <data name="KBDetect" xml:space="preserve">
+    <value>键盘检测</value>
+  </data>
+  <data name="subPixelDetect" xml:space="preserve">
+    <value>亚像素级灯珠检测</value>
+  </data>
+  <data name="SFRFindRoi" xml:space="preserve">
+    <value>SFR_ROI搜索</value>
+  </data>
+  <data name="PixelLedDetect" xml:space="preserve">
+    <value>像素级灯珠检测</value>
+  </data>
+  <data name="LightBandDetection" xml:space="preserve">
+    <value>灯带检测</value>
   </data>
 </root>

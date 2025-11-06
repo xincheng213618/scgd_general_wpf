@@ -19,7 +19,7 @@ namespace ColorVision.Properties {
     // 类通过类似于 ResGen 或 Visual Studio 的工具自动生成的。
     // 若要添加或移除成员，请编辑 .ResX 文件，然后重新运行 ResGen
     // (以 /str 作为命令选项)，或重新生成 VS 项目。
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -84,6 +84,13 @@ namespace ColorVision.Properties {
         public static string ApplicationExit {
             get {
                 return ResourceManager.GetString("ApplicationExit", resourceCulture);
+            }
+        }
+        public static string ConfigurationManagement
+        {
+            get
+            {
+                return ResourceManager.GetString("ConfigurationManagement", resourceCulture);
             }
         }
         
@@ -196,11 +203,29 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 下载BeyondCompare 的本地化字符串。
+        /// </summary>
+        public static string DownLoadBeyondCompare {
+            get {
+                return ResourceManager.GetString("DownLoadBeyondCompare", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 下载已取消 的本地化字符串。
         /// </summary>
         public static string DownloadCancelled {
             get {
                 return ResourceManager.GetString("DownloadCancelled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 转储文件设置 的本地化字符串。
+        /// </summary>
+        public static string DumpFileSettings {
+            get {
+                return ResourceManager.GetString("DumpFileSettings", resourceCulture);
             }
         }
         
@@ -322,6 +347,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 打开BeyondCompare 的本地化字符串。
+        /// </summary>
+        public static string OpenBeyondCompare {
+            get {
+                return ResourceManager.GetString("OpenBeyondCompare", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 上一步 的本地化字符串。
         /// </summary>
         public static string Previous {
@@ -357,6 +391,22 @@ namespace ColorVision.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 保存配置 的本地化字符串。
+        /// </summary>
+        public static string SaveConfiguration {
+            get {
+                return ResourceManager.GetString("SaveConfiguration", resourceCulture);
+            }
+        }
+        public static string OpenConfigFolder
+        {
+            get
+            {
+                return ResourceManager.GetString("OpenConfigFolder", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 搜索 的本地化字符串。
         /// </summary>
@@ -453,6 +503,15 @@ namespace ColorVision.Properties {
         public static string Version {
             get {
                 return ResourceManager.GetString("Version", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Win10桌面经典菜单 的本地化字符串。
+        /// </summary>
+        public static string Win10ClassicDesktopMenu {
+            get {
+                return ResourceManager.GetString("Win10ClassicDesktopMenu", resourceCulture);
             }
         }
         

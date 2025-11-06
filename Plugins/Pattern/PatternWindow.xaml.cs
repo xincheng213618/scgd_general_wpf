@@ -21,7 +21,7 @@ namespace Pattern
 {
     public class PatternFeatureLauncher : IFeatureLauncherBase
     {
-        public override string? Header { get; set; } = "图卡生成工具";
+        public override string? Header { get; set; } = Pattern.Properties.Resources.ChartGenerationTool;
 
         public override void Execute()
         {
@@ -32,7 +32,7 @@ namespace Pattern
     public class ExportTestPatternWpf : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
-        public override string Header => "图卡生成工具";
+        public override string Header => Pattern.Properties.Resources.ChartGenerationTool;
         public override int Order => 3;
 
         public override void Execute()

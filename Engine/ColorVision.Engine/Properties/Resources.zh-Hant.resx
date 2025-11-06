@@ -990,4 +990,118 @@
   <data name="ApplicationPropertyTemplate" xml:space="preserve">
     <value>應用程式屬性模板</value>
   </data>
+  <data name="POIPlacementTemplateSettings" xml:space="preserve">
+    <value>Poi佈點模板設定</value>
+  </data>
+  <data name="POIAnalysis" xml:space="preserve">
+    <value>POI分析</value>
+  </data>
+  <data name="FindAARegion" xml:space="preserve">
+    <value>尋找AA區</value>
+  </data>
+  <data name="POIFileOutputTemplateSettings" xml:space="preserve">
+    <value>Poi檔案輸出範本設定</value>
+  </data>
+  <data name="POICalibrationCorrectionTemplateSettings" xml:space="preserve">
+    <value>Poi修正標定參數模板設定</value>
+  </data>
+  <data name="TemplateMatching" xml:space="preserve">
+    <value>模板匹配</value>
+  </data>
+  <data name="LightBarDetectionV2" xml:space="preserve">
+    <value>燈條檢測V2</value>
+  </data>
+  <data name="GhostingDetection2_0" xml:space="preserve">
+    <value>鬼影2.0</value>
+  </data>
+  <data name="CrossCalculation" xml:space="preserve">
+    <value>十字計算</value>
+  </data>
+  <data name="DistortionDetection2_0" xml:space="preserve">
+    <value>畸變檢測2.0</value>
+  </data>
+  <data name="ImageStitching" xml:space="preserve">
+    <value>影像拼接</value>
+  </data>
+  <data name="AAPointFilling" xml:space="preserve">
+    <value>AA補點</value>
+  </data>
+  <data name="AACropTemplateManagement" xml:space="preserve">
+    <value>發光區裁切模板管理</value>
+  </data>
+  <data name="EditDefaultSensorDictionary" xml:space="preserve">
+    <value>編輯預設感應器字典</value>
+  </data>
+  <data name="CacheManagement" xml:space="preserve">
+    <value>快取管理</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>歸檔</value>
+  </data>
+  <data name="ArchiveServerConfig" xml:space="preserve">
+    <value>歸檔伺服器配置</value>
+  </data>
+  <data name="ArchiveServerConfigNotFound_Resetting" xml:space="preserve">
+    <value>找不到歸檔伺服器配置，正在重置</value>
+  </data>
+  <data name="ArchiveConfiguration" xml:space="preserve">
+    <value>歸檔配置</value>
+  </data>
+  <data name="RcConfigInfoNotFound" xml:space="preserve">
+    <value>找不到RC配置訊息</value>
+  </data>
+  <data name="ArchiveConfigInfoNotFound" xml:space="preserve">
+    <value>找不到歸檔配置訊息</value>
+  </data>
+  <data name="EditDefaultAlgorithmDictionary" xml:space="preserve">
+    <value>編輯預設演算法字典</value>
+  </data>
+  <data name="UnauthorizedOrLicenseExpired" xml:space="preserve">
+    <value>未授權或許可證過期</value>
+  </data>
+  <data name="ColorTemperatureWavelength" xml:space="preserve">
+    <value>色溫波長</value>
+  </data>
+  <data name="DataDirectory" xml:space="preserve">
+    <value>數據目錄</value>
+  </data>
+  <data name="PortAddress" xml:space="preserve">
+    <value>連接埠位址</value>
+  </data>
+  <data name="PortRange" xml:space="preserve">
+    <value>連接埠範圍</value>
+  </data>
+  <data name="RetentionDays" xml:space="preserve">
+    <value>保存天數</value>
+  </data>
+  <data name="CreateProcessMeta" xml:space="preserve">
+    <value>建立 ProcessMeta</value>
+  </data>
+  <data name="DistortionEvaluation" xml:space="preserve">
+    <value>畸變評價</value>
+  </data>
+  <data name="DataLoad" xml:space="preserve">
+    <value>資料載入</value>
+  </data>
+  <data name="AADetect" xml:space="preserve">
+    <value>發光區檢測</value>
+  </data>
+  <data name="StereoFusion" xml:space="preserve">
+    <value>雙目融合</value>
+  </data>
+  <data name="KBDetect" xml:space="preserve">
+    <value>鍵盤偵測</value>
+  </data>
+  <data name="subPixelDetect" xml:space="preserve">
+    <value>亞像素級燈珠檢測</value>
+  </data>
+  <data name="SFRFindRoi" xml:space="preserve">
+    <value>SFRROI搜尋</value>
+  </data>
+  <data name="PixelLedDetect" xml:space="preserve">
+    <value>像素級燈珠檢測</value>
+  </data>
+  <data name="LightBandDetection" xml:space="preserve">
+    <value>燈帶檢測</value>
+  </data>
 </root>

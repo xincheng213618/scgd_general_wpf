@@ -10,7 +10,7 @@ namespace WindowsServicePlugin
     public partial class InstallEveryThing : WizardStepBase
     {
         public override int Order => 99;
-        public override string Header => "安装EveryThing";
+        public override string Header => ColorVision.UI.Properties.Resources.Install+"EveryThing";
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
 
@@ -19,7 +19,7 @@ namespace WindowsServicePlugin
         public InstallEveryThing()
         {
             DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = "下载 Everything 1.4.1.1026";
+            DownloadFile.DownloadTile = ColorVision.UI.Properties.Resources.Download+" Everything 1.4.1.1026";
         }
 
         private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/Everything/Everything-1.4.1.1026.x64-Setup.exe";

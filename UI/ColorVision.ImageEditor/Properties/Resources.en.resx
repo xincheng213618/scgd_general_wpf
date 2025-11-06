@@ -171,4 +171,10 @@
   <data name="Invert" xml:space="preserve">
     <value>Invert</value>
   </data>
+  <data name="SectionalDrawing" xml:space="preserve">
+    <value>Cross-section</value>
+  </data>
+  <data name="ImageAlgorithm" xml:space="preserve">
+    <value>Image Algorithm</value>
+  </data>
 </root>

@@ -243,4 +243,43 @@
   <data name="Delete" xml:space="preserve">
     <value>刪除</value>
   </data>
+  <data name="Previous" xml:space="preserve">
+    <value>上一步</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>下一步</value>
+  </data>
+  <data name="Finish" xml:space="preserve">
+    <value>完成</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>轉儲文件設定</value>
+  </data>
+  <data name="OpenBeyondCompare" xml:space="preserve">
+    <value>打開BeyondCompare</value>
+  </data>
+  <data name="DownLoadBeyondCompare" xml:space="preserve">
+    <value>下載BeyondCompare</value>
+  </data>
+  <data name="Win10ClassicDesktopMenu" xml:space="preserve">
+    <value>Win10桌面經典選單</value>
+  </data>
+  <data name="SaveConfiguration" xml:space="preserve">
+    <value>儲存配置</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>打開設定資料夾</value>
+  </data>
+  <data name="ConfigurationManagement" xml:space="preserve">
+    <value>配置管理視窗</value>
+  </data>
+  <data name="BlackMuraDetect" xml:space="preserve">
+    <value>BlackMura檢測</value>
+  </data>
+  <data name="KBDetect" xml:space="preserve">
+    <value>鍵盤測試</value>
+  </data>
+  <data name="SectionalDrawing" xml:space="preserve">
+    <value>切割面圖</value>
+  </data>
 </root>

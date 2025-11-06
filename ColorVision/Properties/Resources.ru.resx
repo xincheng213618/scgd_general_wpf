@@ -243,4 +243,43 @@
   <data name="Delete" xml:space="preserve">
     <value>удалить</value>
   </data>
+  <data name="Previous" xml:space="preserve">
+    <value>Предыдущий шаг</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>Следующий шаг</value>
+  </data>
+  <data name="Finish" xml:space="preserve">
+    <value>Заканчивать</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>Настройки файла дампа</value>
+  </data>
+  <data name="OpenBeyondCompare" xml:space="preserve">
+    <value>Открыть BeyondCompare</value>
+  </data>
+  <data name="DownLoadBeyondCompare" xml:space="preserve">
+    <value>Скачать BeyondCompare</value>
+  </data>
+  <data name="Win10ClassicDesktopMenu" xml:space="preserve">
+    <value>Классическое меню рабочего стола Windows 10</value>
+  </data>
+  <data name="SaveConfiguration" xml:space="preserve">
+    <value>Сохранить конфигурацию</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>Откройте папку конфигурации</value>
+  </data>
+  <data name="ConfigurationManagement" xml:space="preserve">
+    <value>Окно управления конфигурацией</value>
+  </data>
+  <data name="BlackMuraDetect" xml:space="preserve">
+    <value>Обнаружение BlackMura</value>
+  </data>
+  <data name="KBDetect" xml:space="preserve">
+    <value>Тест клавиатуры</value>
+  </data>
+  <data name="SectionalDrawing" xml:space="preserve">
+    <value>Поперечное сечение</value>
+  </data>
 </root>

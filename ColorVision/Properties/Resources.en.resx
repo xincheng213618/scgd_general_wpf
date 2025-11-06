@@ -243,4 +243,43 @@
   <data name="Delete" xml:space="preserve">
     <value>Delete</value>
   </data>
+  <data name="Previous" xml:space="preserve">
+    <value>Previous step</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>Next step</value>
+  </data>
+  <data name="Finish" xml:space="preserve">
+    <value>Finish</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>Dump file settings</value>
+  </data>
+  <data name="OpenBeyondCompare" xml:space="preserve">
+    <value>Open BeyondCompare</value>
+  </data>
+  <data name="DownLoadBeyondCompare" xml:space="preserve">
+    <value>Download BeyondCompare</value>
+  </data>
+  <data name="Win10ClassicDesktopMenu" xml:space="preserve">
+    <value>Windows 10 desktop classic menu</value>
+  </data>
+  <data name="SaveConfiguration" xml:space="preserve">
+    <value>Save configuration</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>Open the configuration folder</value>
+  </data>
+  <data name="ConfigurationManagement" xml:space="preserve">
+    <value>Configuration Management Window</value>
+  </data>
+  <data name="BlackMuraDetect" xml:space="preserve">
+    <value>BlackMura detection</value>
+  </data>
+  <data name="KBDetect" xml:space="preserve">
+    <value>Keyboard test</value>
+  </data>
+  <data name="SectionalDrawing" xml:space="preserve">
+    <value>Cross-section</value>
+  </data>
 </root>
