@@ -1,14 +1,6 @@
-﻿#pragma warning disable
-using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.Jsons.LargeFlow;
-using ColorVision.UI;
-using Newtonsoft.Json.Linq;
-using ProjectLUX;
-using ProjectLUX;
-using ProjectLUX.Process.DistortionAR;
+﻿using ColorVision.Common.MVVM;
 using ProjectLUX.Recipe;
 using System.ComponentModel;
-using System.Text.Json.Nodes;
 
 namespace ProjectLUX.Process.DistortionAR
 {
