@@ -1308,4 +1308,13 @@
   <data name="RCName" xml:space="preserve">
     <value>Registration Center Name</value>
   </data>
+  <data name="RCConnecteCfg" xml:space="preserve">
+    <value>Registration Center Connection Configuration</value>
+  </data>
+  <data name="ServiceCode" xml:space="preserve">
+    <value>Service Code</value>
+  </data>
+  <data name="QueryMethods" xml:space="preserve">
+    <value>Query methods</value>
+  </data>
 </root>

@@ -1308,4 +1308,13 @@
   <data name="RCName" xml:space="preserve">
     <value>Nom du centre d'inscription</value>
   </data>
+  <data name="RCConnecteCfg" xml:space="preserve">
+    <value>Configuration de la connexion au centre d'inscription</value>
+  </data>
+  <data name="ServiceCode" xml:space="preserve">
+    <value>Code de service</value>
+  </data>
+  <data name="QueryMethods" xml:space="preserve">
+    <value>Méthodes de requête</value>
+  </data>
 </root>

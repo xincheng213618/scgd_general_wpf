@@ -1308,4 +1308,13 @@
   <data name="RCName" xml:space="preserve">
     <value>登録センター名</value>
   </data>
+  <data name="RCConnecteCfg" xml:space="preserve">
+    <value>登録センター接続構成</value>
+  </data>
+  <data name="ServiceCode" xml:space="preserve">
+    <value>サービスコード</value>
+  </data>
+  <data name="QueryMethods" xml:space="preserve">
+    <value>クエリメソッド</value>
+  </data>
 </root>
