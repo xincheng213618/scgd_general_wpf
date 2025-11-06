@@ -387,6 +387,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         {
             if (pOIPointResultModel.Value != null)
             {
+
                 POIResultDataCIExyuv pOIDataCIExyuv = JsonConvert.DeserializeObject<POIResultDataCIExyuv>(pOIPointResultModel.Value);
                 CCT = pOIDataCIExyuv.CCT;
                 Wave = pOIDataCIExyuv.Wave;

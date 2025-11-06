@@ -169,7 +169,7 @@
                     <TextBlock Text="{x:Static properties:Resources.Import}"/>
                 </Button>
             </UniformGrid>
-            <UniformGrid Columns="5" Margin="0,5,0,0">
+            <StackPanel  Margin="0,5,0,0" Orientation="Horizontal">
                 <Button Click="Button_MoveUp_Click" Margin="0,0,5,0">
                     <TextBlock Text="{x:Static properties:Resources.MoveUp}"/>
                 </Button>
@@ -177,7 +177,7 @@
                     <TextBlock Text="{x:Static properties:Resources.MoveDown}"/>
                 </Button>
                 <Grid Grid.Column="2" Grid.ColumnSpan="3"/>
-            </UniformGrid>
+            </StackPanel>
         </StackPanel>
 
 
