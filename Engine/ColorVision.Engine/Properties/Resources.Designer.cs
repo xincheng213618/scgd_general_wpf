@@ -77,6 +77,13 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("AADetect", resourceCulture);
             }
         }
+        public static string CategoryModel
+        {
+            get
+            {
+                return ResourceManager.GetString("CategoryModel", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 AA补点 的本地化字符串。
@@ -941,7 +948,13 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("DeviceAddr", resourceCulture);
             }
         }
-        
+        public static string CaptureImage
+        {
+            get
+            {
+                return ResourceManager.GetString("CaptureImage", resourceCulture);
+            }
+        }
         /// <summary>
         ///   查找类似 设备自动连接 的本地化字符串。
         /// </summary>
