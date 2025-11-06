@@ -1125,4 +1125,22 @@
   <data name="WorkflowEngineTemplateManagement" xml:space="preserve">
     <value>流程引擎範本管理</value>
   </data>
+  <data name="PhysicalCamera" xml:space="preserve">
+    <value>實體相機Code</value>
+  </data>
+  <data name="SetSnFirst" xml:space="preserve">
+    <value>請先設定SN</value>
+  </data>
+  <data name="Connect" xml:space="preserve">
+    <value>連接</value>
+  </data>
+  <data name="StartExecition" xml:space="preserve">
+    <value>開始執行</value>
+  </data>
+  <data name="StopExecution" xml:space="preserve">
+    <value>停止執行</value>
+  </data>
+  <data name="CaptureImage" xml:space="preserve">
+    <value>拍照</value>
+  </data>
 </root>

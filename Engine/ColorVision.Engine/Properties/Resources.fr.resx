@@ -1125,4 +1125,22 @@
   <data name="WorkflowEngineTemplateManagement" xml:space="preserve">
     <value>Gestion des modèles du moteur de flux de travail</value>
   </data>
+  <data name="PhysicalCamera" xml:space="preserve">
+    <value>Code de caméra physique</value>
+  </data>
+  <data name="SetSnFirst" xml:space="preserve">
+    <value>Veuillez d'abord configurer le numéro de série.</value>
+  </data>
+  <data name="Connect" xml:space="preserve">
+    <value>connecter</value>
+  </data>
+  <data name="StartExecition" xml:space="preserve">
+    <value>Début de l'exécution</value>
+  </data>
+  <data name="StopExecution" xml:space="preserve">
+    <value>Arrêter l'exécution</value>
+  </data>
+  <data name="CaptureImage" xml:space="preserve">
+    <value>Photographier</value>
+  </data>
 </root>

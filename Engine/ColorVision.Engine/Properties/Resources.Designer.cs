@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Properties {
     // 类通过类似于 ResGen 或 Visual Studio 的工具自动生成的。
     // 若要添加或移除成员，请编辑 .ResX 文件，然后重新运行 ResGen
     // (以 /str 作为命令选项)，或重新生成 VS 项目。
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -619,6 +619,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 连接 的本地化字符串。
+        /// </summary>
+        public static string Connect {
+            get {
+                return ResourceManager.GetString("Connect", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 连接名 的本地化字符串。
         /// </summary>
         public static string ConnectionName {
@@ -664,6 +673,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 创建副本 的本地化字符串。
+        /// </summary>
+        public static string CreateCopy {
+            get {
+                return ResourceManager.GetString("CreateCopy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 创建时间 的本地化字符串。
         /// </summary>
         public static string CreateDate {
@@ -696,6 +714,15 @@ namespace ColorVision.Engine.Properties {
         public static string CreateProcessMeta {
             get {
                 return ResourceManager.GetString("CreateProcessMeta", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 创建为样例 的本地化字符串。
+        /// </summary>
+        public static string CreateSample {
+            get {
+                return ResourceManager.GetString("CreateSample", resourceCulture);
             }
         }
         
@@ -1888,6 +1915,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 下移 的本地化字符串。
+        /// </summary>
+        public static string MoveDown {
+            get {
+                return ResourceManager.GetString("MoveDown", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 上移 的本地化字符串。
+        /// </summary>
+        public static string MoveUp {
+            get {
+                return ResourceManager.GetString("MoveUp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 MQTT连接 的本地化字符串。
         /// </summary>
         public static string MqttConnection {
@@ -2073,6 +2118,15 @@ namespace ColorVision.Engine.Properties {
         public static string Password {
             get {
                 return ResourceManager.GetString("Password", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 物理相机Code 的本地化字符串。
+        /// </summary>
+        public static string PhysicalCamera {
+            get {
+                return ResourceManager.GetString("PhysicalCamera", resourceCulture);
             }
         }
         
@@ -2590,6 +2644,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 请先配置SN 的本地化字符串。
+        /// </summary>
+        public static string SetSnFirst {
+            get {
+                return ResourceManager.GetString("SetSnFirst", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 设置 的本地化字符串。
         /// </summary>
         public static string Settings {
@@ -2640,6 +2703,15 @@ namespace ColorVision.Engine.Properties {
         public static string Size {
             get {
                 return ResourceManager.GetString("Size", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 开始执行 的本地化字符串。
+        /// </summary>
+        public static string StartExecition {
+            get {
+                return ResourceManager.GetString("StartExecition", resourceCulture);
             }
         }
         
@@ -3038,41 +3110,28 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("WorkflowEngineDebugWindow", resourceCulture);
             }
         }
-        public static string CreateCopy
-        {
-            get
-            {
-                return ResourceManager.GetString("CreateCopy", resourceCulture);
-            }
-        }
-        public static string CreateSample
-        {
-            get
-            {
-                return ResourceManager.GetString("CreateSample", resourceCulture);
-            }
-        }
-        public static string MoveUp
-        {
-            get
-            {
-                return ResourceManager.GetString("MoveUp", resourceCulture);
-            }
-        }
-        public static string MoveDown
-        {
-            get
-            {
-                return ResourceManager.GetString("MoveDown", resourceCulture);
-            }
-        }
-        public static string WorkflowEngineTemplateManagement
-        {
-            get
-            {
+        
+        /// <summary>
+        ///   查找类似 流程引擎模板管理 的本地化字符串。
+        /// </summary>
+        public static string WorkflowEngineTemplateManagement {
+            get {
                 return ResourceManager.GetString("WorkflowEngineTemplateManagement", resourceCulture);
             }
         }
-        
+        public static string StopExecution
+        {
+            get
+            {
+                return ResourceManager.GetString("StopExecution", resourceCulture);
+            }
+        }
+        public static string CaptureImage
+        {
+            get
+            {
+                return ResourceManager.GetString("CaptureImage", resourceCulture);
+            }
+        }
     }
 }

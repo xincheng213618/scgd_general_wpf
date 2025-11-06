@@ -1125,4 +1125,22 @@
   <data name="WorkflowEngineTemplateManagement" xml:space="preserve">
     <value>ワークフローエンジンテンプレート管理</value>
   </data>
+  <data name="PhysicalCamera" xml:space="preserve">
+    <value>物理カメラコード</value>
+  </data>
+  <data name="SetSnFirst" xml:space="preserve">
+    <value>まずSNを設定してください。</value>
+  </data>
+  <data name="Connect" xml:space="preserve">
+    <value>接続する</value>
+  </data>
+  <data name="StartExecition" xml:space="preserve">
+    <value>実行を開始</value>
+  </data>
+  <data name="StopExecution" xml:space="preserve">
+    <value>実行を停止</value>
+  </data>
+  <data name="CaptureImage" xml:space="preserve">
+    <value>写真</value>
+  </data>
 </root>

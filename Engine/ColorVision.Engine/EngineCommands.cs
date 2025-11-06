@@ -13,7 +13,7 @@ namespace ColorVision.Engine
     public class MenuStartExecutionCommand : MenuItemBase
     {
         public override string OwnerGuid => EngineCommands.EngineGuidId;
-        public override string Header => "开始执行(_S)";
+        public override string Header => ColorVision.Engine.Properties.Resources.StartExecition+"(_S)";
         public override int Order => 99;
 
         public override ICommand Command => EngineCommands.StartExecutionCommand;
@@ -25,7 +25,7 @@ namespace ColorVision.Engine
     public class MenuStopExecutionCommand : MenuItemBase
     {
         public override string OwnerGuid => EngineCommands.EngineGuidId;
-        public override string Header => "停止执行(_S)";
+        public override string Header => ColorVision.Engine.Properties.Resources.StopExecution+"(_S)";
         public override int Order => 99;
         public override ICommand Command => EngineCommands.StopExecutionCommand;
         public override object? Icon => MenuItemIcon.TryFindResource("DIRunPaused");
@@ -36,7 +36,7 @@ namespace ColorVision.Engine
     {
         public override string OwnerGuid => EngineCommands.EngineGuidId;
 
-        public override string Header => "拍照(_S)";
+        public override string Header => ColorVision.Engine.Properties.Resources.CaptureImage+"(_S)";
         public override int Order => 99;
 
         public override ICommand Command => EngineCommands.TakePhotoCommand;

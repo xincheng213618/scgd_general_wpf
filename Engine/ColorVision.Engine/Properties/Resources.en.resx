@@ -1125,4 +1125,22 @@
   <data name="WorkflowEngineTemplateManagement" xml:space="preserve">
     <value>Workflow Engine Template Management</value>
   </data>
+  <data name="PhysicalCamera" xml:space="preserve">
+    <value>Physical Camera Code</value>
+  </data>
+  <data name="SetSnFirst" xml:space="preserve">
+    <value>Please configure SN first.</value>
+  </data>
+  <data name="Connect" xml:space="preserve">
+    <value>connect</value>
+  </data>
+  <data name="StartExecition" xml:space="preserve">
+    <value>Start execution</value>
+  </data>
+  <data name="StopExecution" xml:space="preserve">
+    <value>Stop execution</value>
+  </data>
+  <data name="CaptureImage" xml:space="preserve">
+    <value>CaptureImage</value>
+  </data>
 </root>

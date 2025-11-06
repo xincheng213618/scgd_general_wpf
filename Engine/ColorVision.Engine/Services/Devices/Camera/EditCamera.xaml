@@ -41,12 +41,12 @@
                             </DockPanel>
                             <DockPanel Margin="0,0,0,0" >
                                 <TextBlock Text="{x:Static properties:Resources.DeviceAutoConnect}" Width="120"/>
-                                <CheckBox Content="启用" IsChecked="{Binding IsAutoOpen}"/>
+                                <CheckBox Content="{x:Static properties:Resources.IsEnable}" IsChecked="{Binding IsAutoOpen}"/>
                             </DockPanel>
 
                             <DockPanel Margin="0,2">
                                 <Button Content="{x:Static properties:Resources.ApplySettings}" DockPanel.Dock="Right" Click="UpdateConfig_Click"/>
-                                <TextBlock Text="物理相机Code" Width="120"/>
+                                <TextBlock Text="{x:Static properties:Resources.PhysicalCamera}" Width="120"/>
                                 <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Text="{Binding CameraCode}" SelectionChanged="CameraPhyID_SelectionChanged" hc:InfoElement.ShowClearButton="True"  />
                             </DockPanel>
                             <DockPanel Margin="0,2">

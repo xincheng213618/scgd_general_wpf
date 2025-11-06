@@ -23,14 +23,14 @@
         <ScrollViewer x:Name="EditContent" d:DataContext="{d:DesignInstance local:ConfigFlowDevice}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5">
                 <StackPanel >
-                    <GroupBox Header="资源信息" Margin="0,5">
+                    <GroupBox Header="{x:Static properties:Resources.ResourceInformation}" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,0,0,5">
-                                <TextBlock Text="界面展示名称" Width="120"/>
+                                <TextBlock Text="{x:Static properties:Resources.FrameDisplayName}" Width="120"/>
                                 <TextBox Text="{Binding Name}" Style="{StaticResource TextBox.Small}"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
-                                <TextBlock Text="心跳时间"  Width="120"/>
+                                <TextBlock Text="{x:Static properties:Resources.HeartbeatTime}"  Width="120"/>
                                 <TextBox Text="{Binding HeartbeatTime}" Style="{StaticResource TextBox.Small}"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5" >
@@ -38,8 +38,8 @@
                                 <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Style="{StaticResource ComboBox.Small}" Text="{Binding SN}" hc:InfoElement.ShowClearButton="True"  />
                             </DockPanel>
                             <DockPanel >
-                                <TextBlock Text="设备自动连接" Width="120"/>
-                                <CheckBox Content="启用" IsChecked="{Binding IsAutoOpen}"/>
+                                <TextBlock Text="{x:Static properties:Resources.DeviceAutoConnect}" Width="120"/>
+                                <CheckBox Content="{x:Static properties:Resources.IsEnable}" IsChecked="{Binding IsAutoOpen}"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>

@@ -1125,4 +1125,22 @@
   <data name="WorkflowEngineTemplateManagement" xml:space="preserve">
     <value>Управление шаблонами Workflow Engine</value>
   </data>
+  <data name="PhysicalCamera" xml:space="preserve">
+    <value>Физический код камеры</value>
+  </data>
+  <data name="SetSnFirst" xml:space="preserve">
+    <value>Сначала настройте серийный номер.</value>
+  </data>
+  <data name="Connect" xml:space="preserve">
+    <value>соединять</value>
+  </data>
+  <data name="StartExecition" xml:space="preserve">
+    <value>Начать выполнение</value>
+  </data>
+  <data name="StopExecution" xml:space="preserve">
+    <value>Остановить казнь</value>
+  </data>
+  <data name="CaptureImage" xml:space="preserve">
+    <value>Фотография</value>
+  </data>
 </root>
