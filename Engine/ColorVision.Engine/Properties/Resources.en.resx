@@ -553,7 +553,7 @@
     <value>Export</value>
   </data>
   <data name="ExecutionProcess" xml:space="preserve">
-    <value>Implementation process</value>
+    <value> Execution Flow</value>
   </data>
   <data name="Exchange" xml:space="preserve">
     <value>Exchange</value>
@@ -1103,5 +1103,26 @@
   </data>
   <data name="LightBandDetection" xml:space="preserve">
     <value>LED strip testing</value>
+  </data>
+  <data name="IntegratedQuery" xml:space="preserve">
+    <value>Comprehensive Inquiry</value>
+  </data>
+  <data name="ArchiveQuery" xml:space="preserve">
+    <value>Archive Query</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>Move up</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>Move down</value>
+  </data>
+  <data name="CreateCopy" xml:space="preserve">
+    <value>Create a copy</value>
+  </data>
+  <data name="CreateSample" xml:space="preserve">
+    <value>Create as a sample</value>
+  </data>
+  <data name="WorkflowEngineTemplateManagement" xml:space="preserve">
+    <value>Workflow Engine Template Management</value>
   </data>
 </root>

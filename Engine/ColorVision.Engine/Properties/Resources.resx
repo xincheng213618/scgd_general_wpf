@@ -1104,4 +1104,25 @@
   <data name="LightBandDetection" xml:space="preserve">
     <value>灯带检测</value>
   </data>
+  <data name="IntegratedQuery" xml:space="preserve">
+    <value>综合查询</value>
+  </data>
+  <data name="ArchiveQuery" xml:space="preserve">
+    <value>归档查询</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>上移</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>下移</value>
+  </data>
+  <data name="CreateCopy" xml:space="preserve">
+    <value>创建副本</value>
+  </data>
+  <data name="CreateSample" xml:space="preserve">
+    <value>创建为样例</value>
+  </data>
+  <data name="WorkflowEngineTemplateManagement" xml:space="preserve">
+    <value>流程引擎模板管理</value>
+  </data>
 </root>

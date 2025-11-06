@@ -1104,4 +1104,25 @@
   <data name="LightBandDetection" xml:space="preserve">
     <value>LED 스트립 테스트</value>
   </data>
+  <data name="IntegratedQuery" xml:space="preserve">
+    <value>종합적인 문의</value>
+  </data>
+  <data name="ArchiveQuery" xml:space="preserve">
+    <value>아카이브 쿼리</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>위로 이동</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>아래로 이동</value>
+  </data>
+  <data name="CreateCopy" xml:space="preserve">
+    <value>사본을 만듭니다</value>
+  </data>
+  <data name="CreateSample" xml:space="preserve">
+    <value>샘플로 만들기</value>
+  </data>
+  <data name="WorkflowEngineTemplateManagement" xml:space="preserve">
+    <value>워크플로 엔진 템플릿 관리</value>
+  </data>
 </root>

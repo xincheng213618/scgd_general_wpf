@@ -1104,4 +1104,25 @@
   <data name="LightBandDetection" xml:space="preserve">
     <value>LEDストリップテスト</value>
   </data>
+  <data name="IntegratedQuery" xml:space="preserve">
+    <value>包括的な調査</value>
+  </data>
+  <data name="ArchiveQuery" xml:space="preserve">
+    <value>アーカイブクエリ</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>上に移動</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>下に移動</value>
+  </data>
+  <data name="CreateCopy" xml:space="preserve">
+    <value>コピーを作成する</value>
+  </data>
+  <data name="CreateSample" xml:space="preserve">
+    <value>サンプルとして作成</value>
+  </data>
+  <data name="WorkflowEngineTemplateManagement" xml:space="preserve">
+    <value>ワークフローエンジンテンプレート管理</value>
+  </data>
 </root>

@@ -89,8 +89,8 @@
                     <ContextMenu x:Key="ContextMenuItem">
                         <MenuItem Header="{x:Static properties:Resources.MenuDelete}" Command="ApplicationCommands.Delete" />
                         <MenuItem Header="{x:Static properties:Resources.MenuRename}" Command="{x:Static commands:Commands.ReName}" Tag="{Binding .}" />
-                        <MenuItem Header="创建副本"  Click="Button_CreateCopy_Click" Tag="{Binding .}"  />
-                        <MenuItem Header="创建为样例"  Click="CreateTemplate_Click" Tag="{Binding .}"  />
+                        <MenuItem Header="{x:Static properties:Resources.CreateCopy}"  Click="Button_CreateCopy_Click" Tag="{Binding .}"  />
+                        <MenuItem Header="{x:Static properties:Resources.CreateSample}"  Click="CreateTemplate_Click" Tag="{Binding .}"  />
                     </ContextMenu>
                 </ListView.Resources>
                 <ListView.ItemContainerStyle>
@@ -171,10 +171,10 @@
             </UniformGrid>
             <UniformGrid Columns="5" Margin="0,5,0,0">
                 <Button Click="Button_MoveUp_Click" Margin="0,0,5,0">
-                    <TextBlock Text="上移"/>
+                    <TextBlock Text="{x:Static properties:Resources.MoveUp}"/>
                 </Button>
                 <Button Click="Button_MoveDown_Click" Margin="0,0,5,0">
-                    <TextBlock Text="下移"/>
+                    <TextBlock Text="{x:Static properties:Resources.MoveDown}"/>
                 </Button>
                 <Grid Grid.Column="2" Grid.ColumnSpan="3"/>
             </UniformGrid>

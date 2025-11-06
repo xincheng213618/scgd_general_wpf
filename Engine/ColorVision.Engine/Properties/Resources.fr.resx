@@ -1104,4 +1104,25 @@
   <data name="LightBandDetection" xml:space="preserve">
     <value>test de bande LED</value>
   </data>
+  <data name="IntegratedQuery" xml:space="preserve">
+    <value>Enquête approfondie</value>
+  </data>
+  <data name="ArchiveQuery" xml:space="preserve">
+    <value>Requête d'archive</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>Monter en gamme</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>Descendre</value>
+  </data>
+  <data name="CreateCopy" xml:space="preserve">
+    <value>Créer une copie</value>
+  </data>
+  <data name="CreateSample" xml:space="preserve">
+    <value>Créer comme exemple</value>
+  </data>
+  <data name="WorkflowEngineTemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles du moteur de flux de travail</value>
+  </data>
 </root>
