@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
     public partial class DisplaySpectrum : UserControl, IDisPlayControl
     {
         public DeviceSpectrum Device { get; set; }
-        public MQTTSpectrum SpectrumService { get => Device.DService; }
+        public MQTTSpectrum DService { get => Device.DService; }
 
         public ViewSpectrum View { get => Device.View;}
 
@@ -86,8 +86,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
             }
 
-            UpdateUI(SpectrumService.DeviceStatus);
-            SpectrumService.DeviceStatusChanged += UpdateUI;
+            UpdateUI(DService.DeviceStatus);
+            DService.DeviceStatusChanged += UpdateUI;
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
         }
@@ -111,18 +111,18 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 if (!btnTitle.Equals("关闭", StringComparison.Ordinal))
                 {
                     btn_connect.Content = "打开中";
-                    SpectrumService.Open();
+                    DService.Open();
                 }
                 else
                 {
                     btn_connect.Content = "关闭中";
-                    SpectrumService.Close();
+                    DService.Close();
                 }
             }
         }
         private void Button_Click_OneTest(object sender, RoutedEventArgs e)
         {
-            MsgRecord msgRecord = SpectrumService.GetData((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked??false, AutoDark.IsChecked ?? false, AutoShutterDark.IsChecked ?? false);
+            MsgRecord msgRecord = DService.GetData((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked??false, AutoDark.IsChecked ?? false, AutoShutterDark.IsChecked ?? false);
             msgRecord.MsgRecordStateChanged += (e) =>
             {
                 if (e == MsgRecordState.Success)
@@ -140,18 +140,18 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             string btnTitle = btn_autoTest.Content.ToString();
             if (!string.IsNullOrWhiteSpace(btnTitle) && btnTitle.Equals("自动测试", StringComparison.Ordinal))
             {
-                SpectrumService.GetDataAuto((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked ?? false, AutoDark.IsChecked ?? false);
+                DService.GetDataAuto((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked ?? false, AutoDark.IsChecked ?? false);
                 btn_autoTest.Content = "取消自动测试";
             }
             else
             {
-                SpectrumService.GetDataAutoStop();
+                DService.GetDataAutoStop();
                 btn_autoTest.Content = "自动测试";
             }
         }
         private void Button_Click_Init_Dark(object sender, RoutedEventArgs e)
         {
-            MsgRecord  msgRecord = SpectrumService.InitDark((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value);
+            MsgRecord  msgRecord = DService.InitDark((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value);
             msgRecord.MsgRecordStateChanged += (e) =>
             {
                 if (e == MsgRecordState.Success)
@@ -169,17 +169,32 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         private void Button_Click_Shutter_Connect(object sender, RoutedEventArgs e)
         {
-            SpectrumService.ShutterConnect();
+            DService.ShutterConnect();
         }
 
         private void Button_Click_Shutter_Doopen(object sender, RoutedEventArgs e)
         {
-            SpectrumService.ShutterDoopen();
+            DService.ShutterDoopen();
         }
 
         private void Button_Click_Shutter_Doclose(object sender, RoutedEventArgs e)
         {
-            SpectrumService.ShutterDoclose();
+            DService.ShutterDoclose();
+        }
+
+        private void NDport_Click(object sender, RoutedEventArgs e)
+        {
+            MsgRecord msgRecord = DService.SetPort();
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+                if (e == MsgRecordState.Success)
+                {
+                }
+                else
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "执行失败", "ColorVision");
+                }
+            };
         }
     }
 }
