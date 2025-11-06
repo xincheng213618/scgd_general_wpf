@@ -1317,6 +1317,27 @@
   <data name="QuaryMethods" xml:space="preserve">
     <value>クエリメソッド</value>
   </data>
+  <data name="MaxNumber" xml:space="preserve">
+    <value>最大数量</value>
+  </data>
+  <data name="CalibrationViewSettings" xml:space="preserve">
+    <value>正しいビュー構成</value>
+  </data>
+  <data name="ShowList" xml:space="preserve">
+    <value>リストを表示</value>
+  </data>
+  <data name="ListHeight" xml:space="preserve">
+    <value>リストの高さ</value>
+  </data>
+  <data name="EditCalibration" xml:space="preserve">
+    <value>修正ファイルを編集する</value>
+  </data>
+  <data name="BeforeCalibrationSetupPhysicalCamera" xml:space="preserve">
+    <value>キャリブレーションを使用する前に、対応する物理カメラを設定してください。</value>
+  </data>
+  <data name="FileSavePath" xml:space="preserve">
+    <value>ファイルの保存パス</value>
+  </data>
   <data name="MotorAcceleration" xml:space="preserve">
     <value>モーターの加速</value>
   </data>

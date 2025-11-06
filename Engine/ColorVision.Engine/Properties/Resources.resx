@@ -1467,4 +1467,25 @@
   <data name="CaliberationParamSet" xml:space="preserve">
     <value>校正参数设置</value>
   </data>
+  <data name="MaxNumber" xml:space="preserve">
+    <value>最大数量</value>
+  </data>
+  <data name="CalibrationViewSettings" xml:space="preserve">
+    <value>校正视图配置</value>
+  </data>
+  <data name="ShowList" xml:space="preserve">
+    <value>显示列表</value>
+  </data>
+  <data name="ListHeight" xml:space="preserve">
+    <value>列表高度</value>
+  </data>
+  <data name="EditCalibration" xml:space="preserve">
+    <value>编辑校正文件</value>
+  </data>
+  <data name="BeforeCalibrationSetupPhysicalCamera" xml:space="preserve">
+    <value>在使用校正前，请先配置对映的物理相机</value>
+  </data>
+  <data name="FileSavePath" xml:space="preserve">
+    <value>文件保存路径</value>
+  </data>
 </root>

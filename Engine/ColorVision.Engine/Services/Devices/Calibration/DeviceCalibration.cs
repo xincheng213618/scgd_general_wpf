@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         {
             DService = new MQTTCalibration(Config);
             View = new ViewCalibration(this);
-            View.View.Title = $"校正视图 - {Config.Code}";
+            View.View.Title = $"{Config.Code}";
             this.SetIconResource("DICalibrationIcon", View.View);;
 
             EditCommand = new RelayCommand(a =>
@@ -52,14 +52,14 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
         }
 
-        [CommandDisplay("编辑校正文件",Order =100)]
+        [CommandDisplay("EditCalibration",Order =100)]
         public RelayCommand EditCalibrationCommand { get; set; }
 
         public void EditCalibration()
         {
             if (PhyCamera == null)
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.BeforeCalibrationSetupPhysicalCamera, "ColorVision");
                 return;
             }
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
