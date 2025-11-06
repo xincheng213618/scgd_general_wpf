@@ -86,10 +86,10 @@
     <value>Нажмите, чтобы установить сочетания клавиш</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
-    <value>Упрощенный китайский</value>
+    <value>简体中文 (Упрощенный китайский)</value>
   </data>
   <data name="zh-Hant" xml:space="preserve">
-    <value>традиционный китайский</value>
+    <value>繁體中文 (Традиционный китайский)</value>
   </data>
   <data name="UseSystem" xml:space="preserve">
     <value>Следуйте системе</value>
@@ -98,16 +98,16 @@
     <value>Необходимо перезагрузить компьютер, чтобы использовать новые языковые настройки</value>
   </data>
   <data name="en" xml:space="preserve">
-    <value>Английский</value>
+    <value>English (Английский)</value>
   </data>
   <data name="fr" xml:space="preserve">
-    <value>Французский</value>
+    <value>Français (Французский)</value>
   </data>
   <data name="ja" xml:space="preserve">
-    <value>Японский</value>
+    <value>日本語 (Японский)</value>
   </data>
   <data name="ko" xml:space="preserve">
-    <value>Корейский</value>
+    <value>한국어 (Корейский)</value>
   </data>
   <data name="ru" xml:space="preserve">
     <value>Русский</value>
