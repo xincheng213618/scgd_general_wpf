@@ -86,10 +86,10 @@
     <value>Cliquez pour définir les touches de raccourci</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
-    <value>Chinois simplifié</value>
+    <value>简体中文 (Chinois simplifié)</value>
   </data>
   <data name="zh-Hant" xml:space="preserve">
-    <value>chinois traditionnel</value>
+    <value>繁體中文 (Chinois traditionnel)</value>
   </data>
   <data name="UseSystem" xml:space="preserve">
     <value>Suivez le système</value>
@@ -98,19 +98,19 @@
     <value>Vous devez redémarrer pour utiliser les nouveaux paramètres de langue</value>
   </data>
   <data name="en" xml:space="preserve">
-    <value>Anglais</value>
+    <value>English (Anglais)</value>
   </data>
   <data name="fr" xml:space="preserve">
     <value>Français</value>
   </data>
   <data name="ja" xml:space="preserve">
-    <value>Japonais</value>
+    <value>日本語 (Japonais)</value>
   </data>
   <data name="ko" xml:space="preserve">
-    <value>coréen</value>
+    <value>한국어 (Coréen)</value>
   </data>
   <data name="ru" xml:space="preserve">
-    <value>russe</value>
+    <value>Русский (Russe)</value>
   </data>
   <data name="MenuOptions" xml:space="preserve">
     <value>_Option</value>
