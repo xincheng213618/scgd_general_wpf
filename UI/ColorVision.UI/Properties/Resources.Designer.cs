@@ -19,7 +19,7 @@ namespace ColorVision.UI.Properties {
     // 类通过类似于 ResGen 或 Visual Studio 的工具自动生成的。
     // 若要添加或移除成员，请编辑 .ResX 文件，然后重新运行 ResGen
     // (以 /str 作为命令选项)，或重新生成 VS 项目。
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -345,6 +345,15 @@ namespace ColorVision.UI.Properties {
         public static string DownLoadMySql {
             get {
                 return ResourceManager.GetString("DownLoadMySql", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 归档文件设置 的本地化字符串。
+        /// </summary>
+        public static string DumpFileSettings {
+            get {
+                return ResourceManager.GetString("DumpFileSettings", resourceCulture);
             }
         }
         
@@ -1281,14 +1290,6 @@ namespace ColorVision.UI.Properties {
         public static string zh_Hant {
             get {
                 return ResourceManager.GetString("zh-Hant", resourceCulture);
-            }
-        }
-
-        public static string DumpFileSettings
-        {
-            get
-            {
-                return ResourceManager.GetString("DumpFileSettings", resourceCulture);
             }
         }
     }

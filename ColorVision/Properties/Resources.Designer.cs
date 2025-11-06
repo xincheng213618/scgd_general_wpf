@@ -19,7 +19,7 @@ namespace ColorVision.Properties {
     // 类通过类似于 ResGen 或 Visual Studio 的工具自动生成的。
     // 若要添加或移除成员，请编辑 .ResX 文件，然后重新运行 ResGen
     // (以 /str 作为命令选项)，或重新生成 VS 项目。
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -86,13 +86,6 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ApplicationExit", resourceCulture);
             }
         }
-        public static string ConfigurationManagement
-        {
-            get
-            {
-                return ResourceManager.GetString("ConfigurationManagement", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 位 的本地化字符串。
@@ -100,6 +93,15 @@ namespace ColorVision.Properties {
         public static string Bit {
             get {
                 return ResourceManager.GetString("Bit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 BlackMura检测 的本地化字符串。
+        /// </summary>
+        public static string BlackMuraDetect {
+            get {
+                return ResourceManager.GetString("BlackMuraDetect", resourceCulture);
             }
         }
         
@@ -154,6 +156,15 @@ namespace ColorVision.Properties {
         public static string ConfigurationComplete {
             get {
                 return ResourceManager.GetString("ConfigurationComplete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 配置管理窗口 的本地化字符串。
+        /// </summary>
+        public static string ConfigurationManagement {
+            get {
+                return ResourceManager.GetString("ConfigurationManagement", resourceCulture);
             }
         }
         
@@ -275,6 +286,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 键盘测试 的本地化字符串。
+        /// </summary>
+        public static string KBDetect {
+            get {
+                return ResourceManager.GetString("KBDetect", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 启动成功 的本地化字符串。
         /// </summary>
         public static string LaunchSuccess {
@@ -356,6 +376,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 打开配置文件夹 的本地化字符串。
+        /// </summary>
+        public static string OpenConfigFolder {
+            get {
+                return ResourceManager.GetString("OpenConfigFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 上一步 的本地化字符串。
         /// </summary>
         public static string Previous {
@@ -399,20 +428,22 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("SaveConfiguration", resourceCulture);
             }
         }
-        public static string OpenConfigFolder
-        {
-            get
-            {
-                return ResourceManager.GetString("OpenConfigFolder", resourceCulture);
-            }
-        }
-
+        
         /// <summary>
         ///   查找类似 搜索 的本地化字符串。
         /// </summary>
         public static string Search {
             get {
                 return ResourceManager.GetString("Search", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 切面图 的本地化字符串。
+        /// </summary>
+        public static string SectionalDrawing {
+            get {
+                return ResourceManager.GetString("SectionalDrawing", resourceCulture);
             }
         }
         
