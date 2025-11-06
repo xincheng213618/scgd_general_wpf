@@ -1308,4 +1308,163 @@
   <data name="RCName" xml:space="preserve">
     <value>登録センター名</value>
   </data>
+  <data name="RCConnecteCfg" xml:space="preserve">
+    <value>登録センター接続構成</value>
+  </data>
+  <data name="ServiceCode" xml:space="preserve">
+    <value>サービスコード</value>
+  </data>
+  <data name="QuaryMethods" xml:space="preserve">
+    <value>クエリメソッド</value>
+  </data>
+  <data name="MotorAcceleration" xml:space="preserve">
+    <value>モーターの加速</value>
+  </data>
+  <data name="MotorSteadySpeed" xml:space="preserve">
+    <value>モーターのスムーズな運転速度</value>
+  </data>
+  <data name="MotorConfig" xml:space="preserve">
+    <value>モーター構成</value>
+  </data>
+  <data name="MotorDeceleration" xml:space="preserve">
+    <value>モーターの減速</value>
+  </data>
+  <data name="HomingAcceleration" xml:space="preserve">
+    <value>原点に戻るときの加速</value>
+  </data>
+  <data name="HomingMethod" xml:space="preserve">
+    <value>原点回帰法</value>
+  </data>
+  <data name="HomingTimeout" xml:space="preserve">
+    <value>原点復帰タイムアウト</value>
+  </data>
+  <data name="HighSpeedHoming" xml:space="preserve">
+    <value>高速で原点復帰</value>
+  </data>
+  <data name="LowSpeedHoming" xml:space="preserve">
+    <value>低速で原点復帰</value>
+  </data>
+  <data name="MotorMoveRangeLowerLimit" xml:space="preserve">
+    <value>運動範囲の下限</value>
+  </data>
+  <data name="MotorMoveRangeupperLimit" xml:space="preserve">
+    <value>モーター動作範囲の上限</value>
+  </data>
+  <data name="FocusImageCount" xml:space="preserve">
+    <value>画像の数に注目</value>
+  </data>
+  <data name="ConfigMotor" xml:space="preserve">
+    <value>モーターの設定</value>
+  </data>
+  <data name="CameraLinkage" xml:space="preserve">
+    <value>カメラ連動</value>
+  </data>
+  <data name="TemperatureCtrl" xml:space="preserve">
+    <value>温度制御</value>
+  </data>
+  <data name="TemperatureTarget" xml:space="preserve">
+    <value>目標温度</value>
+  </data>
+  <data name="TempQuaryInterval_S" xml:space="preserve">
+    <value>温度クエリ時間間隔（秒）</value>
+  </data>
+  <data name="usbTraffic" xml:space="preserve">
+    <value>伝送速度</value>
+  </data>
+  <data name="offset" xml:space="preserve">
+    <value>オフセット</value>
+  </data>
+  <data name="CameraParam" xml:space="preserve">
+    <value>カメラパラメータ</value>
+  </data>
+  <data name="DefaultGain" xml:space="preserve">
+    <value>デフォルトゲイン</value>
+  </data>
+  <data name="MinGain" xml:space="preserve">
+    <value>最小ゲイン</value>
+  </data>
+  <data name="MaxGain" xml:space="preserve">
+    <value>最大ゲイン</value>
+  </data>
+  <data name="DefaultExpTime" xml:space="preserve">
+    <value>デフォルト値を公開する</value>
+  </data>
+  <data name="MinExpTime" xml:space="preserve">
+    <value>最小限の露出</value>
+  </data>
+  <data name="MaxExpTime" xml:space="preserve">
+    <value>最大露出</value>
+  </data>
+  <data name="DataSavePath" xml:space="preserve">
+    <value>データ保存パス</value>
+  </data>
+  <data name="AddGroup" xml:space="preserve">
+    <value>グループを追加</value>
+  </data>
+  <data name="DeleteGroup" xml:space="preserve">
+    <value>グループを削除</value>
+  </data>
+  <data name="ExportCalibration" xml:space="preserve">
+    <value>輸出修正</value>
+  </data>
+  <data name="CreateCalibration" xml:space="preserve">
+    <value>修正を作成</value>
+  </data>
+  <data name="ExpTime" xml:space="preserve">
+    <value>暴露</value>
+  </data>
+  <data name="Focus" xml:space="preserve">
+    <value>焦点距離</value>
+  </data>
+  <data name="FocusDistance" xml:space="preserve">
+    <value>焦点距離</value>
+  </data>
+  <data name="Selected" xml:space="preserve">
+    <value>選択済み</value>
+  </data>
+  <data name="DarkNoise" xml:space="preserve">
+    <value>ダークノイズ</value>
+  </data>
+  <data name="DefectPoint" xml:space="preserve">
+    <value>欠陥</value>
+  </data>
+  <data name="ColorShift" xml:space="preserve">
+    <value>色偏差</value>
+  </data>
+  <data name="Distortion" xml:space="preserve">
+    <value>ねじれ</value>
+  </data>
+  <data name="Uniformity" xml:space="preserve">
+    <value>均一フィールド</value>
+  </data>
+  <data name="ColorDiff" xml:space="preserve">
+    <value>カラーディフ</value>
+  </data>
+  <data name="Brightness" xml:space="preserve">
+    <value>輝度</value>
+  </data>
+  <data name="OneColor" xml:space="preserve">
+    <value>モノクロ</value>
+  </data>
+  <data name="FourColor" xml:space="preserve">
+    <value>4色</value>
+  </data>
+  <data name="MultiColor" xml:space="preserve">
+    <value>マルチカラー</value>
+  </data>
+  <data name="CalibrationFileManagement" xml:space="preserve">
+    <value>修正ファイル管理</value>
+  </data>
+  <data name="UploadCalibrationGroup" xml:space="preserve">
+    <value>アップロード修正グループ</value>
+  </data>
+  <data name="CalibrationGroupManagement" xml:space="preserve">
+    <value>校正グループ管理</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>設定フォルダを開く</value>
+  </data>
+  <data name="CaliberationParamSet" xml:space="preserve">
+    <value>キャリブレーションパラメータ設定</value>
+  </data>
 </root>

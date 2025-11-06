@@ -1308,4 +1308,163 @@
   <data name="RCName" xml:space="preserve">
     <value>註冊中心名稱</value>
   </data>
+  <data name="RCConnecteCfg" xml:space="preserve">
+    <value>註冊中心連線配置</value>
+  </data>
+  <data name="ServiceCode" xml:space="preserve">
+    <value>服務代碼</value>
+  </data>
+  <data name="QuaryMethods" xml:space="preserve">
+    <value>查詢方法</value>
+  </data>
+  <data name="MotorAcceleration" xml:space="preserve">
+    <value>馬達運轉加速度</value>
+  </data>
+  <data name="MotorSteadySpeed" xml:space="preserve">
+    <value>馬達平穩運轉速度</value>
+  </data>
+  <data name="MotorConfig" xml:space="preserve">
+    <value>馬達配置</value>
+  </data>
+  <data name="MotorDeceleration" xml:space="preserve">
+    <value>馬達減速度</value>
+  </data>
+  <data name="HomingAcceleration" xml:space="preserve">
+    <value>回原點時的加速度</value>
+  </data>
+  <data name="HomingMethod" xml:space="preserve">
+    <value>回原點方式</value>
+  </data>
+  <data name="HomingTimeout" xml:space="preserve">
+    <value>回原點超時時間</value>
+  </data>
+  <data name="HighSpeedHoming" xml:space="preserve">
+    <value>高速回原點</value>
+  </data>
+  <data name="LowSpeedHoming" xml:space="preserve">
+    <value>低速回原點</value>
+  </data>
+  <data name="MotorMoveRangeLowerLimit" xml:space="preserve">
+    <value>馬達移動區間下限</value>
+  </data>
+  <data name="MotorMoveRangeupperLimit" xml:space="preserve">
+    <value>馬達移動區間上限</value>
+  </data>
+  <data name="FocusImageCount" xml:space="preserve">
+    <value>聚焦圖片數量</value>
+  </data>
+  <data name="ConfigMotor" xml:space="preserve">
+    <value>配置馬達</value>
+  </data>
+  <data name="CameraLinkage" xml:space="preserve">
+    <value>相機聯動</value>
+  </data>
+  <data name="TemperatureCtrl" xml:space="preserve">
+    <value>溫控</value>
+  </data>
+  <data name="TemperatureTarget" xml:space="preserve">
+    <value>目標溫度</value>
+  </data>
+  <data name="TempQuaryInterval_S" xml:space="preserve">
+    <value>溫度查詢時間間隔(s)</value>
+  </data>
+  <data name="usbTraffic" xml:space="preserve">
+    <value>傳輸速率</value>
+  </data>
+  <data name="offset" xml:space="preserve">
+    <value>偏移</value>
+  </data>
+  <data name="CameraParam" xml:space="preserve">
+    <value>相機參數</value>
+  </data>
+  <data name="DefaultGain" xml:space="preserve">
+    <value>增益預設值</value>
+  </data>
+  <data name="MinGain" xml:space="preserve">
+    <value>增益最小值</value>
+  </data>
+  <data name="MaxGain" xml:space="preserve">
+    <value>增益最大值</value>
+  </data>
+  <data name="DefaultExpTime" xml:space="preserve">
+    <value>曝光預設值</value>
+  </data>
+  <data name="MinExpTime" xml:space="preserve">
+    <value>曝光最小值</value>
+  </data>
+  <data name="MaxExpTime" xml:space="preserve">
+    <value>曝光最大值</value>
+  </data>
+  <data name="DataSavePath" xml:space="preserve">
+    <value>資料儲存路徑</value>
+  </data>
+  <data name="AddGroup" xml:space="preserve">
+    <value>新增群組</value>
+  </data>
+  <data name="DeleteGroup" xml:space="preserve">
+    <value>刪除群組</value>
+  </data>
+  <data name="ExportCalibration" xml:space="preserve">
+    <value>導出校正</value>
+  </data>
+  <data name="CreateCalibration" xml:space="preserve">
+    <value>建立校正</value>
+  </data>
+  <data name="ExpTime" xml:space="preserve">
+    <value>曝光</value>
+  </data>
+  <data name="Focus" xml:space="preserve">
+    <value>焦距</value>
+  </data>
+  <data name="FocusDistance" xml:space="preserve">
+    <value>對焦距離</value>
+  </data>
+  <data name="Selected" xml:space="preserve">
+    <value>選取</value>
+  </data>
+  <data name="DarkNoise" xml:space="preserve">
+    <value>暗噪音</value>
+  </data>
+  <data name="DefectPoint" xml:space="preserve">
+    <value>缺陷點</value>
+  </data>
+  <data name="ColorShift" xml:space="preserve">
+    <value>色偏</value>
+  </data>
+  <data name="Distortion" xml:space="preserve">
+    <value>畸變</value>
+  </data>
+  <data name="Uniformity" xml:space="preserve">
+    <value>均勻場</value>
+  </data>
+  <data name="ColorDiff" xml:space="preserve">
+    <value>ColorDiff</value>
+  </data>
+  <data name="Brightness" xml:space="preserve">
+    <value>亮度</value>
+  </data>
+  <data name="OneColor" xml:space="preserve">
+    <value>單色</value>
+  </data>
+  <data name="FourColor" xml:space="preserve">
+    <value>四色</value>
+  </data>
+  <data name="MultiColor" xml:space="preserve">
+    <value>多色</value>
+  </data>
+  <data name="CalibrationFileManagement" xml:space="preserve">
+    <value>校正文件管理</value>
+  </data>
+  <data name="UploadCalibrationGroup" xml:space="preserve">
+    <value>上傳校正組</value>
+  </data>
+  <data name="CalibrationGroupManagement" xml:space="preserve">
+    <value>校正組管理</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>打開設定資料夾</value>
+  </data>
+  <data name="CaliberationParamSet" xml:space="preserve">
+    <value>校正參數設定</value>
+  </data>
 </root>

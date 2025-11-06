@@ -6,9 +6,10 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras.Group"
         xmlns:phy="clr-namespace:ColorVision.Engine.Services.PhyCameras"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         d:DataContext="{d:DesignInstance phy:PhyCamera}"
         mc:Ignorable="d"
-        Title="校正文件管理"  Background="{DynamicResource GlobalBackground}" Closed="Window_Closed" Height="600" Width="1000" Initialized="Window_Initialized" >
+        Title="{x:Static properties:Resources.CalibrationFileManagement}"  Background="{DynamicResource GlobalBackground}" Closed="Window_Closed" Height="600" Width="1000" Initialized="Window_Initialized" >
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -23,11 +24,11 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal" Margin="0,0,0,5" >
-            <Button Content="添加组" Click="Button_Add_Click" Margin="0,0,5,0" />
-            <Button Content="删除组" Click="Button_Delete_Click" Margin="0,0,5,0" />
-            <Button Content="上传" Command="{Binding UploadCalibrationCommand}" Margin="0,0,5,0"  />
-            <Button Content="导出校正" Click="Export_Click" Margin="0,0,5,0" />
-            <Button Content="创建校正" Command="{Binding OepnCalibrationToolCommand}" Margin="0,0,5,0" />
+            <Button Content="{x:Static properties:Resources.AddGroup}" Click="Button_Add_Click" Margin="0,0,5,0" />
+            <Button Content="{x:Static properties:Resources.DeleteGroup}" Click="Button_Delete_Click" Margin="0,0,5,0" />
+            <Button Content="{x:Static properties:Resources.Upload}" Command="{Binding UploadCalibrationCommand}" Margin="0,0,5,0"  />
+            <Button Content="{x:Static properties:Resources.ExportCalibration}" Click="Export_Click" Margin="0,0,5,0" />
+            <Button Content="{x:Static properties:Resources.CreateCalibration}" Command="{Binding OepnCalibrationToolCommand}" Margin="0,0,5,0" />
         </StackPanel>
         <Grid  Grid.Row="1">
             <Grid.ColumnDefinitions>
@@ -49,14 +50,14 @@
                                     <Setter Property="Background" Value="Transparent"/>
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn Header="序号">
+                            <GridViewColumn Header="{x:Static properties:Resources.SerialNumber1}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:GroupResource}">
                                         <TextBlock  Text="{Binding SysResourceModel.Id}" Tag="{Binding .}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="名称">
+                            <GridViewColumn Header="{x:Static properties:Resources.Name}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:GroupResource}">
                                         <Grid>
@@ -77,11 +78,11 @@
                         <StackPanel Margin="5,0,0,0">
                             <UniformGrid  Columns="4">
                                 <DockPanel  Margin="5">
-                                    <TextBlock DockPanel.Dock="Left" Text="曝光"  Width="80" />
+                                    <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.ExpTime}"  Width="80" />
                                     <TextBox   Width="80" HorizontalAlignment="Left"/>
                                 </DockPanel>
                                 <DockPanel Margin="5" >
-                                    <TextBlock DockPanel.Dock="Left" Text="增益"  Width="80" />
+                                    <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.Gain}"  Width="80" />
                                     <TextBox  Text="{Binding Config.Gain}" Width="80" HorizontalAlignment="Left"/>
                                 </DockPanel>
                                 <DockPanel  Margin="5">
@@ -89,15 +90,15 @@
                                     <TextBox  Text="{Binding Config.NDShow}"  Width="80" HorizontalAlignment="Left"/>
                                 </DockPanel>
                                 <DockPanel  Margin="5">
-                                    <TextBlock DockPanel.Dock="Left" Text="光圈"  Width="80" />
+                                    <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.ApertureF}"  Width="80" />
                                     <TextBox Text="{Binding Config.ApertureShow}"  Width="80" HorizontalAlignment="Left"/>
                                 </DockPanel>
                                 <DockPanel Margin="5" >
-                                    <TextBlock DockPanel.Dock="Left" Text="焦距"  Width="80" />
+                                    <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.Focus}"  Width="80" />
                                     <TextBox  Text="{Binding Config.FocalLengthShow}" Width="80" HorizontalAlignment="Left"/>
                                 </DockPanel>
                                 <DockPanel Margin="5">
-                                    <TextBlock DockPanel.Dock="Left" Text="对焦距离"  Width="80" />
+                                    <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.FocusDistance}"  Width="80" />
                                     <TextBox  Text="{Binding Config.FocusDistanceShow}" Width="80" HorizontalAlignment="Left"/>
                                 </DockPanel>
                             </UniformGrid>
@@ -105,55 +106,55 @@
                         <StackPanel Margin="5">
                             <DockPanel  Margin="0,0,0,5">
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding DarkNoise.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="编辑" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0"/>
-                                <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0"/>
+                                <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.DarkNoise}"  Width="80" />
                                 <hc:ComboBox x:Name="ComboBoxDarkNoise" SelectedValue="{Binding DarkNoise}"  hc:InfoElement.ShowClearButton="True"   DisplayMemberPath="Name"  />
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding DSNU.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding DSNU.OpenCommand}"/>
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding DSNU.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="DSNU" Width="80"  />
                                 <hc:ComboBox x:Name="ComboBoxDSNU" SelectedValue="{Binding DSNU}"  DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True"  />
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding DefectPoint.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding DefectPoint.OpenCommand}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="缺陷点" Width="80"  />
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding DefectPoint.OpenCommand}"/>
+                                <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.DefectPoint}" Width="80"  />
                                 <hc:ComboBox x:Name="ComboBoxDefectPoint"  SelectedValue="{Binding DefectPoint}"  DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding ColorShift.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="编辑" Width="80"  Margin="5,0,0,0" Command="{Binding ColorShift.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding ColorShift.OpenCommand}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="色偏" Width="80"  />
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding ColorShift.EditCommand}"/>
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding ColorShift.OpenCommand}"/>
+                                <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.ColorShift}" Width="80"  />
                                 <hc:ComboBox x:Name="ComboBoxColorShift" SelectedValue="{Binding ColorShift}"  DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True"  />
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding Distortion.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="编辑" Width="80"  Margin="5,0,0,0" Command="{Binding Distortion.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding Distortion.OpenCommand}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="畸变" Width="80"  />
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding Distortion.EditCommand}"/>
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding Distortion.OpenCommand}"/>
+                                <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.Distortion}" Width="80"  />
                                 <hc:ComboBox x:Name="ComboBoxDistortion" SelectedValue="{Binding Distortion}"  DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding Uniformity.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding Uniformity.OpenCommand}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="均匀场" Width="80"  />
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding Uniformity.OpenCommand}"/>
+                                <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.Uniformity}" Width="80"  />
                                 <hc:ComboBox  x:Name="ComboBoxUniformity"  SelectedValue="{Binding Uniformity}" DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True" />
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding LineArity.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="编辑" Width="80"  Margin="5,0,0,0" Command="{Binding LineArity.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding LineArity.OpenCommand}"/>
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding LineArity.EditCommand}"/>
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding LineArity.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="LineArity" Width="80"  />
                                 <hc:ComboBox  x:Name="ComboBoxLineArity" SelectedValue="{Binding LineArity}" DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True" />
                             </DockPanel>
                             <DockPanel>
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding ColorDiff.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="编辑" Width="80"  Margin="5,0,0,0" Command="{Binding ColorDiff.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding ColorDiff.OpenCommand}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="ColorDiff" Width="80"  />
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding ColorDiff.EditCommand}"/>
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding ColorDiff.OpenCommand}"/>
+                                <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.ColorDiff}" Width="80"  />
                                 <hc:ComboBox  x:Name="ComboBoxColorDiff"  SelectedValue="{Binding ColorDiff}" DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True" />
                             </DockPanel>
                         </StackPanel>
@@ -161,30 +162,30 @@
                         <StackPanel Margin="5">
                             <DockPanel  Margin="0,0,0,5">
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding Luminance.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="编辑" Width="80"  Margin="5,0,0,0" Command="{Binding Luminance.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding Luminance.OpenCommand}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="亮度" Width="80"  />
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding Luminance.EditCommand}"/>
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding Luminance.OpenCommand}"/>
+                                <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.Brightness}" Width="80"  />
                                 <hc:ComboBox x:Name="ComboBoxLuminance" SelectedValue="{Binding Luminance}" DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding LumOneColor.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="编辑" Width="80"  Margin="5,0,0,0" Command="{Binding LumOneColor.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding LumOneColor.OpenCommand}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="单色" Width="80"/>
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding LumOneColor.EditCommand}"/>
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding LumOneColor.OpenCommand}"/>
+                                <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.OneColor}" Width="80"/>
                                 <hc:ComboBox x:Name="ComboBoxLumOneColor" SelectedValue="{Binding LumOneColor}"  DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding LumFourColor.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="编辑" Width="80"  Margin="5,0,0,0" Command="{Binding LumFourColor.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding LumFourColor.OpenCommand}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="四色" Width="80"  />
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding LumFourColor.EditCommand}"/>
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding LumFourColor.OpenCommand}"/>
+                                <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.FourColor}" Width="80"  />
                                 <hc:ComboBox  x:Name="ComboBoxLumFourColor" SelectedValue="{Binding LumFourColor}" DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
                             </DockPanel>
                             <DockPanel >
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding LumMultiColor.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="编辑" Width="80"  Margin="5,0,0,0" Command="{Binding LumMultiColor.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding LumMultiColor.OpenCommand}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="多色" Width="80"  />
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding LumMultiColor.EditCommand}"/>
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding LumMultiColor.OpenCommand}"/>
+                                <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.MultiColor}" Width="80"  />
                                 <hc:ComboBox x:Name="ComboBoxLumMultiColor"  SelectedValue="{Binding LumMultiColor}" DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
                             </DockPanel>
                         </StackPanel>

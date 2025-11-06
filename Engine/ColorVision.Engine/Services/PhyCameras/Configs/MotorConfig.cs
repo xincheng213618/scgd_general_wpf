@@ -36,23 +36,23 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         FindMaxSearch = 2,
     }
 
-    [DisplayName("电机配置")]
+    [DisplayName("MotorConfig")]
     public class MotorConfigBase: ViewModelBase
     {
 
 
-        [DisplayName("查询方法")]
+        [DisplayName("QuaryMethods")]
         public FindFuncModel FindFuncModel { get => _FindFuncModel; set { _FindFuncModel = value; OnPropertyChanged(); } }
         private FindFuncModel _FindFuncModel;
 
         public FOCUS_COMMUN eFOCUSCOMMUN { get => _eFOCUSCOMMUN; set { _eFOCUSCOMMUN = value; OnPropertyChanged(); } }
         private FOCUS_COMMUN _eFOCUSCOMMUN;
 
-        [DisplayName("串口"), PropertyEditorType(typeof(TextSerialPortPropertiesEditor))]
+        [DisplayName("Serial"), PropertyEditorType(typeof(TextSerialPortPropertiesEditor))]
         public string SzComName { get => _szComName; set { _szComName = value; OnPropertyChanged(); } }
         private string _szComName = "COM1";
 
-        [DisplayName("波特率"), PropertyEditorType(typeof(TextBaudRatePropertiesEditor))]
+        [DisplayName("BaudRate"), PropertyEditorType(typeof(TextBaudRatePropertiesEditor))]
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
         private int _BaudRate = 115200;
 
@@ -66,77 +66,77 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public double VIDPosition { get => _VIDPosition; set { _VIDPosition = value; OnPropertyChanged(); } }
         private double _VIDPosition ;
 
-        [DisplayName("超时时间")]
+        [DisplayName("Timeout")]
         public int DwTimeOut { get => _dwTimeOut; set { _dwTimeOut = value; OnPropertyChanged(); } }
         private int _dwTimeOut = 5000;
 
         // 电机运行加速度
         [JsonProperty("Run_nAcc")]
-        [DisplayName("电机运行加速度")]
+        [DisplayName("MotorAcceleration")]
         public int RunAcceleration { get => _RunAcceleration; set { _RunAcceleration = value; OnPropertyChanged(); } }
         private int _RunAcceleration = 409600;
 
         // 电机平稳运行速度
         [JsonProperty("Run_nSpeed")]
-        [DisplayName("电机平稳运行速度")]
+        [DisplayName("MotorSteadySpeed")]
         public int RunSpeed { get => _RunSpeed; set { _RunSpeed = value; OnPropertyChanged(); } }
         private int _RunSpeed = 500000;
 
         // 电机减速度
         [JsonProperty("Run_ndec")]
-        [DisplayName("电机减速度")]
+        [DisplayName("MotorDeceleration")]
         public int Deceleration { get => _Deceleration; set { _Deceleration = value; OnPropertyChanged(); } }
         private int _Deceleration = 409600;
 
         // 回原点时的加速度
         [JsonProperty("Home_nAcc")]
-        [DisplayName("回原点时的加速度")]
+        [DisplayName("HomingAcceleration")]
         public int HomeAcceleration { get => _HomeAcceleration; set { _HomeAcceleration = value; OnPropertyChanged(); } }
         private int _HomeAcceleration = 409600;
 
-        [DisplayName("回原点方式")]
+        [DisplayName("HomingMethod")]
         public GoHome_WAY GoHomeWay { get => _GoHomeWay; set { _GoHomeWay = value; OnPropertyChanged(); } }
         private GoHome_WAY _GoHomeWay = GoHome_WAY.negative_limit;
 
-        [DisplayName("回原点超时时间")]
+        [DisplayName("HomingTimeout")]
         public int HomeTimeout { get => _HomeTimeout; set { _HomeTimeout = value; OnPropertyChanged(); } }
         private int _HomeTimeout = 5000;
 
         // 高速回原点
         [JsonProperty("Home_nHighSpeed")]
-        [DisplayName("高速回原点")]
+        [DisplayName("HighSpeedHoming")]
         public int HomeHightSpeed { get => _HomeHightSpeed; set { _HomeHightSpeed = value; OnPropertyChanged(); } }
         private int _HomeHightSpeed = 2000;
 
         // 低速回原点
         [JsonProperty("Home_nLowSpeed")]
-        [DisplayName("低速回原点")]
+        [DisplayName("LowSpeedHoming")]
         public int HomeLowSpeed { get => _HomeLowSpeed; set { _HomeLowSpeed = value; OnPropertyChanged(); } }
         private int _HomeLowSpeed = 2000;
 
-        [DisplayName("电机移动区间下限")]
+        [DisplayName("MotorMoveRangeLowerLimit")]
         public int MinPosition { get => _MinPosition; set { _MinPosition = value; OnPropertyChanged(); } }
         private int _MinPosition;
 
-        [DisplayName("电机移动区间上限")]
+        [DisplayName("MotorMoveRangeupperLimit")]
         public int MaxPosition { get => _MaxPosition; set { _MaxPosition = value; OnPropertyChanged(); } }
         private int _MaxPosition = 7800;
 
-        [DisplayName("聚焦图片数量")]
+        [DisplayName("FocusImageCount")]
         public int AutoFocusSaveImageNum { get => _AutoFocusSaveImageNum; set { _AutoFocusSaveImageNum = value; OnPropertyChanged(); } }
         private int _AutoFocusSaveImageNum = 2;
     }
 
 
-    [DisplayName("电机配置")]
+    [DisplayName("MotorConfig")]
     public class MotorConfig : MotorConfigBase
     {
 
-        [DisplayName("配置电机")]
+        [DisplayName("ConfigMotor")]
         public bool IsUseMotor { get => _IsUseMotor; set { _IsUseMotor = value; if(!value) IsCameraLinkage =false; OnPropertyChanged(); } }
         private bool _IsUseMotor;
 
-        [DisplayName("相机联动")]
+        [DisplayName("CameraLinkage")]
         public bool IsCameraLinkage { get => _IsCameraLinkage; set { _IsCameraLinkage = value; OnPropertyChanged(); } }
         private bool _IsCameraLinkage;
 

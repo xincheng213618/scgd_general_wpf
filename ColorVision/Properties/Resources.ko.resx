@@ -267,9 +267,6 @@
   <data name="SaveConfiguration" xml:space="preserve">
     <value>구성 저장</value>
   </data>
-  <data name="OpenConfigFolder" xml:space="preserve">
-    <value>구성 폴더를 엽니다</value>
-  </data>
   <data name="ConfigurationManagement" xml:space="preserve">
     <value>구성 관리 창</value>
   </data>
@@ -281,5 +278,8 @@
   </data>
   <data name="SectionalDrawing" xml:space="preserve">
     <value>횡단면</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>구성 폴더를 엽니다</value>
   </data>
 </root>

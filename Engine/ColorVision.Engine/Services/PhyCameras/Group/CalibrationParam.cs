@@ -180,7 +180,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             }
             Name = $"camera,calibration,{device.Code}";
             TemplateDicId = 2;
-            Title = "校正参数设置";
+            Title = ColorVision.Engine.Properties.Resources.CaliberationParamSet;
             Device = device;
             IsUserControl = true;
             Code = "calibration";

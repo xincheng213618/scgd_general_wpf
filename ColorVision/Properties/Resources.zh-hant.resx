@@ -267,9 +267,6 @@
   <data name="SaveConfiguration" xml:space="preserve">
     <value>儲存配置</value>
   </data>
-  <data name="OpenConfigFolder" xml:space="preserve">
-    <value>打開設定資料夾</value>
-  </data>
   <data name="ConfigurationManagement" xml:space="preserve">
     <value>配置管理視窗</value>
   </data>
@@ -281,5 +278,8 @@
   </data>
   <data name="SectionalDrawing" xml:space="preserve">
     <value>切割面圖</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>打開設定資料夾</value>
   </data>
 </root>

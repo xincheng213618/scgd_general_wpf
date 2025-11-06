@@ -267,9 +267,6 @@
   <data name="SaveConfiguration" xml:space="preserve">
     <value>Сохранить конфигурацию</value>
   </data>
-  <data name="OpenConfigFolder" xml:space="preserve">
-    <value>Откройте папку конфигурации</value>
-  </data>
   <data name="ConfigurationManagement" xml:space="preserve">
     <value>Окно управления конфигурацией</value>
   </data>
@@ -281,5 +278,8 @@
   </data>
   <data name="SectionalDrawing" xml:space="preserve">
     <value>Поперечное сечение</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>Откройте папку конфигурации</value>
   </data>
 </root>

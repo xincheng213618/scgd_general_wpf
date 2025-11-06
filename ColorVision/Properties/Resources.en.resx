@@ -267,9 +267,6 @@
   <data name="SaveConfiguration" xml:space="preserve">
     <value>Save configuration</value>
   </data>
-  <data name="OpenConfigFolder" xml:space="preserve">
-    <value>Open the configuration folder</value>
-  </data>
   <data name="ConfigurationManagement" xml:space="preserve">
     <value>Configuration Management Window</value>
   </data>
@@ -281,5 +278,8 @@
   </data>
   <data name="SectionalDrawing" xml:space="preserve">
     <value>Cross-section</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>Open the configuration folder</value>
   </data>
 </root>

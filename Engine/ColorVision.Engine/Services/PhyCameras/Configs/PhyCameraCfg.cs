@@ -5,7 +5,7 @@ using System.ComponentModel;
 namespace ColorVision.Engine.Services.PhyCameras.Configs
 {
 
-    [DisplayName("相机参数")]
+    [DisplayName("CameraParam")]
     public class PhyCameraCfg : ViewModelBase
     {
         /// <summary>
@@ -45,7 +45,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         /// 温控
         /// </summary>
         [JsonProperty("tempCtlChecked")]
-        [DisplayName("温控")]
+        [DisplayName("TemperatureCtrl")]
         public bool TempCtlChecked { get => _TempCtlChecked; set { _TempCtlChecked = value; OnPropertyChanged(); } }
         private bool _TempCtlChecked = true;
 
@@ -53,20 +53,20 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         /// 目标温度
         /// </summary>
         [JsonProperty("targetTemp")]
-        [DisplayName("目标温度"), PropertyVisibility(nameof(TempCtlChecked))]
+        [DisplayName("TemperatureTarget"), PropertyVisibility(nameof(TempCtlChecked))]
         public float TargetTemp { get => _TargetTemp; set { _TargetTemp = value; OnPropertyChanged(); } }
         private float _TargetTemp = 10.0f;
         /// <summary>
         /// 温度查询时间间隔
         /// </summary>
-        [DisplayName("温度查询时间间隔(s)"), PropertyVisibility(nameof(TempCtlChecked))]
+        [DisplayName("TempQuaryInterval_S"), PropertyVisibility(nameof(TempCtlChecked))]
         public int TempSpanTime { get; set; } = 60;
 
         /// <summary>
         /// 传输速率
         /// </summary>
         [JsonProperty("usbTraffic")]
-        [DisplayName("传输速率")]
+        [DisplayName("usbTraffic")]
         public float UsbTraffic { get => _UsbTraffic; set { _UsbTraffic = value; OnPropertyChanged(); } }
         private float _UsbTraffic;
 
@@ -74,7 +74,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         /// 偏移
         /// </summary>
         [JsonProperty("offset")]
-        [DisplayName("偏移")]
+        [DisplayName("offset")]
         public int Offset { get => _Offset; set { _Offset = value; OnPropertyChanged(); } }
         private int _Offset;
 
@@ -82,7 +82,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         /// 增益
         /// </summary>
         [JsonProperty("gain")]
-        [DisplayName("增益")]
+        [DisplayName("Gain")]
         public int Gain { get => _Gain; set { _Gain = value; OnPropertyChanged(); } }
         private int _Gain = 10;
 

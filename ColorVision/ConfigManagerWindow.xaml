@@ -9,12 +9,16 @@
         mc:Ignorable="d"
         Title="{x:Static properties:Resources.ConfigurationManagement}" Height="450" Width="800" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="11*"/>
+            <ColumnDefinition Width="149*"/>
+        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
-        <StackPanel Grid.Row="0" Margin="0,2">
+        <StackPanel Grid.Row="0" Margin="0,2,0,2" Grid.ColumnSpan="2">
             <StackPanel Orientation="Horizontal" Margin="5">
                 <Button Content="{x:Static properties:Resources.SaveConfiguration}" Click="Save_Click" Margin="0,0,5,0"/>
                 <Button Content="{x:Static properties:Resources.OpenConfigFolder}" Click="OpenFolder_Click"/>
@@ -79,7 +83,7 @@
                 </Border>
             </Popup>
         </StackPanel>
-        <Border Grid.Row="1" Margin="5" Style="{StaticResource BorderModuleArea}">
+        <Border Grid.Row="1" Margin="5,5,5,5" Style="{StaticResource BorderModuleArea}" Grid.ColumnSpan="2">
             <ListView  x:Name="ListView2" Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionChanged="ListView2_SelectionChanged" MouseDoubleClick ="ListView2_MouseDoubleCick">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
@@ -108,7 +112,7 @@
                 </ListView.View>
             </ListView>
         </Border>
-        <DockPanel Grid.Row="2" Margin="10,0,10,5" >
+        <DockPanel Grid.Row="2" Margin="10,0,10,5" Grid.ColumnSpan="2" >
             <TextBlock x:Name="SummaryText"  Text="" />
             <TextBlock x:Name="SummaryText1"  Text=""  HorizontalAlignment="Right"/>
         </DockPanel>

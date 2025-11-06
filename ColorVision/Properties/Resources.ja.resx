@@ -267,9 +267,6 @@
   <data name="SaveConfiguration" xml:space="preserve">
     <value>設定を保存</value>
   </data>
-  <data name="OpenConfigFolder" xml:space="preserve">
-    <value>設定フォルダを開く</value>
-  </data>
   <data name="ConfigurationManagement" xml:space="preserve">
     <value>構成管理ウィンドウ</value>
   </data>
@@ -281,5 +278,8 @@
   </data>
   <data name="SectionalDrawing" xml:space="preserve">
     <value>断面</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>設定フォルダを開く</value>
   </data>
 </root>

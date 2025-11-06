@@ -267,9 +267,6 @@
   <data name="SaveConfiguration" xml:space="preserve">
     <value>Enregistrer la configuration</value>
   </data>
-  <data name="OpenConfigFolder" xml:space="preserve">
-    <value>Ouvrez le dossier de configuration</value>
-  </data>
   <data name="ConfigurationManagement" xml:space="preserve">
     <value>Fenêtre de gestion de la configuration</value>
   </data>
@@ -281,5 +278,8 @@
   </data>
   <data name="SectionalDrawing" xml:space="preserve">
     <value>Coupe transversale</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>Ouvrez le dossier de configuration</value>
   </data>
 </root>
