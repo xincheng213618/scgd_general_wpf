@@ -132,18 +132,17 @@ namespace ColorVision.Engine.Batch.IVL
                 string DateTimeNow = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
                 int z = 0;
-
-                for (int i = 0; i < testResult.PoixyuvDatas.Count;i++)
+                for (int i = 0; i < testResult.PoixyuvDatas.Count; i++)
                 {
                     z = i / cout;
-                    if (testResult.SMUResultModels.Count > z*cout)
+                    if (testResult.SMUResultModels.Count > z * cout)
                     {
                         var SMUResultModel = testResult.SMUResultModels[z];
-                        rows.Add($"{DateTimeNow},{i},{testResult.PoixyuvDatas[i].Id},{SMUResultModel.VResult},{SMUResultModel.IResult},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
+                        rows.Add($"{DateTimeNow},{i},{testResult.PoixyuvDatas[i].POIPointResultModel.Id},{SMUResultModel.VResult},{SMUResultModel.IResult},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
                     }
                     else
                     {
-                        rows.Add($"{DateTimeNow},{i},{testResult.PoixyuvDatas[i].Id},,,{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
+                        rows.Add($"{DateTimeNow},{i},{testResult.PoixyuvDatas[i].POIPointResultModel.Id},,,{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
 
                     }
                 }

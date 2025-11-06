@@ -264,7 +264,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         public PoiResultData(PoiPointResultModel pOIPointResultModel)
         {
             POIPointResultModel = pOIPointResultModel;
-            Point = new POIPoint(pOIPointResultModel.PoiId ?? -1, -1, pOIPointResultModel.PoiName, pOIPointResultModel.PoiType, (int)pOIPointResultModel.PoiX, (int)pOIPointResultModel.PoiY, pOIPointResultModel.PoiWidth ?? 0, pOIPointResultModel.PoiHeight ?? 0);
+            Point = new POIPoint(pOIPointResultModel.PoiId ?? -1, pOIPointResultModel.Pid ??-1, pOIPointResultModel.PoiName, pOIPointResultModel.PoiType, (int)pOIPointResultModel.PoiX, (int)pOIPointResultModel.PoiY, pOIPointResultModel.PoiWidth ?? 0, pOIPointResultModel.PoiHeight ?? 0);
         }
         public int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }
         private int _Id;
