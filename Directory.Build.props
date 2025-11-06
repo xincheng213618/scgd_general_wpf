@@ -9,7 +9,7 @@
 		<PlatformTarget>$(Platform)</PlatformTarget>
 		<TargetFrameworks>net8.0-windows</TargetFrameworks>
 		<NoWarn>CS8002</NoWarn>
-	    <VersionPrefix>1.3.14.5</VersionPrefix>
+	    <VersionPrefix>1.3.14.6</VersionPrefix>
 		<EnableWindowsTargeting>true</EnableWindowsTargeting>
 	</PropertyGroup>
 	<PropertyGroup>
