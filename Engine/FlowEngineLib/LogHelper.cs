@@ -18,7 +18,7 @@ public static class LogHelper
 	{
 		if (loginfo.IsInfoEnabled)
 		{
-			loginfo.Info(info);
+			loginfo.Info((object)info);
 		}
 	}
 
@@ -35,8 +35,8 @@ public static class LogHelper
 		}
 		else if (string.IsNullOrEmpty(info) && ex != null)
 		{
-			string message = BeautyErrorMsg(ex);
-			logerror.Error(message);
+			string text2 = BeautyErrorMsg(ex);
+			logerror.Error((object)text2);
 		}
 	}
 

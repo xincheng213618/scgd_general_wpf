@@ -180,20 +180,20 @@ public class MQTTSubscribeHub : STNodeOutHub
 
 	private void onMsgSub(ResultData_MQTT resultData_MQTT)
 	{
-		logger.Debug(JsonConvert.SerializeObject(resultData_MQTT, Formatting.None));
-		string value = (string)resultData_MQTT.ResultObject2;
-		string text = (string)resultData_MQTT.ResultObject1;
+		logger.Debug((object)JsonConvert.SerializeObject((object)resultData_MQTT, (Formatting)0));
+		string text = (string)resultData_MQTT.ResultObject2;
+		string text2 = (string)resultData_MQTT.ResultObject1;
 		if (resultData_MQTT.EventType == EventTypeEnum.Subscribe)
 		{
-			if (MQTTEvents.ContainsKey(text))
+			if (MQTTEvents.ContainsKey(text2))
 			{
-				MQTTEvents[text].MQTTSubscribed = resultData_MQTT.ResultCode == 1;
+				MQTTEvents[text2].MQTTSubscribed = resultData_MQTT.ResultCode == 1;
 			}
 			return;
 		}
 		if (resultData_MQTT.EventType == EventTypeEnum.Unsubscribe)
 		{
-			removeMQTTEvent(text);
+			removeMQTTEvent(text2);
 			return;
 		}
 		if (resultData_MQTT.EventType == EventTypeEnum.ClientConnected)
@@ -207,11 +207,11 @@ public class MQTTSubscribeHub : STNodeOutHub
 			}
 			return;
 		}
-		if (string.IsNullOrEmpty(text))
+		if (string.IsNullOrEmpty(text2))
 		{
 			return;
 		}
-		MQTTObjectTopic mQTTEvent = getMQTTEvent(text);
+		MQTTObjectTopic mQTTEvent = getMQTTEvent(text2);
 		if (mQTTEvent == null)
 		{
 			return;
@@ -219,20 +219,20 @@ public class MQTTSubscribeHub : STNodeOutHub
 		foreach (MQTTObject mQTTObject in mQTTEvent.MQTTObjects)
 		{
 			MQActionEvent mQTTEvent2 = mQTTObject._MQTTEvent;
-			if (!string.IsNullOrEmpty(value) && mQTTEvent2 != null && mQTTEvent2.EventName != null)
+			if (!string.IsNullOrEmpty(text) && mQTTEvent2 != null && mQTTEvent2.EventName != null)
 			{
 				if (mQTTObject.op.DataType == typeof(CVServerResponse))
 				{
-					CVServerResponse data = JsonConvert.DeserializeObject<CVServerResponse>(JsonConvert.DeserializeObject<CVMQTTRequest>(value).Data.ToString());
+					CVServerResponse data = JsonConvert.DeserializeObject<CVServerResponse>(JsonConvert.DeserializeObject<CVMQTTRequest>(text).Data.ToString());
 					mQTTObject.op.TransferData(data);
 				}
 				else if (mQTTObject.op.DataType == typeof(CVMQTTRequest))
 				{
-					mQTTObject.op.TransferData(JsonConvert.DeserializeObject<CVMQTTRequest>(value));
+					mQTTObject.op.TransferData(JsonConvert.DeserializeObject<CVMQTTRequest>(text));
 				}
 				else if (mQTTObject.op.DataType == typeof(CVBaseDataFlowResp))
 				{
-					mQTTObject.op.TransferData(JsonConvert.DeserializeObject<CVBaseDataFlowResp>(value));
+					mQTTObject.op.TransferData(JsonConvert.DeserializeObject<CVBaseDataFlowResp>(text));
 				}
 				else if (mQTTObject.op.DataType == typeof(bool))
 				{

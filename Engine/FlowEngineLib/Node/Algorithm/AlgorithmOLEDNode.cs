@@ -26,6 +26,8 @@ public class AlgorithmOLEDNode : CVBaseServerNode
 
 	private string _OutputFileName;
 
+	private string _ImgPosResultFile;
+
 	private STNodeEditText<string> m_ctrl_temp;
 
 	private STNodeEditText<AlgorithmOLEDType> m_ctrl_editText;
@@ -140,6 +142,19 @@ public class AlgorithmOLEDNode : CVBaseServerNode
 		}
 	}
 
+	[STNodeProperty("定位输出", "定位输出", true)]
+	public string ImgPosResultFile
+	{
+		get
+		{
+			return _ImgPosResultFile;
+		}
+		set
+		{
+			_ImgPosResultFile = value;
+		}
+	}
+
 	private void setTempName()
 	{
 		m_ctrl_temp.Value = $"{_TempId}:{_TempName}";
@@ -149,6 +164,7 @@ public class AlgorithmOLEDNode : CVBaseServerNode
 		: base("OLED算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
 		operatorCode = "FindDotsArray";
+		_ImgPosResultFile = "ImgPos.tif";
 		_TempName = "";
 		_TempId = -1;
 		_OutputFileName = "pos.csv";
@@ -198,6 +214,7 @@ public class AlgorithmOLEDNode : CVBaseServerNode
 	{
 		AlgorithmOLEDParam algorithmOLEDParam = null;
 		algorithmOLEDParam = new AlgorithmOLEDParam(_Color, _OutputFileName);
+		algorithmOLEDParam.ImgPosResultFile = _ImgPosResultFile;
 		algorithmOLEDParam.ImgFileName = _ImgFileName;
 		algorithmOLEDParam.FileType = GetImageFileType(_ImgFileName);
 		algorithmOLEDParam.FixedLEDPoint = _FixedLEDPoint;

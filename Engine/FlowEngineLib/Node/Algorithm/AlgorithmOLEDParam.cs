@@ -8,6 +8,8 @@ public class AlgorithmOLEDParam : AlgorithmParam
 
 	public CVOLED_FDAType FDAType { get; set; }
 
+	public string ImgPosResultFile { get; set; }
+
 	public AlgorithmOLEDParam(CVOLED_COLOR color, string outputFileName)
 	{
 		base.Color = color;

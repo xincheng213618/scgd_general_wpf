@@ -31,7 +31,7 @@ public class Channel
 
 	public string ToJsonString()
 	{
-		return JsonConvert.SerializeObject(channels);
+		return JsonConvert.SerializeObject((object)channels);
 	}
 
 	public int GetChannelCount()

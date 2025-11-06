@@ -75,7 +75,7 @@ public class CVCameraNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("R曝光", "R 通道曝光时间(ms)", true)]
+	[STNodeProperty("R曝光", "RExpDesc", true)]
 	public float TempR
 	{
 		get
@@ -89,7 +89,7 @@ public class CVCameraNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("G曝光", "G 通道曝光时间(ms)", true)]
+	[STNodeProperty("G曝光", "GExpDesc", true)]
 	public float TempG
 	{
 		get
@@ -103,7 +103,7 @@ public class CVCameraNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("B曝光", "B 通道曝光时间(ms)", true)]
+	[STNodeProperty("B曝光", "BExpDesc", true)]
 	public float TempB
 	{
 		get
@@ -195,6 +195,7 @@ public class CVCameraNode : CVBaseServerNode
 		_CalibTempName = "";
 		_POITempName = "";
 		_POIFilterTempName = "";
+		_POIReviseTempName = "";
 		_TempR = 100f;
 		_TempG = 100f;
 		_TempB = 100f;

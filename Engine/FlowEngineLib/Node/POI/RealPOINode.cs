@@ -292,7 +292,7 @@ public class RealPOINode : CVBaseServerNodeIn2Hub
 		}
 		if (logger.IsDebugEnabled)
 		{
-			logger.DebugFormat("PreStepParams => {0}", JsonConvert.SerializeObject(array));
+			logger.DebugFormat("PreStepParams => {0}", (object)JsonConvert.SerializeObject((object)array));
 		}
 		return new RealPOIData(_FilterTemplateName, _ReviseTemplateName, _ReviseFileName, _OutputTemplateName, poiData, array[0].MasterId, array[1].MasterId, _IsResultAdd, _IsSubPixel, _IsCCTWave)
 		{

@@ -27,7 +27,7 @@ public class CalibrationNodeDescriptor : STNodePropertyDescriptor
 		List<CalibrationNodeProperty> list = (List<CalibrationNodeProperty>)GetValue(null);
 		if (list != null)
 		{
-			return JsonConvert.SerializeObject(list);
+			return JsonConvert.SerializeObject((object)list);
 		}
 		return "[]";
 	}

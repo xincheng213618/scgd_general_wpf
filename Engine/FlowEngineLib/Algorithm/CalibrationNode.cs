@@ -19,6 +19,12 @@ public class CalibrationNode : CVBaseServerNode
 
 	private string _ImgFileName;
 
+	private string _POITempName;
+
+	protected string _POIFilterTempName;
+
+	protected string _POIReviseTempName;
+
 	private STNodeEditText<string> m_ctrl_temp;
 
 	private STNodeEditText<string> m_ctrl_temp_exp;
@@ -78,6 +84,48 @@ public class CalibrationNode : CVBaseServerNode
 		}
 	}
 
+	[STNodeProperty("POI模板", "POI算法模板", true)]
+	public string POITempName
+	{
+		get
+		{
+			return _POITempName;
+		}
+		set
+		{
+			_POITempName = value;
+			setPOITemp();
+		}
+	}
+
+	[STNodeProperty("POI过滤", "POI过滤模板", true)]
+	public string POIFilterTempName
+	{
+		get
+		{
+			return _POIFilterTempName;
+		}
+		set
+		{
+			_POIFilterTempName = value;
+			setPOITemp();
+		}
+	}
+
+	[STNodeProperty("POI修正", "POI修正模板", true)]
+	public string POIReviseTempName
+	{
+		get
+		{
+			return _POIReviseTempName;
+		}
+		set
+		{
+			_POIReviseTempName = value;
+			setPOITemp();
+		}
+	}
+
 	private void setTempName()
 	{
 		m_ctrl_temp.Value = $"{_TempId}:{_TempName}";
@@ -90,6 +138,9 @@ public class CalibrationNode : CVBaseServerNode
 		_TempName = "";
 		_TempId = -1;
 		_ExpTempName = "";
+		_POITempName = "";
+		_POIFilterTempName = "";
+		_POIReviseTempName = "";
 		base.Height += 25;
 		_MaxTime = 10000;
 		_OrderIndex = -1;
@@ -101,6 +152,19 @@ public class CalibrationNode : CVBaseServerNode
 		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "校正:", $"{_TempId}:{_TempName}");
 		m_custom_item.Y += 25;
 		m_ctrl_temp_exp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "曝光:", _ExpTempName);
+	}
+
+	private void setPOITemp()
+	{
+	}
+
+	private string GetPOITempDisplay()
+	{
+		if (string.IsNullOrEmpty(_POITempName))
+		{
+			return string.Empty;
+		}
+		return $"{_POITempName}/{_POIFilterTempName}/{_POIReviseTempName}";
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
@@ -127,6 +191,11 @@ public class CalibrationNode : CVBaseServerNode
 			{
 				calibrationData.FileType = FileExtType.Tif;
 			}
+		}
+		if (!string.IsNullOrEmpty(_POITempName))
+		{
+			POITemplateParam pOIParam = new POITemplateParam(_POITempName, _POIFilterTempName, _POIReviseTempName);
+			calibrationData.POIParam = pOIParam;
 		}
 		return calibrationData;
 	}

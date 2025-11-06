@@ -27,7 +27,7 @@ public class LoopNodePropertyDescriptor<T, U> : STNodePropertyDescriptor where U
 		List<T> list = (List<T>)GetValue(null);
 		if (list != null)
 		{
-			return JsonConvert.SerializeObject(list);
+			return JsonConvert.SerializeObject((object)list);
 		}
 		return "[]";
 	}

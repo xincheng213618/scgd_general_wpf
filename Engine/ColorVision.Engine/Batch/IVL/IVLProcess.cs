@@ -113,8 +113,6 @@ namespace ColorVision.Engine.Batch.IVL
                     }
                 }
 
-
-
                 var DB = new SqlSugarClient(new ConnectionConfig
                 {
                     ConnectionString = MySqlControl.GetConnectionString(),
