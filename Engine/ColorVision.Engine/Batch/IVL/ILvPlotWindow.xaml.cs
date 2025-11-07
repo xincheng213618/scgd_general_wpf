@@ -16,8 +16,8 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Batch.IVL
 {
     /// <summary>
-    /// I-Lv Curve Plot Window
-    /// Plots Current (I) vs Luminance (Lv) curves grouped by POI name
+    /// IVL Curve Plot Window
+    /// Plots Current (I) or Voltage (V) vs Luminance (Lv) curves grouped by POI name
     /// </summary>
     public partial class ILvPlotWindow : Window
     {
@@ -26,6 +26,7 @@ namespace ColorVision.Engine.Batch.IVL
         private Dictionary<string, List<ILvDataPoint>> _groupedData;
         private Dictionary<string, Scatter> _scatterPlots;
         private List<string> _seriesNames;
+        private bool _isILvMode = true; // true for I-Lv, false for V-Lv
 
         public ILvPlotWindow(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas)
             : this(smuResults, poixyuvDatas, null)
@@ -183,20 +184,27 @@ namespace ColorVision.Engine.Batch.IVL
             // Check if there's any data to plot
             if (_groupedData.Count == 0)
             {
-                WpfPlot.Plot.Title("I-Lv Curve (No Data)");
+                string modeText = _isILvMode ? "I-Lv" : "V-Lv";
+                WpfPlot.Plot.Title($"{modeText} Curve (No Data)");
                 WpfPlot.Refresh();
                 TxtLegendInfo.Text = "No valid data to display";
                 return;
             }
             
-            // Set labels with proper formatting
-            WpfPlot.Plot.Title("I-Lv Characteristics Curve");
-            WpfPlot.Plot.XLabel("Current (mA)");
+            // Set labels with proper formatting based on display mode
+            string modeLabel = _isILvMode ? "I-Lv" : "V-Lv";
+            string xLabel = _isILvMode ? "Current (mA)" : "Voltage (V)";
+            
+            WpfPlot.Plot.Title($"{modeLabel} Characteristics Curve");
+            WpfPlot.Plot.XLabel(xLabel);
             WpfPlot.Plot.YLabel("Luminance (cd/m²)");
+            
+            // Update title text block
+            TxtTitle.Text = $"{modeLabel} Curve Analysis";
             
             // Set font for labels to support international characters
             // Use a consistent string for font detection
-            string fontSample = "I-Lv Characteristics Curve Current Luminance";
+            string fontSample = $"{modeLabel} Characteristics Curve {xLabel} Luminance Voltage";
             WpfPlot.Plot.Axes.Title.Label.FontName = Fonts.Detect(fontSample);
             WpfPlot.Plot.Axes.Left.Label.FontName = Fonts.Detect(fontSample);
             WpfPlot.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(fontSample);
@@ -242,7 +250,11 @@ namespace ColorVision.Engine.Batch.IVL
                     continue;
 
                 var dataPoints = _groupedData[seriesName];
-                double[] x = dataPoints.Select(p => (double)p.Current).ToArray();
+                
+                // Select X-axis data based on display mode (Current for I-Lv, Voltage for V-Lv)
+                double[] x = _isILvMode 
+                    ? dataPoints.Select(p => p.Current).ToArray()
+                    : dataPoints.Select(p => p.Voltage).ToArray();
                 double[] y = dataPoints.Select(p => p.Luminance).ToArray();
 
                 // Create scatter plot with line and markers
@@ -309,6 +321,9 @@ namespace ColorVision.Engine.Batch.IVL
             info.AppendLine($"Selected: {PoiSeriesList.SelectedItems.Count} series");
             info.AppendLine();
 
+            string xAxisLabel = _isILvMode ? "I" : "V";
+            string xAxisUnit = _isILvMode ? "mA" : "V";
+
             foreach (var item in PoiSeriesList.SelectedItems)
             {
                 string seriesName = item.ToString();
@@ -319,7 +334,16 @@ namespace ColorVision.Engine.Batch.IVL
                     {
                         info.AppendLine($"{seriesName}:");
                         info.AppendLine($"  Points: {data.Count}");
-                        info.AppendLine($"  I: {data.Min(p => p.Current):F2} - {data.Max(p => p.Current):F2} mA");
+                        
+                        if (_isILvMode)
+                        {
+                            info.AppendLine($"  {xAxisLabel}: {data.Min(p => p.Current):F2} - {data.Max(p => p.Current):F2} {xAxisUnit}");
+                        }
+                        else
+                        {
+                            info.AppendLine($"  {xAxisLabel}: {data.Min(p => p.Voltage):F2} - {data.Max(p => p.Voltage):F2} {xAxisUnit}");
+                        }
+                        
                         info.AppendLine($"  Lv: {data.Min(p => p.Luminance):F2} - {data.Max(p => p.Luminance):F2} cd/m²");
                         info.AppendLine();
                     }
@@ -339,13 +363,36 @@ namespace ColorVision.Engine.Batch.IVL
             PoiSeriesList.UnselectAll();
         }
 
+        private void DisplayMode_Changed(object sender, RoutedEventArgs e)
+        {
+            // Update the mode flag
+            _isILvMode = RbILv.IsChecked == true;
+            
+            // Re-sort data based on the new X-axis
+            foreach (var series in _groupedData.Values)
+            {
+                if (_isILvMode)
+                {
+                    series.Sort((a, b) => a.Current.CompareTo(b.Current));
+                }
+                else
+                {
+                    series.Sort((a, b) => a.Voltage.CompareTo(b.Voltage));
+                }
+            }
+            
+            // Re-initialize the plot with new mode
+            InitializePlot();
+        }
+
         private void BtnSave_Click(object sender, RoutedEventArgs e)
         {
+            string modeText = _isILvMode ? "ILv" : "VLv";
             SaveFileDialog saveFileDialog = new SaveFileDialog
             {
                 Filter = "PNG Files|*.png|JPEG Files|*.jpg|BMP Files|*.bmp",
-                Title = "Save I-Lv Plot Image",
-                FileName = $"ILv_Curve_{DateTime.Now:yyyyMMdd_HHmmss}"
+                Title = $"Save {modeText} Plot Image",
+                FileName = $"{modeText}_Curve_{DateTime.Now:yyyyMMdd_HHmmss}"
             };
 
             if (saveFileDialog.ShowDialog() == true)

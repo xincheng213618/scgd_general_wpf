@@ -6,11 +6,19 @@
         xmlns:local="clr-namespace:ColorVision.Engine.Batch.IVL"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="I-Lv Curve Plot" Height="600" Width="900">
+        Title="IVL Curve Plot" Height="600" Width="900">
     <DockPanel>
         <StackPanel DockPanel.Dock="Right" Width="250" Margin="8">
+            <TextBlock Text="Display Mode" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <RadioButton x:Name="RbILv" Content="I-Lv" IsChecked="True" Margin="0,0,16,0" Checked="DisplayMode_Changed" GroupName="DisplayMode"/>
+                <RadioButton x:Name="RbVLv" Content="V-Lv" Checked="DisplayMode_Changed" GroupName="DisplayMode"/>
+            </StackPanel>
+            
+            <Separator Margin="0,8,0,12"/>
+            
             <TextBlock Text="POI Series" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
-            <ListBox x:Name="PoiSeriesList" Height="300" SelectionMode="Multiple" SelectionChanged="PoiSeriesList_SelectionChanged"/>
+            <ListBox x:Name="PoiSeriesList" Height="260" SelectionMode="Multiple" SelectionChanged="PoiSeriesList_SelectionChanged"/>
             <CheckBox x:Name="ChkShowAll" Content="Show All Series" Margin="0,12,0,8" Checked="ChkShowAll_Checked" Unchecked="ChkShowAll_Unchecked"/>
             
             <Separator Margin="0,12,0,12"/>
@@ -31,7 +39,7 @@
             </Grid.RowDefinitions>
             
             <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
-                <TextBlock Text="I-Lv Curve Analysis" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
+                <TextBlock x:Name="TxtTitle" Text="I-Lv Curve Analysis" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
             </StackPanel>
             
             <ScottPlot:WpfPlot x:Name="WpfPlot" Grid.Row="1"/>
