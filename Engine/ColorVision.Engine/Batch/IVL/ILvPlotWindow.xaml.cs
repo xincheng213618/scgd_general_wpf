@@ -1,5 +1,6 @@
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using log4net;
 using Microsoft.Win32;
 using ScottPlot;
 using ScottPlot.DataSources;
@@ -18,6 +19,8 @@ namespace ColorVision.Engine.Batch.IVL
     /// </summary>
     public partial class ILvPlotWindow : Window
     {
+        private static readonly ILog log = LogManager.GetLogger(nameof(ILvPlotWindow));
+        
         private Dictionary<string, List<ILvDataPoint>> _groupedData;
         private Dictionary<string, Scatter> _scatterPlots;
         private List<string> _seriesNames;
@@ -62,7 +65,17 @@ namespace ColorVision.Engine.Batch.IVL
                 var poi = poixyuvDatas[i];
                 
                 // Use POI name to group data points
-                string poiName = poi.POIPointResultModel?.PoiName ?? $"POI_{i}";
+                // Check if POIPointResultModel is null to detect data integrity issues
+                string poiName;
+                if (poi.POIPointResultModel == null)
+                {
+                    log.Warn($"POIPointResultModel is null for data point at index {i}. Using default name.");
+                    poiName = $"POI_{i}";
+                }
+                else
+                {
+                    poiName = poi.POIPointResultModel.PoiName ?? $"POI_{i}";
+                }
                 
                 if (!_groupedData.ContainsKey(poiName))
                 {
@@ -129,10 +142,11 @@ namespace ColorVision.Engine.Batch.IVL
             WpfPlot.Plot.YLabel("Luminance (cd/m²)");
             
             // Set font for labels to support international characters
-            string title = "I-Lv Curve";
-            WpfPlot.Plot.Axes.Title.Label.FontName = Fonts.Detect(title);
-            WpfPlot.Plot.Axes.Left.Label.FontName = Fonts.Detect(title);
-            WpfPlot.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(title);
+            // Use a consistent string for font detection
+            string fontSample = "I-Lv Characteristics Curve Current Luminance";
+            WpfPlot.Plot.Axes.Title.Label.FontName = Fonts.Detect(fontSample);
+            WpfPlot.Plot.Axes.Left.Label.FontName = Fonts.Detect(fontSample);
+            WpfPlot.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(fontSample);
 
             // Enable grid for better readability
             WpfPlot.Plot.Grid.MajorLineColor = Color.FromColor(System.Drawing.Color.LightGray);
@@ -298,9 +312,9 @@ namespace ColorVision.Engine.Batch.IVL
 
         private class ILvDataPoint
         {
-            public float Current { get; set; }
+            public double Current { get; set; }
             public double Luminance { get; set; }
-            public float Voltage { get; set; }
+            public double Voltage { get; set; }
         }
     }
 }
