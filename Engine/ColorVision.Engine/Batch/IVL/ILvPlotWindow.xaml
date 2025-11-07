@@ -1,0 +1,24 @@
+﻿<Window x:Class="ColorVision.Engine.Batch.IVL.ILvPlotWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Engine.Batch.IVL"
+        mc:Ignorable="d"
+        xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+    Title="I–Lv Plot" Height="600" Width="900">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0" Margin="8">
+            <Button Content="打开 CSV 并绘图" Click="BtnOpenAndPlot_Click" Margin="0,0,8,0"/>
+            <Button Content="清空" Click="BtnClear_Click" Margin="0,0,8,0"/>
+            <TextBlock x:Name="TxtStatus" VerticalAlignment="Center"/>
+        </DockPanel>
+
+        <ScottPlot:WpfPlot x:Name="Plot" Grid.Row="1" Margin="8"/>
+    </Grid>
+</Window>
