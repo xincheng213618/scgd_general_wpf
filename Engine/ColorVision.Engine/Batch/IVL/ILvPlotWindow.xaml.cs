@@ -45,20 +45,23 @@ namespace ColorVision.Engine.Batch.IVL
                 return;
             }
 
-            // Calculate how many POIs per SMU measurement
+            // Calculate how many POIs per SMU measurement (same logic as IVLProcess)
             int poisPerMeasurement = poiCount / smuCount;
             if (poisPerMeasurement == 0)
                 poisPerMeasurement = 1;
 
+            // Match the data pairing logic from IVLProcess.cs
             for (int i = 0; i < poiCount; i++)
             {
+                // Calculate SMU index: z = i / cout (from IVLProcess.cs)
                 int smuIndex = i / poisPerMeasurement;
                 if (smuIndex >= smuCount)
-                    smuIndex = smuCount - 1;
+                    continue; // Skip if no corresponding SMU data
 
                 var smu = smuResults[smuIndex];
                 var poi = poixyuvDatas[i];
                 
+                // Use POI name to group data points
                 string poiName = poi.POIPointResultModel?.PoiName ?? $"POI_{i}";
                 
                 if (!_groupedData.ContainsKey(poiName))
@@ -67,7 +70,8 @@ namespace ColorVision.Engine.Batch.IVL
                     _seriesNames.Add(poiName);
                 }
 
-                // Add data point: Current (IResult) vs Luminance (Y)
+                // Add data point: Current (I) vs Luminance (Lv)
+                // Only add valid data points with non-null current and positive luminance
                 if (smu.IResult.HasValue && poi.Y > 0)
                 {
                     _groupedData[poiName].Add(new ILvDataPoint
@@ -79,36 +83,60 @@ namespace ColorVision.Engine.Batch.IVL
                 }
             }
 
-            // Sort data points within each series by current
+            // Remove empty series
+            var emptyKeys = _groupedData.Where(kv => kv.Value.Count == 0).Select(kv => kv.Key).ToList();
+            foreach (var key in emptyKeys)
+            {
+                _groupedData.Remove(key);
+                _seriesNames.Remove(key);
+            }
+
+            // Sort data points within each series by current for proper line plotting
             foreach (var series in _groupedData.Values)
             {
                 series.Sort((a, b) => a.Current.CompareTo(b.Current));
             }
 
-            // Populate list box
+            // Populate list box with series names
             foreach (var name in _seriesNames)
             {
                 PoiSeriesList.Items.Add(name);
             }
 
-            // Select all by default
-            PoiSeriesList.SelectAll();
+            // Select all series by default for initial display
+            if (_seriesNames.Count > 0)
+            {
+                PoiSeriesList.SelectAll();
+            }
         }
 
         private void InitializePlot()
         {
             WpfPlot.Plot.Clear();
             
-            // Set labels
+            // Check if there's any data to plot
+            if (_groupedData.Count == 0)
+            {
+                WpfPlot.Plot.Title("I-Lv Curve (No Data)");
+                WpfPlot.Refresh();
+                TxtLegendInfo.Text = "No valid data to display";
+                return;
+            }
+            
+            // Set labels with proper formatting
             WpfPlot.Plot.Title("I-Lv Characteristics Curve");
             WpfPlot.Plot.XLabel("Current (mA)");
             WpfPlot.Plot.YLabel("Luminance (cd/m²)");
             
-            // Set font for labels
+            // Set font for labels to support international characters
             string title = "I-Lv Curve";
             WpfPlot.Plot.Axes.Title.Label.FontName = Fonts.Detect(title);
             WpfPlot.Plot.Axes.Left.Label.FontName = Fonts.Detect(title);
             WpfPlot.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(title);
+
+            // Enable grid for better readability
+            WpfPlot.Plot.Grid.MajorLineColor = Color.FromColor(System.Drawing.Color.LightGray);
+            WpfPlot.Plot.Grid.MajorLineWidth = 1;
 
             PlotAllSeries();
             WpfPlot.Refresh();
@@ -125,19 +153,19 @@ namespace ColorVision.Engine.Batch.IVL
             }
             _scatterPlots.Clear();
 
-            // Color palette for different series
+            // Enhanced color palette for better distinction
             var colors = new[]
             {
                 System.Drawing.Color.Red,
                 System.Drawing.Color.Blue,
                 System.Drawing.Color.Green,
-                System.Drawing.Color.Orange,
+                System.Drawing.Color.DarkOrange,
                 System.Drawing.Color.Purple,
                 System.Drawing.Color.Brown,
-                System.Drawing.Color.Pink,
-                System.Drawing.Color.Gray,
-                System.Drawing.Color.Cyan,
-                System.Drawing.Color.Magenta
+                System.Drawing.Color.DeepPink,
+                System.Drawing.Color.DarkCyan,
+                System.Drawing.Color.Magenta,
+                System.Drawing.Color.Teal
             };
 
             int colorIndex = 0;
@@ -150,13 +178,15 @@ namespace ColorVision.Engine.Batch.IVL
                 double[] x = dataPoints.Select(p => (double)p.Current).ToArray();
                 double[] y = dataPoints.Select(p => p.Luminance).ToArray();
 
+                // Create scatter plot with line and markers
                 var scatter = new Scatter(new ScatterSourceDoubleArray(x, y))
                 {
                     Color = Color.FromColor(colors[colorIndex % colors.Length]),
                     LineWidth = 2,
-                    MarkerSize = 5,
+                    MarkerSize = 6,
                     MarkerShape = MarkerShape.FilledCircle,
-                    Label = seriesName
+                    Label = seriesName,
+                    LineStyle = LinePattern.Solid
                 };
 
                 _scatterPlots[seriesName] = scatter;
