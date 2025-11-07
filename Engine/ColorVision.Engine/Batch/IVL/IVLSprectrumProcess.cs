@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 
 namespace ColorVision.Engine.Batch.IVL
 {
@@ -80,6 +81,8 @@ namespace ColorVision.Engine.Batch.IVL
                         try
                         {
                             // Create an empty list for POI data since this process only has spectrum data
+                            var list = ViewResults.ToList();
+
                             var plotWindow = new ILvPlotWindow(testResult.SMUResultModels, new List<PoiResultCIExyuvData>(), ViewResults.ToList());
                             plotWindow.Show();
                         }

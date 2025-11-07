@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace ColorVision.Engine.Batch.IVL
@@ -196,6 +197,7 @@ namespace ColorVision.Engine.Batch.IVL
                     {
                         try
                         {
+                          
                             var plotWindow = new ILvPlotWindow(testResult.SMUResultModels, testResult.PoixyuvDatas, ViewResults.ToList());
                             plotWindow.Show();
                         }
