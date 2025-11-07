@@ -1,4 +1,5 @@
 using ColorVision.Engine.Services.Devices.SMU.Dao;
+using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using log4net;
 using Microsoft.Win32;
@@ -32,11 +33,22 @@ namespace ColorVision.Engine.Batch.IVL
             _scatterPlots = new Dictionary<string, Scatter>();
             _seriesNames = new List<string>();
             
-            LoadData(smuResults, poixyuvDatas);
+            LoadData(smuResults, poixyuvDatas, null);
             InitializePlot();
         }
 
-        private void LoadData(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas)
+        public ILvPlotWindow(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas, List<ViewResultSpectrum> spectrumResults)
+        {
+            InitializeComponent();
+            _groupedData = new Dictionary<string, List<ILvDataPoint>>();
+            _scatterPlots = new Dictionary<string, Scatter>();
+            _seriesNames = new List<string>();
+            
+            LoadData(smuResults, poixyuvDatas, spectrumResults);
+            InitializePlot();
+        }
+
+        private void LoadData(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas, List<ViewResultSpectrum> spectrumResults)
         {
             // Group data by POI name
             int smuCount = smuResults.Count;
@@ -93,6 +105,43 @@ namespace ColorVision.Engine.Batch.IVL
                         Luminance = poi.Y,
                         Voltage = smu.VResult ?? 0
                     });
+                }
+            }
+
+            // Add spectrum data if available
+            if (spectrumResults != null && spectrumResults.Count > 0)
+            {
+                string spectrumSeriesName = "光谱仪";
+                
+                if (!_groupedData.ContainsKey(spectrumSeriesName))
+                {
+                    _groupedData[spectrumSeriesName] = new List<ILvDataPoint>();
+                    _seriesNames.Add(spectrumSeriesName);
+                }
+
+                // Match spectrum results with SMU data (similar to IVLProcess logic)
+                for (int i = 0; i < spectrumResults.Count; i++)
+                {
+                    var spectrum = spectrumResults[i];
+                    
+                    // Try to get the Lv value from the string property
+                    if (!string.IsNullOrEmpty(spectrum.Lv) && double.TryParse(spectrum.Lv, out double lvValue))
+                    {
+                        // Match with SMU data by index
+                        if (i < smuResults.Count)
+                        {
+                            var smu = smuResults[i];
+                            if (smu.IResult.HasValue && lvValue > 0)
+                            {
+                                _groupedData[spectrumSeriesName].Add(new ILvDataPoint
+                                {
+                                    Current = smu.IResult.Value,
+                                    Luminance = lvValue,
+                                    Voltage = smu.VResult ?? 0
+                                });
+                            }
+                        }
+                    }
                 }
             }
 

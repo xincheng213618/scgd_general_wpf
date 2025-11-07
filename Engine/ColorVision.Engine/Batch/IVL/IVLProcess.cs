@@ -190,13 +190,13 @@ namespace ColorVision.Engine.Batch.IVL
                 }
                 
                 // Show I-Lv curve plot window
-                if (testResult.SMUResultModels.Count > 0 && testResult.PoixyuvDatas.Count > 0)
+                if (testResult.SMUResultModels.Count > 0 && (testResult.PoixyuvDatas.Count > 0 || ViewResults.Count > 0))
                 {
                     System.Windows.Application.Current?.Dispatcher.Invoke(() =>
                     {
                         try
                         {
-                            var plotWindow = new ILvPlotWindow(testResult.SMUResultModels, testResult.PoixyuvDatas);
+                            var plotWindow = new ILvPlotWindow(testResult.SMUResultModels, testResult.PoixyuvDatas, ViewResults.ToList());
                             plotWindow.Show();
                         }
                         catch (Exception ex)
