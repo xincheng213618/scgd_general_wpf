@@ -8,6 +8,7 @@ using ScottPlot.DataSources;
 using ScottPlot.Plottables;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -31,7 +32,7 @@ namespace ColorVision.Engine.Batch.IVL
         {
         }
 
-        public ILvPlotWindow(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas, List<ViewResultSpectrum> spectrumResults)
+        public ILvPlotWindow(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas, ObservableCollection<ViewResultSpectrum> spectrumResults)
         {
             InitializeComponent();
             _groupedData = new Dictionary<string, List<ILvDataPoint>>();
@@ -42,7 +43,7 @@ namespace ColorVision.Engine.Batch.IVL
             InitializePlot();
         }
 
-        private void LoadData(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas, List<ViewResultSpectrum> spectrumResults)
+        private void LoadData(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas, ObservableCollection<ViewResultSpectrum> spectrumResults)
         {
             // Group data by POI name
             int smuCount = smuResults.Count;
@@ -51,8 +52,9 @@ namespace ColorVision.Engine.Batch.IVL
             // Check if we have at least some data to plot (POI or spectrum)
             bool hasPoiData = smuCount > 0 && poiCount > 0;
             bool hasSpectrumData = spectrumResults != null && spectrumResults.Count > 0 && smuCount > 0;
-            
-            if (!hasPoiData && !hasSpectrumData)
+
+            log.Info($"Loading data for I-Lv plot: SMU count = {smuCount}, POI count = {poiCount}, Spectrum count = {(spectrumResults?.Count ?? 0)}");
+            if (!(hasPoiData || hasSpectrumData))
             {
                 MessageBox.Show("No data available to plot.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;

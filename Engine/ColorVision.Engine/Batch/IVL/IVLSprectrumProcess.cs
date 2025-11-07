@@ -81,9 +81,7 @@ namespace ColorVision.Engine.Batch.IVL
                         try
                         {
                             // Create an empty list for POI data since this process only has spectrum data
-                            var list = ViewResults.ToList();
-
-                            var plotWindow = new ILvPlotWindow(testResult.SMUResultModels, new List<PoiResultCIExyuvData>(), ViewResults.ToList());
+                            var plotWindow = new ILvPlotWindow(testResult.SMUResultModels, new List<PoiResultCIExyuvData>(), ViewResults);
                             plotWindow.Show();
                         }
                         catch (Exception ex)

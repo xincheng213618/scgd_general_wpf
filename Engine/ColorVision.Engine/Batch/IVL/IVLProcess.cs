@@ -198,7 +198,7 @@ namespace ColorVision.Engine.Batch.IVL
                         try
                         {
                           
-                            var plotWindow = new ILvPlotWindow(testResult.SMUResultModels, testResult.PoixyuvDatas, ViewResults.ToList());
+                            var plotWindow = new ILvPlotWindow(testResult.SMUResultModels, testResult.PoixyuvDatas, ViewResults);
                             plotWindow.Show();
                         }
                         catch (Exception ex)
