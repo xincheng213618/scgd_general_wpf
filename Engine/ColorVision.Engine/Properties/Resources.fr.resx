@@ -1902,4 +1902,13 @@
   <data name="CADFile" xml:space="preserve">
     <value>fichiers CAO</value>
   </data>
+  <data name="BrightnessLvCdM2" xml:space="preserve">
+    <value>Luminosité Lv (cd/m2)</value>
+  </data>
+  <data name="AddCmd" xml:space="preserve">
+    <value>Ajouter des instructions</value>
+  </data>
+  <data name="TimeOut_Ms" xml:space="preserve">
+    <value>Délai d'attente (ms)</value>
+  </data>
 </root>

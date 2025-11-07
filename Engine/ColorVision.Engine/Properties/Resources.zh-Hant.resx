@@ -1902,4 +1902,13 @@
   <data name="CADFile" xml:space="preserve">
     <value>CAD檔案</value>
   </data>
+  <data name="BrightnessLvCdM2" xml:space="preserve">
+    <value>亮度Lv(cd/m2)</value>
+  </data>
+  <data name="AddCmd" xml:space="preserve">
+    <value>新增指令</value>
+  </data>
+  <data name="TimeOut_Ms" xml:space="preserve">
+    <value>超時(ms)</value>
+  </data>
 </root>

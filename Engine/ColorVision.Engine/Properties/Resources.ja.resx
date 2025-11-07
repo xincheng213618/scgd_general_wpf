@@ -1902,4 +1902,13 @@
   <data name="CADFile" xml:space="preserve">
     <value>CADファイル</value>
   </data>
+  <data name="BrightnessLvCdM2" xml:space="preserve">
+    <value>明るさLv（cd/m2）</value>
+  </data>
+  <data name="AddCmd" xml:space="preserve">
+    <value>指示を追加する</value>
+  </data>
+  <data name="TimeOut_Ms" xml:space="preserve">
+    <value>タイムアウト（ミリ秒）</value>
+  </data>
 </root>

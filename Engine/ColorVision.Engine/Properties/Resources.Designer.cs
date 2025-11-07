@@ -169,6 +169,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 添加指令 的本地化字符串。
+        /// </summary>
+        public static string AddCmd {
+            get {
+                return ResourceManager.GetString("AddCmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 添加组 的本地化字符串。
         /// </summary>
         public static string AddGroup {
@@ -561,6 +570,15 @@ namespace ColorVision.Engine.Properties {
         public static string Brightness {
             get {
                 return ResourceManager.GetString("Brightness", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 亮度Lv(cd/m2) 的本地化字符串。
+        /// </summary>
+        public static string BrightnessLvCdM2 {
+            get {
+                return ResourceManager.GetString("BrightnessLvCdM2", resourceCulture);
             }
         }
         
@@ -5025,6 +5043,15 @@ namespace ColorVision.Engine.Properties {
         public static string Timeout {
             get {
                 return ResourceManager.GetString("Timeout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 超时(ms) 的本地化字符串。
+        /// </summary>
+        public static string TimeOut_Ms {
+            get {
+                return ResourceManager.GetString("TimeOut_Ms", resourceCulture);
             }
         }
         

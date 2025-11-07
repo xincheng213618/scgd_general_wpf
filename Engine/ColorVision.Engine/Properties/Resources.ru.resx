@@ -1902,4 +1902,13 @@
   <data name="CADFile" xml:space="preserve">
     <value>Файлы САПР</value>
   </data>
+  <data name="BrightnessLvCdM2" xml:space="preserve">
+    <value>Яркость Lv (кд/м2)</value>
+  </data>
+  <data name="AddCmd" xml:space="preserve">
+    <value>Добавить инструкции</value>
+  </data>
+  <data name="TimeOut_Ms" xml:space="preserve">
+    <value>Тайм-аут (мс)</value>
+  </data>
 </root>
