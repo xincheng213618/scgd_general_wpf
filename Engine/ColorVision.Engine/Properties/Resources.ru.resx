@@ -1683,4 +1683,13 @@
   <data name="PGParamConfig" xml:space="preserve">
     <value>Настройки PGParam</value>
   </data>
+  <data name="CameraView" xml:space="preserve">
+    <value>Вид с камеры</value>
+  </data>
+  <data name="ClearServiceCache" xml:space="preserve">
+    <value>Очистить кэш службы</value>
+  </data>
+  <data name="DataBasicPath" xml:space="preserve">
+    <value>Путь к базе данных</value>
+  </data>
 </root>

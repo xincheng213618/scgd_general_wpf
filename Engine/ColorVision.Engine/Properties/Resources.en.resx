@@ -1666,7 +1666,7 @@
     <value>value</value>
   </data>
   <data name="Circle" xml:space="preserve">
-    <value>round</value>
+    <value>Circle</value>
   </data>
   <data name="POIEdit" xml:space="preserve">
     <value>POI Editor</value>
@@ -1682,5 +1682,14 @@
   </data>
   <data name="PGParamConfig" xml:space="preserve">
     <value>PGParam settings</value>
+  </data>
+  <data name="CameraView" xml:space="preserve">
+    <value>Camera view</value>
+  </data>
+  <data name="ClearServiceCache" xml:space="preserve">
+    <value>Clear service cache</value>
+  </data>
+  <data name="DataBasicPath" xml:space="preserve">
+    <value>Data base path</value>
   </data>
 </root>

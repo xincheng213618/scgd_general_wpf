@@ -1666,7 +1666,7 @@
     <value>值</value>
   </data>
   <data name="Circle" xml:space="preserve">
-    <value>圆</value>
+    <value>圆形</value>
   </data>
   <data name="POIEdit" xml:space="preserve">
     <value>关注点编辑</value>
@@ -1682,5 +1682,20 @@
   </data>
   <data name="PGParamConfig" xml:space="preserve">
     <value>PGParam设置</value>
+  </data>
+  <data name="CameraView" xml:space="preserve">
+    <value>相机视图</value>
+  </data>
+  <data name="ClearServiceCache" xml:space="preserve">
+    <value>清理服务缓存</value>
+  </data>
+  <data name="DataBasicPath" xml:space="preserve">
+    <value>数据基础路径</value>
+  </data>
+  <data name="singleChannel" xml:space="preserve">
+    <value>单通道</value>
+  </data>
+  <data name="threeChannels" xml:space="preserve">
+    <value>三通道</value>
   </data>
 </root>

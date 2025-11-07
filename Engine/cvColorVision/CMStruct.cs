@@ -125,17 +125,17 @@ namespace cvColorVision
 
     public enum ImageChannel
     {
-        [Description("单通道")]
+        [Description("singleChannel")]
         One = 1,
-        [Description("三通道")]
+        [Description("threeChannels")]
         Three = 3
     }
 
     public enum ImageBpp
     {
-        [Description("8位")]
+        [Description("8bit")]
         bpp8 = 8,
-        [Description("16位")]
+        [Description("16bit")]
         bpp16 = 16,
     }
 

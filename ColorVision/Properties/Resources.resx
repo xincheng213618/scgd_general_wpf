@@ -282,4 +282,10 @@
   <data name="OpenConfigFolder" xml:space="preserve">
     <value>打开配置文件夹</value>
   </data>
+  <data name="singleChannel" xml:space="preserve">
+    <value>单通道</value>
+  </data>
+  <data name="threeChannles" xml:space="preserve">
+    <value>三通道</value>
+  </data>
 </root>

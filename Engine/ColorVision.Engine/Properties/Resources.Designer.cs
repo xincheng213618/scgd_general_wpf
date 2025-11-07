@@ -4757,6 +4757,13 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("PGParamConfig", resourceCulture);
             }
         }
+        public static string CameraView
+        {
+            get
+            {
+                return ResourceManager.GetString("CameraView", resourceCulture);
+            }
+        }
         
     }
 }

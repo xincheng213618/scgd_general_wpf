@@ -1683,4 +1683,13 @@
   <data name="PGParamConfig" xml:space="preserve">
     <value>PGParam設定</value>
   </data>
+  <data name="CameraView" xml:space="preserve">
+    <value>カメラビュー</value>
+  </data>
+  <data name="ClearServiceCache" xml:space="preserve">
+    <value>サービスキャッシュをクリアする</value>
+  </data>
+  <data name="DataBasicPath" xml:space="preserve">
+    <value>データベースパス</value>
+  </data>
 </root>
