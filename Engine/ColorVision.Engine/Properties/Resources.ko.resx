@@ -1746,4 +1746,25 @@
   <data name="Network" xml:space="preserve">
     <value>회로망</value>
   </data>
+  <data name="Cleanup" xml:space="preserve">
+    <value>청소</value>
+  </data>
+  <data name="MeasurementType" xml:space="preserve">
+    <value>측정 속성</value>
+  </data>
+  <data name="LimitStart" xml:space="preserve">
+    <value>원래 값</value>
+  </data>
+  <data name="CurrentCurve" xml:space="preserve">
+    <value>전류 곡선</value>
+  </data>
+  <data name="ElectricCurrent" xml:space="preserve">
+    <value>전류(A)</value>
+  </data>
+  <data name="Voltage" xml:space="preserve">
+    <value>전압(V)</value>
+  </data>
+  <data name="VoltageCurve" xml:space="preserve">
+    <value>전압 곡선</value>
+  </data>
 </root>

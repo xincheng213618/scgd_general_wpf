@@ -1749,4 +1749,31 @@
   <data name="Cleanup" xml:space="preserve">
     <value>清理</value>
   </data>
+  <data name="MeasurementType" xml:space="preserve">
+    <value>测量属性</value>
+  </data>
+  <data name="LimitStart" xml:space="preserve">
+    <value>原值</value>
+  </data>
+  <data name="CurrentCurve" xml:space="preserve">
+    <value>电流曲线</value>
+  </data>
+  <data name="ElectricCurrent" xml:space="preserve">
+    <value>电流(A)</value>
+  </data>
+  <data name="Voltage" xml:space="preserve">
+    <value>电压(V)</value>
+  </data>
+  <data name="VoltageCurve" xml:space="preserve">
+    <value>电压曲线</value>
+  </data>
+  <data name="RelativeSpectrumCurve" xml:space="preserve">
+    <value>相对光谱曲线</value>
+  </data>
+  <data name="AbsoluteSpectrumCurve" xml:space="preserve">
+    <value>绝对光谱曲线</value>
+  </data>
+  <data name="WavelengthNm" xml:space="preserve">
+    <value>波长[nm]</value>
+  </data>
 </root>

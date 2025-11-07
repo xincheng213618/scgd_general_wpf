@@ -49,18 +49,18 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             wpfplot2.Plot.Clear();
 
 
-            string title = "电流曲线";
+            string title = ColorVision.Engine.Properties.Resources.CurrentCurve;
 
-            wpfplot1.Plot.XLabel("电流(A)");
-            wpfplot1.Plot.YLabel("电压(V)");
-            wpfplot1.Plot.Title("电流曲线");
+            wpfplot1.Plot.XLabel(ColorVision.Engine.Properties.Resources.ElectricCurrent);
+            wpfplot1.Plot.YLabel(ColorVision.Engine.Properties.Resources.Voltage);
+            wpfplot1.Plot.Title(ColorVision.Engine.Properties.Resources.CurrentCurve);
             wpfplot1.Plot.Axes.Title.Label.FontName = Fonts.Detect(title);
             wpfplot1.Plot.Axes.Left.Label.FontName = Fonts.Detect(title);
             wpfplot1.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(title);
 
-            wpfplot2.Plot.XLabel("电压(V)");
-            wpfplot2.Plot.YLabel("电流(A)");
-            wpfplot2.Plot.Title("电压曲线");
+            wpfplot2.Plot.XLabel(ColorVision.Engine.Properties.Resources.Voltage);
+            wpfplot2.Plot.YLabel(ColorVision.Engine.Properties.Resources.ElectricCurrent);
+            wpfplot2.Plot.Title(ColorVision.Engine.Properties.Resources.VoltageCurve);
 
             wpfplot2.Plot.Axes.Title.Label.FontName = Fonts.Detect(title);
             wpfplot2.Plot.Axes.Left.Label.FontName = Fonts.Detect(title);

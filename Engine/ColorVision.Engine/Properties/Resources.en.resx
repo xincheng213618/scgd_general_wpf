@@ -1746,4 +1746,25 @@
   <data name="Network" xml:space="preserve">
     <value>network</value>
   </data>
+  <data name="Cleanup" xml:space="preserve">
+    <value>Cleaning</value>
+  </data>
+  <data name="MeasurementType" xml:space="preserve">
+    <value>Measurement attributes</value>
+  </data>
+  <data name="LimitStart" xml:space="preserve">
+    <value>Original value</value>
+  </data>
+  <data name="CurrentCurve" xml:space="preserve">
+    <value>Current curve</value>
+  </data>
+  <data name="ElectricCurrent" xml:space="preserve">
+    <value>Current (A)</value>
+  </data>
+  <data name="Voltage" xml:space="preserve">
+    <value>Voltage (V)</value>
+  </data>
+  <data name="VoltageCurve" xml:space="preserve">
+    <value>voltage curve</value>
+  </data>
 </root>

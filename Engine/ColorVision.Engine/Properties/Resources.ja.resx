@@ -1746,4 +1746,25 @@
   <data name="Network" xml:space="preserve">
     <value>ネットワーク</value>
   </data>
+  <data name="Cleanup" xml:space="preserve">
+    <value>クリーニング</value>
+  </data>
+  <data name="MeasurementType" xml:space="preserve">
+    <value>測定属性</value>
+  </data>
+  <data name="LimitStart" xml:space="preserve">
+    <value>元の値</value>
+  </data>
+  <data name="CurrentCurve" xml:space="preserve">
+    <value>現在の曲線</value>
+  </data>
+  <data name="ElectricCurrent" xml:space="preserve">
+    <value>電流（A）</value>
+  </data>
+  <data name="Voltage" xml:space="preserve">
+    <value>電圧（V）</value>
+  </data>
+  <data name="VoltageCurve" xml:space="preserve">
+    <value>電圧曲線</value>
+  </data>
 </root>

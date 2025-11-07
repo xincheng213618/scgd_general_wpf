@@ -53,9 +53,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
             listView1.ItemsSource = ViewResults;
 
-            string title = "相对光谱曲线";
-            wpfplot1.Plot.XLabel("波长[nm]");
-            wpfplot1.Plot.YLabel("相对光谱");
+            string title = ColorVision.Engine.Properties.Resources.RelativeSpectrumCurve;
+            wpfplot1.Plot.XLabel(ColorVision.Engine.Properties.Resources.WavelengthNm);
+            wpfplot1.Plot.YLabel(ColorVision.Engine.Properties.Resources.RelativeSpectrum);
             wpfplot1.Plot.Axes.Title.Label.Text = title;
             wpfplot1.Plot.Axes.Title.Label.FontName = Fonts.Detect(title);
             wpfplot1.Plot.Axes.Title.Label.Text = title;
@@ -69,9 +69,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             wpfplot1.Plot.Axes.Left.Min = 0;
             wpfplot1.Plot.Axes.Left.Max = 1;
 
-            string titleAbsolute = "绝对光谱曲线";
-            wpfplot2.Plot.XLabel("波长[nm]");
-            wpfplot2.Plot.YLabel("绝对光谱");
+            string titleAbsolute = ColorVision.Engine.Properties.Resources.AbsoluteSpectrumCurve;
+            wpfplot2.Plot.XLabel(ColorVision.Engine.Properties.Resources.WavelengthNm);
+            wpfplot2.Plot.YLabel(ColorVision.Engine.Properties.Resources.AbsoluteSpectrum);
             wpfplot2.Plot.Axes.Title.Label.Text = titleAbsolute;
             wpfplot2.Plot.Axes.Title.Label.FontName = Fonts.Detect(titleAbsolute);
             wpfplot2.Plot.Axes.Left.Label.FontName = Fonts.Detect(titleAbsolute);
@@ -100,6 +100,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
+
         }
         private void Delete()
         {

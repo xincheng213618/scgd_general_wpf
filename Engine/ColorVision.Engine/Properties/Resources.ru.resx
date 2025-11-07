@@ -1746,4 +1746,25 @@
   <data name="Network" xml:space="preserve">
     <value>сеть</value>
   </data>
+  <data name="Cleanup" xml:space="preserve">
+    <value>Уборка</value>
+  </data>
+  <data name="MeasurementType" xml:space="preserve">
+    <value>Атрибуты измерения</value>
+  </data>
+  <data name="LimitStart" xml:space="preserve">
+    <value>Первоначальная стоимость</value>
+  </data>
+  <data name="CurrentCurve" xml:space="preserve">
+    <value>Кривая тока</value>
+  </data>
+  <data name="ElectricCurrent" xml:space="preserve">
+    <value>Ток (А)</value>
+  </data>
+  <data name="Voltage" xml:space="preserve">
+    <value>Напряжение (В)</value>
+  </data>
+  <data name="VoltageCurve" xml:space="preserve">
+    <value>кривая напряжения</value>
+  </data>
 </root>

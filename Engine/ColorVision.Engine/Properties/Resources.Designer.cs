@@ -124,6 +124,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 绝对光谱曲线 的本地化字符串。
+        /// </summary>
+        public static string AbsoluteSpectrumCurve {
+            get {
+                return ResourceManager.GetString("AbsoluteSpectrumCurve", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 采集 的本地化字符串。
         /// </summary>
         public static string Acquire {
@@ -1159,6 +1168,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 电流曲线 的本地化字符串。
+        /// </summary>
+        public static string CurrentCurve {
+            get {
+                return ResourceManager.GetString("CurrentCurve", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 当前位置： 的本地化字符串。
         /// </summary>
         public static string CurrentPosition {
@@ -1641,6 +1659,15 @@ namespace ColorVision.Engine.Properties {
         public static string EditThirdPartyAlgorithmTemplate {
             get {
                 return ResourceManager.GetString("EditThirdPartyAlgorithmTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 电流(A) 的本地化字符串。
+        /// </summary>
+        public static string ElectricCurrent {
+            get {
+                return ResourceManager.GetString("ElectricCurrent", resourceCulture);
             }
         }
         
@@ -2428,6 +2455,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 原值 的本地化字符串。
+        /// </summary>
+        public static string LimitStart {
+            get {
+                return ResourceManager.GetString("LimitStart", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 限值 的本地化字符串。
         /// </summary>
         public static string LimitValue {
@@ -2550,6 +2586,15 @@ namespace ColorVision.Engine.Properties {
         public static string MaxNumber {
             get {
                 return ResourceManager.GetString("MaxNumber", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 测量属性 的本地化字符串。
+        /// </summary>
+        public static string MeasurementType {
+            get {
+                return ResourceManager.GetString("MeasurementType", resourceCulture);
             }
         }
         
@@ -3711,6 +3756,15 @@ namespace ColorVision.Engine.Properties {
         public static string RelativeSpectrum {
             get {
                 return ResourceManager.GetString("RelativeSpectrum", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 相对光谱曲线 的本地化字符串。
+        /// </summary>
+        public static string RelativeSpectrumCurve {
+            get {
+                return ResourceManager.GetString("RelativeSpectrumCurve", resourceCulture);
             }
         }
         
@@ -4885,11 +4939,38 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 电压(V) 的本地化字符串。
+        /// </summary>
+        public static string Voltage {
+            get {
+                return ResourceManager.GetString("Voltage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 电压曲线 的本地化字符串。
+        /// </summary>
+        public static string VoltageCurve {
+            get {
+                return ResourceManager.GetString("VoltageCurve", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 波长 的本地化字符串。
         /// </summary>
         public static string Wavelength {
             get {
                 return ResourceManager.GetString("Wavelength", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 波长[nm] 的本地化字符串。
+        /// </summary>
+        public static string WavelengthNm {
+            get {
+                return ResourceManager.GetString("WavelengthNm", resourceCulture);
             }
         }
         

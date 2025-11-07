@@ -1747,4 +1747,25 @@
   <data name="Network" xml:space="preserve">
     <value>réseau</value>
   </data>
+  <data name="Cleanup" xml:space="preserve">
+    <value>Nettoyage</value>
+  </data>
+  <data name="MeasurementType" xml:space="preserve">
+    <value>attributs de mesure</value>
+  </data>
+  <data name="LimitStart" xml:space="preserve">
+    <value>Valeur d'origine</value>
+  </data>
+  <data name="CurrentCurve" xml:space="preserve">
+    <value>Courbe de courant</value>
+  </data>
+  <data name="ElectricCurrent" xml:space="preserve">
+    <value>Courant (A)</value>
+  </data>
+  <data name="Voltage" xml:space="preserve">
+    <value>Tension (V)</value>
+  </data>
+  <data name="VoltageCurve" xml:space="preserve">
+    <value>courbe de tension</value>
+  </data>
 </root>
