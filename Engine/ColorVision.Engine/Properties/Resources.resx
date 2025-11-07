@@ -1809,4 +1809,22 @@
   <data name="Ra" xml:space="preserve">
     <value>显色性指数Ra</value>
   </data>
+  <data name="CancelAutoTest" xml:space="preserve">
+    <value>取消自动测试</value>
+  </data>
+  <data name="ExecutionComplete" xml:space="preserve">
+    <value>执行结束</value>
+  </data>
+  <data name="ExecutionFailed" xml:space="preserve">
+    <value>执行失败</value>
+  </data>
+  <data name="执行失败" xml:space="preserve">
+    <value>执行失败</value>
+  </data>
+  <data name="Opening" xml:space="preserve">
+    <value>打开中</value>
+  </data>
+  <data name="Closing" xml:space="preserve">
+    <value>关闭中</value>
+  </data>
 </root>

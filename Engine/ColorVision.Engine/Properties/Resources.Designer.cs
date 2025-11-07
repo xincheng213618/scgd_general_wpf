@@ -718,6 +718,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 取消自动测试 的本地化字符串。
+        /// </summary>
+        public static string CancelAutoTest {
+            get {
+                return ResourceManager.GetString("CancelAutoTest", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 我找不到 CalibTools (CalibTools.exe)。你愿意帮我找到它吗？ 的本地化字符串。
         /// </summary>
         public static string CannotFindCalibToolsExe_HelpMeFindIt {
@@ -894,6 +903,15 @@ namespace ColorVision.Engine.Properties {
         public static string CloseCmd {
             get {
                 return ResourceManager.GetString("CloseCmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关闭中 的本地化字符串。
+        /// </summary>
+        public static string Closing {
+            get {
+                return ResourceManager.GetString("Closing", resourceCulture);
             }
         }
         
@@ -1785,6 +1803,24 @@ namespace ColorVision.Engine.Properties {
         public static string ExecteTemplate {
             get {
                 return ResourceManager.GetString("ExecteTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 执行结束 的本地化字符串。
+        /// </summary>
+        public static string ExecutionComplete {
+            get {
+                return ResourceManager.GetString("ExecutionComplete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 执行失败 的本地化字符串。
+        /// </summary>
+        public static string ExecutionFailed {
+            get {
+                return ResourceManager.GetString("ExecutionFailed", resourceCulture);
             }
         }
         
@@ -3351,6 +3387,15 @@ namespace ColorVision.Engine.Properties {
         public static string OpenInCalibTools {
             get {
                 return ResourceManager.GetString("OpenInCalibTools", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开中 的本地化字符串。
+        /// </summary>
+        public static string Opening {
+            get {
+                return ResourceManager.GetString("Opening", resourceCulture);
             }
         }
         
@@ -5133,6 +5178,15 @@ namespace ColorVision.Engine.Properties {
         public static string WorkflowEngineTemplateManagement {
             get {
                 return ResourceManager.GetString("WorkflowEngineTemplateManagement", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 执行失败 的本地化字符串。
+        /// </summary>
+        public static string 执行失败 {
+            get {
+                return ResourceManager.GetString("执行失败", resourceCulture);
             }
         }
     }

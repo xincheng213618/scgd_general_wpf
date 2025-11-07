@@ -50,7 +50,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
 
                 HideAllButtons();
-                btn_autoTest.Content = "自动测试";
+                btn_autoTest.Content = ColorVision.Engine.Properties.Resources.AutoTest;
                 switch (status)
                 {
 
@@ -65,21 +65,21 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         break;
                     case DeviceStatusType.UnInit:
                         SetVisibility(StackPanelContent, Visibility.Visible);
-                        btn_connect.Content = "打开";
+                        btn_connect.Content = ColorVision.Engine.Properties.Resources.Open;
                         break;
                     case DeviceStatusType.Closed:
                         SetVisibility(StackPanelContent, Visibility.Visible);
-                        btn_connect.Content = "打开";
+                        btn_connect.Content = ColorVision.Engine.Properties.Resources.Open;
                         break;
                     case DeviceStatusType.Opened:
                         SetVisibility(StackPanelContent, Visibility.Visible);
                         SetVisibility(StackPanelOpen, Visibility.Visible);
-                        btn_connect.Content = "关闭";
+                        btn_connect.Content = ColorVision.Engine.Properties.Resources.Close;
                         break;
                     case DeviceStatusType.SP_Continuous_Mode:
                         SetVisibility(StackPanelContent, Visibility.Visible);
                         SetVisibility(StackPanelOpen, Visibility.Visible);
-                        btn_autoTest.Content = "取消自动测试";
+                        btn_autoTest.Content = ColorVision.Engine.Properties.Resources.CancelAutoTest;
                         break;
                     default:
                         break;
@@ -108,14 +108,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             string btnTitle = btn_connect.Content.ToString();
             if (!string.IsNullOrWhiteSpace(btnTitle))
             {
-                if (!btnTitle.Equals("关闭", StringComparison.Ordinal))
+                if (!btnTitle.Equals(ColorVision.Engine.Properties.Resources.Close, StringComparison.Ordinal))
                 {
-                    btn_connect.Content = "打开中";
+                    btn_connect.Content = ColorVision.Engine.Properties.Resources.Opening;
                     DService.Open();
                 }
                 else
                 {
-                    btn_connect.Content = "关闭中";
+                    btn_connect.Content = ColorVision.Engine.Properties.Resources.Closing;
                     DService.Close();
                 }
             }
@@ -130,7 +130,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "执行失败", "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
                 }
             };
         }
@@ -138,15 +138,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void Button_Click_AutoTest(object sender, RoutedEventArgs e)
         {
             string btnTitle = btn_autoTest.Content.ToString();
-            if (!string.IsNullOrWhiteSpace(btnTitle) && btnTitle.Equals("自动测试", StringComparison.Ordinal))
+            if (!string.IsNullOrWhiteSpace(btnTitle) && btnTitle.Equals(ColorVision.Engine.Properties.Resources.AutoTest, StringComparison.Ordinal))
             {
                 DService.GetDataAuto((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked ?? false, AutoDark.IsChecked ?? false);
-                btn_autoTest.Content = "取消自动测试";
+                btn_autoTest.Content = ColorVision.Engine.Properties.Resources.CancelAutoTest;
             }
             else
             {
                 DService.GetDataAutoStop();
-                btn_autoTest.Content = "自动测试";
+                btn_autoTest.Content = ColorVision.Engine.Properties.Resources.AutoTest;
             }
         }
         private void Button_Click_Init_Dark(object sender, RoutedEventArgs e)
@@ -156,11 +156,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             {
                 if (e == MsgRecordState.Success)
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "执行结束", "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionComplete, "ColorVision");
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "执行失败", "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
                 }
             };
         }
@@ -192,7 +192,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "执行失败", "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.执行失败, "ColorVision");
                 }
             };
         }

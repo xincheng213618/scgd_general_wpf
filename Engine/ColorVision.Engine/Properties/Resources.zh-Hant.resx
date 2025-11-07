@@ -1809,4 +1809,22 @@
   <data name="Ra" xml:space="preserve">
     <value>顯色性指數Ra</value>
   </data>
+  <data name="CancelAutoTest" xml:space="preserve">
+    <value>取消自動測試</value>
+  </data>
+  <data name="ExecutionComplete" xml:space="preserve">
+    <value>執行結束</value>
+  </data>
+  <data name="ExecutionFailed" xml:space="preserve">
+    <value>執行失敗</value>
+  </data>
+  <data name="执行失败" xml:space="preserve">
+    <value>"執行失敗</value>
+  </data>
+  <data name="Opening" xml:space="preserve">
+    <value>打開中</value>
+  </data>
+  <data name="Closing" xml:space="preserve">
+    <value>關閉中</value>
+  </data>
 </root>

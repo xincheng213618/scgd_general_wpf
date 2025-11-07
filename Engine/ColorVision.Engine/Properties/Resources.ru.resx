@@ -1809,4 +1809,22 @@
   <data name="Ra" xml:space="preserve">
     <value>Индекс цветопередачи Ra</value>
   </data>
+  <data name="CancelAutoTest" xml:space="preserve">
+    <value>Отменить автоматическое тестирование</value>
+  </data>
+  <data name="ExecutionComplete" xml:space="preserve">
+    <value>Исполнение завершено</value>
+  </data>
+  <data name="ExecutionFailed" xml:space="preserve">
+    <value>Выполнение не удалось</value>
+  </data>
+  <data name="执行失败" xml:space="preserve">
+    <value>Выполнение не удалось</value>
+  </data>
+  <data name="Opening" xml:space="preserve">
+    <value>Открытие</value>
+  </data>
+  <data name="Closing" xml:space="preserve">
+    <value>Закрыто</value>
+  </data>
 </root>

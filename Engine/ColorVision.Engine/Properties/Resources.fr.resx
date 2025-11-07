@@ -1809,4 +1809,22 @@
   <data name="Ra" xml:space="preserve">
     <value>Indice de rendu des couleurs Ra</value>
   </data>
+  <data name="CancelAutoTest" xml:space="preserve">
+    <value>Annuler les tests automatiques</value>
+  </data>
+  <data name="ExecutionComplete" xml:space="preserve">
+    <value>Exécution terminée</value>
+  </data>
+  <data name="ExecutionFailed" xml:space="preserve">
+    <value>L'exécution a échoué</value>
+  </data>
+  <data name="执行失败" xml:space="preserve">
+    <value>L'exécution a échoué</value>
+  </data>
+  <data name="Opening" xml:space="preserve">
+    <value>Ouverture</value>
+  </data>
+  <data name="Closing" xml:space="preserve">
+    <value>Fermé</value>
+  </data>
 </root>

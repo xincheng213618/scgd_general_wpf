@@ -1809,4 +1809,22 @@
   <data name="Ra" xml:space="preserve">
     <value>Color rendering index Ra</value>
   </data>
+  <data name="CancelAutoTest" xml:space="preserve">
+    <value>Cancel automatic testing</value>
+  </data>
+  <data name="ExecutionComplete" xml:space="preserve">
+    <value>Execution completed</value>
+  </data>
+  <data name="ExecutionFailed" xml:space="preserve">
+    <value>Execution failed</value>
+  </data>
+  <data name="执行失败" xml:space="preserve">
+    <value>Execution failed</value>
+  </data>
+  <data name="Opening" xml:space="preserve">
+    <value>Opening</value>
+  </data>
+  <data name="Closing" xml:space="preserve">
+    <value>Closed</value>
+  </data>
 </root>

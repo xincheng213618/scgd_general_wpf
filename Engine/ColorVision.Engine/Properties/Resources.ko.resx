@@ -1809,4 +1809,22 @@
   <data name="Ra" xml:space="preserve">
     <value>연색지수 Ra</value>
   </data>
+  <data name="CancelAutoTest" xml:space="preserve">
+    <value>자동 테스트 취소</value>
+  </data>
+  <data name="ExecutionComplete" xml:space="preserve">
+    <value>실행 완료</value>
+  </data>
+  <data name="ExecutionFailed" xml:space="preserve">
+    <value>실행에 실패했습니다</value>
+  </data>
+  <data name="执行失败" xml:space="preserve">
+    <value>실행에 실패했습니다</value>
+  </data>
+  <data name="Opening" xml:space="preserve">
+    <value>열기</value>
+  </data>
+  <data name="Closing" xml:space="preserve">
+    <value>닫은</value>
+  </data>
 </root>
