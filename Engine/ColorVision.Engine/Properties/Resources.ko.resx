@@ -1827,4 +1827,7 @@
   <data name="Closing" xml:space="preserve">
     <value>닫은</value>
   </data>
+  <data name="Lv" xml:space="preserve">
+    <value>밝기 Lv(cd/m2)</value>
+  </data>
 </root>

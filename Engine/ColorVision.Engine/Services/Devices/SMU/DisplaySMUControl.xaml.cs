@@ -85,20 +85,20 @@ namespace ColorVision.Engine.Services.Devices.SMU
                         break;
                     case DeviceStatusType.Closed:
                         SetVisibility(StackPanelContent, Visibility.Visible);
-                        ButtonSourceMeter1.Content = "打开";
+                        ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Open;
                         break;
                     case DeviceStatusType.LiveOpened:
                     case DeviceStatusType.Opened:
                         SetVisibility(StackPanelContent, Visibility.Visible);
-                        ButtonSourceMeter1.Content = "关闭";
+                        ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Close;
                         break;
                     case DeviceStatusType.Closing:
                         SetVisibility(StackPanelContent, Visibility.Visible);
-                        ButtonSourceMeter1.Content = "关闭中";
+                        ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Closing;
                         break;
                     case DeviceStatusType.Opening:
                         SetVisibility(StackPanelContent, Visibility.Visible);
-                        ButtonSourceMeter1.Content = "打开中";
+                        ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Opening;
                         break;
                     default:
                         break;
@@ -140,14 +140,14 @@ namespace ColorVision.Engine.Services.Devices.SMU
         {
             if (!passSxSource.IsOpen)
             {
-                button.Content = "打开中";
+                button.Content = ColorVision.Engine.Properties.Resources.Opening;
                 Task.Run(() =>
                 {
                     if (passSxSource.Open(Config.IsNet, Config.DevName))
                     {
                         Application.Current.Dispatcher.BeginInvoke(new Action(() =>
                         {
-                            button.Content = "关闭";
+                            button.Content = ColorVision.Engine.Properties.Resources.Close;
                         }));
                     }
                     else

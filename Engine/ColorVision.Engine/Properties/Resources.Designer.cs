@@ -2644,6 +2644,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 亮度Lv(cd/m2) 的本地化字符串。
+        /// </summary>
+        public static string Lv {
+            get {
+                return ResourceManager.GetString("Lv", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 男 的本地化字符串。
         /// </summary>
         public static string Male {

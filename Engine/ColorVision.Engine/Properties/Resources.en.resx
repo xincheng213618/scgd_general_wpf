@@ -1783,19 +1783,19 @@
     <value>Blue light</value>
   </data>
   <data name="fx" xml:space="preserve">
-    <value>Chromaticity x</value>
+    <value>Cx</value>
   </data>
   <data name="fy" xml:space="preserve">
-    <value>chromaticity y</value>
+    <value>Cy</value>
   </data>
   <data name="fu" xml:space="preserve">
-    <value>Chromaticity u</value>
+    <value>u‘</value>
   </data>
   <data name="fv" xml:space="preserve">
-    <value>Chromaticity v</value>
+    <value>v'</value>
   </data>
   <data name="CCT" xml:space="preserve">
-    <value>Correlated color temperature (K)</value>
+    <value>CCT(K)</value>
   </data>
   <data name="Ld" xml:space="preserve">
     <value>Dominant wavelength Ld(nm)</value>
@@ -1826,5 +1826,8 @@
   </data>
   <data name="Closing" xml:space="preserve">
     <value>Closed</value>
+  </data>
+  <data name="Lv" xml:space="preserve">
+    <value>Luminannce (cd/m2)</value>
   </data>
 </root>

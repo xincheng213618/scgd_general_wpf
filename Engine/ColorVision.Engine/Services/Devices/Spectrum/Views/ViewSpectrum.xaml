@@ -134,7 +134,7 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="亮度Lv(cd/m2)" >
+                            <GridViewColumn  Header="{x:Static properties:Resources.Lv}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{ Binding Lv}"/>

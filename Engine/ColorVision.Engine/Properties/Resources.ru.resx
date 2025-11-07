@@ -1827,4 +1827,7 @@
   <data name="Closing" xml:space="preserve">
     <value>Закрыто</value>
   </data>
+  <data name="Lv" xml:space="preserve">
+    <value>Яркость Lv (кд/м2)</value>
+  </data>
 </root>
