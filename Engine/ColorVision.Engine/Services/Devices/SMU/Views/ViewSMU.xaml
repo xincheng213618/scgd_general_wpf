@@ -62,10 +62,10 @@
                                 </Style>
                             </ToggleButton.Style>
                         </ToggleButton>
-                        <Button  Content="交换" Click="Exchange_Click" Margin="0,0,2,0" />
+                        <Button  Content="{x:Static properties:Resources.Exchange}" Click="Exchange_Click" Margin="0,0,2,0" />
 
                         <Button Content="{x:Static properties:Resources.Inquire}" Click="Search_Click" Margin="0,0,2,0" />
-                        <Button x:Name="Search" Content="高级查询" Click="Search1_Click"  />
+                        <Button x:Name="Search" Content="{x:Static properties:Resources.AdvanceSearch}" Click="Search1_Click"  />
                     </ToolBar>
                 </ToolBarTray>
 

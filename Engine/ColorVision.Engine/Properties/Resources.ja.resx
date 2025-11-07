@@ -1827,4 +1827,79 @@
   <data name="Closing" xml:space="preserve">
     <value>閉鎖</value>
   </data>
+  <data name="QueryCount" xml:space="preserve">
+    <value>クエリ数</value>
+  </data>
+  <data name="SortByType" xml:space="preserve">
+    <value>種類別に並べ替え</value>
+  </data>
+  <data name="CreateToPOI" xml:space="preserve">
+    <value>POIに作成</value>
+  </data>
+  <data name="SelectFileInFolder" xml:space="preserve">
+    <value>フォルダ内のファイルを選択</value>
+  </data>
+  <data name="CreatePoiAsBaseImage" xml:space="preserve">
+    <value>ベースマップとしてPOIを作成する</value>
+  </data>
+  <data name="AlgorithmViewConfig" xml:space="preserve">
+    <value>アルゴリズムビューの構成</value>
+  </data>
+  <data name="ShowSidebar" xml:space="preserve">
+    <value>サイドバーを表示</value>
+  </data>
+  <data name="DataColumSavePath" xml:space="preserve">
+    <value>データ列の保存パス</value>
+  </data>
+  <data name="AutoSaveDataColum" xml:space="preserve">
+    <value>データ列を自動的に保存する</value>
+  </data>
+  <data name="AutoSaveRenderedImage" xml:space="preserve">
+    <value>レンダリングを自動保存</value>
+  </data>
+  <data name="HistoricalDataQuery" xml:space="preserve">
+    <value>履歴データクエリ</value>
+  </data>
+  <data name="ShowSiteInfo" xml:space="preserve">
+    <value>サイト情報を表示する</value>
+  </data>
+  <data name="CameraViewConfig" xml:space="preserve">
+    <value>カメラビューの設定</value>
+  </data>
+  <data name="ShowDataColumns" xml:space="preserve">
+    <value>データ列を表示する</value>
+  </data>
+  <data name="Operation" xml:space="preserve">
+    <value>操作する</value>
+  </data>
+  <data name="OpenFailed" xml:space="preserve">
+    <value>開けませんでした</value>
+  </data>
+  <data name="ImageFlip" xml:space="preserve">
+    <value>画像反転</value>
+  </data>
+  <data name="ParameterTemplate" xml:space="preserve">
+    <value>パラメータテンプレート</value>
+  </data>
+  <data name="FileExport" xml:space="preserve">
+    <value>ファイル出力</value>
+  </data>
+  <data name="StorageType" xml:space="preserve">
+    <value>ストレージタイプ</value>
+  </data>
+  <data name="POIFile" xml:space="preserve">
+    <value>フォーカスドキュメント</value>
+  </data>
+  <data name="CalculateColorTemperatureWavelength" xml:space="preserve">
+    <value>色温度波長を計算する</value>
+  </data>
+  <data name="CenterlX" xml:space="preserve">
+    <value>センターX</value>
+  </data>
+  <data name="CentralY" xml:space="preserve">
+    <value>センターY</value>
+  </data>
+  <data name="CADFile" xml:space="preserve">
+    <value>CADファイル</value>
+  </data>
 </root>

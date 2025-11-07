@@ -61,10 +61,10 @@ namespace ColorVision.Engine.Services
             OpenContainingFolderCommand = new RelayCommand(a => OpenContainingFolder());
 
             ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = "选中", Command = OpenContainingFolderCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = "导出", Command = ExportCVCIECommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.Selected, Command = OpenContainingFolderCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.Export, Command = ExportCVCIECommand });
             ExportToPoiCommand = new RelayCommand(a => ExportToPoi(), a => ViewResults?.ToSpecificViewResults<PoiResultData>().Count != 0 || ViewResults?.ToSpecificViewResults<PoiPointResultModel>().Count != 0);
-            ContextMenu.Items.Add(new MenuItem() { Header = "创建到POI", Command = ExportToPoiCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.CreateToPOI, Command = ExportToPoiCommand });
             Task.Run(() =>
             {
                 bool exists = !string.IsNullOrEmpty(FilePath) && File.Exists(FilePath);

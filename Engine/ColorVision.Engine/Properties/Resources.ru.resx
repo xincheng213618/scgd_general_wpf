@@ -1827,4 +1827,79 @@
   <data name="Closing" xml:space="preserve">
     <value>Закрыто</value>
   </data>
+  <data name="QueryCount" xml:space="preserve">
+    <value>Количество запросов</value>
+  </data>
+  <data name="SortByType" xml:space="preserve">
+    <value>Сортировать по типу</value>
+  </data>
+  <data name="CreateToPOI" xml:space="preserve">
+    <value>Создать в точке интереса</value>
+  </data>
+  <data name="SelectFileInFolder" xml:space="preserve">
+    <value>Выберите файл в папке</value>
+  </data>
+  <data name="CreatePoiAsBaseImage" xml:space="preserve">
+    <value>Создать POI как базовую карту</value>
+  </data>
+  <data name="AlgorithmViewConfig" xml:space="preserve">
+    <value>Конфигурация представления алгоритма</value>
+  </data>
+  <data name="ShowSidebar" xml:space="preserve">
+    <value>Показать боковую панель</value>
+  </data>
+  <data name="DataColumSavePath" xml:space="preserve">
+    <value>Путь сохранения столбца данных</value>
+  </data>
+  <data name="AutoSaveDataColum" xml:space="preserve">
+    <value>Автоматически сохранять столбцы данных</value>
+  </data>
+  <data name="AutoSaveRenderedImage" xml:space="preserve">
+    <value>Автоматически сохранять рендеринг</value>
+  </data>
+  <data name="HistoricalDataQuery" xml:space="preserve">
+    <value>Запрос исторических данных</value>
+  </data>
+  <data name="ShowSiteInfo" xml:space="preserve">
+    <value>Отображение информации о сайте</value>
+  </data>
+  <data name="CameraViewConfig" xml:space="preserve">
+    <value>Конфигурация вида камеры</value>
+  </data>
+  <data name="ShowDataColumns" xml:space="preserve">
+    <value>Отображение столбцов данных</value>
+  </data>
+  <data name="Operation" xml:space="preserve">
+    <value>работать</value>
+  </data>
+  <data name="OpenFailed" xml:space="preserve">
+    <value>Не удалось открыть</value>
+  </data>
+  <data name="ImageFlip" xml:space="preserve">
+    <value>Перевернуть изображение</value>
+  </data>
+  <data name="ParameterTemplate" xml:space="preserve">
+    <value>Шаблон параметров</value>
+  </data>
+  <data name="FileExport" xml:space="preserve">
+    <value>Вывод файла</value>
+  </data>
+  <data name="StorageType" xml:space="preserve">
+    <value>Тип хранилища</value>
+  </data>
+  <data name="POIFile" xml:space="preserve">
+    <value>Фокусный документ</value>
+  </data>
+  <data name="CalculateColorTemperatureWavelength" xml:space="preserve">
+    <value>Рассчитать длину волны цветовой температуры</value>
+  </data>
+  <data name="CenterlX" xml:space="preserve">
+    <value>Центр X</value>
+  </data>
+  <data name="CentralY" xml:space="preserve">
+    <value>Центр Y</value>
+  </data>
+  <data name="CADFile" xml:space="preserve">
+    <value>Файлы САПР</value>
+  </data>
 </root>

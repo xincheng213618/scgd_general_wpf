@@ -38,7 +38,7 @@
                     </Grid>
                 </DockPanel>
                 <DockPanel Margin="0,2">
-                    <TextBlock Text="文件输出" Width="50"/>
+                    <TextBlock Text="{x:Static properties:Resources.FileExport}" Width="50"/>
                     <ComboBox  x:Name="ComboxPoiOutput"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                     <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                         <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -46,23 +46,23 @@
                     </Grid>
                 </DockPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,2">
-                    <TextBlock Text="存储类型" Width="70"/>
+                    <TextBlock Text="{x:Static properties:Resources.StorageType}" Width="70"/>
                     <ComboBox x:Name="CBPOIStorageModel" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" SelectedValue="{Binding POIStorageModel}" Width="100"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,2" Visibility="{Binding IsUSeFile,Converter={StaticResource bool2VisibilityConverter}}">
-                    <TextBlock Text="关注点文件" Margin="0,0,10,0" Width="60"/>
+                    <TextBlock Text="{x:Static properties:Resources.POIFile}" Margin="0,0,10,0" Width="60"/>
                     <TextBox  Style="{StaticResource TextBox.Small}" Text="{Binding POIPointFileName}"  Width="150" Margin="0,0,2,0" HorizontalAlignment="Left" />
                     <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Command="{Binding OpenPoiFileCommand}" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,2">
-                    <TextBlock Text="计算色温波长" Width="100"/>
+                    <TextBlock Text="{x:Static properties:Resources.CalculateColorTemperatureWavelength}" Width="100"/>
                     <CheckBox IsChecked="{Binding IsCCTWave}" />
                 </StackPanel>
             </StackPanel>
             <TabControl BorderThickness="0" Background="Transparent">
                 <TabItem Background="Transparent" x:Name="LoaclFileTabItem" Header="{x:Static properties:Resources.Local}"  IsSelected="{Binding IsLocalFile}">
                     <StackPanel Orientation="Horizontal" Margin="0,2">
-                        <TextBlock Text="文件" Margin="0,0,10,0" Width="40"/>
+                        <TextBlock Text="{x:Static properties:Resources.File}" Margin="0,0,10,0" Width="40"/>
                         <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}" Text="{Binding ImageFilePath}"  Width="150" Margin="0,0,2,0" HorizontalAlignment="Left" />
                         <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open_File" />
                         <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_OpenLocal_Click" />

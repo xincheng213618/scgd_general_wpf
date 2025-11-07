@@ -1827,4 +1827,79 @@
   <data name="Closing" xml:space="preserve">
     <value>Fermé</value>
   </data>
+  <data name="QueryCount" xml:space="preserve">
+    <value>Nombre de requêtes</value>
+  </data>
+  <data name="SortByType" xml:space="preserve">
+    <value>Trier par type</value>
+  </data>
+  <data name="CreateToPOI" xml:space="preserve">
+    <value>Créer un point d'intérêt</value>
+  </data>
+  <data name="SelectFileInFolder" xml:space="preserve">
+    <value>Sélectionnez le fichier dans le dossier</value>
+  </data>
+  <data name="CreatePoiAsBaseImage" xml:space="preserve">
+    <value>Créer des points d'intérêt comme carte de base</value>
+  </data>
+  <data name="AlgorithmViewConfig" xml:space="preserve">
+    <value>Configuration de la vue de l'algorithme</value>
+  </data>
+  <data name="ShowSidebar" xml:space="preserve">
+    <value>Afficher la barre latérale</value>
+  </data>
+  <data name="DataColumSavePath" xml:space="preserve">
+    <value>Chemin d'enregistrement de la colonne de données</value>
+  </data>
+  <data name="AutoSaveDataColum" xml:space="preserve">
+    <value>Sauvegarde automatique des colonnes de données</value>
+  </data>
+  <data name="AutoSaveRenderedImage" xml:space="preserve">
+    <value>Sauvegarde automatique du rendu</value>
+  </data>
+  <data name="HistoricalDataQuery" xml:space="preserve">
+    <value>Requête de données historiques</value>
+  </data>
+  <data name="ShowSiteInfo" xml:space="preserve">
+    <value>Afficher les informations du site</value>
+  </data>
+  <data name="CameraViewConfig" xml:space="preserve">
+    <value>configuration de la vue de la caméra</value>
+  </data>
+  <data name="ShowDataColumns" xml:space="preserve">
+    <value>Afficher les colonnes de données</value>
+  </data>
+  <data name="Operation" xml:space="preserve">
+    <value>fonctionner</value>
+  </data>
+  <data name="OpenFailed" xml:space="preserve">
+    <value>Impossible d'ouvrir</value>
+  </data>
+  <data name="ImageFlip" xml:space="preserve">
+    <value>Retournement d'image</value>
+  </data>
+  <data name="ParameterTemplate" xml:space="preserve">
+    <value>Modèle de paramètre</value>
+  </data>
+  <data name="FileExport" xml:space="preserve">
+    <value>Sortie de fichier</value>
+  </data>
+  <data name="StorageType" xml:space="preserve">
+    <value>Type de stockage</value>
+  </data>
+  <data name="POIFile" xml:space="preserve">
+    <value>Document principal</value>
+  </data>
+  <data name="CalculateColorTemperatureWavelength" xml:space="preserve">
+    <value>Calculer la longueur d'onde de la température de couleur</value>
+  </data>
+  <data name="CenterlX" xml:space="preserve">
+    <value>Centre X</value>
+  </data>
+  <data name="CentralY" xml:space="preserve">
+    <value>Centre Y</value>
+  </data>
+  <data name="CADFile" xml:space="preserve">
+    <value>fichiers CAO</value>
+  </data>
 </root>

@@ -1827,4 +1827,79 @@
   <data name="Closing" xml:space="preserve">
     <value>닫은</value>
   </data>
+  <data name="QueryCount" xml:space="preserve">
+    <value>쿼리 수</value>
+  </data>
+  <data name="SortByType" xml:space="preserve">
+    <value>유형별로 정렬</value>
+  </data>
+  <data name="CreateToPOI" xml:space="preserve">
+    <value>POI에 생성</value>
+  </data>
+  <data name="SelectFileInFolder" xml:space="preserve">
+    <value>폴더에서 파일을 선택하세요</value>
+  </data>
+  <data name="CreatePoiAsBaseImage" xml:space="preserve">
+    <value>POI를 기본 지도로 생성</value>
+  </data>
+  <data name="AlgorithmViewConfig" xml:space="preserve">
+    <value>알고리즘 뷰 구성</value>
+  </data>
+  <data name="ShowSidebar" xml:space="preserve">
+    <value>사이드바 표시</value>
+  </data>
+  <data name="DataColumSavePath" xml:space="preserve">
+    <value>데이터 열 저장 경로</value>
+  </data>
+  <data name="AutoSaveDataColum" xml:space="preserve">
+    <value>데이터 열을 자동으로 저장합니다</value>
+  </data>
+  <data name="AutoSaveRenderedImage" xml:space="preserve">
+    <value>렌더링을 자동으로 저장합니다</value>
+  </data>
+  <data name="HistoricalDataQuery" xml:space="preserve">
+    <value>과거 데이터 쿼리</value>
+  </data>
+  <data name="ShowSiteInfo" xml:space="preserve">
+    <value>사이트 정보 표시</value>
+  </data>
+  <data name="CameraViewConfig" xml:space="preserve">
+    <value>카메라 뷰 구성</value>
+  </data>
+  <data name="ShowDataColumns" xml:space="preserve">
+    <value>데이터 열 표시</value>
+  </data>
+  <data name="Operation" xml:space="preserve">
+    <value>작동하다</value>
+  </data>
+  <data name="OpenFailed" xml:space="preserve">
+    <value>열 수 없습니다</value>
+  </data>
+  <data name="ImageFlip" xml:space="preserve">
+    <value>이미지 뒤집기</value>
+  </data>
+  <data name="ParameterTemplate" xml:space="preserve">
+    <value>매개변수 템플릿</value>
+  </data>
+  <data name="FileExport" xml:space="preserve">
+    <value>파일 출력</value>
+  </data>
+  <data name="StorageType" xml:space="preserve">
+    <value>저장 유형</value>
+  </data>
+  <data name="POIFile" xml:space="preserve">
+    <value>문서에 초점 맞추기</value>
+  </data>
+  <data name="CalculateColorTemperatureWavelength" xml:space="preserve">
+    <value>색온도 파장 계산</value>
+  </data>
+  <data name="CenterlX" xml:space="preserve">
+    <value>센터 X</value>
+  </data>
+  <data name="CentralY" xml:space="preserve">
+    <value>센터 Y</value>
+  </data>
+  <data name="CADFile" xml:space="preserve">
+    <value>CAD 파일</value>
+  </data>
 </root>

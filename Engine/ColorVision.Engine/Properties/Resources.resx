@@ -1827,4 +1827,79 @@
   <data name="Closing" xml:space="preserve">
     <value>关闭中</value>
   </data>
+  <data name="QueryCount" xml:space="preserve">
+    <value>查询数量</value>
+  </data>
+  <data name="SortByType" xml:space="preserve">
+    <value>按类型排序</value>
+  </data>
+  <data name="CreateToPOI" xml:space="preserve">
+    <value>创建到POI</value>
+  </data>
+  <data name="SelectFileInFolder" xml:space="preserve">
+    <value>在文件夹中选中文件</value>
+  </data>
+  <data name="CreatePoiAsBaseImage" xml:space="preserve">
+    <value>作为底图创建POI</value>
+  </data>
+  <data name="AlgorithmViewConfig" xml:space="preserve">
+    <value>算法视图配置</value>
+  </data>
+  <data name="ShowSidebar" xml:space="preserve">
+    <value>显示侧边栏</value>
+  </data>
+  <data name="DataColumSavePath" xml:space="preserve">
+    <value>数据列保存路径</value>
+  </data>
+  <data name="AutoSaveDataColum" xml:space="preserve">
+    <value>自动保存数据列</value>
+  </data>
+  <data name="AutoSaveRenderedImage" xml:space="preserve">
+    <value>自动保存渲染图</value>
+  </data>
+  <data name="HistoricalDataQuery" xml:space="preserve">
+    <value>历史数据查询</value>
+  </data>
+  <data name="ShowSiteInfo" xml:space="preserve">
+    <value>显示位点信息</value>
+  </data>
+  <data name="CameraViewConfig" xml:space="preserve">
+    <value>相机视图配置</value>
+  </data>
+  <data name="ShowDataColumns" xml:space="preserve">
+    <value>显示数据列</value>
+  </data>
+  <data name="Operation" xml:space="preserve">
+    <value>操作</value>
+  </data>
+  <data name="OpenFailed" xml:space="preserve">
+    <value>打开失败</value>
+  </data>
+  <data name="ImageFlip" xml:space="preserve">
+    <value>图像翻转</value>
+  </data>
+  <data name="ParameterTemplate" xml:space="preserve">
+    <value>参数模板</value>
+  </data>
+  <data name="FileExport" xml:space="preserve">
+    <value>文件输出</value>
+  </data>
+  <data name="StorageType" xml:space="preserve">
+    <value>存储类型</value>
+  </data>
+  <data name="POIFile" xml:space="preserve">
+    <value>关注点文件</value>
+  </data>
+  <data name="CalculateColorTemperatureWavelength" xml:space="preserve">
+    <value>计算色温波长</value>
+  </data>
+  <data name="CenterlX" xml:space="preserve">
+    <value>中心X</value>
+  </data>
+  <data name="CentralY" xml:space="preserve">
+    <value>中心Y</value>
+  </data>
+  <data name="CADFile" xml:space="preserve">
+    <value>CAD文件</value>
+  </data>
 </root>

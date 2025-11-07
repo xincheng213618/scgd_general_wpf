@@ -52,9 +52,9 @@ namespace ColorVision.Engine.Services
 
             ContextMenu = new ContextMenu();
             OpenContainingFolderCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", $"/select,{FileUrl}"), a => File.Exists(FileUrl));
-            ContextMenu.Items.Add(new MenuItem() { Header = "在文件夹中选中文件", Command = OpenContainingFolderCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = "导出", Command = ExportCVCIECommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = "作为底图创建POI", Command = CreateToPoiCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.SelectFileInFolder, Command = OpenContainingFolderCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.Export, Command = ExportCVCIECommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.CreatePoiAsBaseImage, Command = CreateToPoiCommand });
 
             Task.Run(() =>
             {
