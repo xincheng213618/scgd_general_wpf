@@ -200,7 +200,6 @@ namespace ColorVision.Engine.Batch.IVL
                     MarkerSize = 6,
                     MarkerShape = MarkerShape.FilledCircle,
                     Label = seriesName,
-                    LineStyle = LinePattern.Solid
                 };
 
                 _scatterPlots[seriesName] = scatter;
