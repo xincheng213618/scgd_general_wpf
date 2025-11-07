@@ -2,11 +2,14 @@ using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using log4net;
 using SqlSugar;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 
 namespace ColorVision.Engine.Batch.IVL
 {
@@ -69,6 +72,25 @@ namespace ColorVision.Engine.Batch.IVL
                     string sprectrumfilePath = Path.Combine(config.SavePath, $"SP_IVL_{timeStr}.csv");
                     ViewResults.SaveToCsv(sprectrumfilePath);
                 }
+                
+                // Show I-Lv curve plot window
+                if (testResult.SMUResultModels.Count > 0 && ViewResults.Count > 0)
+                {
+                    System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        try
+                        {
+                            // Create an empty list for POI data since this process only has spectrum data
+                            var plotWindow = new ILvPlotWindow(testResult.SMUResultModels, new List<PoiResultCIExyuvData>(), ViewResults);
+                            plotWindow.Show();
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error("Failed to open I-Lv plot window", ex);
+                        }
+                    });
+                }
+                
                 //ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
                 return true;
             }

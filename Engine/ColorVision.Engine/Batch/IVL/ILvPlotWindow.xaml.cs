@@ -1,7 +1,14 @@
-﻿using Microsoft.Win32;
+﻿using ColorVision.Engine.Services.Devices.SMU.Dao;
+using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using log4net;
+using Microsoft.Win32;
 using ScottPlot;
+using ScottPlot.DataSources;
+using ScottPlot.Plottables;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,98 +24,404 @@ using System.Windows.Shapes;
 namespace ColorVision.Engine.Batch.IVL
 {
     /// <summary>
-    /// ILvPlotWindow.xaml 的交互逻辑
+    /// IVL Curve Plot Window
+    /// Plots Current (I) or Voltage (V) vs Luminance (Lv) curves grouped by POI name
     /// </summary>
     public partial class ILvPlotWindow : Window
     {
-        public ILvPlotWindow()
+        private static readonly ILog log = LogManager.GetLogger(nameof(ILvPlotWindow));
+        
+        private Dictionary<string, List<ILvDataPoint>> _groupedData;
+        private Dictionary<string, Scatter> _scatterPlots;
+        private List<string> _seriesNames;
+        private bool _isILvMode = true; // true for I-Lv, false for V-Lv
+
+        public ILvPlotWindow(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas)
+            : this(smuResults, poixyuvDatas, null)
+        {
+        }
+
+        public ILvPlotWindow(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas, ObservableCollection<ViewResultSpectrum> spectrumResults)
         {
             InitializeComponent();
-            InitPlot();
-        }
-        private void InitPlot()
-        {
-            var plt = Plot.Plot;
-            plt.Clear();
-            plt.Title("I–L");
-            plt.Axes.Bottom.Label.Text = "Current (mA)";
-            plt.Axes.Left.Label.Text = "Lv (cd/m²)";
-            plt.ShowGrid();
-            Plot.Refresh();
+            _groupedData = new Dictionary<string, List<ILvDataPoint>>();
+            _scatterPlots = new Dictionary<string, Scatter>();
+            _seriesNames = new List<string>();
+            
+            LoadData(smuResults, poixyuvDatas, spectrumResults);
+            InitializePlot();
         }
 
-        private void BtnOpenAndPlot_Click(object sender, RoutedEventArgs e)
+        private void LoadData(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas, ObservableCollection<ViewResultSpectrum> spectrumResults)
         {
-            var dlg = new OpenFileDialog
+            // Group data by POI name
+            int smuCount = smuResults.Count;
+            int poiCount = poixyuvDatas.Count;
+            
+            // Check if we have at least some data to plot (POI or spectrum)
+            bool hasPoiData = smuCount > 0 && poiCount > 0;
+            bool hasSpectrumData = spectrumResults != null && spectrumResults.Count > 0 && smuCount > 0;
+
+            log.Info($"Loading data for I-Lv plot: SMU count = {smuCount}, POI count = {poiCount}, Spectrum count = {(spectrumResults?.Count ?? 0)}");
+            if (!(hasPoiData || hasSpectrumData))
             {
-                Filter = "CSV Files (*.csv)|*.csv|All Files (*.*)|*.*",
-                Title = "选择由 IVL 导出的 CSV（Camera_IVL_*.csv 或 SP_IVL_*.csv）"
-            };
+                MessageBox.Show("No data available to plot.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
-            if (dlg.ShowDialog() != true) return;
-
-            try
+            // Process POI data if available
+            if (hasPoiData)
             {
-                var (currents, lvs) = ILvCsvParser.ParseCurrentLvFromCsv(dlg.FileName);
+                // Calculate how many POIs per SMU measurement (same logic as IVLProcess)
+                int poisPerMeasurement = poiCount / smuCount;
+                if (poisPerMeasurement == 0)
+                    poisPerMeasurement = 1;
 
-                if (currents.Count == 0 || lvs.Count == 0 || currents.Count != lvs.Count)
+                // Match the data pairing logic from IVLProcess.cs
+                for (int i = 0; i < poiCount; i++)
                 {
-                    TxtStatus.Text = "未解析到有效的 Current 与 Lv。";
-                    return;
+                // Calculate SMU index: z = i / cout (from IVLProcess.cs)
+                int smuIndex = i / poisPerMeasurement;
+                if (smuIndex >= smuCount)
+                    continue; // Skip if no corresponding SMU data
+
+                var smu = smuResults[smuIndex];
+                var poi = poixyuvDatas[i];
+                
+                // Use POI name to group data points
+                // Check if POIPointResultModel is null to detect data integrity issues
+                string poiName;
+                if (poi.POIPointResultModel == null)
+                {
+                    log.Warn($"POIPointResultModel is null for data point at index {i}. Using default name.");
+                    poiName = $"POI_{i}";
+                }
+                else
+                {
+                    poiName = poi.POIPointResultModel.PoiName ?? $"POI_{i}";
+                }
+                
+                if (!_groupedData.ContainsKey(poiName))
+                {
+                    _groupedData[poiName] = new List<ILvDataPoint>();
+                    _seriesNames.Add(poiName);
                 }
 
-                PlotIL(currents, lvs);
-                TxtStatus.Text = $"已绘图：{currents.Count} 点 —— {System.IO.Path.GetFileName(dlg.FileName)}";
+                // Add data point: Current (I) vs Luminance (Lv)
+                // Only add valid data points with non-null current and positive luminance
+                if (smu.IResult.HasValue && poi.Y > 0)
+                {
+                    _groupedData[poiName].Add(new ILvDataPoint
+                    {
+                        Current = smu.IResult.Value,
+                        Luminance = poi.Y,
+                        Voltage = smu.VResult ?? 0
+                    });
+                }
             }
-            catch (Exception ex)
+            }
+
+            // Add spectrum data if available
+            if (hasSpectrumData)
             {
-                TxtStatus.Text = $"解析/绘图失败：{ex.Message}";
+                string spectrumSeriesName = "光谱仪";
+                
+                if (!_groupedData.ContainsKey(spectrumSeriesName))
+                {
+                    _groupedData[spectrumSeriesName] = new List<ILvDataPoint>();
+                    _seriesNames.Add(spectrumSeriesName);
+                }
+
+                // Match spectrum results with SMU data (similar to IVLProcess logic)
+                for (int i = 0; i < spectrumResults.Count; i++)
+                {
+                    var spectrum = spectrumResults[i];
+                    
+                    // Try to get the Lv value from the string property
+                    if (!string.IsNullOrEmpty(spectrum.Lv) && double.TryParse(spectrum.Lv, out double lvValue))
+                    {
+                        // Match with SMU data by index
+                        if (i < smuResults.Count)
+                        {
+                            var smu = smuResults[i];
+                            if (smu.IResult.HasValue && lvValue > 0)
+                            {
+                                _groupedData[spectrumSeriesName].Add(new ILvDataPoint
+                                {
+                                    Current = smu.IResult.Value,
+                                    Luminance = lvValue,
+                                    Voltage = smu.VResult ?? 0
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Remove empty series
+            var emptyKeys = _groupedData.Where(kv => kv.Value.Count == 0).Select(kv => kv.Key).ToList();
+            foreach (var key in emptyKeys)
+            {
+                _groupedData.Remove(key);
+                _seriesNames.Remove(key);
+            }
+
+            // Sort data points within each series by current for proper line plotting
+            foreach (var series in _groupedData.Values)
+            {
+                series.Sort((a, b) => a.Current.CompareTo(b.Current));
+            }
+
+            // Populate list box with series names
+            foreach (var name in _seriesNames)
+            {
+                PoiSeriesList.Items.Add(name);
+            }
+
+            // Select all series by default for initial display
+            if (_seriesNames.Count > 0)
+            {
+                PoiSeriesList.SelectAll();
             }
         }
 
-        private void PlotIL(IReadOnlyList<double> currents, IReadOnlyList<double> lvs)
+        private void InitializePlot()
         {
-            var plt = Plot.Plot;
-            plt.Clear();
+            WpfPlot.Plot.Clear();
+            
+            // Check if there's any data to plot
+            if (_groupedData.Count == 0)
+            {
+                string modeText = _isILvMode ? "I-Lv" : "V-Lv";
+                WpfPlot.Plot.Title($"{modeText} Curve (No Data)");
+                WpfPlot.Refresh();
+                TxtLegendInfo.Text = "No valid data to display";
+                return;
+            }
+            
+            // Set labels with proper formatting based on display mode
+            string modeLabel = _isILvMode ? "I-Lv" : "V-Lv";
+            string xLabel = _isILvMode ? "Current (mA)" : "Voltage (V)";
+            
+            WpfPlot.Plot.Title($"{modeLabel} Characteristics Curve");
+            WpfPlot.Plot.XLabel(xLabel);
+            WpfPlot.Plot.YLabel("Luminance (cd/m²)");
+            
+            // Update title text block
+            TxtTitle.Text = $"{modeLabel} Curve Analysis";
+            
+            // Set font for labels to support international characters
+            // Use a consistent string for font detection
+            string fontSample = $"{modeLabel} Characteristics Curve {xLabel} Luminance Voltage";
+            WpfPlot.Plot.Axes.Title.Label.FontName = Fonts.Detect(fontSample);
+            WpfPlot.Plot.Axes.Left.Label.FontName = Fonts.Detect(fontSample);
+            WpfPlot.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(fontSample);
 
-            var zipped = currents.Zip(lvs, (i, lv) => new { i, lv })
-                                 .Where(p => !double.IsNaN(p.i) && !double.IsNaN(p.lv)
-                                          && !double.IsInfinity(p.i) && !double.IsInfinity(p.lv))
-                                 .OrderBy(p => p.i)
-                                 .ToList();
+            // Enable grid for better readability
+            WpfPlot.Plot.Grid.MajorLineColor = Color.FromColor(System.Drawing.Color.LightGray);
+            WpfPlot.Plot.Grid.MajorLineWidth = 1;
 
-            if (zipped.Count == 0)
-                throw new InvalidOperationException("全部数据为 NaN 或 Infinity。");
-
-            double[] xsSorted = zipped.Select(p => p.i).ToArray();
-            double[] ysSorted = zipped.Select(p => p.lv).ToArray();
-
-            // 折线（趋势），只显示线，不显示点
-            var lineScatter = plt.Add.Scatter(xsSorted, ysSorted);
-            lineScatter.MarkerSize = 0;     // 不显示标记
-            lineScatter.LineWidth = 2;
-            lineScatter.Color = ScottPlot.Colors.Blue; // 可自行调整
-
-            // 散点（原始顺序），只显示点不显示线
-            var pointScatter = plt.Add.Scatter(currents.ToArray(), lvs.ToArray());
-            pointScatter.LineWidth = 0;      // 不显示连接线
-            pointScatter.MarkerSize = 6;
-            pointScatter.MarkerShape = MarkerShape.FilledCircle;
-            pointScatter.Color = ScottPlot.Colors.Black;
-
-            plt.Title("I–L");
-            plt.Axes.Bottom.Label.Text = "Current (mA)";
-            plt.Axes.Left.Label.Text = "Lv (cd/m²)";
-            plt.ShowGrid();
-            plt.Axes.AutoScale();
-
-            Plot.Refresh();
+            PlotAllSeries();
+            WpfPlot.Refresh();
+            
+            UpdateLegendInfo();
         }
 
-        private void BtnClear_Click(object sender, RoutedEventArgs e)
+        private void PlotAllSeries()
         {
-            InitPlot();
-            TxtStatus.Text = string.Empty;
+            // Clear existing plots
+            foreach (var plot in _scatterPlots.Values)
+            {
+                WpfPlot.Plot.Remove(plot);
+            }
+            _scatterPlots.Clear();
+
+            // Enhanced color palette for better distinction
+            var colors = new[]
+            {
+                System.Drawing.Color.Red,
+                System.Drawing.Color.Blue,
+                System.Drawing.Color.Green,
+                System.Drawing.Color.DarkOrange,
+                System.Drawing.Color.Purple,
+                System.Drawing.Color.Brown,
+                System.Drawing.Color.DeepPink,
+                System.Drawing.Color.DarkCyan,
+                System.Drawing.Color.Magenta,
+                System.Drawing.Color.Teal
+            };
+
+            int colorIndex = 0;
+            foreach (var seriesName in _seriesNames)
+            {
+                if (!_groupedData.ContainsKey(seriesName) || _groupedData[seriesName].Count == 0)
+                    continue;
+
+                var dataPoints = _groupedData[seriesName];
+                
+                // Select X-axis data based on display mode (Current for I-Lv, Voltage for V-Lv)
+                double[] x = _isILvMode 
+                    ? dataPoints.Select(p => p.Current).ToArray()
+                    : dataPoints.Select(p => p.Voltage).ToArray();
+                double[] y = dataPoints.Select(p => p.Luminance).ToArray();
+
+                // Create scatter plot with line and markers
+                var scatter = new Scatter(new ScatterSourceDoubleArray(x, y))
+                {
+                    Color = Color.FromColor(colors[colorIndex % colors.Length]),
+                    LineWidth = 2,
+                    MarkerSize = 6,
+                    MarkerShape = MarkerShape.FilledCircle,
+                    Label = seriesName,
+                };
+
+                _scatterPlots[seriesName] = scatter;
+                
+                // Only add if selected
+                if (PoiSeriesList.SelectedItems.Contains(seriesName))
+                {
+                    WpfPlot.Plot.PlottableList.Add(scatter);
+                }
+
+                colorIndex++;
+            }
+
+            // Show legend
+            WpfPlot.Plot.ShowLegend(Alignment.UpperLeft);
+        }
+
+        private void PoiSeriesList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdatePlotVisibility();
+        }
+
+        private void UpdatePlotVisibility()
+        {
+            // Remove all plots
+            foreach (var plot in _scatterPlots.Values)
+            {
+                WpfPlot.Plot.Remove(plot);
+            }
+
+            // Add only selected series
+            foreach (var item in PoiSeriesList.SelectedItems)
+            {
+                string seriesName = item.ToString();
+                if (_scatterPlots.ContainsKey(seriesName))
+                {
+                    WpfPlot.Plot.PlottableList.Add(_scatterPlots[seriesName]);
+                }
+            }
+
+            WpfPlot.Refresh();
+            UpdateLegendInfo();
+        }
+
+        private void UpdateLegendInfo()
+        {
+            if (PoiSeriesList.SelectedItems.Count == 0)
+            {
+                TxtLegendInfo.Text = "No series selected";
+                return;
+            }
+
+            var info = new System.Text.StringBuilder();
+            info.AppendLine($"Selected: {PoiSeriesList.SelectedItems.Count} series");
+            info.AppendLine();
+
+            string xAxisLabel = _isILvMode ? "I" : "V";
+            string xAxisUnit = _isILvMode ? "mA" : "V";
+
+            foreach (var item in PoiSeriesList.SelectedItems)
+            {
+                string seriesName = item.ToString();
+                if (_groupedData.ContainsKey(seriesName))
+                {
+                    var data = _groupedData[seriesName];
+                    if (data.Count > 0)
+                    {
+                        info.AppendLine($"{seriesName}:");
+                        info.AppendLine($"  Points: {data.Count}");
+                        
+                        if (_isILvMode)
+                        {
+                            info.AppendLine($"  {xAxisLabel}: {data.Min(p => p.Current):F2} - {data.Max(p => p.Current):F2} {xAxisUnit}");
+                        }
+                        else
+                        {
+                            info.AppendLine($"  {xAxisLabel}: {data.Min(p => p.Voltage):F2} - {data.Max(p => p.Voltage):F2} {xAxisUnit}");
+                        }
+                        
+                        info.AppendLine($"  Lv: {data.Min(p => p.Luminance):F2} - {data.Max(p => p.Luminance):F2} cd/m²");
+                        info.AppendLine();
+                    }
+                }
+            }
+
+            TxtLegendInfo.Text = info.ToString();
+        }
+
+        private void ChkShowAll_Checked(object sender, RoutedEventArgs e)
+        {
+            PoiSeriesList.SelectAll();
+        }
+
+        private void ChkShowAll_Unchecked(object sender, RoutedEventArgs e)
+        {
+            PoiSeriesList.UnselectAll();
+        }
+
+        private void DisplayMode_Changed(object sender, RoutedEventArgs e)
+        {
+            // Update the mode flag
+            _isILvMode = RbILv.IsChecked == true;
+            
+            // Re-sort data based on the new X-axis
+            foreach (var series in _groupedData.Values)
+            {
+                if (_isILvMode)
+                {
+                    series.Sort((a, b) => a.Current.CompareTo(b.Current));
+                }
+                else
+                {
+                    series.Sort((a, b) => a.Voltage.CompareTo(b.Voltage));
+                }
+            }
+            
+            // Re-initialize the plot with new mode
+            InitializePlot();
+        }
+
+        private void BtnSave_Click(object sender, RoutedEventArgs e)
+        {
+            string modeText = _isILvMode ? "ILv" : "VLv";
+            SaveFileDialog saveFileDialog = new SaveFileDialog
+            {
+                Filter = "PNG Files|*.png|JPEG Files|*.jpg|BMP Files|*.bmp",
+                Title = $"Save {modeText} Plot Image",
+                FileName = $"{modeText}_Curve_{DateTime.Now:yyyyMMdd_HHmmss}"
+            };
+
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                string filePath = saveFileDialog.FileName;
+                WpfPlot.Plot.Save(filePath, 1200, 800);
+                MessageBox.Show($"Plot saved to:\n{filePath}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private void BtnRefresh_Click(object sender, RoutedEventArgs e)
+        {
+            WpfPlot.Plot.Axes.AutoScale();
+            WpfPlot.Refresh();
+        }
+
+        private class ILvDataPoint
+        {
+            public double Current { get; set; }
+            public double Luminance { get; set; }
+            public double Voltage { get; set; }
         }
     }
 }
