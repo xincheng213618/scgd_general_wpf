@@ -188,6 +188,24 @@ namespace ColorVision.Engine.Batch.IVL
                     string sprectrumfilePath = Path.Combine(config.SavePath, $"SP_IVL_{timeStr}.csv");
                     ViewResults.SaveToCsv(sprectrumfilePath);
                 }
+                
+                // Show I-Lv curve plot window
+                if (testResult.SMUResultModels.Count > 0 && testResult.PoixyuvDatas.Count > 0)
+                {
+                    System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        try
+                        {
+                            var plotWindow = new ILvPlotWindow(testResult.SMUResultModels, testResult.PoixyuvDatas);
+                            plotWindow.Show();
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error("Failed to open I-Lv plot window", ex);
+                        }
+                    });
+                }
+                
                 //ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
                 return true;
             }
