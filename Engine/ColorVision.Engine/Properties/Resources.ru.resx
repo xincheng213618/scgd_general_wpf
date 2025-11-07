@@ -1767,4 +1767,13 @@
   <data name="VoltageCurve" xml:space="preserve">
     <value>кривая напряжения</value>
   </data>
+  <data name="RelativeSpectrumCurve" xml:space="preserve">
+    <value>Относительная спектральная кривая</value>
+  </data>
+  <data name="AbsoluteSpectrumCurve" xml:space="preserve">
+    <value>Абсолютная спектральная кривая</value>
+  </data>
+  <data name="WavelengthNm" xml:space="preserve">
+    <value>Длина волны [нм]</value>
+  </data>
 </root>

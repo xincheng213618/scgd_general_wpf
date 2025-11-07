@@ -1767,4 +1767,13 @@
   <data name="VoltageCurve" xml:space="preserve">
     <value>voltage curve</value>
   </data>
+  <data name="RelativeSpectrumCurve" xml:space="preserve">
+    <value>Relative spectral curve</value>
+  </data>
+  <data name="AbsoluteSpectrumCurve" xml:space="preserve">
+    <value>Absolute spectral curve</value>
+  </data>
+  <data name="WavelengthNm" xml:space="preserve">
+    <value>Wavelength [nm]</value>
+  </data>
 </root>

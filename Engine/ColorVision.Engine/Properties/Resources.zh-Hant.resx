@@ -1767,4 +1767,13 @@
   <data name="VoltageCurve" xml:space="preserve">
     <value>電壓曲線</value>
   </data>
+  <data name="RelativeSpectrumCurve" xml:space="preserve">
+    <value>相對光譜曲線</value>
+  </data>
+  <data name="AbsoluteSpectrumCurve" xml:space="preserve">
+    <value>絕對光譜曲線</value>
+  </data>
+  <data name="WavelengthNm" xml:space="preserve">
+    <value>波長[nm]</value>
+  </data>
 </root>

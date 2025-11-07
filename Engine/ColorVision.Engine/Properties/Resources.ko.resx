@@ -1767,4 +1767,13 @@
   <data name="VoltageCurve" xml:space="preserve">
     <value>전압 곡선</value>
   </data>
+  <data name="RelativeSpectrumCurve" xml:space="preserve">
+    <value>상대 스펙트럼 곡선</value>
+  </data>
+  <data name="AbsoluteSpectrumCurve" xml:space="preserve">
+    <value>절대 스펙트럼 곡선</value>
+  </data>
+  <data name="WavelengthNm" xml:space="preserve">
+    <value>파장 [nm]</value>
+  </data>
 </root>

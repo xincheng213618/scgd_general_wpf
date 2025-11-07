@@ -1768,4 +1768,13 @@
   <data name="VoltageCurve" xml:space="preserve">
     <value>courbe de tension</value>
   </data>
+  <data name="RelativeSpectrumCurve" xml:space="preserve">
+    <value>Courbe spectrale relative</value>
+  </data>
+  <data name="AbsoluteSpectrumCurve" xml:space="preserve">
+    <value>courbe spectrale absolue</value>
+  </data>
+  <data name="WavelengthNm" xml:space="preserve">
+    <value>Longueur d'onde [nm]</value>
+  </data>
 </root>
