@@ -32,7 +32,7 @@ namespace ColorVision.Engine.Batch.IVL
                     IsAutoCloseConnection = true
                 });
 
-                foreach (var item in DB.Queryable<SMUResultModel>().Where(x => x.Batchid == ctx.Batch.Id).ToList())
+                foreach (var item in DB.Queryable<SMUResultModel>().Where(x => x.BatchId == ctx.Batch.Id).ToList())
                 {
                     testResult.SMUResultModels.Add(item);
                 }
@@ -55,8 +55,8 @@ namespace ColorVision.Engine.Batch.IVL
                         if (testResult.SMUResultModels.Count > i)
                         {
                             var SMUResultModel = testResult.SMUResultModels[i];
-                            viewResultSpectrum.V = SMUResultModel.VResult;
-                            viewResultSpectrum.I = SMUResultModel.IResult;
+                            viewResultSpectrum.V = SMUResultModel.VResult ?? 0;
+                            viewResultSpectrum.I = SMUResultModel.IResult ?? 0;
                         }
                         else
                         {
