@@ -40,17 +40,17 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; } = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();
         public RelayCommand RefreshDeviceIdCommand { get; set; }
 
-        [CommandDisplay("上传许可证")]
+        [CommandDisplay("UploadLic")]
         public RelayCommand UploadLincenseCommand { get; set; }
 
-        [CommandDisplay("自适应校零")]
+        [CommandDisplay("AdaptiveZeroCalibration")]
 
         public RelayCommand SelfAdaptionInitDarkCommand { get; set; }
 
-        [CommandDisplay("自适应校零设置")]
+        [CommandDisplay("ApaptivezeroCaliSet")]
         public RelayCommand SelfAdaptionInitDarkSettingCommand { get; set; }
 
-        [CommandDisplay("EmissionSP100设置")]
+        [CommandDisplay("EmissionSP100Set")]
         public RelayCommand EmissionSP100SettingCommand { get; set; }
 
 
@@ -58,7 +58,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             DService = new MQTTSpectrum(this);
             View = new ViewSpectrum();
-            View.View.Title = $"光谱仪视图 - {Config.Code}";
+            View.View.Title = ColorVision.Engine.Properties.Resources.SpectrumView+$" - {Config.Code}";
             this.SetIconResource("DISpectrumIcon", View.View);
 
             SpectrumResourceParam.Load(SpectrumResourceParams, SysResourceModel.Id);
@@ -88,7 +88,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             {
                 if (msgRecord.MsgReturn != null)
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(),"自适应校零执行" + e.ToString(),"ColorVison");
+                    MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.ExcAdaptiveZeroCali + e.ToString(),"ColorVison");
                 }
             };
         }

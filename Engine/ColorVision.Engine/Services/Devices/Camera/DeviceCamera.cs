@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DService = new MQTTCamera(Config);
 
             View = new ViewCamera(this);
-            View.View.Title = $"相机视图 - {Config.Code}";
+            View.View.Title = ColorVision.Engine.Properties.Resources.CameraView +$" - {Config.Code}";
             this.SetIconResource("DrawingImageCamera", View.View);
 
             EditCommand = new RelayCommand(a => EditCameraAction() ,b => AccessControl.Check(EditCameraAction));
@@ -105,14 +105,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
             var windowTemplate = new TemplateEditorWindow(new TemplateAutoExpTime()) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
-        [CommandDisplay("自动聚焦模板",Order =100)]
+        [CommandDisplay("AutoFocusTemplate",Order =100)]
         public RelayCommand EditAutoFocusCommand { get; set; }
         public static void EditAutoFocus()
         {
             var windowTemplate = new TemplateEditorWindow(new TemplateAutoFocus()) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
-        [CommandDisplay("相机参数模板",Order =100)]
+        [CommandDisplay("CameraParameterTemplate",Order =100)]
         public RelayCommand EditCameraExpousureCommand { get; set; }
         
         public static void EditCameraExpousure()
@@ -175,7 +175,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Save();
         }
 
-        [CommandDisplay("清理服务缓存")]
+        [CommandDisplay("ClearServiceCache")]
         public RelayCommand ServiceClearCommand { get; set; }
         [RequiresPermission(PermissionMode.Administrator)]
         private void ServiceClear()
@@ -221,7 +221,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             phyCameraManager.ShowDialog();
         }
 
-        [CommandDisplay("刷新设备列表")]
+        [CommandDisplay("RefreshDeviceList")]
         public RelayCommand RefreshDeviceIdCommand { get; set; }
         private bool _isRefreshing;
 

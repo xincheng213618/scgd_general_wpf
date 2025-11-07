@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             IsSideHide = true;
             TemplateDicId = -1;
-            Title = "关注点设置";
+            Title = ColorVision.Engine.Properties.Resources.POISetting;
             Code = "POI";
             TemplateParams = Params;
         }

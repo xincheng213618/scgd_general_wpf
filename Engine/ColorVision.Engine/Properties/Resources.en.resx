@@ -376,7 +376,7 @@
     <value>Te_mplate</value>
   </data>
   <data name="MenuSUM" xml:space="preserve">
-    <value>Source table template settings(_S)</value>
+    <value>SMU template settings(_S)</value>
   </data>
   <data name="MenuSFR" xml:space="preserve">
     <value>_SFR</value>
@@ -398,9 +398,6 @@
   </data>
   <data name="MenuPhyCameraManager" xml:space="preserve">
     <value>_Physical Camera Management</value>
-  </data>
-  <data name="MenuPG" xml:space="preserve">
-    <value>P_G</value>
   </data>
   <data name="MenuOptions" xml:space="preserve">
     <value>_Options</value>
@@ -1228,7 +1225,7 @@
     <value>Device address</value>
   </data>
   <data name="SMUAddr" xml:space="preserve">
-    <value>Source table address</value>
+    <value>SMU address</value>
   </data>
   <data name="IntegrationTime" xml:space="preserve">
     <value>Integration Time</value>
@@ -1467,8 +1464,11 @@
   <data name="CaliberationParamSet" xml:space="preserve">
     <value>Calibration parameter settings</value>
   </data>
-  <data name="MaxNumber" xml:space="preserve">
-    <value>Max Number</value>
+  <data name="EditCalibration" xml:space="preserve">
+    <value>Edit Calibration file</value>
+  </data>
+  <data name="BeforeCalibrationSetupPhysicalCamera" xml:space="preserve">
+    <value>Before using the calibration, please configure the corresponding physical camera.</value>
   </data>
   <data name="CalibrationViewSettings" xml:space="preserve">
     <value>Calibration View Settings</value>
@@ -1476,26 +1476,221 @@
   <data name="ShowList" xml:space="preserve">
     <value>Show list</value>
   </data>
+  <data name="TemperatureDataNotFound" xml:space="preserve">
+    <value>Temperature data not obtained</value>
+  </data>
   <data name="ListHeight" xml:space="preserve">
     <value>List height</value>
   </data>
-  <data name="EditCalibration" xml:space="preserve">
-    <value>Edit Calibration file</value>
-  </data>
-  <data name="BeforeCalibrationSetupPhysicalCamera" xml:space="preserve">
-    <value>Before using the calibration, please configure the corresponding physical camera.</value>
-  </data>
-  <data name="FileSavePath" xml:space="preserve">
-    <value>File save path</value>
-  </data>
-  <data name="TemperatureDataNotFound" xml:space="preserve">
-    <value>Temperature data not obtained</value>
+  <data name="MaxNumber" xml:space="preserve">
+    <value>Max Number</value>
   </data>
   <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
     <value>Do you want to save the current exposure configuration?</value>
   </data>
+  <data name="FileSavePath" xml:space="preserve">
+    <value>File save path</value>
+  </data>
   <data name="ErrorQueryingTemperatureData" xml:space="preserve">
     <value>An error occurred while querying temperature data.</value>
+  </data>
+  <data name="SzComName" xml:space="preserve">
+    <value>serial number</value>
+  </data>
+  <data name="RetryCount" xml:space="preserve">
+    <value>Number of retries</value>
+  </data>
+  <data name="FilterWheelCount" xml:space="preserve">
+    <value>Number of color filters (6, 12)</value>
+  </data>
+  <data name="AutoConnect" xml:space="preserve">
+    <value>Automatic connection</value>
+  </data>
+  <data name="PgTemplateConfig" xml:space="preserve">
+    <value>PG Template Configuration</value>
+  </data>
+  <data name="SensorDicEdit" xml:space="preserve">
+    <value>Sensor dictionary editing</value>
+  </data>
+  <data name="SMUView" xml:space="preserve">
+    <value>SMU view</value>
+  </data>
+  <data name="UploadLic" xml:space="preserve">
+    <value>Upload License</value>
+  </data>
+  <data name="ApaptivezeroCaliSet" xml:space="preserve">
+    <value>Adaptive zero setting</value>
+  </data>
+  <data name="SpectrumView" xml:space="preserve">
+    <value>Spectrometer View</value>
+  </data>
+  <data name="ExcAdaptiveZeroCali" xml:space="preserve">
+    <value>Adaptive zeroing execution</value>
+  </data>
+  <data name="UploadThridPartPlusIn" xml:space="preserve">
+    <value>Upload third-party plugins</value>
+  </data>
+  <data name="ThirdPartAlgorithmConfig" xml:space="preserve">
+    <value>Configure third-party algorithms</value>
+  </data>
+  <data name="ThirdPartAlgView" xml:space="preserve">
+    <value>Third-party algorithm view</value>
+  </data>
+  <data name="CaliTemplateManagerment" xml:space="preserve">
+    <value>Correction Template Management</value>
+  </data>
+  <data name="CaliTemplateSet" xml:space="preserve">
+    <value>Correction template settings</value>
+  </data>
+  <data name="DownLicOnline" xml:space="preserve">
+    <value>Download license online</value>
+  </data>
+  <data name="CreateRestorePoint" xml:space="preserve">
+    <value>Create a restore point</value>
+  </data>
+  <data name="LoadRestorePoint" xml:space="preserve">
+    <value>Load restore point</value>
+  </data>
+  <data name="StartRC" xml:space="preserve">
+    <value>Enable RC</value>
+  </data>
+  <data name="DefaultCanvas" xml:space="preserve">
+    <value>Default Canvas</value>
+  </data>
+  <data name="ImgImport" xml:space="preserve">
+    <value>Image import</value>
+  </data>
+  <data name="ImportLatestImages" xml:space="preserve">
+    <value>Import the latest images</value>
+  </data>
+  <data name="SavePOI" xml:space="preserve">
+    <value>Save attention</value>
+  </data>
+  <data name="ClearPOI" xml:space="preserve">
+    <value>Clear focus</value>
+  </data>
+  <data name="ReRender" xml:space="preserve">
+    <value>Re-render</value>
+  </data>
+  <data name="Once" xml:space="preserve">
+    <value>once</value>
+  </data>
+  <data name="SaveToFile" xml:space="preserve">
+    <value>Save to file</value>
+  </data>
+  <data name="Radius" xml:space="preserve">
+    <value>radius</value>
+  </data>
+  <data name="DataCorrectionFilePath" xml:space="preserve">
+    <value>Data correction file path</value>
+  </data>
+  <data name="TopRight" xml:space="preserve">
+    <value>Top right</value>
+  </data>
+  <data name="TopLeft" xml:space="preserve">
+    <value>Top left</value>
+  </data>
+  <data name="DownLeft" xml:space="preserve">
+    <value>Bottom left</value>
+  </data>
+  <data name="DownRight" xml:space="preserve">
+    <value>Bottom right</value>
+  </data>
+  <data name="SetToGlobalCache" xml:space="preserve">
+    <value>Set to global cache</value>
+  </data>
+  <data name="ApplyCache" xml:space="preserve">
+    <value>Application caching</value>
+  </data>
+  <data name="EnableActiveAreaFourCorners" xml:space="preserve">
+    <value>Enable the four corner points of the luminous area</value>
+  </data>
+  <data name="PointLayoutAreaDisplay" xml:space="preserve">
+    <value>Display of distribution area</value>
+  </data>
+  <data name="CentralPoint" xml:space="preserve">
+    <value>center point</value>
+  </data>
+  <data name="SetPointLayoutArea" xml:space="preserve">
+    <value>Set up deployment area</value>
+  </data>
+  <data name="Count" xml:space="preserve">
+    <value>quantity</value>
+  </data>
+  <data name="Angle" xml:space="preserve">
+    <value>angle</value>
+  </data>
+  <data name="FindActiveArea" xml:space="preserve">
+    <value>Find the glowing area</value>
+  </data>
+  <data name="FillArea" xml:space="preserve">
+    <value>full</value>
+  </data>
+  <data name="Width" xml:space="preserve">
+    <value>width</value>
+  </data>
+  <data name="height" xml:space="preserve">
+    <value>high</value>
+  </data>
+  <data name="RowCount" xml:space="preserve">
+    <value>Number of lines</value>
+  </data>
+  <data name="ColumCount" xml:space="preserve">
+    <value>Number of columns</value>
+  </data>
+  <data name="FindLuminousAreaCorners" xml:space="preserve">
+    <value>Find the corner of the luminous area</value>
+  </data>
+  <data name="Left" xml:space="preserve">
+    <value>Left</value>
+  </data>
+  <data name="Right" xml:space="preserve">
+    <value>right:</value>
+  </data>
+  <data name="Dispaly" xml:space="preserve">
+    <value>show</value>
+  </data>
+  <data name="SetSegmentation" xml:space="preserve">
+    <value>Set segmentation</value>
+  </data>
+  <data name="UseNodePrompt" xml:space="preserve">
+    <value>Use nodes</value>
+  </data>
+  <data name="Quadrilateral" xml:space="preserve">
+    <value>quadrilateral</value>
+  </data>
+  <data name="Polyline" xml:space="preserve">
+    <value>Polyline</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>value</value>
+  </data>
+  <data name="Circle" xml:space="preserve">
+    <value>Circle</value>
+  </data>
+  <data name="POIEdit" xml:space="preserve">
+    <value>POI Editor</value>
+  </data>
+  <data name="Rect" xml:space="preserve">
+    <value>rectangle</value>
+  </data>
+  <data name="Draw" xml:space="preserve">
+    <value>draw</value>
+  </data>
+  <data name="POISetting" xml:space="preserve">
+    <value>POI settings</value>
+  </data>
+  <data name="PGParamConfig" xml:space="preserve">
+    <value>PGParam settings</value>
+  </data>
+  <data name="CameraView" xml:space="preserve">
+    <value>Camera view</value>
+  </data>
+  <data name="ClearServiceCache" xml:space="preserve">
+    <value>Clear service cache</value>
+  </data>
+  <data name="DataBasicPath" xml:space="preserve">
+    <value>Data base path</value>
   </data>
   <data name="Absolute" xml:space="preserve">
     <value>Absolute</value>

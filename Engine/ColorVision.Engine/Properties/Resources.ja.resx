@@ -399,9 +399,6 @@
   <data name="MenuPhyCameraManager" xml:space="preserve">
     <value>物理カメラ管理(_P)</value>
   </data>
-  <data name="MenuPG" xml:space="preserve">
-    <value>PGテンプレートの設定</value>
-  </data>
   <data name="MenuOptions" xml:space="preserve">
     <value>オプション (_O)</value>
   </data>
@@ -1317,27 +1314,6 @@
   <data name="QuaryMethods" xml:space="preserve">
     <value>クエリメソッド</value>
   </data>
-  <data name="MaxNumber" xml:space="preserve">
-    <value>最大数量</value>
-  </data>
-  <data name="CalibrationViewSettings" xml:space="preserve">
-    <value>正しいビュー構成</value>
-  </data>
-  <data name="ShowList" xml:space="preserve">
-    <value>リストを表示</value>
-  </data>
-  <data name="ListHeight" xml:space="preserve">
-    <value>リストの高さ</value>
-  </data>
-  <data name="EditCalibration" xml:space="preserve">
-    <value>修正ファイルを編集する</value>
-  </data>
-  <data name="BeforeCalibrationSetupPhysicalCamera" xml:space="preserve">
-    <value>キャリブレーションを使用する前に、対応する物理カメラを設定してください。</value>
-  </data>
-  <data name="FileSavePath" xml:space="preserve">
-    <value>ファイルの保存パス</value>
-  </data>
   <data name="MotorAcceleration" xml:space="preserve">
     <value>モーターの加速</value>
   </data>
@@ -1488,14 +1464,233 @@
   <data name="CaliberationParamSet" xml:space="preserve">
     <value>キャリブレーションパラメータ設定</value>
   </data>
+  <data name="EditCalibration" xml:space="preserve">
+    <value>修正ファイルを編集する</value>
+  </data>
+  <data name="BeforeCalibrationSetupPhysicalCamera" xml:space="preserve">
+    <value>キャリブレーションを使用する前に、対応する物理カメラを設定してください。</value>
+  </data>
+  <data name="CalibrationViewSettings" xml:space="preserve">
+    <value>正しいビュー構成</value>
+  </data>
+  <data name="ShowList" xml:space="preserve">
+    <value>リストを表示</value>
+  </data>
   <data name="TemperatureDataNotFound" xml:space="preserve">
     <value>対応する温度データが見つかりません</value>
+  </data>
+  <data name="ListHeight" xml:space="preserve">
+    <value>リストの高さ</value>
+  </data>
+  <data name="MaxNumber" xml:space="preserve">
+    <value>最大数量</value>
+  </data>
+  <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
+    <value>現在の露出設定を保存しますか?</value>
+  </data>
+  <data name="FileSavePath" xml:space="preserve">
+    <value>ファイルの保存パス</value>
   </data>
   <data name="ErrorQueryingTemperatureData" xml:space="preserve">
     <value>温度データの照会中にエラーが発生しました。</value>
   </data>
-  <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
-    <value>現在の露出設定を保存しますか?</value>
+  <data name="SzComName" xml:space="preserve">
+    <value>シリアルナンバー</value>
+  </data>
+  <data name="RetryCount" xml:space="preserve">
+    <value>再試行回数</value>
+  </data>
+  <data name="FilterWheelCount" xml:space="preserve">
+    <value>カラーフィルターの数（6、12）</value>
+  </data>
+  <data name="AutoConnect" xml:space="preserve">
+    <value>自動接続</value>
+  </data>
+  <data name="PgTemplateConfig" xml:space="preserve">
+    <value>PGテンプレートの設定</value>
+  </data>
+  <data name="SensorDicEdit" xml:space="preserve">
+    <value>センサー辞書編集</value>
+  </data>
+  <data name="SMUView" xml:space="preserve">
+    <value>ソーステーブルビュー</value>
+  </data>
+  <data name="UploadLic" xml:space="preserve">
+    <value>アップロードライセンス</value>
+  </data>
+  <data name="ApaptivezeroCaliSet" xml:space="preserve">
+    <value>適応ゼロ設定</value>
+  </data>
+  <data name="SpectrumView" xml:space="preserve">
+    <value>分光計ビュー</value>
+  </data>
+  <data name="ExcAdaptiveZeroCali" xml:space="preserve">
+    <value>適応ゼロ設定実行</value>
+  </data>
+  <data name="UploadThridPartPlusIn" xml:space="preserve">
+    <value>サードパーティのプラグインをアップロードする</value>
+  </data>
+  <data name="ThirdPartAlgorithmConfig" xml:space="preserve">
+    <value>サードパーティのアルゴリズムを構成する</value>
+  </data>
+  <data name="ThirdPartAlgView" xml:space="preserve">
+    <value>サードパーティのアルゴリズムビュー</value>
+  </data>
+  <data name="CaliTemplateManagerment" xml:space="preserve">
+    <value>修正テンプレート管理</value>
+  </data>
+  <data name="CaliTemplateSet" xml:space="preserve">
+    <value>修正テンプレートの設定</value>
+  </data>
+  <data name="DownLicOnline" xml:space="preserve">
+    <value>ライセンスをオンラインでダウンロード</value>
+  </data>
+  <data name="CreateRestorePoint" xml:space="preserve">
+    <value>復元ポイントを作成する</value>
+  </data>
+  <data name="LoadRestorePoint" xml:space="preserve">
+    <value>復元ポイントを読み込む</value>
+  </data>
+  <data name="StartRC" xml:space="preserve">
+    <value>RCを有効にする</value>
+  </data>
+  <data name="DefaultCanvas" xml:space="preserve">
+    <value>デフォルトのキャンバス</value>
+  </data>
+  <data name="ImgImport" xml:space="preserve">
+    <value>画像のインポート</value>
+  </data>
+  <data name="ImportLatestImages" xml:space="preserve">
+    <value>最新の画像をインポートする</value>
+  </data>
+  <data name="SavePOI" xml:space="preserve">
+    <value>注意を節約する</value>
+  </data>
+  <data name="ClearPOI" xml:space="preserve">
+    <value>明確な焦点</value>
+  </data>
+  <data name="ReRender" xml:space="preserve">
+    <value>再レンダリング</value>
+  </data>
+  <data name="Once" xml:space="preserve">
+    <value>一度</value>
+  </data>
+  <data name="SaveToFile" xml:space="preserve">
+    <value>ファイルに保存</value>
+  </data>
+  <data name="Radius" xml:space="preserve">
+    <value>半径</value>
+  </data>
+  <data name="DataCorrectionFilePath" xml:space="preserve">
+    <value>データ修正ファイルパス</value>
+  </data>
+  <data name="TopRight" xml:space="preserve">
+    <value>右上</value>
+  </data>
+  <data name="TopLeft" xml:space="preserve">
+    <value>左上</value>
+  </data>
+  <data name="DownLeft" xml:space="preserve">
+    <value>左下</value>
+  </data>
+  <data name="DownRight" xml:space="preserve">
+    <value>右下</value>
+  </data>
+  <data name="SetToGlobalCache" xml:space="preserve">
+    <value>グローバルキャッシュに設定</value>
+  </data>
+  <data name="ApplyCache" xml:space="preserve">
+    <value>アプリケーションキャッシュ</value>
+  </data>
+  <data name="EnableActiveAreaFourCorners" xml:space="preserve">
+    <value>発光領域の4つのコーナーポイントを有効にする</value>
+  </data>
+  <data name="PointLayoutAreaDisplay" xml:space="preserve">
+    <value>配信エリアの表示</value>
+  </data>
+  <data name="CentralPoint" xml:space="preserve">
+    <value>中心点</value>
+  </data>
+  <data name="SetPointLayoutArea" xml:space="preserve">
+    <value>展開エリアの設定</value>
+  </data>
+  <data name="Count" xml:space="preserve">
+    <value>量</value>
+  </data>
+  <data name="Angle" xml:space="preserve">
+    <value>角度</value>
+  </data>
+  <data name="FindActiveArea" xml:space="preserve">
+    <value>光っている部分を見つける</value>
+  </data>
+  <data name="FillArea" xml:space="preserve">
+    <value>満杯</value>
+  </data>
+  <data name="Width" xml:space="preserve">
+    <value>幅</value>
+  </data>
+  <data name="height" xml:space="preserve">
+    <value>高い</value>
+  </data>
+  <data name="RowCount" xml:space="preserve">
+    <value>行数</value>
+  </data>
+  <data name="ColumCount" xml:space="preserve">
+    <value>列数</value>
+  </data>
+  <data name="FindLuminousAreaCorners" xml:space="preserve">
+    <value>光っている領域の角を見つける</value>
+  </data>
+  <data name="Left" xml:space="preserve">
+    <value>左</value>
+  </data>
+  <data name="Right" xml:space="preserve">
+    <value>右：</value>
+  </data>
+  <data name="Dispaly" xml:space="preserve">
+    <value>見せる</value>
+  </data>
+  <data name="SetSegmentation" xml:space="preserve">
+    <value>セグメンテーションを設定する</value>
+  </data>
+  <data name="UseNodePrompt" xml:space="preserve">
+    <value>ノードを使用する</value>
+  </data>
+  <data name="Quadrilateral" xml:space="preserve">
+    <value>四角形</value>
+  </data>
+  <data name="Polyline" xml:space="preserve">
+    <value>破線</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>価値</value>
+  </data>
+  <data name="Circle" xml:space="preserve">
+    <value>ラウンド</value>
+  </data>
+  <data name="POIEdit" xml:space="preserve">
+    <value>フォーカスエディター</value>
+  </data>
+  <data name="Rect" xml:space="preserve">
+    <value>矩形</value>
+  </data>
+  <data name="Draw" xml:space="preserve">
+    <value>描く</value>
+  </data>
+  <data name="POISetting" xml:space="preserve">
+    <value>フォーカス設定</value>
+  </data>
+  <data name="PGParamConfig" xml:space="preserve">
+    <value>PGParam設定</value>
+  </data>
+  <data name="CameraView" xml:space="preserve">
+    <value>カメラビュー</value>
+  </data>
+  <data name="ClearServiceCache" xml:space="preserve">
+    <value>サービスキャッシュをクリアする</value>
+  </data>
+  <data name="DataBasicPath" xml:space="preserve">
+    <value>データベースパス</value>
   </data>
   <data name="Absolute" xml:space="preserve">
     <value>絶対</value>

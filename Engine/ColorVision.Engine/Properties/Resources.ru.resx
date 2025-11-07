@@ -399,9 +399,6 @@
   <data name="MenuPhyCameraManager" xml:space="preserve">
     <value>Физическое управление камерой(_P)</value>
   </data>
-  <data name="MenuPG" xml:space="preserve">
-    <value>Настройки шаблона PG</value>
-  </data>
   <data name="MenuOptions" xml:space="preserve">
     <value>Вариант(_О)</value>
   </data>
@@ -1317,27 +1314,6 @@
   <data name="QuaryMethods" xml:space="preserve">
     <value>Методы запроса</value>
   </data>
-  <data name="MaxNumber" xml:space="preserve">
-    <value>Максимальное количество</value>
-  </data>
-  <data name="CalibrationViewSettings" xml:space="preserve">
-    <value>Правильная конфигурация представления</value>
-  </data>
-  <data name="ShowList" xml:space="preserve">
-    <value>Показать список</value>
-  </data>
-  <data name="ListHeight" xml:space="preserve">
-    <value>Высота списка</value>
-  </data>
-  <data name="EditCalibration" xml:space="preserve">
-    <value>Редактировать файл исправлений</value>
-  </data>
-  <data name="BeforeCalibrationSetupPhysicalCamera" xml:space="preserve">
-    <value>Перед использованием калибровки настройте соответствующую физическую камеру.</value>
-  </data>
-  <data name="FileSavePath" xml:space="preserve">
-    <value>Путь сохранения файла</value>
-  </data>
   <data name="MotorAcceleration" xml:space="preserve">
     <value>Ускорение двигателя</value>
   </data>
@@ -1488,14 +1464,233 @@
   <data name="CaliberationParamSet" xml:space="preserve">
     <value>Настройки параметров калибровки</value>
   </data>
+  <data name="EditCalibration" xml:space="preserve">
+    <value>Редактировать файл исправлений</value>
+  </data>
+  <data name="BeforeCalibrationSetupPhysicalCamera" xml:space="preserve">
+    <value>Перед использованием калибровки настройте соответствующую физическую камеру.</value>
+  </data>
+  <data name="CalibrationViewSettings" xml:space="preserve">
+    <value>Правильная конфигурация представления</value>
+  </data>
+  <data name="ShowList" xml:space="preserve">
+    <value>Показать список</value>
+  </data>
   <data name="TemperatureDataNotFound" xml:space="preserve">
     <value>Соответствующие данные по температуре не найдены.</value>
+  </data>
+  <data name="ListHeight" xml:space="preserve">
+    <value>Высота списка</value>
+  </data>
+  <data name="MaxNumber" xml:space="preserve">
+    <value>Максимальное количество</value>
+  </data>
+  <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
+    <value>Хотите сохранить текущую конфигурацию экспозиции?</value>
+  </data>
+  <data name="FileSavePath" xml:space="preserve">
+    <value>Путь сохранения файла</value>
   </data>
   <data name="ErrorQueryingTemperatureData" xml:space="preserve">
     <value>Произошла ошибка при запросе данных о температуре.</value>
   </data>
-  <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
-    <value>Хотите сохранить текущую конфигурацию экспозиции?</value>
+  <data name="SzComName" xml:space="preserve">
+    <value>серийный номер</value>
+  </data>
+  <data name="RetryCount" xml:space="preserve">
+    <value>Количество повторных попыток</value>
+  </data>
+  <data name="FilterWheelCount" xml:space="preserve">
+    <value>Количество цветных фильтров (6, 12)</value>
+  </data>
+  <data name="AutoConnect" xml:space="preserve">
+    <value>Автоматическое подключение</value>
+  </data>
+  <data name="PgTemplateConfig" xml:space="preserve">
+    <value>Конфигурация шаблона PG</value>
+  </data>
+  <data name="SensorDicEdit" xml:space="preserve">
+    <value>Редактирование словаря датчиков</value>
+  </data>
+  <data name="SMUView" xml:space="preserve">
+    <value>Исходный табличный вид</value>
+  </data>
+  <data name="UploadLic" xml:space="preserve">
+    <value>Загрузить лицензию</value>
+  </data>
+  <data name="ApaptivezeroCaliSet" xml:space="preserve">
+    <value>Адаптивная установка нуля</value>
+  </data>
+  <data name="SpectrumView" xml:space="preserve">
+    <value>Вид спектрометра</value>
+  </data>
+  <data name="ExcAdaptiveZeroCali" xml:space="preserve">
+    <value>Адаптивное выполнение обнуления</value>
+  </data>
+  <data name="UploadThridPartPlusIn" xml:space="preserve">
+    <value>Загрузите сторонние плагины</value>
+  </data>
+  <data name="ThirdPartAlgorithmConfig" xml:space="preserve">
+    <value>Настройка сторонних алгоритмов</value>
+  </data>
+  <data name="ThirdPartAlgView" xml:space="preserve">
+    <value>Вид стороннего алгоритма</value>
+  </data>
+  <data name="CaliTemplateManagerment" xml:space="preserve">
+    <value>Управление шаблонами исправлений</value>
+  </data>
+  <data name="CaliTemplateSet" xml:space="preserve">
+    <value>Настройки шаблона коррекции</value>
+  </data>
+  <data name="DownLicOnline" xml:space="preserve">
+    <value>Скачать лицензию онлайн</value>
+  </data>
+  <data name="CreateRestorePoint" xml:space="preserve">
+    <value>Создать точку восстановления</value>
+  </data>
+  <data name="LoadRestorePoint" xml:space="preserve">
+    <value>Загрузить точку восстановления</value>
+  </data>
+  <data name="StartRC" xml:space="preserve">
+    <value>Включить RC</value>
+  </data>
+  <data name="DefaultCanvas" xml:space="preserve">
+    <value>Холст по умолчанию</value>
+  </data>
+  <data name="ImgImport" xml:space="preserve">
+    <value>Импорт изображений</value>
+  </data>
+  <data name="ImportLatestImages" xml:space="preserve">
+    <value>Импортируйте последние изображения</value>
+  </data>
+  <data name="SavePOI" xml:space="preserve">
+    <value>Сохранить внимание</value>
+  </data>
+  <data name="ClearPOI" xml:space="preserve">
+    <value>Четкий фокус</value>
+  </data>
+  <data name="ReRender" xml:space="preserve">
+    <value>Повторный рендеринг</value>
+  </data>
+  <data name="Once" xml:space="preserve">
+    <value>один раз</value>
+  </data>
+  <data name="SaveToFile" xml:space="preserve">
+    <value>Сохранить в файл</value>
+  </data>
+  <data name="Radius" xml:space="preserve">
+    <value>радиус</value>
+  </data>
+  <data name="DataCorrectionFilePath" xml:space="preserve">
+    <value>Путь к файлу исправления данных</value>
+  </data>
+  <data name="TopRight" xml:space="preserve">
+    <value>Вверху справа</value>
+  </data>
+  <data name="TopLeft" xml:space="preserve">
+    <value>Вверху слева</value>
+  </data>
+  <data name="DownLeft" xml:space="preserve">
+    <value>Внизу слева</value>
+  </data>
+  <data name="DownRight" xml:space="preserve">
+    <value>Внизу справа</value>
+  </data>
+  <data name="SetToGlobalCache" xml:space="preserve">
+    <value>Установить глобальный кэш</value>
+  </data>
+  <data name="ApplyCache" xml:space="preserve">
+    <value>Кэширование приложений</value>
+  </data>
+  <data name="EnableActiveAreaFourCorners" xml:space="preserve">
+    <value>Включить четыре угловые точки светящейся области</value>
+  </data>
+  <data name="PointLayoutAreaDisplay" xml:space="preserve">
+    <value>Отображение зоны распространения</value>
+  </data>
+  <data name="CentralPoint" xml:space="preserve">
+    <value>центральная точка</value>
+  </data>
+  <data name="SetPointLayoutArea" xml:space="preserve">
+    <value>Настроить зону развертывания</value>
+  </data>
+  <data name="Count" xml:space="preserve">
+    <value>количество</value>
+  </data>
+  <data name="Angle" xml:space="preserve">
+    <value>угол</value>
+  </data>
+  <data name="FindActiveArea" xml:space="preserve">
+    <value>Найдите светящуюся область</value>
+  </data>
+  <data name="FillArea" xml:space="preserve">
+    <value>полный</value>
+  </data>
+  <data name="Width" xml:space="preserve">
+    <value>ширина</value>
+  </data>
+  <data name="height" xml:space="preserve">
+    <value>высокий</value>
+  </data>
+  <data name="RowCount" xml:space="preserve">
+    <value>Количество строк</value>
+  </data>
+  <data name="ColumCount" xml:space="preserve">
+    <value>Количество столбцов</value>
+  </data>
+  <data name="FindLuminousAreaCorners" xml:space="preserve">
+    <value>Найдите угол светящейся области</value>
+  </data>
+  <data name="Left" xml:space="preserve">
+    <value>Левый</value>
+  </data>
+  <data name="Right" xml:space="preserve">
+    <value>верно:</value>
+  </data>
+  <data name="Dispaly" xml:space="preserve">
+    <value>показывать</value>
+  </data>
+  <data name="SetSegmentation" xml:space="preserve">
+    <value>Установить сегментацию</value>
+  </data>
+  <data name="UseNodePrompt" xml:space="preserve">
+    <value>Использовать узлы</value>
+  </data>
+  <data name="Quadrilateral" xml:space="preserve">
+    <value>четырехугольник</value>
+  </data>
+  <data name="Polyline" xml:space="preserve">
+    <value>Ломаная линия</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>ценить</value>
+  </data>
+  <data name="Circle" xml:space="preserve">
+    <value>круглый</value>
+  </data>
+  <data name="POIEdit" xml:space="preserve">
+    <value>Редактор фокуса</value>
+  </data>
+  <data name="Rect" xml:space="preserve">
+    <value>прямоугольник</value>
+  </data>
+  <data name="Draw" xml:space="preserve">
+    <value>рисовать</value>
+  </data>
+  <data name="POISetting" xml:space="preserve">
+    <value>Настройки фокуса</value>
+  </data>
+  <data name="PGParamConfig" xml:space="preserve">
+    <value>Настройки PGParam</value>
+  </data>
+  <data name="CameraView" xml:space="preserve">
+    <value>Вид с камеры</value>
+  </data>
+  <data name="ClearServiceCache" xml:space="preserve">
+    <value>Очистить кэш службы</value>
+  </data>
+  <data name="DataBasicPath" xml:space="preserve">
+    <value>Путь к базе данных</value>
   </data>
   <data name="Absolute" xml:space="preserve">
     <value>абсолютный</value>

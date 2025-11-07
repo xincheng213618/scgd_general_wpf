@@ -25,9 +25,9 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         public MQTTThirdPartyAlgorithms DService { get; set; }
         public ThirdPartyAlgorithmsView View { get; set; }
 
-        [CommandDisplay("上传第三方插件")]
+        [CommandDisplay("UploadThridPartPlusIn")]
         public RelayCommand UploadPluginCommand { get; set; }
-        [CommandDisplay("配置第三方算法")]
+        [CommandDisplay("ThirdPartAlgorithmConfig")]
         public RelayCommand ThirdPartyAlgorithmsManagerCommand { get; set; }
 
         public DeviceThirdPartyAlgorithms(SysResourceModel sysResourceModel) : base(sysResourceModel)
@@ -35,7 +35,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             DService = new MQTTThirdPartyAlgorithms(this, Config);
 
             View = new ThirdPartyAlgorithmsView();
-            View.View.Title = $"第三方算法视图 - {Config.Code}";
+            View.View.Title = ColorVision.Engine.Properties.Resources.ThirdPartAlgView+$" - {Config.Code}";
             this.SetIconResource("DrawingImageAlgorithm", View.View);
 
             DisplayAlgorithmControlLazy = new Lazy<DisplayThirdPartyAlgorithms>(() => { DisplayAlgorithmControl ??= new DisplayThirdPartyAlgorithms(this); return DisplayAlgorithmControl; });

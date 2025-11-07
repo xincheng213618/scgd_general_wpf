@@ -399,9 +399,6 @@
   <data name="MenuPhyCameraManager" xml:space="preserve">
     <value>Gestion des caméras physiques(_P)</value>
   </data>
-  <data name="MenuPG" xml:space="preserve">
-    <value>Paramètres du modèle PG</value>
-  </data>
   <data name="MenuOptions" xml:space="preserve">
     <value>_Option</value>
   </data>
@@ -1468,8 +1465,11 @@
   <data name="CaliberationParamSet" xml:space="preserve">
     <value>Paramètres d'étalonnage</value>
   </data>
-  <data name="MaxNumber" xml:space="preserve">
-    <value>quantité maximale</value>
+  <data name="EditCalibration" xml:space="preserve">
+    <value>Fichier de correction de modification</value>
+  </data>
+  <data name="BeforeCalibrationSetupPhysicalCamera" xml:space="preserve">
+    <value>Avant d'utiliser l'étalonnage, veuillez configurer la caméra physique correspondante.</value>
   </data>
   <data name="CalibrationViewSettings" xml:space="preserve">
     <value>Configuration d'affichage correcte</value>
@@ -1477,26 +1477,221 @@
   <data name="ShowList" xml:space="preserve">
     <value>Afficher la liste</value>
   </data>
+  <data name="TemperatureDataNotFound" xml:space="preserve">
+    <value>Données de température non obtenues</value>
+  </data>
   <data name="ListHeight" xml:space="preserve">
     <value>Hauteur de la liste</value>
   </data>
-  <data name="EditCalibration" xml:space="preserve">
-    <value>Fichier de correction de modification</value>
-  </data>
-  <data name="BeforeCalibrationSetupPhysicalCamera" xml:space="preserve">
-    <value>Avant d'utiliser l'étalonnage, veuillez configurer la caméra physique correspondante.</value>
-  </data>
-  <data name="FileSavePath" xml:space="preserve">
-    <value>chemin d'enregistrement du fichier</value>
-  </data>
-  <data name="TemperatureDataNotFound" xml:space="preserve">
-    <value>Données de température non obtenues</value>
+  <data name="MaxNumber" xml:space="preserve">
+    <value>quantité maximale</value>
   </data>
   <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
     <value>Souhaitez-vous enregistrer la configuration d'exposition actuelle ?</value>
   </data>
+  <data name="FileSavePath" xml:space="preserve">
+    <value>chemin d'enregistrement du fichier</value>
+  </data>
   <data name="ErrorQueryingTemperatureData" xml:space="preserve">
     <value>Une erreur s'est produite lors de la requête des données de température.</value>
+  </data>
+  <data name="SzComName" xml:space="preserve">
+    <value>numéro de série</value>
+  </data>
+  <data name="RetryCount" xml:space="preserve">
+    <value>Nombre de tentatives</value>
+  </data>
+  <data name="FilterWheelCount" xml:space="preserve">
+    <value>Nombre de filtres de couleur (6, 12)</value>
+  </data>
+  <data name="AutoConnect" xml:space="preserve">
+    <value>Connexion automatique</value>
+  </data>
+  <data name="PgTemplateConfig" xml:space="preserve">
+    <value>Configuration du modèle PG</value>
+  </data>
+  <data name="SensorDicEdit" xml:space="preserve">
+    <value>édition du dictionnaire des capteurs</value>
+  </data>
+  <data name="SMUView" xml:space="preserve">
+    <value>vue du tableau source</value>
+  </data>
+  <data name="UploadLic" xml:space="preserve">
+    <value>Licence de téléchargement</value>
+  </data>
+  <data name="ApaptivezeroCaliSet" xml:space="preserve">
+    <value>Réglage adaptatif du zéro</value>
+  </data>
+  <data name="SpectrumView" xml:space="preserve">
+    <value>Vue du spectromètre</value>
+  </data>
+  <data name="ExcAdaptiveZeroCali" xml:space="preserve">
+    <value>Exécution de mise à zéro adaptative</value>
+  </data>
+  <data name="UploadThridPartPlusIn" xml:space="preserve">
+    <value>Télécharger des plugins tiers</value>
+  </data>
+  <data name="ThirdPartAlgorithmConfig" xml:space="preserve">
+    <value>Configurer les algorithmes tiers</value>
+  </data>
+  <data name="ThirdPartAlgView" xml:space="preserve">
+    <value>Vue de l'algorithme tiers</value>
+  </data>
+  <data name="CaliTemplateManagerment" xml:space="preserve">
+    <value>Gestion des modèles de correction</value>
+  </data>
+  <data name="CaliTemplateSet" xml:space="preserve">
+    <value>Paramètres du modèle de correction</value>
+  </data>
+  <data name="DownLicOnline" xml:space="preserve">
+    <value>Télécharger la licence en ligne</value>
+  </data>
+  <data name="CreateRestorePoint" xml:space="preserve">
+    <value>Créer un point de restauration</value>
+  </data>
+  <data name="LoadRestorePoint" xml:space="preserve">
+    <value>Point de restauration du chargement</value>
+  </data>
+  <data name="StartRC" xml:space="preserve">
+    <value>Activer la radiocommande</value>
+  </data>
+  <data name="DefaultCanvas" xml:space="preserve">
+    <value>Canevas par défaut</value>
+  </data>
+  <data name="ImgImport" xml:space="preserve">
+    <value>Importation d'images</value>
+  </data>
+  <data name="ImportLatestImages" xml:space="preserve">
+    <value>Importer les images les plus récentes</value>
+  </data>
+  <data name="SavePOI" xml:space="preserve">
+    <value>Attention</value>
+  </data>
+  <data name="ClearPOI" xml:space="preserve">
+    <value>Concentration claire</value>
+  </data>
+  <data name="ReRender" xml:space="preserve">
+    <value>Re-rendu</value>
+  </data>
+  <data name="Once" xml:space="preserve">
+    <value>une fois</value>
+  </data>
+  <data name="SaveToFile" xml:space="preserve">
+    <value>Enregistrer dans un fichier</value>
+  </data>
+  <data name="Radius" xml:space="preserve">
+    <value>rayon</value>
+  </data>
+  <data name="DataCorrectionFilePath" xml:space="preserve">
+    <value>chemin d'accès au fichier de correction des données</value>
+  </data>
+  <data name="TopRight" xml:space="preserve">
+    <value>En haut à droite</value>
+  </data>
+  <data name="TopLeft" xml:space="preserve">
+    <value>En haut à gauche</value>
+  </data>
+  <data name="DownLeft" xml:space="preserve">
+    <value>En bas à gauche</value>
+  </data>
+  <data name="DownRight" xml:space="preserve">
+    <value>En bas à droite</value>
+  </data>
+  <data name="SetToGlobalCache" xml:space="preserve">
+    <value>Définir sur le cache global</value>
+  </data>
+  <data name="ApplyCache" xml:space="preserve">
+    <value>Mise en cache de l'application</value>
+  </data>
+  <data name="EnableActiveAreaFourCorners" xml:space="preserve">
+    <value>Activez les quatre points d'angle de la zone lumineuse.</value>
+  </data>
+  <data name="PointLayoutAreaDisplay" xml:space="preserve">
+    <value>Affichage de la zone de distribution</value>
+  </data>
+  <data name="CentralPoint" xml:space="preserve">
+    <value>point central</value>
+  </data>
+  <data name="SetPointLayoutArea" xml:space="preserve">
+    <value>Définir la zone de déploiement</value>
+  </data>
+  <data name="Count" xml:space="preserve">
+    <value>quantité</value>
+  </data>
+  <data name="Angle" xml:space="preserve">
+    <value>angle</value>
+  </data>
+  <data name="FindActiveArea" xml:space="preserve">
+    <value>Trouvez la zone lumineuse</value>
+  </data>
+  <data name="FillArea" xml:space="preserve">
+    <value>complet</value>
+  </data>
+  <data name="Width" xml:space="preserve">
+    <value>largeur</value>
+  </data>
+  <data name="height" xml:space="preserve">
+    <value>haut</value>
+  </data>
+  <data name="RowCount" xml:space="preserve">
+    <value>Nombre de lignes</value>
+  </data>
+  <data name="ColumCount" xml:space="preserve">
+    <value>Nombre de colonnes</value>
+  </data>
+  <data name="FindLuminousAreaCorners" xml:space="preserve">
+    <value>Trouvez le coin de la zone lumineuse</value>
+  </data>
+  <data name="Left" xml:space="preserve">
+    <value>Gauche</value>
+  </data>
+  <data name="Right" xml:space="preserve">
+    <value>droite:</value>
+  </data>
+  <data name="Dispaly" xml:space="preserve">
+    <value>montrer</value>
+  </data>
+  <data name="SetSegmentation" xml:space="preserve">
+    <value>Segmentation de l'ensemble</value>
+  </data>
+  <data name="UseNodePrompt" xml:space="preserve">
+    <value>Utiliser des nœuds</value>
+  </data>
+  <data name="Quadrilateral" xml:space="preserve">
+    <value>quadrilatère</value>
+  </data>
+  <data name="Polyline" xml:space="preserve">
+    <value>Ligne brisée</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>valeur</value>
+  </data>
+  <data name="Circle" xml:space="preserve">
+    <value>rond</value>
+  </data>
+  <data name="POIEdit" xml:space="preserve">
+    <value>Éditeur Focus</value>
+  </data>
+  <data name="Rect" xml:space="preserve">
+    <value>rectangle</value>
+  </data>
+  <data name="Draw" xml:space="preserve">
+    <value>dessiner</value>
+  </data>
+  <data name="POISetting" xml:space="preserve">
+    <value>Paramètres de mise au point</value>
+  </data>
+  <data name="PGParamConfig" xml:space="preserve">
+    <value>Paramètres PGParam</value>
+  </data>
+  <data name="CameraView" xml:space="preserve">
+    <value>Vue de la caméra</value>
+  </data>
+  <data name="ClearServiceCache" xml:space="preserve">
+    <value>Vider le cache du service</value>
+  </data>
+  <data name="DataBasicPath" xml:space="preserve">
+    <value>Chemin de base de données</value>
   </data>
   <data name="Absolute" xml:space="preserve">
     <value>Absolu</value>
