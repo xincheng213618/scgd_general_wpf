@@ -1627,7 +1627,8 @@ namespace ColorVision.Engine.Templates.POI
         {
             var lsit = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList();
             DeviceCamera deviceCamera = lsit.FirstOrDefault();
-            MsgRecord msgRecord = deviceCamera?.DisplayCameraControlLazy.Value.TakePhoto();
+
+            MsgRecord msgRecord = deviceCamera?.DisplayCameraControlLazy.Value.TakePhoto(PoiConfig.Exp);
 
             if (msgRecord != null)
             {

@@ -441,7 +441,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             };
         }
 
-        public MsgRecord? TakePhoto()
+        public MsgRecord? TakePhoto(double exp =0)
         {
             if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return null;
 
@@ -464,8 +464,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             double[] expTime = null;
-            if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
-            else expTime = new double[] { Device.Config.ExpTime };
+            if (exp == 0)
+            {
+                if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
+                else expTime = new double[] { Device.Config.ExpTime };
+            }
+            else
+            {
+                if (Device.Config.IsExpThree) { expTime = new double[] { exp, exp, exp }; }
+                else expTime = new double[] { exp };
+            }
 
             if (ComboBoxHDRTemplate.SelectedValue is not ParamBase HDRparamBase) return null;
 
