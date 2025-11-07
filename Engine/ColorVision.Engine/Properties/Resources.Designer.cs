@@ -664,6 +664,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 相机视图 的本地化字符串。
+        /// </summary>
+        public static string CameraView {
+            get {
+                return ResourceManager.GetString("CameraView", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 相机模式 的本地化字符串。
         /// </summary>
         public static string CamreaMode {
@@ -772,7 +781,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 圆 的本地化字符串。
+        ///   查找类似 圆形 的本地化字符串。
         /// </summary>
         public static string Circle {
             get {
@@ -813,6 +822,15 @@ namespace ColorVision.Engine.Properties {
         public static string ClearPOI {
             get {
                 return ResourceManager.GetString("ClearPOI", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清理服务缓存 的本地化字符串。
+        /// </summary>
+        public static string ClearServiceCache {
+            get {
+                return ResourceManager.GetString("ClearServiceCache", resourceCulture);
             }
         }
         
@@ -1191,6 +1209,15 @@ namespace ColorVision.Engine.Properties {
         public static string DatabaseConnectionFailed {
             get {
                 return ResourceManager.GetString("DatabaseConnectionFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 数据基础路径 的本地化字符串。
+        /// </summary>
+        public static string DataBasicPath {
+            get {
+                return ResourceManager.GetString("DataBasicPath", resourceCulture);
             }
         }
         
@@ -3184,6 +3211,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 PGParam设置 的本地化字符串。
+        /// </summary>
+        public static string PGParamConfig {
+            get {
+                return ResourceManager.GetString("PGParamConfig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 PG模板配置 的本地化字符串。
         /// </summary>
         public static string PgTemplateConfig {
@@ -4084,6 +4120,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 单通道 的本地化字符串。
+        /// </summary>
+        public static string singleChannel {
+            get {
+                return ResourceManager.GetString("singleChannel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 单次测试 的本地化字符串。
         /// </summary>
         public static string SingleTest {
@@ -4404,6 +4449,15 @@ namespace ColorVision.Engine.Properties {
         public static string ThirdPartAlgView {
             get {
                 return ResourceManager.GetString("ThirdPartAlgView", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 三通道 的本地化字符串。
+        /// </summary>
+        public static string threeChannels {
+            get {
+                return ResourceManager.GetString("threeChannels", resourceCulture);
             }
         }
         
@@ -4766,22 +4820,5 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("WorkflowEngineTemplateManagement", resourceCulture);
             }
         }
-        
-
-        public static string PGParamConfig
-        {
-            get
-            {
-                return ResourceManager.GetString("PGParamConfig", resourceCulture);
-            }
-        }
-        public static string CameraView
-        {
-            get
-            {
-                return ResourceManager.GetString("CameraView", resourceCulture);
-            }
-        }
-        
     }
 }
