@@ -97,6 +97,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 绝对 的本地化字符串。
+        /// </summary>
+        public static string Absolute {
+            get {
+                return ResourceManager.GetString("Absolute", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 绝对位置 的本地化字符串。
         /// </summary>
         public static string AbsolutePosition {
@@ -3216,6 +3225,15 @@ namespace ColorVision.Engine.Properties {
         public static string RegistryCenterConfig {
             get {
                 return ResourceManager.GetString("RegistryCenterConfig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 相对 的本地化字符串。
+        /// </summary>
+        public static string Relative {
+            get {
+                return ResourceManager.GetString("Relative", resourceCulture);
             }
         }
         

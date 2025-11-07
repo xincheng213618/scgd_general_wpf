@@ -1497,4 +1497,10 @@
   <data name="ErrorQueryingTemperatureData" xml:space="preserve">
     <value>온도 데이터를 쿼리하는 동안 오류가 발생했습니다.</value>
   </data>
+  <data name="Absolute" xml:space="preserve">
+    <value>순수한</value>
+  </data>
+  <data name="Relative" xml:space="preserve">
+    <value>비교적</value>
+  </data>
 </root>

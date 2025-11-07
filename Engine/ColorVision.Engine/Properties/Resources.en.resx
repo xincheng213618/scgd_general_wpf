@@ -1497,4 +1497,10 @@
   <data name="ErrorQueryingTemperatureData" xml:space="preserve">
     <value>An error occurred while querying temperature data.</value>
   </data>
+  <data name="Absolute" xml:space="preserve">
+    <value>Absolute</value>
+  </data>
+  <data name="Relative" xml:space="preserve">
+    <value>Relatively</value>
+  </data>
 </root>

@@ -1497,4 +1497,10 @@
   <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
     <value>Хотите сохранить текущую конфигурацию экспозиции?</value>
   </data>
+  <data name="Absolute" xml:space="preserve">
+    <value>абсолютный</value>
+  </data>
+  <data name="Relative" xml:space="preserve">
+    <value>относительно</value>
+  </data>
 </root>

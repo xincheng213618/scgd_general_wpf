@@ -366,13 +366,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             {
                 wpfplot1.Visibility = Visibility.Collapsed;
                 wpfplot2.Visibility = Visibility.Visible;
-                SpectrumTypeText.Text = "绝对";
+                SpectrumTypeText.Text = ColorVision.Engine.Properties.Resources.Absolute;
             }
             else
             {
                 wpfplot1.Visibility = Visibility.Visible;
                 wpfplot2.Visibility = Visibility.Collapsed;
-                SpectrumTypeText.Text = "相对";
+                SpectrumTypeText.Text = ColorVision.Engine.Properties.Resources.Relative;
             }
             
             ReDrawPlot();

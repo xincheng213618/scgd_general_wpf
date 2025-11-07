@@ -1497,4 +1497,10 @@
   <data name="ErrorQueryingTemperatureData" xml:space="preserve">
     <value>查询温度数据时发生错误</value>
   </data>
+  <data name="Absolute" xml:space="preserve">
+    <value>绝对</value>
+  </data>
+  <data name="Relative" xml:space="preserve">
+    <value>相对</value>
+  </data>
 </root>

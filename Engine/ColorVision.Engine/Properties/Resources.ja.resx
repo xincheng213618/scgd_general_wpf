@@ -1497,4 +1497,10 @@
   <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
     <value>現在の露出設定を保存しますか?</value>
   </data>
+  <data name="Absolute" xml:space="preserve">
+    <value>絶対</value>
+  </data>
+  <data name="Relative" xml:space="preserve">
+    <value>比較的</value>
+  </data>
 </root>
