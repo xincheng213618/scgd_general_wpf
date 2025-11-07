@@ -211,21 +211,21 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="半波宽" >
+                            <GridViewColumn  Header="{x:Static properties:Resources.HalfBandwidth}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{ Binding fHW}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="电压" >
+                            <GridViewColumn  Header="{x:Static properties:Resources.V}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{ Binding V}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="电流" >
+                            <GridViewColumn  Header=""{x:Static properties:Resources.I}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{ Binding I}"/>
@@ -254,21 +254,21 @@
                             <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
                         </Style>
                     </GridView.ColumnHeaderContainerStyle>
-                    <GridViewColumn  Header="波长" >
+                    <GridViewColumn  Header="{x:Static properties:Resources.Wavelength}" >
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SpectralData}">
                                 <TextBlock Text="{ Binding  Wavelength}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="相对光谱">
+                    <GridViewColumn  Header="{x:Static properties:Resources.RelativeSpectrum}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SpectralData}">
                                 <TextBlock Text="{Binding  RelativeSpectrum, StringFormat={}{0:F4}}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="绝对光谱" >
+                    <GridViewColumn  Header="{x:Static properties:Resources.AbsoluteSpectrum}" >
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SpectralData}">
                                 <TextBlock Text="{ Binding   AbsoluteSpectrum, StringFormat={}{0:F4}}"/>

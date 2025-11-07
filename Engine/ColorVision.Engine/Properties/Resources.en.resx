@@ -1698,4 +1698,52 @@
   <data name="Relative" xml:space="preserve">
     <value>Relatively</value>
   </data>
+  <data name="singleChannel" xml:space="preserve">
+    <value>single channel</value>
+  </data>
+  <data name="threeChannels" xml:space="preserve">
+    <value>Three-channel</value>
+  </data>
+  <data name="Wavelength" xml:space="preserve">
+    <value>wavelength</value>
+  </data>
+  <data name="RelativeSpectrum" xml:space="preserve">
+    <value>relative spectrum</value>
+  </data>
+  <data name="AbsoluteSpectrum" xml:space="preserve">
+    <value>Absolute Spectrum</value>
+  </data>
+  <data name="I" xml:space="preserve">
+    <value>Current</value>
+  </data>
+  <data name="V" xml:space="preserve">
+    <value>Voltage</value>
+  </data>
+  <data name="HalfBandwidth" xml:space="preserve">
+    <value>Half-wavewidth</value>
+  </data>
+  <data name="SourceValue" xml:space="preserve">
+    <value>Source value</value>
+  </data>
+  <data name="LimitValue" xml:space="preserve">
+    <value>Limit</value>
+  </data>
+  <data name="Ignite" xml:space="preserve">
+    <value>Light up</value>
+  </data>
+  <data name="Extinguish" xml:space="preserve">
+    <value>Extinguish</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="End" xml:space="preserve">
+    <value>Finish</value>
+  </data>
+  <data name="PointCount" xml:space="preserve">
+    <value>Points</value>
+  </data>
+  <data name="Network" xml:space="preserve">
+    <value>network</value>
+  </data>
 </root>

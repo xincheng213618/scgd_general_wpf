@@ -1698,4 +1698,52 @@
   <data name="Relative" xml:space="preserve">
     <value>相對</value>
   </data>
+  <data name="singleChannel" xml:space="preserve">
+    <value>單通道</value>
+  </data>
+  <data name="threeChannels" xml:space="preserve">
+    <value>三通道</value>
+  </data>
+  <data name="Wavelength" xml:space="preserve">
+    <value>波長</value>
+  </data>
+  <data name="RelativeSpectrum" xml:space="preserve">
+    <value>相對光譜</value>
+  </data>
+  <data name="AbsoluteSpectrum" xml:space="preserve">
+    <value>絕對光譜</value>
+  </data>
+  <data name="I" xml:space="preserve">
+    <value>電流</value>
+  </data>
+  <data name="V" xml:space="preserve">
+    <value>電壓</value>
+  </data>
+  <data name="HalfBandwidth" xml:space="preserve">
+    <value>半波寬</value>
+  </data>
+  <data name="SourceValue" xml:space="preserve">
+    <value>來源值</value>
+  </data>
+  <data name="LimitValue" xml:space="preserve">
+    <value>限值</value>
+  </data>
+  <data name="Ignite" xml:space="preserve">
+    <value>點亮</value>
+  </data>
+  <data name="Extinguish" xml:space="preserve">
+    <value>熄滅</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>起始</value>
+  </data>
+  <data name="End" xml:space="preserve">
+    <value>結束</value>
+  </data>
+  <data name="PointCount" xml:space="preserve">
+    <value>點數</value>
+  </data>
+  <data name="Network" xml:space="preserve">
+    <value>網路</value>
+  </data>
 </root>

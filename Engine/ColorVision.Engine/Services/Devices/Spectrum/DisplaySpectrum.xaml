@@ -52,7 +52,7 @@
                 <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}" Command="{Binding EditCommand}"/>
                 <StackPanel x:Name="StackPanelContent">
                     <DockPanel Margin="0,0,0,2">
-                        <Button x:Name="btn_connect" Margin="0,0,0,2" Content="打开" Click="Button_Click_Open"/>
+                        <Button x:Name="btn_connect" Margin="0,0,0,2" Content="{x:Static properties:Resources.Open}" Click="Button_Click_Open"/>
                     </DockPanel>
                     <StackPanel x:Name="StackPanelOpen">
                         <DockPanel Margin="0,0,0,5">

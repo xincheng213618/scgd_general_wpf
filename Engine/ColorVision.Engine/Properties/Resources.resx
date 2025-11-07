@@ -1704,4 +1704,49 @@
   <data name="Relative" xml:space="preserve">
     <value>相对</value>
   </data>
+  <data name="Wavelength" xml:space="preserve">
+    <value>波长</value>
+  </data>
+  <data name="RelativeSpectrum" xml:space="preserve">
+    <value>相对光谱</value>
+  </data>
+  <data name="AbsoluteSpectrum" xml:space="preserve">
+    <value>绝对光谱</value>
+  </data>
+  <data name="I" xml:space="preserve">
+    <value>电流</value>
+  </data>
+  <data name="V" xml:space="preserve">
+    <value>电压</value>
+  </data>
+  <data name="HalfBandwidth" xml:space="preserve">
+    <value>半波宽</value>
+  </data>
+  <data name="SourceValue" xml:space="preserve">
+    <value>源值</value>
+  </data>
+  <data name="LimitValue" xml:space="preserve">
+    <value>限值</value>
+  </data>
+  <data name="Ignite" xml:space="preserve">
+    <value>点亮</value>
+  </data>
+  <data name="Extinguish" xml:space="preserve">
+    <value>熄灭</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>起始</value>
+  </data>
+  <data name="End" xml:space="preserve">
+    <value>结束</value>
+  </data>
+  <data name="PointCount" xml:space="preserve">
+    <value>点数</value>
+  </data>
+  <data name="Network" xml:space="preserve">
+    <value>网络</value>
+  </data>
+  <data name="Cleanup" xml:space="preserve">
+    <value>清理</value>
+  </data>
 </root>

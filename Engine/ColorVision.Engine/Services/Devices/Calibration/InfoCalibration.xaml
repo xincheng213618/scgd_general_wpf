@@ -110,7 +110,7 @@
                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.ServiceToken}"/>
                             </DockPanel>
                             <DockPanel>
-                                <Button DockPanel.Dock="Right" Content="管理" Command="{Binding OpenPhyCameraMangerCommand}"  />
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Manager}" Command="{Binding OpenPhyCameraMangerCommand}"  />
                                 <TextBlock Text="{x:Static properties:Resources.BindPhysicalCameraCode}"  Width="120"/>
                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.CameraCode ,Mode=OneWay }"/>
                             </DockPanel>
@@ -136,7 +136,7 @@
                                 <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.FileServerCfg.SaveDays}"/>
                             </DockPanel>
                             <DockPanel>
-                                <Button DockPanel.Dock="Right" Content="清理" Click="ServiceCache_Click"/>
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Cleanup}" Click="ServiceCache_Click"/>
                                 <TextBlock Text="{x:Static properties:Resources.ServiceCach}"/>
                             </DockPanel>
                         </StackPanel>

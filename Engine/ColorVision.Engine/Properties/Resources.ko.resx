@@ -1698,4 +1698,52 @@
   <data name="Relative" xml:space="preserve">
     <value>비교적</value>
   </data>
+  <data name="singleChannel" xml:space="preserve">
+    <value>단일 채널</value>
+  </data>
+  <data name="threeChannels" xml:space="preserve">
+    <value>3채널</value>
+  </data>
+  <data name="Wavelength" xml:space="preserve">
+    <value>파장</value>
+  </data>
+  <data name="RelativeSpectrum" xml:space="preserve">
+    <value>상대 스펙트럼</value>
+  </data>
+  <data name="AbsoluteSpectrum" xml:space="preserve">
+    <value>절대 스펙트럼</value>
+  </data>
+  <data name="I" xml:space="preserve">
+    <value>현재의</value>
+  </data>
+  <data name="V" xml:space="preserve">
+    <value>전압</value>
+  </data>
+  <data name="HalfBandwidth" xml:space="preserve">
+    <value>반파장</value>
+  </data>
+  <data name="SourceValue" xml:space="preserve">
+    <value>소스 값</value>
+  </data>
+  <data name="LimitValue" xml:space="preserve">
+    <value>한계</value>
+  </data>
+  <data name="Ignite" xml:space="preserve">
+    <value>불을 켜다</value>
+  </data>
+  <data name="Extinguish" xml:space="preserve">
+    <value>끄다</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>시작</value>
+  </data>
+  <data name="End" xml:space="preserve">
+    <value>마치다</value>
+  </data>
+  <data name="PointCount" xml:space="preserve">
+    <value>전철기</value>
+  </data>
+  <data name="Network" xml:space="preserve">
+    <value>회로망</value>
+  </data>
 </root>
