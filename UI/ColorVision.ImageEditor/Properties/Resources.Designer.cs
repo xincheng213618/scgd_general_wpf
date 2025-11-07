@@ -19,7 +19,7 @@ namespace ColorVision.ImageEditor.Properties {
     // 类通过类似于 ResGen 或 Visual Studio 的工具自动生成的。
     // 若要添加或移除成员，请编辑 .ResX 文件，然后重新运行 ResGen
     // (以 /str 作为命令选项)，或重新生成 VS 项目。
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -61,6 +61,15 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
+        ///   查找类似 绝对值 的本地化字符串。
+        /// </summary>
+        public static string Absolute {
+            get {
+                return ResourceManager.GetString("Absolute", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 位图缩放模式 的本地化字符串。
         /// </summary>
         public static string BitmapScalingMode {
@@ -75,6 +84,15 @@ namespace ColorVision.ImageEditor.Properties {
         public static string Clear {
             get {
                 return ResourceManager.GetString("Clear", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 外切 的本地化字符串。
+        /// </summary>
+        public static string External {
+            get {
+                return ResourceManager.GetString("External", resourceCulture);
             }
         }
         
@@ -115,11 +133,29 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
+        ///   查找类似 内切 的本地化字符串。
+        /// </summary>
+        public static string Internal {
+            get {
+                return ResourceManager.GetString("Internal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 反相 的本地化字符串。
         /// </summary>
         public static string Invert {
             get {
                 return ResourceManager.GetString("Invert", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 线上 的本地化字符串。
+        /// </summary>
+        public static string LineOn {
+            get {
+                return ResourceManager.GetString("LineOn", resourceCulture);
             }
         }
         
@@ -147,6 +183,15 @@ namespace ColorVision.ImageEditor.Properties {
         public static string Property {
             get {
                 return ResourceManager.GetString("Property", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 相对值 的本地化字符串。
+        /// </summary>
+        public static string Relative {
+            get {
+                return ResourceManager.GetString("Relative", resourceCulture);
             }
         }
         

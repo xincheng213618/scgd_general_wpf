@@ -200,19 +200,19 @@ namespace ColorVision.ImageEditor
 
     public enum GraphicBorderType
     {
-        [Description("绝对值")]
+        [Description("Absolute")]
         Absolute,
-        [Description("相对值")]
+        [Description("Relative")]
         Relative
     }
 
     public enum DrawingGraphicPosition
     {
-        [Description("线上")]
+        [Description("LineOn")]
         LineOn,
-        [Description("内切")]
+        [Description("Internal")]
         Internal,
-        [Description("外切")]
+        [Description("External")]
         External
     }
 

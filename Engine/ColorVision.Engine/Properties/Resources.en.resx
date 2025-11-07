@@ -1660,7 +1660,7 @@
     <value>quadrilateral</value>
   </data>
   <data name="Polyline" xml:space="preserve">
-    <value>Broken line</value>
+    <value>Polyline</value>
   </data>
   <data name="Value" xml:space="preserve">
     <value>value</value>
