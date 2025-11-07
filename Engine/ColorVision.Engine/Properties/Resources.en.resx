@@ -1776,4 +1776,37 @@
   <data name="WavelengthNm" xml:space="preserve">
     <value>Wavelength [nm]</value>
   </data>
+  <data name="Scan" xml:space="preserve">
+    <value>Scan</value>
+  </data>
+  <data name="Blue" xml:space="preserve">
+    <value>Blue light</value>
+  </data>
+  <data name="fx" xml:space="preserve">
+    <value>Chromaticity x</value>
+  </data>
+  <data name="fy" xml:space="preserve">
+    <value>chromaticity y</value>
+  </data>
+  <data name="fu" xml:space="preserve">
+    <value>Chromaticity u</value>
+  </data>
+  <data name="fv" xml:space="preserve">
+    <value>Chromaticity v</value>
+  </data>
+  <data name="CCT" xml:space="preserve">
+    <value>Correlated color temperature (K)</value>
+  </data>
+  <data name="Ld" xml:space="preserve">
+    <value>Dominant wavelength Ld(nm)</value>
+  </data>
+  <data name="ColorPurityPercent" xml:space="preserve">
+    <value>Color purity (%)</value>
+  </data>
+  <data name="Lp" xml:space="preserve">
+    <value>Peak wavelength Lp (nm)</value>
+  </data>
+  <data name="Ra" xml:space="preserve">
+    <value>Color rendering index Ra</value>
+  </data>
 </root>

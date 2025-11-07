@@ -520,6 +520,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 蓝光 的本地化字符串。
+        /// </summary>
+        public static string Blue {
+            get {
+                return ResourceManager.GetString("Blue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 亮度 的本地化字符串。
         /// </summary>
         public static string Brightness {
@@ -745,6 +754,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 相关色温(K) 的本地化字符串。
+        /// </summary>
+        public static string CCT {
+            get {
+                return ResourceManager.GetString("CCT", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 中心点 的本地化字符串。
         /// </summary>
         public static string CentralPoint {
@@ -894,6 +912,15 @@ namespace ColorVision.Engine.Properties {
         public static string ColorDiff {
             get {
                 return ResourceManager.GetString("ColorDiff", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 色纯度(%) 的本地化字符串。
+        /// </summary>
+        public static string ColorPurityPercent {
+            get {
+                return ResourceManager.GetString("ColorPurityPercent", resourceCulture);
             }
         }
         
@@ -2068,6 +2095,42 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 色度u 的本地化字符串。
+        /// </summary>
+        public static string fu {
+            get {
+                return ResourceManager.GetString("fu", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 色度v 的本地化字符串。
+        /// </summary>
+        public static string fv {
+            get {
+                return ResourceManager.GetString("fv", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 色度x 的本地化字符串。
+        /// </summary>
+        public static string fx {
+            get {
+                return ResourceManager.GetString("fx", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 色度y 的本地化字符串。
+        /// </summary>
+        public static string fy {
+            get {
+                return ResourceManager.GetString("fy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 增益 的本地化字符串。
         /// </summary>
         public static string Gain {
@@ -2410,6 +2473,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 主波长Ld(nm) 的本地化字符串。
+        /// </summary>
+        public static string Ld {
+            get {
+                return ResourceManager.GetString("Ld", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 左 的本地化字符串。
         /// </summary>
         public static string Left {
@@ -2523,6 +2595,15 @@ namespace ColorVision.Engine.Properties {
         public static string LowSpeedHoming {
             get {
                 return ResourceManager.GetString("LowSpeedHoming", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 峰值波长Lp(nm) 的本地化字符串。
+        /// </summary>
+        public static string Lp {
+            get {
+                return ResourceManager.GetString("Lp", resourceCulture);
             }
         }
         
@@ -3643,6 +3724,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 显色性指数Ra 的本地化字符串。
+        /// </summary>
+        public static string Ra {
+            get {
+                return ResourceManager.GetString("Ra", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 半径 的本地化字符串。
         /// </summary>
         public static string Radius {
@@ -3963,6 +4053,15 @@ namespace ColorVision.Engine.Properties {
         public static string SaveWindowLayout {
             get {
                 return ResourceManager.GetString("SaveWindowLayout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 扫描 的本地化字符串。
+        /// </summary>
+        public static string Scan {
+            get {
+                return ResourceManager.GetString("Scan", resourceCulture);
             }
         }
         

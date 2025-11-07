@@ -610,8 +610,7 @@
     <value>La version actuelle est déjà la dernière version</value>
   </data>
   <data name="CurrentSpeed" xml:space="preserve">
-    <value>AdaptiveZeroCalibration
-</value>
+    <value>AdaptiveZeroCalibration</value>
   </data>
   <data name="CreateTime" xml:space="preserve">
     <value>mesurer le temps</value>
@@ -1776,5 +1775,38 @@
   </data>
   <data name="WavelengthNm" xml:space="preserve">
     <value>Longueur d'onde [nm]</value>
+  </data>
+  <data name="Scan" xml:space="preserve">
+    <value>balayage</value>
+  </data>
+  <data name="Blue" xml:space="preserve">
+    <value>Lumière bleue</value>
+  </data>
+  <data name="fx" xml:space="preserve">
+    <value>Chromaticité x</value>
+  </data>
+  <data name="fy" xml:space="preserve">
+    <value>chromaticité y</value>
+  </data>
+  <data name="fu" xml:space="preserve">
+    <value>Chromaticité u</value>
+  </data>
+  <data name="fv" xml:space="preserve">
+    <value>Chromaticité v</value>
+  </data>
+  <data name="CCT" xml:space="preserve">
+    <value>Température de couleur corrélée (K)</value>
+  </data>
+  <data name="Ld" xml:space="preserve">
+    <value>longueur d'onde dominante Ld (nm)</value>
+  </data>
+  <data name="ColorPurityPercent" xml:space="preserve">
+    <value>Pureté de la couleur (%)</value>
+  </data>
+  <data name="Lp" xml:space="preserve">
+    <value>Longueur d'onde maximale Lp (nm)</value>
+  </data>
+  <data name="Ra" xml:space="preserve">
+    <value>Indice de rendu des couleurs Ra</value>
   </data>
 </root>

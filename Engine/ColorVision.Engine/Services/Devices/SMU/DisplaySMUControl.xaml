@@ -111,7 +111,7 @@
                                 <TextBox Text="{Binding  Config.StartMeasureVal}"  BorderThickness="0,0,0,1"/>
                             </DockPanel>
                             <DockPanel >
-                                <TextBlock Text="{x:Static properties:Resources.End}"" />
+                                <TextBlock Text="{x:Static properties:Resources.End}" />
                                 <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"  Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="V"/>
                                 <TextBlock DockPanel.Dock="Right" Width="30" Block.TextAlignment="Center"  Visibility="{Binding Config.IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="mA"/>
                                 <TextBox Text="{Binding  Config.StopMeasureVal}" BorderThickness="0,0,0,1"/>

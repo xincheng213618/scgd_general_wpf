@@ -1776,4 +1776,37 @@
   <data name="WavelengthNm" xml:space="preserve">
     <value>波長[nm]</value>
   </data>
+  <data name="Scan" xml:space="preserve">
+    <value>掃描</value>
+  </data>
+  <data name="Blue" xml:space="preserve">
+    <value>藍光</value>
+  </data>
+  <data name="fx" xml:space="preserve">
+    <value>色度x</value>
+  </data>
+  <data name="fy" xml:space="preserve">
+    <value>色度y</value>
+  </data>
+  <data name="fu" xml:space="preserve">
+    <value>色度u</value>
+  </data>
+  <data name="fv" xml:space="preserve">
+    <value>色度v</value>
+  </data>
+  <data name="CCT" xml:space="preserve">
+    <value>相關色溫(K)</value>
+  </data>
+  <data name="Ld" xml:space="preserve">
+    <value>主波長Ld(nm)</value>
+  </data>
+  <data name="ColorPurityPercent" xml:space="preserve">
+    <value>色純度(%)</value>
+  </data>
+  <data name="Lp" xml:space="preserve">
+    <value>峰值波長Lp(nm)</value>
+  </data>
+  <data name="Ra" xml:space="preserve">
+    <value>顯色性指數Ra</value>
+  </data>
 </root>

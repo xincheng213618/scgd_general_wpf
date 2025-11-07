@@ -141,70 +141,70 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="蓝光" >
+                            <GridViewColumn  Header="{x:Static properties:Resources.Blue}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{ Binding Blue}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="色度x" >
+                            <GridViewColumn  Header="{x:Static properties:Resources.fx}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{ Binding fx}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="色度y" >
+                            <GridViewColumn  Header="{x:Static properties:Resources.fy}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{ Binding fy}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="色度u" >
+                            <GridViewColumn  Header="{x:Static properties:Resources.fu}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{ Binding fu}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="色度v" >
+                            <GridViewColumn  Header="{x:Static properties:Resources.fv}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{ Binding fv}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="相关色温(K)" >
+                            <GridViewColumn  Header="{x:Static properties:Resources.CCT}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{ Binding fCCT}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="主波长Ld(nm)" >
+                            <GridViewColumn  Header="{x:Static properties:Resources.Ld}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{ Binding fLd}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="色纯度(%)" >
+                            <GridViewColumn  Header="{x:Static properties:Resources.ColorPurityPercent}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{ Binding fPur}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="峰值波长Lp(nm)" >
+                            <GridViewColumn  Header="{x:Static properties:Resources.Lp}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{ Binding fLp}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="显色性指数Ra" >
+                            <GridViewColumn  Header="{x:Static properties:Resources.Ra}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{ Binding fRa}"/>
@@ -225,7 +225,7 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header=""{x:Static properties:Resources.I}" >
+                            <GridViewColumn  Header="{x:Static properties:Resources.I}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{ Binding I}"/>

@@ -1776,4 +1776,37 @@
   <data name="WavelengthNm" xml:space="preserve">
     <value>파장 [nm]</value>
   </data>
+  <data name="Scan" xml:space="preserve">
+    <value>스캐닝</value>
+  </data>
+  <data name="Blue" xml:space="preserve">
+    <value>푸른 빛</value>
+  </data>
+  <data name="fx" xml:space="preserve">
+    <value>색도 x</value>
+  </data>
+  <data name="fy" xml:space="preserve">
+    <value>색도 y</value>
+  </data>
+  <data name="fu" xml:space="preserve">
+    <value>색도 u</value>
+  </data>
+  <data name="fv" xml:space="preserve">
+    <value>색도 v</value>
+  </data>
+  <data name="CCT" xml:space="preserve">
+    <value>상관색온도(K)</value>
+  </data>
+  <data name="Ld" xml:space="preserve">
+    <value>주요 파장 Ld(nm)</value>
+  </data>
+  <data name="ColorPurityPercent" xml:space="preserve">
+    <value>색상 순도(%)</value>
+  </data>
+  <data name="Lp" xml:space="preserve">
+    <value>피크 파장 Lp(nm)</value>
+  </data>
+  <data name="Ra" xml:space="preserve">
+    <value>연색지수 Ra</value>
+  </data>
 </root>
