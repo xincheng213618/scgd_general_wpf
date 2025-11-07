@@ -399,9 +399,6 @@
   <data name="MenuPhyCameraManager" xml:space="preserve">
     <value>物理相机管理(_P)</value>
   </data>
-  <data name="MenuPG" xml:space="preserve">
-    <value>P_G模板设置</value>
-  </data>
   <data name="MenuOptions" xml:space="preserve">
     <value>选项(_O)</value>
   </data>
@@ -1496,5 +1493,194 @@
   </data>
   <data name="ErrorQueryingTemperatureData" xml:space="preserve">
     <value>查询温度数据时发生错误</value>
+  </data>
+  <data name="SzComName" xml:space="preserve">
+    <value>串口号</value>
+  </data>
+  <data name="RetryCount" xml:space="preserve">
+    <value>重试次数</value>
+  </data>
+  <data name="FilterWheelCount" xml:space="preserve">
+    <value>滤色轮数量(6,12)</value>
+  </data>
+  <data name="AutoConnect" xml:space="preserve">
+    <value>自动连接</value>
+  </data>
+  <data name="PgTemplateConfig" xml:space="preserve">
+    <value>PG模板配置</value>
+  </data>
+  <data name="SensorDicEdit" xml:space="preserve">
+    <value>传感器字典编辑</value>
+  </data>
+  <data name="SMUView" xml:space="preserve">
+    <value>源表视图</value>
+  </data>
+  <data name="UploadLic" xml:space="preserve">
+    <value>上传许可证</value>
+  </data>
+  <data name="ApaptivezeroCaliSet" xml:space="preserve">
+    <value>自适应校零设置</value>
+  </data>
+  <data name="SpectrumView" xml:space="preserve">
+    <value>光谱仪视图</value>
+  </data>
+  <data name="ExcAdaptiveZeroCali" xml:space="preserve">
+    <value>自适应校零执行</value>
+  </data>
+  <data name="UploadThridPartPlusIn" xml:space="preserve">
+    <value>上传第三方插件</value>
+  </data>
+  <data name="ThirdPartAlgorithmConfig" xml:space="preserve">
+    <value>配置第三方算法</value>
+  </data>
+  <data name="ThirdPartAlgView" xml:space="preserve">
+    <value>第三方算法视图</value>
+  </data>
+  <data name="CaliTemplateManagerment" xml:space="preserve">
+    <value>校正模板管理</value>
+  </data>
+  <data name="CaliTemplateSet" xml:space="preserve">
+    <value>校正模板设置</value>
+  </data>
+  <data name="DownLicOnline" xml:space="preserve">
+    <value>在线下载许可证</value>
+  </data>
+  <data name="CreateRestorePoint" xml:space="preserve">
+    <value>创建还原点</value>
+  </data>
+  <data name="LoadRestorePoint" xml:space="preserve">
+    <value>加载还原点</value>
+  </data>
+  <data name="StartRC" xml:space="preserve">
+    <value>启用RC</value>
+  </data>
+  <data name="DefaultCanvas" xml:space="preserve">
+    <value>默认画布</value>
+  </data>
+  <data name="ImgImport" xml:space="preserve">
+    <value>图像导入</value>
+  </data>
+  <data name="ImportLatestImages" xml:space="preserve">
+    <value>导入最新的图像</value>
+  </data>
+  <data name="SavePOI" xml:space="preserve">
+    <value>保存关注点</value>
+  </data>
+  <data name="ClearPOI" xml:space="preserve">
+    <value>清空关注点</value>
+  </data>
+  <data name="ReRender" xml:space="preserve">
+    <value>重渲染</value>
+  </data>
+  <data name="Once" xml:space="preserve">
+    <value>一次</value>
+  </data>
+  <data name="SaveToFile" xml:space="preserve">
+    <value>保存到文件</value>
+  </data>
+  <data name="Radius" xml:space="preserve">
+    <value>半径</value>
+  </data>
+  <data name="DataCorrectionFilePath" xml:space="preserve">
+    <value>数据修正文件路径</value>
+  </data>
+  <data name="TopRight" xml:space="preserve">
+    <value>右上</value>
+  </data>
+  <data name="TopLeft" xml:space="preserve">
+    <value>左上</value>
+  </data>
+  <data name="DownLeft" xml:space="preserve">
+    <value>左下</value>
+  </data>
+  <data name="DownRight" xml:space="preserve">
+    <value>右下</value>
+  </data>
+  <data name="SetToGlobalCache" xml:space="preserve">
+    <value>设置到全局缓存</value>
+  </data>
+  <data name="ApplyCache" xml:space="preserve">
+    <value>应用缓存</value>
+  </data>
+  <data name="EnableActiveAreaFourCorners" xml:space="preserve">
+    <value>启用发光区4个角点</value>
+  </data>
+  <data name="PointLayoutAreaDisplay" xml:space="preserve">
+    <value>布点区域显示</value>
+  </data>
+  <data name="CentralPoint" xml:space="preserve">
+    <value>中心点</value>
+  </data>
+  <data name="SetPointLayoutArea" xml:space="preserve">
+    <value>设置布点区域</value>
+  </data>
+  <data name="Count" xml:space="preserve">
+    <value>数量</value>
+  </data>
+  <data name="Angle" xml:space="preserve">
+    <value>角度</value>
+  </data>
+  <data name="FindActiveArea" xml:space="preserve">
+    <value>寻找发光区</value>
+  </data>
+  <data name="FillArea" xml:space="preserve">
+    <value>充满</value>
+  </data>
+  <data name="Width" xml:space="preserve">
+    <value>宽度</value>
+  </data>
+  <data name="height" xml:space="preserve">
+    <value>高度</value>
+  </data>
+  <data name="RowCount" xml:space="preserve">
+    <value>行数</value>
+  </data>
+  <data name="ColumCount" xml:space="preserve">
+    <value>列数</value>
+  </data>
+  <data name="FindLuminousAreaCorners" xml:space="preserve">
+    <value>寻找发光区角点</value>
+  </data>
+  <data name="Left" xml:space="preserve">
+    <value>左</value>
+  </data>
+  <data name="Right" xml:space="preserve">
+    <value>右:</value>
+  </data>
+  <data name="Dispaly" xml:space="preserve">
+    <value>显示</value>
+  </data>
+  <data name="SetSegmentation" xml:space="preserve">
+    <value>设定分割</value>
+  </data>
+  <data name="UseNodePrompt" xml:space="preserve">
+    <value>是否使用节点</value>
+  </data>
+  <data name="Quadrilateral" xml:space="preserve">
+    <value>四边形</value>
+  </data>
+  <data name="Polyline" xml:space="preserve">
+    <value>折线</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>值</value>
+  </data>
+  <data name="Circle" xml:space="preserve">
+    <value>圆</value>
+  </data>
+  <data name="POIEdit" xml:space="preserve">
+    <value>关注点编辑</value>
+  </data>
+  <data name="Rect" xml:space="preserve">
+    <value>矩形</value>
+  </data>
+  <data name="Draw" xml:space="preserve">
+    <value>绘制</value>
+  </data>
+  <data name="POISetting" xml:space="preserve">
+    <value>关注点设置</value>
+  </data>
+  <data name="PGParamConfig" xml:space="preserve">
+    <value>PGParam设置</value>
   </data>
 </root>

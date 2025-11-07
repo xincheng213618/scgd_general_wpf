@@ -56,12 +56,12 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         [CommandDisplay("UploadCalibrationFiles", Order =100)]
         public RelayCommand UploadCalibrationCommand { get; set; }
-        [CommandDisplay("校正模板管理",Order =102)]
+        [CommandDisplay("aliTemplateManagerment",Order =102)]
         public RelayCommand CalibrationEditCommand { get; set; }
-        [CommandDisplay("校正模板设置",Order =101)]
+        [CommandDisplay("CaliTemplateSet",Order =101)]
         public RelayCommand CalibrationTemplateOpenCommand { get; set; }
         public RelayCommand UploadLicenseCommand { get; set; }
-        [CommandDisplay("在线下载许可证")]
+        [CommandDisplay("DownLicOnline")]
         public RelayCommand UploadLicenseNetCommand { get; set; }
 
         public RelayCommand RefreshLicenseCommand { get; set; }
@@ -71,13 +71,13 @@ namespace ColorVision.Engine.Services.PhyCameras
         [CommandDisplay("ModifyConfiguration", Order = -99)]
         public RelayCommand EditCommand { get; set; }
         public RelayCommand CopyConfigCommand { get; set; }
-        [CommandDisplay("打开配置文件")]
+        [CommandDisplay("OpenConfigFile")]
         public RelayCommand OpenSettingDirectoryCommand { get; set; }
 
-        [CommandDisplay("创建还原点", Order = 99999)]
+        [CommandDisplay("CreateRestorePoint", Order = 99999)]
         public RelayCommand CreatResotreCommand { get; set; }
 
-        [CommandDisplay("加载还原点", Order = 99999)]
+        [CommandDisplay("LoadRestorePoint", Order = 99999)]
         public RelayCommand LoadResotreCommand { get; set; }
 
 

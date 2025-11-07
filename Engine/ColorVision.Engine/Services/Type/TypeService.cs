@@ -24,25 +24,25 @@ namespace ColorVision.Engine.Services.Types
         ThirdPartyAlgorithms = 13,
         ThirdPartyAlgorithms32 = 15,
         FlowTemp = 21,
-        [Description("暗噪声")]
+        [Description("DarkNoise")]
         DarkNoise = 31,
-        [Description("缺陷点")]
+        [Description("DefectPoint")]
         DefectPoint = 32,
         [Description("DSNU")]
         DSNU = 33,
-        [Description("均匀场")]
+        [Description("Uniformity")]
         Uniformity = 34,
-        [Description("畸变")]
+        [Description("Distortion")]
         Distortion = 35,
-        [Description("色偏")]
+        [Description("ColorShift")]
         ColorShift = 36,
-        [Description("亮度")]
+        [Description("Brightness")]
         Luminance = 37,
-        [Description("单色")]
+        [Description("OneColor")]
         LumOneColor = 38,
-        [Description("四色")]
+        [Description("FourColor")]
         LumFourColor = 39,
-        [Description("多色")]
+        [Description("MultiColor")]
         LumMultiColor = 40,
         [Description("LineArity")]
         LineArity = 41,

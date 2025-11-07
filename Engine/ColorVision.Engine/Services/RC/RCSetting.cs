@@ -16,8 +16,8 @@ namespace ColorVision.Engine.Services.RC
             {
                 new ConfigSettingMetadata
                 {
-                    Name = "启用RC",
-                    Description = "启用RC",
+                    Name = ColorVision.Engine.Properties.Resources.StartRC,
+                    Description = ColorVision.Engine.Properties.Resources.StartRC,
                     Type = ConfigSettingType.Bool,
                     Group ="Engine",
                     Order =10,
