@@ -27,14 +27,8 @@ namespace ColorVision.Engine.Batch.IVL
         private List<string> _seriesNames;
 
         public ILvPlotWindow(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas)
+            : this(smuResults, poixyuvDatas, null)
         {
-            InitializeComponent();
-            _groupedData = new Dictionary<string, List<ILvDataPoint>>();
-            _scatterPlots = new Dictionary<string, Scatter>();
-            _seriesNames = new List<string>();
-            
-            LoadData(smuResults, poixyuvDatas, null);
-            InitializePlot();
         }
 
         public ILvPlotWindow(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas, List<ViewResultSpectrum> spectrumResults)
@@ -54,20 +48,27 @@ namespace ColorVision.Engine.Batch.IVL
             int smuCount = smuResults.Count;
             int poiCount = poixyuvDatas.Count;
             
-            if (smuCount == 0 || poiCount == 0)
+            // Check if we have at least some data to plot (POI or spectrum)
+            bool hasPoiData = smuCount > 0 && poiCount > 0;
+            bool hasSpectrumData = spectrumResults != null && spectrumResults.Count > 0 && smuCount > 0;
+            
+            if (!hasPoiData && !hasSpectrumData)
             {
                 MessageBox.Show("No data available to plot.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            // Calculate how many POIs per SMU measurement (same logic as IVLProcess)
-            int poisPerMeasurement = poiCount / smuCount;
-            if (poisPerMeasurement == 0)
-                poisPerMeasurement = 1;
-
-            // Match the data pairing logic from IVLProcess.cs
-            for (int i = 0; i < poiCount; i++)
+            // Process POI data if available
+            if (hasPoiData)
             {
+                // Calculate how many POIs per SMU measurement (same logic as IVLProcess)
+                int poisPerMeasurement = poiCount / smuCount;
+                if (poisPerMeasurement == 0)
+                    poisPerMeasurement = 1;
+
+                // Match the data pairing logic from IVLProcess.cs
+                for (int i = 0; i < poiCount; i++)
+                {
                 // Calculate SMU index: z = i / cout (from IVLProcess.cs)
                 int smuIndex = i / poisPerMeasurement;
                 if (smuIndex >= smuCount)
@@ -107,9 +108,10 @@ namespace ColorVision.Engine.Batch.IVL
                     });
                 }
             }
+            }
 
             // Add spectrum data if available
-            if (spectrumResults != null && spectrumResults.Count > 0)
+            if (hasSpectrumData)
             {
                 string spectrumSeriesName = "光谱仪";
                 
