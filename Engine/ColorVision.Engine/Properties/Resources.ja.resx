@@ -1911,4 +1911,55 @@
   <data name="TimeOut_Ms" xml:space="preserve">
     <value>タイムアウト（ミリ秒）</value>
   </data>
+  <data name="SMUSimulator" xml:space="preserve">
+    <value>ソーステーブルシミュレーター</value>
+  </data>
+  <data name="WaveLengthFile" xml:space="preserve">
+    <value>波長ファイル</value>
+  </data>
+  <data name="AmplitudeFile" xml:space="preserve">
+    <value>振幅ファイル</value>
+  </data>
+  <data name="IsEnableNd" xml:space="preserve">
+    <value>ND を有効にしますか?</value>
+  </data>
+  <data name="ConnectType" xml:space="preserve">
+    <value>接続方法</value>
+  </data>
+  <data name="Saturation" xml:space="preserve">
+    <value>飽和</value>
+  </data>
+  <data name="SetEmissionSP100Config" xml:space="preserve">
+    <value>EmissionSP100設定</value>
+  </data>
+  <data name="SelectDataFirst" xml:space="preserve">
+    <value>最初にデータを選択する必要があります。</value>
+  </data>
+  <data name="SelectLicenseFilePrompt" xml:space="preserve">
+    <value>ライセンスファイルを選択してください</value>
+  </data>
+  <data name="AddFailed" xml:space="preserve">
+    <value>追加に失敗しました</value>
+  </data>
+  <data name="AddSuccess" xml:space="preserve">
+    <value>正常に追加されました</value>
+  </data>
+  <data name="ExtractionFailed" xml:space="preserve">
+    <value>減圧に失敗しました</value>
+  </data>
+  <data name="UpdataSucess" xml:space="preserve">
+    <value>更新成功</value>
+  </data>
+  <data name="UnsupportedLicenseFileExtension" xml:space="preserve">
+    <value>サポートされていないライセンスファイル拡張子</value>
+  </data>
+  <data name="AllSpectrumDeviceInfo" xml:space="preserve">
+    <value>すべての分光計機器情報</value>
+  </data>
+  <data name="CreateDataBase" xml:space="preserve">
+    <value>データベースの作成</value>
+  </data>
+  <data name="TemplateFailed" xml:space="preserve">
+    <value>テンプレートが失敗しました</value>
+  </data>
 </root>

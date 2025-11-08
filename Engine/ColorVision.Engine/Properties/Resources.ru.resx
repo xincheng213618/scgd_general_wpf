@@ -1911,4 +1911,55 @@
   <data name="TimeOut_Ms" xml:space="preserve">
     <value>Тайм-аут (мс)</value>
   </data>
+  <data name="SMUSimulator" xml:space="preserve">
+    <value>Симулятор исходной таблицы</value>
+  </data>
+  <data name="WaveLengthFile" xml:space="preserve">
+    <value>Файл длины волны</value>
+  </data>
+  <data name="AmplitudeFile" xml:space="preserve">
+    <value>Файл амплитуды</value>
+  </data>
+  <data name="IsEnableNd" xml:space="preserve">
+    <value>Включить ND?</value>
+  </data>
+  <data name="ConnectType" xml:space="preserve">
+    <value>Способ подключения</value>
+  </data>
+  <data name="Saturation" xml:space="preserve">
+    <value>Насыщенность</value>
+  </data>
+  <data name="SetEmissionSP100Config" xml:space="preserve">
+    <value>Настройки EmissionSP100</value>
+  </data>
+  <data name="SelectDataFirst" xml:space="preserve">
+    <value>Сначала вам нужно выбрать данные.</value>
+  </data>
+  <data name="SelectLicenseFilePrompt" xml:space="preserve">
+    <value>Пожалуйста, выберите файл лицензии</value>
+  </data>
+  <data name="AddFailed" xml:space="preserve">
+    <value>Добавить не удалось</value>
+  </data>
+  <data name="AddSuccess" xml:space="preserve">
+    <value>Добавлено успешно</value>
+  </data>
+  <data name="ExtractionFailed" xml:space="preserve">
+    <value>Декомпрессия не удалась</value>
+  </data>
+  <data name="UpdataSucess" xml:space="preserve">
+    <value>Обновление успешно завершено</value>
+  </data>
+  <data name="UnsupportedLicenseFileExtension" xml:space="preserve">
+    <value>Неподдерживаемые расширения файла лицензии</value>
+  </data>
+  <data name="AllSpectrumDeviceInfo" xml:space="preserve">
+    <value>Вся информация о спектрометрическом оборудовании</value>
+  </data>
+  <data name="CreateDataBase" xml:space="preserve">
+    <value>Создание базы данных</value>
+  </data>
+  <data name="TemplateFailed" xml:space="preserve">
+    <value>Шаблон не удался</value>
+  </data>
 </root>

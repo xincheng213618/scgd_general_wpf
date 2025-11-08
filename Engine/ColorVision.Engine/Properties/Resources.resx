@@ -1911,4 +1911,67 @@
   <data name="TimeOut_Ms" xml:space="preserve">
     <value>超时(ms)</value>
   </data>
+  <data name="SMUSimulator" xml:space="preserve">
+    <value>源表模拟器</value>
+  </data>
+  <data name="WaveLengthFile" xml:space="preserve">
+    <value>波长文件</value>
+  </data>
+  <data name="AmplitudeFile" xml:space="preserve">
+    <value>幅值文件</value>
+  </data>
+  <data name="IsEnableNd" xml:space="preserve">
+    <value>是否启用ND</value>
+  </data>
+  <data name="ConnectType" xml:space="preserve">
+    <value>连接方式</value>
+  </data>
+  <data name="Saturation" xml:space="preserve">
+    <value>饱和度</value>
+  </data>
+  <data name="SetEmissionSP100Config" xml:space="preserve">
+    <value>EmissionSP100设置</value>
+  </data>
+  <data name="SelectDataFirst" xml:space="preserve">
+    <value>您需要先选择数据</value>
+  </data>
+  <data name="SelectLicenseFilePrompt" xml:space="preserve">
+    <value>请选择许可证文件</value>
+  </data>
+  <data name="AddFailed" xml:space="preserve">
+    <value>添加失败</value>
+  </data>
+  <data name="AddSuccess" xml:space="preserve">
+    <value>添加成功</value>
+  </data>
+  <data name="ExtractionFailed" xml:space="preserve">
+    <value>解压失败</value>
+  </data>
+  <data name="UpdataSucess" xml:space="preserve">
+    <value>更新成功</value>
+  </data>
+  <data name="UnsupportedLicenseFileExtension" xml:space="preserve">
+    <value>不支持的许可文件后缀</value>
+  </data>
+  <data name="AllSpectrumDeviceInfo" xml:space="preserve">
+    <value>所有光谱仪设备信息</value>
+  </data>
+  <data name="CreateDataBase" xml:space="preserve">
+    <value>数据库创建</value>
+  </data>
+  <data name="TemplateFailed" xml:space="preserve">
+    <value>模板失败</value>
+  </data>
+  <data name="LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt" xml:space="preserve">
+    <value>当前逻辑相机许可证过期，无法刷新设备列表，是否清空当前相机服务绑定的物理相机，然后在重试</value>
+  </data>
+  <data name="LogicalCameraOffline_ClearBindingsAndRetryPromp" xml:space="preserve">
+    <value>当前逻辑相机离线，无法刷新设备列表，是否清空当前相机服务绑定的物理相机，然后在重试</value>
+  </data>
+  <data name="CurrentDeviceCameraInfo" xml:space="preserve">
+    <value>当前设备相机信息</value>
+  </data>
+  <data name="RefreshDeviceListFailed" xml:space="preserve">
+    <value>刷新设备列表失败</value>
+  </data>
 </root>

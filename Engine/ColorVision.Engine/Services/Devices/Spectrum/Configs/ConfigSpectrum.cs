@@ -82,24 +82,24 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public override string SN { get => _SN; set { _SN = value; OnPropertyChanged(); } }
         private string _SN;
 
-        [DisplayName("设备自动连接")]
+        [DisplayName("DeviceAutoConnect")]
         public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; OnPropertyChanged(); } }
         private bool _IsAutoOpen;
 
-        [DisplayName("波长文件")]
+        [DisplayName("WaveLengthFile")]
         [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string WavelengthFile { get => _WavelengthFile; set { _WavelengthFile = value; OnPropertyChanged(); } }
         private string _WavelengthFile;
 
-        [DisplayName("幅值文件")]
+        [DisplayName("AmplitudeFile")]
         [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string MaguideFile { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
         private string _MaguideFile;
 
-        [DisplayName("是否启用ND")]
+        [DisplayName("IsEnableNd")]
         public bool IsWithND { get => _IsWithND; set { _IsWithND = value; OnPropertyChanged(); } }
         private bool _IsWithND;
-        [DisplayName("连接方式")]
+        [DisplayName("ConnectType")]
         public SpectrometerType SpectrometerType { get => _SpectrometerType; set { _SpectrometerType = value; OnPropertyChanged(); if (value == SpectrometerType.CMvSpectra) _ComPort = "0"; OnPropertyChanged(nameof(ComPort)); } }
         private SpectrometerType _SpectrometerType = SpectrometerType.CMvSpectra;
 
@@ -109,20 +109,20 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
         private int _BaudRate = 9600;
 
-        [DisplayName("饱和度")]
+        [DisplayName("Saturation")]
         public int Saturation { get => _Saturation; set { _Saturation = value; OnPropertyChanged(); } }
         private int _Saturation = 80;
 
 
-        [DisplayName("最大积分时间(ms)"), Category("配置信息")]
+        [DisplayName("MaxIntegrationTime_Ms"), Category("ConfigerInfo")]
         public int MaxIntegralTime { get => _TimeLimit; set { _TimeLimit = value; OnPropertyChanged(); } }
         private int _TimeLimit = 60000;
 
-        [DisplayName("自动测试间隔(ms)"),Category("配置信息")]
+        [DisplayName("AutoTestInterval_Ms"),Category("ConfigerInfo")]
         public int AutoTestTime { get => _AutoTestTime; set { _AutoTestTime = value; OnPropertyChanged(); } }
         private int _AutoTestTime = 100;
 
-        [DisplayName("起始积分时间(ms)"), Category("配置信息")]
+        [DisplayName("StartIntegrationTime_Ms"), Category("ConfigerInfo")]
         public float BeginIntegralTime { get => _TimeFrom; set { _TimeFrom = value; OnPropertyChanged(); } }
         private float _TimeFrom = 10;
 
@@ -171,7 +171,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
     }
 
 
-    [DisplayName("EmissionSP100设置")]
+    [DisplayName("SetEmissionSP100Config")]
     public class SetEmissionSP100Config : ViewModelBase
     {
 

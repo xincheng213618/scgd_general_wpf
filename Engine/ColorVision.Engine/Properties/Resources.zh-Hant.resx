@@ -1911,4 +1911,55 @@
   <data name="TimeOut_Ms" xml:space="preserve">
     <value>超時(ms)</value>
   </data>
+  <data name="SMUSimulator" xml:space="preserve">
+    <value>源表模擬器</value>
+  </data>
+  <data name="WaveLengthFile" xml:space="preserve">
+    <value>波長文件</value>
+  </data>
+  <data name="AmplitudeFile" xml:space="preserve">
+    <value>振幅文件</value>
+  </data>
+  <data name="IsEnableNd" xml:space="preserve">
+    <value>是否啟用ND</value>
+  </data>
+  <data name="ConnectType" xml:space="preserve">
+    <value>連接方式</value>
+  </data>
+  <data name="Saturation" xml:space="preserve">
+    <value>飽和度</value>
+  </data>
+  <data name="SetEmissionSP100Config" xml:space="preserve">
+    <value>EmissionSP100設定</value>
+  </data>
+  <data name="SelectDataFirst" xml:space="preserve">
+    <value>您需要先選擇數據</value>
+  </data>
+  <data name="SelectLicenseFilePrompt" xml:space="preserve">
+    <value>請選擇許可證文件</value>
+  </data>
+  <data name="AddFailed" xml:space="preserve">
+    <value>新增失敗</value>
+  </data>
+  <data name="AddSuccess" xml:space="preserve">
+    <value>添加成功</value>
+  </data>
+  <data name="ExtractionFailed" xml:space="preserve">
+    <value>解壓縮失敗</value>
+  </data>
+  <data name="UpdataSucess" xml:space="preserve">
+    <value>更新成功</value>
+  </data>
+  <data name="UnsupportedLicenseFileExtension" xml:space="preserve">
+    <value>不支援的授權文件後綴</value>
+  </data>
+  <data name="AllSpectrumDeviceInfo" xml:space="preserve">
+    <value>所有光譜儀設備資訊</value>
+  </data>
+  <data name="CreateDataBase" xml:space="preserve">
+    <value>資料庫創建</value>
+  </data>
+  <data name="TemplateFailed" xml:space="preserve">
+    <value>模板失敗</value>
+  </data>
 </root>

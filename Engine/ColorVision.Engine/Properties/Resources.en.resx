@@ -1911,4 +1911,55 @@
   <data name="TimeOut_Ms" xml:space="preserve">
     <value>Timeout (ms)</value>
   </data>
+  <data name="SMUSimulator" xml:space="preserve">
+    <value>SMU simulator</value>
+  </data>
+  <data name="WaveLengthFile" xml:space="preserve">
+    <value>Wavelength file</value>
+  </data>
+  <data name="AmplitudeFile" xml:space="preserve">
+    <value>Amplitude file</value>
+  </data>
+  <data name="IsEnableNd" xml:space="preserve">
+    <value>Enable ND?</value>
+  </data>
+  <data name="ConnectType" xml:space="preserve">
+    <value>Connection method</value>
+  </data>
+  <data name="Saturation" xml:space="preserve">
+    <value>Saturation</value>
+  </data>
+  <data name="SetEmissionSP100Config" xml:space="preserve">
+    <value>EmissionSP100 Settings</value>
+  </data>
+  <data name="SelectDataFirst" xml:space="preserve">
+    <value>You need to select data first.</value>
+  </data>
+  <data name="SelectLicenseFilePrompt" xml:space="preserve">
+    <value>Please select license file</value>
+  </data>
+  <data name="AddFailed" xml:space="preserve">
+    <value>Add failed</value>
+  </data>
+  <data name="AddSuccess" xml:space="preserve">
+    <value>Added successfully</value>
+  </data>
+  <data name="ExtractionFailed" xml:space="preserve">
+    <value>Decompression failed</value>
+  </data>
+  <data name="UpdataSucess" xml:space="preserve">
+    <value>Update successful</value>
+  </data>
+  <data name="UnsupportedLicenseFileExtension" xml:space="preserve">
+    <value>Unsupported license file extensions</value>
+  </data>
+  <data name="AllSpectrumDeviceInfo" xml:space="preserve">
+    <value>All spectrometer equipment information</value>
+  </data>
+  <data name="CreateDataBase" xml:space="preserve">
+    <value>Database creation</value>
+  </data>
+  <data name="TemplateFailed" xml:space="preserve">
+    <value>Template failed</value>
+  </data>
 </root>

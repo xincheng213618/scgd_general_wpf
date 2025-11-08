@@ -1911,4 +1911,55 @@
   <data name="TimeOut_Ms" xml:space="preserve">
     <value>Délai d'attente (ms)</value>
   </data>
+  <data name="SMUSimulator" xml:space="preserve">
+    <value>Simulateur de table source</value>
+  </data>
+  <data name="WaveLengthFile" xml:space="preserve">
+    <value>Fichier de longueur d'onde</value>
+  </data>
+  <data name="AmplitudeFile" xml:space="preserve">
+    <value>Fichier d'amplitude</value>
+  </data>
+  <data name="IsEnableNd" xml:space="preserve">
+    <value>Activer ND ?</value>
+  </data>
+  <data name="ConnectType" xml:space="preserve">
+    <value>Méthode de connexion</value>
+  </data>
+  <data name="Saturation" xml:space="preserve">
+    <value>Saturation</value>
+  </data>
+  <data name="SetEmissionSP100Config" xml:space="preserve">
+    <value>Paramètres d'émission SP100</value>
+  </data>
+  <data name="SelectDataFirst" xml:space="preserve">
+    <value>Vous devez d'abord sélectionner des données.</value>
+  </data>
+  <data name="SelectLicenseFilePrompt" xml:space="preserve">
+    <value>Veuillez sélectionner le fichier de licence</value>
+  </data>
+  <data name="AddFailed" xml:space="preserve">
+    <value>Échec de l'ajout</value>
+  </data>
+  <data name="AddSuccess" xml:space="preserve">
+    <value>Ajouté avec succès</value>
+  </data>
+  <data name="ExtractionFailed" xml:space="preserve">
+    <value>La décompression a échoué</value>
+  </data>
+  <data name="UpdataSucess" xml:space="preserve">
+    <value>Mise à jour réussie</value>
+  </data>
+  <data name="UnsupportedLicenseFileExtension" xml:space="preserve">
+    <value>Extensions de fichiers de licence non prises en charge</value>
+  </data>
+  <data name="AllSpectrumDeviceInfo" xml:space="preserve">
+    <value>Toutes les informations sur les équipements de spectromètre</value>
+  </data>
+  <data name="CreateDataBase" xml:space="preserve">
+    <value>Création de base de données</value>
+  </data>
+  <data name="TemplateFailed" xml:space="preserve">
+    <value>Échec du modèle</value>
+  </data>
 </root>
