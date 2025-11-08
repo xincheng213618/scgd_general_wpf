@@ -177,4 +177,19 @@
   <data name="ImageAlgorithm" xml:space="preserve">
     <value>이미지 알고리즘</value>
   </data>
+  <data name="LineOn" xml:space="preserve">
+    <value>온라인</value>
+  </data>
+  <data name="Internal" xml:space="preserve">
+    <value>절개</value>
+  </data>
+  <data name="External" xml:space="preserve">
+    <value>외부 절개</value>
+  </data>
+  <data name="Absolute" xml:space="preserve">
+    <value>절대값</value>
+  </data>
+  <data name="Relative" xml:space="preserve">
+    <value>상대적 가치</value>
+  </data>
 </root>

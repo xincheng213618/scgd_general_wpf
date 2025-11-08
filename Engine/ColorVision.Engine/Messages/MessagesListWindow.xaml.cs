@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Messages
     {
         public override string OwnerGuid => MenuItemConstants.View;
         public override string GuidId => "MsgList";
-        public override string Header => "消息日志窗口";
+        public override string Header => ColorVision.Engine.Properties.Resources.MsgLogWin;
         public override int Order => 20;
 
         public override void Execute()

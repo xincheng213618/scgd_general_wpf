@@ -2115,4 +2115,118 @@
   <data name="Lv" xml:space="preserve">
     <value>明るさLv（cd/m2）</value>
   </data>
+  <data name="MsgLogWin" xml:space="preserve">
+    <value>メッセージログウィンドウ</value>
+  </data>
+  <data name="PhySpectrum" xml:space="preserve">
+    <value>物理分光計</value>
+  </data>
+  <data name="ComplyPoint" xml:space="preserve">
+    <value>ポイント</value>
+  </data>
+  <data name="ComplyPointList_" xml:space="preserve">
+    <value>ドットセット</value>
+  </data>
+  <data name="EditDefaultComplianceDictionary" xml:space="preserve">
+    <value>デフォルトのコンプライアンス辞書を編集する</value>
+  </data>
+  <data name="CalibrationToolNotFound_DownloadPrompt" xml:space="preserve">
+    <value>キャリブレーション生成ツールが見つかりません。オンラインでダウンロードしますか?</value>
+  </data>
+  <data name="DownloadCalibrationTool" xml:space="preserve">
+    <value>キャリブレーション生成ツールをダウンロード</value>
+  </data>
+  <data name="SelectUpzipDirectry" xml:space="preserve">
+    <value>解凍ディレクトリを選択してください。</value>
+  </data>
+  <data name="LedDataFIle" xml:space="preserve">
+    <value>LEDデータファイル</value>
+  </data>
+  <data name="LedDataFileNotFound" xml:space="preserve">
+    <value>LEDデータファイルが見つかりません</value>
+  </data>
+  <data name="ImageFileNotFound" xml:space="preserve">
+    <value>画像ファイルが見つかりません</value>
+  </data>
+  <data name="ImageFileIsnotCVCIE" xml:space="preserve">
+    <value>画像ファイルは CVCIE ファイルではありません。</value>
+  </data>
+  <data name="ImageFileOpenFailed" xml:space="preserve">
+    <value>画像ファイルを開けませんでした</value>
+  </data>
+  <data name="SSCOMTool" xml:space="preserve">
+    <value>SSCOM シリアルポートデバッグアシスタント</value>
+  </data>
+  <data name="CalibrationFileCorrectionTool" xml:space="preserve">
+    <value>修正ファイル修復ツール</value>
+  </data>
+  <data name="AlgorithmView" xml:space="preserve">
+    <value>アルゴリズムビュー</value>
+  </data>
+  <data name="StartTimeMs" xml:space="preserve">
+    <value>開始時間（ミリ秒）</value>
+  </data>
+  <data name="FrequencySyncHz" xml:space="preserve">
+    <value>周波数同期（Hz）</value>
+  </data>
+  <data name="SaturationPercent" xml:space="preserve">
+    <value>彩度（％）</value>
+  </data>
+  <data name="ADMax" xml:space="preserve">
+    <value>最大AD</value>
+  </data>
+  <data name="MaxPercent" xml:space="preserve">
+    <value>最大パーセンテージ</value>
+  </data>
+  <data name="SaturationDifference" xml:space="preserve">
+    <value>彩度差</value>
+  </data>
+  <data name="MaxExposureTimeMs" xml:space="preserve">
+    <value>最大露光時間（ミリ秒）</value>
+  </data>
+  <data name="MinExposureTimeMs" xml:space="preserve">
+    <value>最小露光時間（ミリ秒）</value>
+  </data>
+  <data name="BurstThresholdMs" xml:space="preserve">
+    <value>バースト閾値（ミリ秒）</value>
+  </data>
+  <data name="EvaluationFunctionType" xml:space="preserve">
+    <value>評価関数の種類</value>
+  </data>
+  <data name="StepSwingRange" xml:space="preserve">
+    <value>ストライドスイング範囲</value>
+  </data>
+  <data name="StepSwingRangeDiscription" xml:space="preserve">
+    <value>2番目のステップのパス。実際の2番目のステップのパスは forwardparam * です。</value>
+  </data>
+  <data name="StepReductionFactor" xml:space="preserve">
+    <value>ステップサイズ削減係数</value>
+  </data>
+  <data name="SecondStepFactor" xml:space="preserve">
+    <value>2段階目の係数</value>
+  </data>
+  <data name="CurrentStepSize" xml:space="preserve">
+    <value>現在ステップパスを使用しています</value>
+  </data>
+  <data name="InitialStepSize" xml:space="preserve">
+    <value>最初のステップ</value>
+  </data>
+  <data name="StopStepSize" xml:space="preserve">
+    <value>停止ステップ</value>
+  </data>
+  <data name="Deprecated" xml:space="preserve">
+    <value>非推奨</value>
+  </data>
+  <data name="MinEvaluationValue" xml:space="preserve">
+    <value>最低評価</value>
+  </data>
+  <data name="TimeoutDuration" xml:space="preserve">
+    <value>タイムアウト</value>
+  </data>
+  <data name="RestoreMysqlAutoFocusTemplateSettings" xml:space="preserve">
+    <value>MySQL AutoFocus テンプレートの設定を復元する</value>
+  </data>
+  <data name="RestoreMysqlCameraRunParamTemplateSettings" xml:space="preserve">
+    <value>MysqlCameraRunParam テンプレートの設定を復元する</value>
+  </data>
 </root>

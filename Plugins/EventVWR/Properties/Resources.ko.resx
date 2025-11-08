@@ -117,58 +117,13 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="x86ServiceLog" xml:space="preserve">
-    <value>x86 서비스 로그</value>
+  <data name="Search" xml:space="preserve">
+    <value>찾다</value>
   </data>
-  <data name="x64ServiceLog" xml:space="preserve">
-    <value>x64 서비스 로그</value>
+  <data name="ChartGenerationTool" xml:space="preserve">
+    <value>이미지 생성 도구</value>
   </data>
-  <data name="ServiceLog" xml:space="preserve">
-    <value>서비스 로그</value>
-  </data>
-  <data name="SpectrometerLog" xml:space="preserve">
-    <value>분광계 로그</value>
-  </data>
-  <data name="CameraLog" xml:space="preserve">
-    <value>카메라 로그</value>
-  </data>
-  <data name="RCServiceLog" xml:space="preserve">
-    <value>RC 서비스 로그</value>
-  </data>
-  <data name="ManagementService" xml:space="preserve">
-    <value>관리 서비스</value>
-  </data>
-  <data name="Service" xml:space="preserve">
-    <value>서비스</value>
-  </data>
-  <data name="BCompareNotFound_DownloadPrompt" xml:space="preserve">
-    <value>BCompare를 찾을 수 없습니다. 다운로드하시겠습니까?</value>
-  </data>
-  <data name="DownLoadBeyondCompare" xml:space="preserve">
-    <value>BeyondCompare 다운로드</value>
-  </data>
-  <data name="OpenBeyondCompare" xml:space="preserve">
-    <value>BeyondCompare 열기</value>
-  </data>
-  <data name="InstallMqtt" xml:space="preserve">
-    <value>MQTT 설치</value>
-  </data>
-  <data name="DumpFileSettings" xml:space="preserve">
-    <value>덤프 파일 설정</value>
-  </data>
-  <data name="ActivateWindows" xml:space="preserve">
-    <value>Windows 활성화</value>
-  </data>
-  <data name="RestartService" xml:space="preserve">
-    <value>서비스 재시작</value>
-  </data>
-  <data name="RestartServiceSucess" xml:space="preserve">
-    <value>서비스 재시작 성공</value>
-  </data>
-  <data name="ServiceRestartFailed_PleaseRestartManually" xml:space="preserve">
-    <value>서비스 재시작에 실패할 경우, 서비스를 수동으로 재시작하세요.</value>
-  </data>
-  <data name="UpdateService" xml:space="preserve">
-    <value>서비스 업데이트</value>
+  <data name="EventWindow" xml:space="preserve">
+    <value>이벤트 뷰어</value>
   </data>
 </root>

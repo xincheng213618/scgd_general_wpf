@@ -2115,4 +2115,118 @@
   <data name="Lv" xml:space="preserve">
     <value>Яркость Lv (кд/м2)</value>
   </data>
+  <data name="MsgLogWin" xml:space="preserve">
+    <value>Окно журнала сообщений</value>
+  </data>
+  <data name="PhySpectrum" xml:space="preserve">
+    <value>Физический спектрометр</value>
+  </data>
+  <data name="ComplyPoint" xml:space="preserve">
+    <value>точка</value>
+  </data>
+  <data name="ComplyPointList_" xml:space="preserve">
+    <value>набор точек</value>
+  </data>
+  <data name="EditDefaultComplianceDictionary" xml:space="preserve">
+    <value>Редактировать словарь соответствия по умолчанию</value>
+  </data>
+  <data name="CalibrationToolNotFound_DownloadPrompt" xml:space="preserve">
+    <value>Не можете найти инструмент генерации калибровок. Хотите загрузить его онлайн?</value>
+  </data>
+  <data name="DownloadCalibrationTool" xml:space="preserve">
+    <value>Загрузить инструмент генерации калибровок</value>
+  </data>
+  <data name="SelectUpzipDirectry" xml:space="preserve">
+    <value>Пожалуйста, выберите каталог для распаковки.</value>
+  </data>
+  <data name="LedDataFIle" xml:space="preserve">
+    <value>Файл данных светодиодов</value>
+  </data>
+  <data name="LedDataFileNotFound" xml:space="preserve">
+    <value>Файл данных светодиодов не найден</value>
+  </data>
+  <data name="ImageFileNotFound" xml:space="preserve">
+    <value>Файл изображения не найден</value>
+  </data>
+  <data name="ImageFileIsnotCVCIE" xml:space="preserve">
+    <value>Файл изображения не является файлом CVCIE.</value>
+  </data>
+  <data name="ImageFileOpenFailed" xml:space="preserve">
+    <value>Не удалось открыть файл изображения.</value>
+  </data>
+  <data name="SSCOMTool" xml:space="preserve">
+    <value>Помощник по отладке последовательного порта SSCOM</value>
+  </data>
+  <data name="CalibrationFileCorrectionTool" xml:space="preserve">
+    <value>Инструмент для восстановления файла коррекции</value>
+  </data>
+  <data name="AlgorithmView" xml:space="preserve">
+    <value>Алгоритм Вид</value>
+  </data>
+  <data name="StartTimeMs" xml:space="preserve">
+    <value>Время начала (мс)</value>
+  </data>
+  <data name="FrequencySyncHz" xml:space="preserve">
+    <value>Частота синхронизации (Гц)</value>
+  </data>
+  <data name="SaturationPercent" xml:space="preserve">
+    <value>Насыщенность (%)</value>
+  </data>
+  <data name="ADMax" xml:space="preserve">
+    <value>максимальный AD</value>
+  </data>
+  <data name="MaxPercent" xml:space="preserve">
+    <value>Максимальный процент</value>
+  </data>
+  <data name="SaturationDifference" xml:space="preserve">
+    <value>Разница насыщенности</value>
+  </data>
+  <data name="MaxExposureTimeMs" xml:space="preserve">
+    <value>Максимальное время экспозиции (мс)</value>
+  </data>
+  <data name="MinExposureTimeMs" xml:space="preserve">
+    <value>Минимальное время экспозиции (мс)</value>
+  </data>
+  <data name="BurstThresholdMs" xml:space="preserve">
+    <value>пороговое значение импульса (мс)</value>
+  </data>
+  <data name="EvaluationFunctionType" xml:space="preserve">
+    <value>Тип функции оценки</value>
+  </data>
+  <data name="StepSwingRange" xml:space="preserve">
+    <value>диапазон колебаний шага</value>
+  </data>
+  <data name="StepSwingRangeDiscription" xml:space="preserve">
+    <value>Путь второго шага. Фактический путь второго шага — forwardparam *</value>
+  </data>
+  <data name="StepReductionFactor" xml:space="preserve">
+    <value>Коэффициент уменьшения размера шага</value>
+  </data>
+  <data name="SecondStepFactor" xml:space="preserve">
+    <value>Коэффициент второй ступени</value>
+  </data>
+  <data name="CurrentStepSize" xml:space="preserve">
+    <value>В настоящее время используется пошаговый путь</value>
+  </data>
+  <data name="InitialStepSize" xml:space="preserve">
+    <value>Первый шаг</value>
+  </data>
+  <data name="StopStepSize" xml:space="preserve">
+    <value>Стоп-шаг</value>
+  </data>
+  <data name="Deprecated" xml:space="preserve">
+    <value>Устаревший</value>
+  </data>
+  <data name="MinEvaluationValue" xml:space="preserve">
+    <value>Самый низкий рейтинг</value>
+  </data>
+  <data name="TimeoutDuration" xml:space="preserve">
+    <value>Тайм-аут</value>
+  </data>
+  <data name="RestoreMysqlAutoFocusTemplateSettings" xml:space="preserve">
+    <value>Восстановить настройки шаблона MySQL AutoFocus</value>
+  </data>
+  <data name="RestoreMysqlCameraRunParamTemplateSettings" xml:space="preserve">
+    <value>Восстановить настройки шаблона MysqlCameraRunParam</value>
+  </data>
 </root>

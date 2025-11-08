@@ -916,6 +916,24 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似  &quot;消息日志窗口 的本地化字符串。
+        /// </summary>
+        public static string MsgList {
+            get {
+                return ResourceManager.GetString("MsgList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Mysql工具 的本地化字符串。
+        /// </summary>
+        public static string MysqlTool {
+            get {
+                return ResourceManager.GetString("MysqlTool", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 没有配置本地的log4输出 的本地化字符串。
         /// </summary>
         public static string NoLocalLog4Output {
@@ -1042,6 +1060,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 项目/解决方案(_P)... 的本地化字符串。
+        /// </summary>
+        public static string ProjectSolution_P {
+            get {
+                return ResourceManager.GetString("ProjectSolution_P", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似   rem Robocopy 0-7 视为成功 的本地化字符串。
         /// </summary>
         public static string RemRobocopySuccess {
@@ -1137,6 +1164,15 @@ namespace ColorVision.UI.Properties {
         public static string SocketBufferSize {
             get {
                 return ResourceManager.GetString("SocketBufferSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Socket管理窗口 的本地化字符串。
+        /// </summary>
+        public static string SocketManagementWindow {
+            get {
+                return ResourceManager.GetString("SocketManagementWindow", resourceCulture);
             }
         }
         

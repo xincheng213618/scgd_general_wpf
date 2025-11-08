@@ -177,4 +177,19 @@
   <data name="ImageAlgorithm" xml:space="preserve">
     <value>画像アルゴリズム</value>
   </data>
+  <data name="LineOn" xml:space="preserve">
+    <value>オンライン</value>
+  </data>
+  <data name="Internal" xml:space="preserve">
+    <value>切開</value>
+  </data>
+  <data name="External" xml:space="preserve">
+    <value>外切開</value>
+  </data>
+  <data name="Absolute" xml:space="preserve">
+    <value>絶対値</value>
+  </data>
+  <data name="Relative" xml:space="preserve">
+    <value>相対価値</value>
+  </data>
 </root>

@@ -13,25 +13,25 @@ using System.Windows;
 
 namespace ColorVision.Engine.ToolPlugins
 {
-    [DisplayName("绘制")]
+    [DisplayName("Draw")]
     public class LedToolConfig : ViewModelBase, IConfig
     {
 
         public static LedToolConfig Instance => ConfigService.Instance.GetRequiredService<LedToolConfig>();
 
-        [DisplayName("灯珠数据文件"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
+        [DisplayName("LedDataFIle"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string SelectedPath { get => _SelectedPath; set { _SelectedPath = value; OnPropertyChanged(); } }
         private string _SelectedPath;
 
-        [DisplayName("图像文件"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
+        [DisplayName("ImageFile"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string SelectedPath1 { get => _SelectedPath1; set { _SelectedPath1 = value; OnPropertyChanged(); } }
         private string _SelectedPath1;
 
-        [DisplayName("半径"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
+        [DisplayName("ColorVision.Engine.Properties.Resources.Radius"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public int Radius { get => _Radius; set { _Radius = value; OnPropertyChanged(); } }
         private int _Radius = 4;
 
-        [DisplayName("宽度"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
+        [DisplayName("Width"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public int Thickness { get => _Thickness; set { _Thickness = value; OnPropertyChanged(); } }
         private int _Thickness = 1;
 
@@ -76,13 +76,13 @@ namespace ColorVision.Engine.ToolPlugins
 
             if (!File.Exists(LedToolConfig.Instance.SelectedPath))
             {
-                MessageBox.Show("找不到灯珠数据文件");
+                MessageBox.Show(ColorVision.Engine.Properties.Resources.LedDataFileNotFound);
                 return;
             }
 
             if (!File.Exists(LedToolConfig.Instance.SelectedPath1))
             {
-                MessageBox.Show("找不到图像文件");
+                MessageBox.Show(ColorVision.Engine.Properties.Resources.ImageFileNotFound);
                 return;
             }
             int count = 0;
@@ -120,7 +120,7 @@ namespace ColorVision.Engine.ToolPlugins
 
             if (!CVFileUtil.IsCIEFile(LedToolConfig.Instance.SelectedPath1))
             {
-                MessageBox.Show("图像文件不是CVCIE");
+                MessageBox.Show(ColorVision.Engine.Properties.Resources.ImageFileIsnotCVCIE);
                 return;
             }
 
@@ -128,7 +128,7 @@ namespace ColorVision.Engine.ToolPlugins
 
             if (hImage == null)
             {
-                MessageBox.Show("图像文件打开失败");
+                MessageBox.Show(ColorVision.Engine.Properties.Resources.ImageFileOpenFailed);
                 return;
             }
             int z = 0;

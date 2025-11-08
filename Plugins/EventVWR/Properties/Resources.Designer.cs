@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace ScreenRecorder.Properties {
+namespace EventVWR.Properties {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace ScreenRecorder.Properties {
         public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("ScreenRecorder.Properties.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("EventVWR.Properties.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -61,20 +61,29 @@ namespace ScreenRecorder.Properties {
         }
         
         /// <summary>
-        ///   查找类似 录制 的本地化字符串。
+        ///   查找类似 图卡生成工具 的本地化字符串。
         /// </summary>
-        public static string Record {
+        public static string ChartGenerationTool {
             get {
-                return ResourceManager.GetString("Record", resourceCulture);
+                return ResourceManager.GetString("ChartGenerationTool", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   查找类似 录制视频 的本地化字符串。
+        ///   查找类似 事件查看器 的本地化字符串。
         /// </summary>
-        public static string ScreenRecorder {
+        public static string EventWindow {
             get {
-                return ResourceManager.GetString("ScreenRecorder", resourceCulture);
+                return ResourceManager.GetString("EventWindow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 搜索 的本地化字符串。
+        /// </summary>
+        public static string Search {
+            get {
+                return ResourceManager.GetString("Search", resourceCulture);
             }
         }
     }

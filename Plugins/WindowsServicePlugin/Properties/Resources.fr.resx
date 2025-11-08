@@ -156,4 +156,19 @@
   <data name="DumpFileSettings" xml:space="preserve">
     <value>Paramètres du fichier de sauvegarde</value>
   </data>
+  <data name="ActivateWindows" xml:space="preserve">
+    <value>Activer Windows</value>
+  </data>
+  <data name="RestartService" xml:space="preserve">
+    <value>Redémarrer le service</value>
+  </data>
+  <data name="RestartServiceSucess" xml:space="preserve">
+    <value>Redémarrage du service réussi</value>
+  </data>
+  <data name="ServiceRestartFailed_PleaseRestartManually" xml:space="preserve">
+    <value>Si le redémarrage du service échoue, veuillez le redémarrer manuellement.</value>
+  </data>
+  <data name="UpdateService" xml:space="preserve">
+    <value>Service de mise à jour</value>
+  </data>
 </root>

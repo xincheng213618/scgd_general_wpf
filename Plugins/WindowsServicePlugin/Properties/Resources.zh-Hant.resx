@@ -156,4 +156,19 @@
   <data name="DumpFileSettings" xml:space="preserve">
     <value>轉儲文件設定</value>
   </data>
+  <data name="ActivateWindows" xml:space="preserve">
+    <value>啟動Windows</value>
+  </data>
+  <data name="RestartService" xml:space="preserve">
+    <value>重啟服務</value>
+  </data>
+  <data name="RestartServiceSucess" xml:space="preserve">
+    <value>重啟服務成功</value>
+  </data>
+  <data name="ServiceRestartFailed_PleaseRestartManually" xml:space="preserve">
+    <value>重啟服務失敗請手動重啟服務</value>
+  </data>
+  <data name="UpdateService" xml:space="preserve">
+    <value>更新服務</value>
+  </data>
 </root>

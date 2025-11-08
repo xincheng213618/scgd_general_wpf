@@ -177,4 +177,19 @@
   <data name="ImageAlgorithm" xml:space="preserve">
     <value>影像演算法</value>
   </data>
+  <data name="LineOn" xml:space="preserve">
+    <value>線上</value>
+  </data>
+  <data name="Internal" xml:space="preserve">
+    <value>內切</value>
+  </data>
+  <data name="External" xml:space="preserve">
+    <value>外切</value>
+  </data>
+  <data name="Absolute" xml:space="preserve">
+    <value>絕對值</value>
+  </data>
+  <data name="Relative" xml:space="preserve">
+    <value>相對值</value>
+  </data>
 </root>

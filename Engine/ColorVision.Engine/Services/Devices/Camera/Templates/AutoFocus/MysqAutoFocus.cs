@@ -4,7 +4,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus
 {
     public class MysqAutoFocus : IMysqlCommand
     {
-        public string GetMysqlCommandName() => "恢复Mysql AutoFocus模板设置";
+        public string GetMysqlCommandName() => ColorVision.Engine.Properties.Resources.RestoreMysqlAutoFocusTemplateSettings;
         public string GetRecover()
         {
             string t_scgd_sys_dictionary_mod_master = "INSERT INTO `t_scgd_sys_dictionary_mod_master` (`id`, `code`, `name`, `p_type`, `pid`, `mod_type`, `cfg_json`, `create_date`, `is_enable`, `is_delete`, `remark`, `tenant_id`) VALUES (200, 'AutoFocus', '自动聚焦', 0, NULL, 1, NULL, '2025-01-22 11:19:06', 1, 0, NULL, 0);\r\n";

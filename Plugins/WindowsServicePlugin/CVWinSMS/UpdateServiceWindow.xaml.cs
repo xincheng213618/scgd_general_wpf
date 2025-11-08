@@ -8,7 +8,7 @@ namespace WindowsServicePlugin.CVWinSMS
     public class MenuUpdateService : MenuItemBase
     {
         public override string OwnerGuid => "ServiceLog";
-        public override string Header => "更新服务";
+        public override string Header => WindowsServicePlugin.Properties.Resources.UpdateService;
         public override int Order => 3;
 
 

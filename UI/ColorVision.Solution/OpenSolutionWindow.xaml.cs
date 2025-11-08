@@ -20,7 +20,7 @@ namespace ColorVision.Solution
 
         public override int Order => 1;
 
-        public override string Header => "项目/解决方案(_P)...";
+        public override string Header => ColorVision.UI.Properties.Resources.ProjectSolution_P;
 
         public override void Execute()
         {

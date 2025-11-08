@@ -11,14 +11,14 @@ namespace ColorVision.Engine.Templates.Validate
 
         public override string GuidId => "ComplyEdit";
         public override int Order => 999;
-        public override string Header => "编辑默认合规字典";
+        public override string Header =>ColorVision.Engine.Properties.Resources.EditDefaultComplianceDictionary;
 
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
         {
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.DatabaseConnectionFailed, "ColorVision");
                 return;
             }
             new TemplateEditorWindow(new TemplateDicComply()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;

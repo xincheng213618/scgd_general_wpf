@@ -9,7 +9,7 @@ namespace ColorVision.Engine.Services.PhySpectrums
     public class ExportPhySpectrum : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
-        public override string Header => "物理光谱仪";
+        public override string Header => ColorVision.Engine.Properties.Resources.PhySpectrum;
         public override int Order => 0;
 
         public override Visibility Visibility => Visibility.Hidden;

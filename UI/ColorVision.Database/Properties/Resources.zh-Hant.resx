@@ -162,4 +162,7 @@
   <data name="Cancel" xml:space="preserve">
     <value>取消</value>
   </data>
+  <data name="LogDatabase" xml:space="preserve">
+    <value>日誌資料庫</value>
+  </data>
 </root>
