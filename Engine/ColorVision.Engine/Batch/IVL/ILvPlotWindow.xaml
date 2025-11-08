@@ -42,7 +42,7 @@
                 <TextBlock x:Name="TxtTitle" Text="I-Lv Curve Analysis" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
             </StackPanel>
             
-            <ScottPlot:WpfPlot x:Name="WpfPlot" Grid.Row="1"/>
+            <ScottPlot:WpfPlot x:Name="wpfPlot" Grid.Row="1"/>
         </Grid>
     </DockPanel>
 </Window>

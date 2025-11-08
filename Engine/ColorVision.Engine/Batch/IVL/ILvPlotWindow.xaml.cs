@@ -28,6 +28,7 @@ namespace ColorVision.Engine.Batch.IVL
         private Dictionary<string, Scatter> _scatterPlots;
         private List<string> _seriesNames;
         private bool _isILvMode = true; // true for I-Lv, false for V-Lv
+        private Crosshair _crosshair;
 
         public ILvPlotWindow(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas)
             : this(smuResults, poixyuvDatas, null)
@@ -43,6 +44,7 @@ namespace ColorVision.Engine.Batch.IVL
             
             LoadData(smuResults, poixyuvDatas, spectrumResults);
             InitializePlot();
+            SetupMouseInteraction();
         }
 
         private void LoadData(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas, ObservableCollection<ViewResultSpectrum> spectrumResults)
@@ -180,14 +182,14 @@ namespace ColorVision.Engine.Batch.IVL
 
         private void InitializePlot()
         {
-            WpfPlot.Plot.Clear();
+            wpfPlot.Plot.Clear();
             
             // Check if there's any data to plot
             if (_groupedData.Count == 0)
             {
                 string modeText = _isILvMode ? "I-Lv" : "V-Lv";
-                WpfPlot.Plot.Title($"{modeText} Curve (No Data)");
-                WpfPlot.Refresh();
+                wpfPlot.Plot.Title($"{modeText} Curve (No Data)");
+                wpfPlot.Refresh();
                 TxtLegendInfo.Text = "No valid data to display";
                 return;
             }
@@ -196,9 +198,9 @@ namespace ColorVision.Engine.Batch.IVL
             string modeLabel = _isILvMode ? "I-Lv" : "V-Lv";
             string xLabel = _isILvMode ? "Current (mA)" : "Voltage (V)";
             
-            WpfPlot.Plot.Title($"{modeLabel} Characteristics Curve");
-            WpfPlot.Plot.XLabel(xLabel);
-            WpfPlot.Plot.YLabel("Luminance (cd/m²)");
+            wpfPlot.Plot.Title($"{modeLabel} Characteristics Curve");
+            wpfPlot.Plot.XLabel(xLabel);
+            wpfPlot.Plot.YLabel("Luminance (cd/m²)");
             
             // Update title text block
             TxtTitle.Text = $"{modeLabel} Curve Analysis";
@@ -206,16 +208,15 @@ namespace ColorVision.Engine.Batch.IVL
             // Set font for labels to support international characters
             // Use a consistent string for font detection
             string fontSample = $"{modeLabel} Characteristics Curve {xLabel} Luminance Voltage";
-            WpfPlot.Plot.Axes.Title.Label.FontName = Fonts.Detect(fontSample);
-            WpfPlot.Plot.Axes.Left.Label.FontName = Fonts.Detect(fontSample);
-            WpfPlot.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(fontSample);
+            wpfPlot.Plot.Axes.Title.Label.FontName = Fonts.Detect(fontSample);
+            wpfPlot.Plot.Axes.Left.Label.FontName = Fonts.Detect(fontSample);
+            wpfPlot.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(fontSample);
 
             // Enable grid for better readability
-            WpfPlot.Plot.Grid.MajorLineColor = Color.FromColor(System.Drawing.Color.LightGray);
-            WpfPlot.Plot.Grid.MajorLineWidth = 1;
-
+            wpfPlot.Plot.Grid.MajorLineColor = Color.FromColor(System.Drawing.Color.LightGray);
+            wpfPlot.Plot.Grid.MajorLineWidth = 1;
             PlotAllSeries();
-            WpfPlot.Refresh();
+            wpfPlot.Refresh();
             
             UpdateLegendInfo();
         }
@@ -225,7 +226,7 @@ namespace ColorVision.Engine.Batch.IVL
             // Clear existing plots
             foreach (var plot in _scatterPlots.Values)
             {
-                WpfPlot.Plot.Remove(plot);
+                wpfPlot.Plot.Remove(plot);
             }
             _scatterPlots.Clear();
 
@@ -247,7 +248,7 @@ namespace ColorVision.Engine.Batch.IVL
             int colorIndex = 0;
             foreach (var seriesName in _seriesNames)
             {
-                if (!_groupedData.ContainsKey(seriesName) || _groupedData[seriesName].Count == 0)
+                if (!_groupedData.TryGetValue(seriesName, out List<ILvDataPoint>? value) || value.Count == 0)
                     continue;
 
                 var dataPoints = _groupedData[seriesName];
@@ -265,7 +266,8 @@ namespace ColorVision.Engine.Batch.IVL
                     LineWidth = 2,
                     MarkerSize = 6,
                     MarkerShape = MarkerShape.FilledCircle,
-                    Label = seriesName,
+                    LegendText = seriesName,
+                    Smooth =true
                 };
 
                 _scatterPlots[seriesName] = scatter;
@@ -273,14 +275,14 @@ namespace ColorVision.Engine.Batch.IVL
                 // Only add if selected
                 if (PoiSeriesList.SelectedItems.Contains(seriesName))
                 {
-                    WpfPlot.Plot.PlottableList.Add(scatter);
+                    wpfPlot.Plot.PlottableList.Add(scatter);
                 }
 
                 colorIndex++;
             }
 
             // Show legend
-            WpfPlot.Plot.ShowLegend(Alignment.UpperLeft);
+            wpfPlot.Plot.ShowLegend(Alignment.UpperLeft);
         }
 
         private void PoiSeriesList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -293,7 +295,7 @@ namespace ColorVision.Engine.Batch.IVL
             // Remove all plots
             foreach (var plot in _scatterPlots.Values)
             {
-                WpfPlot.Plot.Remove(plot);
+                wpfPlot.Plot.Remove(plot);
             }
 
             // Add only selected series
@@ -302,11 +304,11 @@ namespace ColorVision.Engine.Batch.IVL
                 string seriesName = item.ToString();
                 if (_scatterPlots.ContainsKey(seriesName))
                 {
-                    WpfPlot.Plot.PlottableList.Add(_scatterPlots[seriesName]);
+                    wpfPlot.Plot.PlottableList.Add(_scatterPlots[seriesName]);
                 }
             }
 
-            WpfPlot.Refresh();
+            wpfPlot.Refresh();
             UpdateLegendInfo();
         }
 
@@ -401,15 +403,104 @@ namespace ColorVision.Engine.Batch.IVL
             if (saveFileDialog.ShowDialog() == true)
             {
                 string filePath = saveFileDialog.FileName;
-                WpfPlot.Plot.Save(filePath, 1200, 800);
+                wpfPlot.Plot.Save(filePath, 1200, 800);
                 MessageBox.Show($"Plot saved to:\n{filePath}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 
         private void BtnRefresh_Click(object sender, RoutedEventArgs e)
         {
-            WpfPlot.Plot.Axes.AutoScale();
-            WpfPlot.Refresh();
+            wpfPlot.Plot.Axes.AutoScale();
+            wpfPlot.Refresh();
+        }
+
+        private void SetupMouseInteraction()
+        {
+            // Add crosshair for showing nearest data point
+            _crosshair = wpfPlot.Plot.Add.Crosshair(0, 0);
+            _crosshair.IsVisible = false;
+            _crosshair.LineWidth = 1;
+            _crosshair.LineColor = Color.FromColor(System.Drawing.Color.Gray);
+            
+            // Subscribe to mouse move events
+            wpfPlot.MouseMove += WpfPlot_MouseMove;
+            wpfPlot.MouseLeave += WpfPlot_MouseLeave;
+        }
+
+        private void WpfPlot_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            // Get mouse position in plot coordinates
+            var position = e.GetPosition(wpfPlot);
+            var pixel = new Pixel((float)position.X, (float)position.Y);
+            var coords = wpfPlot.Plot.GetCoordinates(pixel);
+
+            // Find the nearest data point
+            double minDistance = double.MaxValue;
+            ILvDataPoint? nearestPoint = null;
+            string nearestSeriesName = string.Empty;
+
+            foreach (var seriesName in _seriesNames)
+            {
+                // Only check visible series
+                if (!PoiSeriesList.SelectedItems.Contains(seriesName))
+                    continue;
+
+                if (!_groupedData.ContainsKey(seriesName))
+                    continue;
+
+                foreach (var point in _groupedData[seriesName])
+                {
+                    double x = _isILvMode ? point.Current : point.Voltage;
+                    double y = point.Luminance;
+
+                    // Calculate distance in plot coordinates
+                    double dx = x - coords.X;
+                    double dy = y - coords.Y;
+                    double distance = Math.Sqrt(dx * dx + dy * dy);
+
+                    if (distance < minDistance)
+                    {
+                        minDistance = distance;
+                        nearestPoint = point;
+                        nearestSeriesName = seriesName;
+                    }
+                }
+            }
+
+            // Show crosshair if a point is close enough
+            if (nearestPoint != null && minDistance < GetDistanceThreshold())
+            {
+                double x = _isILvMode ? nearestPoint.Current : nearestPoint.Voltage;
+                double y = nearestPoint.Luminance;
+                
+                _crosshair.Position = new Coordinates(x, y);
+                _crosshair.IsVisible = true;
+                
+                wpfPlot.Refresh();
+            }
+            else
+            {
+                _crosshair.IsVisible = false;
+                wpfPlot.Refresh();
+            }
+        }
+
+        private void WpfPlot_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            // Hide crosshair when mouse leaves the plot
+            _crosshair.IsVisible = false;
+            wpfPlot.Refresh();
+        }
+
+        private double GetDistanceThreshold()
+        {
+            // Calculate a reasonable distance threshold based on the current axis ranges
+            var xRange = wpfPlot.Plot.Axes.GetLimits().Rect.Width;
+            var yRange = wpfPlot.Plot.Axes.GetLimits().Rect.Height;
+            
+            // Use 5% of the smaller range as threshold
+            double threshold = Math.Min(xRange, yRange) * 0.05;
+            return threshold;
         }
 
         private class ILvDataPoint
