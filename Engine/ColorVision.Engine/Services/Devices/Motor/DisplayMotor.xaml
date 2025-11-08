@@ -63,7 +63,7 @@
                 </DockPanel>
                 <Button  Margin="0,2" Content="{x:Static properties:Resources.HomePosition}"  Click="GoHome_Click" />
                 <DockPanel>
-                    <Button DockPanel.Dock="Right" Content="获取位置"  Click="GetPosition_Click" />
+                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.AcquirePosition}"  Click="GetPosition_Click" />
                     <TextBlock Text="{x:Static properties:Resources.CurrentPosition}" Width="80"/>
                     <TextBox IsReadOnly="True" Text="{Binding Config.Position}"  Background="Transparent" BorderThickness="0,0,0,0"  Margin="5,0"/>
                 </DockPanel>

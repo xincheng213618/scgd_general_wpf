@@ -201,7 +201,7 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     if (AutoSave())
                     {
-                        if (MessageBox.Show("是否保存修改", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                        if (MessageBox.Show(ColorVision.Engine.Properties.Resources.SaveChangesPrompt, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                         {
                             Save();
                         }
@@ -278,7 +278,7 @@ namespace ColorVision.Engine.Templates.Flow
         }
         private void Button_Click_Clear(object sender, RoutedEventArgs e)
         {
-            if (MessageBox.Show("您是否清空已经创建流程\n\r清空后自动保存关闭", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            if (MessageBox.Show("ColorVision.Engine.Properties.Resources.ClearCreatedProcess_ConfirmAutoSaveClosePrompt", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 STNodeEditorMain.Nodes.Clear();
         }
 
@@ -298,7 +298,7 @@ namespace ColorVision.Engine.Templates.Flow
             FileFlow = flowName;
             STNodeEditorMain.Nodes.Clear();
             STNodeEditorMain.LoadCanvas(flowName);
-            Title = "流程编辑器 - " + new FileInfo(flowName).Name;
+            Title = ColorVision.Engine.Properties.Resources.FlowEditor+" - " + new FileInfo(flowName).Name;
         }
 
         public void OpenFlowBase64(FlowParam flowParam)
@@ -317,7 +317,7 @@ namespace ColorVision.Engine.Templates.Flow
                 }
 
             }
-            Title = "流程编辑器 - " + new FileInfo(flowParam.Name).Name;
+            Title = ColorVision.Engine.Properties.Resources.FlowEditor+" - " + new FileInfo(flowParam.Name).Name;
         }
 
 
@@ -335,7 +335,7 @@ namespace ColorVision.Engine.Templates.Flow
         {
             if (File.Exists(FileFlow))
             {
-                MessageBox.Show("保存成功");
+                MessageBox.Show(ColorVision.Engine.Properties.Resources.SaveSucess);
                 SaveToFile(FileFlow);
                 return;
             }
@@ -345,7 +345,7 @@ namespace ColorVision.Engine.Templates.Flow
                 var data = STNodeEditorMain.GetCanvasData();
                 FlowParam.DataBase64 = Convert.ToBase64String(data);
                 TemplateFlow.Save2DB(FlowParam);
-                MessageBox.Show("保存成功");
+                MessageBox.Show(ColorVision.Engine.Properties.Resources.SaveSucess);
             }
         }
 

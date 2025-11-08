@@ -12,7 +12,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam
         {
             Name = "Camera,Camera.RunParams";
             TemplateDicId = 20;
-            Title = "相机参数模板";
+            Title = ColorVision.Engine.Properties.Resources.CameraParameterTemplate;
             Code = "Camera.RunParams";
             TemplateParams = Params;
         }

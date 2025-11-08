@@ -41,7 +41,7 @@ namespace ColorVision.Projects.ProjectShiYuan
         public override string GuidId => "ProjectShiyuan";
 
         public override int Order => 100;
-        public override string Header => "视源项目";
+        public override string Header => "ProjectShiyuan";
 
         public override void Execute()
         {

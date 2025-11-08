@@ -12,7 +12,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus
         {
             Name = "Camera,AutoFocus";
             TemplateDicId = 200;
-            Title = "自动聚焦模板设置";
+            Title = ColorVision.Engine.Properties.Resources.AutoFocusTemplateSettings;
             Code = "AutoFocus";
             TemplateParams = Params;
         }

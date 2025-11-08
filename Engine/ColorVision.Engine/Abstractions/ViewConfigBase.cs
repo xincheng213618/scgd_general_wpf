@@ -30,10 +30,10 @@ namespace ColorVision.Engine
         public bool InsertAtBeginning { get => _InsertAtBeginning; set { _InsertAtBeginning = value; OnPropertyChanged(); } }
         private bool _InsertAtBeginning = true;
 
-        [DisplayName("查询数量"), Category("View")]
+        [DisplayName("QueryCount"), Category("View")]
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count = 50;
-        [DisplayName("按类型排序"), Category("View")]
+        [DisplayName("SortByType"), Category("View")]
         public OrderByType OrderByType { get => _OrderByType; set { _OrderByType = value; OnPropertyChanged(); } }
         private OrderByType _OrderByType = OrderByType.Desc;
 

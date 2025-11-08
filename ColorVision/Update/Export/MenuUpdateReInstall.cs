@@ -16,7 +16,7 @@ namespace ColorVision.Update
         private static string AssemblyCompany => Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "ColorVision";
         private static string CurrentInstallFile => Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),AssemblyCompany), $"ColorVision-{Assembly.GetExecutingAssembly().GetName().Version}.exe");
         
-        public override string Header => "重新安装当前版本";
+        public override string Header => ColorVision.Properties.Resources.MenuUpdateReInstall_重新安装当前版本;
         public override void Execute()
         {
             if (File.Exists(CurrentInstallFile))
@@ -36,7 +36,7 @@ namespace ColorVision.Update
         public override string GuidId => nameof(MenuUpdateReInstallClear);
         public override int Order => 14;
         private static string AssemblyCompany => Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "ColorVision";
-        public override string Header => "清除安装包缓存";
+        public override string Header =>ColorVision.Properties.Resources.ClearPackageCache;
         public override void Execute()
         {
             string[] updateFiles = Directory.GetFiles(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), AssemblyCompany), "ColorVision-*.exe");
@@ -52,7 +52,7 @@ namespace ColorVision.Update
                     return;
                 }
             }
-            MessageBox1.Show("执行结束");
+            MessageBox1.Show(ColorVision.Engine.Properties.Resources.ExecutionComplete);
         }
     }
 }

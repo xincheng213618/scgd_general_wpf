@@ -142,7 +142,7 @@ namespace ColorVision.Engine.Templates
                 Directory.CreateDirectory(TemplateFolder);
 
             // Create default template card
-            var defaultTemplateCard = CreateTemplateCard("默认模板", "使用系统默认模板", true);
+            var defaultTemplateCard = CreateTemplateCard(ColorVision.Engine.Properties.Resources.DefaultTemplate,ColorVision.Engine.Properties.Resources.UseSystemDefaultTemplate, true);
             defaultTemplateCard.Checked += (s, e) => TemplateFile = string.Empty;
             TemplateStackPanels.Children.Add(defaultTemplateCard);
 
@@ -151,7 +151,7 @@ namespace ColorVision.Engine.Templates
             {
                 string fileName = Path.GetFileNameWithoutExtension(item);
                 FileInfo fileInfo = new FileInfo(item);
-                string fileDescription = $"创建时间: {fileInfo.CreationTime:yyyy-MM-dd}";
+                string fileDescription = $"CreateTime: {fileInfo.CreationTime:yyyy-MM-dd}";
                 
                 var templateCard = CreateTemplateCard(fileName, fileDescription, false);
                 templateCard.Checked += (s, e) => TemplateFile = Path.GetFullPath(item);
@@ -160,12 +160,12 @@ namespace ColorVision.Engine.Templates
             if (IsImport)
             {
                 TemplateStackPanels.Visibility = Visibility.Collapsed;
-                this.Title = $"{Properties.Resources.Import} {ITemplate.Title} 模板";
+                this.Title = $"{Properties.Resources.Import} {ITemplate.Title} "+ ColorVision.Engine.Properties.Resources.Template;
 
             }
             else
             {
-                this.Title += ITemplate.Title + " " + "模板";
+                this.Title += ITemplate.Title + " " + ColorVision.Engine.Properties.Resources.Template;
             }
             List<string> list =
             [
@@ -208,13 +208,13 @@ namespace ColorVision.Engine.Templates
             CreateName = CreateCode.Text;
             if (string.IsNullOrEmpty(CreateName))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(),"请输入模板名称", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.InputTemplateName, "ColorVision");
                 return;
             }
             if (ITemplate.ExitsTemplateName(CreateName))
             {
                 var template = TemplateControl.FindDuplicateTemplate(CreateName);
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"{template?.GetType()?.Name}已经存在 {CreateName}模板", "Template Manager");
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"{template?.GetType()?.Name} "+ColorVision.Engine.Properties.Resources.AlreadyExists+" {CreateName}"+ColorVision.Engine.Properties.Resources.Template, "Template Manager");
                 return;
             }
 

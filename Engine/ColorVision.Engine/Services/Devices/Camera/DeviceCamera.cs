@@ -278,7 +278,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
             if (PhyCamera !=null && PhyCamera.LicenseState != LicenseState.Licensed)
             {
-                if ( MessageBox.Show(Application.Current.GetActiveWindow(), "当前逻辑相机许可证过期，无法刷新设备列表，是否清空当前相机服务绑定的物理相机，然后在重试", "ColorVision",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if ( MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt, "ColorVision",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     Config.CameraCode = string.Empty;
                     Save();
@@ -292,7 +292,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             if (DService.DeviceStatus == CVCommCore.DeviceStatusType.OffLine)
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), "当前逻辑相机离线，无法刷新设备列表，是否清空当前相机服务绑定的物理相机，然后在重试", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.LogicalCameraOffline_ClearBindingsAndRetryPromp, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     Config.CameraCode = string.Empty;
                     Save();
@@ -309,13 +309,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 if (e == MsgRecordState.Success)
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "当前设备相机信息" + Environment.NewLine + msgRecord.MsgReturn.Data);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.CurrentDeviceCameraInfo + Environment.NewLine + msgRecord.MsgReturn.Data);
                     PhyCameraManager.GetInstance().LoadPhyCamera();
                     PhyCameraManager.GetInstance().RefreshEmptyCamera();
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "刷新设备列表失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.RefreshDeviceListFailed, " ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
 
                 }
             };
@@ -323,7 +323,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public void SaveDis()
         {
-            if (MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.SaveCurrentExposureConfigPrompt, "ColorVison", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.SaveCurrentExposureConfigPrompt, " ColorVison", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
             SaveConfig();
         }
 

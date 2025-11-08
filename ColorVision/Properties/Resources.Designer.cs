@@ -19,7 +19,7 @@ namespace ColorVision.Properties {
     // 类通过类似于 ResGen 或 Visual Studio 的工具自动生成的。
     // 若要添加或移除成员，请编辑 .ResX 文件，然后重新运行 ResGen
     // (以 /str 作为命令选项)，或重新生成 VS 项目。
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -133,11 +133,29 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 检查更新(旧) 的本地化字符串。
+        /// </summary>
+        public static string CheckUpdateOld {
+            get {
+                return ResourceManager.GetString("CheckUpdateOld", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 软件启动时检测更新 的本地化字符串。
         /// </summary>
         public static string CheckUpdatesOnStartup {
             get {
                 return ResourceManager.GetString("CheckUpdatesOnStartup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似  &quot;清除安装包缓存 的本地化字符串。
+        /// </summary>
+        public static string ClearPackageCache {
+            get {
+                return ResourceManager.GetString("ClearPackageCache", resourceCulture);
             }
         }
         
@@ -228,6 +246,15 @@ namespace ColorVision.Properties {
         public static string DownloadCancelled {
             get {
                 return ResourceManager.GetString("DownloadCancelled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 本地下载 的本地化字符串。
+        /// </summary>
+        public static string DownloadLocal {
+            get {
+                return ResourceManager.GetString("DownloadLocal", resourceCulture);
             }
         }
         
@@ -331,6 +358,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 ReinstallCurrentVersion 的本地化字符串。
+        /// </summary>
+        public static string MenuUpdateReInstall_重新安装当前版本 {
+            get {
+                return ResourceManager.GetString("MenuUpdateReInstall_重新安装当前版本", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 侧边栏 的本地化字符串。
         /// </summary>
         public static string MenuViewSidebar {
@@ -376,6 +412,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 打开缓存文件夹 的本地化字符串。
+        /// </summary>
+        public static string OpenCacheFolder {
+            get {
+                return ResourceManager.GetString("OpenCacheFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 打开配置文件夹 的本地化字符串。
         /// </summary>
         public static string OpenConfigFolder {
@@ -417,6 +462,15 @@ namespace ColorVision.Properties {
         public static string Rollback {
             get {
                 return ResourceManager.GetString("Rollback", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 回退软件需要先卸载在安装，或者是安装后重新运行安装包； 的本地化字符串。
+        /// </summary>
+        public static string RollbackRequiresUninstallThenInstallOrRerunPackage {
+            get {
+                return ResourceManager.GetString("RollbackRequiresUninstallThenInstallOrRerunPackage", resourceCulture);
             }
         }
         
@@ -475,6 +529,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 还有未完成的配置，是否跳过 的本地化字符串。
+        /// </summary>
+        public static string SkipIncompleteConfigPrompt {
+            get {
+                return ResourceManager.GetString("SkipIncompleteConfigPrompt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 软件版本 的本地化字符串。
         /// </summary>
         public static string SoftwareVersion {
@@ -484,11 +547,38 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 软件版本相同 的本地化字符串。
+        /// </summary>
+        public static string SoftwareVersionIdentical {
+            get {
+                return ResourceManager.GetString("SoftwareVersionIdentical", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 恢复上次退出时窗口的大小和位置 的本地化字符串。
         /// </summary>
         public static string StartRecoverUILayout {
             get {
                 return ResourceManager.GetString("StartRecoverUILayout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 步骤 的本地化字符串。
+        /// </summary>
+        public static string Step {
+            get {
+                return ResourceManager.GetString("Step", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 步骤 1 / 1 的本地化字符串。
+        /// </summary>
+        public static string Step11 {
+            get {
+                return ResourceManager.GetString("Step11", resourceCulture);
             }
         }
         
@@ -525,6 +615,24 @@ namespace ColorVision.Properties {
         public static string Update {
             get {
                 return ResourceManager.GetString("Update", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 百度云盘下载 的本地化字符串。
+        /// </summary>
+        public static string UpdateBaidu {
+            get {
+                return ResourceManager.GetString("UpdateBaidu", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新失败 的本地化字符串。
+        /// </summary>
+        public static string UpdateFailed {
+            get {
+                return ResourceManager.GetString("UpdateFailed", resourceCulture);
             }
         }
         

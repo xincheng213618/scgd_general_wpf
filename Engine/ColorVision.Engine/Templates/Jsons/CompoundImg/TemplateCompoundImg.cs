@@ -28,9 +28,9 @@ namespace ColorVision.Engine.Templates.Jsons.CompoundImg
 
         public TemplateCompoundImg()
         {
-            Title = "图像拼接模板管理";
+            Title = ColorVision.Engine.Properties.Resources.ImageStitchingTemplateManagement;
             Code = "CompoundImg";
-            Name = "图像拼接";
+            Name = "CompoundImg";
             TemplateDicId = 46;
             TemplateParams = Params;
             IsUserControl = true;

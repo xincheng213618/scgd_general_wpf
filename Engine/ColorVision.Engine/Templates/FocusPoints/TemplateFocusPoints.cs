@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Templates.FocusPoints
 
         public TemplateFocusPoints()
         {
-            Title = "FocusPoints算法设置";
+            Title =ColorVision.Engine.Properties.Resources.FocusPointsTemplateSettings;
             TemplateDicId = 15;
             Code = "focusPoints";
             TemplateParams = Params;

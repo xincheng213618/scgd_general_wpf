@@ -1827,6 +1827,291 @@
   <data name="Closing" xml:space="preserve">
     <value>Закрыто</value>
   </data>
+  <data name="QueryCount" xml:space="preserve">
+    <value>Количество запросов</value>
+  </data>
+  <data name="SortByType" xml:space="preserve">
+    <value>Сортировать по типу</value>
+  </data>
+  <data name="CreateToPOI" xml:space="preserve">
+    <value>Создать в точке интереса</value>
+  </data>
+  <data name="SelectFileInFolder" xml:space="preserve">
+    <value>Выберите файл в папке</value>
+  </data>
+  <data name="CreatePoiAsBaseImage" xml:space="preserve">
+    <value>Создать POI как базовую карту</value>
+  </data>
+  <data name="AlgorithmViewConfig" xml:space="preserve">
+    <value>Конфигурация представления алгоритма</value>
+  </data>
+  <data name="ShowSidebar" xml:space="preserve">
+    <value>Показать боковую панель</value>
+  </data>
+  <data name="DataColumSavePath" xml:space="preserve">
+    <value>Путь сохранения столбца данных</value>
+  </data>
+  <data name="AutoSaveDataColum" xml:space="preserve">
+    <value>Автоматически сохранять столбцы данных</value>
+  </data>
+  <data name="AutoSaveRenderedImage" xml:space="preserve">
+    <value>Автоматически сохранять рендеринг</value>
+  </data>
+  <data name="HistoricalDataQuery" xml:space="preserve">
+    <value>Запрос исторических данных</value>
+  </data>
+  <data name="ShowSiteInfo" xml:space="preserve">
+    <value>Отображение информации о сайте</value>
+  </data>
+  <data name="CameraViewConfig" xml:space="preserve">
+    <value>Конфигурация вида камеры</value>
+  </data>
+  <data name="ShowDataColumns" xml:space="preserve">
+    <value>Отображение столбцов данных</value>
+  </data>
+  <data name="Operation" xml:space="preserve">
+    <value>работать</value>
+  </data>
+  <data name="OpenFailed" xml:space="preserve">
+    <value>Не удалось открыть</value>
+  </data>
+  <data name="ImageFlip" xml:space="preserve">
+    <value>Перевернуть изображение</value>
+  </data>
+  <data name="ParameterTemplate" xml:space="preserve">
+    <value>Шаблон параметров</value>
+  </data>
+  <data name="FileExport" xml:space="preserve">
+    <value>Вывод файла</value>
+  </data>
+  <data name="StorageType" xml:space="preserve">
+    <value>Тип хранилища</value>
+  </data>
+  <data name="POIFile" xml:space="preserve">
+    <value>Фокусный документ</value>
+  </data>
+  <data name="CalculateColorTemperatureWavelength" xml:space="preserve">
+    <value>Рассчитать длину волны цветовой температуры</value>
+  </data>
+  <data name="CenterlX" xml:space="preserve">
+    <value>Центр X</value>
+  </data>
+  <data name="CentralY" xml:space="preserve">
+    <value>Центр Y</value>
+  </data>
+  <data name="CADFile" xml:space="preserve">
+    <value>Файлы САПР</value>
+  </data>
+  <data name="BrightnessLvCdM2" xml:space="preserve">
+    <value>Яркость Lv (кд/м2)</value>
+  </data>
+  <data name="AddCmd" xml:space="preserve">
+    <value>Добавить инструкции</value>
+  </data>
+  <data name="TimeOut_Ms" xml:space="preserve">
+    <value>Тайм-аут (мс)</value>
+  </data>
+  <data name="SMUSimulator" xml:space="preserve">
+    <value>Симулятор исходной таблицы</value>
+  </data>
+  <data name="WaveLengthFile" xml:space="preserve">
+    <value>Файл длины волны</value>
+  </data>
+  <data name="AmplitudeFile" xml:space="preserve">
+    <value>Файл амплитуды</value>
+  </data>
+  <data name="IsEnableNd" xml:space="preserve">
+    <value>Включить ND?</value>
+  </data>
+  <data name="ConnectType" xml:space="preserve">
+    <value>Способ подключения</value>
+  </data>
+  <data name="Saturation" xml:space="preserve">
+    <value>Насыщенность</value>
+  </data>
+  <data name="SetEmissionSP100Config" xml:space="preserve">
+    <value>Настройки EmissionSP100</value>
+  </data>
+  <data name="SelectDataFirst" xml:space="preserve">
+    <value>Сначала вам нужно выбрать данные.</value>
+  </data>
+  <data name="SelectLicenseFilePrompt" xml:space="preserve">
+    <value>Пожалуйста, выберите файл лицензии</value>
+  </data>
+  <data name="AddFailed" xml:space="preserve">
+    <value>Добавить не удалось</value>
+  </data>
+  <data name="AddSuccess" xml:space="preserve">
+    <value>Добавлено успешно</value>
+  </data>
+  <data name="ExtractionFailed" xml:space="preserve">
+    <value>Декомпрессия не удалась</value>
+  </data>
+  <data name="UpdataSucess" xml:space="preserve">
+    <value>Обновление успешно завершено</value>
+  </data>
+  <data name="UnsupportedLicenseFileExtension" xml:space="preserve">
+    <value>Неподдерживаемые расширения файла лицензии</value>
+  </data>
+  <data name="AllSpectrumDeviceInfo" xml:space="preserve">
+    <value>Вся информация о спектрометрическом оборудовании</value>
+  </data>
+  <data name="CreateDataBase" xml:space="preserve">
+    <value>Создание базы данных</value>
+  </data>
+  <data name="TemplateFailed" xml:space="preserve">
+    <value>Шаблон не удался</value>
+  </data>
+  <data name="LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt" xml:space="preserve">
+    <value>Текущая лицензия на логическую камеру истекла, и список устройств не может быть обновлен. Хотите удалить физические камеры, привязанные к сервису камер, и повторить попытку?</value>
+  </data>
+  <data name="LogicalCameraOffline_ClearBindingsAndRetryPromp" xml:space="preserve">
+    <value>Текущая логическая камера отключена, и список устройств не может быть обновлен. Хотите удалить физические камеры, привязанные к текущей службе камер, и повторить попытку?</value>
+  </data>
+  <data name="CurrentDeviceCameraInfo" xml:space="preserve">
+    <value>Текущая информация о камере устройства</value>
+  </data>
+  <data name="RefreshDeviceListFailed" xml:space="preserve">
+    <value>Не удалось обновить список устройств.</value>
+  </data>
+  <data name="AutoAlign" xml:space="preserve">
+    <value>Автоматическое выравнивание</value>
+  </data>
+  <data name="SaveChangesPrompt" xml:space="preserve">
+    <value>Сохранить изменения?</value>
+  </data>
+  <data name="ClearCreatedProcess_ConfirmAutoSaveClosePrompt" xml:space="preserve">
+    <value>Хотите очистить уже созданные процессы?\n\rПосле очистки автоматически сохранить и закрыть.</value>
+  </data>
+  <data name="FlowEditor" xml:space="preserve">
+    <value>Редактор процессов</value>
+  </data>
+  <data name="SaveSucess" xml:space="preserve">
+    <value>Сохранено успешно</value>
+  </data>
+  <data name="AutoExposureTemplateSettings" xml:space="preserve">
+    <value>Настройки шаблона автоматической экспозиции</value>
+  </data>
+  <data name="AutoFocusTemplateSettings" xml:space="preserve">
+    <value>Настройки шаблона автофокуса</value>
+  </data>
+  <data name="DistortionEvaluationTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами оценки искажений</value>
+  </data>
+  <data name="FOVTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами FOV</value>
+  </data>
+  <data name="GhostTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами Ghost</value>
+  </data>
+  <data name="MTFTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами MTF</value>
+  </data>
+  <data name="SFRTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами SFR</value>
+  </data>
+  <data name="BuzProcucTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами BuzProduc</value>
+  </data>
+  <data name="DataLoadTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами загрузки данных</value>
+  </data>
+  <data name="AADetectTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами обнаружения излучающей области</value>
+  </data>
+  <data name="ImportFlow" xml:space="preserve">
+    <value>Процесс импорта</value>
+  </data>
+  <data name="FocusPointsTemplateSettings" xml:space="preserve">
+    <value>Настройки алгоритма FocusPoints</value>
+  </data>
+  <data name="ImageCroppingTemplateSettings" xml:space="preserve">
+    <value>Шаблон для резки области освещения</value>
+  </data>
+  <data name="JNDTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами JND</value>
+  </data>
+  <data name="ImageEdit" xml:space="preserve">
+    <value>Графическое редактирование</value>
+  </data>
+  <data name="VerifyJson" xml:space="preserve">
+    <value>Проверить JSON</value>
+  </data>
+  <data name="DatabaseResetOptionNotConfigured" xml:space="preserve">
+    <value>Параметр сброса базы данных не настроен.</value>
+  </data>
+  <data name="InputTemplateName" xml:space="preserve">
+    <value>Введите название шаблона.</value>
+  </data>
+  <data name="AlreadyExists" xml:space="preserve">
+    <value>Он уже существует.</value>
+  </data>
+  <data name="DefaultTemplate" xml:space="preserve">
+    <value>Шаблон по умолчанию</value>
+  </data>
+  <data name="UseSystemDefaultTemplate" xml:space="preserve">
+    <value>Использовать системный шаблон по умолчанию</value>
+  </data>
+  <data name="LoadingTempate" xml:space="preserve">
+    <value>Загрузка шаблона</value>
+  </data>
+  <data name="EditDefaultComplianceTemplate" xml:space="preserve">
+    <value>Изменить шаблон соответствия по умолчанию</value>
+  </data>
+  <data name="TemplateExists_PleaseRename" xml:space="preserve">
+    <value>Этот шаблон уже существует. Измените название шаблона.</value>
+  </data>
+  <data name="PoiFileOutputTemplateSetting" xml:space="preserve">
+    <value>Настройки шаблона вывода файла POI</value>
+  </data>
+  <data name="POIFilterTemplateSetting" xml:space="preserve">
+    <value>Настройки шаблона фильтра POI</value>
+  </data>
+  <data name="LedBandDetectorManagement" xml:space="preserve">
+    <value>«Управление шаблонами тестирования светодиодных полос»</value>
+  </data>
+  <data name="SfrEdgeDetectionTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами поиска кромок SFR</value>
+  </data>
+  <data name="SfrV2TemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами SFRV2</value>
+  </data>
+  <data name="PoiAnalysisTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами анализа POI</value>
+  </data>
+  <data name="MtfV2TemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами MTFV2</value>
+  </data>
+  <data name="LedStripDetectionV2TemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами LEDStripDetectionV2</value>
+  </data>
+  <data name="SubPixelLedDetectionTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами обнаружения светодиодных шариков на субпиксельном уровне</value>
+  </data>
+  <data name="HdrTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами HDR</value>
+  </data>
+  <data name="Fov20TemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами FOV2.0</value>
+  </data>
+  <data name="CrossCalculationTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами крестообразных расчетов</value>
+  </data>
+  <data name="Distortion20TemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами Distortion 2.0</value>
+  </data>
+  <data name="ImageStitchingTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами сшивания изображений</value>
+  </data>
+  <data name="FindAaRegionTemplateManagement" xml:space="preserve">
+    <value>Ищу менеджера по шаблонам AA-зон</value>
+  </data>
+  <data name="BlackMuraTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами BlackMura</value>
+  </data>
+  <data name="StereoFusionTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами бинокулярного слияния</value>
+  </data>
   <data name="Lv" xml:space="preserve">
     <value>Яркость Lv (кд/м2)</value>
   </data>

@@ -74,10 +74,10 @@
                         </StackPanel>
                     </GroupBox>
                     <UniformGrid Columns="2">
-                        <Button Margin="2" x:Name="btn_open" Content="打开" Click="PGOpen"/>
+                        <Button Margin="2" x:Name="btn_open" Content="{x:Static properties:Resources.Open}" Click="PGOpen"/>
                         <Button Margin="2" Content="ReSet" Click="PGReSetPG"/>
                     </UniformGrid>
-                    <GroupBox Header="操作" Margin="2">
+                    <GroupBox Header="{x:Static properties:Resources.Operation}" Margin="2">
                         <StackPanel Visibility="Visible" >
                             <UniformGrid Columns="2">
                                 <Button Margin="2"  Content="{x:Static properties:Resources.PowerOn}" Click="PGStartPG"/>

@@ -138,35 +138,35 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         {
             if (listView1.SelectedIndex < 0)
             {
-                MessageBox.Show("您需要先选择数据");
+                MessageBox.Show("SelectDataFirst");
                 return;
             }
             using var dialog = new System.Windows.Forms.SaveFileDialog();
             dialog.Filter = "CSV files (*.csv) | *.csv";
-            dialog.FileName = DateTime.Now.ToString("光谱仪导出yyyy-MM-dd-HH-mm-ss");
+            dialog.FileName = DateTime.Now.ToString("SpectrometerExportyyyy-MM-dd-HH-mm-ss");
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
             var csvBuilder = new StringBuilder();
 
             List<string> properties = new();
-            properties.Add("序号");
-            properties.Add("批次号");
+            properties.Add("No");
+            properties.Add("Lot");
             properties.Add("IP");
-            properties.Add("亮度Lv(cd/m2)");
-            properties.Add("蓝光");
-            properties.Add("色度x");
-            properties.Add("色度y");
-            properties.Add("色度u");
-            properties.Add("色度v");
-            properties.Add("相关色温(K)");
-            properties.Add("主波长Ld(nm)");
-            properties.Add("色纯度(%)");
-            properties.Add("峰值波长Lp(nm");
-            properties.Add("显色性指数Ra");
-            properties.Add("半波宽");
-            properties.Add("电压");
-            properties.Add("电流");
+            properties.Add("Luminace（Lv）(cd/m²)");
+            properties.Add("Blue Light Intensity");
+            properties.Add("Cx");
+            properties.Add("Cy");
+            properties.Add("u'");
+            properties.Add("v'");
+            properties.Add("Correlated Color Temperature(CCT)（K）");
+            properties.Add("DW（λd）（nm）");
+            properties.Add("Color Purity(%)");
+            properties.Add("Peak Wavelength(λp)(nm)");
+            properties.Add("Color Rendering (Ra)");
+            properties.Add("FWHM");
+            properties.Add("Voltgage(V) (V)");
+            properties.Add("Current(I) (mA)");
 
             for (int i = 380; i <= 780; i++)
             {

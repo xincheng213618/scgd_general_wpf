@@ -19,7 +19,7 @@ namespace ColorVision.Update
     {
         public override string OwnerGuid => nameof(MenuUpdate);
         public override int Order => 100;
-        public override string Header => "检查更新(旧)";
+        public override string Header => ColorVision.Properties.Resources.CheckUpdateOld;
 
         public override void Execute() => _ = AutoUpdater.GetInstance().CheckAndUpdate();
     }

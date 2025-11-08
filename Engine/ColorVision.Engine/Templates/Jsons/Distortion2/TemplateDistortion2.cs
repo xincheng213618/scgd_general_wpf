@@ -28,7 +28,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
 
         public TemplateDistortion2()
         {
-            Title = "畸变2.0模板管理";
+            Title =ColorVision.Engine.Properties.Resources.Distortion20TemplateManagement;
             Code = "distortion";
             Name = "distortion2.0";
             TemplateDicId = 40;

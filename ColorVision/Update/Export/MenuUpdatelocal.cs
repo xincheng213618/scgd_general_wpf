@@ -6,7 +6,7 @@ namespace ColorVision.Update
     public class MenuUpdatelocal : MenuItemBase
     {
         public override string OwnerGuid => nameof(MenuUpdate);
-        public override string Header => "本地下载";
+        public override string Header => ColorVision.Properties.Resources.DownloadLocal;
         public override int Order => 10;
 
         public override void Execute()
@@ -19,7 +19,7 @@ namespace ColorVision.Update
     public class MenuUpdateBaidu : MenuItemBase
     {
         public override string OwnerGuid => nameof(MenuUpdate);
-        public override string Header => "百度云盘下载";
+        public override string Header => ColorVision.Properties.Resources.UpdateBaidu;
         public override int Order => 11;
 
         public override void Execute()

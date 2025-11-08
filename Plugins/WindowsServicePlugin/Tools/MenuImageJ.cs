@@ -20,11 +20,11 @@ namespace WindowsServicePlugin.Tools
     {
         public static ImageJConfig Instance => ConfigService.Instance.GetRequiredService<ImageJConfig>();
 
-        [DisplayName("ImageJ路径"),PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
+        [DisplayName("ImageJ path"),PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string ImageJPath { get => _ImageJPath; set { _ImageJPath = value; } }
         private string _ImageJPath = string.Empty;
 
-        [DisplayName("BeyondCompare路径"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
+        [DisplayName("BeyondCompare path"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string BeyondComparePath { get => _BeyondComparePath; set { _BeyondComparePath = value; } }
         private string _BeyondComparePath = string.Empty;
 
@@ -35,7 +35,7 @@ namespace WindowsServicePlugin.Tools
             {
                 new ConfigSettingMetadata()
                 {
-                    Name = "第三方",
+                    Name = "Thrid Party",
                     Description = "ImageJ",
                     Type = ConfigSettingType.Class,
                     Source = Instance
@@ -113,7 +113,7 @@ namespace WindowsServicePlugin.Tools
         private static readonly ILog log = LogManager.GetLogger(typeof(MenuImageJ));
         public override string OwnerGuid => MenuItemConstants.View;
         public override int Order => 99;
-        public override string Header => "打开ImageJ";
+        public override string Header => "Open ImageJ";
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
 
         public static string LatestReleaseUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/ImageJ/LATEST_RELEASE";
@@ -122,13 +122,13 @@ namespace WindowsServicePlugin.Tools
         public MenuImageJ()
         {
             DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = "下载ImageJ";
+            DownloadFile.DownloadTile = "Down ImageJ";
         }
         public override void Execute()
         {
             if (!File.Exists(ImageJConfig.Instance.ImageJPath))
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), "找不到ImageJ，是否下载", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), "Cannot Found ImageJ，Download?", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     string filename = "ij154-win-java8.zip";
                     string url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/ImageJ/{filename}";

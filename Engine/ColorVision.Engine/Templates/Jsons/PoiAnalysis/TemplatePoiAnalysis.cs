@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
 
         public TemplatePoiAnalysis()
         {
-            Title = "POI分析模板管理";
+            Title = ColorVision.Engine.Properties.Resources.PoiAnalysisTemplateManagement;
             Code = "PoiAnalysis";
             Name = "PoiAnalysis";
             TemplateDicId = 44;

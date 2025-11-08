@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
 
         public TemplateSFR2()
         {
-            Title = "SFRV2模板管理";
+            Title = ColorVision.Engine.Properties.Resources.SfrV2TemplateManagement;
             Code = "SFR";
             Name = "SFR_V2";
             TemplateDicId = 49;

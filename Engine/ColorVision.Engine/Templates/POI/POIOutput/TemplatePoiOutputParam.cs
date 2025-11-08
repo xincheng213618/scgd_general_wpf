@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Templates.POI.POIOutput
 
         public TemplatePoiOutputParam()
         {
-            Title = "Poi文件输出模板设置";
+            Title =ColorVision.Engine.Properties.Resources.PoiFileOutputTemplateSetting;
             TemplateDicId = 27;
             Code = "PoiOutput";
             TemplateParams = Params;

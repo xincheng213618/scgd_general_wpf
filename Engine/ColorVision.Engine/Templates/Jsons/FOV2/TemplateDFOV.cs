@@ -62,7 +62,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
 
         public TemplateDFOV()
         {
-            Title = "FOV2.0模板管理";
+            Title = ColorVision.Engine.Properties.Resources.Fov20TemplateManagement;
             Code = "FOV";
             Name = "FOV2.0";
             TemplateDicId = 39;

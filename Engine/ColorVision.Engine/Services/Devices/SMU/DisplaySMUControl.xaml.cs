@@ -154,7 +154,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                     {
                         Application.Current.Dispatcher.BeginInvoke(new Action(() =>
                         {
-                            button.Content = "打开失败";
+                            button.Content = ColorVision.Engine.Properties.Resources.OpenFailed;
                         }));
                     }
                 });
@@ -162,7 +162,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
             else
             {
                 passSxSource.Close();
-                button.Content = "打开";
+                button.Content = ColorVision.Engine.Properties.Resources.Open;
             }
         }
 

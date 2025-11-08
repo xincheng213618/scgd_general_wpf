@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Templates.BuzProduct
 
         public TemplateBuzProduc()
         {
-            Title = "BuzProduc模板管理";
+            Title = ColorVision.Engine.Properties.Resources.BuzProcucTemplateManagement;
             Code = "BuzProduc";
             TemplateParams = Params;
             IsUserControl = true;

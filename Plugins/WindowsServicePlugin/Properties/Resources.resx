@@ -136,4 +136,7 @@
   <data name="DumpFileSettings" xml:space="preserve">
     <value>转储文件设置</value>
   </data>
+  <data name="ActivateWindows" xml:space="preserve">
+    <value>激活Windows</value>
+  </data>
 </root>
