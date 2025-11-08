@@ -87,7 +87,7 @@
                         <ScrollViewer Margin="5"  HorizontalScrollBarVisibility="Disabled">
                             <UniformGrid x:Name="CommandGrid" Margin="5" Columns="3" VerticalAlignment="Top">
                                 <hc:Badge Value="{Binding Count}"  Style="{StaticResource BadgeDanger}" >
-                                    <Button Style="{StaticResource ButtonCommand}" Content="刷新设备"   Command="{Binding RefreshDeviceIdCommand}" />
+                                    <Button Style="{StaticResource ButtonCommand}" Content="{x:Static properties:Resources.RefreshDeviceList}"   Command="{Binding RefreshDeviceIdCommand}" />
                                 </hc:Badge>
                             </UniformGrid>
                         </ScrollViewer>
