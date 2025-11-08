@@ -282,4 +282,46 @@
   <data name="OpenConfigFolder" xml:space="preserve">
     <value>Ouvrez le dossier de configuration</value>
   </data>
+  <data name="singleChannel" xml:space="preserve">
+    <value>canal unique</value>
+  </data>
+  <data name="threeChannles" xml:space="preserve">
+    <value>Trois canaux</value>
+  </data>
+  <data name="Step11" xml:space="preserve">
+    <value>Étape 1 / 1</value>
+  </data>
+  <data name="Step" xml:space="preserve">
+    <value>étape</value>
+  </data>
+  <data name="SkipIncompleteConfigPrompt" xml:space="preserve">
+    <value>Certaines configurations sont encore incomplètes. Voulez-vous les ignorer ?</value>
+  </data>
+  <data name="UpdateFailed" xml:space="preserve">
+    <value>Échec de la mise à jour</value>
+  </data>
+  <data name="CheckUpdateOld" xml:space="preserve">
+    <value>Vérifier les mises à jour (anciennes).</value>
+  </data>
+  <data name="DownloadLocal" xml:space="preserve">
+    <value>Téléchargement local</value>
+  </data>
+  <data name="UpdateBaidu" xml:space="preserve">
+    <value>Téléchargement de Baidu Cloud</value>
+  </data>
+  <data name="MenuUpdateReInstall_重新安装当前版本" xml:space="preserve">
+    <value>Réinstaller la version actuelle</value>
+  </data>
+  <data name="ClearPackageCache" xml:space="preserve">
+    <value>Vider le cache du package d'installation</value>
+  </data>
+  <data name="OpenCacheFolder" xml:space="preserve">
+    <value>Ouvrez le dossier cache</value>
+  </data>
+  <data name="SoftwareVersionIdentical" xml:space="preserve">
+    <value>Même version du logiciel</value>
+  </data>
+  <data name="RollbackRequiresUninstallThenInstallOrRerunPackage" xml:space="preserve">
+    <value>Pour annuler la modification du logiciel, vous devez d'abord le désinstaller puis le réinstaller, ou réinstaller le package après l'installation.</value>
+  </data>
 </root>

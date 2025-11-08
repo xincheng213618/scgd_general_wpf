@@ -13,7 +13,7 @@ namespace WindowsServicePlugin.Tools
         private static readonly ILog log = LogManager.GetLogger(typeof(MenuAcitveWindows));
 
         public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => "激活Windows";
+        public override string Header => WindowsServicePlugin.Properties.Resources.ActivateWindows;
         public override int Order => 99;
 
         public override void Execute()

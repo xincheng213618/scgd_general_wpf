@@ -12,7 +12,7 @@ namespace ColorVision.Update
         public override string GuidId => nameof(MenuUpdateReInstallPath);
         public override int Order => 12;
         private static string AssemblyCompany => Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "ColorVision";
-        public override string Header => "打开缓存文件夹";
+        public override string Header => ColorVision.Properties.Resources.OpenCacheFolder;
         public override void Execute()
         {
             PlatformHelper.Open(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), AssemblyCompany));
