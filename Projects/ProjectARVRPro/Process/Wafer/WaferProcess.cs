@@ -33,7 +33,7 @@ namespace ProjectARVRPro.Process.Wafer
                         }
                     }
                 }
-                foreach (var item in MySqlControl.GetInstance().DB.Queryable<SMUResultModel>().Where(x=>x.Batchid == ctx.Batch.Id).ToList())
+                foreach (var item in MySqlControl.GetInstance().DB.Queryable<SMUResultModel>().Where(x=>x.BatchId == ctx.Batch.Id).ToList())
                 {
                     testResult.SMUResultModels.Add(item);
                 }

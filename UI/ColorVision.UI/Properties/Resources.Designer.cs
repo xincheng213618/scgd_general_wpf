@@ -1292,5 +1292,13 @@ namespace ColorVision.UI.Properties {
                 return ResourceManager.GetString("zh-Hant", resourceCulture);
             }
         }
+        public static string ProjectSolution_P
+        {
+            get
+            {
+                return ResourceManager.GetString("ProjectSolution_P", resourceCulture);
+            }
+        }
+        
     }
 }

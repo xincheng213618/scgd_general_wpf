@@ -11,7 +11,7 @@ namespace ProjectARVRPro.PluginConfig
         public override string OwnerGuid => MenuItemConstants.Tool;
 
         public override int Order => 100;
-        public override string Header => "ARVR检测Pro";
+        public override string Header => "ARVRDetectPro";
 
         public override void Execute()
         {

@@ -469,4 +469,7 @@
   <data name="DumpFileSettings" xml:space="preserve">
     <value>보관 파일 설정</value>
   </data>
+  <data name="ProjectSolution_P" xml:space="preserve">
+    <value>프로젝트/솔루션(P)...</value>
+  </data>
 </root>

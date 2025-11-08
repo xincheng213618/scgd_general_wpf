@@ -469,4 +469,7 @@
   <data name="DumpFileSettings" xml:space="preserve">
     <value>Archive file settings</value>
   </data>
+  <data name="ProjectSolution_P" xml:space="preserve">
+    <value>Project/Solution (P)...</value>
+  </data>
 </root>
