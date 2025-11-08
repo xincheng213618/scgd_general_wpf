@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             DService = new MQTTAlgorithm(this, Config);
 
             View = new AlgorithmView();
-            View.View.Title = $"算法视图 - {Config.Code}";
+            View.View.Title = ColorVision.Engine.Properties.Resources.AlgorithmView+$" - {Config.Code}";
             this.SetIconResource("DrawingImageAlgorithm", View.View);
 
             DisplayAlgorithmControlLazy = new Lazy<DisplayAlgorithm>(() => { DisplayAlgorithm ??= new DisplayAlgorithm(this); return DisplayAlgorithm; });

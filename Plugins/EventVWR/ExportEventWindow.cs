@@ -10,7 +10,7 @@ namespace EventVWR
         public override string OwnerGuid => "Help";
         public override string GuidId => "EventWindow";
         public override int Order => 1000;
-        public override string Header => "事件查看器";
+        public override string Header => EventVWR.Properties.Resources.EventWindow;
 
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()

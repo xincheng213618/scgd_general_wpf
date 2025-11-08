@@ -162,4 +162,7 @@
   <data name="Cancel" xml:space="preserve">
     <value>Annuler</value>
   </data>
+  <data name="LogDatabase" xml:space="preserve">
+    <value>Base de données de journaux</value>
+  </data>
 </root>

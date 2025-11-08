@@ -4,7 +4,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam
 {
     public class MysqlCameraRunParam : IMysqlCommand
     {
-        public string GetMysqlCommandName() => "恢复MysqlCameraRunParam模板设置";
+        public string GetMysqlCommandName() => ColorVision.Engine.Properties.Resources.RestoreMysqlCameraRunParamTemplateSettings;
         public string GetRecover()
         {
 

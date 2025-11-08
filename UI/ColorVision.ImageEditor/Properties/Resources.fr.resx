@@ -177,4 +177,19 @@
   <data name="ImageAlgorithm" xml:space="preserve">
     <value>Algorithme d'image</value>
   </data>
+  <data name="LineOn" xml:space="preserve">
+    <value>en ligne</value>
+  </data>
+  <data name="Internal" xml:space="preserve">
+    <value>Incision</value>
+  </data>
+  <data name="External" xml:space="preserve">
+    <value>incision externe</value>
+  </data>
+  <data name="Absolute" xml:space="preserve">
+    <value>valeur absolue</value>
+  </data>
+  <data name="Relative" xml:space="preserve">
+    <value>valeur relative</value>
+  </data>
 </root>

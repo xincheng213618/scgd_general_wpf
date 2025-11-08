@@ -1,7 +1,7 @@
 ﻿using ColorVision.UI.Menus;
 using System.Windows;
 using System.Windows.Controls;
-
+using ColorVision.UI.Properties;
 namespace ColorVision.SocketProtocol
 {
     /// <summary>
@@ -11,7 +11,7 @@ namespace ColorVision.SocketProtocol
     {
         public override string OwnerGuid => MenuItemConstants.Help;
         public override int Order => 9000;
-        public override string Header => "Socket管理窗口";
+        public override string Header => Resources.SocketManagementWindow;
 
         public override void Execute()
         {

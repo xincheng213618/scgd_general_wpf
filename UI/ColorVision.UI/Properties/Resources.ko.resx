@@ -472,4 +472,13 @@
   <data name="ProjectSolution_P" xml:space="preserve">
     <value>프로젝트/솔루션(P)...</value>
   </data>
+  <data name="MysqlTool" xml:space="preserve">
+    <value>MySQL 도구</value>
+  </data>
+  <data name="MsgList" xml:space="preserve">
+    <value>메시지 로그 창</value>
+  </data>
+  <data name="SocketManagementWindow" xml:space="preserve">
+    <value>소켓 관리 창</value>
+  </data>
 </root>

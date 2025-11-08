@@ -2115,4 +2115,118 @@
   <data name="Lv" xml:space="preserve">
     <value>Luminannce (cd/m2)</value>
   </data>
+  <data name="MsgLogWin" xml:space="preserve">
+    <value>Message Log Window</value>
+  </data>
+  <data name="PhySpectrum" xml:space="preserve">
+    <value>Physical spectrometer</value>
+  </data>
+  <data name="ComplyPoint" xml:space="preserve">
+    <value>point</value>
+  </data>
+  <data name="ComplyPointList_" xml:space="preserve">
+    <value>dot set</value>
+  </data>
+  <data name="EditDefaultComplianceDictionary" xml:space="preserve">
+    <value>Edit the default compliance dictionary</value>
+  </data>
+  <data name="CalibrationToolNotFound_DownloadPrompt" xml:space="preserve">
+    <value>Cannot find the calibration generation tool, do you want to download it online?</value>
+  </data>
+  <data name="DownloadCalibrationTool" xml:space="preserve">
+    <value>Download calibration generation tool</value>
+  </data>
+  <data name="SelectUpzipDirectry" xml:space="preserve">
+    <value>Please select the decompression directory.</value>
+  </data>
+  <data name="LedDataFIle" xml:space="preserve">
+    <value>LED data file</value>
+  </data>
+  <data name="LedDataFileNotFound" xml:space="preserve">
+    <value>LED data file not found</value>
+  </data>
+  <data name="ImageFileNotFound" xml:space="preserve">
+    <value>Image file not found</value>
+  </data>
+  <data name="ImageFileIsnotCVCIE" xml:space="preserve">
+    <value>The image file is not a CVCIE file.</value>
+  </data>
+  <data name="ImageFileOpenFailed" xml:space="preserve">
+    <value>Image file failed to open</value>
+  </data>
+  <data name="SSCOMTool" xml:space="preserve">
+    <value>SSCOM Serial Port Debugging Assistant</value>
+  </data>
+  <data name="CalibrationFileCorrectionTool" xml:space="preserve">
+    <value>Correction File Repair Tool</value>
+  </data>
+  <data name="AlgorithmView" xml:space="preserve">
+    <value>Algorithm View</value>
+  </data>
+  <data name="StartTimeMs" xml:space="preserve">
+    <value>Start time (ms)</value>
+  </data>
+  <data name="FrequencySyncHz" xml:space="preserve">
+    <value>Frequency synchronization (Hz)</value>
+  </data>
+  <data name="SaturationPercent" xml:space="preserve">
+    <value>Saturation (%)</value>
+  </data>
+  <data name="ADMax" xml:space="preserve">
+    <value>maximum AD</value>
+  </data>
+  <data name="MaxPercent" xml:space="preserve">
+    <value>Maximum percentage</value>
+  </data>
+  <data name="SaturationDifference" xml:space="preserve">
+    <value>Saturation difference</value>
+  </data>
+  <data name="MaxExposureTimeMs" xml:space="preserve">
+    <value>Maximum exposure time (ms)</value>
+  </data>
+  <data name="MinExposureTimeMs" xml:space="preserve">
+    <value>Minimum exposure time (ms)</value>
+  </data>
+  <data name="BurstThresholdMs" xml:space="preserve">
+    <value>burst threshold (ms)</value>
+  </data>
+  <data name="EvaluationFunctionType" xml:space="preserve">
+    <value>Evaluation function type</value>
+  </data>
+  <data name="StepSwingRange" xml:space="preserve">
+    <value>stride swing range</value>
+  </data>
+  <data name="StepSwingRangeDiscription" xml:space="preserve">
+    <value>The second step path. The actual second step path is forwardparam *</value>
+  </data>
+  <data name="StepReductionFactor" xml:space="preserve">
+    <value>Step size reduction factor</value>
+  </data>
+  <data name="SecondStepFactor" xml:space="preserve">
+    <value>The second step coefficient</value>
+  </data>
+  <data name="CurrentStepSize" xml:space="preserve">
+    <value>Currently using the step path</value>
+  </data>
+  <data name="InitialStepSize" xml:space="preserve">
+    <value>First step</value>
+  </data>
+  <data name="StopStepSize" xml:space="preserve">
+    <value>Stop step</value>
+  </data>
+  <data name="Deprecated" xml:space="preserve">
+    <value>Deprecated</value>
+  </data>
+  <data name="MinEvaluationValue" xml:space="preserve">
+    <value>Lowest rating</value>
+  </data>
+  <data name="TimeoutDuration" xml:space="preserve">
+    <value>Timeout</value>
+  </data>
+  <data name="RestoreMysqlAutoFocusTemplateSettings" xml:space="preserve">
+    <value>Restore MySQL AutoFocus template settings</value>
+  </data>
+  <data name="RestoreMysqlCameraRunParamTemplateSettings" xml:space="preserve">
+    <value>Restore MysqlCameraRunParam template settings</value>
+  </data>
 </root>

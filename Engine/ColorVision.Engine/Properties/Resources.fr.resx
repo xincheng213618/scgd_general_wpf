@@ -2115,4 +2115,118 @@
   <data name="Lv" xml:space="preserve">
     <value>Luminosité Lv (cd/m2)</value>
   </data>
+  <data name="MsgLogWin" xml:space="preserve">
+    <value>Fenêtre de journalisation des messages</value>
+  </data>
+  <data name="PhySpectrum" xml:space="preserve">
+    <value>spectromètre physique</value>
+  </data>
+  <data name="ComplyPoint" xml:space="preserve">
+    <value>indiquer</value>
+  </data>
+  <data name="ComplyPointList_" xml:space="preserve">
+    <value>ensemble de points</value>
+  </data>
+  <data name="EditDefaultComplianceDictionary" xml:space="preserve">
+    <value>Modifier le dictionnaire de conformité par défaut</value>
+  </data>
+  <data name="CalibrationToolNotFound_DownloadPrompt" xml:space="preserve">
+    <value>Impossible de trouver l'outil de génération d'étalonnage ? Voulez-vous le télécharger en ligne ?</value>
+  </data>
+  <data name="DownloadCalibrationTool" xml:space="preserve">
+    <value>Télécharger l'outil de génération d'étalonnage</value>
+  </data>
+  <data name="SelectUpzipDirectry" xml:space="preserve">
+    <value>Veuillez sélectionner le répertoire de décompression.</value>
+  </data>
+  <data name="LedDataFIle" xml:space="preserve">
+    <value>fichier de données LED</value>
+  </data>
+  <data name="LedDataFileNotFound" xml:space="preserve">
+    <value>Fichier de données LED introuvable</value>
+  </data>
+  <data name="ImageFileNotFound" xml:space="preserve">
+    <value>Fichier image introuvable</value>
+  </data>
+  <data name="ImageFileIsnotCVCIE" xml:space="preserve">
+    <value>Le fichier image n'est pas un fichier CVCIE.</value>
+  </data>
+  <data name="ImageFileOpenFailed" xml:space="preserve">
+    <value>Impossible d'ouvrir le fichier image</value>
+  </data>
+  <data name="SSCOMTool" xml:space="preserve">
+    <value>Assistant de débogage du port série SSCOM</value>
+  </data>
+  <data name="CalibrationFileCorrectionTool" xml:space="preserve">
+    <value>Outil de réparation de fichiers de correction</value>
+  </data>
+  <data name="AlgorithmView" xml:space="preserve">
+    <value>Vue de l'algorithme</value>
+  </data>
+  <data name="StartTimeMs" xml:space="preserve">
+    <value>Heure de début (ms)</value>
+  </data>
+  <data name="FrequencySyncHz" xml:space="preserve">
+    <value>Synchronisation de fréquence (Hz)</value>
+  </data>
+  <data name="SaturationPercent" xml:space="preserve">
+    <value>Saturation (%)</value>
+  </data>
+  <data name="ADMax" xml:space="preserve">
+    <value>AD maximum</value>
+  </data>
+  <data name="MaxPercent" xml:space="preserve">
+    <value>Pourcentage maximum</value>
+  </data>
+  <data name="SaturationDifference" xml:space="preserve">
+    <value>Différence de saturation</value>
+  </data>
+  <data name="MaxExposureTimeMs" xml:space="preserve">
+    <value>Temps d'exposition maximal (ms)</value>
+  </data>
+  <data name="MinExposureTimeMs" xml:space="preserve">
+    <value>Temps d'exposition minimum (ms)</value>
+  </data>
+  <data name="BurstThresholdMs" xml:space="preserve">
+    <value>Seuil de rafale (ms)</value>
+  </data>
+  <data name="EvaluationFunctionType" xml:space="preserve">
+    <value>type de fonction d'évaluation</value>
+  </data>
+  <data name="StepSwingRange" xml:space="preserve">
+    <value>amplitude de mouvement</value>
+  </data>
+  <data name="StepSwingRangeDiscription" xml:space="preserve">
+    <value>Le chemin de la deuxième étape. Le chemin réel de la deuxième étape est forwardparam *</value>
+  </data>
+  <data name="StepReductionFactor" xml:space="preserve">
+    <value>facteur de réduction de la taille du pas</value>
+  </data>
+  <data name="SecondStepFactor" xml:space="preserve">
+    <value>Le coefficient de la deuxième étape</value>
+  </data>
+  <data name="CurrentStepSize" xml:space="preserve">
+    <value>J'utilise actuellement la méthode par étapes.</value>
+  </data>
+  <data name="InitialStepSize" xml:space="preserve">
+    <value>Premier pas</value>
+  </data>
+  <data name="StopStepSize" xml:space="preserve">
+    <value>Étape d'arrêt</value>
+  </data>
+  <data name="Deprecated" xml:space="preserve">
+    <value>Déprécié</value>
+  </data>
+  <data name="MinEvaluationValue" xml:space="preserve">
+    <value>Note la plus basse</value>
+  </data>
+  <data name="TimeoutDuration" xml:space="preserve">
+    <value>Temps mort</value>
+  </data>
+  <data name="RestoreMysqlAutoFocusTemplateSettings" xml:space="preserve">
+    <value>Restaurer les paramètres du modèle MySQL AutoFocus</value>
+  </data>
+  <data name="RestoreMysqlCameraRunParamTemplateSettings" xml:space="preserve">
+    <value>Restaurer les paramètres du modèle MysqlCameraRunParam</value>
+  </data>
 </root>

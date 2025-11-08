@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam
 
         }
 
-        [Category("Gain"),DisplayName("增益"), Description("增益")]
+        [Category("Gain"),DisplayName("Gain"), Description("Gain")]
         public float Gain { get => GetValue(_Gain); set { SetProperty(ref _Gain, value); } }
         private float _Gain;
 
@@ -40,20 +40,20 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam
         private float _ExpTimeB = 10;
 
 
-        [Category("Focus"), Description("焦距")]
+        [Category("Focus"), Description("Focus")]
         public bool EnableFocus { get => GetValue(_EnableFocus); set { SetProperty(ref _EnableFocus, value); } }
         private bool _EnableFocus;
 
-        [Category("Camera"), Description("平均次数")]
+        [Category("Camera"), Description("AverageTimes")]
         public int AvgCount { get => GetValue(_AvgCount); set { SetProperty(ref _AvgCount, value); } }
         private int _AvgCount = 1;
 
 
-        [Category("Focus"), Description("焦距")]
+        [Category("Focus"), Description("Focus")]
         public int Focus { get => GetValue(_Focus); set { SetProperty(ref _Focus, value); } }
         private int _Focus = -1;
 
-        [Category("Camera"), Description("光圈")]
+        [Category("Camera"), Description("ApertureF")]
         public int Aperture { get => GetValue(_Aperture); set { SetProperty(ref _Aperture, value); } }
         private int _Aperture = -1;
 

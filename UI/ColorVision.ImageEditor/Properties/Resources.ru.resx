@@ -177,4 +177,19 @@
   <data name="ImageAlgorithm" xml:space="preserve">
     <value>Алгоритм изображения</value>
   </data>
+  <data name="LineOn" xml:space="preserve">
+    <value>онлайн</value>
+  </data>
+  <data name="Internal" xml:space="preserve">
+    <value>Разрез</value>
+  </data>
+  <data name="External" xml:space="preserve">
+    <value>внешний разрез</value>
+  </data>
+  <data name="Absolute" xml:space="preserve">
+    <value>абсолютное значение</value>
+  </data>
+  <data name="Relative" xml:space="preserve">
+    <value>относительная ценность</value>
+  </data>
 </root>

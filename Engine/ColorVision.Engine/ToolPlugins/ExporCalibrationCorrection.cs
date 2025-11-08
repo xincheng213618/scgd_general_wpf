@@ -39,7 +39,7 @@ namespace ColorVision.Engine.ToolPlugins
         public ExporCalibrationCorrection()
         {
             DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = "下载校正生成工具240906";
+            DownloadFile.DownloadTile = ColorVision.Engine.Properties.Resources.DownloadCalibrationTool+"240906";
         }
 
         private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/CalibTool/generateCaliFileTool240906.zip";
@@ -51,7 +51,7 @@ namespace ColorVision.Engine.ToolPlugins
         {
             if (!File.Exists(CalibrationConfig.Instance.CalibToolsPath))
             {
-                if (MessageBox.Show("找不到校正生成工具，是否在线下载","ColorVision",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show(ColorVision.Engine.Properties.Resources.CalibrationToolNotFound_DownloadPrompt,"ColorVision",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     WindowUpdate windowUpdate = new WindowUpdate(DownloadFile);
                     if (!File.Exists(downloadPath))
@@ -81,7 +81,7 @@ namespace ColorVision.Engine.ToolPlugins
                             Process.GetProcessesByName("CalibTools").ToList().ForEach(p => p.Kill());
                             using (System.Windows.Forms.FolderBrowserDialog folderBrowser = new System.Windows.Forms.FolderBrowserDialog())
                             {
-                                folderBrowser.Description = "请选择解压缩目录";
+                                folderBrowser.Description = ColorVision.Engine.Properties.Resources.SelectUpzipDirectry;
                                 folderBrowser.ShowNewFolderButton = true;
                                 folderBrowser.RootFolder = Environment.SpecialFolder.Desktop;
                                 if (folderBrowser.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;

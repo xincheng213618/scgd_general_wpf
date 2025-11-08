@@ -267,4 +267,7 @@
   <data name="Column" xml:space="preserve">
     <value>Column</value>
   </data>
+  <data name="Terminal" xml:space="preserve">
+    <value>terminal</value>
+  </data>
 </root>

@@ -100,4 +100,7 @@
   <data name="Record" xml:space="preserve">
     <value>录制</value>
   </data>
+  <data name="ScreenRecorder" xml:space="preserve">
+    <value>录制视频</value>
+  </data>
 </root>

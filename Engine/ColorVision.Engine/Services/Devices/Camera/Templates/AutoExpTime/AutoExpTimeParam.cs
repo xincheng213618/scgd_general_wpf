@@ -13,43 +13,43 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam
         public AutoExpTimeParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
         }
-        [DisplayName("是否启用")]
+        [DisplayName("IsEnable")]
         public bool autoExpFlag { get => GetValue(_autoExpFlag); set { SetProperty(ref _autoExpFlag, value); } }
         private bool _autoExpFlag = true;
 
-        [DisplayName("开始时间(ms)")]
+        [DisplayName("StartTimeMs")]
         public int autoExpTimeBegin { get => GetValue(_autoExpTimeBegin); set { SetProperty(ref _autoExpTimeBegin, value); } }
         private int _autoExpTimeBegin = 10;
 
-        [DisplayName("频率同步(hz)")]
+        [DisplayName("FrequencySyncHz")]
         public int autoExpSyncFreq { get => GetValue(_autoExpSyncFreq); set { SetProperty(ref _autoExpSyncFreq, value); } }
         private int _autoExpSyncFreq = -1;
 
-        [DisplayName("饱和度(%)")]
+        [DisplayName("SaturationPercent")]
         public int autoExpSaturation { get => GetValue(_autoExpSaturation); set { SetProperty(ref _autoExpSaturation, value); } }
         private int _autoExpSaturation = 70;
 
-        [DisplayName("AD最大值")]
+        [DisplayName("ADMax")]
         public int autoExpSatMaxAD { get => GetValue(_autoExpSatMaxAD); set { SetProperty(ref _autoExpSatMaxAD, value); } }
         private int _autoExpSatMaxAD = 65000;
 
-        [DisplayName("最大值百分比")]
+        [DisplayName("MaxPercent")]
         public double autoExpMaxPecentage { get => GetValue(_autoExpMaxPecentage); set { SetProperty(ref _autoExpMaxPecentage, value); } }
         private double _autoExpMaxPecentage = 0.01;
 
-        [DisplayName("饱和度差值")]
+        [DisplayName("SaturationDifference")]
         public int autoExpSatDev { get => GetValue(_autoExpSatDev); set { SetProperty(ref _autoExpSatDev, value); } }
         private int _autoExpSatDev = 20;
 
-        [DisplayName("最大曝光时间(ms)")]
+        [DisplayName("MaxExposureTimeMs")]
         public double maxExpTime { get => GetValue(_maxExpTime); set { SetProperty(ref _maxExpTime, value); } }
         private double _maxExpTime = 60000;
 
-        [DisplayName("最小曝光时间(ms)")]
+        [DisplayName("MinExposureTimeMs")]
         public double minExpTime { get => GetValue(_minExpTime); set { SetProperty(ref _minExpTime, value); } }
         private double _minExpTime = 0.2;
 
-        [DisplayName("burst阈值(ms)")]
+        [DisplayName("BurstThresholdMs")]
         public int burstThreshold { get => GetValue(_burstThreshold); set { SetProperty(ref _burstThreshold, value); } }
         private int _burstThreshold = 200;
 

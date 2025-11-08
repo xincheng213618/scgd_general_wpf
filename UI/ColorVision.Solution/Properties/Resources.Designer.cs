@@ -509,5 +509,14 @@ namespace ColorVision.Solution.Properties {
                 return ResourceManager.GetString("Sign_out", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 终端 的本地化字符串。
+        /// </summary>
+        public static string Terminal {
+            get {
+                return ResourceManager.GetString("Terminal", resourceCulture);
+            }
+        }
     }
 }

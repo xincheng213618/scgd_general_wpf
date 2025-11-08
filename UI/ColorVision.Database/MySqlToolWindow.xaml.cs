@@ -11,7 +11,7 @@ namespace ColorVision.Database
     {
         public override string OwnerGuid => nameof(ExportMySqlMenuItem);
         public override string GuidId => nameof(ExportMySqlTool);
-        public override string Header => "Mysql工具";
+        public override string Header => ColorVision.UI.Properties.Resources.MysqlTool;
         public override int Order => 2;
 
         public override void Execute()

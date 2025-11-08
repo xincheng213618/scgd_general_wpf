@@ -472,4 +472,13 @@
   <data name="ProjectSolution_P" xml:space="preserve">
     <value>Project/Solution (P)...</value>
   </data>
+  <data name="MysqlTool" xml:space="preserve">
+    <value>MySQL tools</value>
+  </data>
+  <data name="MsgList" xml:space="preserve">
+    <value>Message Log Window</value>
+  </data>
+  <data name="SocketManagementWindow" xml:space="preserve">
+    <value>Socket Management Window</value>
+  </data>
 </root>

@@ -2115,4 +2115,118 @@
   <data name="Lv" xml:space="preserve">
     <value>亮度Lv(cd/m2)</value>
   </data>
+  <data name="MsgLogWin" xml:space="preserve">
+    <value>訊息日誌視窗</value>
+  </data>
+  <data name="PhySpectrum" xml:space="preserve">
+    <value>物理光譜儀</value>
+  </data>
+  <data name="ComplyPoint" xml:space="preserve">
+    <value>點</value>
+  </data>
+  <data name="ComplyPointList_" xml:space="preserve">
+    <value>點集</value>
+  </data>
+  <data name="EditDefaultComplianceDictionary" xml:space="preserve">
+    <value>"編輯預設合規字典</value>
+  </data>
+  <data name="CalibrationToolNotFound_DownloadPrompt" xml:space="preserve">
+    <value>找不到校正產生工具，是否在線上下載</value>
+  </data>
+  <data name="DownloadCalibrationTool" xml:space="preserve">
+    <value>下載校正產生工具</value>
+  </data>
+  <data name="SelectUpzipDirectry" xml:space="preserve">
+    <value>請選擇解壓縮目錄</value>
+  </data>
+  <data name="LedDataFIle" xml:space="preserve">
+    <value>燈珠數據文件</value>
+  </data>
+  <data name="LedDataFileNotFound" xml:space="preserve">
+    <value>找不到燈珠數據文件</value>
+  </data>
+  <data name="ImageFileNotFound" xml:space="preserve">
+    <value>找不到圖像文件</value>
+  </data>
+  <data name="ImageFileIsnotCVCIE" xml:space="preserve">
+    <value>影像檔不是CVCIE</value>
+  </data>
+  <data name="ImageFileOpenFailed" xml:space="preserve">
+    <value>圖像檔案開啟失敗</value>
+  </data>
+  <data name="SSCOMTool" xml:space="preserve">
+    <value>SSCOM串口調試助手</value>
+  </data>
+  <data name="CalibrationFileCorrectionTool" xml:space="preserve">
+    <value>校正文件修正工具</value>
+  </data>
+  <data name="AlgorithmView" xml:space="preserve">
+    <value>演算法視圖</value>
+  </data>
+  <data name="StartTimeMs" xml:space="preserve">
+    <value>開始時間(ms)</value>
+  </data>
+  <data name="FrequencySyncHz" xml:space="preserve">
+    <value>頻率同步(hz)</value>
+  </data>
+  <data name="SaturationPercent" xml:space="preserve">
+    <value>飽和度(%)</value>
+  </data>
+  <data name="ADMax" xml:space="preserve">
+    <value>AD最大值</value>
+  </data>
+  <data name="MaxPercent" xml:space="preserve">
+    <value>最大值百分比</value>
+  </data>
+  <data name="SaturationDifference" xml:space="preserve">
+    <value>飽和度差值</value>
+  </data>
+  <data name="MaxExposureTimeMs" xml:space="preserve">
+    <value>最大曝光時間(ms)</value>
+  </data>
+  <data name="MinExposureTimeMs" xml:space="preserve">
+    <value>最小曝光時間(ms)</value>
+  </data>
+  <data name="BurstThresholdMs" xml:space="preserve">
+    <value>burst閾值(ms)</value>
+  </data>
+  <data name="EvaluationFunctionType" xml:space="preserve">
+    <value>評價函數類型</value>
+  </data>
+  <data name="StepSwingRange" xml:space="preserve">
+    <value>步徑擺盪範圍</value>
+  </data>
+  <data name="StepSwingRangeDiscription" xml:space="preserve">
+    <value>第二次的步徑 實際第二次步徑為 forwardparam *</value>
+  </data>
+  <data name="StepReductionFactor" xml:space="preserve">
+    <value>步徑每次縮減係數</value>
+  </data>
+  <data name="SecondStepFactor" xml:space="preserve">
+    <value>第二次的步徑係數</value>
+  </data>
+  <data name="CurrentStepSize" xml:space="preserve">
+    <value>目前使用步徑</value>
+  </data>
+  <data name="InitialStepSize" xml:space="preserve">
+    <value>第一次的步徑</value>
+  </data>
+  <data name="StopStepSize" xml:space="preserve">
+    <value>停止步徑</value>
+  </data>
+  <data name="Deprecated" xml:space="preserve">
+    <value>已棄用</value>
+  </data>
+  <data name="MinEvaluationValue" xml:space="preserve">
+    <value>最低評價值</value>
+  </data>
+  <data name="TimeoutDuration" xml:space="preserve">
+    <value>超時時間</value>
+  </data>
+  <data name="RestoreMysqlAutoFocusTemplateSettings" xml:space="preserve">
+    <value>恢復Mysql AutoFocus模板設置</value>
+  </data>
+  <data name="RestoreMysqlCameraRunParamTemplateSettings" xml:space="preserve">
+    <value>恢復MysqlCameraRunParam模板設置</value>
+  </data>
 </root>
