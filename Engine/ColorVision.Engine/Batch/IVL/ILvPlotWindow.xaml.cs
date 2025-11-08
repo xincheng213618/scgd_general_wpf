@@ -204,7 +204,7 @@ namespace ColorVision.Engine.Batch.IVL
             WpfPlot.Plot.YLabel("Luminance (cd/m²)");
             
             // Update title text block
-            TxtTitle.Text = $"{modeLabel} Curve Analysis";date
+            TxtTitle.Text = $"{modeLabel} Curve Analysis";
             
             // Set font for labels to support international characters
             // Use a consistent string for font detection
