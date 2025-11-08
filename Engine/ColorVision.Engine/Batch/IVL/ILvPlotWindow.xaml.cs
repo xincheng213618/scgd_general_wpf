@@ -16,10 +16,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace ColorVision.Engine.Batch.IVL
 {
@@ -208,7 +204,7 @@ namespace ColorVision.Engine.Batch.IVL
             WpfPlot.Plot.YLabel("Luminance (cd/m²)");
             
             // Update title text block
-            TxtTitle.Text = $"{modeLabel} Curve Analysis";
+            TxtTitle.Text = $"{modeLabel} Curve Analysis";date
             
             // Set font for labels to support international characters
             // Use a consistent string for font detection
