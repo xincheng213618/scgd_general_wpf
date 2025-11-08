@@ -117,24 +117,24 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
     public class CameraParameterLimit : ViewModelBase
     {
-        [DisplayName("增益默认值")]
+        [DisplayName("DefaultGain")]
         public float GainDefault { get => _GainDefault; set { _GainDefault = value; OnPropertyChanged(); } }
         private float _GainDefault = 10;
-        [DisplayName("增益最小值")]
+        [DisplayName("MinGain")]
         public float GainMin { get => _GainMin; set { _GainMin = value; OnPropertyChanged(); } }
         private float _GainMin;
-        [DisplayName("增益最大值")]
+        [DisplayName("MaxGain")]
         public float GainMax { get => _GainMax; set { _GainMax = value; OnPropertyChanged(); } }
         private float _GainMax = 100;
 
-        [DisplayName("曝光默认值")]
+        [DisplayName("DefaultExpTime")]
         public float ExpDefalut { get => _ExpDefalut; set { _ExpDefalut = value; OnPropertyChanged(); } }
         private float _ExpDefalut = 100;
 
-        [DisplayName("曝光最小值")]
+        [DisplayName("MinExpTime")]
         public float ExpMin { get => _ExpMin; set { _ExpMin = value; OnPropertyChanged(); } }
         private float _ExpMin = 1;
-        [DisplayName("曝光最大值")]
+        [DisplayName("MaxExpTime")]
         public float ExpMax { get => _ExpMax; set { _ExpMax = value; OnPropertyChanged(); } }
         private float _ExpMax = 60000;
 
@@ -142,19 +142,19 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
     public class FileSeviceConfig :ViewModelBase
     {
-        [DisplayName("数据存储路径"),PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
+        [DisplayName("DataSavePath"),PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string FileBasePath { get => _FileBasePath; set { _FileBasePath = value; OnPropertyChanged(); } }
         private string _FileBasePath = "D:\\CVTest";
         /// <summary>
         /// 端口地址
         /// </summary>
-        [DisplayName("端口地址")]
+        [DisplayName("PortAddress")]
         public string Endpoint { get => _Endpoint; set { _Endpoint = value; OnPropertyChanged(); } }
         private string _Endpoint = "127.0.0.1";
         /// <summary>
         /// 端口范围
         /// </summary>
-        [DisplayName("端口范围")]
+        [DisplayName("PortRange")]
         public string PortRange { get => _PortRange; set { _PortRange = value; OnPropertyChanged(); } }
         private string _PortRange = ((Func<string>)(() => { int fromPort = Math.Abs(new Random().Next()) % 99 + 6600; return string.Format("{0}-{1}", fromPort, fromPort + 5); }))();
 

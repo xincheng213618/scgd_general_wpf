@@ -133,6 +133,15 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
+        ///   查找类似 日志数据库 的本地化字符串。
+        /// </summary>
+        public static string LogDatabase {
+            get {
+                return ResourceManager.GetString("LogDatabase", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Mysql连接 的本地化字符串。
         /// </summary>
         public static string MysqlConnection {

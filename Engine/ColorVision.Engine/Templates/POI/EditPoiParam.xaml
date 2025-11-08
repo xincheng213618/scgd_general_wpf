@@ -14,7 +14,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PoiParam}"
-        Title="关注点编辑"  Height="1080" Width="1920" WindowState="Maximized" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.POIEdit}"  Height="1261" Width="1953" WindowState="Maximized" Initialized="Window_Initialized">
     <Window.Resources>
         <local:RoundToNearestHalfConverter x:Key="RoundToNearestHalfConverter"/>
 
@@ -53,10 +53,10 @@
                         </DockPanel>
                     </DockPanel>
                     <StackPanel  Orientation="Horizontal" Margin="0,2">
-                        <Button  Content="默认画布" DockPanel.Dock="Right" Click="CreateImage_Click"  Style="{StaticResource ButtonDefault.Small}" Margin="2,0" />
-                        <Button x:Name="button1" Content="图像导入" HorizontalAlignment="Left"   Style="{StaticResource ButtonDefault.Small}"  Click="Button1_Click" Margin="2,0"/>
-                        <Button x:Name="button4" Content="导入最新的图像" Click="Service_Click"  Style="{StaticResource ButtonDefault.Small}" Margin="2,0" />
-                        <Button x:Name="button5" Content="拍摄" Click="TakePhoto_Click"  Style="{StaticResource ButtonDefault.Small}" Margin="2,0" />
+                        <Button  Content="{x:Static properties:Resources.DefaultCanvas}" DockPanel.Dock="Right" Click="CreateImage_Click"  Style="{StaticResource ButtonDefault.Small}" Margin="2,0" />
+                        <Button x:Name="button1" Content="{x:Static properties:Resources.ImgImport}" HorizontalAlignment="Left"   Style="{StaticResource ButtonDefault.Small}"  Click="Button1_Click" Margin="2,0"/>
+                        <Button x:Name="button4" Content="{x:Static properties:Resources.ImportLatestImages}" Click="Service_Click"  Style="{StaticResource ButtonDefault.Small}" Margin="2,0" />
+                        <Button x:Name="button5" Content="{x:Static properties:Resources.CaptureImage}" Click="TakePhoto_Click"  Style="{StaticResource ButtonDefault.Small}" Margin="2,0" />
                     </StackPanel>
 
 
@@ -68,13 +68,13 @@
                     </DockPanel>
 
                     <StackPanel  Margin="2" Orientation="Horizontal">
-                        <Button  ToolTip="保存关注点" Click="Button_Save_Click" HorizontalAlignment="Right" Margin="0,0,5,0">
+                        <Button  ToolTip="{x:Static properties:Resources.SavePOI}" Click="Button_Save_Click" HorizontalAlignment="Right" Margin="0,0,5,0">
                             <Image Source="{StaticResource DrawingImageSave}" Height="20" />
                         </Button>
-                        <Button x:Name="button3" ToolTip="清空关注点" Click="Button3_Click" HorizontalAlignment="Right">
+                        <Button x:Name="button3" ToolTip="{x:Static properties:Resources.ClearPOI}" Click="Button3_Click" HorizontalAlignment="Right">
                             <Image Source="{StaticResource DrawingImageClear}" Height="20"/>
                         </Button>
-                        <Button Content="重渲染" Margin="5,0,0,0" ToolTip="一次"  Click="Button_UpdateVisualLayout_Click"  DockPanel.Dock="Right" Visibility="{Binding PoiConfig.IsLayoutUpdated ,Converter={StaticResource bool2VisibilityConverter1}}" />
+                        <Button Content="{x:Static properties:Resources.ReRender}" Margin="5,0,0,0" ToolTip="{x:Static properties:Resources.Once}"  Click="Button_UpdateVisualLayout_Click"  DockPanel.Dock="Right" Visibility="{Binding PoiConfig.IsLayoutUpdated ,Converter={StaticResource bool2VisibilityConverter1}}" />
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -82,7 +82,7 @@
             <Border Grid.Row="2"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="5,5,5,0">
                 <StackPanel Margin="2">
                     <DockPanel Margin="0,2">
-                        <TextBlock Text="保存到文件"/>
+                        <TextBlock Text="{x:Static properties:Resources.SaveToFile}"/>
                         <ToggleButton  HorizontalAlignment="Left"  Margin="0,0,2,0" Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding PoiConfig.IsPoiCIEFile}"/>
                     </DockPanel>
                     <DockPanel Visibility="{Binding  PoiConfig.IsPoiCIEFile,Converter={StaticResource bool2VisibilityConverter}}">
@@ -90,70 +90,70 @@
                             <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding PoiConfig.OpenPoiCIEFileCommand}"/>
                             <TextBlock Text="&#xED25;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
                         </Grid>
-                        <Button x:Name="button6" DockPanel.Dock="Right"  Content="保存" Click="SaveFile_Click" Margin="2,0" />
+                        <Button x:Name="button6" DockPanel.Dock="Right"  Content="{x:Static properties:Resources.Save}" Click="SaveFile_Click" Margin="2,0" />
                         <Button DockPanel.Dock="Right"  Content="..." Command="{Binding PoiConfig.SetPoiFileCommand}" Margin="2,0" />
                         <TextBox Margin="2,0" BorderThickness="1" Text="{Binding PoiConfig.PoiCIEFileName}"/>
                     </DockPanel>
                     <StackPanel Margin="2"  Orientation="Horizontal" Visibility="{Binding  PoiConfig.IsPoiCIEFile,Converter={StaticResource bool2VisibilityConverter}}">
-                        <TextBlock Text="半径:" Width="40"/>
+                        <TextBlock Text="{x:Static properties:Resources.Radius}" Width="40"/>
                         <TextBox Text="{Binding PoiConfig.Thickness}"  Width="55"  />
                     </StackPanel>
                     <StackPanel x:Name="PoiFixStackPanel" >
                         <StackPanel Orientation="Horizontal" Margin="0,2" >
-                            <TextBlock DockPanel.Dock="Left" Margin="2,0" Text="数据修正文件路径" Width="120"/>
+                            <TextBlock DockPanel.Dock="Left" Margin="2,0" Text="{x:Static properties:Resources.DataCorrectionFilePath}" Width="120"/>
                             <TextBox Text="{Binding PoiConfig.PoiFixFilePath}" Margin="2,0"  Width="90"/>
-                            <Button DockPanel.Dock="Right" Margin="2,0" Content="设置" Click="PoiFix_Create_Click"/>
+                            <Button DockPanel.Dock="Right" Margin="2,0" Content="{x:Static properties:Resources.Settings}" Click="PoiFix_Create_Click"/>
                         </StackPanel>
                         <DockPanel  Margin="2">
-                            <TextBlock  Text="左上"  MinWidth="70" />
+                            <TextBlock  Text="{x:Static properties:Resources.TopLeft}"  MinWidth="70" />
                             <TextBox  Text="{Binding  LeftTopX}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                             <TextBox   Text="{Binding LeftTopY}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                         </DockPanel>
 
                         <DockPanel  Margin="2">
-                            <TextBlock Text="右上"   MinWidth="70"/>
+                            <TextBlock Text="{x:Static properties:Resources.TopRight}"   MinWidth="70"/>
                             <TextBox  Text="{Binding RightTopX}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                             <TextBox   Text="{Binding RightTopY}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                         </DockPanel>
                         <DockPanel  Margin="2">
-                            <TextBlock Text="右下"  MinWidth="70"/>
+                            <TextBlock Text="{x:Static properties:Resources.DownRight}"  MinWidth="70"/>
                             <TextBox  Text="{Binding RightBottomX}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                             <TextBox   Text="{Binding RightBottomY}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                         </DockPanel>
                         <DockPanel  Margin="2">
-                            <TextBlock Text="左下"   MinWidth="70"/>
+                            <TextBlock Text="{x:Static properties:Resources.DownLeft}"   MinWidth="70"/>
                             <TextBox Text="{Binding LeftBottomX}" Width="80" Margin="5,0" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                             <TextBox   Text="{Binding LeftBottomY}" Width="80" Margin="5,0"   BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                         </DockPanel>
                         <StackPanel Orientation="Horizontal">
-                            <Button Content="设置到全局缓存" Click="Button_Click_4"/>
-                            <Button Content="应用缓存" Click="Button_Click_3"/>
+                            <Button Content="{x:Static properties:Resources.SetToGlobalCache}" Click="Button_Click_4"/>
+                            <Button Content="{x:Static properties:Resources.ApplyCache}" Click="Button_Click_3"/>
                         </StackPanel>
                     </StackPanel>
-                    <CheckBox Content="启用发光区4个角点" IsChecked="{Binding PoiConfig.IsPointInt}" Margin="2"/>
+                    <CheckBox Content="{x:Static properties:Resources.EnableActiveAreaFourCorners}" IsChecked="{Binding PoiConfig.IsPointInt}" Margin="2"/>
                     <StackPanel Visibility="{Binding PoiConfig.IsPointInt,Converter={StaticResource bool2VisibilityConverter}}">
                         <DockPanel Margin="2" HorizontalAlignment="Left">
-                            <TextBlock Text="左上"   MinWidth="20"/>
+                            <TextBlock Text="{x:Static properties:Resources.TopLeft}"   MinWidth="20"/>
                             <TextBox Text="{Binding PoiConfig.PointInt1.X}" Width="55" Margin="5,0" />
                             <TextBox  Text="{Binding PoiConfig.PointInt1.Y}" Width="55" Margin="5,0"/>
                         </DockPanel>
                         <DockPanel Margin="2" HorizontalAlignment="Left">
-                            <TextBlock Text="右上"  MinWidth="20"/>
+                            <TextBlock Text="{x:Static properties:Resources.TopRight}"  MinWidth="20"/>
                             <TextBox  Text="{Binding PoiConfig.PointInt2.X}" Width="55" Margin="5,0"  />
                             <TextBox   Text="{Binding PoiConfig.PointInt2.Y}" Width="55" Margin="5,0"  />
                         </DockPanel>
                         <DockPanel Margin="2" HorizontalAlignment="Left">
-                            <TextBlock  Text="右下"  MinWidth="20" />
+                            <TextBlock  Text="{x:Static properties:Resources.DownRight}"  MinWidth="20" />
                             <TextBox  Text="{Binding PoiConfig.PointInt3.X}" Width="55" Margin="5,0"  />
                             <TextBox  Text="{Binding PoiConfig.PointInt3.Y}" Width="55" Margin="5,0"  />
                         </DockPanel>
                         <DockPanel Margin="2" HorizontalAlignment="Left">
-                            <TextBlock Text="左下"   MinWidth="20"/>
+                            <TextBlock Text="{x:Static properties:Resources.DownLeft}"   MinWidth="20"/>
                             <TextBox  Text="{Binding PoiConfig.PointInt4.X}" Width="55" Margin="5,0"  />
                             <TextBox  Text="{Binding PoiConfig.PointInt4.Y}" Width="55" Margin="5,0"  />
                         </DockPanel>
                         <StackPanel Orientation="Horizontal">
-                            <Button Content="设置到全局缓存" Click="Button_Click_5"/>
+                            <Button Content="{x:Static properties:Resources.SetToGlobalCache}" Click="Button_Click_5"/>
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>
@@ -165,34 +165,34 @@
                     <Border Margin="0" Style="{StaticResource BorderModuleArea}"  CornerRadius="5">
                         <StackPanel  Margin="5">
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                                <RadioButton x:Name="RadioButtonAreaCircle" GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaCircle}" Width="60" Content="圆"/>
-                                <RadioButton x:Name="RadioButtonAreaRect"  GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaRect}" Width="60" Content="矩形"/>
-                                <RadioButton x:Name="RadioButtonAreaMask"  GroupName="shapeArea"   Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaMask}" Width="70" Content="四边形"/>
-                                <RadioButton x:Name="RadioButtonAreaPolygon"  GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaPolygon}" Width="60" Content="折线"/>
+                                <RadioButton x:Name="RadioButtonAreaCircle" GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaCircle}" Width="60" Content="{x:Static properties:Resources.Circle}"/>
+                                <RadioButton x:Name="RadioButtonAreaRect"  GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaRect}" Width="60" Content="{x:Static properties:Resources.Rect}"/>
+                                <RadioButton x:Name="RadioButtonAreaMask"  GroupName="shapeArea"   Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaMask}" Width="70" Content="{x:Static properties:Resources.Quadrilateral}"/>
+                                <RadioButton x:Name="RadioButtonAreaPolygon"  GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaPolygon}" Width="60" Content="{x:Static properties:Resources.Polyline}"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,5" >
                                 <ToggleButton HorizontalAlignment="Left" Height="16" Margin="0,0,2,0"  Style="{StaticResource ToggleButtonSwitch}"  BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="ShowPoiConfig_Click" IsChecked="{Binding PoiConfig.IsShowPoiConfig}"/>
-                                <TextBlock   HorizontalAlignment="Left"  Text="布点区域显示"/>
+                                <TextBlock   HorizontalAlignment="Left"  Text="{x:Static properties:Resources.PointLayoutAreaDisplay}"/>
                             </StackPanel>
                             <StackPanel>
                                 <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaCircle,Converter={StaticResource bool2VisibilityConverter}}">
                                     <DockPanel  Margin="2" HorizontalAlignment="Left">
-                                        <TextBlock Text="中心点"  MinWidth="50"/>
+                                        <TextBlock Text="{x:Static properties:Resources.CentralPoint}"  MinWidth="50"/>
                                         <TextBox  Text="{Binding PoiConfig.CenterX}" Width="55"  />
                                         <TextBox  Text="{Binding PoiConfig.CenterY}" Width="55" Margin="5,0"  />
                                     </DockPanel>
                                     <DockPanel  Margin="2" HorizontalAlignment="Left">
-                                        <TextBlock Text="半径:" MinWidth="50"/>
+                                        <TextBlock Text="{x:Static properties:Resources.Radius}" MinWidth="50"/>
                                         <TextBox  x:Name="TextBoxAreaCircleR" Width="55" Text="{Binding PoiConfig.AreaCircleRadius}"  BorderThickness="0,0,0,1"  PreviewTextInput="TextBox_PreviewTextInput"/>
                                     </DockPanel>
-                                    <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
+                                    <Button Content="{x:Static properties:Resources.SetPointLayoutArea}" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
                                     <UniformGrid Columns="2">
                                         <DockPanel Margin="2" HorizontalAlignment="Left">
-                                            <TextBlock Text="数量:" MinWidth="50"/>
+                                            <TextBlock Text="{x:Static properties:Resources.Count}" MinWidth="50"/>
                                             <TextBox x:Name="tbNum" Width="55" Text="{Binding PoiConfig.AreaCircleNum}"  />
                                         </DockPanel>
                                         <DockPanel Margin="2" HorizontalAlignment="Left">
-                                            <TextBlock Text="角度:"  MinWidth="50"/>
+                                            <TextBlock Text="{x:Static properties:Resources.Angle}"  MinWidth="50"/>
                                             <TextBox x:Name="tbAngle" Width="55" Text="{Binding PoiConfig.AreaCircleAngle}" />
                                         </DockPanel>
                                     </UniformGrid>
@@ -200,7 +200,7 @@
                                 </StackPanel>
                                 <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaRect,Converter={StaticResource bool2VisibilityConverter}}">
                                     <DockPanel Margin="0,2" >
-                                        <Button Content="寻找发光区" Margin="5,0,0,0" ToolTip="一次"  Click="FindLuminousArea_Click"   />
+                                        <Button Content="{x:Static properties:Resources.FindActiveArea}" Margin="5,0,0,0" ToolTip="一次"  Click="FindLuminousArea_Click"   />
                                         <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding PoiConfig.FindLuminousAreaEditCommand}" Padding="2" Height="25" Width="25" >
                                             <Button.Triggers>
                                                 <EventTrigger RoutedEvent="Button.Click">
@@ -217,28 +217,28 @@
                                                 </TextBlock.RenderTransform>
                                             </TextBlock>
                                         </Button>
-                                    
+
                                     </DockPanel>
                                     <StackPanel Orientation="Horizontal"  Margin="2" HorizontalAlignment="Left">
-                                        <TextBlock Text="中心点"  MinWidth="50"/>
+                                        <TextBlock Text="{x:Static properties:Resources.CentralPoint}"  MinWidth="50"/>
                                         <TextBox  Text="{Binding PoiConfig.CenterX}" Width="55"  />
                                         <TextBox  Text="{Binding PoiConfig.CenterY}" Width="55" Margin="5,0"  />
-                                        <Button Content="充满" Click="Button_Click_2"/>
+                                        <Button Content="{x:Static properties:Resources.FillArea}" Click="Button_Click_2"/>
                                     </StackPanel>
                                     <UniformGrid  Columns="2">
                                         <DockPanel Margin="2" HorizontalAlignment="Left">
-                                            <TextBlock Text="宽度:" MinWidth="50"/>
+                                            <TextBlock Text="{x:Static properties:Resources.Width}" MinWidth="50"/>
                                             <TextBox x:Name="tbWidth"  Width="55" Text="{Binding PoiConfig.AreaRectWidth}"  />
                                         </DockPanel>
                                         <DockPanel Margin="2" HorizontalAlignment="Left">
-                                            <TextBlock Text="高度:" MinWidth="50"/>
+                                            <TextBlock Text="{x:Static properties:Resources.height}" MinWidth="50"/>
                                             <TextBox x:Name="tbHeight" Width="55"  Text="{Binding PoiConfig.AreaRectHeight}" />
                                         </DockPanel>
                                     </UniformGrid>
- 
+
 
                                     <Grid >
-                                        <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
+                                        <Button Content="{x:Static properties:Resources.SetPointLayoutArea}" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
                                         <StackPanel  HorizontalAlignment="Right">
                                             <Button x:Name="ButtonImportMarin1" Content="边距设置" Margin="3" Height="25" Click="ButtonImportMarin1_Click"/>
                                             <Popup  x:Name="ImportMarinPopup1" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=ButtonImportMarin1}">
@@ -264,7 +264,7 @@
                                                         </UniformGrid>
                                                         <StackPanel Orientation="Horizontal">
                                                             <ComboBox x:Name="ComboBoxBorderType11" HorizontalAlignment="Left"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="0,0,6,0"/>
-                                                            <Button Content="设置" Click="ButtonImportMarinSetting2"/>
+                                                            <Button Content="{x:Static properties:Resources.Settings}" Click="ButtonImportMarinSetting2"/>
                                                         </StackPanel>
                                                     </StackPanel>
                                                 </Border>
@@ -273,11 +273,11 @@
                                     </Grid>
                                     <UniformGrid  Columns="2" >
                                         <DockPanel Margin="2" HorizontalAlignment="Left">
-                                            <TextBlock Text="行数:"  MinWidth="50"/>
+                                            <TextBlock Text="{x:Static properties:Resources.RowCount}"  MinWidth="50"/>
                                             <TextBox x:Name="tbX"  Width="55" Text="{Binding PoiConfig.AreaRectRow}"  />
                                         </DockPanel>
                                         <DockPanel Margin="2" HorizontalAlignment="Left">
-                                            <TextBlock Text="列数:" MinWidth="50"/>
+                                            <TextBlock Text="{x:Static properties:Resources.ColumCount}" MinWidth="50"/>
                                             <TextBox x:Name="tbY" Width="55" Text="{Binding PoiConfig.AreaRectCol}" />
                                         </DockPanel>
                                     </UniformGrid>
@@ -286,7 +286,7 @@
                                     <Grid>
                                         <StackPanel>
                                             <DockPanel Margin="0,2" >
-                                                <Button Content="寻找发光区角点" Margin="5,0,0,0" ToolTip="一次"  Click="FindLuminousAreaCorner_Click"   />
+                                                <Button Content="{x:Static properties:Resources.FindLuminousAreaCorners}" Margin="5,0,0,0" ToolTip="一次"  Click="FindLuminousAreaCorner_Click"   />
                                                 <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding PoiConfig.FindLuminousAreaCornerEditCommand}" Padding="2" Height="25" Width="25" >
                                                     <Button.Triggers>
                                                         <EventTrigger RoutedEvent="Button.Click">
@@ -303,25 +303,25 @@
                                                         </TextBlock.RenderTransform>
                                                     </TextBlock>
                                                 </Button>
-                                                <Button Content="设置到全局缓存" Click="Button_Click_41"/>
+                                                <Button Content="{x:Static properties:Resources.SetToGlobalCache}" Click="Button_Click_41"/>
                                             </DockPanel>
                                             <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                <TextBlock Text="左上"   MinWidth="20"/>
+                                                <TextBlock Text="{x:Static properties:Resources.TopLeft}"   MinWidth="20"/>
                                                 <TextBox Text="{Binding PoiConfig.Polygon1X}" Width="55" Margin="5,0" />
                                                 <TextBox  Text="{Binding PoiConfig.Polygon1Y}" Width="55" Margin="5,0"/>
                                             </DockPanel>
                                             <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                <TextBlock Text="右上"  MinWidth="20"/>
+                                                <TextBlock Text="{x:Static properties:Resources.TopRight}"  MinWidth="20"/>
                                                 <TextBox  Text="{Binding PoiConfig.Polygon2X}" Width="55" Margin="5,0"  />
                                                 <TextBox   Text="{Binding PoiConfig.Polygon2Y}" Width="55" Margin="5,0"  />
                                             </DockPanel>
                                             <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                <TextBlock  Text="右下"  MinWidth="20" />
+                                                <TextBlock  Text="{x:Static properties:Resources.DownRight}"  MinWidth="20" />
                                                 <TextBox  Text="{Binding PoiConfig.Polygon3X}" Width="55" Margin="5,0"  />
                                                 <TextBox   Text="{Binding PoiConfig.Polygon3Y}" Width="55" Margin="5,0"  />
                                             </DockPanel>
                                             <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                <TextBlock Text="左下"   MinWidth="20"/>
+                                                <TextBlock Text="{x:Static properties:Resources.DownLeft}"   MinWidth="20"/>
                                                 <TextBox  Text="{Binding PoiConfig.Polygon4X}" Width="55" Margin="5,0"  />
                                                 <TextBox   Text="{Binding PoiConfig.Polygon4Y}" Width="55" Margin="5,0"  />
                                             </DockPanel>
@@ -337,21 +337,21 @@
                                                                 <TextBox  x:Name="TextBoxUp1" Text="10" Margin="5,0" MinWidth="55" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
                                                             </DockPanel>
                                                             <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                                <TextBlock  VerticalAlignment="Center"  Text="左:" Width="20"/>
+                                                                <TextBlock  VerticalAlignment="Center"  Text="{x:Static properties:Resources.Left}" Width="20"/>
                                                                 <TextBox   x:Name="TextBoxLeft1" Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
                                                             </DockPanel>
                                                             <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                                <TextBlock  VerticalAlignment="Center"  Text="下:" Width="20"/>
+                                                                <TextBlock  VerticalAlignment="Center"  Text="{x:Static properties:Resources.Down}" Width="20"/>
                                                                 <TextBox  x:Name="TextBoxDown1"  Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
                                                             </DockPanel>
                                                             <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                                <TextBlock VerticalAlignment="Center"  Text="右:" Width="20"/>
+                                                                <TextBlock VerticalAlignment="Center"  Text="{x:Static properties:Resources.Right}" Width="20"/>
                                                                 <TextBox  x:Name="TextBoxRight1"  Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
                                                             </DockPanel>
                                                         </UniformGrid>
                                                         <StackPanel Orientation="Horizontal">
                                                             <ComboBox x:Name="ComboBoxBorderType1" HorizontalAlignment="Left"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="0,0,6,0"/>
-                                                            <Button Content="设置" Click="ButtonImportMarinSetting"/>
+                                                            <Button Content="{x:Static properties:Resources.Settings}" Click="ButtonImportMarinSetting"/>
                                                         </StackPanel>
                                                     </StackPanel>
                                                 </Border>
@@ -359,14 +359,14 @@
                                         </StackPanel>
 
                                     </Grid>
-                                    <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
+                                    <Button Content="{x:Static properties:Resources.SetPointLayoutArea}" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
                                     <UniformGrid  Columns="2" >
                                         <DockPanel Margin="2" HorizontalAlignment="Left">
-                                            <TextBlock Text="行数:"   MinWidth="50"/>
+                                            <TextBlock Text="{x:Static properties:Resources.RowCount}"   MinWidth="50"/>
                                             <TextBox  Text="{Binding PoiConfig.AreaPolygonRow}" Width="55"  />
                                         </DockPanel>
                                         <DockPanel Margin="2" HorizontalAlignment="Left">
-                                            <TextBlock Text="列数:"  MinWidth="50"/>
+                                            <TextBlock Text="{x:Static properties:Resources.ColumCount}"  MinWidth="50"/>
                                             <TextBox  Text="{Binding PoiConfig.AreaPolygonCol}" Width="55" />
                                         </DockPanel>
                                     </UniformGrid>
@@ -388,21 +388,21 @@
                                                         <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                                     </Style>
                                                 </GridView.ColumnHeaderContainerStyle>
-                                                <GridViewColumn Header="显示">
+                                                <GridViewColumn Header="{x:Static properties:Resources.Dispaly}">
                                                     <GridViewColumn.CellTemplate>
                                                         <DataTemplate DataType="{x:Type local:PolygonPoint}">
                                                             <TextBlock Text="{Binding .}"/>
                                                         </DataTemplate>
                                                     </GridViewColumn.CellTemplate>
                                                 </GridViewColumn>
-                                                <GridViewColumn Header="显示">
+                                                <GridViewColumn Header="{x:Static properties:Resources.Dispaly}">
                                                     <GridViewColumn.CellTemplate>
                                                         <DataTemplate DataType="{x:Type local:PolygonPoint}">
-                                                            <Button Content="删除" Click="Button_Click" Tag="{Binding .}"/>
+                                                            <Button Content="{x:Static properties:Resources.Delete}" Click="Button_Click" Tag="{Binding .}"/>
                                                         </DataTemplate>
                                                     </GridViewColumn.CellTemplate>
                                                 </GridViewColumn>
-                                                <GridViewColumn Header="显示" Width="70">
+                                                <GridViewColumn Header="{x:Static properties:Resources.Dispaly}" Width="70">
                                                     <GridViewColumn.CellTemplate>
                                                         <DataTemplate DataType="{x:Type local:PolygonPoint}">
                                                             <TextBox Text="{Binding SplitNumber}" HorizontalContentAlignment="Center" Width="50"/>
@@ -419,41 +419,41 @@
 
                                     <UniformGrid  Columns="2" >
                                         <DockPanel Margin="2" HorizontalAlignment="Left">
-                                            <TextBlock Text="设定分割"   MinWidth="70"/>
+                                            <TextBlock Text="{x:Static properties:Resources.SetSegmentation}"   MinWidth="70"/>
                                             <TextBox Text="{Binding PoiConfig.AreaPolygonLenNum}" Width="55"/>
                                         </DockPanel>
                                         <DockPanel Margin="2" HorizontalAlignment="Left">
                                             <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding PoiConfig.AreaPolygonUsNode}"/>
-                                            <TextBox  Text="是否使用节点" />
+                                            <TextBox  Text="{x:Static properties:Resources.UseNodePrompt}" />
                                         </DockPanel>
                                     </UniformGrid>
-                                    <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
+                                    <Button Content="{x:Static properties:Resources.SetPointLayoutArea}" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
                                 </StackPanel>
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                <RadioButton x:Name="RadioButtonCircle" Width="60"  GroupName="shape" IsChecked="{Binding PoiConfig.IsPointCircle}" Content="圆形"/>
-                                <RadioButton x:Name="RadioButtonRect" Width="60"  GroupName="shape" IsChecked="{Binding PoiConfig.IsPointRect}" Content="矩形"/>
+                                <RadioButton x:Name="RadioButtonCircle" Width="60"  GroupName="shape" IsChecked="{Binding PoiConfig.IsPointCircle}" Content="{x:Static properties:Resources.Circle}"/>
+                                <RadioButton x:Name="RadioButtonRect" Width="60"  GroupName="shape" IsChecked="{Binding PoiConfig.IsPointRect}" Content="{x:Static properties:Resources.Rect}"/>
                             </StackPanel>
 
                             <StackPanel Margin="5" Visibility="{Binding PoiConfig.IsPointCircle,Converter={StaticResource bool2VisibilityConverter}}" >
                                 <DockPanel Margin="2"  HorizontalAlignment="Left">
-                                    <TextBlock Text="半径:" Width="40"/>
+                                    <TextBlock Text="{x:Static properties:Resources.Radius}" Width="40"/>
                                     <TextBox  Text="{Binding PoiConfig.DefaultCircleRadius}" Width="55" />
                                 </DockPanel>
                             </StackPanel>
                             <StackPanel Margin="5" Visibility="{Binding PoiConfig.IsPointRect,Converter={StaticResource bool2VisibilityConverter}}"  Orientation="Horizontal">
                                 <DockPanel Margin="2" >
-                                    <TextBlock Text="宽度:" Width="40"/>
+                                    <TextBlock Text="{x:Static properties:Resources.Width}" Width="40"/>
                                     <TextBox Text="{Binding PoiConfig.DefaultRectWidth}"  Width="55"  />
                                 </DockPanel>
                                 <DockPanel Margin="2" >
-                                    <TextBlock Text="高度:" Width="40"/>
+                                    <TextBlock Text="{x:Static properties:Resources.height}" Width="40"/>
                                     <TextBox Text="{Binding PoiConfig.DefaultRectHeight}"  Width="55"  />
                                 </DockPanel>
                             </StackPanel>
                             <ComboBox x:Name="ComboBoxBorderType2"  Visibility="{Binding ElementName=RadioButtonAreaMask,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}" HorizontalAlignment="Left" Width="100" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="5,3"/>
-                            <Button x:Name="button2" Margin="5"  Height="30" Width="100" FontWeight="Bold" HorizontalAlignment="Left"  Content="绘制" Click="Button2_Click"/>
+                            <Button x:Name="button2" Margin="5"  Height="30" Width="100" FontWeight="Bold" HorizontalAlignment="Left"  Content="{x:Static properties:Resources.Draw}" Click="Button2_Click"/>
                         </StackPanel>
 
                     </Border>
@@ -518,14 +518,14 @@
                                     <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn  Header="序号">
+                            <GridViewColumn  Header="{x:Static properties:Resources.SerialNumber1}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type im:IDrawingVisual}">
                                         <TextBlock Text="{Binding BaseAttribute.Id}" HorizontalAlignment="Center"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="值"  Width="400">
+                            <GridViewColumn  Header="{x:Static properties:Resources.Value}"  Width="400">
                                 <GridViewColumn.CellTemplateSelector>
                                     <converter:DrawCanvasTemplateSelector  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}" DrawingVisualCircleWordTemplate="{StaticResource DrawingVisualCircleWordTemplate}"  DrawingVisualRectangleWordTemplate="{StaticResource DrawingVisualRectangleWordTemplate}" DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
                                 </GridViewColumn.CellTemplateSelector>

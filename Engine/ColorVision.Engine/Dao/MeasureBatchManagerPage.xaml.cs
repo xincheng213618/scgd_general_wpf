@@ -1,5 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.Batch;
+using ColorVision.Engine.Batch.IVL;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Solution.Searches;
 using ColorVision.UI;
@@ -23,6 +25,8 @@ namespace ColorVision.Engine
         public MeasureBatchModel MeasureBatchModel { get; set; }
 
         public ContextMenu ContextMenu { get; set; }
+
+        public RelayCommand ProcessCommand { get; set; }
 
         public ViewBatchResult()
         {

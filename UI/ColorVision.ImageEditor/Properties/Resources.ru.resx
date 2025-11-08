@@ -171,4 +171,10 @@
   <data name="Invert" xml:space="preserve">
     <value>Инвертировать</value>
   </data>
+  <data name="SectionalDrawing" xml:space="preserve">
+    <value>Поперечное сечение</value>
+  </data>
+  <data name="ImageAlgorithm" xml:space="preserve">
+    <value>Алгоритм изображения</value>
+  </data>
 </root>

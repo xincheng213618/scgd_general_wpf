@@ -86,10 +86,10 @@
     <value>クリックしてホットキーを設定する</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
-    <value>簡体字中国語</value>
+    <value>简体中文 (簡体字中国語)</value>
   </data>
   <data name="zh-Hant" xml:space="preserve">
-    <value>繁体字中国語</value>
+    <value>繁體中文 (繁体字中国語)</value>
   </data>
   <data name="UseSystem" xml:space="preserve">
     <value>システムのテーマを使用する</value>
@@ -98,19 +98,19 @@
     <value>新しい言語設定を使用するためには、再起動が必要です</value>
   </data>
   <data name="en" xml:space="preserve">
-    <value>英語</value>
+    <value>English (英語)</value>
   </data>
   <data name="fr" xml:space="preserve">
-    <value>フランス語</value>
+    <value>Français (フランス語)</value>
   </data>
   <data name="ja" xml:space="preserve">
     <value>日本語</value>
   </data>
   <data name="ko" xml:space="preserve">
-    <value>韓国語</value>
+    <value>한국어 (韓国語)</value>
   </data>
   <data name="ru" xml:space="preserve">
-    <value>ロシア</value>
+    <value>Русский (ロシア語)</value>
   </data>
   <data name="MenuOptions" xml:space="preserve">
     <value>オプション (_O)</value>
@@ -453,5 +453,20 @@
   </data>
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>bool2VisibilityConverterリソースが見つかりません</value>
+  </data>
+  <data name="DownLoadMQTT" xml:space="preserve">
+    <value>MQTTをダウンロード</value>
+  </data>
+  <data name="DownLoadMySql" xml:space="preserve">
+    <value>MySQLをダウンロード</value>
+  </data>
+  <data name="Install" xml:space="preserve">
+    <value>インストール</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>名前を変更</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>アーカイブファイルの設定</value>
   </data>
 </root>

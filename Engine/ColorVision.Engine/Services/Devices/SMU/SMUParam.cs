@@ -3,6 +3,7 @@ using ColorVision.Engine.Templates;
 using cvColorVision;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Text;
 
 namespace ColorVision.Engine.Services.Devices.SMU
@@ -14,7 +15,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
         public TemplateSMUParam()
         {
-            Title = "SMUParam设置";
+            Title = "SMUParamConfig";
             Code = "SMU";
             TemplateDicId = 13;
             TemplateParams = Params;

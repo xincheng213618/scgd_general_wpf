@@ -46,13 +46,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             EditConfig = Device.Config.Clone();
             EditContent.DataContext = EditConfig;
 
-            ComboBoxSn.ItemsSource = CameraLicenseDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "lic_type",1} });
-            ComboBoxSn.DisplayMemberPath = "MacAddress";
+            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig));
 
-            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.NDConfig));
-            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.SelfAdaptionInitDark));
-            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.SetEmissionSP100Config));
-            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg));
 
         }
 

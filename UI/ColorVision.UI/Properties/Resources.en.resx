@@ -86,10 +86,10 @@
     <value>Click to Set Hotkeys</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
-    <value>Simplified Chinese</value>
+    <value>简体中文 (Simplified Chinese)</value>
   </data>
   <data name="zh-Hant" xml:space="preserve">
-    <value>Traditional Chinese</value>
+    <value>繁體中文 (Traditional Chinese)</value>
   </data>
   <data name="UseSystem" xml:space="preserve">
     <value>UseSystem</value>
@@ -101,16 +101,16 @@
     <value>English</value>
   </data>
   <data name="fr" xml:space="preserve">
-    <value>French</value>
+    <value>Français (French)</value>
   </data>
   <data name="ja" xml:space="preserve">
-    <value>Japanese</value>
+    <value>日本語 (Japanese)</value>
   </data>
   <data name="ko" xml:space="preserve">
-    <value>Korean</value>
+    <value>한국어 (Korean)</value>
   </data>
   <data name="ru" xml:space="preserve">
-    <value>Russian</value>
+    <value>Русский (Russian)</value>
   </data>
   <data name="MenuOptions" xml:space="preserve">
     <value>_Options</value>
@@ -453,5 +453,20 @@
   </data>
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>bool2VisibilityConverter resource not found</value>
+  </data>
+  <data name="DownLoadMQTT" xml:space="preserve">
+    <value>Download MQTT</value>
+  </data>
+  <data name="DownLoadMySql" xml:space="preserve">
+    <value>Download MySQL</value>
+  </data>
+  <data name="Install" xml:space="preserve">
+    <value>Install</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>Rename</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>Archive file settings</value>
   </data>
 </root>

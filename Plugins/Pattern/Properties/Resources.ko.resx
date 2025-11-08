@@ -120,4 +120,7 @@
   <data name="Search" xml:space="preserve">
     <value>찾다</value>
   </data>
+  <data name="ChartGenerationTool" xml:space="preserve">
+    <value>이미지 생성 도구</value>
+  </data>
 </root>

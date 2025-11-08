@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             }
             else
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(SpectrumResourceParam)}模板失败", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.CreateDataBase+$" {typeof(SpectrumResourceParam)} "+ ColorVision.Engine.Properties.Resources.TemplateFailed, "ColorVision");
             }
         }
     }

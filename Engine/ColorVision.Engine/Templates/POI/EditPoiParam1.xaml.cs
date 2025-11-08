@@ -1267,22 +1267,29 @@ namespace ColorVision.Engine.Templates.POI
 
         private void CalPoiPointParamB(RectangleTextProperties rectangle)
         {
+
             if (!IsInitialKB) return;
+            InitialKBKey(false);
+            return;
             if (rectangle.Param is KBPoiVMParam poiPointParam)
             {
                 IRECT rect = new IRECT((int)rectangle.Rect.X, (int)rectangle.Rect.Y, (int)rectangle.Rect.Width, (int)rectangle.Rect.Height);
-                if (PoiConfig.DefaultDoKey)
+                if (PoiConfig.DefaultDoKey && Calibratiohandle != IntPtr.Zero)
                 {
+                    if (!Directory.Exists(PoiConfig.SaveFolderPath))
+                    {
+                        MessageBox.Show($"找不到保存路径{PoiConfig.SaveFolderPath}");
+                        return;
+                    }
+
                     ushort[] keygray1 = new ushort[256];
                     uint Keygraynum = 0;
+
                     float keyGray = KeyBoardDLL.CM_CalculateKey(rect, poiPointParam.KeyOutMOVE, poiPointParam.KeyThreadV, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", keygray1, ref Keygraynum);
-                    if (Calibratiohandle != IntPtr.Zero)
-                    {
-                        byte[] byteArray = BitConverter.GetBytes(keygray1[0]);
-                        byte[] byteArray1 = new byte[4];
-                        cvCameraCSLib.CM_SCGD_SDP_Luminance(Calibratiohandle, 1, 1, 16, 1, byteArray, byteArray1, new float[] { PoiConfig.Exp, PoiConfig.Exp, PoiConfig.Exp });
-                        keyGray = (float)BitConverter.ToSingle(byteArray1);
-                    }
+                    byte[] byteArray = BitConverter.GetBytes(keygray1[0]);
+                    byte[] byteArray1 = new byte[4];
+                    cvCameraCSLib.CM_SCGD_SDP_Luminance(Calibratiohandle, 1, 1, 16, 1, byteArray, byteArray1, new float[] { PoiConfig.Exp, PoiConfig.Exp, PoiConfig.Exp });
+                    keyGray = (float)BitConverter.ToSingle(byteArray1);
 
                     keyGray = (float)(keyGray * poiPointParam.KeyScale);
                     if (poiPointParam.Area != 0)
@@ -1305,7 +1312,7 @@ namespace ColorVision.Engine.Templates.POI
         nint Calibratiohandle = IntPtr.Zero;
 
         bool IsInitialKB ;
-        private void InitialKBKey()
+        private void InitialKBKey(bool show =true)
         {
            if (PoiConfig.CalibrationParams == null)
             {
@@ -1544,6 +1551,7 @@ namespace ColorVision.Engine.Templates.POI
                 }
             }
 
+            if (!show) return;
             IntPtr pData = Marshal.AllocHGlobal(width * height * channels);
 
             int rw = 0; int rh = 0; int rBpp = 0; int rChannel = 0;
@@ -1619,7 +1627,8 @@ namespace ColorVision.Engine.Templates.POI
         {
             var lsit = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList();
             DeviceCamera deviceCamera = lsit.FirstOrDefault();
-            MsgRecord msgRecord = deviceCamera?.DisplayCameraControlLazy.Value.TakePhoto();
+
+            MsgRecord msgRecord = deviceCamera?.DisplayCameraControlLazy.Value.TakePhoto(PoiConfig.Exp);
 
             if (msgRecord != null)
             {

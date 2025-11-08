@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Services.Devices.PG
     {
         public MQTTPG DService { get; set; }
 
-        [CommandDisplayAttribute("PG模板配置",Order =100)]
+        [CommandDisplayAttribute("PgTemplateConfig",Order =100)]
         public RelayCommand EditPGTemplateCommand { get; set; }
 
 
@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Services.Devices.PG
         {
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.DatabaseConnectionFailed, "ColorVision");
                 return;
             }
             new TemplateEditorWindow(new TemplatePGParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;

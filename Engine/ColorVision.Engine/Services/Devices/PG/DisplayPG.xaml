@@ -48,18 +48,18 @@
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="0">
                 <TextBlock x:Name="TextBlockUnknow" Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
-                <TextBlock x:Name="TextBlockOffLine" Text="OffLine状态"  HorizontalAlignment="Center"/>
-                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="未注册" Command="{Binding EditCommand}"/>
+                <TextBlock x:Name="TextBlockOffLine" Text="{x:Static properties:Resources.offline}"  HorizontalAlignment="Center"/>
+                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="{x:Static properties:Resources.Unregistered}" Command="{Binding EditCommand}"/>
                 <StackPanel x:Name="StackPanelContent">
-                    <GroupBox Header="通讯方式" Margin="5">
+                    <GroupBox Header="{x:Static properties:Resources.CommunicationType}" Margin="5">
                         <StackPanel>
                             <DockPanel Margin="0,5" IsEnabled="False">
-                                <TextBlock Text="类别型号"/>
+                                <TextBlock Text="{x:Static properties:Resources.CategoryModel}"/>
                                 <TextBox BorderThickness="0,0,0,1" Text="{Binding Config.Category}"/>
                             </DockPanel>
                             <DockPanel Margin="0,5" IsEnabled="False">
-                                <RadioButton Content="TCPIP通讯" IsChecked="{Binding  Config.IsNet}" Margin="0,0,5,0"/>
-                                <RadioButton Content="串口通讯"  IsChecked="{Binding  Config.IsNet,Converter={StaticResource Boolean2BooleanReConverter}}" Margin="0,0,5,0"/>
+                                <RadioButton Content="TCPIP" IsChecked="{Binding  Config.IsNet}" Margin="0,0,5,0"/>
+                                <RadioButton Content="{x:Static properties:Resources.SerialPortCom}"  IsChecked="{Binding  Config.IsNet,Converter={StaticResource Boolean2BooleanReConverter}}" Margin="0,0,5,0"/>
                             </DockPanel>
                             <UniformGrid IsEnabled="False" Columns="2">
                                 <DockPanel Margin="5">
@@ -74,24 +74,24 @@
                         </StackPanel>
                     </GroupBox>
                     <UniformGrid Columns="2">
-                        <Button Margin="2" x:Name="btn_open" Content="打开" Click="PGOpen"/>
+                        <Button Margin="2" x:Name="btn_open" Content="{x:Static properties:Resources.Open}" Click="PGOpen"/>
                         <Button Margin="2" Content="ReSet" Click="PGReSetPG"/>
                     </UniformGrid>
-                    <GroupBox Header="操作" Margin="2">
+                    <GroupBox Header="{x:Static properties:Resources.Operation}" Margin="2">
                         <StackPanel Visibility="Visible" >
                             <UniformGrid Columns="2">
-                                <Button Margin="2"  Content="上电" Click="PGStartPG"/>
-                                <Button Margin="2"  Content="下电" Click="PGStopPG"/>
-                                <Button Margin="2"  Content="上" Click="PGSwitchUpPG"/>
-                                <Button  Margin="2" Content="下" Click="PGSwitchDownPG"/>
+                                <Button Margin="2"  Content="{x:Static properties:Resources.PowerOn}" Click="PGStartPG"/>
+                                <Button Margin="2"  Content="{x:Static properties:Resources.PowerOff}" Click="PGStopPG"/>
+                                <Button Margin="2"  Content="{x:Static properties:Resources.Up}" Click="PGSwitchUpPG"/>
+                                <Button  Margin="2" Content="{x:Static properties:Resources.Down}" Click="PGSwitchDownPG"/>
                                 <TextBox VerticalContentAlignment="Center"  BorderThickness="0,0,0,1" Margin="2" x:Name="PGFrameText" Text="0"/>
-                                <Button  Margin="2" Content="切换" Click="PGSwitchFramePG"/>
+                                <Button  Margin="2" Content="{x:Static properties:Resources.Switch}" Click="PGSwitchFramePG"/>
                             </UniformGrid>
 
                             <StackPanel>
                                 <DockPanel Margin="0,5">
-                                    <Button  DockPanel.Dock="Right" Content="发送" Click="PGSendCmd" Margin="2,0" Width="60"/>
-                                    <TextBlock Text="画面指令:" Margin="0,0,5,0"/>
+                                    <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resources.Send}" Click="PGSendCmd" Margin="2,0" Width="60"/>
+                                    <TextBlock Text="{x:Static properties:Resources.PGCommand}" Margin="0,0,5,0"/>
                                     <TextBox x:Name="PGCmdMsg"  BorderThickness="0,0,0,1"/>
                                 </DockPanel>
                             </StackPanel>

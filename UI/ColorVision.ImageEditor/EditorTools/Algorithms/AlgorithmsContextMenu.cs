@@ -20,7 +20,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             { 
                 GuidId = "Algorithms", 
                 Order = 103, 
-                Header = "图像算法", 
+                Header = ColorVision.ImageEditor.Properties.Resources.ImageAlgorithm, 
             });
 
             // 反相 - 直接应用，无需参数

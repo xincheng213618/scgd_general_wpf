@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.FileServer"
              mc:Ignorable="d" 
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              d:DataContext="{d:DesignInstance local:DeviceFileServer}"
              d:DesignHeight="450" d:DesignWidth="300"  Initialized="UserControl_Initialized">
     <UserControl.Resources>
@@ -45,13 +46,13 @@
         <Border x:Name="DisPlayBorder"  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel >
                 <DockPanel Margin="2">
-                    <Button Content="刷新" Click="Button_Click_Refresh" />
-                    <Button DockPanel.Dock="Right" Content="上传" Click="Button_Click_Upload" />
-                    <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_Open" />
+                    <Button Content="{x:Static properties:Resources.Refresh}" Click="Button_Click_Refresh" />
+                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Upload}" Click="Button_Click_Upload" />
+                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_Click_Open" />
                     <ComboBox x:Name="FilesView"  Style="{StaticResource ComboBox.Small}"  />
                 </DockPanel>
                 <DockPanel Margin="5" >
-                    <TextBlock Text="输出视图：" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0"/>
+                    <TextBlock Text="{x:Static properties:Resources.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0"/>
                     <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"   />
                 </DockPanel>
             </StackPanel>

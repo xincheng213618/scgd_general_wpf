@@ -17,39 +17,44 @@
         </Style>
     </Window.Resources>
     <Grid Margin="5">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="11*"/>
+            <ColumnDefinition Width="16*"/>
+            <ColumnDefinition Width="563*"/>
+        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <ScrollViewer x:Name="EditContent" d:DataContext="{d:DesignInstance config:ConfigCamera}">
+        <ScrollViewer x:Name="EditContent" d:DataContext="{d:DesignInstance config:ConfigCamera}" Grid.ColumnSpan="3" Margin="0,0,0,30" Grid.RowSpan="2">
             <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5">
                 <StackPanel x:Name="EditStackPanel" Margin="5,0">
-                    <GroupBox Header="资源信息" Margin="0,5">
+                    <GroupBox Header="{x:Static properties:Resources.ResourceInformation}" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,0,0,5">
-                                <TextBlock Text="界面展示名称" Width="120"/>
+                                <TextBlock Text="{x:Static properties:Resources.FrameDisplayName}" Width="120"/>
                                 <TextBox Text="{Binding Name}" Style="{StaticResource TextBox.Small}"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
-                                <TextBlock Text="心跳时间"  Width="120"/>
+                                <TextBlock Text="{x:Static properties:Resources.HeartbeatTime}"  Width="120"/>
                                 <TextBox Text="{Binding HeartbeatTime}" Style="{StaticResource TextBox.Small}"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,0" >
-                                <TextBlock Text="设备自动连接" Width="120"/>
-                                <CheckBox Content="启用" IsChecked="{Binding IsAutoOpen}"/>
+                                <TextBlock Text="{x:Static properties:Resources.DeviceAutoConnect}" Width="120"/>
+                                <CheckBox Content="{x:Static properties:Resources.IsEnable}" IsChecked="{Binding IsAutoOpen}"/>
                             </DockPanel>
 
                             <DockPanel Margin="0,2">
-                                <Button Content="应用参数" DockPanel.Dock="Right" Click="UpdateConfig_Click"/>
-                                <TextBlock Text="物理相机Code" Width="120"/>
+                                <Button Content="{x:Static properties:Resources.ApplySettings}" DockPanel.Dock="Right" Click="UpdateConfig_Click"/>
+                                <TextBlock Text="{x:Static properties:Resources.PhysicalCamera}" Width="120"/>
                                 <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Text="{Binding CameraCode}" SelectionChanged="CameraPhyID_SelectionChanged" hc:InfoElement.ShowClearButton="True"  />
                             </DockPanel>
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="文件缓存:" Width="120"/>
+                                <TextBlock Text="{x:Static properties:Resources.FileCache}" Width="120"/>
                                 <ui:ToggleSwitch IsChecked="{Binding UsingFileCaching}"/>
                             </DockPanel>
                             <DockPanel Visibility="{Binding UsingFileCaching,Converter={StaticResource bool2VisibilityConverter}}" Margin="0,2">
-                                <TextBlock Text="CVCIE文件保存:" Width="120"/>
+                                <TextBlock Text="{x:Static properties:Resources.CVCIEFileSave}" Width="120"/>
                                 <ui:ToggleSwitch IsChecked="{Binding IsCVCIEFileSave}"/>
                             </DockPanel>
                         </StackPanel>
@@ -58,7 +63,7 @@
                 </StackPanel>
             </Border>
         </ScrollViewer>
-        <Border Grid.Row="1" Height="30">
+        <Border Grid.Row="1" Height="30" Grid.ColumnSpan="3">
             <Button  Content="{x:Static properties:Resources.Submit}" Foreground="White" Background="{StaticResource PrimaryBrush}" Command="{Binding SaveCommand}" Click="Button_Click" />
         </Border>
     </Grid>

@@ -2,7 +2,7 @@
 {
     public class MenuPoiRevise : MenuTemplatePoiBase
     {
-        public override string Header => "Poi修正模板设置";
+        public override string Header => ColorVision.Engine.Properties.Resources.POICorrectionTemplateSettings;
         public override int Order => 3;
         public override ITemplate Template => new TemplatePoiReviseParam();
     }

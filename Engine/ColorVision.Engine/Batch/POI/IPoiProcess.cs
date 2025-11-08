@@ -16,8 +16,8 @@ namespace ColorVision.Engine.Batch.Poi
             try
             {
                 //var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
-                ////if (values.Count > 0)
-                //    //ctx.Result.FileName = values[0].FileUrl;
+                //if (values.Count > 0)
+                //    ctx.FileName = values[0].FileUrl;
 
                 var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 foreach (var master in masters)
@@ -32,8 +32,10 @@ namespace ColorVision.Engine.Batch.Poi
                         {
                             PoiResultCIExyuvDatas.Add(new PoiResultCIExyuvData(item));
                         }
+
                         string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                         string filePath = Path.Combine(config.SavePath, $"Poi_{master.Id}_{timeStr}.csv");
+
                         PoiResultCIExyuvDatas.SaveCsv(filePath);
                     }
                     if (master.ImgFileType == ViewResultAlgType.POI_Y)

@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Flow;
-using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using ColorVision.UI;
 using FlowEngineLib;
 using log4net;
@@ -86,15 +85,12 @@ namespace ColorVision.Engine.Templates.Flow
         public ObservableCollection<TemplateModel<FlowParam>> FlowParams { get; set; } = TemplateFlow.Params;
 
         public int TemplateFlowParamsIndex { get => Config.TemplateFlowParamsIndex; set { Config.TemplateFlowParamsIndex = value; OnPropertyChanged(); } }
-        public static ObservableCollection<TemplateModel<TJLargeFlowParam>> LargeFlowParams => TemplateLargeFlow.Params;
-        public int TemplateLargeFlowParamsIndex { get => Config.TemplateLargeFlowParamsIndex; set { Config.TemplateLargeFlowParamsIndex = value; OnPropertyChanged(); } }
+
         public ContextMenu ContextMenu { get; set; }
 
         public RelayCommand EditFlowCommand { get; set; }
 
         public RelayCommand EditTemplateFlowCommand { get; set; }
-        public RelayCommand EditLargeFlowCommand { get; set; }
-        public RelayCommand EditTemplateLargeFlowCommand { get; set; }
 
         public RelayCommand MeasureBatchManagerCommand { get; set; }
 
@@ -110,8 +106,6 @@ namespace ColorVision.Engine.Templates.Flow
 
             EditFlowCommand = new RelayCommand(a => EditFlow());
             EditTemplateFlowCommand = new RelayCommand(a=> EditTemplateFlow());
-            EditLargeFlowCommand = new RelayCommand(a => EditLargeFlow());
-            EditTemplateLargeFlowCommand = new RelayCommand(a => EditTemplateLargeFlow());
 
 
             MeasureBatchManagerCommand = new RelayCommand(a=> MeasureBatchManager());
@@ -147,17 +141,5 @@ namespace ColorVision.Engine.Templates.Flow
             new TemplateEditorWindow(new TemplateFlow(), TemplateFlowParamsIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
             _ = View.DisplayFlow.Refresh();
         }
-        public void EditLargeFlow()
-        {
-            new EditLargeFlow(LargeFlowParams[TemplateLargeFlowParamsIndex].Value) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
-        }
-        public void EditTemplateLargeFlow()
-        {
-            new TemplateEditorWindow(new TemplateLargeFlow(), TemplateLargeFlowParamsIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        }
-
-
-
-
     }
 }

@@ -23,14 +23,14 @@
         <ScrollViewer x:Name="EditContent"  d:DataContext="{d:DesignInstance local:ConfigFileServer}"  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5">
                 <StackPanel Margin="5,0">
-                    <GroupBox Header="资源信息" Margin="0,5">
+                    <GroupBox Header="{x:Static properties:Resources.ResourceInformation}" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,0,0,5">
-                                <TextBlock Text="界面展示名称" Width="120"/>
+                                <TextBlock Text="{x:Static properties:Resources.FrameDisplayName}" Width="120"/>
                                 <TextBox Text="{Binding Name}" Style="{StaticResource TextBox.Small}"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
-                                <TextBlock Text="心跳时间"  Width="120"/>
+                                <TextBlock Text="{x:Static properties:Resources.HeartbeatTime}"  Width="120"/>
                                 <TextBox Text="{Binding HeartbeatTime}" Style="{StaticResource TextBox.Small}"/>
                             </DockPanel>
                             <DockPanel >
@@ -40,18 +40,18 @@
                         </StackPanel>
                     </GroupBox>
                     
-                    <GroupBox Header="配置信息" Margin="0,5">
+                    <GroupBox Header="{x:Static properties:Resources.ConfigerInfo}" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,5">
-                                <TextBlock  Text="文件目录"  Width="120"/>
+                                <TextBlock  Text="{x:Static properties:Resources.FileDirectory}"  Width="120"/>
                                 <TextBox  x:Name="TextBox_ImgPath" Text="{Binding FileBasePath}"/>
                             </DockPanel>
                             <DockPanel Margin="0,5">
-                                <TextBlock  Text="端口地址" Width="120"/>
+                                <TextBlock  Text="{x:Static properties:Resources.PortAddress}" Width="120"/>
                                 <TextBox  x:Name="TextBox_Endpoint" Text="{Binding Endpoint}"/>
                             </DockPanel>
                             <DockPanel Margin="0,5">
-                                <TextBlock  Text="端口范围" Width="120"/>
+                                <TextBlock  Text="{x:Static properties:Resources.PortRange}" Width="120"/>
                                 <TextBox  x:Name="TextBox_PortRange" Text="{Binding PortRange}"/>
                             </DockPanel>
                         </StackPanel>

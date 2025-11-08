@@ -1,16 +1,15 @@
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
-using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using log4net;
-using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Text;
+using System.Linq;
 
 namespace ColorVision.Engine.Batch.IVL
 {
@@ -28,7 +27,21 @@ namespace ColorVision.Engine.Batch.IVL
             IVLViewTestResult testResult = new IVLViewTestResult();
             try
             {
-                var list = MySqlControl.GetInstance().DB.Queryable<SpectumResultModel>().Where(x => x.BatchId == ctx.Batch.Id).ToList();
+
+                var DB = new SqlSugarClient(new ConnectionConfig
+                {
+                    ConnectionString = MySqlControl.GetConnectionString(),
+                    DbType = SqlSugar.DbType.MySql,
+                    IsAutoCloseConnection = true
+                });
+
+                foreach (var item in DB.Queryable<SMUResultModel>().Where(x => x.BatchId == ctx.Batch.Id).ToList())
+                {
+                    testResult.SMUResultModels.Add(item);
+                }
+                var list = DB.Queryable<SpectumResultModel>().Where(x => x.BatchId == ctx.Batch.Id).ToList();
+
+                DB.Dispose();
                 ObservableCollection<ViewResultSpectrum> ViewResults = new ObservableCollection<ViewResultSpectrum>();
                 if (list.Count == 0)
                 {
@@ -45,20 +58,39 @@ namespace ColorVision.Engine.Batch.IVL
                         if (testResult.SMUResultModels.Count > i)
                         {
                             var SMUResultModel = testResult.SMUResultModels[i];
-                            viewResultSpectrum.V = SMUResultModel.VResult;
-                            viewResultSpectrum.I = SMUResultModel.IResult;
+                            viewResultSpectrum.V = SMUResultModel.VResult ?? 0;
+                            viewResultSpectrum.I = SMUResultModel.IResult ?? 0;
                         }
                         else
                         {
                             viewResultSpectrum.V = float.NaN;
                             viewResultSpectrum.I = float.NaN;
                         }
- 
+                        i++;
                         ViewResults.Add(viewResultSpectrum);
                     }
                     string sprectrumfilePath = Path.Combine(config.SavePath, $"SP_IVL_{timeStr}.csv");
                     ViewResults.SaveToCsv(sprectrumfilePath);
                 }
+                
+                // Show I-Lv curve plot window
+                if (testResult.SMUResultModels.Count > 0 && ViewResults.Count > 0)
+                {
+                    System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        try
+                        {
+                            // Create an empty list for POI data since this process only has spectrum data
+                            var plotWindow = new ILvPlotWindow(testResult.SMUResultModels, new List<PoiResultCIExyuvData>(), ViewResults);
+                            plotWindow.Show();
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error("Failed to open I-Lv plot window", ex);
+                        }
+                    });
+                }
+                
                 //ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
                 return true;
             }

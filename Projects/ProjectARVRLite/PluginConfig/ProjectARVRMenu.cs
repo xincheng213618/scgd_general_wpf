@@ -11,7 +11,7 @@ namespace ProjectARVRLite.PluginConfig
         public override string OwnerGuid => MenuItemConstants.Tool;
 
         public override int Order => 100;
-        public override string Header => "ARVRLite检测";
+        public override string Header => "ARVRLiteDetect";
 
         public override void Execute()
         {

@@ -61,6 +61,15 @@ namespace Pattern.Properties {
         }
         
         /// <summary>
+        ///   查找类似 图卡生成工具 的本地化字符串。
+        /// </summary>
+        public static string ChartGenerationTool {
+            get {
+                return ResourceManager.GetString("ChartGenerationTool", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 搜索 的本地化字符串。
         /// </summary>
         public static string Search {

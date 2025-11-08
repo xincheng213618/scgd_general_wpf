@@ -13,6 +13,8 @@ public class SMUModelNode : CVBaseServerNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(SMUModelNode));
 
+	private bool m_IsCloseOutput;
+
 	private STNodeOption m_in_next;
 
 	private STNodeEditText<string> m_ctrl_editText;
@@ -67,6 +69,20 @@ public class SMUModelNode : CVBaseServerNode
 		set
 		{
 			loopName = value;
+			m_ctrl_lpName.Value = loopName;
+		}
+	}
+
+	[STNodeProperty("关闭输出", "关闭输出", true)]
+	public bool IsCloseOutput
+	{
+		get
+		{
+			return m_IsCloseOutput;
+		}
+		set
+		{
+			m_IsCloseOutput = value;
 		}
 	}
 
@@ -75,6 +91,7 @@ public class SMUModelNode : CVBaseServerNode
 	{
 		m_has_svr_item = false;
 		m_is_out_release = false;
+		m_IsCloseOutput = false;
 		operatorCode = "ModelGetData";
 		m_source = SourceType.Voltage_V;
 		m_begin_val = 0f;
@@ -84,7 +101,7 @@ public class SMUModelNode : CVBaseServerNode
 		m_step_count = 0;
 		modelName = "";
 		IsStarted = false;
-		LoopName = "SMULoop";
+		loopName = "SMULoop";
 		base.Height += 70;
 	}
 
@@ -123,14 +140,32 @@ public class SMUModelNode : CVBaseServerNode
 		m_ctrl_model.Value = modelName;
 	}
 
-	private void end()
+	private void end(CVTransAction trans)
 	{
 		IsStarted = false;
 		updateUI();
 		if (logger.IsDebugEnabled)
 		{
-			logger.DebugFormat("[{0}]Device is end", ToShortString());
+			logger.DebugFormat("[{0}]Device is end,IsCloseOutput={1}", (object)ToShortString(), (object)m_IsCloseOutput);
 		}
+		if (m_IsCloseOutput && trans != null)
+		{
+			SendToCloseOutput(trans);
+		}
+	}
+
+	private void SendToCloseOutput(CVTransAction trans)
+	{
+		if (logger.IsDebugEnabled)
+		{
+			logger.Debug((object)"Send To Server CloseOutput");
+		}
+		CVStartCFC trans_action = trans.trans_action;
+		string token = GetToken();
+		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, "CloseOutput", trans_action.SerialNumber, null, token, base.ZIndex);
+		string message = JsonConvert.SerializeObject((object)cVMQTTRequest, (Formatting)0);
+		MQActionEvent act = new MQActionEvent(cVMQTTRequest.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), cVMQTTRequest.EventName, message, token);
+		trans.trans_action.GetStartNode().DoPublish(act);
 	}
 
 	private void m_in_next_DataTransfer(object sender, STNodeOptionEventArgs e)
@@ -153,7 +188,7 @@ public class SMUModelNode : CVBaseServerNode
 			}
 			else
 			{
-				end();
+				end(trans);
 			}
 		}
 	}
@@ -182,16 +217,16 @@ public class SMUModelNode : CVBaseServerNode
 		string token = GetToken();
 		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(m_nodeName, m_deviceCode, operatorCode, trans_action.SerialNumber, new SMUData(m_source == SourceType.Voltage_V, m_cur_val, m_limit_val), token, base.ZIndex);
 		CVBaseEventCmd cmd = AddActionCmd(trans, cVMQTTRequest);
-		string message = JsonConvert.SerializeObject(cVMQTTRequest, Formatting.None);
+		string message = JsonConvert.SerializeObject((object)cVMQTTRequest, (Formatting)0);
 		MQActionEvent mQActionEvent = new MQActionEvent(cVMQTTRequest.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), cVMQTTRequest.EventName, message, token);
 		DoTransferToServer(trans, mQActionEvent, cmd);
 		return mQActionEvent;
 	}
 
-	protected override void DoTransCompleted(CVStartCFC action)
+	protected override void DoTransCompleted(CVTransAction trans, CVStartCFC action)
 	{
-		base.DoTransCompleted(action);
-		end();
+		base.DoTransCompleted(trans, action);
+		end(trans);
 	}
 
 	protected bool HasNext()

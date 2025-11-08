@@ -243,4 +243,85 @@
   <data name="Delete" xml:space="preserve">
     <value>удалить</value>
   </data>
+  <data name="Previous" xml:space="preserve">
+    <value>Предыдущий шаг</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>Следующий шаг</value>
+  </data>
+  <data name="Finish" xml:space="preserve">
+    <value>Заканчивать</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>Настройки файла дампа</value>
+  </data>
+  <data name="OpenBeyondCompare" xml:space="preserve">
+    <value>Открыть BeyondCompare</value>
+  </data>
+  <data name="DownLoadBeyondCompare" xml:space="preserve">
+    <value>Скачать BeyondCompare</value>
+  </data>
+  <data name="Win10ClassicDesktopMenu" xml:space="preserve">
+    <value>Классическое меню рабочего стола Windows 10</value>
+  </data>
+  <data name="SaveConfiguration" xml:space="preserve">
+    <value>Сохранить конфигурацию</value>
+  </data>
+  <data name="ConfigurationManagement" xml:space="preserve">
+    <value>Окно управления конфигурацией</value>
+  </data>
+  <data name="BlackMuraDetect" xml:space="preserve">
+    <value>Обнаружение BlackMura</value>
+  </data>
+  <data name="KBDetect" xml:space="preserve">
+    <value>Тест клавиатуры</value>
+  </data>
+  <data name="SectionalDrawing" xml:space="preserve">
+    <value>Поперечное сечение</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>Откройте папку конфигурации</value>
+  </data>
+  <data name="singleChannel" xml:space="preserve">
+    <value>один канал</value>
+  </data>
+  <data name="threeChannles" xml:space="preserve">
+    <value>Трехканальный</value>
+  </data>
+  <data name="Step11" xml:space="preserve">
+    <value>Шаг 1 / 1</value>
+  </data>
+  <data name="Step" xml:space="preserve">
+    <value>шаг</value>
+  </data>
+  <data name="SkipIncompleteConfigPrompt" xml:space="preserve">
+    <value>Есть ещё несколько незаконченных конфигураций. Хотите их пропустить?</value>
+  </data>
+  <data name="UpdateFailed" xml:space="preserve">
+    <value>Обновление не удалось</value>
+  </data>
+  <data name="CheckUpdateOld" xml:space="preserve">
+    <value>Проверить наличие обновлений (старых).</value>
+  </data>
+  <data name="DownloadLocal" xml:space="preserve">
+    <value>Локальная загрузка</value>
+  </data>
+  <data name="UpdateBaidu" xml:space="preserve">
+    <value>Загрузка облака Baidu</value>
+  </data>
+  <data name="MenuUpdateReInstall_重新安装当前版本" xml:space="preserve">
+    <value>Переустановить текущую версию</value>
+  </data>
+  <data name="ClearPackageCache" xml:space="preserve">
+    <value>Очистить кэш установочного пакета</value>
+  </data>
+  <data name="OpenCacheFolder" xml:space="preserve">
+    <value>Откройте папку кэша</value>
+  </data>
+  <data name="SoftwareVersionIdentical" xml:space="preserve">
+    <value>Та же версия программного обеспечения</value>
+  </data>
+  <data name="RollbackRequiresUninstallThenInstallOrRerunPackage" xml:space="preserve">
+    <value>Чтобы откатить программное обеспечение, вам необходимо сначала удалить его, а затем переустановить, или переустановить пакет после установки.</value>
+  </data>
 </root>

@@ -9,7 +9,7 @@ namespace ColorVision.Engine.Templates.POI.POIRevise
 
         public TemplatePoiReviseParam()
         {
-            Title = "Poi修正模板设置"; 
+            Title = ColorVision.Engine.Properties.Resources.POICorrectionTemplateSettings; 
             TemplateDicId = 24;
             Code = "PoiRevise";
             TemplateParams = Params;

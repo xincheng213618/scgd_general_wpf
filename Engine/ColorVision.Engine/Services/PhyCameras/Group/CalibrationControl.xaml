@@ -7,6 +7,7 @@
              xmlns:phy ="clr-namespace:ColorVision.Engine.Services.PhyCameras"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              d:DataContext="{d:DesignInstance local:CalibrationParam}"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="450" Width="400" Initialized="UserControl_Initialized">
     <UserControl.Resources>
@@ -28,9 +29,9 @@
             <StackPanel Margin="5">
                 <Border Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="0,0,0,5">
                     <StackPanel d:DataContext="{d:DesignInstance phy:PhyCamera}" x:Name="uploadbutton" Margin="5" Orientation="Horizontal">
-                        <Button  DockPanel.Dock="Right" Content="上传校正组" Command="{Binding UploadCalibrationCommand}"  Margin="5,0"/>
-                        <Button DockPanel.Dock="Right" Content="校正组管理" Click="Button_Click"  Margin="5,0"/>
-                        <Button d:DataContext="{d:DesignInstance phy:PhyCamera}" DockPanel.Dock="Right" Content="打开配置文件夹" Command="{Binding OpenSettingDirectoryCommand}"  Margin="5,0"/>
+                        <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resources.UploadCalibrationGroup}" Command="{Binding UploadCalibrationCommand}"  Margin="5,0"/>
+                        <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.CalibrationGroupManagement}" Click="Button_Click"  Margin="5,0"/>
+                        <Button d:DataContext="{d:DesignInstance phy:PhyCamera}" DockPanel.Dock="Right" Content="{x:Static properties:Resources.OpenConfigFolder}" Command="{Binding OpenSettingDirectoryCommand}"  Margin="5,0"/>
                     </StackPanel>
                 </Border>
 
@@ -41,7 +42,7 @@
                         </DockPanel>
                         <DockPanel  Margin="0,0,0,5">
                             <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="16" IsChecked="{Binding Normal.DarkNoise.IsExitFile,Mode=OneWay}" Margin="5,0,0,0"/>
-                            <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
+                            <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.DarkNoise}"  Width="80" />
                             <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding  Normal.DarkNoise.IsSelected}"   Margin="5,0,0,0" Width="20"/>
                             <TextBox IsEnabled="False"  Text="{Binding  Normal.DarkNoise.FilePath}"/>
                         </DockPanel>
@@ -53,25 +54,25 @@
                         </DockPanel>
                         <DockPanel  Margin="0,0,0,5">
                             <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="16" IsChecked="{Binding Normal.DefectPoint.IsExitFile,Mode=OneWay}" Margin="5,0,0,0"/>
-                            <TextBlock DockPanel.Dock="Left" Text="缺陷点" Width="80"  />
+                            <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.DefectPoint}" Width="80"  />
                             <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding Normal.DefectPoint.IsSelected}"  Margin="5,0,0,0" Width="20"/>
                             <TextBox IsEnabled="False" Text="{Binding  Normal.DefectPoint.FilePath}" />
                         </DockPanel>
                         <DockPanel  Margin="0,0,0,5">
                             <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="16" IsChecked="{Binding Normal.ColorShift.IsExitFile,Mode=OneWay}" Margin="5,0,0,0"/>
-                            <TextBlock DockPanel.Dock="Left" Text="色偏" Width="80"  />
+                            <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.ColorShift}" Width="80"  />
                             <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding Normal.ColorShift.IsSelected}"  Margin="5,0,0,0" Width="20"/>
                             <TextBox IsEnabled="False" Text="{Binding  Normal.ColorShift.FilePath}" />
                         </DockPanel>
                         <DockPanel  Margin="0,0,0,5">
                             <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="16" IsChecked="{Binding Normal.Distortion.IsExitFile,Mode=OneWay}" Margin="5,0,0,0"/>
-                            <TextBlock DockPanel.Dock="Left" Text="畸变" Width="80"  />
+                            <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.Distortion}" Width="80"  />
                             <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding Normal.Distortion.IsSelected}"  Margin="5,0,0,0"  Width="20"/>
                             <TextBox IsEnabled="False" Text="{Binding  Normal.Distortion.FilePath}" />
                         </DockPanel>
                         <DockPanel  Margin="0,0,0,5">
                             <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="16" IsChecked="{Binding Normal.Uniformity.IsExitFile,Mode=OneWay}" Margin="5,0,0,0"/>
-                            <TextBlock DockPanel.Dock="Left" Text="均匀场" Width="80"  />
+                            <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.Uniformity}" Width="80"  />
                             <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding Normal.Uniformity.IsSelected}"   Margin="5,0,0,0"  Width="20"/>
                             <TextBox IsEnabled="False" Text="{Binding Normal.Uniformity.FilePath}" />
                         </DockPanel>
@@ -93,25 +94,25 @@
                     <StackPanel Margin="5">
                         <DockPanel  Margin="0,0,0,5">
                             <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="16" IsChecked="{Binding Color.Luminance.IsExitFile,Mode=OneWay}" Margin="5,0,0,0"/>
-                            <TextBlock DockPanel.Dock="Left" Text="亮度" Width="80"  />
+                            <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.Brightness}" Width="80"  />
                             <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding Color.Luminance.IsSelected}"   Margin="5,0,0,0"  Width="20"/>
                             <TextBox IsEnabled="False" Text="{Binding Color.Luminance.FilePath}"  />
                         </DockPanel>
                         <DockPanel  Margin="0,0,0,5">
                             <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="16" IsChecked="{Binding Color.LumOneColor.IsExitFile,Mode=OneWay}" Margin="5,0,0,0"/>
-                            <TextBlock DockPanel.Dock="Left" Text="单色" Width="80"  />
+                            <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.OneColor}" Width="80"  />
                             <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding Color.LumOneColor.IsSelected}"   Margin="5,0,0,0"  Width="20"/>
                             <TextBox IsEnabled="False" Text="{Binding Color.LumOneColor.FilePath}" />
                         </DockPanel>
                         <DockPanel  Margin="0,0,0,5">
                             <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="16" IsChecked="{Binding Color.LumFourColor.IsExitFile,Mode=OneWay}" Margin="5,0,0,0"/>
-                            <TextBlock DockPanel.Dock="Left" Text="四色" Width="80"  />
+                            <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.FourColor}" Width="80"  />
                             <CheckBox  VerticalAlignment="Center" DockPanel.Dock="Right" Content="" IsChecked="{Binding Color.LumFourColor.IsSelected}"   Margin="5,0,0,0"  Width="20"/>
                             <TextBox IsEnabled="False" Text="{Binding Color.LumFourColor.FilePath}"  />
                         </DockPanel>
                         <DockPanel  Margin="0,0,0,5">
                             <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="16" IsChecked="{Binding Color.LumMultiColor.IsExitFile,Mode=OneWay}" Margin="5,0,0,0"/>
-                            <TextBlock DockPanel.Dock="Left" Text="多色" Width="80"  />
+                            <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.MultiColor}" Width="80"  />
                             <CheckBox VerticalAlignment="Center"  DockPanel.Dock="Right" Content="" IsChecked="{Binding Color.LumMultiColor.IsSelected}"   Margin="5,0,0,0" Width="20"/>
                             <TextBox IsEnabled="False" Text="{Binding Color.LumMultiColor.FilePath}" />
                         </DockPanel>

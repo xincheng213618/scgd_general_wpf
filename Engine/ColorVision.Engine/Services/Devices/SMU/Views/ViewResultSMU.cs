@@ -17,9 +17,10 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             Id = item.Id;
             CreateTime = item.CreateDate;
             BatchID = item.BatchId;
-            MeasurementType = item.IsSourceV ? MeasurementType.Voltage : MeasurementType.Current;
-            LimitStart = item.SrcBegin;
-            LimitEnd = item.SrcEnd;
+            if (item.IsSourceV!=null)
+                MeasurementType = item.IsSourceV ==true ? MeasurementType.Voltage : MeasurementType.Current;
+            LimitStart = item.SrcBegin ?? 0;
+            LimitEnd = item.SrcEnd??0;
 
             VList = JsonConvert.DeserializeObject<double[]>(item.VResult??string.Empty)?? Array.Empty<Double>();
             IList = JsonConvert.DeserializeObject<double[]>(item.IResult ?? string.Empty) ?? Array.Empty<Double>();
@@ -40,13 +41,13 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         {
             Id = item.Id;
             CreateTime = item.CreateDate;
-            BatchID = item.Batchid;
-            MeasurementType = item.IsSourceV ? MeasurementType.Voltage : MeasurementType.Current;
+            BatchID = item.BatchId;
+            MeasurementType = item.IsSourceV == true ? MeasurementType.Voltage : MeasurementType.Current;
             VList = new double[3];
             IList = new double[3];
-            LimitEnd = item.LimitValue;
-            VResult = item.VResult;
-            IResult = item.IResult;
+            LimitEnd = item.LimitValue ??0;
+            VResult = item.VResult ?? 0;
+            IResult = item.IResult ?? 0;
             if (VList != null && IList != null)
             {
                 for (int i = 0; i < VList.Length; i++)

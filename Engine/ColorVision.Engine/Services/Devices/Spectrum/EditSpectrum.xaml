@@ -10,7 +10,7 @@
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              d:DataContext="{d:DesignInstance local:DeviceSpectrum}"
              mc:Ignorable="d" 
-             Title="{x:Static properties:Resources.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="400" Initialized="UserControl_Initialized">
+             Title="{x:Static properties:Resources.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="600" Width="800" Initialized="UserControl_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -30,92 +30,31 @@
         <ScrollViewer x:Name="EditContent" d:DataContext="{d:DesignInstance config:ConfigSpectrum}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" >
                 <StackPanel x:Name="EditStackPanel" >
-                    <GroupBox Header="资源信息" Margin="0,5">
-                        <StackPanel Margin="5">
-                            <DockPanel Margin="0,0,0,5">
-                                <TextBlock Text="界面展示名称" Width="120"/>
-                                <TextBox Text="{Binding Name}" Style="{StaticResource TextBox.Small}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,5">
-                                <TextBlock Text="心跳时间"  Width="120"/>
-                                <TextBox Text="{Binding HeartbeatTime}" Style="{StaticResource TextBox.Small}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,5" >
-                                <TextBlock Text="SN" Width="120"/>
-                                <hc:ComboBox  x:Name="ComboBoxSn" IsEditable="True" SelectedIndex="0" Style="{StaticResource ComboBox.Small}" Text="{Binding SN}" hc:InfoElement.ShowClearButton="True"  />
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,5" >
-                                <TextBlock Text="设备自动连接" Width="120"/>
-                                <CheckBox Content="启用" IsChecked="{Binding IsAutoOpen}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,5" >
-                                <Button DockPanel.Dock="Right" Content="..." Style="{StaticResource ButtonDefault.Small}" Margin="5,0,0,0" Command="{Binding SetWavelengthFileCommand}"/>
-                                <TextBlock Text="波长文件" Width="120"/>
-                                <TextBox Text="{Binding WavelengthFile}" Style="{StaticResource TextBox.Small}"/>
-                            </DockPanel>
-                            <DockPanel  Margin="0,0,0,5">
-                                <Button DockPanel.Dock="Right" Content="..." Style="{StaticResource ButtonDefault.Small}" Margin="5,0,0,0" Command="{Binding SetMaguideFileCommand}"/>
-                                <TextBlock Text="幅值文件" Width="120"/>
-                                <TextBox Text="{Binding MaguideFile}" Style="{StaticResource TextBox.Small}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,0">
-                                <TextBlock Text="饱和度"  Width="120"/>
-                                <TextBox Text="{Binding Saturation}" Style="{StaticResource TextBox.Small}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,0">
-                                <TextBlock Text="ComPort"  Width="120"/>
-                                <TextBox Text="{Binding ComPort}" Style="{StaticResource TextBox.Small}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,0">
-                                <TextBlock Text="BaudRate"  Width="120"/>
-                                <TextBox Text="{Binding BaudRate}" Style="{StaticResource TextBox.Small}"/>
-                            </DockPanel>
-                        </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="配置信息" Margin="0,5">
-                        <StackPanel Margin="5">
-                            <DockPanel Margin="0,2" >
-                                <TextBlock Text="自动测试间隔(ms)"  Width="120"/>
-                                <TextBox Text="{Binding AutoTestTime}"/>
-                            </DockPanel>
-
-                            <DockPanel Margin="0,2" >
-                                <TextBlock Text="最大积分时间(ms)"  Width="120"/>
-                                <TextBox Text="{Binding MaxIntegralTime}"/>
-                            </DockPanel>
-
-                            <DockPanel Margin="0,2" >
-                                <TextBlock Text="起始积分时间(ms)"  Width="120"/>
-                                <TextBox Text="{Binding BeginIntegralTime}"/>
-                            </DockPanel>
-                        </StackPanel>
-                    </GroupBox>
-
                     <GroupBox Header="Shutter" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="启用" Width="120"/>
+                                <TextBlock Text="{x:Static properties:Resources.IsEnable}" Width="120"/>
                                 <ui:ToggleSwitch IsChecked="{Binding IsShutterEnable}"/>
                             </DockPanel>
                             <StackPanel Visibility="{Binding IsShutterEnable,Converter={StaticResource bool2VisibilityConverter}}">
                                 <DockPanel Margin="0,2">
-                                    <TextBlock Text="串口:" Width="120"/>
+                                    <TextBlock Text="{x:Static properties:Resources.Serial}" Width="120"/>
                                     <hc:ComboBox  x:Name="TextSerial" IsEditable="True" Text="{Binding ShutterCfg.Addr}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
-                                    <TextBlock Text="波特率:" Width="120"/>
+                                    <TextBlock Text="{x:Static properties:Resources.BaudRate}" Width="120"/>
                                     <hc:ComboBox  x:Name="TextBaudRate" IsEditable="True" Text="{Binding ShutterCfg.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
-                                    <TextBlock Text="延时(ms):" Width="120"/>
+                                    <TextBlock Text="{x:Static properties:Resources.DelayMs}" Width="120"/>
                                     <TextBox Text="{Binding ShutterCfg.DelayTime}" />
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
-                                    <TextBlock Text="打开命令:" Width="120"/>
+                                    <TextBlock Text="{x:Static properties:Resources.OpenCmd}" Width="120"/>
                                     <TextBox Text="{Binding ShutterCfg.OpenCmd}" />
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
-                                    <TextBlock Text="关闭命令" Width="120"/>
+                                    <TextBlock Text="{x:Static properties:Resources.CloseCmd}" Width="120"/>
                                     <TextBox Text="{Binding ShutterCfg.CloseCmd}" />
                                 </DockPanel>
                             </StackPanel>

@@ -23,12 +23,12 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
         public int RetryCount { get => _RetryCount; set { _RetryCount = value; OnPropertyChanged(); } }
         private int _RetryCount =3;
 
-        [DisplayName("滤色轮数量(6,12)")]
+        [DisplayName("FilterWheelCount")]
         public int Ports { get => _Ports; set { _Ports = value; OnPropertyChanged(); } } 
         private int _Ports = 6;
 
 
-        [DisplayName("自动连接")]
+        [DisplayName("AutoConnect")]
         public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; OnPropertyChanged(); } }
         private bool _IsAutoOpen = true;
  

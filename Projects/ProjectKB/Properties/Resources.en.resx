@@ -147,4 +147,7 @@
   <data name="CopyConfigurationFile" xml:space="preserve">
     <value>Copy configuration file</value>
   </data>
+  <data name="KBDetect" xml:space="preserve">
+    <value>Keyboard test</value>
+  </data>
 </root>

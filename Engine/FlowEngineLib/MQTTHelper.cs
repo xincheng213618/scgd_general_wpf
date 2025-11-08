@@ -47,7 +47,7 @@ public class MQTTHelper
 
 	private static void OnServerCreateMsg(ResultData_MQTT obj)
 	{
-		logger.Debug(JsonConvert.SerializeObject(obj));
+		logger.Debug((object)JsonConvert.SerializeObject((object)obj));
 	}
 
 	public static void GetDefaultCfg(ref string server, ref int port, ref string userName, ref string password)
@@ -90,7 +90,7 @@ public class MQTTHelper
 			{
 				ResultData_MQTT resultData_MQTT = new ResultData_MQTT();
 				resultData_MQTT.ResultCode = 1;
-				resultData_MQTT.ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTServer_成功！[" + mqttServerOptions.DefaultEndpointOptions.BoundInterNetworkAddress.ToString() + ":" + mqttServerOptions.DefaultEndpointOptions.Port + "]";
+				resultData_MQTT.ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTServer_成功！[" + ((MqttServerTcpEndpointBaseOptions)mqttServerOptions.DefaultEndpointOptions).BoundInterNetworkAddress.ToString() + ":" + ((MqttServerTcpEndpointBaseOptions)mqttServerOptions.DefaultEndpointOptions).Port + "]";
 				resultData_MQTT2 = resultData_MQTT;
 			}
 			else
@@ -116,13 +116,13 @@ public class MQTTHelper
 
 	public async Task<ResultData_MQTT> CreateMQTTServerAndStart(string ip, int port, bool withPersistentSessions, Action<ResultData_MQTT> callback)
 	{
-		MqttServerOptionsBuilder mqttServerOptionsBuilder = new MqttServerOptionsBuilder();
-		mqttServerOptionsBuilder.WithDefaultEndpoint();
-		mqttServerOptionsBuilder.WithDefaultEndpointBoundIPAddress(IPAddress.Parse(ip));
-		mqttServerOptionsBuilder.WithDefaultEndpointPort(port);
-		mqttServerOptionsBuilder.WithPersistentSessions(withPersistentSessions);
-		mqttServerOptionsBuilder.WithConnectionBacklog(2000);
-		Task<ResultData_MQTT> task = CreateMQTTServerAndStart(mqttServerOptionsBuilder, callback);
+		MqttServerOptionsBuilder val = new MqttServerOptionsBuilder();
+		val.WithDefaultEndpoint();
+		val.WithDefaultEndpointBoundIPAddress(IPAddress.Parse(ip));
+		val.WithDefaultEndpointPort(port);
+		val.WithPersistentSessions(withPersistentSessions);
+		val.WithConnectionBacklog(2000);
+		Task<ResultData_MQTT> task = CreateMQTTServerAndStart(val, callback);
 		await task;
 		return task.Result;
 	}
@@ -145,9 +145,9 @@ public class MQTTHelper
 			{
 				foreach (MqttClientStatus item in _MqttServer.GetClientsAsync().Result)
 				{
-					await item.DisconnectAsync();
+					await MqttClientStatusExtensions.DisconnectAsync(item);
 				}
-				await _MqttServer.StopAsync();
+				await MqttServerExtensions.StopAsync(_MqttServer);
 				_MqttServer = null;
 				resultData_MQTT = new ResultData_MQTT
 				{
@@ -224,6 +224,7 @@ public class MQTTHelper
 
 	private Task ClientSubscribedTopicHandle(ClientSubscribedTopicEventArgs arg)
 	{
+		//IL_004e: Unknown result type (might be due to invalid IL or missing references)
 		_Callback?.Invoke(new ResultData_MQTT
 		{
 			ResultCode = 1,
@@ -255,6 +256,7 @@ public class MQTTHelper
 
 	private Task ApplicationMessageNotConsumedHandle(ApplicationMessageNotConsumedEventArgs arg)
 	{
+		//IL_0071: Unknown result type (might be due to invalid IL or missing references)
 		ResultData_MQTT resultData_MQTT = new ResultData_MQTT();
 		resultData_MQTT.ResultCode = 1;
 		resultData_MQTT.EventType = EventTypeEnum.Publish;
@@ -276,17 +278,17 @@ public class MQTTHelper
 			_MqttClient.ConnectedAsync += ConnectedHandle;
 			_MqttClient.DisconnectedAsync += DisconnectedHandle;
 			_MqttClient.ApplicationMessageReceivedAsync += ApplicationMessageReceivedHandle;
-			await _MqttClient.ConnectAsync(options);
+			await _MqttClient.ConnectAsync(options, default(CancellationToken));
 			resultData_MQTT = ((!_MqttClient.IsConnected) ? new ResultData_MQTT
 			{
 				ResultCode = -1,
 				EventType = EventTypeEnum.ClientConnected,
-				ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTClient_失败！[" + options.ChannelOptions.ToString() + "]"
+				ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTClient_失败！[" + ((object)options.ChannelOptions).ToString() + "]"
 			} : new ResultData_MQTT
 			{
 				ResultCode = 1,
 				EventType = EventTypeEnum.ClientConnected,
-				ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTClient_成功！[" + options.ChannelOptions.ToString() + "]"
+				ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTClient_成功！[" + ((object)options.ChannelOptions).ToString() + "]"
 			});
 		}
 		catch (Exception ex)
@@ -304,14 +306,16 @@ public class MQTTHelper
 
 	private MqttClientOptionsBuilder buildOptions(string mqttServerUrl, int port, string userName, string userPassword)
 	{
-		MqttClientOptionsBuilder mqttClientOptionsBuilder = new MqttClientOptionsBuilder();
-		mqttClientOptionsBuilder.WithTcpServer(mqttServerUrl, port);
+		//IL_0000: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0006: Expected O, but got Unknown
+		MqttClientOptionsBuilder val = new MqttClientOptionsBuilder();
+		val.WithTcpServer(mqttServerUrl, (int?)port);
 		if (!string.IsNullOrEmpty(userName))
 		{
-			mqttClientOptionsBuilder.WithCredentials(userName, userPassword);
+			val.WithCredentials(userName, userPassword);
 		}
-		mqttClientOptionsBuilder.WithClientId(Guid.NewGuid().ToString("N"));
-		return mqttClientOptionsBuilder;
+		val.WithClientId(Guid.NewGuid().ToString("N"));
+		return val;
 	}
 
 	public async Task<ResultData_MQTT> CreateMQTTClientAndStart(string mqttServerUrl, int port, string userName, string userPassword, Action<ResultData_MQTT> callback)
@@ -335,8 +339,8 @@ public class MQTTHelper
 		{
 			if (_MqttClient != null && _MqttClient.IsConnected)
 			{
-				await _MqttClient.DisconnectAsync();
-				_MqttClient.Dispose();
+				await MqttClientExtensions.DisconnectAsync(_MqttClient, (MqttClientDisconnectOptionsReason)0, (string)null, 0u, (List<MqttUserProperty>)null, default(CancellationToken));
+				((IDisposable)_MqttClient).Dispose();
 				_MqttClient = null;
 				obj = new ResultData_MQTT
 				{
@@ -375,7 +379,7 @@ public class MQTTHelper
 		{
 			if (_MqttClient != null)
 			{
-				await _MqttClient.ReconnectAsync();
+				await MqttClientExtensions.ReconnectAsync(_MqttClient, default(CancellationToken));
 				obj = new ResultData_MQTT
 				{
 					ResultCode = 1,
@@ -411,8 +415,8 @@ public class MQTTHelper
 		ResultData_MQTT obj;
 		try
 		{
-			MqttTopicFilter topicFilter = new MqttTopicFilterBuilder().WithTopic(topic).Build();
-			await _MqttClient.SubscribeAsync(topicFilter, CancellationToken.None);
+			MqttTopicFilter val = new MqttTopicFilterBuilder().WithTopic(topic).Build();
+			await MqttClientExtensions.SubscribeAsync(_MqttClient, val, CancellationToken.None);
 			obj = new ResultData_MQTT
 			{
 				ResultCode = 1,
@@ -439,7 +443,7 @@ public class MQTTHelper
 		ResultData_MQTT obj;
 		try
 		{
-			await _MqttClient.UnsubscribeAsync(topic, CancellationToken.None);
+			await MqttClientExtensions.UnsubscribeAsync(_MqttClient, topic, CancellationToken.None);
 			obj = new ResultData_MQTT
 			{
 				ResultCode = 1,
@@ -470,12 +474,12 @@ public class MQTTHelper
 		ResultData_MQTT obj;
 		try
 		{
-			MqttApplicationMessageBuilder mqttApplicationMessageBuilder = new MqttApplicationMessageBuilder();
-			mqttApplicationMessageBuilder.WithTopic(topic).WithPayload(msg).WithRetainFlag(retained);
-			MqttApplicationMessage applicationMessage = mqttApplicationMessageBuilder.Build();
+			MqttApplicationMessageBuilder val = new MqttApplicationMessageBuilder();
+			val.WithTopic(topic).WithPayload(msg).WithRetainFlag(retained);
+			MqttApplicationMessage val2 = val.Build();
 			if (_MqttClient.IsConnected)
 			{
-				await _MqttClient.PublishAsync(applicationMessage, CancellationToken.None);
+				await _MqttClient.PublishAsync(val2, CancellationToken.None);
 				ResultData_MQTT resultData_MQTT = new ResultData_MQTT();
 				resultData_MQTT.ResultCode = 1;
 				resultData_MQTT.EventType = EventTypeEnum.Publish;
@@ -525,7 +529,7 @@ public class MQTTHelper
 		});
 		if (_MqttClient != null)
 		{
-			_MqttClient.ReconnectAsync();
+			MqttClientExtensions.ReconnectAsync(_MqttClient, default(CancellationToken));
 		}
 		return Task.CompletedTask;
 	}

@@ -8,7 +8,7 @@ namespace ProjectBlackMura.PluginConfig
         public override string OwnerGuid => MenuItemConstants.Tool;
 
         public override int Order => 100;
-        public override string Header => "BlackMura检测";
+        public override string Header => ProjectBlackMura.Properties.Resources.BlackMuraDetect;
 
         public override void Execute()
         {

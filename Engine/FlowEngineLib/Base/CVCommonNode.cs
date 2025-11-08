@@ -33,7 +33,7 @@ public class CVCommonNode : STNode
 		}
 	}
 
-	[STNodeProperty("节点类型", "节点类型/类别", false, true, true)]
+	[STNodeProperty("节点类型", "节点类型", false, true, true)]
 	public string NodeType
 	{
 		get

@@ -97,6 +97,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 BlackMura检测 的本地化字符串。
+        /// </summary>
+        public static string BlackMuraDetect {
+            get {
+                return ResourceManager.GetString("BlackMuraDetect", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 构建日期 的本地化字符串。
         /// </summary>
         public static string BuildDate {
@@ -124,11 +133,29 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 检查更新(旧) 的本地化字符串。
+        /// </summary>
+        public static string CheckUpdateOld {
+            get {
+                return ResourceManager.GetString("CheckUpdateOld", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 软件启动时检测更新 的本地化字符串。
         /// </summary>
         public static string CheckUpdatesOnStartup {
             get {
                 return ResourceManager.GetString("CheckUpdatesOnStartup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似  &quot;清除安装包缓存 的本地化字符串。
+        /// </summary>
+        public static string ClearPackageCache {
+            get {
+                return ResourceManager.GetString("ClearPackageCache", resourceCulture);
             }
         }
         
@@ -147,6 +174,15 @@ namespace ColorVision.Properties {
         public static string ConfigurationComplete {
             get {
                 return ResourceManager.GetString("ConfigurationComplete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 配置管理窗口 的本地化字符串。
+        /// </summary>
+        public static string ConfigurationManagement {
+            get {
+                return ResourceManager.GetString("ConfigurationManagement", resourceCulture);
             }
         }
         
@@ -196,11 +232,38 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 下载BeyondCompare 的本地化字符串。
+        /// </summary>
+        public static string DownLoadBeyondCompare {
+            get {
+                return ResourceManager.GetString("DownLoadBeyondCompare", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 下载已取消 的本地化字符串。
         /// </summary>
         public static string DownloadCancelled {
             get {
                 return ResourceManager.GetString("DownloadCancelled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 本地下载 的本地化字符串。
+        /// </summary>
+        public static string DownloadLocal {
+            get {
+                return ResourceManager.GetString("DownloadLocal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 转储文件设置 的本地化字符串。
+        /// </summary>
+        public static string DumpFileSettings {
+            get {
+                return ResourceManager.GetString("DumpFileSettings", resourceCulture);
             }
         }
         
@@ -250,6 +313,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 键盘测试 的本地化字符串。
+        /// </summary>
+        public static string KBDetect {
+            get {
+                return ResourceManager.GetString("KBDetect", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 启动成功 的本地化字符串。
         /// </summary>
         public static string LaunchSuccess {
@@ -282,6 +354,15 @@ namespace ColorVision.Properties {
         public static string MenuUpdate {
             get {
                 return ResourceManager.GetString("MenuUpdate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 ReinstallCurrentVersion 的本地化字符串。
+        /// </summary>
+        public static string MenuUpdateReInstall_重新安装当前版本 {
+            get {
+                return ResourceManager.GetString("MenuUpdateReInstall_重新安装当前版本", resourceCulture);
             }
         }
         
@@ -322,6 +403,33 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 打开BeyondCompare 的本地化字符串。
+        /// </summary>
+        public static string OpenBeyondCompare {
+            get {
+                return ResourceManager.GetString("OpenBeyondCompare", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开缓存文件夹 的本地化字符串。
+        /// </summary>
+        public static string OpenCacheFolder {
+            get {
+                return ResourceManager.GetString("OpenCacheFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开配置文件夹 的本地化字符串。
+        /// </summary>
+        public static string OpenConfigFolder {
+            get {
+                return ResourceManager.GetString("OpenConfigFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 上一步 的本地化字符串。
         /// </summary>
         public static string Previous {
@@ -358,11 +466,38 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 回退软件需要先卸载在安装，或者是安装后重新运行安装包； 的本地化字符串。
+        /// </summary>
+        public static string RollbackRequiresUninstallThenInstallOrRerunPackage {
+            get {
+                return ResourceManager.GetString("RollbackRequiresUninstallThenInstallOrRerunPackage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 保存配置 的本地化字符串。
+        /// </summary>
+        public static string SaveConfiguration {
+            get {
+                return ResourceManager.GetString("SaveConfiguration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 搜索 的本地化字符串。
         /// </summary>
         public static string Search {
             get {
                 return ResourceManager.GetString("Search", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 切面图 的本地化字符串。
+        /// </summary>
+        public static string SectionalDrawing {
+            get {
+                return ResourceManager.GetString("SectionalDrawing", resourceCulture);
             }
         }
         
@@ -385,11 +520,38 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 单通道 的本地化字符串。
+        /// </summary>
+        public static string singleChannel {
+            get {
+                return ResourceManager.GetString("singleChannel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 还有未完成的配置，是否跳过 的本地化字符串。
+        /// </summary>
+        public static string SkipIncompleteConfigPrompt {
+            get {
+                return ResourceManager.GetString("SkipIncompleteConfigPrompt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 软件版本 的本地化字符串。
         /// </summary>
         public static string SoftwareVersion {
             get {
                 return ResourceManager.GetString("SoftwareVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 软件版本相同 的本地化字符串。
+        /// </summary>
+        public static string SoftwareVersionIdentical {
+            get {
+                return ResourceManager.GetString("SoftwareVersionIdentical", resourceCulture);
             }
         }
         
@@ -403,11 +565,38 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 步骤 的本地化字符串。
+        /// </summary>
+        public static string Step {
+            get {
+                return ResourceManager.GetString("Step", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 步骤 1 / 1 的本地化字符串。
+        /// </summary>
+        public static string Step11 {
+            get {
+                return ResourceManager.GetString("Step11", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 开机启动(可能会不成功) 的本地化字符串。
         /// </summary>
         public static string TbSettingsStartBoot {
             get {
                 return ResourceManager.GetString("TbSettingsStartBoot", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 三通道 的本地化字符串。
+        /// </summary>
+        public static string threeChannles {
+            get {
+                return ResourceManager.GetString("threeChannles", resourceCulture);
             }
         }
         
@@ -426,6 +615,24 @@ namespace ColorVision.Properties {
         public static string Update {
             get {
                 return ResourceManager.GetString("Update", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 百度云盘下载 的本地化字符串。
+        /// </summary>
+        public static string UpdateBaidu {
+            get {
+                return ResourceManager.GetString("UpdateBaidu", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新失败 的本地化字符串。
+        /// </summary>
+        public static string UpdateFailed {
+            get {
+                return ResourceManager.GetString("UpdateFailed", resourceCulture);
             }
         }
         
@@ -453,6 +660,15 @@ namespace ColorVision.Properties {
         public static string Version {
             get {
                 return ResourceManager.GetString("Version", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Win10桌面经典菜单 的本地化字符串。
+        /// </summary>
+        public static string Win10ClassicDesktopMenu {
+            get {
+                return ResourceManager.GetString("Win10ClassicDesktopMenu", resourceCulture);
             }
         }
         

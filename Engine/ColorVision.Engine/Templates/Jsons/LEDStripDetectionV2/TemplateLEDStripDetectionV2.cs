@@ -28,9 +28,9 @@ namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
 
         public TemplateLEDStripDetectionV2()
         {
-            Title = "LEDStripDetectionV2模板管理";
+            Title = ColorVision.Engine.Properties.Resources.LedStripDetectionV2TemplateManagement;
             Code = "LEDStripDetection";
-            Name = "灯条检测V2";
+            Name = "LedStripDetectionV2";
             TemplateDicId = 26;
             TemplateParams = Params;
             IsUserControl = true;

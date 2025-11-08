@@ -22,7 +22,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         {
             DService = new MQTTSMU(this,Config);
             View = new ViewSMU();
-            View.View.Title = $"源表视图 - {Config.Code}";
+            View.View.Title = ColorVision.Engine.Properties.Resources.SMUView+$" - {Config.Code}";
             this.SetIconResource("SMUDrawingImage", View.View);
 
 
@@ -47,7 +47,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.DatabaseConnectionFailed, "ColorVision");
                 return;
             }
             new TemplateEditorWindow(new TemplateSMUParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;

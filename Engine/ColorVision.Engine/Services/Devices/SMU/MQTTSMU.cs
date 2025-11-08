@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.Devices.SMU.Views;
 using MQTTMessageLib.SMU;
 using MQTTnet.Client;
 using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -48,7 +49,9 @@ namespace ColorVision.Engine.Services.Devices.SMU
                         if (msg != null && msg.Data != null && msg.Data.MasterId != null && msg.Data.MasterId > 0)
                         {
                             int masterId = msg.Data.MasterId;
-                            SMUResultModel model = MySqlControl.GetInstance().DB.Queryable<SMUResultModel>().Where(x => x.Id == masterId).First();
+                            var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
+                            SMUResultModel model = DB.Queryable<SMUResultModel>().Where(x => x.Id == masterId).First();
+                            DB.Dispose();
                             if (model != null)
                             {
                                 ViewResultSMU viewResultSpectrum = new ViewResultSMU(model);

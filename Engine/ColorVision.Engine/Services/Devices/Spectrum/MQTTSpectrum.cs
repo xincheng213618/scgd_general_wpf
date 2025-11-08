@@ -1,6 +1,7 @@
 ﻿using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.MQTT;
+using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
@@ -9,6 +10,7 @@ using MQTTMessageLib.Spectrum;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -35,11 +37,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
     public class MQTTSpectrum : MQTTDeviceService<ConfigSpectrum>
     {
-        public DeviceSpectrum DeviceSpectrum { get; set; }
+        public DeviceSpectrum Device { get; set; }
 
         public MQTTSpectrum(DeviceSpectrum DeviceSpectrum) : base(DeviceSpectrum.Config)
         {
-            this.DeviceSpectrum = DeviceSpectrum;
+            this.Device = DeviceSpectrum;
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
         }
 
@@ -68,13 +70,20 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                             if (msg !=null && msg.Data != null && msg?.Data?.MasterId != null && msg?.Data?.MasterId > 0)
                             {
                                 int masterId = msg.Data?.MasterId;
-                                SpectumResultModel model = MySqlControl.GetInstance().DB.Queryable<SpectumResultModel>().Where(x => x.Id == masterId).First();
+                                var DB = new SqlSugarClient(new ConnectionConfig
+                                {
+                                    ConnectionString = MySqlControl.GetConnectionString(),
+                                    DbType = SqlSugar.DbType.MySql,
+                                    IsAutoCloseConnection = true
+                                });
+                                SpectumResultModel model = DB.Queryable<SpectumResultModel>().Where(x => x.Id == masterId).First();
+                                DB.Dispose();
                                 if (model != null)
                                 {
                                     ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
-                                        DeviceSpectrum.View.AddViewResultSpectrum(viewResultSpectrum);
+                                        Device.View.AddViewResultSpectrum(viewResultSpectrum);
                                     });
                                 }
                             }
@@ -86,7 +95,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                             ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(colorParam.Data);
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                DeviceSpectrum.View.AddViewResultSpectrum(viewResultSpectrum);
+                                Device.View.AddViewResultSpectrum(viewResultSpectrum);
                             });
 
                         }
@@ -100,8 +109,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                             {
                                 Application.Current.Dispatcher.BeginInvoke(() =>
                                 {
-                                    DeviceSpectrum.Config.BeginIntegralTime = param.fTimeB;
-                                    DeviceSpectrum.Config.MaxIntegralTime = param.iLimitTime;
+                                    Device.Config.BeginIntegralTime = param.fTimeB;
+                                    Device.Config.MaxIntegralTime = param.iLimitTime;
                                 });
                             }
                             else
@@ -178,14 +187,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             MsgRecord msgRecord= PublishAsyncClient(msg);
             return msgRecord;
         }
-
         public bool Close()
         {
             MsgSend msg = new()
             {
                 EventName = "Close",
-                ServiceName = Config.Code,
             };
+
             PublishAsyncClient(msg);
             return true;
         }
@@ -194,11 +202,24 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             MsgSend msg = new()
             {
                 EventName = "InitAutoDark",
-                SerialNumber = Config.Code,
                 Params = Config.SelfAdaptionInitDark
             };
             return PublishAsyncClient(msg);
         }
+
+        public MsgRecord SetPort()
+        {
+            var Params = new Dictionary<string, object>() { };
+
+            MsgSend msg = new()
+            {
+                EventName = "SetPort",
+                Params = Params
+            };
+            Params.Add("PortNum", Device.DisplaySpectrumConfig.PortNum);
+            return PublishAsyncClient(msg);
+        }
+
 
         public MsgRecord InitDark(float IntTime, int AveNum)
         {

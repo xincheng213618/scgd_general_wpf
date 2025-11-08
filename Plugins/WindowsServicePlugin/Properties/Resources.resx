@@ -121,4 +121,22 @@
   <data name="Service" xml:space="preserve">
     <value>服务</value>
   </data>
+  <data name="BCompareNotFound_DownloadPrompt" xml:space="preserve">
+    <value>找不到BCompare，是否下载</value>
+  </data>
+  <data name="DownLoadBeyondCompare" xml:space="preserve">
+    <value>下载BeyondCompare</value>
+  </data>
+  <data name="OpenBeyondCompare" xml:space="preserve">
+    <value>打开BeyondCompare</value>
+  </data>
+  <data name="InstallMqtt" xml:space="preserve">
+    <value>安装MQTT</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>转储文件设置</value>
+  </data>
+  <data name="ActivateWindows" xml:space="preserve">
+    <value>激活Windows</value>
+  </data>
 </root>

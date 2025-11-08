@@ -1,11 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using System.ComponentModel;
 
 namespace ProjectKB
 {
-    [DisplayName("ARVR上下限判定")]
-    public class KBRecipeConfig : ViewModelBase, IRecipe
+    [DisplayName("KB上下限判定")]
+    public class KBRecipeConfig : ViewModelBase
     {
         public double MinKeyLv { get => _MinKeyLv; set { _MinKeyLv = value; OnPropertyChanged(); } }
         private double _MinKeyLv;

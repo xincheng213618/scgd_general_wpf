@@ -72,11 +72,11 @@ namespace ColorVision.Update
                 }
                 else if (version == AutoUpdater.CurrentVersion)
                 {
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "软件版本相同");
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), ColorVision.Properties.Resources.SoftwareVersionIdentical);
                 }
                 else
                 {
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "回退软件需要先卸载在安装，或者是安装后重新运行安装包；");
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), ColorVision.Properties.Resources.RollbackRequiresUninstallThenInstallOrRerunPackage);
                     PlatformHelper.Open($"http://xc213618.ddns.me:9998/upload/ColorVision/History/{version.Major}.{version.Minor}.{version.Build}");
                 }
             });

@@ -21,6 +21,7 @@ namespace ColorVision
         [JsonIgnore]
         public bool IsOpenSidebar { get => _IsOpenSidebar; set { _IsOpenSidebar = value; OnPropertyChanged(); } }
         private bool _IsOpenSidebar = true;
+
         [JsonIgnore]
         public bool IsFull { get => _IsFull; set { _IsFull = value; OnPropertyChanged(); } }
         private bool _IsFull;
@@ -107,7 +108,7 @@ namespace ColorVision
             {
                 list.Add(new ConfigSettingMetadata
                 {
-                    Name = "Win10桌面经典菜单",
+                    Name = ColorVision.Properties.Resources.Win10ClassicDesktopMenu,
                     Description = "",
                     Order = 15,
                     Type = ConfigSettingType.Bool,

@@ -15,7 +15,7 @@ namespace ColorVision
     public class MenuConfigManagerWindow : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Help;
-        public override string Header => "配置管理窗口";
+        public override string Header => ColorVision.Properties.Resources.ConfigurationManagement;
 
         public override int Order => 9009;
 

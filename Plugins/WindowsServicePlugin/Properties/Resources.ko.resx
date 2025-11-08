@@ -141,4 +141,19 @@
   <data name="Service" xml:space="preserve">
     <value>서비스</value>
   </data>
+  <data name="BCompareNotFound_DownloadPrompt" xml:space="preserve">
+    <value>BCompare를 찾을 수 없습니다. 다운로드하시겠습니까?</value>
+  </data>
+  <data name="DownLoadBeyondCompare" xml:space="preserve">
+    <value>BeyondCompare 다운로드</value>
+  </data>
+  <data name="OpenBeyondCompare" xml:space="preserve">
+    <value>BeyondCompare 열기</value>
+  </data>
+  <data name="InstallMqtt" xml:space="preserve">
+    <value>MQTT 설치</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>덤프 파일 설정</value>
+  </data>
 </root>

@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Motor"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceMotor}"
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
@@ -49,21 +50,21 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel   Margin="5" >
-                <Button x:Name="ButtonSwitch" Margin="0,2" Content="连接"  Click="Open_Click"/>
+                <Button x:Name="ButtonSwitch" Margin="0,2" Content="{x:Static properties:Resources.Connect}"  Click="Open_Click"/>
                 <DockPanel Margin="0,2">
-                    <Button  DockPanel.Dock="Right" Content="移动"  Click="Move_Click" />
-                    <CheckBox  x:Name="CheckBoxIsAbs" Content="绝对位置" />
+                    <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resources.Move}"  Click="Move_Click" />
+                    <CheckBox  x:Name="CheckBoxIsAbs" Content="{x:Static properties:Resources.AbsolutePosition}" />
                     <TextBox x:Name="TextPos" Text="0"  BorderThickness="0,0,0,1" Margin="5,0"/>
                 </DockPanel>
                 <DockPanel Margin="0,2">
-                    <Button  DockPanel.Dock="Right" Content="调整光圈"  Click="Move1_Click" />
-                    <TextBlock Text="光圈F"  Width="40"  />
+                    <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resources.AdjustAperture}"  Click="Move1_Click" />
+                    <TextBlock Text="{x:Static properties:Resources.Aperture}"  Width="40"  />
                     <TextBox x:Name="TextDiaphragm" Text="0"  BorderThickness="0,0,0,1"  Margin="5,0"/>
                 </DockPanel>
-                <Button  Margin="0,2" Content="返回原点"  Click="GoHome_Click" />
+                <Button  Margin="0,2" Content="{x:Static properties:Resources.HomePosition}"  Click="GoHome_Click" />
                 <DockPanel>
-                    <Button DockPanel.Dock="Right" Content="获取位置"  Click="GetPosition_Click" />
-                    <TextBlock Text="当前位置：" Width="80"/>
+                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.AcquirePosition}"  Click="GetPosition_Click" />
+                    <TextBlock Text="{x:Static properties:Resources.CurrentPosition}" Width="80"/>
                     <TextBox IsReadOnly="True" Text="{Binding Config.Position}"  Background="Transparent" BorderThickness="0,0,0,0"  Margin="5,0"/>
                 </DockPanel>
             </StackPanel>

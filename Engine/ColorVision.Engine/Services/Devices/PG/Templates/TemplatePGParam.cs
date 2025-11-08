@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Services.Devices.PG.Templates
 
         public TemplatePGParam()
         {
-            Title = "PGParam设置";
+            Title = ColorVision.Engine.Properties.Resources.PGParamConfig;
             Code = "pg";
             TemplateDicId = 3;
             TemplateParams = Params;

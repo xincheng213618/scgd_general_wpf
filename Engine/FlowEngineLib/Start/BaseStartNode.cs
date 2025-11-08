@@ -258,13 +258,13 @@ public abstract class BaseStartNode : CVCommonNode
 			}
 			if (logger.IsInfoEnabled)
 			{
-				logger.InfoFormat("Remove Flow Mapping => {0}", serialNumber);
+				logger.InfoFormat("Remove Flow Mapping => {0}", (object)serialNumber);
 			}
 			m_op_start.TransferData(action);
 		}
 		else
 		{
-			logger.WarnFormat("Flow does not exist and has been removed. => {0}", action.ToShortString());
+			logger.WarnFormat("Flow does not exist and has been removed. => {0}", (object)action.ToShortString());
 		}
 	}
 
@@ -339,7 +339,7 @@ public abstract class BaseStartNode : CVCommonNode
 		if (start.GetActionType() == ActionTypeEnum.Start)
 		{
 			start.SetStartNode(this);
-			logger.InfoFormat("===============开始运行流程文件[{0}/{1}]", m_nodeName, start.SerialNumber);
+			logger.InfoFormat("===============开始运行流程文件[{0}/{1}]", (object)m_nodeName, (object)start.SerialNumber);
 		}
 		DoStartTransferData(start);
 	}
@@ -372,6 +372,8 @@ public abstract class BaseStartNode : CVCommonNode
 		{
 			message = startAction.Data["Msg"].ToString();
 		}
+		logger.InfoFormat("Fire Flow Finished Before", Array.Empty<object>());
 		this.Finished?.Invoke(this, new FlowStartEventArgs(startAction.SerialNumber, flowStatus, (long)startAction.GetTotalTime().TotalMilliseconds, message));
+		logger.InfoFormat("Fire Flow Finished End", Array.Empty<object>());
 	}
 }

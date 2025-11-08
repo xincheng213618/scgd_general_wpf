@@ -34,7 +34,7 @@ namespace ColorVision.Engine.Templates.Flow
         public TemplateFlow()
         {
             IsSideHide = true;
-            Title = "流程引擎模板管理";
+            Title = ColorVision.Engine.Properties.Resources.WorkflowEngineTemplateManagement;
             Code = "flow";
             TemplateParams = Params;
         }
@@ -219,7 +219,7 @@ namespace ColorVision.Engine.Templates.Flow
                 sfd.Filter = "*.zip|*.zip";
                 sfd.AddExtension = true;
                 sfd.RestoreDirectory = true;
-                sfd.Title = "导出";
+                sfd.Title = ColorVision.Engine.Properties.Resources.Export;
                 sfd.FileName = $"{Code}.zip";
                 if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
@@ -259,7 +259,7 @@ namespace ColorVision.Engine.Templates.Flow
         {
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
             ofd.Filter = "*.stn|*.stn";
-            ofd.Title = "导入流程";
+            ofd.Title = ColorVision.Engine.Properties.Resources.ImportFlow;
             ofd.RestoreDirectory = true;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
             return ImportFile(ofd.FileName);
@@ -309,7 +309,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(FlowParam)}模板失败", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.CreateDataBase+$"{typeof(FlowParam)}"+ ColorVision.Engine.Properties.Resources.TemplateFailed, "ColorVision");
             }
         }
         public FlowParam? AddFlowParam(string templateName)

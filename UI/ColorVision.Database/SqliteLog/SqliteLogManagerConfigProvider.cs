@@ -10,8 +10,8 @@ namespace ColorVision.Database.SqliteLog
             return new List<ConfigSettingMetadata> {
                             new ConfigSettingMetadata
                             {
-                                Name = "日志数据库",
-                                Description = "日志数据库",
+                                Name = Properties.Resources.LogDatabase,
+                                Description = Properties.Resources.LogDatabase,
                                 Order = 99,
                                 Type = ConfigSettingType.Bool,
                                 BindingName = nameof(SqliteLogManagerConfig.IsEnabled),

@@ -252,4 +252,76 @@
   <data name="Delete" xml:space="preserve">
     <value>删除</value>
   </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>转储文件设置</value>
+  </data>
+  <data name="OpenBeyondCompare" xml:space="preserve">
+    <value>打开BeyondCompare</value>
+  </data>
+  <data name="DownLoadBeyondCompare" xml:space="preserve">
+    <value>下载BeyondCompare</value>
+  </data>
+  <data name="Win10ClassicDesktopMenu" xml:space="preserve">
+    <value>Win10桌面经典菜单</value>
+  </data>
+  <data name="SaveConfiguration" xml:space="preserve">
+    <value>保存配置</value>
+  </data>
+  <data name="ConfigurationManagement" xml:space="preserve">
+    <value>配置管理窗口</value>
+  </data>
+  <data name="BlackMuraDetect" xml:space="preserve">
+    <value>BlackMura检测</value>
+  </data>
+  <data name="KBDetect" xml:space="preserve">
+    <value>键盘测试</value>
+  </data>
+  <data name="SectionalDrawing" xml:space="preserve">
+    <value>切面图</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>打开配置文件夹</value>
+  </data>
+  <data name="singleChannel" xml:space="preserve">
+    <value>单通道</value>
+  </data>
+  <data name="threeChannles" xml:space="preserve">
+    <value>三通道</value>
+  </data>
+  <data name="Step11" xml:space="preserve">
+    <value>步骤 1 / 1</value>
+  </data>
+  <data name="Step" xml:space="preserve">
+    <value>步骤</value>
+  </data>
+  <data name="SkipIncompleteConfigPrompt" xml:space="preserve">
+    <value>还有未完成的配置，是否跳过</value>
+  </data>
+  <data name="UpdateFailed" xml:space="preserve">
+    <value>更新失败</value>
+  </data>
+  <data name="CheckUpdateOld" xml:space="preserve">
+    <value>检查更新(旧)</value>
+  </data>
+  <data name="DownloadLocal" xml:space="preserve">
+    <value>本地下载</value>
+  </data>
+  <data name="UpdateBaidu" xml:space="preserve">
+    <value>百度云盘下载</value>
+  </data>
+  <data name="MenuUpdateReInstall_重新安装当前版本" xml:space="preserve">
+    <value>ReinstallCurrentVersion</value>
+  </data>
+  <data name="ClearPackageCache" xml:space="preserve">
+    <value> "清除安装包缓存</value>
+  </data>
+  <data name="OpenCacheFolder" xml:space="preserve">
+    <value>打开缓存文件夹</value>
+  </data>
+  <data name="SoftwareVersionIdentical" xml:space="preserve">
+    <value>软件版本相同</value>
+  </data>
+  <data name="RollbackRequiresUninstallThenInstallOrRerunPackage" xml:space="preserve">
+    <value>回退软件需要先卸载在安装，或者是安装后重新运行安装包；</value>
+  </data>
 </root>

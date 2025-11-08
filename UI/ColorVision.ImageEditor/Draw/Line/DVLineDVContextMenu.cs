@@ -17,7 +17,7 @@ namespace ColorVision.ImageEditor.Draw.Line
             List<MenuItem> MenuItems = new List<MenuItem>();
             if (obj is DVLine dVLine)
             {
-                MenuItem menuItem = new() { Header = "切面图" };
+                MenuItem menuItem = new() { Header = ColorVision.ImageEditor.Properties.Resources.SectionalDrawing };
                 menuItem.Click += (s, e) =>
                 {
                     if (dVLine.Points == null || dVLine.Points.Count < 2)

@@ -21,19 +21,19 @@
 
             <DockPanel Margin="0,2">
                 <ToggleButton  HorizontalAlignment="Left"  Margin="0,0,2,0" Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding IsInversion}"/>
-                <TextBlock HorizontalAlignment="Left" Text="图像翻转"/>
+                <TextBlock HorizontalAlignment="Left" Text="{x:Static properties:Resources.ImageFlip}"/>
             </DockPanel>
             
             <TabControl BorderThickness="0" Background="Transparent">
                 <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" IsSelected="{Binding IsLocalFile}" >
                     <StackPanel Orientation="Horizontal" Margin="0,2">
-                        <TextBlock Text="文件" Margin="10,0,0,0" Width="40"/>
+                        <TextBlock Text="{x:Static properties:Resources.File}" Margin="10,0,0,0" Width="40"/>
                         <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}"  Width="150" Text="{Binding ImageFilePath}" Margin="0,0,2,0" HorizontalAlignment="Left" />
                         <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open_File" />
                         <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_OpenLocal_Click" />
                     </StackPanel>
                 </TabItem>
-                <TabItem Background="Transparent" Header="服务" x:Name="AlgRawSelect" IsSelected="True">
+                <TabItem Background="Transparent" Header="{x:Static properties:Resources.Service}" x:Name="AlgRawSelect" IsSelected="True">
                     <StackPanel>
                         <DockPanel Margin="0,2">
                             <TextBlock Text="{x:Static properties:Resources.ImageSource}" Margin="10,0,0,0" Width="40"/>
@@ -62,10 +62,10 @@
                     </StackPanel>
 
                 </TabItem>
-                <TabItem  Background="Transparent" Header="批次号" x:Name="AlgBatchSelect" >
+                <TabItem  Background="Transparent" Header="{x:Static properties:Resources.BatchNumber}" x:Name="AlgBatchSelect" >
                     <StackPanel>
                         <DockPanel Margin="0,2">
-                            <TextBlock Text="批次号" Margin="10,0,0,0" Width="40"/>
+                            <TextBlock Text="{x:Static properties:Resources.BatchNumber}" Margin="10,0,0,0" Width="40"/>
                             <TextBox x:Name="AlgBatchCode" Style="{StaticResource TextBox.Small}"  Width="150" HorizontalAlignment="Left" />
                         </DockPanel>
                     </StackPanel>

@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Engine.Batch"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:BatchManager}"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         Title="流程处理配置" Height="800" Width="1000" Initialized="Window_Initialized">
     <Window.Resources>
         <local:TypeNameConverter x:Key="TypeNameConverter"/>
@@ -19,7 +20,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <GroupBox Header="创建 ProcessMeta" Padding="8" Margin="0 0 0 8" Grid.Row="0">
+        <GroupBox Header="{x:Static properties:Resources.CreateProcessMeta}" Padding="8" Margin="0 0 0 8" Grid.Row="0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -34,10 +35,10 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Text="名称:" VerticalAlignment="Center" Margin="0 0 4 0"/>
+                <TextBlock Text="{x:Static properties:Resources.Name}" VerticalAlignment="Center" Margin="0 0 4 0"/>
                 <TextBox Grid.Column="1" Text="{Binding NewMetaName, UpdateSourceTrigger=PropertyChanged}"/>
 
-                <TextBlock Grid.Column="2" Text="流程模板:" VerticalAlignment="Center" Margin="12 0 4 0"/>
+                <TextBlock Grid.Column="2" Text="{x:Static properties:Resources.FlowTemplate}" VerticalAlignment="Center" Margin="12 0 4 0"/>
                 <ComboBox Grid.Column="3" ItemsSource="{Binding templateModels}" DisplayMemberPath="Key" SelectedItem="{Binding SelectedTemplate}"/>
 
                 <TextBlock Grid.Column="4" Text="处理类:" VerticalAlignment="Center" Margin="12 0 4 0"/>

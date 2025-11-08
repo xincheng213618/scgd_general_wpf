@@ -9,16 +9,16 @@ namespace WindowsServicePlugin
     public class InstallWinrar : WizardStepBase
     {
         public override int Order => 99;
-        public override string Header => "安装压缩软件";
+        public override string Header => ColorVision.UI.Properties.Resources.Install+" Winrar";
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
 
-        public override string Description => "下载并安装Winrar7.0 作为默认的解压软件"; 
+        public override string Description => "Download and Install WinRAR 7.0 as the Default Compression Software."; 
 
         public InstallWinrar()
         {
             DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = "下载Winrar";
+            DownloadFile.DownloadTile = ColorVision.UI.Properties.Resources.Download+" Winrar";
         }
 
         private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/Winrar/winrar-x64-700sc.exe";

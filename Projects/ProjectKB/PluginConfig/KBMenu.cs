@@ -11,7 +11,7 @@ namespace ProjectKB.PluginConfig
         public override string OwnerGuid => MenuItemConstants.Tool;
 
         public override int Order => 100;
-        public override string Header => "键盘测试";
+        public override string Header => ProjectKB.Properties.Resources.KBDetect;
 
         public override void Execute()
         {

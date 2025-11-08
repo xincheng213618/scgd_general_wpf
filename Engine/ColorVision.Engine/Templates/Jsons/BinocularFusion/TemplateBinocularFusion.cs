@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
 
         public TemplateBinocularFusion()
         {
-            Title = "双目融合模板管理";
+            Title = ColorVision.Engine.Properties.Resources.StereoFusionTemplateManagement;
             Code = "ARVR.BinocularFusion";
             TemplateDicId = 35;
             TemplateParams = Params;

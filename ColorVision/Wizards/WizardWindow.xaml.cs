@@ -89,7 +89,7 @@ namespace ColorVision.Wizards
             if (_wizardSteps == null || _wizardSteps.Count == 0) return;
 
             // Update step indicator
-            StepIndicator.Text = $"步骤 {_currentStepIndex + 1} / {_wizardSteps.Count}";
+            StepIndicator.Text = ColorVision.Properties.Resources.Step+$" {_currentStepIndex + 1} / {_wizardSteps.Count}";
             
             // Update progress bar
             WizardProgress.Value = (_currentStepIndex + 1) * 100.0 / _wizardSteps.Count;
@@ -148,7 +148,7 @@ namespace ColorVision.Wizards
 
             if (!result)
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), "还有未完成的配置，是否跳过", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Properties.Resources.SkipIncompleteConfigPrompt, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     if (Application.Current.MainWindow == this)
                     {

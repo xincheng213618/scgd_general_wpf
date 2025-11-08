@@ -4,7 +4,7 @@ namespace ColorVision.Engine.Templates.ImageCropping
 {
     public class MenuImageCropping : MenuITemplateAlgorithmBase
     {
-        public override string Header => "发光区裁剪模板管理";
+        public override string Header => ColorVision.Engine.Properties.Resources.AACropTemplateManagement;
         public override int Order => 41323;
         public override ITemplate Template => new TemplateImageCropping();
     }

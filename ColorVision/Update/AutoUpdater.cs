@@ -100,7 +100,7 @@ namespace ColorVision.Update
         {
             CancellationTokenSource _cancellationTokenSource = new();
             WindowUpdate windowUpdate = new WindowUpdate(this) { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            windowUpdate.Title = $"正在下载 {Version} {(IsIncrement?"增量":"")}更新";
+            windowUpdate.Title = $"Downding {Version} {(IsIncrement? "Incremental" : "")}Update";
             windowUpdate.Closed += (s, e) =>
             {
                 _cancellationTokenSource.Cancel();
@@ -495,7 +495,7 @@ del ""%~f0"" & exit
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"更新失败: {ex.Message}");
+                MessageBox.Show(ColorVision.Properties.Resources.UpdateFailed+$": {ex.Message}");
             }
         }
 

@@ -8,7 +8,7 @@
         xmlns:properties ="clr-namespace:Pattern.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PatternManager}"
-        Title="图卡生成工具" Height="600" Width="1400" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
+        Title="ChartGenerationTool" Height="600" Width="1400" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBoxBaseStyle}"/>
         <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBaseStyle}">

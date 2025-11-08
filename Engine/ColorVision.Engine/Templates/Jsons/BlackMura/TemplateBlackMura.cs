@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
         public TemplateBlackMura()
         {
-            Title = "BlackMura模板管理";
+            Title = ColorVision.Engine.Properties.Resources.BlackMuraTemplateManagement;
             Code = "BlackMura.Caculate";
             TemplateDicId = 37;
             TemplateParams = Params;

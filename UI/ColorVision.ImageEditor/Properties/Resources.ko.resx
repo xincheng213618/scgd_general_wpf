@@ -171,4 +171,10 @@
   <data name="Invert" xml:space="preserve">
     <value>거꾸로 하다</value>
   </data>
+  <data name="SectionalDrawing" xml:space="preserve">
+    <value>횡단면</value>
+  </data>
+  <data name="ImageAlgorithm" xml:space="preserve">
+    <value>이미지 알고리즘</value>
+  </data>
 </root>

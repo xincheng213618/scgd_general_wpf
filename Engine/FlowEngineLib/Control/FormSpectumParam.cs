@@ -97,10 +97,10 @@ public class FormSpectumParam : Form, ILoopFormProperty
 			return;
 		}
 		comboBox_cmd.Text = dataGridView1.SelectedRows[0].Cells[1].Value.ToString();
-		string value = dataGridView1.SelectedRows[0].Cells[2].Value?.ToString();
-		if (!string.IsNullOrEmpty(value))
+		string text = dataGridView1.SelectedRows[0].Cells[2].Value?.ToString();
+		if (!string.IsNullOrEmpty(text))
 		{
-			SpectrumParamData spectrumParamData = JsonConvert.DeserializeObject<SpectrumParamData>(value);
+			SpectrumParamData spectrumParamData = JsonConvert.DeserializeObject<SpectrumParamData>(text);
 			if (spectrumParamData != null)
 			{
 				textBox_integral_time.Text = spectrumParamData.IntegralTime.ToString();

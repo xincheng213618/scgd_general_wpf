@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
 
         public TemplateMTF2()
         {
-            Title = "MTFV2模板管理";
+            Title = ColorVision.Engine.Properties.Resources.MtfV2TemplateManagement;
             Code = "MTF";
             Name = "MTF_V2";
             TemplateDicId = 48;

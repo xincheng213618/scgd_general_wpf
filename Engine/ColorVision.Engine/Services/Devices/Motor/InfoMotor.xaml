@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Motor"
-             xmlns:resx="clr-namespace:ColorVision.Engine.Properties"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceMotor}"
@@ -83,22 +83,22 @@
             <Border  Grid.Row="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="5,0" >
-                        <GroupBox Header="基本信息" Margin="0,5">
+                        <GroupBox Header="{x:Static properties:Resources.BasicInformation}" Margin="0,5">
                             <StackPanel Margin="5">
                                 <DockPanel>
                                     <TextBlock Text="ID" Width="120"/>
                                     <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.Id}"/>
                                 </DockPanel>
                                 <DockPanel>
-                                    <TextBlock Text="发送信道" Width="120"/>
+                                    <TextBlock Text="{x:Static properties:Resources.TransmitChannel}" Width="120"/>
                                     <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SendTopic}"/>
                                 </DockPanel>
                                 <DockPanel>
-                                    <TextBlock Text="接收信道" Width="120"/>
+                                    <TextBlock Text="{x:Static properties:Resources.ReceiveChannel}" Width="120"/>
                                     <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SubscribeTopic}"/>
                                 </DockPanel>
                                 <DockPanel>
-                                    <TextBlock Text="心跳时间(ms)"  Width="120"/>
+                                    <TextBlock Text="{x:Static properties:Resources.HeartbeatTime}"  Width="120"/>
                                     <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.HeartbeatTime}"/>
                                 </DockPanel>
                                 <DockPanel>

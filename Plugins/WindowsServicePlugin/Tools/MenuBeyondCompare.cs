@@ -7,7 +7,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Windows;
 
-
 namespace WindowsServicePlugin.Tools
 {
     public class MenuBeyondCompare : MenuItemBase
@@ -16,7 +15,7 @@ namespace WindowsServicePlugin.Tools
         public override string OwnerGuid => MenuItemConstants.View;
         public override int Order => 99;
 
-        public override string Header => "打开BeyondCompare";
+        public override string Header =>Properties.Resources.OpenBeyondCompare;
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
 
@@ -26,13 +25,13 @@ namespace WindowsServicePlugin.Tools
         public MenuBeyondCompare()
         {
             DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = "下载BeyondCompare";
+            DownloadFile.DownloadTile = Properties.Resources.DownLoadBeyondCompare;
         }
         public override void Execute()
         {
             if (!File.Exists(ImageJConfig.Instance.BeyondComparePath))
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), "找不到BCompare，是否下载", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.BCompareNotFound_DownloadPrompt, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     string filename = "Beyond_Compare_5.zip";
                     string url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/BeyondCompare/{filename}";

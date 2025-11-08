@@ -1,6 +1,5 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
-  
   <xs:schema id="root">
     <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xs:element name="root" ns1:IsDataSet="true">
@@ -87,7 +86,7 @@
     <value>點擊設置快捷鍵</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
-    <value>簡體中文</value>
+    <value>简体中文（簡體中文）</value>
   </data>
   <data name="zh-Hant" xml:space="preserve">
     <value>繁體中文</value>
@@ -99,19 +98,19 @@
     <value>您必須重新啟動才能使用新的語言設定</value>
   </data>
   <data name="en" xml:space="preserve">
-    <value>英語</value>
+    <value>English（英語）</value>
   </data>
   <data name="fr" xml:space="preserve">
-    <value>法語</value>
+    <value>Français（法語）</value>
   </data>
   <data name="ja" xml:space="preserve">
-    <value>日語</value>
+    <value>日本語（日語）</value>
   </data>
   <data name="ko" xml:space="preserve">
-    <value>韓語</value>
+    <value>한국어（韓語）</value>
   </data>
   <data name="ru" xml:space="preserve">
-    <value>俄語</value>
+    <value>Русский（俄語）</value>
   </data>
   <data name="MenuOptions" xml:space="preserve">
     <value>選項(_O）</value>
@@ -254,4 +253,220 @@
   <data name="Options" xml:space="preserve">
     <value>選項</value>
   </data>
-<data name="NoLocalLog4Output" xml:space="preserve"><value>沒有配置本地的log4輸出</value></data><data name="UpdateLog4NetLevel" xml:space="preserve"><value>更新Log4Net 日誌級別：</value></data><data name="ViewMode1" xml:space="preserve"><value>視圖模式1</value></data><data name="ViewMode2" xml:space="preserve"><value>視圖模式2</value></data><data name="ViewMode4" xml:space="preserve"><value>視圖模式4</value></data><data name="ViewMode9" xml:space="preserve"><value>視圖模式9</value></data><data name="CheckPluginUpdates" xml:space="preserve"><value>檢測插件更新</value></data><data name="CheckingForAdditionalProjects" xml:space="preserve"><value>正在檢索是否存在附加項目</value></data><data name="Download" xml:space="preserve"><value>下載</value></data><data name="ProjectNotFound" xml:space="preserve"><value>找不到項目{0}</value></data><data name="FoundProjectDownloadConfirm" xml:space="preserve"><value>找到項目{0}，{1}，是否下載</value></data><data name="AllFiles" xml:space="preserve"><value>所有文件 (*.*)|*.*</value></data><data name="UnsupportedFileFormat" xml:space="preserve"><value>不支持的文件格式</value></data><data name="SortOptions" xml:space="preserve"><value>排序選項</value></data><data name="SmartSortAscending" xml:space="preserve"><value>智能排序 (升序)</value></data><data name="SmartSortDescending" xml:space="preserve"><value>智能排序 (降序)</value></data><data name="SortByColumn" xml:space="preserve"><value>按 {0} 排序</value></data><data name="Ascending" xml:space="preserve"><value>升序</value></data><data name="Descending" xml:space="preserve"><value>降序</value></data><data name="ConfirmUpdate" xml:space="preserve"><value>是否更新</value></data><data name="ConfirmDeletePlugin" xml:space="preserve"><value>是否確認刪除插件{0}</value></data><data name="EnableCUDA" xml:space="preserve"><value>是否啟用CUDA</value></data><data name="CheckingCUDASupport" xml:space="preserve"><value>正在檢測是否支持CUDA</value></data><data name="ConfigurationParameters" xml:space="preserve"><value>配置相關參數</value></data><data name="EnableScheduledBackup" xml:space="preserve"><value>是否啟用定時備份</value></data><data name="MaxBackupCount" xml:space="preserve"><value>最大備份數量</value></data><data name="AutoCleanOldBackups" xml:space="preserve"><value>超過則自動清理舊備份</value></data><data name="ConfigFileResetDueToError" xml:space="preserve"><value>配置文件異常,已經重置</value></data><data name="ConfigFileRestored" xml:space="preserve"><value>配置文件已從最近備份恢復</value></data><data name="RestoreConfigFileFailed" xml:space="preserve"><value>恢復配置文件失敗</value></data><data name="BackupConfigFileFailed" xml:space="preserve"><value>備份配置文件失敗</value></data><data name="CleanupBackupFailed" xml:space="preserve"><value>清理備份文件失敗</value></data><data name="SaveSingleConfigFailed" xml:space="preserve"><value>保存單個配置 {0} 失敗</value></data><data name="WriteConfigFileFailed" xml:space="preserve"><value>寫入配置文件 {0} 失敗</value></data><data name="Execute" xml:space="preserve"><value>執行</value></data><data name="OpenContainingFolder" xml:space="preserve"><value>打開所在文件夾</value></data><data name="OpenFolder" xml:space="preserve"><value>打開文件夾</value></data><data name="OnlineCronGenerator" xml:space="preserve"><value>在線Cron表達式生成器</value></data><data name="PluginMissingId" xml:space="preserve"><value>插件 {0} 缺少唯一Id，已跳過</value></data><data name="DependencyDllNotFound" xml:space="preserve"><value>依賴 {0} 未找到對應的dll: {1}</value></data><data name="DependencyVersionInsufficient" xml:space="preserve"><value>依賴 {0} 版本不足，要求: {1}，實際: {2}</value></data><data name="DependencyCheckException" xml:space="preserve"><value>檢查依賴 {0} 版本時發生異常: {1}</value></data><data name="LoadingPlugin" xml:space="preserve"><value>加載插件: {0}</value></data><data name="PluginDllNotFound" xml:space="preserve"><value>插件DLL不存在: {0}</value></data><data name="LoadedPluginWithoutManifest" xml:space="preserve"><value>加載了沒有manifest的插件: {0}</value></data><data name="PluginLoadError" xml:space="preserve"><value>加載插件或manifest錯誤：{0}</value></data><data name="BatchFilePathCannotBeEmpty" xml:space="preserve"><value>batchFilePath 不能為空</value></data><data name="BaseDirCannotBeEmpty" xml:space="preserve"><value>baseDir 不能為空</value></data><data name="ExeNameCannotBeEmpty" xml:space="preserve"><value>exeName 不能為空</value></data><data name="EchoTerminatingProcess" xml:space="preserve"><value>echo 正在結束進程: {0}</value></data><data name="EchoStartCopyingFiles" xml:space="preserve"><value>echo 開始複製新版本文件...</value></data><data name="RemStagePointsToTemp" xml:space="preserve"><value>rem STAGE 指向臨時目錄中解壓出的 ColorVision 內容根</value></data><data name="EchoBackingUpCurrentVersion" xml:space="preserve"><value>echo 正在備份當前版本...</value></data><data name="EchoTargetDirNotExist" xml:space="preserve"><value>  echo 目標目錄不存在，跳過備份。</value></data><data name="EchoBackupTo" xml:space="preserve"><value>  echo 備份到：%BKDIR%</value></data><data name="EchoBackupComplete" xml:space="preserve"><value>  echo 備份完成。</value></data><data name="RemRobocopySuccess" xml:space="preserve"><value>  rem Robocopy 0-7 視為成功</value></data><data name="EchoRobocopyFailed" xml:space="preserve"><value>     echo Robocopy 失敗，錯誤碼 !RC! ，嘗試使用 XCOPY 回退...</value></data><data name="EchoRobocopyNotFound" xml:space="preserve"><value>  echo 未找到 Robocopy，回退到 XCOPY...</value></data><data name="EchoUsingXCOPY" xml:space="preserve"><value>echo 使用 XCOPY 回退複製...</value></data><data name="EchoXCOPYFailed" xml:space="preserve"><value>  echo XCOPY 複製失敗，更新中止。</value></data><data name="EchoCopyComplete" xml:space="preserve"><value>echo 複製完成。</value></data><data name="EchoRestartingProgram" xml:space="preserve"><value>echo 正在重新啟動程序...</value></data><data name="EchoSchedulingCleanup" xml:space="preserve"><value>echo 安排延遲清理臨時目錄與腳本...</value></data><data name="EchoUpdateComplete" xml:space="preserve"><value>echo 更新完成。（清理在後台進行）</value></data><data name="ApplicationCurrentNotInitialized" xml:space="preserve"><value>Application.Current 未初始化</value></data><data name="Bool2VisibilityConverterNotFound" xml:space="preserve"><value>bool2VisibilityConverter 資源未找到</value></data></root>
+  <data name="NoLocalLog4Output" xml:space="preserve">
+    <value>沒有配置本地的log4輸出</value>
+  </data>
+  <data name="UpdateLog4NetLevel" xml:space="preserve">
+    <value>更新Log4Net 日誌級別：</value>
+  </data>
+  <data name="ViewMode1" xml:space="preserve">
+    <value>視圖模式1</value>
+  </data>
+  <data name="ViewMode2" xml:space="preserve">
+    <value>視圖模式2</value>
+  </data>
+  <data name="ViewMode4" xml:space="preserve">
+    <value>視圖模式4</value>
+  </data>
+  <data name="ViewMode9" xml:space="preserve">
+    <value>視圖模式9</value>
+  </data>
+  <data name="CheckPluginUpdates" xml:space="preserve">
+    <value>檢測插件更新</value>
+  </data>
+  <data name="CheckingForAdditionalProjects" xml:space="preserve">
+    <value>正在檢索是否存在附加項目</value>
+  </data>
+  <data name="Download" xml:space="preserve">
+    <value>下載</value>
+  </data>
+  <data name="ProjectNotFound" xml:space="preserve">
+    <value>找不到項目{0}</value>
+  </data>
+  <data name="FoundProjectDownloadConfirm" xml:space="preserve">
+    <value>找到項目{0}，{1}，是否下載</value>
+  </data>
+  <data name="AllFiles" xml:space="preserve">
+    <value>所有文件 (*.*)|*.*</value>
+  </data>
+  <data name="UnsupportedFileFormat" xml:space="preserve">
+    <value>不支持的文件格式</value>
+  </data>
+  <data name="SortOptions" xml:space="preserve">
+    <value>排序選項</value>
+  </data>
+  <data name="SmartSortAscending" xml:space="preserve">
+    <value>智能排序 (升序)</value>
+  </data>
+  <data name="SmartSortDescending" xml:space="preserve">
+    <value>智能排序 (降序)</value>
+  </data>
+  <data name="SortByColumn" xml:space="preserve">
+    <value>按 {0} 排序</value>
+  </data>
+  <data name="Ascending" xml:space="preserve">
+    <value>升序</value>
+  </data>
+  <data name="Descending" xml:space="preserve">
+    <value>降序</value>
+  </data>
+  <data name="ConfirmUpdate" xml:space="preserve">
+    <value>是否更新</value>
+  </data>
+  <data name="ConfirmDeletePlugin" xml:space="preserve">
+    <value>是否確認刪除插件{0}</value>
+  </data>
+  <data name="EnableCUDA" xml:space="preserve">
+    <value>是否啟用CUDA</value>
+  </data>
+  <data name="CheckingCUDASupport" xml:space="preserve">
+    <value>正在檢測是否支持CUDA</value>
+  </data>
+  <data name="ConfigurationParameters" xml:space="preserve">
+    <value>配置相關參數</value>
+  </data>
+  <data name="EnableScheduledBackup" xml:space="preserve">
+    <value>是否啟用定時備份</value>
+  </data>
+  <data name="MaxBackupCount" xml:space="preserve">
+    <value>最大備份數量</value>
+  </data>
+  <data name="AutoCleanOldBackups" xml:space="preserve">
+    <value>超過則自動清理舊備份</value>
+  </data>
+  <data name="ConfigFileResetDueToError" xml:space="preserve">
+    <value>配置文件異常,已經重置</value>
+  </data>
+  <data name="ConfigFileRestored" xml:space="preserve">
+    <value>配置文件已從最近備份恢復</value>
+  </data>
+  <data name="RestoreConfigFileFailed" xml:space="preserve">
+    <value>恢復配置文件失敗</value>
+  </data>
+  <data name="BackupConfigFileFailed" xml:space="preserve">
+    <value>備份配置文件失敗</value>
+  </data>
+  <data name="CleanupBackupFailed" xml:space="preserve">
+    <value>清理備份文件失敗</value>
+  </data>
+  <data name="SaveSingleConfigFailed" xml:space="preserve">
+    <value>保存單個配置 {0} 失敗</value>
+  </data>
+  <data name="WriteConfigFileFailed" xml:space="preserve">
+    <value>寫入配置文件 {0} 失敗</value>
+  </data>
+  <data name="Execute" xml:space="preserve">
+    <value>執行</value>
+  </data>
+  <data name="OpenContainingFolder" xml:space="preserve">
+    <value>打開所在文件夾</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>打開文件夾</value>
+  </data>
+  <data name="OnlineCronGenerator" xml:space="preserve">
+    <value>在線Cron表達式生成器</value>
+  </data>
+  <data name="PluginMissingId" xml:space="preserve">
+    <value>插件 {0} 缺少唯一Id，已跳過</value>
+  </data>
+  <data name="DependencyDllNotFound" xml:space="preserve">
+    <value>依賴 {0} 未找到對應的dll: {1}</value>
+  </data>
+  <data name="DependencyVersionInsufficient" xml:space="preserve">
+    <value>依賴 {0} 版本不足，要求: {1}，實際: {2}</value>
+  </data>
+  <data name="DependencyCheckException" xml:space="preserve">
+    <value>檢查依賴 {0} 版本時發生異常: {1}</value>
+  </data>
+  <data name="LoadingPlugin" xml:space="preserve">
+    <value>加載插件: {0}</value>
+  </data>
+  <data name="PluginDllNotFound" xml:space="preserve">
+    <value>插件DLL不存在: {0}</value>
+  </data>
+  <data name="LoadedPluginWithoutManifest" xml:space="preserve">
+    <value>加載了沒有manifest的插件: {0}</value>
+  </data>
+  <data name="PluginLoadError" xml:space="preserve">
+    <value>加載插件或manifest錯誤：{0}</value>
+  </data>
+  <data name="BatchFilePathCannotBeEmpty" xml:space="preserve">
+    <value>batchFilePath 不能為空</value>
+  </data>
+  <data name="BaseDirCannotBeEmpty" xml:space="preserve">
+    <value>baseDir 不能為空</value>
+  </data>
+  <data name="ExeNameCannotBeEmpty" xml:space="preserve">
+    <value>exeName 不能為空</value>
+  </data>
+  <data name="EchoTerminatingProcess" xml:space="preserve">
+    <value>echo 正在結束進程: {0}</value>
+  </data>
+  <data name="EchoStartCopyingFiles" xml:space="preserve">
+    <value>echo 開始複製新版本文件...</value>
+  </data>
+  <data name="RemStagePointsToTemp" xml:space="preserve">
+    <value>rem STAGE 指向臨時目錄中解壓出的 ColorVision 內容根</value>
+  </data>
+  <data name="EchoBackingUpCurrentVersion" xml:space="preserve">
+    <value>echo 正在備份當前版本...</value>
+  </data>
+  <data name="EchoTargetDirNotExist" xml:space="preserve">
+    <value>  echo 目標目錄不存在，跳過備份。</value>
+  </data>
+  <data name="EchoBackupTo" xml:space="preserve">
+    <value>  echo 備份到：%BKDIR%</value>
+  </data>
+  <data name="EchoBackupComplete" xml:space="preserve">
+    <value>  echo 備份完成。</value>
+  </data>
+  <data name="RemRobocopySuccess" xml:space="preserve">
+    <value>  rem Robocopy 0-7 視為成功</value>
+  </data>
+  <data name="EchoRobocopyFailed" xml:space="preserve">
+    <value>     echo Robocopy 失敗，錯誤碼 !RC! ，嘗試使用 XCOPY 回退...</value>
+  </data>
+  <data name="EchoRobocopyNotFound" xml:space="preserve">
+    <value>  echo 未找到 Robocopy，回退到 XCOPY...</value>
+  </data>
+  <data name="EchoUsingXCOPY" xml:space="preserve">
+    <value>echo 使用 XCOPY 回退複製...</value>
+  </data>
+  <data name="EchoXCOPYFailed" xml:space="preserve">
+    <value>  echo XCOPY 複製失敗，更新中止。</value>
+  </data>
+  <data name="EchoCopyComplete" xml:space="preserve">
+    <value>echo 複製完成。</value>
+  </data>
+  <data name="EchoRestartingProgram" xml:space="preserve">
+    <value>echo 正在重新啟動程序...</value>
+  </data>
+  <data name="EchoSchedulingCleanup" xml:space="preserve">
+    <value>echo 安排延遲清理臨時目錄與腳本...</value>
+  </data>
+  <data name="EchoUpdateComplete" xml:space="preserve">
+    <value>echo 更新完成。（清理在後台進行）</value>
+  </data>
+  <data name="ApplicationCurrentNotInitialized" xml:space="preserve">
+    <value>Application.Current 未初始化</value>
+  </data>
+  <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
+    <value>bool2VisibilityConverter 資源未找到</value>
+  </data>
+  <data name="DownLoadMQTT" xml:space="preserve">
+    <value>下載MQTT</value>
+  </data>
+  <data name="DownLoadMySql" xml:space="preserve">
+    <value>下載MySql</value>
+  </data>
+  <data name="Install" xml:space="preserve">
+    <value>安裝</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>重新命名</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>歸檔文件設定</value>
+  </data>
+</root>

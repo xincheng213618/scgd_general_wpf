@@ -26,24 +26,31 @@ using ColorVision.Engine.Extension;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
+    public class DisplaySpectrumConfig : ViewModelBase
+    {
+        public int PortNum { get => _PortNum; set { _PortNum = value; OnPropertyChanged(); } }
+        private int _PortNum = 1;
+    }
+
     public class DeviceSpectrum : DeviceService<ConfigSpectrum>
     {
+        public DisplaySpectrumConfig DisplaySpectrumConfig { get; set; } = new DisplaySpectrumConfig();
         public MQTTSpectrum DService { get; set; }
         public ViewSpectrum View { get; set; }
         public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; } = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();
         public RelayCommand RefreshDeviceIdCommand { get; set; }
 
-        [CommandDisplay("上传许可证")]
+        [CommandDisplay("UploadLic")]
         public RelayCommand UploadLincenseCommand { get; set; }
 
-        [CommandDisplay("自适应校零")]
+        [CommandDisplay("AdaptiveZeroCalibration")]
 
         public RelayCommand SelfAdaptionInitDarkCommand { get; set; }
 
-        [CommandDisplay("自适应校零设置")]
+        [CommandDisplay("ApaptivezeroCaliSet")]
         public RelayCommand SelfAdaptionInitDarkSettingCommand { get; set; }
 
-        [CommandDisplay("EmissionSP100设置")]
+        [CommandDisplay("EmissionSP100Set")]
         public RelayCommand EmissionSP100SettingCommand { get; set; }
 
 
@@ -51,7 +58,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             DService = new MQTTSpectrum(this);
             View = new ViewSpectrum();
-            View.View.Title = $"光谱仪视图 - {Config.Code}";
+            View.View.Title = ColorVision.Engine.Properties.Resources.SpectrumView+$" - {Config.Code}";
             this.SetIconResource("DISpectrumIcon", View.View);
 
             SpectrumResourceParam.Load(SpectrumResourceParams, SysResourceModel.Id);
@@ -81,7 +88,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             {
                 if (msgRecord.MsgReturn != null)
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(),"自适应校零执行" + e.ToString(),"ColorVison");
+                    MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.ExcAdaptiveZeroCali + e.ToString(),"ColorVison");
                 }
             };
         }
@@ -103,7 +110,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             openFileDialog.RestoreDirectory = true;
             openFileDialog.Multiselect = true; // 允许多选
             openFileDialog.Filter = "All files (*.*)|*.zip;*.lic"; // 可以设置特定的文件类型过滤器
-            openFileDialog.Title = "请选择许可证文件 " + SysResourceModel.Code;
+            openFileDialog.Title = ColorVision.Engine.Properties.Resources.SelectLicenseFilePrompt  + SysResourceModel.Code;
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
@@ -186,12 +193,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;
                         CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
                         int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
-                        MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
+                        MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? ColorVision.Engine.Properties.Resources.AddFailed : ColorVision.Engine.Properties.Resources.AddSuccess)}", "ColorVision");
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"解压失败 :{ex.Message}", "ColorVision");
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExtractionFailed+$" :{ex.Message}", "ColorVision");
                 }
             }
             else if (Path.GetExtension(filepath) == ".lic")
@@ -208,11 +215,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
 
                 int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "更新成功")}", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? ColorVision.Engine.Properties.Resources.AddFailed : ColorVision.Engine.Properties.Resources.UpdataSucess)}", "ColorVision");
             }
             else
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "不支持的许可文件后缀", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), ColorVision.Engine.Properties.Resources.UnsupportedLicenseFileExtension, "ColorVision");
             }
         }
 
@@ -230,7 +237,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         Task.Run(() => UploadLicenseNet(item.Code));
                     }
                     string result = string.Join(",", strings);
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "所有光谱仪设备信息" + Environment.NewLine + result);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.AllSpectrumDeviceInfo + Environment.NewLine + result);
                 }
                 RefreshEmptySpectrum();
 

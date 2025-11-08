@@ -9,7 +9,7 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
 
         public TemplateLEDStripDetection()
         {
-            Title = "灯条检测模板管理";
+            Title = ColorVision.Engine.Properties.Resources.LedBandDetectorManagement;
             TemplateDicId = 21;
             Code = "LEDStripDetection";
             TemplateParams = Params;

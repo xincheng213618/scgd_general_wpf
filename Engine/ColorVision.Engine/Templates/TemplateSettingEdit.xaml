@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Templates"
         xmlns:ui ="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:TemplateSetting}"
         Title="编辑模板设置" Height="450" Width="400" Initialized="Window_Initialized">
@@ -23,8 +24,8 @@
                 <Border Grid.Row="1" Background="{StaticResource GlobalBorderBrush}" BorderThickness="1" BorderBrush="{ StaticResource BorderBrush}" CornerRadius="5" Margin="0,0,0,5">
                     <StackPanel Margin="10,5">
                         <DockPanel>
-                            <Button DockPanel.Dock="Right" Click="Mysql_Reset_Click"  Content="重置"/>
-                            <TextBlock Text="数据库配置(如果出现无法配置的情况)" />
+                            <Button DockPanel.Dock="Right" Click="Mysql_Reset_Click"  Content="{x:Static properties:Resources.Reset}"/>
+                            <TextBlock Text="{x:Static properties:Resources.DataBaseConfig1}" />
                         </DockPanel>
                     </StackPanel>
                 </Border>

@@ -59,13 +59,12 @@ namespace ColorVision.Engine.Services.Devices
         /// 许可
         /// </summary>
         [PropertyEditorType(typeof(TextSNPropertiesEditor)),Category("Base")]
-        public string SN { get => _SN; set { _SN = value; OnPropertyChanged(); } }
+        public virtual string SN { get => _SN; set { _SN = value; OnPropertyChanged(); } }
         private string _SN;
     }
 
     public class TextSNPropertiesEditor : IPropertyEditor
     {
-        private static readonly List<int> BaudRates = new() { 921600, 460800, 230400, 115200, 57600, 38400, 19200, 14400, 9600, 4800, 2400, 1200, 600, 300 };
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);
@@ -73,7 +72,7 @@ namespace ColorVision.Engine.Services.Devices
             var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
             dockPanel.Children.Add(textBlock);
 
-            var combo = new HandyControl.Controls.ComboBox { Margin = new Thickness(5, 0, 0, 0), Style = PropertyEditorHelper.ComboBoxSmallStyle, IsEditable = true, ItemsSource = BaudRates };
+            var combo = new HandyControl.Controls.ComboBox { Margin = new Thickness(5, 0, 0, 0), Style = PropertyEditorHelper.ComboBoxSmallStyle, IsEditable = true };
             HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
             combo.SetBinding(ComboBox.TextProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name));
             combo.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;

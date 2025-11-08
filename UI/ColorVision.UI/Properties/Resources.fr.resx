@@ -86,10 +86,10 @@
     <value>Cliquez pour définir les touches de raccourci</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
-    <value>Chinois simplifié</value>
+    <value>简体中文 (Chinois simplifié)</value>
   </data>
   <data name="zh-Hant" xml:space="preserve">
-    <value>chinois traditionnel</value>
+    <value>繁體中文 (Chinois traditionnel)</value>
   </data>
   <data name="UseSystem" xml:space="preserve">
     <value>Suivez le système</value>
@@ -98,19 +98,19 @@
     <value>Vous devez redémarrer pour utiliser les nouveaux paramètres de langue</value>
   </data>
   <data name="en" xml:space="preserve">
-    <value>Anglais</value>
+    <value>English (Anglais)</value>
   </data>
   <data name="fr" xml:space="preserve">
     <value>Français</value>
   </data>
   <data name="ja" xml:space="preserve">
-    <value>Japonais</value>
+    <value>日本語 (Japonais)</value>
   </data>
   <data name="ko" xml:space="preserve">
-    <value>coréen</value>
+    <value>한국어 (Coréen)</value>
   </data>
   <data name="ru" xml:space="preserve">
-    <value>russe</value>
+    <value>Русский (Russe)</value>
   </data>
   <data name="MenuOptions" xml:space="preserve">
     <value>_Option</value>
@@ -453,5 +453,20 @@
   </data>
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>Ressource bool2VisibilityConverter introuvable</value>
+  </data>
+  <data name="DownLoadMQTT" xml:space="preserve">
+    <value>Télécharger MQTT</value>
+  </data>
+  <data name="DownLoadMySql" xml:space="preserve">
+    <value>Télécharger MySQL</value>
+  </data>
+  <data name="Install" xml:space="preserve">
+    <value>Installer</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>Rebaptiser</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>Paramètres des fichiers d'archive</value>
   </data>
 </root>

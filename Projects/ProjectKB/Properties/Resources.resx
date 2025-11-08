@@ -127,4 +127,7 @@
   <data name="CopyConfigurationFile" xml:space="preserve">
     <value>复制配置文件</value>
   </data>
+  <data name="KBDetect" xml:space="preserve">
+    <value>键盘测试</value>
+  </data>
 </root>

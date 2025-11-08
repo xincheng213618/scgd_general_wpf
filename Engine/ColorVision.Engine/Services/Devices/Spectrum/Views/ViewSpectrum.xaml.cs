@@ -53,9 +53,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
             listView1.ItemsSource = ViewResults;
 
-            string title = "相对光谱曲线";
-            wpfplot1.Plot.XLabel("波长[nm]");
-            wpfplot1.Plot.YLabel("相对光谱");
+            string title = ColorVision.Engine.Properties.Resources.RelativeSpectrumCurve;
+            wpfplot1.Plot.XLabel(ColorVision.Engine.Properties.Resources.WavelengthNm);
+            wpfplot1.Plot.YLabel(ColorVision.Engine.Properties.Resources.RelativeSpectrum);
             wpfplot1.Plot.Axes.Title.Label.Text = title;
             wpfplot1.Plot.Axes.Title.Label.FontName = Fonts.Detect(title);
             wpfplot1.Plot.Axes.Title.Label.Text = title;
@@ -68,6 +68,18 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             wpfplot1.Plot.Axes.Bottom.Max = 1000;
             wpfplot1.Plot.Axes.Left.Min = 0;
             wpfplot1.Plot.Axes.Left.Max = 1;
+
+            string titleAbsolute = ColorVision.Engine.Properties.Resources.AbsoluteSpectrumCurve;
+            wpfplot2.Plot.XLabel(ColorVision.Engine.Properties.Resources.WavelengthNm);
+            wpfplot2.Plot.YLabel(ColorVision.Engine.Properties.Resources.AbsoluteSpectrum);
+            wpfplot2.Plot.Axes.Title.Label.Text = titleAbsolute;
+            wpfplot2.Plot.Axes.Title.Label.FontName = Fonts.Detect(titleAbsolute);
+            wpfplot2.Plot.Axes.Left.Label.FontName = Fonts.Detect(titleAbsolute);
+            wpfplot2.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(titleAbsolute);
+
+            wpfplot2.Plot.Axes.SetLimitsX(380, 780);
+            wpfplot2.Plot.Axes.Bottom.Min = 370;
+            wpfplot2.Plot.Axes.Bottom.Max = 1000;
 
             if (listView1.View is GridView gridView)
             {
@@ -88,6 +100,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
+
         }
         private void Delete()
         {
@@ -125,35 +138,35 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         {
             if (listView1.SelectedIndex < 0)
             {
-                MessageBox.Show("您需要先选择数据");
+                MessageBox.Show("SelectDataFirst");
                 return;
             }
             using var dialog = new System.Windows.Forms.SaveFileDialog();
             dialog.Filter = "CSV files (*.csv) | *.csv";
-            dialog.FileName = DateTime.Now.ToString("光谱仪导出yyyy-MM-dd-HH-mm-ss");
+            dialog.FileName = DateTime.Now.ToString("SpectrometerExportyyyy-MM-dd-HH-mm-ss");
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
             var csvBuilder = new StringBuilder();
 
             List<string> properties = new();
-            properties.Add("序号");
-            properties.Add("批次号");
+            properties.Add("No");
+            properties.Add("Lot");
             properties.Add("IP");
-            properties.Add("亮度Lv(cd/m2)");
-            properties.Add("蓝光");
-            properties.Add("色度x");
-            properties.Add("色度y");
-            properties.Add("色度u");
-            properties.Add("色度v");
-            properties.Add("相关色温(K)");
-            properties.Add("主波长Ld(nm)");
-            properties.Add("色纯度(%)");
-            properties.Add("峰值波长Lp(nm");
-            properties.Add("显色性指数Ra");
-            properties.Add("半波宽");
-            properties.Add("电压");
-            properties.Add("电流");
+            properties.Add("Luminace（Lv）(cd/m²)");
+            properties.Add("Blue Light Intensity");
+            properties.Add("Cx");
+            properties.Add("Cy");
+            properties.Add("u'");
+            properties.Add("v'");
+            properties.Add("Correlated Color Temperature(CCT)（K）");
+            properties.Add("DW（λd）（nm）");
+            properties.Add("Color Purity(%)");
+            properties.Add("Peak Wavelength(λp)(nm)");
+            properties.Add("Color Rendering (Ra)");
+            properties.Add("FWHM");
+            properties.Add("Voltgage(V) (V)");
+            properties.Add("Current(I) (mA)");
 
             for (int i = 380; i <= 780; i++)
             {
@@ -238,6 +251,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         private void DrawPlot()
         {
             if (listView1.SelectedIndex < 0) return;
+            
+            if (IsShowingAbsoluteSpectrum)
+            {
+                DrawAbsolutePlot();
+                return;
+            }
+            
             wpfplot1.Plot.Axes.SetLimitsX(380, 780);
             wpfplot1.Plot.Axes.SetLimitsY(0, 1);
             wpfplot1.Plot.Axes.Bottom.Min = ViewResults[listView1.SelectedIndex].fSpect1;
@@ -280,7 +300,52 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             wpfplot1.Refresh();
         }
 
+        private void DrawAbsolutePlot()
+        {
+            if (listView1.SelectedIndex < 0) return;
+            
+            wpfplot2.Plot.Axes.SetLimitsX(380, 780);
+            wpfplot2.Plot.Axes.Bottom.Min = ViewResults[listView1.SelectedIndex].fSpect1;
+            wpfplot2.Plot.Axes.Bottom.Max = ViewResults[listView1.SelectedIndex].fSpect2;
+
+            if (AbsoluteScatterPlots.Count > 0)
+            {
+                if (MulComparison)
+                {
+                    if (LastMulSelectComparsion != null)
+                    {
+                        LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
+                        LastMulSelectComparsion.LineWidth = 1;
+                        LastMulSelectComparsion.MarkerSize = 1;
+                    }
+
+                    LastMulSelectComparsion = AbsoluteScatterPlots[listView1.SelectedIndex];
+                    LastMulSelectComparsion.LineWidth = 3;
+                    LastMulSelectComparsion.MarkerSize = 3;
+                    LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.Red);
+                    wpfplot2.Plot.PlottableList.Add(LastMulSelectComparsion);
+
+                }
+                else
+                {
+                    var temp = AbsoluteScatterPlots[listView1.SelectedIndex];
+                    temp.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
+                    temp.LineWidth = 1;
+                    temp.MarkerSize = 1;
+
+                    wpfplot2.Plot.PlottableList.Add(temp);
+                    wpfplot2.Plot.Remove(LastMulSelectComparsion);
+                    LastMulSelectComparsion = temp;
+
+                }
+            }
+
+            wpfplot2.Refresh();
+        }
+
         private List<Scatter> ScatterPlots { get; set; } = new List<Scatter>();
+        private List<Scatter> AbsoluteScatterPlots { get; set; } = new List<Scatter>();
+        private bool IsShowingAbsoluteSpectrum { get; set; } = false;
 
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
@@ -294,27 +359,69 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             ReDrawPlot();
         }
 
+        private void ToggleSpectrumType_Click(object sender, RoutedEventArgs e)
+        {
+            IsShowingAbsoluteSpectrum = !IsShowingAbsoluteSpectrum;
+            
+            if (IsShowingAbsoluteSpectrum)
+            {
+                wpfplot1.Visibility = Visibility.Collapsed;
+                wpfplot2.Visibility = Visibility.Visible;
+                SpectrumTypeText.Text = ColorVision.Engine.Properties.Resources.Absolute;
+            }
+            else
+            {
+                wpfplot1.Visibility = Visibility.Visible;
+                wpfplot2.Visibility = Visibility.Collapsed;
+                SpectrumTypeText.Text = ColorVision.Engine.Properties.Resources.Relative;
+            }
+            
+            ReDrawPlot();
+        }
+
 
         private void ReDrawPlot()
         {
             if (listView1.SelectedIndex < 0) return;
 
-            wpfplot1.Plot.Clear();
-
-            LastMulSelectComparsion = null;
-            if (MulComparison)
+            if (IsShowingAbsoluteSpectrum)
             {
-                listView1.SelectedIndex = listView1.Items.Count > 0 && listView1.SelectedIndex == -1 ? 0 : listView1.SelectedIndex;
-                for (int i = 0; i < ViewResults.Count; i++)
+                wpfplot2.Plot.Clear();
+                LastMulSelectComparsion = null;
+                if (MulComparison)
                 {
-                    if (i == listView1.SelectedIndex)
-                        continue;
-                    var plot = ScatterPlots[i];
-                    plot.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
-                    plot.LineWidth = 1;
-                    plot.MarkerSize = 1;
+                    listView1.SelectedIndex = listView1.Items.Count > 0 && listView1.SelectedIndex == -1 ? 0 : listView1.SelectedIndex;
+                    for (int i = 0; i < ViewResults.Count; i++)
+                    {
+                        if (i == listView1.SelectedIndex)
+                            continue;
+                        var plot = AbsoluteScatterPlots[i];
+                        plot.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
+                        plot.LineWidth = 1;
+                        plot.MarkerSize = 1;
 
-                    wpfplot1.Plot.PlottableList.Add(plot);
+                        wpfplot2.Plot.PlottableList.Add(plot);
+                    }
+                }
+            }
+            else
+            {
+                wpfplot1.Plot.Clear();
+                LastMulSelectComparsion = null;
+                if (MulComparison)
+                {
+                    listView1.SelectedIndex = listView1.Items.Count > 0 && listView1.SelectedIndex == -1 ? 0 : listView1.SelectedIndex;
+                    for (int i = 0; i < ViewResults.Count; i++)
+                    {
+                        if (i == listView1.SelectedIndex)
+                            continue;
+                        var plot = ScatterPlots[i];
+                        plot.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
+                        plot.LineWidth = 1;
+                        plot.MarkerSize = 1;
+
+                        wpfplot1.Plot.PlottableList.Add(plot);
+                    }
                 }
             }
             DrawPlot();
@@ -324,9 +431,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         {
             ViewResults.Clear();
             ScatterPlots.Clear();
+            AbsoluteScatterPlots.Clear();
 
             wpfplot1.Plot.Clear();
             wpfplot1.Refresh();
+            wpfplot2.Plot.Clear();
+            wpfplot2.Refresh();
 
             ReDrawPlot();
         }
@@ -359,16 +469,21 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 {
                     wpfplot1.Plot.Clear();
                     wpfplot1.Refresh();
+                    wpfplot2.Plot.Clear();
+                    wpfplot2.Refresh();
                 }
             }
 
         }
 
         Marker markerPlot1;
+        Marker markerPlot2;
 
         private void listView2_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             wpfplot1.Plot.Remove(markerPlot1);
+            wpfplot2.Plot.Remove(markerPlot2);
+            
             if (listView2.SelectedIndex > -1)
             {
                 markerPlot1 = new Marker
@@ -380,8 +495,19 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                     Color = Color.FromColor(System.Drawing.Color.Orange),
                 };
                 wpfplot1.Plot.PlottableList.Add(markerPlot1);
+                
+                markerPlot2 = new Marker
+                {
+                    X = listView2.SelectedIndex + 380,
+                    Y = ViewResults[listView1.SelectedIndex].fPL[listView2.SelectedIndex * 10] * ViewResults[listView1.SelectedIndex].fPlambda,
+                    MarkerShape = MarkerShape.FilledCircle,
+                    MarkerSize = 10f,
+                    Color = Color.FromColor(System.Drawing.Color.Orange),
+                };
+                wpfplot2.Plot.PlottableList.Add(markerPlot2);
             }
             wpfplot1.Refresh();
+            wpfplot2.Refresh();
 
         }
 
@@ -407,6 +533,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         {
             ViewResults.Clear();
             ScatterPlots.Clear();
+            AbsoluteScatterPlots.Clear();
         }
 
         public void AddViewResultSpectrum(ViewResultSpectrum viewResultSpectrum)
@@ -415,6 +542,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             viewResultSpectrum.I = float.NaN;
             ViewResults.Add(viewResultSpectrum);
             ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
+            AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);
             listView1.SelectedIndex = ViewResults.Count - 1;
         }
 
@@ -422,6 +550,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         {
             ViewResults.Clear();
             ScatterPlots.Clear();
+            AbsoluteScatterPlots.Clear();
 
             var list = MySqlControl.GetInstance().DB.Queryable<SpectumResultModel>().OrderByDescending(x => x.Id).ToList();
             foreach (var item in list)
@@ -431,6 +560,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 viewResultSpectrum.I = float.NaN;
                 ViewResults.Add(viewResultSpectrum);
                 ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
+                AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);
             }
             ;
             if (ViewResults.Count > 0)

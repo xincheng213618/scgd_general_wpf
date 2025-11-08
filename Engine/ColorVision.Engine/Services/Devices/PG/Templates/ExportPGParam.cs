@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Services.Devices.PG.Templates
 
         public override string GuidId => "PGParam";
         public override int Order => 11;
-        public override string Header => Properties.Resources.MenuPG;
+        public override string Header => Properties.Resources.PgTemplateConfig;
 
         public override void Execute()
         {

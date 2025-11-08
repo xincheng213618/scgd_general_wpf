@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DService = new MQTTCamera(Config);
 
             View = new ViewCamera(this);
-            View.View.Title = $"相机视图 - {Config.Code}";
+            View.View.Title = ColorVision.Engine.Properties.Resources.CameraView +$" - {Config.Code}";
             this.SetIconResource("DrawingImageCamera", View.View);
 
             EditCommand = new RelayCommand(a => EditCameraAction() ,b => AccessControl.Check(EditCameraAction));
@@ -76,7 +76,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             EditCameraExpousureCommand = new RelayCommand(A => EditCameraExpousure());
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
         }
-        [CommandDisplay("编辑校正文件")]
+        [CommandDisplay("EditCalibrationFile")]
         public RelayCommand EditCalibrationCommand { get; set; }
 
         public void EditCalibration()
@@ -105,14 +105,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
             var windowTemplate = new TemplateEditorWindow(new TemplateAutoExpTime()) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
-        [CommandDisplay("自动聚焦模板",Order =100)]
+        [CommandDisplay("AutoFocusTemplate",Order =100)]
         public RelayCommand EditAutoFocusCommand { get; set; }
         public static void EditAutoFocus()
         {
             var windowTemplate = new TemplateEditorWindow(new TemplateAutoFocus()) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
-        [CommandDisplay("相机参数模板",Order =100)]
+        [CommandDisplay("CameraParameterTemplate",Order =100)]
         public RelayCommand EditCameraExpousureCommand { get; set; }
         
         public static void EditCameraExpousure()
@@ -175,7 +175,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Save();
         }
 
-        [CommandDisplay("清理服务缓存")]
+        [CommandDisplay("ClearServiceCache")]
         public RelayCommand ServiceClearCommand { get; set; }
         [RequiresPermission(PermissionMode.Administrator)]
         private void ServiceClear()
@@ -221,7 +221,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             phyCameraManager.ShowDialog();
         }
 
-        [CommandDisplay("刷新设备列表")]
+        [CommandDisplay("RefreshDeviceList")]
         public RelayCommand RefreshDeviceIdCommand { get; set; }
         private bool _isRefreshing;
 
@@ -278,7 +278,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
             if (PhyCamera !=null && PhyCamera.LicenseState != LicenseState.Licensed)
             {
-                if ( MessageBox.Show(Application.Current.GetActiveWindow(), "当前逻辑相机许可证过期，无法刷新设备列表，是否清空当前相机服务绑定的物理相机，然后在重试", "ColorVision",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if ( MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt, "ColorVision",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     Config.CameraCode = string.Empty;
                     Save();
@@ -292,7 +292,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             if (DService.DeviceStatus == CVCommCore.DeviceStatusType.OffLine)
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), "当前逻辑相机离线，无法刷新设备列表，是否清空当前相机服务绑定的物理相机，然后在重试", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.LogicalCameraOffline_ClearBindingsAndRetryPromp, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     Config.CameraCode = string.Empty;
                     Save();
@@ -309,13 +309,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 if (e == MsgRecordState.Success)
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "当前设备相机信息" + Environment.NewLine + msgRecord.MsgReturn.Data);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.CurrentDeviceCameraInfo + Environment.NewLine + msgRecord.MsgReturn.Data);
                     PhyCameraManager.GetInstance().LoadPhyCamera();
                     PhyCameraManager.GetInstance().RefreshEmptyCamera();
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "刷新设备列表失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.RefreshDeviceListFailed, " ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
 
                 }
             };
@@ -323,7 +323,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public void SaveDis()
         {
-            if (MessageBox1.Show(Application.Current.GetActiveWindow(), "是否保存当前界面的曝光配置", "ColorVison", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.SaveCurrentExposureConfigPrompt, " ColorVison", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
             SaveConfig();
         }
 
@@ -367,12 +367,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
                 else
                 {
-                    MessageBox1.Show(Application.Current.MainWindow, "查询不到对应的温度数据");
+                    MessageBox1.Show(Application.Current.MainWindow, ColorVision.Engine.Properties.Resources.TemperatureDataNotFound);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox1.Show(Application.Current.MainWindow, "查询温度数据时发生错误：" + ex.Message);
+                MessageBox1.Show(Application.Current.MainWindow, ColorVision.Engine.Properties.Resources.ErrorQueryingTemperatureData+" : " + ex.Message);
             }
         }
 

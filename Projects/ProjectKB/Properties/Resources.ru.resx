@@ -147,4 +147,7 @@
   <data name="CopyConfigurationFile" xml:space="preserve">
     <value>Скопировать файл конфигурации</value>
   </data>
+  <data name="KBDetect" xml:space="preserve">
+    <value>Тест клавиатуры</value>
+  </data>
 </root>

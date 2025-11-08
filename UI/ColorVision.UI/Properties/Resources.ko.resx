@@ -86,10 +86,10 @@
     <value>클릭하여 핫키 설정하기</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
-    <value>중국어 간체</value>
+    <value>简体中文 (중국어 간체)</value>
   </data>
   <data name="zh-Hant" xml:space="preserve">
-    <value>중국어 번체</value>
+    <value>繁體中文 (중국어 번체)</value>
   </data>
   <data name="UseSystem" xml:space="preserve">
     <value>시스템 테마 사용</value>
@@ -98,19 +98,19 @@
     <value>새로운 언어 설정을 적용하려면 재시작해야 합니다</value>
   </data>
   <data name="en" xml:space="preserve">
-    <value>영어</value>
+    <value>English (영어)</value>
   </data>
   <data name="fr" xml:space="preserve">
-    <value>프랑스 국민</value>
+    <value>Français (프랑스어)</value>
   </data>
   <data name="ja" xml:space="preserve">
-    <value>일본어</value>
+    <value>日本語 (일본어)</value>
   </data>
   <data name="ko" xml:space="preserve">
-    <value>한국인</value>
+    <value>한국어</value>
   </data>
   <data name="ru" xml:space="preserve">
-    <value>러시아인</value>
+    <value>Русский (러시아어)</value>
   </data>
   <data name="MenuOptions" xml:space="preserve">
     <value>옵션 (_O)</value>
@@ -453,5 +453,20 @@
   </data>
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>bool2VisibilityConverter 리소스를 찾을 수 없습니다</value>
+  </data>
+  <data name="DownLoadMQTT" xml:space="preserve">
+    <value>MQTT 다운로드</value>
+  </data>
+  <data name="DownLoadMySql" xml:space="preserve">
+    <value>MySQL 다운로드</value>
+  </data>
+  <data name="Install" xml:space="preserve">
+    <value>설치하다</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>이름 바꾸기</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>보관 파일 설정</value>
   </data>
 </root>

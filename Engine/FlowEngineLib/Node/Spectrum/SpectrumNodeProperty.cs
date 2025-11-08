@@ -19,7 +19,7 @@ public class SpectrumNodeProperty : CVBaseDeviceParam<SPCommCmdType, SpectrumPar
 		{
 			no.ToString(),
 			base.Cmd.ToString(),
-			JsonConvert.SerializeObject(base.Data)
+			JsonConvert.SerializeObject((object)base.Data)
 		};
 	}
 }

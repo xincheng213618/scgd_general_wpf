@@ -6,7 +6,7 @@ namespace ColorVision.Engine.Services
     public class MenuCacheSetting : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
-        public override string Header => "缓存管理";
+        public override string Header => ColorVision.Engine.Properties.Resources.CacheManagement;
         public override int Order => 3;
 
         public override void Execute()

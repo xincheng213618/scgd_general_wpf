@@ -9,7 +9,7 @@ namespace ColorVision.Engine.Templates.ImageCropping
 
         public TemplateImageCropping()
         {
-            Title = "发光区裁剪模板";
+            Title = ColorVision.Engine.Properties.Resources.ImageCroppingTemplateSettings;
             TemplateDicId = 32;
             Code = "ImageCropping";
             TemplateParams = Params;

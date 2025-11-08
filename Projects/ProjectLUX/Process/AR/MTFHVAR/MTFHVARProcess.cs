@@ -39,13 +39,14 @@ namespace ProjectLUX.Process.MTFHVAR
                             switch (mtf.name)
                             {
                                 case "Center_0F":
-                                    testResult.MTF0F_Center_V1.Value = mtf.childRects[0].mtfValue ?? 0;
+                                    //顺序反了  H1=0, V1=1, V2=2, H2=3,后面调整一下
+                                    testResult.MTF0F_Center_V1.Value = mtf.childRects[1].mtfValue ?? 0;
                                     testResult.MTF0F_Center_V1.Value *= fixConfig.MTF0F_Center_V1;
                                     testResult.MTF0F_Center_V1.LowLimit = recipeConfig.MTF0F_Center_V1.Min;
                                     testResult.MTF0F_Center_V1.UpLimit = recipeConfig.MTF0F_Center_V1.Max;
                                     ctx.Result.Result &= testResult.MTF0F_Center_V1.TestResult;
 
-                                    testResult.MTF0F_Center_H1.Value = mtf.childRects[1].mtfValue ?? 0;
+                                    testResult.MTF0F_Center_H1.Value = mtf.childRects[0].mtfValue ?? 0;
                                     testResult.MTF0F_Center_H1.Value *= fixConfig.MTF0F_Center_H1;
                                     testResult.MTF0F_Center_H1.LowLimit = recipeConfig.MTF0F_Center_H1.Min;
                                     testResult.MTF0F_Center_H1.UpLimit = recipeConfig.MTF0F_Center_H1.Max;
@@ -77,13 +78,13 @@ namespace ProjectLUX.Process.MTFHVAR
                                     break;
 
                                 case "LeftUp_0.4F":
-                                    testResult.MTF0_4F_LeftUp_V1.Value = mtf.childRects[0].mtfValue ?? 0;
+                                    testResult.MTF0_4F_LeftUp_V1.Value = mtf.childRects[1].mtfValue ?? 0;
                                     testResult.MTF0_4F_LeftUp_V1.Value *= fixConfig.MTF0_4F_LeftUp_V1;
                                     testResult.MTF0_4F_LeftUp_V1.LowLimit = recipeConfig.MTF0_4F_LeftUp_V1.Min;
                                     testResult.MTF0_4F_LeftUp_V1.UpLimit = recipeConfig.MTF0_4F_LeftUp_V1.Max;
                                     ctx.Result.Result &= testResult.MTF0_4F_LeftUp_V1.TestResult;
 
-                                    testResult.MTF0_4F_LeftUp_H1.Value = mtf.childRects[1].mtfValue ?? 0;
+                                    testResult.MTF0_4F_LeftUp_H1.Value = mtf.childRects[0].mtfValue ?? 0;
                                     testResult.MTF0_4F_LeftUp_H1.Value *= fixConfig.MTF0_4F_LeftUp_H1;
                                     testResult.MTF0_4F_LeftUp_H1.LowLimit = recipeConfig.MTF0_4F_LeftUp_H1.Min;
                                     testResult.MTF0_4F_LeftUp_H1.UpLimit = recipeConfig.MTF0_4F_LeftUp_H1.Max;
@@ -115,13 +116,13 @@ namespace ProjectLUX.Process.MTFHVAR
                                     break;
 
                                 case "RightUp_0.4F":
-                                    testResult.MTF0_4F_RightUp_V1.Value = mtf.childRects[0].mtfValue ?? 0;
+                                    testResult.MTF0_4F_RightUp_V1.Value = mtf.childRects[1].mtfValue ?? 0;
                                     testResult.MTF0_4F_RightUp_V1.Value *= fixConfig.MTF0_4F_RightUp_V1;
                                     testResult.MTF0_4F_RightUp_V1.LowLimit = recipeConfig.MTF0_4F_RightUp_V1.Min;
                                     testResult.MTF0_4F_RightUp_V1.UpLimit = recipeConfig.MTF0_4F_RightUp_V1.Max;
                                     ctx.Result.Result &= testResult.MTF0_4F_RightUp_V1.TestResult;
 
-                                    testResult.MTF0_4F_RightUp_H1.Value = mtf.childRects[1].mtfValue ?? 0;
+                                    testResult.MTF0_4F_RightUp_H1.Value = mtf.childRects[0].mtfValue ?? 0;
                                     testResult.MTF0_4F_RightUp_H1.Value *= fixConfig.MTF0_4F_RightUp_H1;
                                     testResult.MTF0_4F_RightUp_H1.LowLimit = recipeConfig.MTF0_4F_RightUp_H1.Min;
                                     testResult.MTF0_4F_RightUp_H1.UpLimit = recipeConfig.MTF0_4F_RightUp_H1.Max;
@@ -153,13 +154,13 @@ namespace ProjectLUX.Process.MTFHVAR
                                     break;
 
                                 case "LeftDown_0.4F":
-                                    testResult.MTF0_4F_LeftDown_V1.Value = mtf.childRects[0].mtfValue ?? 0;
+                                    testResult.MTF0_4F_LeftDown_V1.Value = mtf.childRects[1].mtfValue ?? 0;
                                     testResult.MTF0_4F_LeftDown_V1.Value *= fixConfig.MTF0_4F_LeftDown_V1;
                                     testResult.MTF0_4F_LeftDown_V1.LowLimit = recipeConfig.MTF0_4F_LeftDown_V1.Min;
                                     testResult.MTF0_4F_LeftDown_V1.UpLimit = recipeConfig.MTF0_4F_LeftDown_V1.Max;
                                     ctx.Result.Result &= testResult.MTF0_4F_LeftDown_V1.TestResult;
 
-                                    testResult.MTF0_4F_LeftDown_H1.Value = mtf.childRects[1].mtfValue ?? 0;
+                                    testResult.MTF0_4F_LeftDown_H1.Value = mtf.childRects[0].mtfValue ?? 0;
                                     testResult.MTF0_4F_LeftDown_H1.Value *= fixConfig.MTF0_4F_LeftDown_H1;
                                     testResult.MTF0_4F_LeftDown_H1.LowLimit = recipeConfig.MTF0_4F_LeftDown_H1.Min;
                                     testResult.MTF0_4F_LeftDown_H1.UpLimit = recipeConfig.MTF0_4F_LeftDown_H1.Max;
@@ -191,13 +192,13 @@ namespace ProjectLUX.Process.MTFHVAR
                                     break;
 
                                 case "RightDown_0.4F":
-                                    testResult.MTF0_4F_RightDown_V1.Value = mtf.childRects[0].mtfValue ?? 0;
+                                    testResult.MTF0_4F_RightDown_V1.Value = mtf.childRects[1].mtfValue ?? 0;
                                     testResult.MTF0_4F_RightDown_V1.Value *= fixConfig.MTF0_4F_RightDown_V1;
                                     testResult.MTF0_4F_RightDown_V1.LowLimit = recipeConfig.MTF0_4F_RightDown_V1.Min;
                                     testResult.MTF0_4F_RightDown_V1.UpLimit = recipeConfig.MTF0_4F_RightDown_V1.Max;
                                     ctx.Result.Result &= testResult.MTF0_4F_RightDown_V1.TestResult;
 
-                                    testResult.MTF0_4F_RightDown_H1.Value = mtf.childRects[1].mtfValue ?? 0;
+                                    testResult.MTF0_4F_RightDown_H1.Value = mtf.childRects[0].mtfValue ?? 0;
                                     testResult.MTF0_4F_RightDown_H1.Value *= fixConfig.MTF0_4F_RightDown_H1;
                                     testResult.MTF0_4F_RightDown_H1.LowLimit = recipeConfig.MTF0_4F_RightDown_H1.Min;
                                     testResult.MTF0_4F_RightDown_H1.UpLimit = recipeConfig.MTF0_4F_RightDown_H1.Max;
@@ -229,13 +230,13 @@ namespace ProjectLUX.Process.MTFHVAR
                                     break;
 
                                 case "LeftUp_0.8F":
-                                    testResult.MTF0_8F_LeftUp_V1.Value = mtf.childRects[0].mtfValue ?? 0;
+                                    testResult.MTF0_8F_LeftUp_V1.Value = mtf.childRects[1].mtfValue ?? 0;
                                     testResult.MTF0_8F_LeftUp_V1.Value *= fixConfig.MTF0_8F_LeftUp_V1;
                                     testResult.MTF0_8F_LeftUp_V1.LowLimit = recipeConfig.MTF0_8F_LeftUp_V1.Min;
                                     testResult.MTF0_8F_LeftUp_V1.UpLimit = recipeConfig.MTF0_8F_LeftUp_V1.Max;
                                     ctx.Result.Result &= testResult.MTF0_8F_LeftUp_V1.TestResult;
 
-                                    testResult.MTF0_8F_LeftUp_H1.Value = mtf.childRects[1].mtfValue ?? 0;
+                                    testResult.MTF0_8F_LeftUp_H1.Value = mtf.childRects[0].mtfValue ?? 0;
                                     testResult.MTF0_8F_LeftUp_H1.Value *= fixConfig.MTF0_8F_LeftUp_H1;
                                     testResult.MTF0_8F_LeftUp_H1.LowLimit = recipeConfig.MTF0_8F_LeftUp_H1.Min;
                                     testResult.MTF0_8F_LeftUp_H1.UpLimit = recipeConfig.MTF0_8F_LeftUp_H1.Max;
@@ -267,13 +268,13 @@ namespace ProjectLUX.Process.MTFHVAR
                                     break;
 
                                 case "RightUp_0.8F":
-                                    testResult.MTF0_8F_RightUp_V1.Value = mtf.childRects[0].mtfValue ?? 0;
+                                    testResult.MTF0_8F_RightUp_V1.Value = mtf.childRects[1].mtfValue ?? 0;
                                     testResult.MTF0_8F_RightUp_V1.Value *= fixConfig.MTF0_8F_RightUp_V1;
                                     testResult.MTF0_8F_RightUp_V1.LowLimit = recipeConfig.MTF0_8F_RightUp_V1.Min;
                                     testResult.MTF0_8F_RightUp_V1.UpLimit = recipeConfig.MTF0_8F_RightUp_V1.Max;
                                     ctx.Result.Result &= testResult.MTF0_8F_RightUp_V1.TestResult;
 
-                                    testResult.MTF0_8F_RightUp_H1.Value = mtf.childRects[1].mtfValue ?? 0;
+                                    testResult.MTF0_8F_RightUp_H1.Value = mtf.childRects[0].mtfValue ?? 0;
                                     testResult.MTF0_8F_RightUp_H1.Value *= fixConfig.MTF0_8F_RightUp_H1;
                                     testResult.MTF0_8F_RightUp_H1.LowLimit = recipeConfig.MTF0_8F_RightUp_H1.Min;
                                     testResult.MTF0_8F_RightUp_H1.UpLimit = recipeConfig.MTF0_8F_RightUp_H1.Max;
@@ -305,13 +306,13 @@ namespace ProjectLUX.Process.MTFHVAR
                                     break;
 
                                 case "LeftDown_0.8F":
-                                    testResult.MTF0_8F_LeftDown_V1.Value = mtf.childRects[0].mtfValue ?? 0;
+                                    testResult.MTF0_8F_LeftDown_V1.Value = mtf.childRects[1].mtfValue ?? 0;
                                     testResult.MTF0_8F_LeftDown_V1.Value *= fixConfig.MTF0_8F_LeftDown_V1;
                                     testResult.MTF0_8F_LeftDown_V1.LowLimit = recipeConfig.MTF0_8F_LeftDown_V1.Min;
                                     testResult.MTF0_8F_LeftDown_V1.UpLimit = recipeConfig.MTF0_8F_LeftDown_V1.Max;
                                     ctx.Result.Result &= testResult.MTF0_8F_LeftDown_V1.TestResult;
 
-                                    testResult.MTF0_8F_LeftDown_H1.Value = mtf.childRects[1].mtfValue ?? 0;
+                                    testResult.MTF0_8F_LeftDown_H1.Value = mtf.childRects[0].mtfValue ?? 0;
                                     testResult.MTF0_8F_LeftDown_H1.Value *= fixConfig.MTF0_8F_LeftDown_H1;
                                     testResult.MTF0_8F_LeftDown_H1.LowLimit = recipeConfig.MTF0_8F_LeftDown_H1.Min;
                                     testResult.MTF0_8F_LeftDown_H1.UpLimit = recipeConfig.MTF0_8F_LeftDown_H1.Max;
@@ -343,13 +344,13 @@ namespace ProjectLUX.Process.MTFHVAR
                                     break;
 
                                 case "RightDown_0.8F":
-                                    testResult.MTF0_8F_RightDown_V1.Value = mtf.childRects[0].mtfValue ?? 0;
+                                    testResult.MTF0_8F_RightDown_V1.Value = mtf.childRects[1].mtfValue ?? 0;
                                     testResult.MTF0_8F_RightDown_V1.Value *= fixConfig.MTF0_8F_RightDown_V1;
                                     testResult.MTF0_8F_RightDown_V1.LowLimit = recipeConfig.MTF0_8F_RightDown_V1.Min;
                                     testResult.MTF0_8F_RightDown_V1.UpLimit = recipeConfig.MTF0_8F_RightDown_V1.Max;
                                     ctx.Result.Result &= testResult.MTF0_8F_RightDown_V1.TestResult;
 
-                                    testResult.MTF0_8F_RightDown_H1.Value = mtf.childRects[1].mtfValue ?? 0;
+                                    testResult.MTF0_8F_RightDown_H1.Value = mtf.childRects[0].mtfValue ?? 0;
                                     testResult.MTF0_8F_RightDown_H1.Value *= fixConfig.MTF0_8F_RightDown_H1;
                                     testResult.MTF0_8F_RightDown_H1.LowLimit = recipeConfig.MTF0_8F_RightDown_H1.Min;
                                     testResult.MTF0_8F_RightDown_H1.UpLimit = recipeConfig.MTF0_8F_RightDown_H1.Max;

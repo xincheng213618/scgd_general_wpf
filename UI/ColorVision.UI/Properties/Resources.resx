@@ -128,7 +128,7 @@
     <value>简体中文</value>
   </data>
   <data name="zh-Hant" xml:space="preserve">
-    <value>繁体中文</value>
+    <value>繁體中文（繁体中文）</value>
   </data>
   <data name="UseSystem" xml:space="preserve">
     <value>跟随系统</value>
@@ -137,19 +137,19 @@
     <value>您必须重新启动才能使用新的语言设置</value>
   </data>
   <data name="en" xml:space="preserve">
-    <value>英语</value>
+    <value>English（英语）</value>
   </data>
   <data name="fr" xml:space="preserve">
-    <value>法语</value>
+    <value>Français（法语）</value>
   </data>
   <data name="ja" xml:space="preserve">
-    <value>日语</value>
+    <value>日本語（日语）</value>
   </data>
   <data name="ko" xml:space="preserve">
-    <value>韩语</value>
+    <value>한국어（韩语）</value>
   </data>
   <data name="ru" xml:space="preserve">
-    <value>俄语</value>
+    <value>Русский（俄语）</value>
   </data>
   <data name="MenuOptions" xml:space="preserve">
     <value>选项(_O)</value>
@@ -492,5 +492,20 @@
   </data>
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>bool2VisibilityConverter 资源未找到</value>
+  </data>
+  <data name="DownLoadMQTT" xml:space="preserve">
+    <value>下载MQTT</value>
+  </data>
+  <data name="DownLoadMySql" xml:space="preserve">
+    <value>下载MySql</value>
+  </data>
+  <data name="Install" xml:space="preserve">
+    <value>安装</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>重命名</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>归档文件设置</value>
   </data>
 </root>

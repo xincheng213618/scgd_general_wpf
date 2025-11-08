@@ -61,6 +61,15 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
+        ///   查找类似 绝对值 的本地化字符串。
+        /// </summary>
+        public static string Absolute {
+            get {
+                return ResourceManager.GetString("Absolute", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 位图缩放模式 的本地化字符串。
         /// </summary>
         public static string BitmapScalingMode {
@@ -75,6 +84,15 @@ namespace ColorVision.ImageEditor.Properties {
         public static string Clear {
             get {
                 return ResourceManager.GetString("Clear", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 外切 的本地化字符串。
+        /// </summary>
+        public static string External {
+            get {
+                return ResourceManager.GetString("External", resourceCulture);
             }
         }
         
@@ -106,11 +124,38 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
+        ///   查找类似 图像算法 的本地化字符串。
+        /// </summary>
+        public static string ImageAlgorithm {
+            get {
+                return ResourceManager.GetString("ImageAlgorithm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 内切 的本地化字符串。
+        /// </summary>
+        public static string Internal {
+            get {
+                return ResourceManager.GetString("Internal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 反相 的本地化字符串。
         /// </summary>
         public static string Invert {
             get {
                 return ResourceManager.GetString("Invert", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 线上 的本地化字符串。
+        /// </summary>
+        public static string LineOn {
+            get {
+                return ResourceManager.GetString("LineOn", resourceCulture);
             }
         }
         
@@ -138,6 +183,15 @@ namespace ColorVision.ImageEditor.Properties {
         public static string Property {
             get {
                 return ResourceManager.GetString("Property", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 相对值 的本地化字符串。
+        /// </summary>
+        public static string Relative {
+            get {
+                return ResourceManager.GetString("Relative", resourceCulture);
             }
         }
         
@@ -174,6 +228,15 @@ namespace ColorVision.ImageEditor.Properties {
         public static string SaveAsImage {
             get {
                 return ResourceManager.GetString("SaveAsImage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 切面图 的本地化字符串。
+        /// </summary>
+        public static string SectionalDrawing {
+            get {
+                return ResourceManager.GetString("SectionalDrawing", resourceCulture);
             }
         }
         

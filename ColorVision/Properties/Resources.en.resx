@@ -243,4 +243,85 @@
   <data name="Delete" xml:space="preserve">
     <value>Delete</value>
   </data>
+  <data name="Previous" xml:space="preserve">
+    <value>Previous step</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>Next step</value>
+  </data>
+  <data name="Finish" xml:space="preserve">
+    <value>Finish</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>Dump file settings</value>
+  </data>
+  <data name="OpenBeyondCompare" xml:space="preserve">
+    <value>Open BeyondCompare</value>
+  </data>
+  <data name="DownLoadBeyondCompare" xml:space="preserve">
+    <value>Download BeyondCompare</value>
+  </data>
+  <data name="Win10ClassicDesktopMenu" xml:space="preserve">
+    <value>Windows 10 desktop classic menu</value>
+  </data>
+  <data name="SaveConfiguration" xml:space="preserve">
+    <value>Save configuration</value>
+  </data>
+  <data name="ConfigurationManagement" xml:space="preserve">
+    <value>Configuration Management Window</value>
+  </data>
+  <data name="BlackMuraDetect" xml:space="preserve">
+    <value>BlackMura detection</value>
+  </data>
+  <data name="KBDetect" xml:space="preserve">
+    <value>Keyboard test</value>
+  </data>
+  <data name="SectionalDrawing" xml:space="preserve">
+    <value>Cross-section</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>Open the configuration folder</value>
+  </data>
+  <data name="singleChannel" xml:space="preserve">
+    <value>single channel</value>
+  </data>
+  <data name="threeChannles" xml:space="preserve">
+    <value>Three-channel</value>
+  </data>
+  <data name="Step11" xml:space="preserve">
+    <value>Step 1 / 1</value>
+  </data>
+  <data name="Step" xml:space="preserve">
+    <value>step</value>
+  </data>
+  <data name="SkipIncompleteConfigPrompt" xml:space="preserve">
+    <value>There are still some incomplete configurations. Do you want to skip them?</value>
+  </data>
+  <data name="UpdateFailed" xml:space="preserve">
+    <value>Update failed</value>
+  </data>
+  <data name="CheckUpdateOld" xml:space="preserve">
+    <value>Check for updates (old).</value>
+  </data>
+  <data name="DownloadLocal" xml:space="preserve">
+    <value>Local download</value>
+  </data>
+  <data name="UpdateBaidu" xml:space="preserve">
+    <value>Baidu Cloud Download</value>
+  </data>
+  <data name="MenuUpdateReInstall_重新安装当前版本" xml:space="preserve">
+    <value>ReinstallCurrentVersion</value>
+  </data>
+  <data name="ClearPackageCache" xml:space="preserve">
+    <value>Clear installation package cache</value>
+  </data>
+  <data name="OpenCacheFolder" xml:space="preserve">
+    <value>Open the cache folder</value>
+  </data>
+  <data name="SoftwareVersionIdentical" xml:space="preserve">
+    <value>Same software version</value>
+  </data>
+  <data name="RollbackRequiresUninstallThenInstallOrRerunPackage" xml:space="preserve">
+    <value>To roll back the software, you need to uninstall it first and then reinstall it, or reinstall the package after installation.</value>
+  </data>
 </root>

@@ -7,9 +7,11 @@
              xmlns:st ="clr-namespace:ST.Library.UI.NodeEditor;assembly=ST.Library.UI"
              mc:Ignorable="d" 
              PreviewKeyDown="UserControl_PreviewKeyDown"
-              xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
+             xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
              xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+             xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
              d:DataContext="{d:DesignInstance local:ViewFlow}"
+             
              d:DesignHeight="600" d:DesignWidth="800" Background="{DynamicResource GlobalBackground}" Initialized="UserControl_Initialized" >
     <Grid Margin="0,0.5,0,0">
         <Grid.ColumnDefinitions >
@@ -84,12 +86,12 @@
                         <TextBlock Text="{Binding FlowEngineManager.Batch.Code}" />
                     </DockPanel>
                     <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
-                        <Button Content="查询结果" Click="Button_Click" Margin="0,0,5,0"/>
-                        <Button Content="流程结果管理"  Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"/>
+                        <Button Content="{x:Static properties:Resources.SearchResults}" Click="Button_Click" Margin="0,0,5,0"/>
+                        <Button Content="{x:Static properties:Resources.FlowResultManagement}"  Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"/>
                     </StackPanel>
                     <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
-                        <Button Content="解析管理" Click="Button_Click_1"/>
-                        <Button Content="解析" Click="BatchProcess_Click"/>
+                        <Button Content="{x:Static properties:Resources.ParsingManagement}" Click="Button_Click_1"/>
+                        <Button Content="{x:Static properties:Resources.Parsing}" Click="BatchProcess_Click"/>
                     </StackPanel>
                     <ProgressBar x:Name="ProgressBar1" Maximum="100"/>
                     <TextBox x:FieldModifier="public"  x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Height="105" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" Margin="0,0,0,5" />

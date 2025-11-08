@@ -19,7 +19,7 @@ public class PGNodeProperty : CVBaseDeviceParam<PGCommCmdType, PGParamData>, ILo
 		{
 			no.ToString(),
 			base.Cmd.ToString(),
-			JsonConvert.SerializeObject(base.Data)
+			JsonConvert.SerializeObject((object)base.Data)
 		};
 	}
 }

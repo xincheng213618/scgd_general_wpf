@@ -120,4 +120,7 @@
   <data name="Search" xml:space="preserve">
     <value>Поиск</value>
   </data>
+  <data name="ChartGenerationTool" xml:space="preserve">
+    <value>Инструмент генерации изображений</value>
+  </data>
 </root>

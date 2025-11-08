@@ -62,10 +62,10 @@
                                 </Style>
                             </ToggleButton.Style>
                         </ToggleButton>
-                        <Button  Content="交换" Click="Exchange_Click" Margin="0,0,2,0" />
+                        <Button  Content="{x:Static properties:Resources.Exchange}" Click="Exchange_Click" Margin="0,0,2,0" />
 
                         <Button Content="{x:Static properties:Resources.Inquire}" Click="Search_Click" Margin="0,0,2,0" />
-                        <Button x:Name="Search" Content="高级查询" Click="Search1_Click"  />
+                        <Button x:Name="Search" Content="{x:Static properties:Resources.AdvanceSearch}" Click="Search1_Click"  />
                     </ToolBar>
                 </ToolBarTray>
 
@@ -125,7 +125,7 @@
                                     <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn  Header="序号" >
+                            <GridViewColumn  Header="{x:Static properties:Resources.SerialNumber1}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSMU}">
                                         <TextBlock Text="{Binding Id}"/>
@@ -139,14 +139,14 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="测量时间">
+                            <GridViewColumn  Header="{x:Static properties:Resources.CreateTime}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSMU}">
                                         <TextBlock Text="{Binding CreateTime}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="测量属性">
+                            <GridViewColumn  Header="{x:Static properties:Resources.MeasurementType}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSMU}">
                                         <TextBlock Text="{Binding MeasurementType ,Converter={StaticResource DescriptioConverter}}"/>
@@ -167,14 +167,14 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="原值">
+                            <GridViewColumn  Header="{x:Static properties:Resources.LimitStart}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSMU}">
                                         <TextBlock Text="{Binding LimitStart}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="限值">
+                            <GridViewColumn  Header="{x:Static properties:Resources.LimitValue}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSMU}">
                                         <TextBlock Text="{Binding LimitEnd}"/>
@@ -202,14 +202,14 @@
                             <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
                         </Style>
                     </GridView.ColumnHeaderContainerStyle>
-                    <GridViewColumn  Header="电压" >
+                    <GridViewColumn  Header="{x:Static properties:Resources.V}" >
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SMUData}">
                                 <TextBlock Text="{ Binding  Voltage}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="电流">
+                    <GridViewColumn  Header="{x:Static properties:Resources.I}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SMUData}">
                                 <TextBlock Text="{Binding Current}"/>

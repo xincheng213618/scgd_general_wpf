@@ -46,13 +46,13 @@
         <Border x:Name="DisPlayBorder"  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel Margin="5">
                 <TextBlock x:Name="TextBlockUnknow" Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
-                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="未授权或者许可证过期" Command="{Binding EditCommand}"/>
-                <TextBlock x:Name="TextBlockOffLine" Text="OffLine状态"  HorizontalAlignment="Center"/>
+                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}" Command="{Binding EditCommand}"/>
+                <TextBlock x:Name="TextBlockOffLine" Text="OffLine"  HorizontalAlignment="Center"/>
                 <StackPanel x:Name="StackPanelContent">
-                    <Button x:Name="ButtonOpen" Margin="0,2" Content="连接"  Click="Open_Click"/>
-                    <Button x:Name="ButtonClose" Margin="0,2" Content="关闭"  Click="Close_Click" Visibility="Collapsed"/>
+                    <Button x:Name="ButtonOpen" Margin="0,2" Content="{x:Static properties:Resources.Connect}"  Click="Open_Click"/>
+                    <Button x:Name="ButtonClose" Margin="0,2" Content="{x:Static properties:Resources.Close}"  Click="Close_Click" Visibility="Collapsed"/>
                     <DockPanel Margin="0,0,0,5">
-                        <Button DockPanel.Dock="Right" Content="执行模板" Margin="5,0,0,0" Click="SendTemp_Click"/>
+                        <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.ExecteTemplate}" Margin="5,0,0,0" Click="SendTemp_Click"/>
                         <ComboBox  x:Name="ComboxSensorTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                         <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -63,18 +63,18 @@
 
                     <StackPanel Visibility="{Binding ElementName=CheckBoxIsDeBug,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="指令类型" Width="60"/>
+                            <TextBlock Text="{x:Static properties:Resources.CommandType}" Width="60"/>
                             <ComboBox x:Name="ComboBoxType" Style="{StaticResource ComboBox.Small}"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="发送指令" Width="60"/>
+                            <TextBlock Text="{x:Static properties:Resources.SendCmd}" Width="60"/>
                             <TextBox  x:Name="TextBoxSendCommand" Height="40"  TextWrapping="Wrap"  Style="{StaticResource TextBox.Small}" Text=""/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="返回指令" Width="60"/>
+                            <TextBlock Text="{x:Static properties:Resources.RevCmd}" Width="60"/>
                             <TextBox  x:Name="TextBoxResCommand" Height="40" TextWrapping="Wrap"  Style="{StaticResource TextBox.Small}"  Text=""/>
                         </DockPanel>
-                        <Button  DockPanel.Dock="Right" Padding="10,5" Content="发送" HorizontalAlignment="Right" Click="SendCommand_Click"/>
+                        <Button  DockPanel.Dock="Right" Padding="10,5" Content="{x:Static properties:Resources.Send}" HorizontalAlignment="Right" Click="SendCommand_Click"/>
                     </StackPanel>
 
 

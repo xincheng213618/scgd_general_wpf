@@ -9,14 +9,14 @@ namespace WindowsServicePlugin
     public class InstallNavicate : WizardStepBase
     {
         public override int Order => 50;
-        public override string Header => "下载 Navicate";
-        public override string Description => "下载Navicate作为第三方数据库查看软件";
+        public override string Header => ColorVision.UI.Properties.Resources.Download +"Navicate";
+        public override string Description => "Download Navicat as a third-party client for database management.";
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
         public InstallNavicate()
         {
             DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = "下载Navicate";
+            DownloadFile.DownloadTile = ColorVision.UI.Properties.Resources.Download+"Navicate";
         }
 
         private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/navicat/navicat161_premium_cs_x64.exe";

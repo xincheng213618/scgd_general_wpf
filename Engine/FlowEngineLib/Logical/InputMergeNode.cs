@@ -99,7 +99,7 @@ public class InputMergeNode : STNodeInHub
 							num++;
 						}
 					}
-					logger.DebugFormat("{0}/{1} - {2}", num, base.InputOptionsCount - 1, JsonConvert.SerializeObject(cVStartCFC));
+					logger.DebugFormat("{0}/{1} - {2}", (object)num, (object)(base.InputOptionsCount - 1), (object)JsonConvert.SerializeObject((object)cVStartCFC));
 					if (num == base.InputOptionsCount - 1)
 					{
 						clearData();
@@ -155,9 +155,9 @@ public class InputMergeNode : STNodeInHub
 	{
 		if (string.IsNullOrEmpty(_OutPath))
 		{
-			return JsonConvert.SerializeObject(result);
+			return JsonConvert.SerializeObject((object)result);
 		}
-		return JsonConvert.SerializeObject(new Dictionary<string, List<T>> { { _OutPath, result } });
+		return JsonConvert.SerializeObject((object)new Dictionary<string, List<T>> { { _OutPath, result } });
 	}
 
 	private string GetMasterValueByValue(List<MergeAlgorithmPreStepParam> master)
@@ -193,7 +193,7 @@ public class InputMergeNode : STNodeInHub
 
 	private void DoResultOutTransferData(object obj)
 	{
-		logger.Debug(JsonConvert.SerializeObject(obj));
+		logger.Debug((object)JsonConvert.SerializeObject(obj));
 		m_op_result.TransferData(obj);
 	}
 

@@ -13,7 +13,7 @@ namespace ColorVision.Engine.Archive
     public class MenuArchiveManager : MenuItemBase
     {
         public override string OwnerGuid => nameof(MenuArchive);
-        public override string Header => "归档查询";
+        public override string Header => ColorVision.Engine.Properties.Resources.ArchiveQuery;
 
         public override void Execute()
         {
