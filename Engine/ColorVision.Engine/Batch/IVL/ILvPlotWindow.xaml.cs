@@ -416,13 +416,13 @@ namespace ColorVision.Engine.Batch.IVL
 
         private void SetupMouseInteraction()
         {
-            // Add crosshair for showing data point values on hover
+            // Add crosshair for showing nearest data point
             _crosshair = WpfPlot.Plot.Add.Crosshair(0, 0);
             _crosshair.IsVisible = false;
             _crosshair.LineWidth = 1;
             _crosshair.LineColor = Color.FromColor(System.Drawing.Color.Gray);
             
-            // Subscribe to mouse move event
+            // Subscribe to mouse move events
             WpfPlot.MouseMove += WpfPlot_MouseMove;
             WpfPlot.MouseLeave += WpfPlot_MouseLeave;
         }
@@ -467,7 +467,7 @@ namespace ColorVision.Engine.Batch.IVL
                 }
             }
 
-            // Show crosshair and tooltip if a point is close enough
+            // Show crosshair if a point is close enough
             if (nearestPoint != null && minDistance < GetDistanceThreshold())
             {
                 double x = _isILvMode ? nearestPoint.Current : nearestPoint.Voltage;
@@ -475,16 +475,6 @@ namespace ColorVision.Engine.Batch.IVL
                 
                 _crosshair.Position = new Coordinates(x, y);
                 _crosshair.IsVisible = true;
-
-                // Update crosshair label with data point information
-                string xLabel = _isILvMode ? "I" : "V";
-                string xUnit = _isILvMode ? "mA" : "V";
-                _crosshair.Label.Text = $"{nearestSeriesName}\n{xLabel}: {x:F2} {xUnit}\nLv: {y:F2} cd/m²";
-                _crosshair.Label.FontSize = 12;
-                _crosshair.Label.ForeColor = Color.FromColor(System.Drawing.Color.Black);
-                _crosshair.Label.BackColor = Color.FromColor(System.Drawing.Color.FromArgb(220, 255, 255, 255));
-                _crosshair.Label.BorderColor = Color.FromColor(System.Drawing.Color.Gray);
-                _crosshair.Label.BorderWidth = 1;
                 
                 WpfPlot.Refresh();
             }
