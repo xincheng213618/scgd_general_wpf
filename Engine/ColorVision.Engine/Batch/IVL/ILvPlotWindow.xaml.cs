@@ -3,12 +3,14 @@ using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using log4net;
 using Microsoft.Win32;
+using NPOI.Util;
 using ScottPlot;
 using ScottPlot.DataSources;
 using ScottPlot.Plottables;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -30,9 +32,13 @@ namespace ColorVision.Engine.Batch.IVL
         private bool _isILvMode = true; // true for I-Lv, false for V-Lv
         private Crosshair _crosshair;
 
+        ScottPlot.Plottables.Marker MyHighlightMarker;
+        ScottPlot.Plottables.Text MyHighlightText;
+
         public ILvPlotWindow(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas)
             : this(smuResults, poixyuvDatas, null)
         {
+
         }
 
         public ILvPlotWindow(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas, ObservableCollection<ViewResultSpectrum> spectrumResults)
@@ -41,14 +47,23 @@ namespace ColorVision.Engine.Batch.IVL
             _groupedData = new Dictionary<string, List<ILvDataPoint>>();
             _scatterPlots = new Dictionary<string, Scatter>();
             _seriesNames = new List<string>();
-            
+
+
             LoadData(smuResults, poixyuvDatas, spectrumResults);
             InitializePlot();
             SetupMouseInteraction();
         }
 
+        double dpiRadio = 1;
+
         private void LoadData(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas, ObservableCollection<ViewResultSpectrum> spectrumResults)
         {
+
+            using System.Drawing.Graphics graphics = System.Drawing.Graphics.FromHwnd(IntPtr.Zero);
+            dpiRadio = graphics.DpiY /96.0;
+
+
+
             // Group data by POI name
             int smuCount = smuResults.Count;
             int poiCount = poixyuvDatas.Count;
@@ -193,7 +208,8 @@ namespace ColorVision.Engine.Batch.IVL
                 TxtLegendInfo.Text = "No valid data to display";
                 return;
             }
-            
+
+
             // Set labels with proper formatting based on display mode
             string modeLabel = _isILvMode ? "I-Lv" : "V-Lv";
             string xLabel = _isILvMode ? "Current (mA)" : "Voltage (V)";
@@ -421,16 +437,35 @@ namespace ColorVision.Engine.Batch.IVL
             _crosshair.IsVisible = false;
             _crosshair.LineWidth = 1;
             _crosshair.LineColor = Color.FromColor(System.Drawing.Color.Gray);
-            
+
+            MyHighlightMarker = wpfPlot.Plot.Add.Marker(0, 0);
+            MyHighlightMarker.Shape = MarkerShape.OpenCircle;
+            MyHighlightMarker.Size = 17;
+            MyHighlightMarker.LineWidth = 2;
+            MyHighlightMarker.Color = Color.FromColor(System.Drawing.Color.Gray);
+
+            // Create a text label to place near the highlighted value
+            MyHighlightText = wpfPlot.Plot.Add.Text("", 0, 0);
+            MyHighlightText.LabelAlignment = Alignment.LowerLeft;
+            MyHighlightText.LabelBold = true;
+            MyHighlightText.OffsetX = 7;
+            MyHighlightText.OffsetY = -7;
+            MyHighlightText.LabelFontColor = Color.FromColor(System.Drawing.Color.Gray);
             // Subscribe to mouse move events
             wpfPlot.MouseMove += WpfPlot_MouseMove;
             wpfPlot.MouseLeave += WpfPlot_MouseLeave;
         }
 
+
+
         private void WpfPlot_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
         {
             // Get mouse position in plot coordinates
             var position = e.GetPosition(wpfPlot);
+
+            position.X = position.X * dpiRadio;
+            position.Y = position.Y * dpiRadio;
+
             var pixel = new Pixel((float)position.X, (float)position.Y);
             var coords = wpfPlot.Plot.GetCoordinates(pixel);
 
@@ -468,14 +503,27 @@ namespace ColorVision.Engine.Batch.IVL
             }
 
             // Show crosshair if a point is close enough
-            if (nearestPoint != null && minDistance < GetDistanceThreshold())
+            if (nearestPoint != null)
             {
                 double x = _isILvMode ? nearestPoint.Current : nearestPoint.Voltage;
                 double y = nearestPoint.Luminance;
-                
-                _crosshair.Position = new Coordinates(x, y);
+                var coords1 = new Coordinates(x,y);
+
+                _crosshair.Position = coords1;
                 _crosshair.IsVisible = true;
-                
+
+                string xLabel = _isILvMode ? "I" : "V";
+                string xUnit = _isILvMode ? "mA" : "V";
+
+                MyHighlightMarker.IsVisible = true;
+                MyHighlightMarker.Location = coords1;
+
+                MyHighlightText.IsVisible = true;
+                MyHighlightText.Location = coords1;
+                MyHighlightText.LabelText = $"{x:F2} {xUnit}\nLv: {y:F2} cd/m";
+                MyHighlightText.LabelFontColor = Color.FromColor(System.Drawing.Color.Red);
+                //MyHighlightText.LabelBorderColor = Color.FromColor(System.Drawing.Color.Red);
+
                 wpfPlot.Refresh();
             }
             else
@@ -492,16 +540,6 @@ namespace ColorVision.Engine.Batch.IVL
             wpfPlot.Refresh();
         }
 
-        private double GetDistanceThreshold()
-        {
-            // Calculate a reasonable distance threshold based on the current axis ranges
-            var xRange = wpfPlot.Plot.Axes.GetLimits().Rect.Width;
-            var yRange = wpfPlot.Plot.Axes.GetLimits().Rect.Height;
-            
-            // Use 5% of the smaller range as threshold
-            double threshold = Math.Min(xRange, yRange) * 0.05;
-            return threshold;
-        }
 
         private class ILvDataPoint
         {

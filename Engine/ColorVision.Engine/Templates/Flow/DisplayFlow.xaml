@@ -44,28 +44,6 @@
 
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel Margin="5">
-                <DockPanel Margin="0,0,0,5" Visibility="{Binding Config.IsShowLargeFlow,Converter={StaticResource bool2VisibilityConverter}}" >
-                    <Button  DockPanel.Dock="Right" Width="20" Background="Transparent" Padding="0" BorderThickness="0" Command="{Binding EditLargeFlowCommand}">
-                        <Image Source="{DynamicResource  DrawingImageEdit}" Width="12" Margin="0" />
-                    </Button>
-                    <Button DockPanel.Dock="Right"  Command="{Binding EditTemplateLargeFlowCommand}" Background="Transparent" BorderThickness="0" Padding="2" Height="20" Width="20">
-                        <Button.Triggers>
-                            <EventTrigger RoutedEvent="Button.Click">
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="rotateTransform211" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                        </Button.Triggers>
-                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
-                            <TextBlock.RenderTransform>
-                                <RotateTransform x:Name="rotateTransform211" CenterX="8" CenterY="8"/>
-                            </TextBlock.RenderTransform>
-                        </TextBlock>
-                    </Button>
-                    <ComboBox  x:Name="ComboBoxBigFlow" SelectedIndex="{Binding TemplateLargeFlowParamsIndex}"  Style="{StaticResource ComboBox.Small}" ItemsSource="{Binding LargeFlowParams}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                </DockPanel>
                 <DockPanel Margin="0,0,0,5">
                     <Button DockPanel.Dock="Left" Click="Button_Click_Refresh" Background="Transparent"  BorderThickness="0" Padding="3,0" >
                         <Button.Triggers>
