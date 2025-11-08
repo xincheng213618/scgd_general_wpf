@@ -40,7 +40,6 @@ namespace ColorVision.Engine
 
             ProcessCommand = new RelayCommand(a =>
             {
-                MessageBox.Show($"开始处理批次 {MeasureBatchModel.Code}");
 
                 IBatchContext ctx = new IBatchContext
                 {
@@ -49,7 +48,6 @@ namespace ColorVision.Engine
                 };
                 IVLCameraProcess iVLCameraProcess = new IVLCameraProcess();
                 iVLCameraProcess.Process(ctx);
-                MessageBox.Show($"批次 {MeasureBatchModel.Code} 处理完成");
 
             });
             ContextMenu.Items.Add(new MenuItem() { Header ="Process",Command = ProcessCommand } );
