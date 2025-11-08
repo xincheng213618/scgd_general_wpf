@@ -1962,4 +1962,31 @@
   <data name="TemplateFailed" xml:space="preserve">
     <value>テンプレートが失敗しました</value>
   </data>
+  <data name="LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt" xml:space="preserve">
+    <value>現在の論理カメラライセンスの有効期限が切れているため、デバイスリストを更新できません。現在カメラサービスにバインドされている物理カメラをクリアしてから、もう一度お試しください。</value>
+  </data>
+  <data name="LogicalCameraOffline_ClearBindingsAndRetryPromp" xml:space="preserve">
+    <value>現在の論理カメラはオフラインのため、デバイスリストを更新できません。現在のカメラサービスにバインドされている物理カメラをクリアしてから再試行しますか？</value>
+  </data>
+  <data name="CurrentDeviceCameraInfo" xml:space="preserve">
+    <value>現在のデバイスのカメラ情報</value>
+  </data>
+  <data name="RefreshDeviceListFailed" xml:space="preserve">
+    <value>デバイスリストの更新に失敗しました</value>
+  </data>
+  <data name="AutoAlign" xml:space="preserve">
+    <value>自動調整</value>
+  </data>
+  <data name="SaveChangesPrompt" xml:space="preserve">
+    <value>変更を保存しますか?</value>
+  </data>
+  <data name="ClearCreatedProcess_ConfirmAutoSaveClosePrompt" xml:space="preserve">
+    <value>すでに作成されたプロセスをクリアしますか?\n\rクリア後、自動的に保存して閉じます。</value>
+  </data>
+  <data name="FlowEditor" xml:space="preserve">
+    <value>プロセスエディター</value>
+  </data>
+  <data name="SaveSucess" xml:space="preserve">
+    <value>保存に成功しました</value>
+  </data>
 </root>

@@ -1962,4 +1962,31 @@
   <data name="TemplateFailed" xml:space="preserve">
     <value>Échec du modèle</value>
   </data>
+  <data name="LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt" xml:space="preserve">
+    <value>La licence de la caméra logique actuelle a expiré et la liste des périphériques ne peut pas être actualisée. Voulez-vous supprimer les caméras physiques actuellement associées au service de caméra, puis réessayer ?</value>
+  </data>
+  <data name="LogicalCameraOffline_ClearBindingsAndRetryPromp" xml:space="preserve">
+    <value>La caméra logique actuelle est hors ligne et la liste des périphériques ne peut pas être actualisée. Voulez-vous supprimer les caméras physiques associées au service de caméra actuel, puis réessayer ?</value>
+  </data>
+  <data name="CurrentDeviceCameraInfo" xml:space="preserve">
+    <value>Informations actuelles sur la caméra de l'appareil</value>
+  </data>
+  <data name="RefreshDeviceListFailed" xml:space="preserve">
+    <value>Échec de l'actualisation de la liste des appareils</value>
+  </data>
+  <data name="AutoAlign" xml:space="preserve">
+    <value>Alignement automatique</value>
+  </data>
+  <data name="SaveChangesPrompt" xml:space="preserve">
+    <value>Enregistrer les modifications ?</value>
+  </data>
+  <data name="ClearCreatedProcess_ConfirmAutoSaveClosePrompt" xml:space="preserve">
+    <value>Voulez-vous supprimer les processus déjà créés ?\n\rAprès suppression, l’enregistrement et la fermeture seront automatiques.</value>
+  </data>
+  <data name="FlowEditor" xml:space="preserve">
+    <value>Éditeur de processus</value>
+  </data>
+  <data name="SaveSucess" xml:space="preserve">
+    <value>Sauvegarde réussie</value>
+  </data>
 </root>

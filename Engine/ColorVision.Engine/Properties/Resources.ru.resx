@@ -1962,4 +1962,31 @@
   <data name="TemplateFailed" xml:space="preserve">
     <value>Шаблон не удался</value>
   </data>
+  <data name="LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt" xml:space="preserve">
+    <value>Текущая лицензия на логическую камеру истекла, и список устройств не может быть обновлен. Хотите удалить физические камеры, привязанные к сервису камер, и повторить попытку?</value>
+  </data>
+  <data name="LogicalCameraOffline_ClearBindingsAndRetryPromp" xml:space="preserve">
+    <value>Текущая логическая камера отключена, и список устройств не может быть обновлен. Хотите удалить физические камеры, привязанные к текущей службе камер, и повторить попытку?</value>
+  </data>
+  <data name="CurrentDeviceCameraInfo" xml:space="preserve">
+    <value>Текущая информация о камере устройства</value>
+  </data>
+  <data name="RefreshDeviceListFailed" xml:space="preserve">
+    <value>Не удалось обновить список устройств.</value>
+  </data>
+  <data name="AutoAlign" xml:space="preserve">
+    <value>Автоматическое выравнивание</value>
+  </data>
+  <data name="SaveChangesPrompt" xml:space="preserve">
+    <value>Сохранить изменения?</value>
+  </data>
+  <data name="ClearCreatedProcess_ConfirmAutoSaveClosePrompt" xml:space="preserve">
+    <value>Хотите очистить уже созданные процессы?\n\rПосле очистки автоматически сохранить и закрыть.</value>
+  </data>
+  <data name="FlowEditor" xml:space="preserve">
+    <value>Редактор процессов</value>
+  </data>
+  <data name="SaveSucess" xml:space="preserve">
+    <value>Сохранено успешно</value>
+  </data>
 </root>

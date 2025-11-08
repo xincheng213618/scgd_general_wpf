@@ -421,6 +421,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 自动对齐 的本地化字符串。
+        /// </summary>
+        public static string AutoAlign {
+            get {
+                return ResourceManager.GetString("AutoAlign", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 自动连接 的本地化字符串。
         /// </summary>
         public static string AutoConnect {
@@ -984,6 +993,15 @@ namespace ColorVision.Engine.Properties {
         public static string ClearCache {
             get {
                 return ResourceManager.GetString("ClearCache", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 您是否清空已经创建流程\n\r清空后自动保存关闭 的本地化字符串。
+        /// </summary>
+        public static string ClearCreatedProcess_ConfirmAutoSaveClosePrompt {
+            get {
+                return ResourceManager.GetString("ClearCreatedProcess_ConfirmAutoSaveClosePrompt", resourceCulture);
             }
         }
         
@@ -2253,6 +2271,15 @@ namespace ColorVision.Engine.Properties {
         public static string Flow {
             get {
                 return ResourceManager.GetString("Flow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 流程编辑器 的本地化字符串。
+        /// </summary>
+        public static string FlowEditor {
+            get {
+                return ResourceManager.GetString("FlowEditor", resourceCulture);
             }
         }
         
@@ -4354,6 +4381,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 是否保存修改 的本地化字符串。
+        /// </summary>
+        public static string SaveChangesPrompt {
+            get {
+                return ResourceManager.GetString("SaveChangesPrompt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 保存当前的曝光等参数 的本地化字符串。
         /// </summary>
         public static string SaveCurrentExposureAndOtherParameters {
@@ -4386,6 +4422,15 @@ namespace ColorVision.Engine.Properties {
         public static string SavePOI {
             get {
                 return ResourceManager.GetString("SavePOI", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 保存成功 的本地化字符串。
+        /// </summary>
+        public static string SaveSucess {
+            get {
+                return ResourceManager.GetString("SaveSucess", resourceCulture);
             }
         }
         

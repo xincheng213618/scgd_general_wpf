@@ -1962,4 +1962,31 @@
   <data name="TemplateFailed" xml:space="preserve">
     <value>Template failed</value>
   </data>
+  <data name="LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt" xml:space="preserve">
+    <value>The current logical camera license has expired, and the device list cannot be refreshed. Do you want to clear the physical cameras currently bound to the camera service and then try again?</value>
+  </data>
+  <data name="LogicalCameraOffline_ClearBindingsAndRetryPromp" xml:space="preserve">
+    <value>The current logical camera is offline and the device list cannot be refreshed. Do you want to clear the physical cameras bound to the current camera service and then retry?</value>
+  </data>
+  <data name="CurrentDeviceCameraInfo" xml:space="preserve">
+    <value>Current device camera information</value>
+  </data>
+  <data name="RefreshDeviceListFailed" xml:space="preserve">
+    <value>Refreshing device list failed</value>
+  </data>
+  <data name="AutoAlign" xml:space="preserve">
+    <value>Auto Align</value>
+  </data>
+  <data name="SaveChangesPrompt" xml:space="preserve">
+    <value>Save changes?</value>
+  </data>
+  <data name="ClearCreatedProcess_ConfirmAutoSaveClosePrompt" xml:space="preserve">
+    <value>Do you want to clear the already created processes?\n\rAfter clearing, automatically save and close.</value>
+  </data>
+  <data name="FlowEditor" xml:space="preserve">
+    <value>Process Editor</value>
+  </data>
+  <data name="SaveSucess" xml:space="preserve">
+    <value>Saved successfully</value>
+  </data>
 </root>

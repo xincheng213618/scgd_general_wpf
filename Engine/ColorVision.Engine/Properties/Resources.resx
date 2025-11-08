@@ -1974,4 +1974,19 @@
   <data name="RefreshDeviceListFailed" xml:space="preserve">
     <value>刷新设备列表失败</value>
   </data>
+  <data name="AutoAlign" xml:space="preserve">
+    <value>自动对齐</value>
+  </data>
+  <data name="SaveChangesPrompt" xml:space="preserve">
+    <value>是否保存修改</value>
+  </data>
+  <data name="ClearCreatedProcess_ConfirmAutoSaveClosePrompt" xml:space="preserve">
+    <value>您是否清空已经创建流程\n\r清空后自动保存关闭</value>
+  </data>
+  <data name="FlowEditor" xml:space="preserve">
+    <value>流程编辑器</value>
+  </data>
+  <data name="SaveSucess" xml:space="preserve">
+    <value>保存成功</value>
+  </data>
 </root>

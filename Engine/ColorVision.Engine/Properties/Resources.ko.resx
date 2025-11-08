@@ -1962,4 +1962,31 @@
   <data name="TemplateFailed" xml:space="preserve">
     <value>템플릿이 실패했습니다</value>
   </data>
+  <data name="LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt" xml:space="preserve">
+    <value>현재 논리적 카메라 라이선스가 만료되어 장치 목록을 새로 고칠 수 없습니다. 현재 카메라 서비스에 바인딩된 물리적 카메라를 삭제한 후 다시 시도하시겠습니까?</value>
+  </data>
+  <data name="LogicalCameraOffline_ClearBindingsAndRetryPromp" xml:space="preserve">
+    <value>현재 논리적 카메라가 오프라인 상태이므로 장치 목록을 새로 고칠 수 없습니다. 현재 카메라 서비스에 바인딩된 물리적 카메라를 삭제한 후 다시 시도하시겠습니까?</value>
+  </data>
+  <data name="CurrentDeviceCameraInfo" xml:space="preserve">
+    <value>현재 기기 카메라 정보</value>
+  </data>
+  <data name="RefreshDeviceListFailed" xml:space="preserve">
+    <value>장치 목록 새로 고침에 실패했습니다.</value>
+  </data>
+  <data name="AutoAlign" xml:space="preserve">
+    <value>자동 정렬</value>
+  </data>
+  <data name="SaveChangesPrompt" xml:space="preserve">
+    <value>변경 사항을 저장하시겠습니까?</value>
+  </data>
+  <data name="ClearCreatedProcess_ConfirmAutoSaveClosePrompt" xml:space="preserve">
+    <value>이미 생성된 프로세스를 지우시겠습니까?\n\r지운 후 자동으로 저장하고 닫습니다.</value>
+  </data>
+  <data name="FlowEditor" xml:space="preserve">
+    <value>프로세스 편집기</value>
+  </data>
+  <data name="SaveSucess" xml:space="preserve">
+    <value>성공적으로 저장되었습니다</value>
+  </data>
 </root>

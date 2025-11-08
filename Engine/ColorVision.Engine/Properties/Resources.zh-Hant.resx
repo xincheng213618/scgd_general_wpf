@@ -1962,4 +1962,31 @@
   <data name="TemplateFailed" xml:space="preserve">
     <value>模板失敗</value>
   </data>
+  <data name="LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt" xml:space="preserve">
+    <value>當前邏輯相機許可證過期，無法刷新設備列表，是否清空當前相機服務綁定的實體相機，然後在重試</value>
+  </data>
+  <data name="LogicalCameraOffline_ClearBindingsAndRetryPromp" xml:space="preserve">
+    <value>目前邏輯相機離線，無法刷新裝置列表，是否清空目前相機服務綁定的實體相機，然後在重試</value>
+  </data>
+  <data name="CurrentDeviceCameraInfo" xml:space="preserve">
+    <value>當前設備相機訊息</value>
+  </data>
+  <data name="RefreshDeviceListFailed" xml:space="preserve">
+    <value>刷新設備清單失敗</value>
+  </data>
+  <data name="AutoAlign" xml:space="preserve">
+    <value>自動對齊</value>
+  </data>
+  <data name="SaveChangesPrompt" xml:space="preserve">
+    <value>是否儲存修改</value>
+  </data>
+  <data name="ClearCreatedProcess_ConfirmAutoSaveClosePrompt" xml:space="preserve">
+    <value>您是否清空已經建立流程\n\r清空後自動儲存關閉</value>
+  </data>
+  <data name="FlowEditor" xml:space="preserve">
+    <value>流程編輯器</value>
+  </data>
+  <data name="SaveSucess" xml:space="preserve">
+    <value>保存成功</value>
+  </data>
 </root>
