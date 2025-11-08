@@ -32,6 +32,68 @@ namespace ColorVision.Engine
         {
             MeasureBatchModel = batchResultMasterModel;
             ContextMenu = new ContextMenu();
+            PopulateContextMenu();
+        }
+
+        private void PopulateContextMenu()
+        {
+            var batchManager = ColorVision.Engine.Batch.BatchManager.GetInstance();
+            if (batchManager.Processes.Count > 0)
+            {
+                var processMenuItem = new MenuItem { Header = "处理结果" };
+                
+                foreach (var process in batchManager.Processes)
+                {
+                    var metadata = ColorVision.Engine.Batch.BatchProcessMetadata.FromProcess(process);
+                    var menuItem = new MenuItem 
+                    { 
+                        Header = metadata.DisplayName,
+                        ToolTip = metadata.GetTooltipText(),
+                        Tag = process
+                    };
+                    menuItem.Click += ProcessMenuItem_Click;
+                    processMenuItem.Items.Add(menuItem);
+                }
+                
+                ContextMenu.Items.Add(processMenuItem);
+            }
+        }
+
+        private void ProcessMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is ColorVision.Engine.Batch.IBatchProcess process)
+            {
+                ExecuteProcess(process);
+            }
+        }
+
+        private void ExecuteProcess(ColorVision.Engine.Batch.IBatchProcess process)
+        {
+            try
+            {
+                var context = new ColorVision.Engine.Batch.IBatchContext
+                {
+                    Batch = MeasureBatchModel,
+                    Config = ColorVision.Engine.Batch.BatchConfig.Instance
+                };
+
+                bool success = process.Process(context);
+                
+                if (success)
+                {
+                    var metadata = ColorVision.Engine.Batch.BatchProcessMetadata.FromProcess(process);
+                    MessageBox.Show($"处理成功: {metadata.DisplayName}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    var metadata = ColorVision.Engine.Batch.BatchProcessMetadata.FromProcess(process);
+                    MessageBox.Show($"处理失败: {metadata.DisplayName}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"处理出错: {ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 
