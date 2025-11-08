@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Templates.POI.POIGenCali
 
         public TemplatePoiGenCalParam()
         {
-            Title = "Poi修正标定参数模板设置";
+            Title = ColorVision.Engine.Properties.Resources.POICalibrationCorrectionTemplateSettings;
             TemplateDicId = 25;
             Code = "POIGenCali";
             TemplateParams = Params;

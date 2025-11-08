@@ -29,9 +29,9 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
 
         public TemplateAAFindPoints()
         {
-            Title = "寻找AA区模板管理";
+            Title = ColorVision.Engine.Properties.Resources.FindAaRegionTemplateManagement;
             Code = "FindLightArea";
-            Name = "寻找AA区";
+            Name = "FindAA";
             TemplateDicId = 42;
             TemplateParams = Params;
             IsUserControl = true;

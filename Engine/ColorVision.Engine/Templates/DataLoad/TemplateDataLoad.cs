@@ -7,7 +7,7 @@ namespace ColorVision.Engine.Templates.DataLoad
         public static ObservableCollection<TemplateModel<DataLoadParam>> Params { get; set; } = new ObservableCollection<TemplateModel<DataLoadParam>>();
         public TemplateDataLoad()
         {
-            Title = "数据加载模板管理";
+            Title = ColorVision.Engine.Properties.Resources.DataLoadTemplateManagement;
             TemplateDicId = 22;
             Code = "DataLoad";
             TemplateParams = Params;

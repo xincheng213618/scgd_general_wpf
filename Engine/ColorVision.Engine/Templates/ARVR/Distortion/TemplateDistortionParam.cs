@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Templates.Distortion
 
         public TemplateDistortionParam()
         {
-            Title = "畸变评价模板管理";
+            Title = ColorVision.Engine.Properties.Resources.DistortionEvaluationTemplateManagement;
             TemplateDicId = 10;
             Code = "distortion";
             TemplateParams = Params;

@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Templates.MTF
 
         public TemplateMTF()
         {
-            Title = "MTF模板管理";
+            Title = ColorVision.Engine.Properties.Resources.MTFTemplateManagement;
             TemplateDicId = 8;
             Code = "MTF";
             TemplateParams = TemplateMTF.Params;

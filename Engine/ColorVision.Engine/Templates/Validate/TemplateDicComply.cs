@@ -13,7 +13,7 @@ namespace ColorVision.Engine.Templates.Validate
 
         public TemplateDicComply()
         {
-            Title = "编辑默认合规模板";
+            Title = ColorVision.Engine.Properties.Resources.EditDefaultComplianceTemplate;
             TemplateParams = Params;
             IsUserControl = true;
         }

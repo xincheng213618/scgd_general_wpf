@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Templates.Jsons.HDR
 
         public TemplateHDR()
         {
-            Title = "HDR模板管理";
+            Title = ColorVision.Engine.Properties.Resources.HdrTemplateManagement;
             Code = "Camera.RunParams";
             Name = "Camera,HDR";
             TemplateDicId = 43;

@@ -29,9 +29,9 @@ namespace ColorVision.Engine.Templates.Jsons.BuildPOIAA
 
         public TemplateBuildPOIAA()
         {
-            Title = "寻找AA区模板管理";
+            Title = ColorVision.Engine.Properties.Resources.FindAaRegionTemplateManagement;
             Code = "BuildPOI";
-            Name = "AA布点";
+            Name = "AAPointLayout";
             TemplateDicId = 41;
             TemplateParams = Params;
             IsUserControl = true;

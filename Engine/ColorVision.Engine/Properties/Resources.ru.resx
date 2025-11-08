@@ -1989,4 +1989,127 @@
   <data name="SaveSucess" xml:space="preserve">
     <value>Сохранено успешно</value>
   </data>
+  <data name="AutoExposureTemplateSettings" xml:space="preserve">
+    <value>Настройки шаблона автоматической экспозиции</value>
+  </data>
+  <data name="AutoFocusTemplateSettings" xml:space="preserve">
+    <value>Настройки шаблона автофокуса</value>
+  </data>
+  <data name="DistortionEvaluationTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами оценки искажений</value>
+  </data>
+  <data name="FOVTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами FOV</value>
+  </data>
+  <data name="GhostTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами Ghost</value>
+  </data>
+  <data name="MTFTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами MTF</value>
+  </data>
+  <data name="SFRTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами SFR</value>
+  </data>
+  <data name="BuzProcucTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами BuzProduc</value>
+  </data>
+  <data name="DataLoadTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами загрузки данных</value>
+  </data>
+  <data name="AADetectTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами обнаружения излучающей области</value>
+  </data>
+  <data name="ImportFlow" xml:space="preserve">
+    <value>Процесс импорта</value>
+  </data>
+  <data name="FocusPointsTemplateSettings" xml:space="preserve">
+    <value>Настройки алгоритма FocusPoints</value>
+  </data>
+  <data name="ImageCroppingTemplateSettings" xml:space="preserve">
+    <value>Шаблон для резки области освещения</value>
+  </data>
+  <data name="JNDTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами JND</value>
+  </data>
+  <data name="ImageEdit" xml:space="preserve">
+    <value>Графическое редактирование</value>
+  </data>
+  <data name="VerifyJson" xml:space="preserve">
+    <value>Проверить JSON</value>
+  </data>
+  <data name="DatabaseResetOptionNotConfigured" xml:space="preserve">
+    <value>Параметр сброса базы данных не настроен.</value>
+  </data>
+  <data name="InputTemplateName" xml:space="preserve">
+    <value>Введите название шаблона.</value>
+  </data>
+  <data name="AlreadyExists" xml:space="preserve">
+    <value>Он уже существует.</value>
+  </data>
+  <data name="DefaultTemplate" xml:space="preserve">
+    <value>Шаблон по умолчанию</value>
+  </data>
+  <data name="UseSystemDefaultTemplate" xml:space="preserve">
+    <value>Использовать системный шаблон по умолчанию</value>
+  </data>
+  <data name="LoadingTempate" xml:space="preserve">
+    <value>Загрузка шаблона</value>
+  </data>
+  <data name="EditDefaultComplianceTemplate" xml:space="preserve">
+    <value>Изменить шаблон соответствия по умолчанию</value>
+  </data>
+  <data name="TemplateExists_PleaseRename" xml:space="preserve">
+    <value>Этот шаблон уже существует. Измените название шаблона.</value>
+  </data>
+  <data name="PoiFileOutputTemplateSetting" xml:space="preserve">
+    <value>Настройки шаблона вывода файла POI</value>
+  </data>
+  <data name="POIFilterTemplateSetting" xml:space="preserve">
+    <value>Настройки шаблона фильтра POI</value>
+  </data>
+  <data name="LedBandDetectorManagement" xml:space="preserve">
+    <value>«Управление шаблонами тестирования светодиодных полос»</value>
+  </data>
+  <data name="SfrEdgeDetectionTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами поиска кромок SFR</value>
+  </data>
+  <data name="SfrV2TemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами SFRV2</value>
+  </data>
+  <data name="PoiAnalysisTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами анализа POI</value>
+  </data>
+  <data name="MtfV2TemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами MTFV2</value>
+  </data>
+  <data name="LedStripDetectionV2TemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами LEDStripDetectionV2</value>
+  </data>
+  <data name="SubPixelLedDetectionTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами обнаружения светодиодных шариков на субпиксельном уровне</value>
+  </data>
+  <data name="HdrTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами HDR</value>
+  </data>
+  <data name="Fov20TemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами FOV2.0</value>
+  </data>
+  <data name="CrossCalculationTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами крестообразных расчетов</value>
+  </data>
+  <data name="Distortion20TemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами Distortion 2.0</value>
+  </data>
+  <data name="ImageStitchingTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами сшивания изображений</value>
+  </data>
+  <data name="FindAaRegionTemplateManagement" xml:space="preserve">
+    <value>Ищу менеджера по шаблонам AA-зон</value>
+  </data>
+  <data name="BlackMuraTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами BlackMura</value>
+  </data>
+  <data name="StereoFusionTemplateManagement" xml:space="preserve">
+    <value>Управление шаблонами бинокулярного слияния</value>
+  </data>
 </root>

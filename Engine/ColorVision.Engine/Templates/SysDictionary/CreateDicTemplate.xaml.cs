@@ -39,13 +39,13 @@ namespace ColorVision.Engine.Templates
         {
             if (string.IsNullOrEmpty(CreateCode.Text))
             {
-                MessageBox.Show("请输入模板名称", "ColorVision");
+                MessageBox.Show(ColorVision.Engine.Properties.Resources.InputTemplateName, "ColorVision");
                 return;
             }
 
             if (TemplateControl.ExitsTemplateName(CreateCode.Text))
             {
-                MessageBox.Show("已经存在改模板，请修改模板名称", "ColorVision");
+                MessageBox.Show(ColorVision.Engine.Properties.Resources.TemplateExists_PleaseRename, "ColorVision");
                 return;
             }
 

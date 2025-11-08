@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Templates.POI.POIFilters
 
         public TemplatePoiFilterParam()
         {
-            Title = "POI过滤模板设置";
+            Title =ColorVision.Engine.Properties.Resources.POIFilterTemplateSetting;
             TemplateDicId = 23;
             Code = "POIFilter";
             TemplateParams = Params;

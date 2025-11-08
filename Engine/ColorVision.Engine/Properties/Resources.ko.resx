@@ -1989,4 +1989,127 @@
   <data name="SaveSucess" xml:space="preserve">
     <value>성공적으로 저장되었습니다</value>
   </data>
+  <data name="AutoExposureTemplateSettings" xml:space="preserve">
+    <value>자동 노출 템플릿 설정</value>
+  </data>
+  <data name="AutoFocusTemplateSettings" xml:space="preserve">
+    <value>자동 초점 템플릿 설정</value>
+  </data>
+  <data name="DistortionEvaluationTemplateManagement" xml:space="preserve">
+    <value>왜곡 평가 템플릿 관리</value>
+  </data>
+  <data name="FOVTemplateManagement" xml:space="preserve">
+    <value>FOV 템플릿 관리</value>
+  </data>
+  <data name="GhostTemplateManagement" xml:space="preserve">
+    <value>고스트 템플릿 관리</value>
+  </data>
+  <data name="MTFTemplateManagement" xml:space="preserve">
+    <value>MTF 템플릿 관리</value>
+  </data>
+  <data name="SFRTemplateManagement" xml:space="preserve">
+    <value>SFR 템플릿 관리</value>
+  </data>
+  <data name="BuzProcucTemplateManagement" xml:space="preserve">
+    <value>BuzProduc 템플릿 관리</value>
+  </data>
+  <data name="DataLoadTemplateManagement" xml:space="preserve">
+    <value>데이터 로딩 템플릿 관리</value>
+  </data>
+  <data name="AADetectTemplateManagement" xml:space="preserve">
+    <value>방출 영역 감지 템플릿 관리</value>
+  </data>
+  <data name="ImportFlow" xml:space="preserve">
+    <value>수입 프로세스</value>
+  </data>
+  <data name="FocusPointsTemplateSettings" xml:space="preserve">
+    <value>FocusPoints 알고리즘 설정</value>
+  </data>
+  <data name="ImageCroppingTemplateSettings" xml:space="preserve">
+    <value>조명 영역 절단 템플릿</value>
+  </data>
+  <data name="JNDTemplateManagement" xml:space="preserve">
+    <value>JND 템플릿 관리</value>
+  </data>
+  <data name="ImageEdit" xml:space="preserve">
+    <value>그래픽 편집</value>
+  </data>
+  <data name="VerifyJson" xml:space="preserve">
+    <value>JSON 검증</value>
+  </data>
+  <data name="DatabaseResetOptionNotConfigured" xml:space="preserve">
+    <value>데이터베이스 재설정 옵션이 구성되어 있지 않습니다.</value>
+  </data>
+  <data name="InputTemplateName" xml:space="preserve">
+    <value>템플릿 이름을 입력하세요.</value>
+  </data>
+  <data name="AlreadyExists" xml:space="preserve">
+    <value>이미 존재합니다</value>
+  </data>
+  <data name="DefaultTemplate" xml:space="preserve">
+    <value>기본 템플릿</value>
+  </data>
+  <data name="UseSystemDefaultTemplate" xml:space="preserve">
+    <value>시스템 기본 템플릿을 사용하세요</value>
+  </data>
+  <data name="LoadingTempate" xml:space="preserve">
+    <value>템플릿 로딩 중</value>
+  </data>
+  <data name="EditDefaultComplianceTemplate" xml:space="preserve">
+    <value>기본 규정 준수 템플릿 편집</value>
+  </data>
+  <data name="TemplateExists_PleaseRename" xml:space="preserve">
+    <value>이 템플릿은 이미 존재합니다. 템플릿 이름을 변경하세요.</value>
+  </data>
+  <data name="PoiFileOutputTemplateSetting" xml:space="preserve">
+    <value>POI 파일 출력 템플릿 설정</value>
+  </data>
+  <data name="POIFilterTemplateSetting" xml:space="preserve">
+    <value>POI 필터 템플릿 설정</value>
+  </data>
+  <data name="LedBandDetectorManagement" xml:space="preserve">
+    <value>"라이트 스트립 테스트 템플릿 관리"</value>
+  </data>
+  <data name="SfrEdgeDetectionTemplateManagement" xml:space="preserve">
+    <value>SFR Edge 찾기 템플릿 관리</value>
+  </data>
+  <data name="SfrV2TemplateManagement" xml:space="preserve">
+    <value>SFRV2 템플릿 관리</value>
+  </data>
+  <data name="PoiAnalysisTemplateManagement" xml:space="preserve">
+    <value>POI 분석 템플릿 관리</value>
+  </data>
+  <data name="MtfV2TemplateManagement" xml:space="preserve">
+    <value>MTFV2 템플릿 관리</value>
+  </data>
+  <data name="LedStripDetectionV2TemplateManagement" xml:space="preserve">
+    <value>LEDStripDetectionV2 템플릿 관리</value>
+  </data>
+  <data name="SubPixelLedDetectionTemplateManagement" xml:space="preserve">
+    <value>서브픽셀 수준 LED 비드 감지 템플릿 관리</value>
+  </data>
+  <data name="HdrTemplateManagement" xml:space="preserve">
+    <value>HDR 템플릿 관리</value>
+  </data>
+  <data name="Fov20TemplateManagement" xml:space="preserve">
+    <value>FOV2.0 템플릿 관리</value>
+  </data>
+  <data name="CrossCalculationTemplateManagement" xml:space="preserve">
+    <value>십자형 계산 템플릿 관리</value>
+  </data>
+  <data name="Distortion20TemplateManagement" xml:space="preserve">
+    <value>Distortion 2.0 템플릿 관리</value>
+  </data>
+  <data name="ImageStitchingTemplateManagement" xml:space="preserve">
+    <value>이미지 스티칭 템플릿 관리</value>
+  </data>
+  <data name="FindAaRegionTemplateManagement" xml:space="preserve">
+    <value>AA 지역 템플릿 관리를 찾고 있습니다</value>
+  </data>
+  <data name="BlackMuraTemplateManagement" xml:space="preserve">
+    <value>BlackMura 템플릿 관리</value>
+  </data>
+  <data name="StereoFusionTemplateManagement" xml:space="preserve">
+    <value>쌍안경 퓨전 템플릿 관리</value>
+  </data>
 </root>

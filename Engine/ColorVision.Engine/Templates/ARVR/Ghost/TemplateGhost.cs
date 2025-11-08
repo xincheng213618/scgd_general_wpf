@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Templates.Ghost
 
         public TemplateGhost()
         {
-            Title = "鬼影模板管理";
+            Title = ColorVision.Engine.Properties.Resources.GhostTemplateManagement;
             TemplateDicId = 7;
             Code = "ghost";
             TemplateParams = Params;

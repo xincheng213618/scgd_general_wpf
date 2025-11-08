@@ -1989,4 +1989,127 @@
   <data name="SaveSucess" xml:space="preserve">
     <value>保存に成功しました</value>
   </data>
+  <data name="AutoExposureTemplateSettings" xml:space="preserve">
+    <value>自動露出テンプレート設定</value>
+  </data>
+  <data name="AutoFocusTemplateSettings" xml:space="preserve">
+    <value>オートフォーカステンプレートの設定</value>
+  </data>
+  <data name="DistortionEvaluationTemplateManagement" xml:space="preserve">
+    <value>歪み評価テンプレート管理</value>
+  </data>
+  <data name="FOVTemplateManagement" xml:space="preserve">
+    <value>FOVテンプレート管理</value>
+  </data>
+  <data name="GhostTemplateManagement" xml:space="preserve">
+    <value>ゴーストテンプレート管理</value>
+  </data>
+  <data name="MTFTemplateManagement" xml:space="preserve">
+    <value>MTFテンプレート管理</value>
+  </data>
+  <data name="SFRTemplateManagement" xml:space="preserve">
+    <value>SFRテンプレート管理</value>
+  </data>
+  <data name="BuzProcucTemplateManagement" xml:space="preserve">
+    <value>BuzProduc テンプレート管理</value>
+  </data>
+  <data name="DataLoadTemplateManagement" xml:space="preserve">
+    <value>データ読み込みテンプレート管理</value>
+  </data>
+  <data name="AADetectTemplateManagement" xml:space="preserve">
+    <value>発光領域検出テンプレート管理</value>
+  </data>
+  <data name="ImportFlow" xml:space="preserve">
+    <value>インポートプロセス</value>
+  </data>
+  <data name="FocusPointsTemplateSettings" xml:space="preserve">
+    <value>FocusPointsアルゴリズムの設定</value>
+  </data>
+  <data name="ImageCroppingTemplateSettings" xml:space="preserve">
+    <value>照明エリアカットテンプレート</value>
+  </data>
+  <data name="JNDTemplateManagement" xml:space="preserve">
+    <value>JNDテンプレート管理</value>
+  </data>
+  <data name="ImageEdit" xml:space="preserve">
+    <value>グラフィック編集</value>
+  </data>
+  <data name="VerifyJson" xml:space="preserve">
+    <value>JSONを検証する</value>
+  </data>
+  <data name="DatabaseResetOptionNotConfigured" xml:space="preserve">
+    <value>データベース リセット オプションは構成されていません。</value>
+  </data>
+  <data name="InputTemplateName" xml:space="preserve">
+    <value>テンプレート名を入力してください。</value>
+  </data>
+  <data name="AlreadyExists" xml:space="preserve">
+    <value>すでに存在している</value>
+  </data>
+  <data name="DefaultTemplate" xml:space="preserve">
+    <value>デフォルトのテンプレート</value>
+  </data>
+  <data name="UseSystemDefaultTemplate" xml:space="preserve">
+    <value>システムのデフォルトテンプレートを使用する</value>
+  </data>
+  <data name="LoadingTempate" xml:space="preserve">
+    <value>テンプレートを読み込んでいます</value>
+  </data>
+  <data name="EditDefaultComplianceTemplate" xml:space="preserve">
+    <value>デフォルトのコンプライアンステンプレートを編集する</value>
+  </data>
+  <data name="TemplateExists_PleaseRename" xml:space="preserve">
+    <value>このテンプレートは既に存在します。テンプレート名を変更してください。</value>
+  </data>
+  <data name="PoiFileOutputTemplateSetting" xml:space="preserve">
+    <value>POIファイル出力テンプレート設定</value>
+  </data>
+  <data name="POIFilterTemplateSetting" xml:space="preserve">
+    <value>POIフィルターテンプレートの設定</value>
+  </data>
+  <data name="LedBandDetectorManagement" xml:space="preserve">
+    <value>「ライトストリップテストテンプレート管理」</value>
+  </data>
+  <data name="SfrEdgeDetectionTemplateManagement" xml:space="preserve">
+    <value>SFR エッジ検索テンプレート管理</value>
+  </data>
+  <data name="SfrV2TemplateManagement" xml:space="preserve">
+    <value>SFRV2 テンプレート管理</value>
+  </data>
+  <data name="PoiAnalysisTemplateManagement" xml:space="preserve">
+    <value>POI分析テンプレート管理</value>
+  </data>
+  <data name="MtfV2TemplateManagement" xml:space="preserve">
+    <value>MTFV2 テンプレート管理</value>
+  </data>
+  <data name="LedStripDetectionV2TemplateManagement" xml:space="preserve">
+    <value>LEDStripDetectionV2 テンプレート管理</value>
+  </data>
+  <data name="SubPixelLedDetectionTemplateManagement" xml:space="preserve">
+    <value>サブピクセルレベルのLEDビーズ検出テンプレート管理</value>
+  </data>
+  <data name="HdrTemplateManagement" xml:space="preserve">
+    <value>HDRテンプレート管理</value>
+  </data>
+  <data name="Fov20TemplateManagement" xml:space="preserve">
+    <value>FOV2.0 テンプレート管理</value>
+  </data>
+  <data name="CrossCalculationTemplateManagement" xml:space="preserve">
+    <value>十字型計算テンプレート管理</value>
+  </data>
+  <data name="Distortion20TemplateManagement" xml:space="preserve">
+    <value>Distortion 2.0 テンプレート管理</value>
+  </data>
+  <data name="ImageStitchingTemplateManagement" xml:space="preserve">
+    <value>画像ステッチテンプレートの管理</value>
+  </data>
+  <data name="FindAaRegionTemplateManagement" xml:space="preserve">
+    <value>AAエリアテンプレート管理を探しています</value>
+  </data>
+  <data name="BlackMuraTemplateManagement" xml:space="preserve">
+    <value>BlackMuraテンプレート管理</value>
+  </data>
+  <data name="StereoFusionTemplateManagement" xml:space="preserve">
+    <value>両眼融合テンプレート管理</value>
+  </data>
 </root>

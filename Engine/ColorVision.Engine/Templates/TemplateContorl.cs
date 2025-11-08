@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Templates
 
         public override async Task InitializeAsync()
         {
-            log.Info("正在加载模板");
+            log.Info(ColorVision.Engine.Properties.Resources.LoadingTempate);
             Application.Current.Dispatcher.Invoke(() => TemplateControl.GetInstance());
         }
     }

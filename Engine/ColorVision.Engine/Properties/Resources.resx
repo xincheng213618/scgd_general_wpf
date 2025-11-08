@@ -1989,4 +1989,127 @@
   <data name="SaveSucess" xml:space="preserve">
     <value>保存成功</value>
   </data>
+  <data name="AutoExposureTemplateSettings" xml:space="preserve">
+    <value>自动曝光模板设置</value>
+  </data>
+  <data name="AutoFocusTemplateSettings" xml:space="preserve">
+    <value>自动聚焦模板设置</value>
+  </data>
+  <data name="DistortionEvaluationTemplateManagement" xml:space="preserve">
+    <value>畸变评价模板管理</value>
+  </data>
+  <data name="FOVTemplateManagement" xml:space="preserve">
+    <value>FOV模板管理</value>
+  </data>
+  <data name="GhostTemplateManagement" xml:space="preserve">
+    <value>鬼影模板管理</value>
+  </data>
+  <data name="MTFTemplateManagement" xml:space="preserve">
+    <value>MTF模板管理</value>
+  </data>
+  <data name="SFRTemplateManagement" xml:space="preserve">
+    <value>SFR模板管理</value>
+  </data>
+  <data name="BuzProcucTemplateManagement" xml:space="preserve">
+    <value>BuzProduc模板管理</value>
+  </data>
+  <data name="DataLoadTemplateManagement" xml:space="preserve">
+    <value>数据加载模板管理</value>
+  </data>
+  <data name="AADetectTemplateManagement" xml:space="preserve">
+    <value>发光区检测模板管理</value>
+  </data>
+  <data name="ImportFlow" xml:space="preserve">
+    <value>导入流程</value>
+  </data>
+  <data name="FocusPointsTemplateSettings" xml:space="preserve">
+    <value>FocusPoints算法设置</value>
+  </data>
+  <data name="ImageCroppingTemplateSettings" xml:space="preserve">
+    <value>发光区裁剪模板</value>
+  </data>
+  <data name="JNDTemplateManagement" xml:space="preserve">
+    <value>JND模板管理</value>
+  </data>
+  <data name="ImageEdit" xml:space="preserve">
+    <value>图形编辑</value>
+  </data>
+  <data name="VerifyJson" xml:space="preserve">
+    <value>校验Json</value>
+  </data>
+  <data name="DatabaseResetOptionNotConfigured" xml:space="preserve">
+    <value>没有配置数据库重置选项</value>
+  </data>
+  <data name="InputTemplateName" xml:space="preserve">
+    <value>请输入模板名称</value>
+  </data>
+  <data name="AlreadyExists" xml:space="preserve">
+    <value>已经存在</value>
+  </data>
+  <data name="DefaultTemplate" xml:space="preserve">
+    <value>默认模板</value>
+  </data>
+  <data name="UseSystemDefaultTemplate" xml:space="preserve">
+    <value> "使用系统默认模板</value>
+  </data>
+  <data name="LoadingTempate" xml:space="preserve">
+    <value>正在加载模板</value>
+  </data>
+  <data name="EditDefaultComplianceTemplate" xml:space="preserve">
+    <value>编辑默认合规模板</value>
+  </data>
+  <data name="TemplateExists_PleaseRename" xml:space="preserve">
+    <value>已经存在改模板，请修改模板名称</value>
+  </data>
+  <data name="PoiFileOutputTemplateSetting" xml:space="preserve">
+    <value> "Poi文件输出模板设置</value>
+  </data>
+  <data name="POIFilterTemplateSetting" xml:space="preserve">
+    <value> "POI过滤模板设置</value>
+  </data>
+  <data name="LedBandDetectorManagement" xml:space="preserve">
+    <value> "灯条检测模板管理"</value>
+  </data>
+  <data name="SfrEdgeDetectionTemplateManagement" xml:space="preserve">
+    <value>SFR寻边模板管理</value>
+  </data>
+  <data name="SfrV2TemplateManagement" xml:space="preserve">
+    <value>SFRV2模板管理</value>
+  </data>
+  <data name="PoiAnalysisTemplateManagement" xml:space="preserve">
+    <value>POI分析模板管理</value>
+  </data>
+  <data name="MtfV2TemplateManagement" xml:space="preserve">
+    <value>MTFV2模板管理</value>
+  </data>
+  <data name="LedStripDetectionV2TemplateManagement" xml:space="preserve">
+    <value>LEDStripDetectionV2模板管理</value>
+  </data>
+  <data name="SubPixelLedDetectionTemplateManagement" xml:space="preserve">
+    <value>亚像素级灯珠检测模板管理</value>
+  </data>
+  <data name="HdrTemplateManagement" xml:space="preserve">
+    <value>HDR模板管理</value>
+  </data>
+  <data name="Fov20TemplateManagement" xml:space="preserve">
+    <value>FOV2.0模板管理</value>
+  </data>
+  <data name="CrossCalculationTemplateManagement" xml:space="preserve">
+    <value>十字计算模板管理</value>
+  </data>
+  <data name="Distortion20TemplateManagement" xml:space="preserve">
+    <value> "畸变2.0模板管理</value>
+  </data>
+  <data name="ImageStitchingTemplateManagement" xml:space="preserve">
+    <value>图像拼接模板管理</value>
+  </data>
+  <data name="FindAaRegionTemplateManagement" xml:space="preserve">
+    <value>寻找AA区模板管理</value>
+  </data>
+  <data name="BlackMuraTemplateManagement" xml:space="preserve">
+    <value>BlackMura模板管理</value>
+  </data>
+  <data name="StereoFusionTemplateManagement" xml:space="preserve">
+    <value>双目融合模板管理</value>
+  </data>
 </root>

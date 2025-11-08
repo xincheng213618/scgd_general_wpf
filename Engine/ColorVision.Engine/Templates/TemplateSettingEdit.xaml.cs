@@ -28,14 +28,14 @@ namespace ColorVision.Engine.Templates
         {
             if (ITemplate.GetMysqlCommand() is IMysqlCommand mysqlCommand)
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否重置数据库{mysqlCommand.GetMysqlCommandName()}相关项", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), $"Reset {mysqlCommand.GetMysqlCommandName()} in Database\r\n?", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     MySqlControl.GetInstance().BatchExecuteNonQuery(mysqlCommand.GetRecover());
                 }
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"没有配置数据库重置选项", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.DatabaseResetOptionNotConfigured, "ColorVision");
             }
         }
     }

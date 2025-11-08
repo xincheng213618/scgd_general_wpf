@@ -1989,4 +1989,127 @@
   <data name="SaveSucess" xml:space="preserve">
     <value>Sauvegarde réussie</value>
   </data>
+  <data name="AutoExposureTemplateSettings" xml:space="preserve">
+    <value>paramètres de modèle d'exposition automatique</value>
+  </data>
+  <data name="AutoFocusTemplateSettings" xml:space="preserve">
+    <value>paramètres du modèle de mise au point automatique</value>
+  </data>
+  <data name="DistortionEvaluationTemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles d'évaluation des distorsions</value>
+  </data>
+  <data name="FOVTemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles de champ de vision</value>
+  </data>
+  <data name="GhostTemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles Ghost</value>
+  </data>
+  <data name="MTFTemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles MTF</value>
+  </data>
+  <data name="SFRTemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles SFR</value>
+  </data>
+  <data name="BuzProcucTemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles BuzProduc</value>
+  </data>
+  <data name="DataLoadTemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles de chargement de données</value>
+  </data>
+  <data name="AADetectTemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles de détection de zone d'émission</value>
+  </data>
+  <data name="ImportFlow" xml:space="preserve">
+    <value>processus d'importation</value>
+  </data>
+  <data name="FocusPointsTemplateSettings" xml:space="preserve">
+    <value>paramètres de l'algorithme FocusPoints</value>
+  </data>
+  <data name="ImageCroppingTemplateSettings" xml:space="preserve">
+    <value>Gabarit de découpe pour zone d'éclairage</value>
+  </data>
+  <data name="JNDTemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles JND</value>
+  </data>
+  <data name="ImageEdit" xml:space="preserve">
+    <value>édition graphique</value>
+  </data>
+  <data name="VerifyJson" xml:space="preserve">
+    <value>Valider le JSON</value>
+  </data>
+  <data name="DatabaseResetOptionNotConfigured" xml:space="preserve">
+    <value>Aucune option de réinitialisation de la base de données n'est configurée.</value>
+  </data>
+  <data name="InputTemplateName" xml:space="preserve">
+    <value>Veuillez saisir le nom du modèle.</value>
+  </data>
+  <data name="AlreadyExists" xml:space="preserve">
+    <value>Il existe déjà</value>
+  </data>
+  <data name="DefaultTemplate" xml:space="preserve">
+    <value>Modèle par défaut</value>
+  </data>
+  <data name="UseSystemDefaultTemplate" xml:space="preserve">
+    <value>Utilisez le modèle par défaut du système</value>
+  </data>
+  <data name="LoadingTempate" xml:space="preserve">
+    <value>Modèle de chargement</value>
+  </data>
+  <data name="EditDefaultComplianceTemplate" xml:space="preserve">
+    <value>Modifier le modèle de conformité par défaut</value>
+  </data>
+  <data name="TemplateExists_PleaseRename" xml:space="preserve">
+    <value>Ce modèle existe déjà. Veuillez modifier son nom.</value>
+  </data>
+  <data name="PoiFileOutputTemplateSetting" xml:space="preserve">
+    <value>paramètres du modèle de sortie de fichier POI</value>
+  </data>
+  <data name="POIFilterTemplateSetting" xml:space="preserve">
+    <value>paramètres du modèle de filtre POI</value>
+  </data>
+  <data name="LedBandDetectorManagement" xml:space="preserve">
+    <value>« Gestion des modèles de test de bandes lumineuses »</value>
+  </data>
+  <data name="SfrEdgeDetectionTemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles de détection de contours SFR</value>
+  </data>
+  <data name="SfrV2TemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles SFRV2</value>
+  </data>
+  <data name="PoiAnalysisTemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles d'analyse des points d'intérêt</value>
+  </data>
+  <data name="MtfV2TemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles MTFV2</value>
+  </data>
+  <data name="LedStripDetectionV2TemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles LEDStripDetectionV2</value>
+  </data>
+  <data name="SubPixelLedDetectionTemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles de détection de LED au niveau sous-pixel</value>
+  </data>
+  <data name="HdrTemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles HDR</value>
+  </data>
+  <data name="Fov20TemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles FOV2.0</value>
+  </data>
+  <data name="CrossCalculationTemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles de calcul en forme de croix</value>
+  </data>
+  <data name="Distortion20TemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles Distortion 2.0</value>
+  </data>
+  <data name="ImageStitchingTemplateManagement" xml:space="preserve">
+    <value>gestion des modèles d'assemblage d'images</value>
+  </data>
+  <data name="FindAaRegionTemplateManagement" xml:space="preserve">
+    <value>Recherche de modèles de gestion de zone AA</value>
+  </data>
+  <data name="BlackMuraTemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles BlackMura</value>
+  </data>
+  <data name="StereoFusionTemplateManagement" xml:space="preserve">
+    <value>Gestion des modèles de fusion binoculaire</value>
+  </data>
 </root>
