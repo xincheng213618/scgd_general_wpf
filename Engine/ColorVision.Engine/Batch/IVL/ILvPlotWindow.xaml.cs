@@ -28,6 +28,7 @@ namespace ColorVision.Engine.Batch.IVL
         private Dictionary<string, Scatter> _scatterPlots;
         private List<string> _seriesNames;
         private bool _isILvMode = true; // true for I-Lv, false for V-Lv
+        private Crosshair _crosshair;
 
         public ILvPlotWindow(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas)
             : this(smuResults, poixyuvDatas, null)
@@ -43,6 +44,7 @@ namespace ColorVision.Engine.Batch.IVL
             
             LoadData(smuResults, poixyuvDatas, spectrumResults);
             InitializePlot();
+            SetupMouseInteraction();
         }
 
         private void LoadData(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas, ObservableCollection<ViewResultSpectrum> spectrumResults)
@@ -410,6 +412,105 @@ namespace ColorVision.Engine.Batch.IVL
         {
             WpfPlot.Plot.Axes.AutoScale();
             WpfPlot.Refresh();
+        }
+
+        private void SetupMouseInteraction()
+        {
+            // Add crosshair for showing data point values on hover
+            _crosshair = WpfPlot.Plot.Add.Crosshair(0, 0);
+            _crosshair.IsVisible = false;
+            _crosshair.LineWidth = 1;
+            _crosshair.LineColor = Color.FromColor(System.Drawing.Color.Gray);
+            
+            // Subscribe to mouse move event
+            WpfPlot.MouseMove += WpfPlot_MouseMove;
+            WpfPlot.MouseLeave += WpfPlot_MouseLeave;
+        }
+
+        private void WpfPlot_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            // Get mouse position in plot coordinates
+            var position = e.GetPosition(WpfPlot);
+            var pixel = new Pixel((float)position.X, (float)position.Y);
+            var coords = WpfPlot.Plot.GetCoordinates(pixel);
+
+            // Find the nearest data point
+            double minDistance = double.MaxValue;
+            ILvDataPoint? nearestPoint = null;
+            string nearestSeriesName = string.Empty;
+
+            foreach (var seriesName in _seriesNames)
+            {
+                // Only check visible series
+                if (!PoiSeriesList.SelectedItems.Contains(seriesName))
+                    continue;
+
+                if (!_groupedData.ContainsKey(seriesName))
+                    continue;
+
+                foreach (var point in _groupedData[seriesName])
+                {
+                    double x = _isILvMode ? point.Current : point.Voltage;
+                    double y = point.Luminance;
+
+                    // Calculate distance in plot coordinates
+                    double dx = x - coords.X;
+                    double dy = y - coords.Y;
+                    double distance = Math.Sqrt(dx * dx + dy * dy);
+
+                    if (distance < minDistance)
+                    {
+                        minDistance = distance;
+                        nearestPoint = point;
+                        nearestSeriesName = seriesName;
+                    }
+                }
+            }
+
+            // Show crosshair and tooltip if a point is close enough
+            if (nearestPoint != null && minDistance < GetDistanceThreshold())
+            {
+                double x = _isILvMode ? nearestPoint.Current : nearestPoint.Voltage;
+                double y = nearestPoint.Luminance;
+                
+                _crosshair.Position = new Coordinates(x, y);
+                _crosshair.IsVisible = true;
+
+                // Update crosshair label with data point information
+                string xLabel = _isILvMode ? "I" : "V";
+                string xUnit = _isILvMode ? "mA" : "V";
+                _crosshair.Label.Text = $"{nearestSeriesName}\n{xLabel}: {x:F2} {xUnit}\nLv: {y:F2} cd/m²";
+                _crosshair.Label.FontSize = 12;
+                _crosshair.Label.ForeColor = Color.FromColor(System.Drawing.Color.Black);
+                _crosshair.Label.BackColor = Color.FromColor(System.Drawing.Color.FromArgb(220, 255, 255, 255));
+                _crosshair.Label.BorderColor = Color.FromColor(System.Drawing.Color.Gray);
+                _crosshair.Label.BorderWidth = 1;
+                
+                WpfPlot.Refresh();
+            }
+            else
+            {
+                _crosshair.IsVisible = false;
+                WpfPlot.Refresh();
+            }
+        }
+
+        private void WpfPlot_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            // Hide crosshair when mouse leaves the plot
+            _crosshair.IsVisible = false;
+            WpfPlot.Refresh();
+        }
+
+        private double GetDistanceThreshold()
+        {
+            // Calculate a reasonable distance threshold based on the current axis ranges
+            var xRange = WpfPlot.Plot.Axes.GetLimits().Rect.Width;
+            var yRange = WpfPlot.Plot.Axes.GetLimits().Rect.Height;
+            
+            // Use 5% of the smaller range as threshold
+            double threshold = Math.Min(xRange, yRange) * 0.05;
+            return threshold;
         }
 
         private class ILvDataPoint
