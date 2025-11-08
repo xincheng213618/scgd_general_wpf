@@ -1,5 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.Batch;
+using ColorVision.Engine.Batch.IVL;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Solution.Searches;
 using ColorVision.UI;
@@ -24,6 +26,8 @@ namespace ColorVision.Engine
 
         public ContextMenu ContextMenu { get; set; }
 
+        public RelayCommand ProcessCommand { get; set; }
+
         public ViewBatchResult()
         {
 
@@ -32,6 +36,24 @@ namespace ColorVision.Engine
         {
             MeasureBatchModel = batchResultMasterModel;
             ContextMenu = new ContextMenu();
+
+
+            ProcessCommand = new RelayCommand(a =>
+            {
+                MessageBox.Show($"开始处理批次 {MeasureBatchModel.Code}");
+
+                IBatchContext ctx = new IBatchContext
+                {
+                    FlowName = "IVL流程",
+                    Batch = MeasureBatchModel
+                };
+                IVLCameraProcess iVLCameraProcess = new IVLCameraProcess();
+                iVLCameraProcess.Process(ctx);
+                MessageBox.Show($"批次 {MeasureBatchModel.Code} 处理完成");
+
+            });
+            ContextMenu.Items.Add(new MenuItem() { Header ="Process",Command = ProcessCommand } );
+
         }
     }
 

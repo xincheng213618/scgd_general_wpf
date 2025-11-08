@@ -1,6 +1,8 @@
 ﻿using ColorVision.Engine.Services.Devices.SMU.Dao;
+using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.UI.Menus;
 using log4net;
 using Microsoft.Win32;
 using ScottPlot;
@@ -19,6 +21,24 @@ using System.Windows.Documents;
 
 namespace ColorVision.Engine.Batch.IVL
 {
+
+
+    public class ILvPlotWindowTEst : MenuItemBase
+    {
+        public override string OwnerGuid => MenuItemConstants.Help;
+        public override string Header => "Test";
+
+        public override int Order => 9009;
+
+        public override void Execute()
+        {
+
+            // Show I-Lv curve plot window
+
+        }
+    }
+
+
     /// <summary>
     /// IVL Curve Plot Window
     /// Plots Current (I) or Voltage (V) vs Luminance (Lv) curves grouped by POI name
@@ -369,6 +389,8 @@ namespace ColorVision.Engine.Batch.IVL
 
         private void DisplayMode_Changed(object sender, RoutedEventArgs e)
         {
+            if (RbILv == null) return;
+            if (_groupedData == null) return;
             // Update the mode flag
             _isILvMode = RbILv.IsChecked == true;
             
