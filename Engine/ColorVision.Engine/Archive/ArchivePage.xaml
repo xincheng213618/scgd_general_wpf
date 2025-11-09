@@ -4,8 +4,9 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine.Archive.Dao"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
-             Title="归档查询"  d:DesignHeight="450" d:DesignWidth="800" Loaded="Page_Loaded" Initialized="UserControl_Initialized">
+             Title="{x:Static properties:Resources.ArchiveQuery}"  d:DesignHeight="450" d:DesignWidth="800" Loaded="Page_Loaded" Initialized="UserControl_Initialized">
     <Page.Resources>
         <Style TargetType="TextBlock" >
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
@@ -21,10 +22,10 @@
             </Grid.RowDefinitions>
             <Grid>
                 <DockPanel Margin="5" >
-                    <Button  Content="保存到本地" DockPanel.Dock="Right" Click="Save_Click" Margin="10,0"/>
-                    <Button  Content="设置" DockPanel.Dock="Right" Click="Setting_Click" Margin="10,0"/>
-                    <Button  Content="高级搜索" DockPanel.Dock="Right" Click="AdvanceQuery_Click" Margin="5,0,0,0"/>
-                    <Button  Content="搜索" DockPanel.Dock="Right" Click="Query_Click" Margin="10,0"/>
+                    <Button  Content="{x:Static properties:Resources.SaveToLoacal}" DockPanel.Dock="Right" Click="Save_Click" Margin="10,0"/>
+                    <Button  Content="{x:Static properties:Resources.Settings}" DockPanel.Dock="Right" Click="Setting_Click" Margin="10,0"/>
+                    <Button  Content="{x:Static properties:Resources.AdvanceSearch}" DockPanel.Dock="Right" Click="AdvanceQuery_Click" Margin="5,0,0,0"/>
+                    <Button  Content="{x:Static properties:Resources.Search}" DockPanel.Dock="Right" Click="Query_Click" Margin="10,0"/>
                     <TextBox x:Name="SearchBox" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="0"  VerticalContentAlignment="Center"  VerticalAlignment="Center" Text="" TextChanged="SearchBox_TextChanged"  InputMethod.IsInputMethodEnabled="True"  KeyDown="KeyEnter"  />
                 </DockPanel>
             </Grid>
@@ -53,7 +54,7 @@
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
 
-                            <GridViewColumn  Header="名称">
+                            <GridViewColumn  Header="{x:Static properties:Resources.Name}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ArchivedMasterModel}"  >
                                         <TextBlock Text="{Binding Name}"/>
@@ -70,7 +71,7 @@
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
 
-                            <GridViewColumn  Header="归档日期">
+                            <GridViewColumn  Header="{x:Static properties:Resources.ArchiveDate}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ArchivedMasterModel}"  >
                                         <TextBlock Text="{Binding ArchDate}"/>
@@ -78,18 +79,18 @@
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
 
-                            <GridViewColumn  Header="创建日期">
+                            <GridViewColumn  Header="{x:Static properties:Resources.CreationDate}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ArchivedMasterModel}"  >
                                         <TextBlock Text="{Binding CreateDate}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="归档" Width="100">
+                            <GridViewColumn  Header="{x:Static properties:Resources.Archive}" Width="100">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ArchivedMasterModel}">
                                         <Grid>
-                                            <Button Content="保存" Click="Save_Click"  Tag="{Binding .}"/>
+                                            <Button Content="{x:Static properties:Resources.Save}" Click="Save_Click"  Tag="{Binding .}"/>
                                         </Grid>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
