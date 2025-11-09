@@ -2334,4 +2334,43 @@
   <data name="FileNotFound" xml:space="preserve">
     <value>找不到文件</value>
   </data>
+  <data name="ResetDatabasePrompt" xml:space="preserve">
+    <value>是否重置資料庫</value>
+  </data>
+  <data name="RelatedItems" xml:space="preserve">
+    <value>相關項</value>
+  </data>
+  <data name="Debug" xml:space="preserve">
+    <value>偵錯</value>
+  </data>
+  <data name="ToggleList" xml:space="preserve">
+    <value>切換列表</value>
+  </data>
+  <data name="CmdSendAlready" xml:space="preserve">
+    <value>命令已經發送</value>
+  </data>
+  <data name="License" xml:space="preserve">
+    <value>許可證</value>
+  </data>
+  <data name="ModifyLicense" xml:space="preserve">
+    <value>修改許可證</value>
+  </data>
+  <data name="ConfigurePhysicalCameraBeforeCalibration" xml:space="preserve">
+    <value>使用校正前，請先配置對映的實體相機</value>
+  </data>
+  <data name="CacheSize" xml:space="preserve">
+    <value>快取大小</value>
+  </data>
+  <data name="IntegrationStartTime" xml:space="preserve">
+    <value>積分起始時間</value>
+  </data>
+  <data name="IntervalTime" xml:space="preserve">
+    <value>間隔時間</value>
+  </data>
+  <data name="Step" xml:space="preserve">
+    <value>步數</value>
+  </data>
+  <data name="RestartWindowsService" xml:space="preserve">
+    <value>重新啟動WindowsService</value>
+  </data>
 </root>

@@ -106,7 +106,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         {
             if (listView1.SelectedIndex < 0)
             {
-                MessageBox1.Show("您需要先选择数据");
+                MessageBox1.Show(ColorVision.Engine.Properties.Resources.SelectDataFirst);
                 return;
             }
 
@@ -286,7 +286,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         {
             if (listView1.SelectedIndex < 0)
             {
-                MessageBox1.Show("您需要先选择数据");
+                MessageBox1.Show(ColorVision.Engine.Properties.Resources.SelectDataFirst);
                 return;
             }
             var selectedItems = listView1.SelectedItems;

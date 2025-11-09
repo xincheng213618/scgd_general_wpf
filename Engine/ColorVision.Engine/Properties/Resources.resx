@@ -2334,4 +2334,43 @@
   <data name="执行失败" xml:space="preserve">
     <value>执行失败</value>
   </data>
+  <data name="ResetDatabasePrompt" xml:space="preserve">
+    <value>是否重置数据库</value>
+  </data>
+  <data name="RelatedItems" xml:space="preserve">
+    <value>相关项</value>
+  </data>
+  <data name="Debug" xml:space="preserve">
+    <value>调试</value>
+  </data>
+  <data name="ToggleList" xml:space="preserve">
+    <value>切换列表</value>
+  </data>
+  <data name="CmdSendAlready" xml:space="preserve">
+    <value>命令已经发送</value>
+  </data>
+  <data name="License" xml:space="preserve">
+    <value>许可证</value>
+  </data>
+  <data name="ModifyLicense" xml:space="preserve">
+    <value>修改许可证</value>
+  </data>
+  <data name="ConfigurePhysicalCameraBeforeCalibration" xml:space="preserve">
+    <value>在使用校正前，请先配置对映的物理相机</value>
+  </data>
+  <data name="CacheSize" xml:space="preserve">
+    <value>缓存大小</value>
+  </data>
+  <data name="IntegrationStartTime" xml:space="preserve">
+    <value>积分起始时间</value>
+  </data>
+  <data name="IntervalTime" xml:space="preserve">
+    <value>间隔时间</value>
+  </data>
+  <data name="Step" xml:space="preserve">
+    <value>步数</value>
+  </data>
+  <data name="RestartWindowsService" xml:space="preserve">
+    <value>重启WindowsService</value>
+  </data>
 </root>

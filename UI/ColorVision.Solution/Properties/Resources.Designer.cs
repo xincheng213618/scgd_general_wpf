@@ -79,6 +79,15 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 添加文件夹 的本地化字符串。
+        /// </summary>
+        public static string AddFolder {
+            get {
+                return ResourceManager.GetString("AddFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 应用 的本地化字符串。
         /// </summary>
         public static string Apply {
@@ -120,6 +129,24 @@ namespace ColorVision.Solution.Properties {
         public static string ConfigureNewProject {
             get {
                 return ResourceManager.GetString("ConfigureNewProject", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 复制完整路径 的本地化字符串。
+        /// </summary>
+        public static string CopyFullPath {
+            get {
+                return ResourceManager.GetString("CopyFullPath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 复制路径 的本地化字符串。
+        /// </summary>
+        public static string CopyPath {
+            get {
+                return ResourceManager.GetString("CopyPath", resourceCulture);
             }
         }
         
@@ -183,6 +210,15 @@ namespace ColorVision.Solution.Properties {
         public static string Edit {
             get {
                 return ResourceManager.GetString("Edit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 编辑解决方案 的本地化字符串。
+        /// </summary>
+        public static string EditSolution {
+            get {
+                return ResourceManager.GetString("EditSolution", resourceCulture);
             }
         }
         
@@ -322,6 +358,15 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 未找到 的本地化字符串。
+        /// </summary>
+        public static string NoFound {
+            get {
+                return ResourceManager.GetString("NoFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 未找到相关项目 的本地化字符串。
         /// </summary>
         public static string NoRelatedItemsFound {
@@ -439,6 +484,15 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 相关项目 的本地化字符串。
+        /// </summary>
+        public static string RelateItem {
+            get {
+                return ResourceManager.GetString("RelateItem", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 重置 的本地化字符串。
         /// </summary>
         public static string Reset {
@@ -507,6 +561,15 @@ namespace ColorVision.Solution.Properties {
         public static string Sign_out {
             get {
                 return ResourceManager.GetString("Sign_out", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 解决方案配置 的本地化字符串。
+        /// </summary>
+        public static string SolutionConfiguration {
+            get {
+                return ResourceManager.GetString("SolutionConfiguration", resourceCulture);
             }
         }
         

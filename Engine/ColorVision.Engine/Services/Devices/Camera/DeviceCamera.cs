@@ -83,7 +83,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (PhyCamera == null)
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ConfigurePhysicalCameraBeforeCalibration, "ColorVision");
                 return;
             }
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)

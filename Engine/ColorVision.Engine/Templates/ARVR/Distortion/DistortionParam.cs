@@ -13,10 +13,10 @@ namespace ColorVision.Engine.Templates.Distortion
 
         }
 
-        [Category("大小"), Description("宽度"), DisplayName("宽度")]
+        [Category("Size"), Description("Width"), DisplayName("Width")]
         public int Width { get => GetValue(_Width); set { SetProperty(ref _Width, value); } }
         private int _Width = 16;
-        [Category("大小"), Description("高度"), DisplayName("高度")]
+        [Category("Size"), Description("Resources.height"), DisplayName("height")]
         public int Height { get => GetValue(_Height); set { SetProperty(ref _Height, value); } }
         private int _Height = 16;
 

@@ -2334,4 +2334,43 @@
   <data name="FileNotFound" xml:space="preserve">
     <value>File not found</value>
   </data>
+  <data name="ResetDatabasePrompt" xml:space="preserve">
+    <value>Reset the database?</value>
+  </data>
+  <data name="RelatedItems" xml:space="preserve">
+    <value>Related items</value>
+  </data>
+  <data name="Debug" xml:space="preserve">
+    <value>debug</value>
+  </data>
+  <data name="ToggleList" xml:space="preserve">
+    <value>Toggle list</value>
+  </data>
+  <data name="CmdSendAlready" xml:space="preserve">
+    <value>Command has been sent</value>
+  </data>
+  <data name="License" xml:space="preserve">
+    <value>license</value>
+  </data>
+  <data name="ModifyLicense" xml:space="preserve">
+    <value>Modify license</value>
+  </data>
+  <data name="ConfigurePhysicalCameraBeforeCalibration" xml:space="preserve">
+    <value>Before using the calibration, please configure the corresponding physical camera.</value>
+  </data>
+  <data name="CacheSize" xml:space="preserve">
+    <value>Cache size</value>
+  </data>
+  <data name="IntegrationStartTime" xml:space="preserve">
+    <value>Integral start time</value>
+  </data>
+  <data name="IntervalTime" xml:space="preserve">
+    <value>Interval time</value>
+  </data>
+  <data name="Step" xml:space="preserve">
+    <value>Steps</value>
+  </data>
+  <data name="RestartWindowsService" xml:space="preserve">
+    <value>Restart WindowsService</value>
+  </data>
 </root>

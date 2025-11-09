@@ -2334,4 +2334,43 @@
   <data name="FileNotFound" xml:space="preserve">
     <value>Fichier introuvable</value>
   </data>
+  <data name="ResetDatabasePrompt" xml:space="preserve">
+    <value>Réinitialiser la base de données ?</value>
+  </data>
+  <data name="RelatedItems" xml:space="preserve">
+    <value>Articles connexes</value>
+  </data>
+  <data name="Debug" xml:space="preserve">
+    <value>déboguer</value>
+  </data>
+  <data name="ToggleList" xml:space="preserve">
+    <value>Afficher/Masquer la liste</value>
+  </data>
+  <data name="CmdSendAlready" xml:space="preserve">
+    <value>La commande a été envoyée.</value>
+  </data>
+  <data name="License" xml:space="preserve">
+    <value>licence</value>
+  </data>
+  <data name="ModifyLicense" xml:space="preserve">
+    <value>Modifier la licence</value>
+  </data>
+  <data name="ConfigurePhysicalCameraBeforeCalibration" xml:space="preserve">
+    <value>Avant d'utiliser l'étalonnage, veuillez configurer la caméra physique correspondante.</value>
+  </data>
+  <data name="CacheSize" xml:space="preserve">
+    <value>Taille du cache</value>
+  </data>
+  <data name="IntegrationStartTime" xml:space="preserve">
+    <value>Heure de début intégrale</value>
+  </data>
+  <data name="IntervalTime" xml:space="preserve">
+    <value>Intervalle de temps</value>
+  </data>
+  <data name="Step" xml:space="preserve">
+    <value>Mesures</value>
+  </data>
+  <data name="RestartWindowsService" xml:space="preserve">
+    <value>Redémarrer le service Windows</value>
+  </data>
 </root>

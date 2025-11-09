@@ -2334,4 +2334,43 @@
   <data name="FileNotFound" xml:space="preserve">
     <value>Файл не найден</value>
   </data>
+  <data name="ResetDatabasePrompt" xml:space="preserve">
+    <value>Сбросить базу данных?</value>
+  </data>
+  <data name="RelatedItems" xml:space="preserve">
+    <value>Связанные элементы</value>
+  </data>
+  <data name="Debug" xml:space="preserve">
+    <value>отлаживать</value>
+  </data>
+  <data name="ToggleList" xml:space="preserve">
+    <value>Переключить список</value>
+  </data>
+  <data name="CmdSendAlready" xml:space="preserve">
+    <value>Команда отправлена.</value>
+  </data>
+  <data name="License" xml:space="preserve">
+    <value>лицензия</value>
+  </data>
+  <data name="ModifyLicense" xml:space="preserve">
+    <value>Изменить лицензию</value>
+  </data>
+  <data name="ConfigurePhysicalCameraBeforeCalibration" xml:space="preserve">
+    <value>Перед использованием калибровки настройте соответствующую физическую камеру.</value>
+  </data>
+  <data name="CacheSize" xml:space="preserve">
+    <value>Размер кэша</value>
+  </data>
+  <data name="IntegrationStartTime" xml:space="preserve">
+    <value>Интегральное время начала</value>
+  </data>
+  <data name="IntervalTime" xml:space="preserve">
+    <value>Интервал времени</value>
+  </data>
+  <data name="Step" xml:space="preserve">
+    <value>Шаги</value>
+  </data>
+  <data name="RestartWindowsService" xml:space="preserve">
+    <value>Перезапустить WindowsService</value>
+  </data>
 </root>

@@ -214,7 +214,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(CalibrationParam)}模板失败", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.CreateDataBase+$"{typeof(CalibrationParam)} "+ ColorVision.Engine.Properties.Resources.TemplateFailed, "ColorVision");
             }
         }
     }

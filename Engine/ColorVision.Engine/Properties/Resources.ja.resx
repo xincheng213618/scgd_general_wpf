@@ -2334,4 +2334,43 @@
   <data name="FileNotFound" xml:space="preserve">
     <value>ファイルが見つかりません</value>
   </data>
+  <data name="ResetDatabasePrompt" xml:space="preserve">
+    <value>データベースをリセットしますか?</value>
+  </data>
+  <data name="RelatedItems" xml:space="preserve">
+    <value>関連商品</value>
+  </data>
+  <data name="Debug" xml:space="preserve">
+    <value>デバッグ</value>
+  </data>
+  <data name="ToggleList" xml:space="preserve">
+    <value>リストを切り替える</value>
+  </data>
+  <data name="CmdSendAlready" xml:space="preserve">
+    <value>コマンドが送信されました</value>
+  </data>
+  <data name="License" xml:space="preserve">
+    <value>ライセンス</value>
+  </data>
+  <data name="ModifyLicense" xml:space="preserve">
+    <value>ライセンスの変更</value>
+  </data>
+  <data name="ConfigurePhysicalCameraBeforeCalibration" xml:space="preserve">
+    <value>キャリブレーションを使用する前に、対応する物理カメラを設定してください。</value>
+  </data>
+  <data name="CacheSize" xml:space="preserve">
+    <value>キャッシュサイズ</value>
+  </data>
+  <data name="IntegrationStartTime" xml:space="preserve">
+    <value>積分開始時間</value>
+  </data>
+  <data name="IntervalTime" xml:space="preserve">
+    <value>インターバル時間</value>
+  </data>
+  <data name="Step" xml:space="preserve">
+    <value>手順</value>
+  </data>
+  <data name="RestartWindowsService" xml:space="preserve">
+    <value>Windowsサービスを再起動する</value>
+  </data>
 </root>
