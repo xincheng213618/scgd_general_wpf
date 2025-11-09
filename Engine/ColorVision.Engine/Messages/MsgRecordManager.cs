@@ -14,11 +14,11 @@ namespace ColorVision.Engine.Messages
 
     public class MsgRecordManagerConfig : ViewModelBase, IConfig
     {
-        [DisplayName("查询数量"), Category("View")]
+        [DisplayName("QueryCount"), Category("View")]
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count = 50;
 
-        [DisplayName("按类型排序"), Category("View")]
+        [DisplayName("SortByType"), Category("View")]
         public OrderByType OrderByType { get => _OrderByType; set { _OrderByType = value; OnPropertyChanged(); } }
         private OrderByType _OrderByType = OrderByType.Desc;
     }

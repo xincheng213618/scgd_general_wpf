@@ -1692,17 +1692,17 @@
   <data name="DataBasicPath" xml:space="preserve">
     <value>Chemin de base de données</value>
   </data>
-  <data name="Absolute" xml:space="preserve">
-    <value>Absolu</value>
-  </data>
-  <data name="Relative" xml:space="preserve">
-    <value>Relativement</value>
-  </data>
   <data name="singleChannel" xml:space="preserve">
     <value>canal unique</value>
   </data>
   <data name="threeChannels" xml:space="preserve">
     <value>Trois canaux</value>
+  </data>
+  <data name="Absolute" xml:space="preserve">
+    <value>Absolu</value>
+  </data>
+  <data name="Relative" xml:space="preserve">
+    <value>Relativement</value>
   </data>
   <data name="Wavelength" xml:space="preserve">
     <value>longueur d'onde</value>
@@ -2228,5 +2228,110 @@
   </data>
   <data name="RestoreMysqlCameraRunParamTemplateSettings" xml:space="preserve">
     <value>Restaurer les paramètres du modèle MysqlCameraRunParam</value>
+  </data>
+  <data name="ParamInput" xml:space="preserve">
+    <value>Paramètres d'entrée</value>
+  </data>
+  <data name="SaveToLoacal" xml:space="preserve">
+    <value>Enregistrer dans la région</value>
+  </data>
+  <data name="ArchiveDate" xml:space="preserve">
+    <value>Date d'archivage</value>
+  </data>
+  <data name="CreationDate" xml:space="preserve">
+    <value>Date de création</value>
+  </data>
+  <data name="ProcessHandlingConfig" xml:space="preserve">
+    <value>Configuration de traitement</value>
+  </data>
+  <data name="UpdateProcessMeta" xml:space="preserve">
+    <value>Mise à jour des métadonnées du processus</value>
+  </data>
+  <data name="WorkflowTemplate" xml:space="preserve">
+    <value>Modèle de processus :</value>
+  </data>
+  <data name="DeleteSelected" xml:space="preserve">
+    <value>Supprimer la sélection</value>
+  </data>
+  <data name="DoubleClickToRename_CurrentlySavedInMemoryOnly" xml:space="preserve">
+    <value>(Double-cliquez pour renommer ; actuellement enregistré uniquement en mémoire)</value>
+  </data>
+  <data name="HandleClass" xml:space="preserve">
+    <value>Classe de traitement</value>
+  </data>
+  <data name="Description" xml:space="preserve">
+    <value>décrire</value>
+  </data>
+  <data name="DuplicateName" xml:space="preserve">
+    <value>Noms en double</value>
+  </data>
+  <data name="UnableToInstantiateProcessType" xml:space="preserve">
+    <value>Impossible d'instancier le type de processus</value>
+  </data>
+  <data name="NoServicesRequireCachePathConfiguration" xml:space="preserve">
+    <value>Aucun service ne nécessite la configuration d'un chemin de cache.</value>
+  </data>
+  <data name="BulkEdit" xml:space="preserve">
+    <value>Édition unifiée</value>
+  </data>
+  <data name="ArchiveAll" xml:space="preserve">
+    <value>Toutes les archives</value>
+  </data>
+  <data name="BatchResults" xml:space="preserve">
+    <value>Résultats du lot</value>
+  </data>
+  <data name="Integer" xml:space="preserve">
+    <value>Entier</value>
+  </data>
+  <data name="Float" xml:space="preserve">
+    <value>virgule flottante</value>
+  </data>
+  <data name="Bool" xml:space="preserve">
+    <value>booléen</value>
+  </data>
+  <data name="String" xml:space="preserve">
+    <value>Chaîne</value>
+  </data>
+  <data name="Enum" xml:space="preserve">
+    <value>énumérer</value>
+  </data>
+  <data name="ConfigePOINeed" xml:space="preserve">
+    <value>Il faut configurer les points d'attention</value>
+  </data>
+  <data name="ExportTo" xml:space="preserve">
+    <value>Exporter comme</value>
+  </data>
+  <data name="OpenFileFailed" xml:space="preserve">
+    <value>Impossible d'ouvrir le fichier</value>
+  </data>
+  <data name="Compress" xml:space="preserve">
+    <value>compression</value>
+  </data>
+  <data name="MqttConfig" xml:space="preserve">
+    <value>Configuration MQTT</value>
+  </data>
+  <data name="ConfigureMqttConnection_DefaultsToLocalOptional" xml:space="preserve">
+    <value>Configurez la connexion MQTT ; la connexion par défaut est une connexion locale, qui peut rester non configurée.</value>
+  </data>
+  <data name="SelectSaveLocation" xml:space="preserve">
+    <value>Choisissez l'emplacement où enregistrer.</value>
+  </data>
+  <data name="FolderPathCannotBeEmpty" xml:space="preserve">
+    <value>Le chemin du dossier ne peut pas être vide.</value>
+  </data>
+  <data name="Hint" xml:space="preserve">
+    <value>indice</value>
+  </data>
+  <data name="CurrentlySupportsCvRawImages" xml:space="preserve">
+    <value>Prend actuellement en charge les images CVRAW.</value>
+  </data>
+  <data name="OriginalFileNotFound" xml:space="preserve">
+    <value>Fichier original introuvable</value>
+  </data>
+  <data name="ExportSupportsCieFilesOnly" xml:space="preserve">
+    <value>L'exportation ne prend en charge que les fichiers CIE.</value>
+  </data>
+  <data name="FileNotFound" xml:space="preserve">
+    <value>Fichier introuvable</value>
   </data>
 </root>

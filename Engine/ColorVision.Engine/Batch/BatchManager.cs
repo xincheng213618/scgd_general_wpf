@@ -169,7 +169,7 @@ namespace ColorVision.Engine.Batch
             if (!CanAddMeta()) return;
             if (ProcessMetas.Any(m => m.Name.Equals(NewMetaName, StringComparison.OrdinalIgnoreCase)))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "名称重复", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.DuplicateName, "ColorVision");
                 return;
             }
             ProcessMetas.Add(new BatchProcessMeta
@@ -265,7 +265,7 @@ namespace ColorVision.Engine.Batch
                         }
                         catch (Exception ex)
                         {
-                            log.Warn($"无法实例化进程类型 {item.ProcessTypeFullName}: {ex.Message}");
+                            log.Warn(ColorVision.Engine.Properties.Resources.UnableToInstantiateProcessType+$" {item.ProcessTypeFullName}: {ex.Message}");
                         }
                     }
                     BatchProcessMeta meta = new BatchProcessMeta() { Name = item.Name, TemplateName = item.TemplateName, BatchProcess = proc };
