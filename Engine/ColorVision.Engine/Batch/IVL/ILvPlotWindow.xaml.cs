@@ -3,6 +3,7 @@ using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using log4net;
 using Microsoft.Win32;
+using NPOI.SS.Formula.Functions;
 using NPOI.Util;
 using ScottPlot;
 using ScottPlot.DataSources;
@@ -217,7 +218,9 @@ namespace ColorVision.Engine.Batch.IVL
             wpfPlot.Plot.Title($"{modeLabel} Characteristics Curve");
             wpfPlot.Plot.XLabel(xLabel);
             wpfPlot.Plot.YLabel("Luminance (cd/m²)");
-            
+            wpfPlot.Plot.Legend.FontName = Fonts.Detect("中文");
+
+
             // Update title text block
             TxtTitle.Text = $"{modeLabel} Curve Analysis";
             
