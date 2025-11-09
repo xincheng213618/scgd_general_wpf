@@ -8,7 +8,7 @@
       xmlns:se ="clr-namespace:ColorVision.Engine.Services"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
-      Title="批次结果" Initialized="Page_Initialized" Loaded="Page_Loaded">
+      Title="{x:Static properties:Resources.BatchResults}" Initialized="Page_Initialized" Loaded="Page_Loaded">
     <Page.Resources>
         <Style TargetType="TextBlock" >
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />

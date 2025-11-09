@@ -270,4 +270,25 @@
   <data name="Terminal" xml:space="preserve">
     <value>terminal</value>
   </data>
+  <data name="EditSolution" xml:space="preserve">
+    <value>Editing solutions</value>
+  </data>
+  <data name="AddFolder" xml:space="preserve">
+    <value>Add folder</value>
+  </data>
+  <data name="CopyFullPath" xml:space="preserve">
+    <value>Copy the full path</value>
+  </data>
+  <data name="NoFound" xml:space="preserve">
+    <value>not found</value>
+  </data>
+  <data name="RelateItem" xml:space="preserve">
+    <value>Related projects</value>
+  </data>
+  <data name="CopyPath" xml:space="preserve">
+    <value>Copy path</value>
+  </data>
+  <data name="SolutionConfiguration" xml:space="preserve">
+    <value>Solution Configuration</value>
+  </data>
 </root>

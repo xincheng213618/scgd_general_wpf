@@ -89,28 +89,28 @@
                             </UniformGrid>
                         </Grid>
                     </TabItem>
-                    <TabItem Header="信息">
+                    <TabItem Header="{x:Static properties:Resources.Info}">
                         <StackPanel Margin="5,0">
-                            <GroupBox Header="基本信息" Margin="0,5">
+                            <GroupBox Header="{x:Static properties:Resources.BasicInformation}" Margin="0,5">
                                 <StackPanel Margin="5">
                                     <DockPanel Margin="0,2">
                                         <TextBlock Text="SN" Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.SN}"/>
                                     </DockPanel>
                                     <DockPanel Margin="0,2">
-                                        <TextBlock Text="数据目录" Width="120"/>
+                                        <TextBlock Text="{x:Static properties:Resources.DataDirectory}" Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.FileServerCfg.DataBasePath}"/>
                                     </DockPanel>
                                     <DockPanel Margin="0,2">
-                                        <TextBlock Text="端口地址" Width="120"/>
+                                        <TextBlock Text="{x:Static properties:Resources.PortAddress}" Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.FileServerCfg.Endpoint}"/>
                                     </DockPanel>
                                     <DockPanel Margin="0,2">
-                                        <TextBlock Text="端口范围" Width="120"/>
+                                        <TextBlock Text="{x:Static properties:Resources.PortRange}" Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.FileServerCfg.PortRange}"/>
                                     </DockPanel>
                                     <DockPanel Margin="0,5">
-                                        <TextBlock  Text="保存天数:" Width="120"/>
+                                        <TextBlock  Text="{x:Static properties:Resources.RetentionDays}" Width="120"/>
                                         <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.FileServerCfg.SaveDays}"/>
                                     </DockPanel>
                                 </StackPanel>

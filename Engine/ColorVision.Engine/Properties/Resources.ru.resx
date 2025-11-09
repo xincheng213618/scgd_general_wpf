@@ -1692,17 +1692,17 @@
   <data name="DataBasicPath" xml:space="preserve">
     <value>Путь к базе данных</value>
   </data>
-  <data name="Absolute" xml:space="preserve">
-    <value>абсолютный</value>
-  </data>
-  <data name="Relative" xml:space="preserve">
-    <value>относительно</value>
-  </data>
   <data name="singleChannel" xml:space="preserve">
     <value>один канал</value>
   </data>
   <data name="threeChannels" xml:space="preserve">
     <value>Трехканальный</value>
+  </data>
+  <data name="Absolute" xml:space="preserve">
+    <value>абсолютный</value>
+  </data>
+  <data name="Relative" xml:space="preserve">
+    <value>относительно</value>
   </data>
   <data name="Wavelength" xml:space="preserve">
     <value>длина волны</value>
@@ -2228,5 +2228,149 @@
   </data>
   <data name="RestoreMysqlCameraRunParamTemplateSettings" xml:space="preserve">
     <value>Восстановить настройки шаблона MysqlCameraRunParam</value>
+  </data>
+  <data name="ParamInput" xml:space="preserve">
+    <value>Входные параметры</value>
+  </data>
+  <data name="SaveToLoacal" xml:space="preserve">
+    <value>Сохранить локально</value>
+  </data>
+  <data name="ArchiveDate" xml:space="preserve">
+    <value>Дата архивации</value>
+  </data>
+  <data name="CreationDate" xml:space="preserve">
+    <value>Дата создания</value>
+  </data>
+  <data name="ProcessHandlingConfig" xml:space="preserve">
+    <value>Конфигурация обработки</value>
+  </data>
+  <data name="UpdateProcessMeta" xml:space="preserve">
+    <value>Обновление ProcessMeta</value>
+  </data>
+  <data name="WorkflowTemplate" xml:space="preserve">
+    <value>Шаблон процесса:</value>
+  </data>
+  <data name="DeleteSelected" xml:space="preserve">
+    <value>Удалить выбранное</value>
+  </data>
+  <data name="DoubleClickToRename_CurrentlySavedInMemoryOnly" xml:space="preserve">
+    <value>(Дважды щелкните, чтобы переименовать; в настоящее время сохраняется только в памяти)</value>
+  </data>
+  <data name="HandleClass" xml:space="preserve">
+    <value>Класс обработки</value>
+  </data>
+  <data name="Description" xml:space="preserve">
+    <value>описывать</value>
+  </data>
+  <data name="DuplicateName" xml:space="preserve">
+    <value>Дублирующиеся имена</value>
+  </data>
+  <data name="UnableToInstantiateProcessType" xml:space="preserve">
+    <value>Невозможно создать экземпляр типа процесса</value>
+  </data>
+  <data name="NoServicesRequireCachePathConfiguration" xml:space="preserve">
+    <value>Ни одна служба не требует настройки пути к кэшу.</value>
+  </data>
+  <data name="BulkEdit" xml:space="preserve">
+    <value>Унифицированное редактирование</value>
+  </data>
+  <data name="ArchiveAll" xml:space="preserve">
+    <value>Все архивы</value>
+  </data>
+  <data name="BatchResults" xml:space="preserve">
+    <value>Результаты пакетной обработки</value>
+  </data>
+  <data name="Integer" xml:space="preserve">
+    <value>Целое число</value>
+  </data>
+  <data name="Float" xml:space="preserve">
+    <value>плавающей точкой</value>
+  </data>
+  <data name="Bool" xml:space="preserve">
+    <value>Булевое значение</value>
+  </data>
+  <data name="String" xml:space="preserve">
+    <value>Нить</value>
+  </data>
+  <data name="Enum" xml:space="preserve">
+    <value>перечислить</value>
+  </data>
+  <data name="ConfigePOINeed" xml:space="preserve">
+    <value>Необходимо настроить точки внимания</value>
+  </data>
+  <data name="ExportTo" xml:space="preserve">
+    <value>Экспортировать как</value>
+  </data>
+  <data name="OpenFileFailed" xml:space="preserve">
+    <value>Файл не удалось открыть.</value>
+  </data>
+  <data name="Compress" xml:space="preserve">
+    <value>сжатие</value>
+  </data>
+  <data name="MqttConfig" xml:space="preserve">
+    <value>Конфигурация Mqtt</value>
+  </data>
+  <data name="ConfigureMqttConnection_DefaultsToLocalOptional" xml:space="preserve">
+    <value>Настройте MQTT-соединение; по умолчанию используется локальное соединение, которое можно оставить ненастроенным.</value>
+  </data>
+  <data name="SelectSaveLocation" xml:space="preserve">
+    <value>Выберите место для сохранения.</value>
+  </data>
+  <data name="FolderPathCannotBeEmpty" xml:space="preserve">
+    <value>Путь к папке не может быть пустым.</value>
+  </data>
+  <data name="Hint" xml:space="preserve">
+    <value>намекать</value>
+  </data>
+  <data name="CurrentlySupportsCvRawImages" xml:space="preserve">
+    <value>В настоящее время поддерживает изображения CVRAW.</value>
+  </data>
+  <data name="OriginalFileNotFound" xml:space="preserve">
+    <value>Исходный файл не найден</value>
+  </data>
+  <data name="ExportSupportsCieFilesOnly" xml:space="preserve">
+    <value>Экспорт поддерживает только файлы CIE.</value>
+  </data>
+  <data name="FileNotFound" xml:space="preserve">
+    <value>Файл не найден</value>
+  </data>
+  <data name="ResetDatabasePrompt" xml:space="preserve">
+    <value>Сбросить базу данных?</value>
+  </data>
+  <data name="RelatedItems" xml:space="preserve">
+    <value>Связанные элементы</value>
+  </data>
+  <data name="Debug" xml:space="preserve">
+    <value>отлаживать</value>
+  </data>
+  <data name="ToggleList" xml:space="preserve">
+    <value>Переключить список</value>
+  </data>
+  <data name="CmdSendAlready" xml:space="preserve">
+    <value>Команда отправлена.</value>
+  </data>
+  <data name="License" xml:space="preserve">
+    <value>лицензия</value>
+  </data>
+  <data name="ModifyLicense" xml:space="preserve">
+    <value>Изменить лицензию</value>
+  </data>
+  <data name="ConfigurePhysicalCameraBeforeCalibration" xml:space="preserve">
+    <value>Перед использованием калибровки настройте соответствующую физическую камеру.</value>
+  </data>
+  <data name="CacheSize" xml:space="preserve">
+    <value>Размер кэша</value>
+  </data>
+  <data name="IntegrationStartTime" xml:space="preserve">
+    <value>Интегральное время начала</value>
+  </data>
+  <data name="IntervalTime" xml:space="preserve">
+    <value>Интервал времени</value>
+  </data>
+  <data name="Step" xml:space="preserve">
+    <value>Шаги</value>
+  </data>
+  <data name="RestartWindowsService" xml:space="preserve">
+    <value>Перезапустить WindowsService</value>
   </data>
 </root>

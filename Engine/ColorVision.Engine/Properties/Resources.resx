@@ -1818,9 +1818,6 @@
   <data name="ExecutionFailed" xml:space="preserve">
     <value>执行失败</value>
   </data>
-  <data name="执行失败" xml:space="preserve">
-    <value>执行失败</value>
-  </data>
   <data name="Opening" xml:space="preserve">
     <value>打开中</value>
   </data>
@@ -2228,5 +2225,152 @@
   </data>
   <data name="RestoreMysqlCameraRunParamTemplateSettings" xml:space="preserve">
     <value>恢复MysqlCameraRunParam模板设置</value>
+  </data>
+  <data name="ParamInput" xml:space="preserve">
+    <value>输入参数</value>
+  </data>
+  <data name="SaveToLoacal" xml:space="preserve">
+    <value>保存到本地</value>
+  </data>
+  <data name="ArchiveDate" xml:space="preserve">
+    <value>归档日期</value>
+  </data>
+  <data name="CreationDate" xml:space="preserve">
+    <value>创建日期</value>
+  </data>
+  <data name="ProcessHandlingConfig" xml:space="preserve">
+    <value>流程处理配置</value>
+  </data>
+  <data name="UpdateProcessMeta" xml:space="preserve">
+    <value>更新 ProcessMeta</value>
+  </data>
+  <data name="WorkflowTemplate" xml:space="preserve">
+    <value>流程模板:</value>
+  </data>
+  <data name="DeleteSelected" xml:space="preserve">
+    <value>删除选中</value>
+  </data>
+  <data name="DoubleClickToRename_CurrentlySavedInMemoryOnly" xml:space="preserve">
+    <value>  (双击可重命名, 当前仅内存保存)</value>
+  </data>
+  <data name="HandleClass" xml:space="preserve">
+    <value>处理类</value>
+  </data>
+  <data name="Description" xml:space="preserve">
+    <value>描述</value>
+  </data>
+  <data name="DuplicateName" xml:space="preserve">
+    <value>名称重复</value>
+  </data>
+  <data name="UnableToInstantiateProcessType" xml:space="preserve">
+    <value>无法实例化进程类型</value>
+  </data>
+  <data name="NoServicesRequireCachePathConfiguration" xml:space="preserve">
+    <value>没有服务需要配置缓存路径</value>
+  </data>
+  <data name="BulkEdit" xml:space="preserve">
+    <value>统一编辑</value>
+  </data>
+  <data name="ArchiveAll" xml:space="preserve">
+    <value>全部归档</value>
+  </data>
+  <data name="BatchResults" xml:space="preserve">
+    <value>批次结果</value>
+  </data>
+  <data name="Integer" xml:space="preserve">
+    <value>整数</value>
+  </data>
+  <data name="Float" xml:space="preserve">
+    <value>浮点</value>
+  </data>
+  <data name="Bool" xml:space="preserve">
+    <value>布尔</value>
+  </data>
+  <data name="String" xml:space="preserve">
+    <value>字符串</value>
+  </data>
+  <data name="Enum" xml:space="preserve">
+    <value>枚举</value>
+  </data>
+  <data name="ConfigePOINeed" xml:space="preserve">
+    <value>需要配置关注点</value>
+  </data>
+  <data name="ExportTo" xml:space="preserve">
+    <value>导出为</value>
+  </data>
+  <data name="OpenFileFailed" xml:space="preserve">
+    <value>打开文件失败</value>
+  </data>
+  <data name="Compress" xml:space="preserve">
+    <value>压缩</value>
+  </data>
+  <data name="MqttConfig" xml:space="preserve">
+    <value>Mqtt配置</value>
+  </data>
+  <data name="ConfigureMqttConnection_DefaultsToLocalOptional" xml:space="preserve">
+    <value>配置Mqtt连接，默认为本地连接，可以不进行配置</value>
+  </data>
+  <data name="SelectSaveLocation" xml:space="preserve">
+    <value>选择要保存到得位置</value>
+  </data>
+  <data name="FolderPathCannotBeEmpty" xml:space="preserve">
+    <value>文件夹路径不能为空</value>
+  </data>
+  <data name="Hint" xml:space="preserve">
+    <value>提示</value>
+  </data>
+  <data name="CurrentlySupportsCvRawImages" xml:space="preserve">
+    <value>目前支持CVRAW图像</value>
+  </data>
+  <data name="OriginalFileNotFound" xml:space="preserve">
+    <value>找不到原始文件</value>
+  </data>
+  <data name="ExportSupportsCieFilesOnly" xml:space="preserve">
+    <value>导出仅支持CIE文件</value>
+  </data>
+  <data name="FileNotFound" xml:space="preserve">
+    <value>找不到文件</value>
+  </data>
+  <data name="执行失败" xml:space="preserve">
+    <value>执行失败</value>
+  </data>
+  <data name="ResetDatabasePrompt" xml:space="preserve">
+    <value>是否重置数据库</value>
+  </data>
+  <data name="RelatedItems" xml:space="preserve">
+    <value>相关项</value>
+  </data>
+  <data name="Debug" xml:space="preserve">
+    <value>调试</value>
+  </data>
+  <data name="ToggleList" xml:space="preserve">
+    <value>切换列表</value>
+  </data>
+  <data name="CmdSendAlready" xml:space="preserve">
+    <value>命令已经发送</value>
+  </data>
+  <data name="License" xml:space="preserve">
+    <value>许可证</value>
+  </data>
+  <data name="ModifyLicense" xml:space="preserve">
+    <value>修改许可证</value>
+  </data>
+  <data name="ConfigurePhysicalCameraBeforeCalibration" xml:space="preserve">
+    <value>在使用校正前，请先配置对映的物理相机</value>
+  </data>
+  <data name="CacheSize" xml:space="preserve">
+    <value>缓存大小</value>
+  </data>
+  <data name="IntegrationStartTime" xml:space="preserve">
+    <value>积分起始时间</value>
+  </data>
+  <data name="IntervalTime" xml:space="preserve">
+    <value>间隔时间</value>
+  </data>
+  <data name="Step" xml:space="preserve">
+    <value>步数</value>
+  </data>
+  <data name="RestartWindowsService" xml:space="preserve">
+    <value>重启WindowsService</value>
   </data>
 </root>

@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Reports
 
 
             // 添加抬头
-            Paragraph title = new Paragraph("光谱校正数据报表")
+            Paragraph title = new Paragraph("Spetrum Calibration Data Report")
                 .SetTextAlignment(TextAlignment.CENTER)
                 .SetFontSize(20);
             document.Add(title);
@@ -25,9 +25,9 @@ namespace ColorVision.Engine.Reports
 
             // 创建表格
             Table table = new Table(3, true);
-            table.AddCell("公司名称");
-            table.AddCell("校正参数1");
-            table.AddCell("校正参数2");
+            table.AddCell("Company Name");
+            table.AddCell("Calibration1");
+            table.AddCell("Calibration2");
 
             // 添加数据
             table.AddCell("Company A");

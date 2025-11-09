@@ -270,4 +270,25 @@
   <data name="Terminal" xml:space="preserve">
     <value>ターミナル</value>
   </data>
+  <data name="EditSolution" xml:space="preserve">
+    <value>編集ソリューション</value>
+  </data>
+  <data name="AddFolder" xml:space="preserve">
+    <value>フォルダを追加</value>
+  </data>
+  <data name="CopyFullPath" xml:space="preserve">
+    <value>フルパスをコピーする</value>
+  </data>
+  <data name="NoFound" xml:space="preserve">
+    <value>見つかりません</value>
+  </data>
+  <data name="RelateItem" xml:space="preserve">
+    <value>関連プロジェクト</value>
+  </data>
+  <data name="CopyPath" xml:space="preserve">
+    <value>パスをコピー</value>
+  </data>
+  <data name="SolutionConfiguration" xml:space="preserve">
+    <value>ソリューション構成</value>
+  </data>
 </root>

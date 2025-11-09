@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Templates.Distortion
             List<string> bdHeader = new() { "DisTypeDesc", "SlopeTypeDesc", "LayoutTypeDesc", "CornerTypeDesc", "MaxRatio" };
 
             var csvBuilder = new StringBuilder();
-            List<string> header = new() { "类型", "斜率", "布点", "角点", "畸变率" };
+            List<string> header = new() { "Type", "Slope", "Layout", "Corner", "DistortionRatio" };
 
             csvBuilder.AppendLine(string.Join(",", header));
 
@@ -72,7 +72,7 @@ namespace ColorVision.Engine.Templates.Distortion
                 result.ViewResults = new ObservableCollection<IViewResult>();
                 foreach (var item in AlgResultDistortionDao.Instance.GetAllByPid(result.Id))
                     result.ViewResults.Add(new ViewResultDistortion(item));
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmDistortion), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmDistortion), ImageFilePath = result.FilePath })) });
             }
         }
 
@@ -101,7 +101,7 @@ namespace ColorVision.Engine.Templates.Distortion
                 }
             }
 
-            List<string> header = new() { "类型", "斜率", "布点", "角点", "畸变率" };
+            List<string> header = new() { "Type", "Slope", "Layout", "Corner", "DistortionRatio" };
             List<string> bdHeader = new() { "DisTypeDesc", "SlopeTypeDesc", "LayoutTypeDesc", "CornerTypeDesc", "MaxRatio" };
 
             if (view.ListView.View is GridView gridView)

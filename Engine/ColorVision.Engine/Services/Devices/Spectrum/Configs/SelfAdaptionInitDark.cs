@@ -8,25 +8,25 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         /// <summary>
         /// 积分起始时间
         /// </summary>
-        [DisplayName("积分起始时间")]
+        [DisplayName("IntegrationStartTime")]
         public float BeginIntegralTime { get => _BeginIntegralTime; set { _BeginIntegralTime = value; OnPropertyChanged(); } }
         private float _BeginIntegralTime = 100;
         /// <summary>
         /// 平均次数
         /// </summary>
-        [DisplayName("平均次数")]
+        [DisplayName("AverageTimes")]
         public int NumberOfAverage { get => _NumberOfAverage; set { _NumberOfAverage = value; OnPropertyChanged(); } }
         private int _NumberOfAverage = 1;
         /// <summary>
         /// 间隔时间
         /// </summary>
-        [DisplayName("间隔时间")]
+        [DisplayName("IntervalTime")]
         public int StepTime { get => _StepTime; set { _StepTime = value; OnPropertyChanged(); } }
         private int _StepTime = 100;
         /// <summary>
         /// 步数
         /// </summary>
-        [DisplayName("步数")]
+        [DisplayName("Step")]
         public int StepCount { get => _StepCount; set { _StepCount = value; OnPropertyChanged(); } }
         private int _StepCount = 50;
     }

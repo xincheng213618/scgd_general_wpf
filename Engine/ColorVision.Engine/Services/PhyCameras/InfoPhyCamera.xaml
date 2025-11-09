@@ -60,7 +60,7 @@
                             <UniformGrid x:Name="CommandGrid" VerticalAlignment="Top">
                                 <Button   Style="{StaticResource ButtonCommand}" Margin="10" Background="{Binding LicenseSolidColorBrush}" Command="{Binding UploadLicenseCommand}">
                                     <StackPanel  HorizontalAlignment="Center">
-                                        <TextBlock Text="修改许可证" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{x:Static properties:Resources.ModifyLicense}" HorizontalAlignment="Center"/>
                                         <TextBlock VerticalAlignment="Bottom" HorizontalAlignment="Center" Text="{Binding CameraLicenseModel.ExpiryDate,StringFormat=yyyy/MM//dd}"/>
                                     </StackPanel>
                                 </Button>
@@ -68,7 +68,7 @@
                             </UniformGrid>
                         </ScrollViewer>
                     </TabItem>
-                    <TabItem Header="许可证">
+                    <TabItem Header="{x:Static properties:Resources.License}">
                         <StackPanel Margin="10">
                             <DockPanel >
                                 <TextBlock Text="DeviceMode" Width="120"/>

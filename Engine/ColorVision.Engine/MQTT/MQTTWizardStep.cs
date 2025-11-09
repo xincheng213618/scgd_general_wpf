@@ -7,9 +7,9 @@ namespace ColorVision.Engine.MQTT
     {
         public override int Order => 10;
 
-        public override string Header => "Mqtt配置";
+        public override string Header => ColorVision.Engine.Properties.Resources.MqttConfig;
 
-        public override string Description => "配置Mqtt连接，默认为本地连接，可以不进行配置";
+        public override string Description => ColorVision.Engine.Properties.Resources.ConfigureMqttConnection_DefaultsToLocalOptional;
 
         public override void Execute()
         {

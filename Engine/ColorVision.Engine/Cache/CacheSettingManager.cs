@@ -29,7 +29,7 @@ namespace ColorVision.Engine.Services
         {
             if (CacheSettingInfos.Count == 0)
             {
-                MessageBox.Show("没有服务需要配置缓存路径","ColorVision");
+                MessageBox.Show(ColorVision.Engine.Properties.Resources.NoServicesRequireCachePathConfiguration,"ColorVision");
             }
             var Unifiedvalue = CacheSettingInfos[0].FileServerCfg.FileServerCfg.Clone();
 

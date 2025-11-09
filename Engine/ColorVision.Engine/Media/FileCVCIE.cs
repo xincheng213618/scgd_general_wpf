@@ -97,7 +97,7 @@ namespace ColorVision.Engine.Impl.CVFile
                 {
                     OwnerGuid ="Export",
                     GuidId ="ExportBmp",
-                    Header = "导出为 BMP",
+                    Header = ColorVision.Engine.Properties.Resources.ExportTo+" BMP",
                     Order =2,
                     Command = ExportBMPCommand,
                 },
@@ -105,7 +105,7 @@ namespace ColorVision.Engine.Impl.CVFile
                 {
                     OwnerGuid ="Export",
                     GuidId ="ExportTIF",
-                    Header = "导出为 TIFF",
+                    Header = ColorVision.Engine.Properties.Resources.ExportTo+" TIFF",
                     Order =3,
                     Command = ExportTIFFCommand,
                 },
@@ -113,7 +113,7 @@ namespace ColorVision.Engine.Impl.CVFile
                 {
                     OwnerGuid ="Export",
                     GuidId ="ExportPNG",
-                    Header = "导出为 PNG",
+                    Header = ColorVision.Engine.Properties.Resources.ExportTo+" PNG",
                     Order =3,
                     Command = ExportPNGCommand,
                 },
@@ -121,7 +121,7 @@ namespace ColorVision.Engine.Impl.CVFile
                 {
                     OwnerGuid ="Export",
                     GuidId ="ExportAs",
-                    Header = "导出为",
+                    Header = ColorVision.Engine.Properties.Resources.ExportTo,
                     Order =1,
                     Command = ExportCommand
                 },

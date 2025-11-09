@@ -192,7 +192,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.执行失败, "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
                 }
             };
         }

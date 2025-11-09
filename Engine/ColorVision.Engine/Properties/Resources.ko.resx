@@ -1692,17 +1692,17 @@
   <data name="DataBasicPath" xml:space="preserve">
     <value>데이터베이스 경로</value>
   </data>
-  <data name="Absolute" xml:space="preserve">
-    <value>순수한</value>
-  </data>
-  <data name="Relative" xml:space="preserve">
-    <value>비교적</value>
-  </data>
   <data name="singleChannel" xml:space="preserve">
     <value>단일 채널</value>
   </data>
   <data name="threeChannels" xml:space="preserve">
     <value>3채널</value>
+  </data>
+  <data name="Absolute" xml:space="preserve">
+    <value>순수한</value>
+  </data>
+  <data name="Relative" xml:space="preserve">
+    <value>비교적</value>
   </data>
   <data name="Wavelength" xml:space="preserve">
     <value>파장</value>
@@ -2228,5 +2228,149 @@
   </data>
   <data name="RestoreMysqlCameraRunParamTemplateSettings" xml:space="preserve">
     <value>MysqlCameraRunParam 템플릿 설정 복원</value>
+  </data>
+  <data name="ParamInput" xml:space="preserve">
+    <value>입력 매개변수</value>
+  </data>
+  <data name="SaveToLoacal" xml:space="preserve">
+    <value>로컬에 저장</value>
+  </data>
+  <data name="ArchiveDate" xml:space="preserve">
+    <value>보관된 날짜</value>
+  </data>
+  <data name="CreationDate" xml:space="preserve">
+    <value>생성 날짜</value>
+  </data>
+  <data name="ProcessHandlingConfig" xml:space="preserve">
+    <value>처리 구성</value>
+  </data>
+  <data name="UpdateProcessMeta" xml:space="preserve">
+    <value>ProcessMeta 업데이트</value>
+  </data>
+  <data name="WorkflowTemplate" xml:space="preserve">
+    <value>프로세스 템플릿:</value>
+  </data>
+  <data name="DeleteSelected" xml:space="preserve">
+    <value>선택한 항목 삭제</value>
+  </data>
+  <data name="DoubleClickToRename_CurrentlySavedInMemoryOnly" xml:space="preserve">
+    <value>(이름을 바꾸려면 두 번 클릭하세요. 현재는 메모리에만 저장됩니다.)</value>
+  </data>
+  <data name="HandleClass" xml:space="preserve">
+    <value>처리 클래스</value>
+  </data>
+  <data name="Description" xml:space="preserve">
+    <value>설명하다</value>
+  </data>
+  <data name="DuplicateName" xml:space="preserve">
+    <value>중복된 이름</value>
+  </data>
+  <data name="UnableToInstantiateProcessType" xml:space="preserve">
+    <value>프로세스 유형을 인스턴스화할 수 없습니다.</value>
+  </data>
+  <data name="NoServicesRequireCachePathConfiguration" xml:space="preserve">
+    <value>어떤 서비스도 캐시 경로를 구성할 필요가 없습니다.</value>
+  </data>
+  <data name="BulkEdit" xml:space="preserve">
+    <value>통합 편집</value>
+  </data>
+  <data name="ArchiveAll" xml:space="preserve">
+    <value>모든 아카이브</value>
+  </data>
+  <data name="BatchResults" xml:space="preserve">
+    <value>배치 결과</value>
+  </data>
+  <data name="Integer" xml:space="preserve">
+    <value>정수</value>
+  </data>
+  <data name="Float" xml:space="preserve">
+    <value>부동 소수점</value>
+  </data>
+  <data name="Bool" xml:space="preserve">
+    <value>부울</value>
+  </data>
+  <data name="String" xml:space="preserve">
+    <value>끈</value>
+  </data>
+  <data name="Enum" xml:space="preserve">
+    <value>낱낱이 세다</value>
+  </data>
+  <data name="ConfigePOINeed" xml:space="preserve">
+    <value>주의점을 구성해야 합니다.</value>
+  </data>
+  <data name="ExportTo" xml:space="preserve">
+    <value>내보내기로</value>
+  </data>
+  <data name="OpenFileFailed" xml:space="preserve">
+    <value>파일을 열지 못했습니다</value>
+  </data>
+  <data name="Compress" xml:space="preserve">
+    <value>압축</value>
+  </data>
+  <data name="MqttConfig" xml:space="preserve">
+    <value>MQTT 구성</value>
+  </data>
+  <data name="ConfigureMqttConnection_DefaultsToLocalOptional" xml:space="preserve">
+    <value>MQTT 연결을 구성합니다. 기본값은 로컬 연결이며, 구성하지 않아도 됩니다.</value>
+  </data>
+  <data name="SelectSaveLocation" xml:space="preserve">
+    <value>저장할 위치를 선택하세요.</value>
+  </data>
+  <data name="FolderPathCannotBeEmpty" xml:space="preserve">
+    <value>폴더 경로는 비워둘 수 없습니다.</value>
+  </data>
+  <data name="Hint" xml:space="preserve">
+    <value>힌트</value>
+  </data>
+  <data name="CurrentlySupportsCvRawImages" xml:space="preserve">
+    <value>현재 CVRAW 이미지를 지원합니다.</value>
+  </data>
+  <data name="OriginalFileNotFound" xml:space="preserve">
+    <value>원본 파일을 찾을 수 없습니다</value>
+  </data>
+  <data name="ExportSupportsCieFilesOnly" xml:space="preserve">
+    <value>내보내기는 CIE 파일만 지원합니다.</value>
+  </data>
+  <data name="FileNotFound" xml:space="preserve">
+    <value>파일을 찾을 수 없습니다</value>
+  </data>
+  <data name="ResetDatabasePrompt" xml:space="preserve">
+    <value>데이터베이스를 재설정하시겠습니까?</value>
+  </data>
+  <data name="RelatedItems" xml:space="preserve">
+    <value>관련 항목</value>
+  </data>
+  <data name="Debug" xml:space="preserve">
+    <value>디버그</value>
+  </data>
+  <data name="ToggleList" xml:space="preserve">
+    <value>토글 목록</value>
+  </data>
+  <data name="CmdSendAlready" xml:space="preserve">
+    <value>명령이 전송되었습니다</value>
+  </data>
+  <data name="License" xml:space="preserve">
+    <value>특허</value>
+  </data>
+  <data name="ModifyLicense" xml:space="preserve">
+    <value>라이센스 수정</value>
+  </data>
+  <data name="ConfigurePhysicalCameraBeforeCalibration" xml:space="preserve">
+    <value>보정을 사용하기 전에 해당 물리적 카메라를 구성하세요.</value>
+  </data>
+  <data name="CacheSize" xml:space="preserve">
+    <value>캐시 크기</value>
+  </data>
+  <data name="IntegrationStartTime" xml:space="preserve">
+    <value>적분 시작 시간</value>
+  </data>
+  <data name="IntervalTime" xml:space="preserve">
+    <value>간격 시간</value>
+  </data>
+  <data name="Step" xml:space="preserve">
+    <value>단계</value>
+  </data>
+  <data name="RestartWindowsService" xml:space="preserve">
+    <value>WindowsService를 다시 시작하세요</value>
   </data>
 </root>

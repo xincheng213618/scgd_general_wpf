@@ -7,7 +7,7 @@ using System.Windows;
 namespace ColorVision.Solution
 {
 
-    [DisplayName("解决方案配置")]
+    [DisplayName("SolutionConfiguration")]
     public class SolutionSetting: ViewModelBase,IConfig
     {
         public static SolutionSetting Instance => ConfigService.Instance.GetRequiredService<SolutionSetting>();
@@ -22,7 +22,7 @@ namespace ColorVision.Solution
 
 
         public string DefaultCreatName { get => _DefaultCreatName; set { _DefaultCreatName = value; OnPropertyChanged(); } }
-        private string _DefaultCreatName = "新建工程";
+        private string _DefaultCreatName = ColorVision.Solution.Properties.Resources.NewSolution;
 
     }
 }

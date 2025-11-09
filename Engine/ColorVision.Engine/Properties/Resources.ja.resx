@@ -1692,17 +1692,17 @@
   <data name="DataBasicPath" xml:space="preserve">
     <value>データベースパス</value>
   </data>
-  <data name="Absolute" xml:space="preserve">
-    <value>絶対</value>
-  </data>
-  <data name="Relative" xml:space="preserve">
-    <value>比較的</value>
-  </data>
   <data name="singleChannel" xml:space="preserve">
     <value>シングルチャンネル</value>
   </data>
   <data name="threeChannels" xml:space="preserve">
     <value>3チャンネル</value>
+  </data>
+  <data name="Absolute" xml:space="preserve">
+    <value>絶対</value>
+  </data>
+  <data name="Relative" xml:space="preserve">
+    <value>比較的</value>
   </data>
   <data name="Wavelength" xml:space="preserve">
     <value>波長</value>
@@ -2228,5 +2228,149 @@
   </data>
   <data name="RestoreMysqlCameraRunParamTemplateSettings" xml:space="preserve">
     <value>MysqlCameraRunParam テンプレートの設定を復元する</value>
+  </data>
+  <data name="ParamInput" xml:space="preserve">
+    <value>入力パラメータ</value>
+  </data>
+  <data name="SaveToLoacal" xml:space="preserve">
+    <value>ローカルに保存</value>
+  </data>
+  <data name="ArchiveDate" xml:space="preserve">
+    <value>アーカイブ日</value>
+  </data>
+  <data name="CreationDate" xml:space="preserve">
+    <value>作成日</value>
+  </data>
+  <data name="ProcessHandlingConfig" xml:space="preserve">
+    <value>処理構成</value>
+  </data>
+  <data name="UpdateProcessMeta" xml:space="preserve">
+    <value>プロセスメタの更新</value>
+  </data>
+  <data name="WorkflowTemplate" xml:space="preserve">
+    <value>プロセステンプレート:</value>
+  </data>
+  <data name="DeleteSelected" xml:space="preserve">
+    <value>選択した項目を削除</value>
+  </data>
+  <data name="DoubleClickToRename_CurrentlySavedInMemoryOnly" xml:space="preserve">
+    <value>(名前を変更するにはダブルクリックします。現在はメモリにのみ保存されます)</value>
+  </data>
+  <data name="HandleClass" xml:space="preserve">
+    <value>処理クラス</value>
+  </data>
+  <data name="Description" xml:space="preserve">
+    <value>説明する</value>
+  </data>
+  <data name="DuplicateName" xml:space="preserve">
+    <value>重複した名前</value>
+  </data>
+  <data name="UnableToInstantiateProcessType" xml:space="preserve">
+    <value>プロセスタイプをインスタンス化できません</value>
+  </data>
+  <data name="NoServicesRequireCachePathConfiguration" xml:space="preserve">
+    <value>キャッシュ パスを構成する必要があるサービスはありません。</value>
+  </data>
+  <data name="BulkEdit" xml:space="preserve">
+    <value>統合編集</value>
+  </data>
+  <data name="ArchiveAll" xml:space="preserve">
+    <value>すべてのアーカイブ</value>
+  </data>
+  <data name="BatchResults" xml:space="preserve">
+    <value>バッチ結果</value>
+  </data>
+  <data name="Integer" xml:space="preserve">
+    <value>整数</value>
+  </data>
+  <data name="Float" xml:space="preserve">
+    <value>浮動小数点</value>
+  </data>
+  <data name="Bool" xml:space="preserve">
+    <value>ブール値</value>
+  </data>
+  <data name="String" xml:space="preserve">
+    <value>弦</value>
+  </data>
+  <data name="Enum" xml:space="preserve">
+    <value>列挙する</value>
+  </data>
+  <data name="ConfigePOINeed" xml:space="preserve">
+    <value>注意ポイントを設定する必要があります</value>
+  </data>
+  <data name="ExportTo" xml:space="preserve">
+    <value>エクスポート形式</value>
+  </data>
+  <data name="OpenFileFailed" xml:space="preserve">
+    <value>ファイルを開けませんでした</value>
+  </data>
+  <data name="Compress" xml:space="preserve">
+    <value>圧縮</value>
+  </data>
+  <data name="MqttConfig" xml:space="preserve">
+    <value>MQTT設定</value>
+  </data>
+  <data name="ConfigureMqttConnection_DefaultsToLocalOptional" xml:space="preserve">
+    <value>MQTT 接続を構成します。デフォルトはローカル接続であり、構成しないままにすることができます。</value>
+  </data>
+  <data name="SelectSaveLocation" xml:space="preserve">
+    <value>保存する場所を選択します。</value>
+  </data>
+  <data name="FolderPathCannotBeEmpty" xml:space="preserve">
+    <value>フォルダー パスを空にすることはできません。</value>
+  </data>
+  <data name="Hint" xml:space="preserve">
+    <value>ヒント</value>
+  </data>
+  <data name="CurrentlySupportsCvRawImages" xml:space="preserve">
+    <value>現在、CVRAW 画像をサポートしています。</value>
+  </data>
+  <data name="OriginalFileNotFound" xml:space="preserve">
+    <value>元のファイルが見つかりません</value>
+  </data>
+  <data name="ExportSupportsCieFilesOnly" xml:space="preserve">
+    <value>エクスポートはCIEファイルのみサポートされます</value>
+  </data>
+  <data name="FileNotFound" xml:space="preserve">
+    <value>ファイルが見つかりません</value>
+  </data>
+  <data name="ResetDatabasePrompt" xml:space="preserve">
+    <value>データベースをリセットしますか?</value>
+  </data>
+  <data name="RelatedItems" xml:space="preserve">
+    <value>関連商品</value>
+  </data>
+  <data name="Debug" xml:space="preserve">
+    <value>デバッグ</value>
+  </data>
+  <data name="ToggleList" xml:space="preserve">
+    <value>リストを切り替える</value>
+  </data>
+  <data name="CmdSendAlready" xml:space="preserve">
+    <value>コマンドが送信されました</value>
+  </data>
+  <data name="License" xml:space="preserve">
+    <value>ライセンス</value>
+  </data>
+  <data name="ModifyLicense" xml:space="preserve">
+    <value>ライセンスの変更</value>
+  </data>
+  <data name="ConfigurePhysicalCameraBeforeCalibration" xml:space="preserve">
+    <value>キャリブレーションを使用する前に、対応する物理カメラを設定してください。</value>
+  </data>
+  <data name="CacheSize" xml:space="preserve">
+    <value>キャッシュサイズ</value>
+  </data>
+  <data name="IntegrationStartTime" xml:space="preserve">
+    <value>積分開始時間</value>
+  </data>
+  <data name="IntervalTime" xml:space="preserve">
+    <value>インターバル時間</value>
+  </data>
+  <data name="Step" xml:space="preserve">
+    <value>手順</value>
+  </data>
+  <data name="RestartWindowsService" xml:space="preserve">
+    <value>Windowsサービスを再起動する</value>
   </data>
 </root>

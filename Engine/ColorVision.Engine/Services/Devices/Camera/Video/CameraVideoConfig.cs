@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             DeafutPort++;
             _Port = Common.Utilities.Tool.GetFreePort(DeafutPort);
         }
-        [DisplayName("主机")]
+        [DisplayName("Host")]
         public string Host { get => _Host; set { _Host = value; OnPropertyChanged(); } }
         private string _Host = "127.0.0.1";
 
@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         /// <summary>
         /// 端口地址
         /// </summary>
-        [DisplayName("端口地址")]
+        [DisplayName("PortAddress")]
         public int Port
         {
             get => _Port; set
@@ -50,7 +50,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private long _Capacity = 1073741824;
 
         [JsonIgnore]
-        [DisplayName("缓存大小")]
+        [DisplayName("CacheSize")]
         public string CapacityText
         {
             get => Common.Utilities.MemorySize.MemorySizeText(_Capacity);

@@ -7,16 +7,16 @@ namespace ColorVision.Engine
 {
     public enum SValueType
     {
-        [DescriptionAttribute("整数")]
+        [DescriptionAttribute("Integer")]
         Integer = 0,  // 整数
-        [DescriptionAttribute("浮点")]
+        [DescriptionAttribute("Float")]
         Float = 1,    // 浮点
 
-        [DescriptionAttribute("布尔")]
+        [DescriptionAttribute("Bool")]
         Boolean = 2,  // 布尔
-        [DescriptionAttribute("字符串")]
+        [DescriptionAttribute("String")]
         String = 3,   // 字符串
-        [DescriptionAttribute("枚举")]
+        [DescriptionAttribute("Enum")]
         Enum = 4      // 枚举
     }
 

@@ -250,4 +250,25 @@
   <data name="Terminal" xml:space="preserve">
     <value>终端</value>
   </data>
+  <data name="EditSolution" xml:space="preserve">
+    <value>编辑解决方案</value>
+  </data>
+  <data name="AddFolder" xml:space="preserve">
+    <value>添加文件夹</value>
+  </data>
+  <data name="CopyFullPath" xml:space="preserve">
+    <value>复制完整路径</value>
+  </data>
+  <data name="NoFound" xml:space="preserve">
+    <value>未找到</value>
+  </data>
+  <data name="RelateItem" xml:space="preserve">
+    <value>相关项目</value>
+  </data>
+  <data name="CopyPath" xml:space="preserve">
+    <value>复制路径</value>
+  </data>
+  <data name="SolutionConfiguration" xml:space="preserve">
+    <value>解决方案配置</value>
+  </data>
 </root>

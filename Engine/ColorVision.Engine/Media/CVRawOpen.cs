@@ -393,7 +393,7 @@ namespace ColorVision.Engine.Media
             List<MenuItemMetadata> menuItems = new List<MenuItemMetadata>();
             menuItems.Add(new MenuItemMetadata()
             {
-                Header = "导出",
+                Header = ColorVision.Engine.Properties.Resources.Export,
                 GuidId = "CVCIEExport",
                 Order = 301,
                 Command = new RelayCommand(a =>
@@ -417,7 +417,7 @@ namespace ColorVision.Engine.Media
 
                         if (EditorContext.ImageView.ComboxPOITemplate.SelectedValue is not PoiParam poiParams)
                         {
-                            MessageBox1.Show("需要配置关注点");
+                            MessageBox1.Show(ColorVision.Engine.Properties.Resources.ConfigePOINeed);
                             return;
                         }
 

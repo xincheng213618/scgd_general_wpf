@@ -164,7 +164,7 @@ namespace ColorVision.Solution.V
             {
                 GuidId = "Edit",
                 Order = 50,
-                Header = "编辑解决方案",
+                Header = ColorVision.Solution.Properties.Resources.EditSolution,
                 Command = EditCommand
             });
 
@@ -179,7 +179,7 @@ namespace ColorVision.Solution.V
                 OwnerGuid = "Add",
                 GuidId = "AddFolder",
                 Order = 1,
-                Header = "添加文件夹",
+                Header = ColorVision.Solution.Properties.Resources.AddFolder,
                 Command = AddDirCommand
             });
             MenuItemMetadatas.Add(new MenuItemMetadata
@@ -187,7 +187,7 @@ namespace ColorVision.Solution.V
                 GuidId = "CopyFullPath",
                 Order = 200,
                 Command = CopyFullPathCommand,
-                Header = "复制完整路径",
+                Header = ColorVision.Solution.Properties.Resources.CopyFullPath,
                 Icon = MenuItemIcon.TryFindResource("DICopyFullPath")
             });
             MenuItemMetadatas.Add(new MenuItemMetadata

@@ -101,10 +101,10 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(SensorParam)}模板失败", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.CreateDataBase+$" {typeof(SensorParam)} "+ ColorVision.Engine.Properties.Resources.TemplateFailed, "ColorVision");
                 if (GetMysqlCommand() is IMysqlCommand mysqlCommand)
                 {
-                    if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否重置数据库{typeof(SensorParam)}相关项", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                    if (MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ResetDatabasePrompt+$" {typeof(SensorParam)} "+ ColorVision.Engine.Properties.Resources.RelatedItems, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                     {
                         MySqlControl.GetInstance().BatchExecuteNonQuery(mysqlCommand.GetRecover());
                     }
