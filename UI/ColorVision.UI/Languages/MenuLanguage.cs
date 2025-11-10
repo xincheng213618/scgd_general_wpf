@@ -4,7 +4,7 @@ using ColorVision.UI.Menus;
 namespace ColorVision.UI.Languages
 {
     //这里隐藏掉，因为我认为频繁切换语言是不需要的
-
+    //后面这个合并到插件中
 
     public class MenuLanguage : MenuItemBase
     {

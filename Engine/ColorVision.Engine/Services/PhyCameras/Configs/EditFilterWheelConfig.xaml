@@ -41,7 +41,7 @@
                   BorderThickness="1">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Hole Index" Binding="{Binding HoleIndex}" Width="*" IsReadOnly="False"/>
-                <DataGridTextColumn Header="Hole Name" Binding="{Binding HoldName}" Width="2*" IsReadOnly="False"/>
+                <DataGridTextColumn Header="Hole Name" Binding="{Binding HoleName}" Width="2*" IsReadOnly="False"/>
             </DataGrid.Columns>
         </DataGrid>
 
