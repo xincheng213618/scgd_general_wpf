@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Archive.Dao
     {
         [SugarColumn(ColumnName = "code", IsPrimaryKey = true),DisplayName("Code")]
         public string Code { get; set; }
-        [SugarColumn(ColumnName ="name"),DisplayName("名称")]
+        [SugarColumn(ColumnName ="name"),DisplayName("Name")]
         public string Name { get; set; }
         [SugarColumn(ColumnName ="data"),DisplayName("Data")]
         public string Data { get; set; }
@@ -19,9 +19,9 @@ namespace ColorVision.Engine.Archive.Dao
         public string Remark { get; set; }
         [SugarColumn(ColumnName ="tenant_id")]
         public int? TenantId { get; set; }
-        [SugarColumn(ColumnName ="create_date"),DisplayName("创建日期")]
+        [SugarColumn(ColumnName ="create_date"),DisplayName("CreationDate")]
         public DateTime? CreateDate { get; set; } = DateTime.Now;
-        [SugarColumn(ColumnName ="arch_date"),DisplayName("归档日期")]
+        [SugarColumn(ColumnName ="arch_date"),DisplayName("ArchiveDate")]
         public DateTime? ArchDate { get; set; } = DateTime.Now;
     }
 }
