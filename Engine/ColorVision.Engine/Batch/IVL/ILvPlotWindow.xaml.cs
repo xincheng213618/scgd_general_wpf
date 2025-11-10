@@ -135,7 +135,7 @@ namespace ColorVision.Engine.Batch.IVL
             // Add spectrum data if available
             if (hasSpectrumData)
             {
-                string spectrumSeriesName = "光谱仪";
+                string spectrumSeriesName = ColorVision.Engine.Properties.Resources.Spectrometer;
                 
                 if (!_groupedData.ContainsKey(spectrumSeriesName))
                 {

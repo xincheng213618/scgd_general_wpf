@@ -2373,4 +2373,7 @@
   <data name="RestartWindowsService" xml:space="preserve">
     <value>Redémarrer le service Windows</value>
   </data>
+  <data name="Spectrometer" xml:space="preserve">
+    <value>Spectromètre</value>
+  </data>
 </root>

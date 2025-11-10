@@ -2373,4 +2373,7 @@
   <data name="RestartWindowsService" xml:space="preserve">
     <value>WindowsService를 다시 시작하세요</value>
   </data>
+  <data name="Spectrometer" xml:space="preserve">
+    <value>분광계</value>
+  </data>
 </root>
