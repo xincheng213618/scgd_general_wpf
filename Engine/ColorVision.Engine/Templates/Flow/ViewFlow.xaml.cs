@@ -20,9 +20,9 @@ namespace ColorVision.Engine.Services.Flow
     /// <summary>
     /// CVFlowView.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewFlow : UserControl,IView,IDisposable
+    public partial class ViewFlow : UserControl, IView, IDisposable
     {
-        public  FlowEngineControl FlowEngineControl { get; set; }
+        public FlowEngineControl FlowEngineControl { get; set; }
 
         public static FlowEngineManager FlowEngineManager => FlowEngineManager.GetInstance();
 
@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Services.Flow
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
 
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo(),(s,e) => { e.CanExecute = UndoStack.Count > 0; }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo(), (s, e) => { e.CanExecute = UndoStack.Count > 0; }));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo(), (s, e) => { e.CanExecute = RedoStack.Count > 0; }));
             this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, null, (s, e) => { e.CanExecute = UndoStack.Count > 0; if (e.Parameter is MenuItem m1 && m1.ItemsSource != UndoStack) m1.ItemsSource = UndoStack; }));
             CommandBindings.Add(new CommandBinding(EngineCommands.StartExecutionCommand, (s, e) => DisplayFlow.RunFlow(), (s, e) =>
@@ -185,7 +185,7 @@ namespace ColorVision.Engine.Services.Flow
                 winf2.Visibility = STNodeEditorMain.ActiveNode != null ? Visibility.Visible : Visibility.Collapsed;
             };
 
-            
+
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {
                 if (e.KeyCode == System.Windows.Forms.Keys.Delete)
@@ -232,7 +232,7 @@ namespace ColorVision.Engine.Services.Flow
                     );
                 }
             };
-            STNodeEditorHelper = new STNodeEditorHelper(this,STNodeEditorMain, STNodeTreeView1, STNodePropertyGrid1, SignStackPannel);
+            STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain, STNodeTreeView1, STNodePropertyGrid1, SignStackPannel);
         }
 
 
@@ -351,7 +351,7 @@ namespace ColorVision.Engine.Services.Flow
 
         private void STNodeEditorMain_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
         {
-            if ( Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && IsMouseDown)
+            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && IsMouseDown)
             {        // 计算鼠标移动的距离
                 int deltaX = e.X - lastMousePosition.X;
                 int deltaY = e.Y - lastMousePosition.Y;
@@ -421,7 +421,7 @@ namespace ColorVision.Engine.Services.Flow
         {
             if (sender is Grid grid)
             {
-                if (winf2.Visibility ==Visibility.Visible)
+                if (winf2.Visibility == Visibility.Visible)
                     winf2.Visibility = grid.ActualHeight < 500 || grid.ActualWidth < 300 ? Visibility.Collapsed : Visibility.Visible;
 
                 winf1.Visibility = grid.ActualHeight < 200 || grid.ActualWidth < 100 ? Visibility.Collapsed : Visibility.Visible;
@@ -432,5 +432,6 @@ namespace ColorVision.Engine.Services.Flow
         {
             BatchManager.GetInstance().Edit();
         }
+    }
 
 }
