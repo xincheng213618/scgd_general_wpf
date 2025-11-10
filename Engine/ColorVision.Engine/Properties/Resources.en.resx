@@ -1231,7 +1231,7 @@
     <value>Integration Time</value>
   </data>
   <data name="AutoIntegra" xml:space="preserve">
-    <value>Automatic points</value>
+    <value>Automatic intergate</value>
   </data>
   <data name="AutoZeroCalibration" xml:space="preserve">
     <value>Automatic zeroing</value>
