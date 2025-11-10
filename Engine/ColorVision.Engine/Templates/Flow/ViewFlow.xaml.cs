@@ -433,9 +433,4 @@ namespace ColorVision.Engine.Services.Flow
             BatchManager.GetInstance().Edit();
         }
 
-        private void BatchProcess_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-    }
 }
