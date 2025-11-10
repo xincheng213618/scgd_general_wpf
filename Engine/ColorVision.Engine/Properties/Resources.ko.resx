@@ -2376,4 +2376,7 @@
   <data name="Spectrometer" xml:space="preserve">
     <value>분광계</value>
   </data>
+  <data name="EditFilterWheelConfig" xml:space="preserve">
+    <value>필터 휠 구성 편집</value>
+  </data>
 </root>

@@ -2376,4 +2376,7 @@
   <data name="Spectrometer" xml:space="preserve">
     <value>光譜儀</value>
   </data>
+  <data name="EditFilterWheelConfig" xml:space="preserve">
+    <value>編輯濾光輪配置</value>
+  </data>
 </root>

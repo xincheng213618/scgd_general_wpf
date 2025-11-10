@@ -2376,4 +2376,7 @@
   <data name="Spectrometer" xml:space="preserve">
     <value>Spectromètre</value>
   </data>
+  <data name="EditFilterWheelConfig" xml:space="preserve">
+    <value>Modifier la configuration de la roue des filtres</value>
+  </data>
 </root>
