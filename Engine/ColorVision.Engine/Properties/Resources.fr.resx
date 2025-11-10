@@ -1242,9 +1242,6 @@
   <data name="SingleTest" xml:space="preserve">
     <value>Test unique</value>
   </data>
-  <data name="AutoTest" xml:space="preserve">
-    <value>Tests automatisés</value>
-  </data>
   <data name="SingleZeroCalibration" xml:space="preserve">
     <value>Mise à zéro unique</value>
   </data>
@@ -2426,5 +2423,8 @@
   </data>
   <data name="EditFilterWheelConfig" xml:space="preserve">
     <value>Modifier la configuration de la roue des filtres</value>
+  </data>
+  <data name="ContinuousMeasurement" xml:space="preserve">
+    <value>Mesure continue</value>
   </data>
 </root>

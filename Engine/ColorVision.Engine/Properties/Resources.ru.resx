@@ -1242,9 +1242,6 @@
   <data name="SingleTest" xml:space="preserve">
     <value>Одиночный тест</value>
   </data>
-  <data name="AutoTest" xml:space="preserve">
-    <value>Автоматизированное тестирование</value>
-  </data>
   <data name="SingleZeroCalibration" xml:space="preserve">
     <value>Одинарное обнуление</value>
   </data>
@@ -2426,5 +2423,8 @@
   </data>
   <data name="EditFilterWheelConfig" xml:space="preserve">
     <value>Изменить конфигурацию колеса фильтров</value>
+  </data>
+  <data name="ContinuousMeasurement" xml:space="preserve">
+    <value>Непрерывное измерение</value>
   </data>
 </root>
