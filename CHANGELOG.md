@@ -1,6 +1,6 @@
 #   CHANGELOAG
 
-## [1.3.14.33] 2025.11.10
+## [1.3.14.34] 2025.11.10
 
 1.优化 ColorVision.UI 资源中的语言显示名称
 
@@ -14,7 +14,7 @@
 
 6.更多的I18N支持
 
-7.IVL提供POIName而不是PoiId
+7.IVL提供POIName而不是PoiId  
 
 8.修复光谱仪更新产生的数据库对其bug
 
