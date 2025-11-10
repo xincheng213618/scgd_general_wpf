@@ -1,8 +1,11 @@
-﻿using System.Windows;
-using System.Windows.Controls;
-using ColorVision.Common.MVVM;
-using ColorVision.UI.Authorizations;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Extension;
+using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.PhyCameras.Configs;
+using ColorVision.UI.Authorizations;
+using System.Linq;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.CfwPort
 {
@@ -10,6 +13,29 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
     {
         public MQTTCfwPort DService { get; set; }
 
+        public FilterWheelConfig FilterWheelConfig
+        {
+            get 
+            {
+               var phycamera =  PhyCameraManager.GetInstance().PhyCameras.FirstOrDefault(a => a.Code == Config.SN);
+                if (phycamera != null)
+                {
+                    return phycamera.Config.FilterWheelConfig;
+                }
+                else
+                {
+                    var filterWheelConfig = phycamera.Config.FilterWheelConfig;
+                    filterWheelConfig.HoleNum = 5;
+                    filterWheelConfig.HoleMapping.Add(new HoleMap() { HoleIndex = 0, HoldName = "ND0" });
+                    filterWheelConfig.HoleMapping.Add(new HoleMap() { HoleIndex = 1, HoldName = "ND10" });
+                    filterWheelConfig.HoleMapping.Add(new HoleMap() { HoleIndex = 2, HoldName = "ND100" });
+                    filterWheelConfig.HoleMapping.Add(new HoleMap() { HoleIndex = 3, HoldName = "ND1000" });
+                    filterWheelConfig.HoleMapping.Add(new HoleMap() { HoleIndex = 4, HoldName = "EMPTY" });
+                    return filterWheelConfig;
+                }
+
+            } 
+        }
         public DeviceCfwPort(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTCfwPort(Config);
