@@ -14,8 +14,7 @@ namespace Pattern.Checkerboard
     }
     public class PatternCheckerboardConfig:ViewModelBase,IConfig
     {
-        public SolidColorBrush BackGroundBrush { get => _BackGroundBrush; set { _BackGroundBrush = value; OnPropertyChanged(); } }
-        private SolidColorBrush _BackGroundBrush = Brushes.Black;
+
 
         public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _MainBrush = Brushes.White;
@@ -37,6 +36,10 @@ namespace Pattern.Checkerboard
 
         public string MainBrushTag { get; set; } = "W";
         public string AltBrushTag { get; set; } = "K";
+
+        [DisplayName("视场背景")]
+        public SolidColorBrush BackGroundBrush { get => _BackGroundBrush; set { _BackGroundBrush = value; OnPropertyChanged(); } }
+        private SolidColorBrush _BackGroundBrush = Brushes.Black;
 
         public double FieldOfViewX { get => _FieldOfViewX; set { _FieldOfViewX = value; OnPropertyChanged(); } }
         private double _FieldOfViewX = 1.0;
