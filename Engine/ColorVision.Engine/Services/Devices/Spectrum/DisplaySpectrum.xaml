@@ -86,9 +86,9 @@
                             <UniformGrid Columns="3">
                                 <Button x:Name="btn_oneTest" Content="{x:Static properties:Resources.SingleTest}"  Margin="2" Click="Button_Click_OneTest"/>
                                 <Button x:Name="btn_autoTest" Content="{x:Static properties:Resources.ContinuousMeasurement}"  Margin="2" Click="Button_Click_AutoTest"/>
-                                <Button x:Name="btn_oneInitDark" Content="{x:Static properties:Resources.SingleZeroCalibration}"  Margin="2" Click="Button_Click_Init_Dark"/>
                             </UniformGrid>
                             <DockPanel>
+                                <Button x:Name="btn_oneInitDark" Content="{x:Static properties:Resources.SingleZeroCalibration}"  Margin="2" Click="Button_Click_Init_Dark"/>
                                 <Button Content="{x:Static properties:Resources.AdaptiveZeroCalibration}"  Margin="2" Command="{Binding SelfAdaptionInitDarkCommand}"/>
                                 <Button Grid.Column="1" Margin="5,0,5,0" HorizontalAlignment="Left" Command="{Binding SelfAdaptionInitDarkSettingCommand}" Padding="2" Height="21" Width="21" >
                                     <Button.Triggers>
