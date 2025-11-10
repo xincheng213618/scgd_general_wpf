@@ -120,4 +120,13 @@
   <data name="CommunicationProtocol" xml:space="preserve">
     <value>通信プロトコル</value>
   </data>
+  <data name="ServerPort" xml:space="preserve">
+    <value>ポート</value>
+  </data>
+  <data name="IPAddress" xml:space="preserve">
+    <value>IPアドレス</value>
+  </data>
+  <data name="IsServerEnabled" xml:space="preserve">
+    <value>サーバーが有効</value>
+  </data>
 </root>
