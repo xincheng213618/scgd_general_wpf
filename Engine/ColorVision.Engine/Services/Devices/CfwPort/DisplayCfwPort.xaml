@@ -38,7 +38,7 @@
                 <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontWeight="Bold"  FontSize="12" ToolTip="刷新">
                     <TextBlock.RenderTransform>
                         <RotateTransform x:Name="rotateTransform1" CenterX="6" CenterY="6"/>
-                    </TextBlock.RenderTransform>
+                    </TextBlock.RenderTransform> 
                 </TextBlock>
             </Button>
 
