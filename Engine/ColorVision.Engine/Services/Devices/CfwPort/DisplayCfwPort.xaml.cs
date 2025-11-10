@@ -1,13 +1,36 @@
-﻿using ColorVision.Engine.Messages;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Messages;
 using ColorVision.UI;
 using CVCommCore;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.CfwPort
 {
+
+    public class HoleMap:ViewModelBase
+    {
+        public int HoleIndex { get => _HoleIndex; set { _HoleIndex = value; OnPropertyChanged(); } }
+        private int _HoleIndex;
+
+        public string HoldName { get => _HoldName; set { _HoldName = value; OnPropertyChanged(); } }
+        private string _HoldName;
+    }
+
+    public class FilterWheelConfig: ViewModelBase
+    {
+        public int HoleNum { get => _HoleNum; set { _HoleNum = value; OnPropertyChanged(); } }
+        private int _HoleNum;
+
+        public ObservableCollection<HoleMap> HoleMapping { get => _HoleMapping; set { _HoleMapping = value; OnPropertyChanged(); } }
+        private ObservableCollection<HoleMap> _HoleMapping = new ObservableCollection<HoleMap>();
+    }
+
+
+
     /// <summary>
     /// DisplaySMUControl.xaml 的交互逻辑
     /// </summary>
@@ -24,18 +47,22 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             Device = device;
             InitializeComponent();
         }
-
+        FilterWheelConfig filterWheelConfig = new FilterWheelConfig();
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
             this.ApplyChangedSelectedColor(DisPlayBorder);
-
             List<int> ports = new List<int>();
-            for (int i = 0; i < Device.Config.Ports; i++)
-            {
-                ports.Add(i);
-            }
-            TextPort.ItemsSource = ports;
+            filterWheelConfig.HoleNum = 5;
+            filterWheelConfig.HoleMapping.Add(new HoleMap() { HoleIndex = 0, HoldName = "ND0" });
+            filterWheelConfig.HoleMapping.Add(new HoleMap() { HoleIndex = 1, HoldName = "ND10" });
+            filterWheelConfig.HoleMapping.Add(new HoleMap() { HoleIndex = 2, HoldName = "ND100" });
+            filterWheelConfig.HoleMapping.Add(new HoleMap() { HoleIndex = 3, HoldName = "ND1000" });
+            filterWheelConfig.HoleMapping.Add(new HoleMap() { HoleIndex = 4, HoldName = "EMPTY" });
+
+
+            CombPort.ItemsSource = filterWheelConfig.HoleMapping;
+            CombPort.DisplayMemberPath ="HoldName";
 
             void UpdateUI(DeviceStatusType status)
             {
@@ -115,7 +142,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
         {
             if (sender is Button button)
             {
-                if (int.TryParse(TextPort.Text,out int port))
+                if (int.TryParse(CombPort.Text,out int port))
                 {
                     var msgRecord = DService.SetPort(port);
                     msgRecord.MsgRecordStateChanged += (e) =>
@@ -156,7 +183,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 if (e == MsgRecordState.Success)
                 {
                     int port = msgRecord.MsgReturn.Data.Port;
-                    TextPort.Text = port.ToString();
+                    CombPort.SelectedIndex = port;
                 }
                 else
                 {
