@@ -583,7 +583,8 @@
     <value>Идентификация оборудования</value>
   </data>
   <data name="DeviceCode" xml:space="preserve">
-    <value>Код устройства</value>
+    <value>熄灭
+</value>
   </data>
   <data name="DeviceCameraSign1" xml:space="preserve">
     <value>Устройство не в сети. Сначала настройте идентификатор камеры.</value>

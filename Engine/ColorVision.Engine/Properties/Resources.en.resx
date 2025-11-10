@@ -1231,7 +1231,7 @@
     <value>Integration Time</value>
   </data>
   <data name="AutoIntegra" xml:space="preserve">
-    <value>Automatic intergate</value>
+    <value>Automatic intergation</value>
   </data>
   <data name="AutoZeroCalibration" xml:space="preserve">
     <value>Automatic zeroing</value>
@@ -1729,10 +1729,10 @@
     <value>Limit</value>
   </data>
   <data name="Ignite" xml:space="preserve">
-    <value>Light up</value>
+    <value>ON</value>
   </data>
   <data name="Extinguish" xml:space="preserve">
-    <value>Extinguish</value>
+    <value>OFF</value>
   </data>
   <data name="Start" xml:space="preserve">
     <value>Start</value>
