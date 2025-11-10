@@ -6,7 +6,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
     public class ConfigCalibration: DeviceServiceConfig, IFileServerCfg
     {
 
-        [PropertyEditorType(typeof(TextSNPropertiesEditor)))]
+        [PropertyEditorType(typeof(TextSNPropertiesEditor))]
         public string? CameraCode { get => _CameraCode; set { _CameraCode = value; OnPropertyChanged(); } }
         private string? _CameraCode;
 
