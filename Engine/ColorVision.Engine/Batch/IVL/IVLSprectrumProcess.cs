@@ -1,4 +1,6 @@
 using ColorVision.Database;
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
@@ -90,7 +92,13 @@ namespace ColorVision.Engine.Batch.IVL
                         }
                     });
                 }
-                
+
+                var DeviceSMUs = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList();
+                if (DeviceSMUs.Count > 0)
+                {
+                    DeviceSMUs[0].Config.V = null;
+                    DeviceSMUs[0].Config.I = null;
+                }
                 //ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
                 return true;
             }

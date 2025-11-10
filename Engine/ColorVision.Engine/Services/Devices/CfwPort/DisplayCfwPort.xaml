@@ -66,8 +66,9 @@
                 <Button  x:Name="ButtonClose" Margin="0,2" Content="{x:Static properties:Resources.Close}"  Click="Close_Click" Visibility="Collapsed"/>
                 <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,3">
                     <DockPanel Margin="0,2">
+                        <Button DockPanel.Dock="Right" Content="GetPort"  Click="GetPort_Click" />
                         <Button DockPanel.Dock="Right" Content="SetPort"  Click="SetPort_Click" />
-                        <hc:ComboBox  x:Name="TextPort"  Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}"  IsEditable="True" AutoComplete ="True" hc:InfoElement.ShowClearButton="True"/>
+                        <hc:ComboBox  x:Name="CombPort"  Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}"  IsEditable="True" AutoComplete ="True" hc:InfoElement.ShowClearButton="True"/>
                     </DockPanel>
                 </StackPanel>
 

@@ -1,10 +1,12 @@
 ﻿#pragma warning disable CS1998
 using ColorVision.Database;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Templates;
 using ColorVision.UI;
 using cvColorVision;
 using log4net;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -24,6 +26,7 @@ namespace ColorVision.Engine.Services
 
         public override async Task InitializeAsync()
         {
+
             if (MySqlControl.GetInstance().IsConnect)
             {
                 Application.Current.Dispatcher.Invoke(() =>

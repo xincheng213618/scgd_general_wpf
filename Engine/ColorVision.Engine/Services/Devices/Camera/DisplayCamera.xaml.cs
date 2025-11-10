@@ -733,6 +733,23 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             ServicesHelper.SendCommandEx(sender, () => DService.SetNDPort());
         }
+
+        private void GetNDport_Click(object sender, RoutedEventArgs e)
+        {
+            MsgRecord msgRecord = DService.GetPort();
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+                if (e == MsgRecordState.Success)
+                {
+                    int port = msgRecord.MsgReturn.Data.Port;
+                    DService.Config.NDPort = port;
+                }
+                else
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
+                }
+            };
+        }
     }
 }
 

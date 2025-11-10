@@ -19,7 +19,6 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
 
         private void ProcessingReceived(MsgReturn msg)
         {
-
             if (msg.Code == 0)
             {
                 switch (msg.EventName)
@@ -30,13 +29,11 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                     case "SetPort":
                         break;
                     case "GetPort":
-                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"Port:{(char)(msg.Data.nPort)}"));
                         break;
                     case "Clode":
                         DeviceStatus = DeviceStatusType.Closed;
                         break;
                     default:
-                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"未定义{msg.EventName}"));
                         break;
                 }
             }
@@ -50,7 +47,6 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                         break;
                     case "SetPort":
                         DeviceStatus = DeviceStatusType.Closed;
-
                         break;
                     case "GetPort":
                         DeviceStatus = DeviceStatusType.Closed;
@@ -59,7 +55,6 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                         DeviceStatus = DeviceStatusType.Closed;
                         break;
                     default:
-                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"未定义{msg.EventName}"));
                         break;
                 }
             }
