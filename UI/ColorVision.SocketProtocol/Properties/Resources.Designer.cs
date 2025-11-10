@@ -68,5 +68,32 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("CommunicationProtocol", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 IP地址 的本地化字符串。
+        /// </summary>
+        public static string IPAddress {
+            get {
+                return ResourceManager.GetString("IPAddress", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 服务器启用状态 的本地化字符串。
+        /// </summary>
+        public static string IsServerEnabled {
+            get {
+                return ResourceManager.GetString("IsServerEnabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 端口 的本地化字符串。
+        /// </summary>
+        public static string ServerPort {
+            get {
+                return ResourceManager.GetString("ServerPort", resourceCulture);
+            }
+        }
     }
 }

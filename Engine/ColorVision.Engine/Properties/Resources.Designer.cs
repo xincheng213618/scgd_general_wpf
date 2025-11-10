@@ -592,15 +592,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 自动测试 的本地化字符串。
-        /// </summary>
-        public static string AutoTest {
-            get {
-                return ResourceManager.GetString("AutoTest", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 自动测试间隔(ms) 的本地化字符串。
         /// </summary>
         public static string AutoTestInterval_Ms {
@@ -1461,6 +1452,15 @@ namespace ColorVision.Engine.Properties {
         public static string ConnectType {
             get {
                 return ResourceManager.GetString("ConnectType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 连续测量 的本地化字符串。
+        /// </summary>
+        public static string ContinuousMeasurement {
+            get {
+                return ResourceManager.GetString("ContinuousMeasurement", resourceCulture);
             }
         }
         
@@ -3945,6 +3945,15 @@ namespace ColorVision.Engine.Properties {
         public static string MenuGhost {
             get {
                 return ResourceManager.GetString("MenuGhost", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 语言(_Language) 的本地化字符串。
+        /// </summary>
+        public static string MenuLanguage {
+            get {
+                return ResourceManager.GetString("MenuLanguage", resourceCulture);
             }
         }
         

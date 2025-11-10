@@ -1242,9 +1242,6 @@
   <data name="SingleTest" xml:space="preserve">
     <value>単一テスト</value>
   </data>
-  <data name="AutoTest" xml:space="preserve">
-    <value>自動テスト</value>
-  </data>
   <data name="SingleZeroCalibration" xml:space="preserve">
     <value>シングルゼロ</value>
   </data>
@@ -2426,5 +2423,11 @@
   </data>
   <data name="EditFilterWheelConfig" xml:space="preserve">
     <value>フィルターホイールの設定を編集する</value>
+  </data>
+  <data name="ContinuousMeasurement" xml:space="preserve">
+    <value>連続測定</value>
+  </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>言語(_L)</value>
   </data>
 </root>

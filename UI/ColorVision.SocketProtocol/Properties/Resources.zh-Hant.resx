@@ -120,4 +120,13 @@
   <data name="CommunicationProtocol" xml:space="preserve">
     <value>通訊協定</value>
   </data>
+  <data name="ServerPort" xml:space="preserve">
+    <value>連接埠</value>
+  </data>
+  <data name="IPAddress" xml:space="preserve">
+    <value>IP位址</value>
+  </data>
+  <data name="IsServerEnabled" xml:space="preserve">
+    <value>伺服器啟用狀態</value>
+  </data>
 </root>

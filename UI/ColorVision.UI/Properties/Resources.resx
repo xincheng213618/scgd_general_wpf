@@ -158,7 +158,7 @@
     <value>自动调整列宽</value>
   </data>
   <data name="MenuLanguage" xml:space="preserve">
-    <value>语言(_Language)</value>
+    <value>语言(_L)</value>
   </data>
   <data name="Language" xml:space="preserve">
     <value>用户界面语言</value>

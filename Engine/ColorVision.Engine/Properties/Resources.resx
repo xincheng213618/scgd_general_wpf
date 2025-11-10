@@ -1242,9 +1242,6 @@
   <data name="SingleTest" xml:space="preserve">
     <value>单次测试</value>
   </data>
-  <data name="AutoTest" xml:space="preserve">
-    <value>自动测试</value>
-  </data>
   <data name="SingleZeroCalibration" xml:space="preserve">
     <value>单次校零</value>
   </data>
@@ -2426,5 +2423,11 @@
   </data>
   <data name="EditFilterWheelConfig" xml:space="preserve">
     <value>编辑滤光轮配置</value>
+  </data>
+  <data name="ContinuousMeasurement" xml:space="preserve">
+    <value>连续测量</value>
+  </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>语言(_Language)</value>
   </data>
 </root>

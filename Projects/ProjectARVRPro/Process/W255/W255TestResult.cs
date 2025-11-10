@@ -5,11 +5,42 @@ namespace ProjectARVRPro.Process.W255
 {
     public class W255ViewTestResult : W255TestResult
     {
-        public List<PoiResultCIExyuvData> PoixyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
+        public List<PoiResultCIExyuvData> ViewPoixyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
+    }
+
+
+    public class PoixyuvData
+    {
+        public int Id { get; set; }
+
+        public string Name { get; set; }
+
+        public double CCT { get; set; }
+
+        public double Wave { get; set; }
+
+        public double X { get; set; }
+
+        public double Y { get; set; }
+
+        public double Z { get; set; }
+
+        public double u { get; set; }
+
+
+        public double v { get; set; }
+
+        public double x { get; set; }
+
+
+        public double y { get; set; }
+
     }
 
     public class W255TestResult : ViewModelBase
     {
+        public List<PoixyuvData> PoixyuvDatas { get; set; } = new List<PoixyuvData>();
+
         /// <summary>
         /// 水平视场角(°) 测试项
         /// </summary>
@@ -49,10 +80,10 @@ namespace ProjectARVRPro.Process.W255
         /// <summary>
         /// CenterCIE1976ChromaticCoordinatesu
         /// </summary>
-        public ObjectiveTestItem CenterCIE1976ChromaticCoordinatesu { get; set; } = new ObjectiveTestItem() { Name = "Center_CIE_1931Chromatic_Coordinates_u'" };
+        public ObjectiveTestItem CenterCIE1976ChromaticCoordinatesu { get; set; } = new ObjectiveTestItem() { Name = "Center_CIE_1976Chromatic_Coordinates_u'" };
         /// <summary>
         /// CenterCIE1976ChromaticCoordinatesv
         /// </summary>
-        public ObjectiveTestItem CenterCIE1976ChromaticCoordinatesv { get; set; } = new ObjectiveTestItem() { Name = "Center_CIE_1931Chromatic_Coordinates_v'" };
+        public ObjectiveTestItem CenterCIE1976ChromaticCoordinatesv { get; set; } = new ObjectiveTestItem() { Name = "Center_CIE_1976Chromatic_Coordinates_v'" };
     }
 }

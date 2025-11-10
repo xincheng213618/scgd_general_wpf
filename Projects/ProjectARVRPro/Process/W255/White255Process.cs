@@ -37,7 +37,7 @@ namespace ProjectARVRPro.Process.W255
                     {
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
                         int id = 0;
-                        testResult.PoixyuvDatas.Clear();
+                        testResult.ViewPoixyuvDatas.Clear();
                         foreach (var item in poiPoints)
                         {
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };
@@ -47,7 +47,7 @@ namespace ProjectARVRPro.Process.W255
                             poi.y *= fixConfig.CenterCIE1931ChromaticCoordinatesy;
                             poi.u *= fixConfig.CenterCIE1976ChromaticCoordinatesu;
                             poi.v *= fixConfig.CenterCIE1976ChromaticCoordinatesv;
-                            testResult.PoixyuvDatas.Add(poi);
+                            testResult.ViewPoixyuvDatas.Add(poi);
 
                             if (item.PoiName == "P_9")
                             {
@@ -193,7 +193,7 @@ namespace ProjectARVRPro.Process.W255
             W255ViewTestResult testResult = JsonConvert.DeserializeObject<W255ViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return;
 
-            foreach (var poiResultCIExyuvData in testResult.PoixyuvDatas)
+            foreach (var poiResultCIExyuvData in testResult.ViewPoixyuvDatas)
             {
                 var item = poiResultCIExyuvData.Point;
                 switch (item.PointType)
@@ -238,7 +238,7 @@ namespace ProjectARVRPro.Process.W255
             W255ViewTestResult testResult = JsonConvert.DeserializeObject<W255ViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return outtext;
 
-            foreach (var item in testResult.PoixyuvDatas)
+            foreach (var item in testResult.ViewPoixyuvDatas)
             {
                 outtext += $"X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
             }

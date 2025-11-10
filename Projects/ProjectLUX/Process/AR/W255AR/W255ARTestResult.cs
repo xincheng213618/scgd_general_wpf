@@ -82,10 +82,10 @@ namespace ProjectLUX.Process.W255AR
         /// <summary>
         /// CenterCIE1976ChromaticCoordinatesu
         /// </summary>
-        public ObjectiveTestItem CenterCIE1976ChromaticCoordinatesu { get; set; } = new ObjectiveTestItem() { Name = "Center_CIE_1931Chromatic_Coordinates_u'" };
+        public ObjectiveTestItem CenterCIE1976ChromaticCoordinatesu { get; set; } = new ObjectiveTestItem() { Name = "Center_CIE_1976Chromatic_Coordinates_u'" };
         /// <summary>
         /// CenterCIE1976ChromaticCoordinatesv
         /// </summary>
-        public ObjectiveTestItem CenterCIE1976ChromaticCoordinatesv { get; set; } = new ObjectiveTestItem() { Name = "Center_CIE_1931Chromatic_Coordinates_v'" };
+        public ObjectiveTestItem CenterCIE1976ChromaticCoordinatesv { get; set; } = new ObjectiveTestItem() { Name = "Center_CIE_1976Chromatic_Coordinates_v'" };
     }
 }

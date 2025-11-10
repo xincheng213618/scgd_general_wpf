@@ -50,7 +50,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
 
                 HideAllButtons();
-                btn_autoTest.Content = ColorVision.Engine.Properties.Resources.AutoTest;
+                btn_autoTest.Content = ColorVision.Engine.Properties.Resources.ContinuousMeasurement;
                 switch (status)
                 {
 
@@ -139,7 +139,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void Button_Click_AutoTest(object sender, RoutedEventArgs e)
         {
             string btnTitle = btn_autoTest.Content.ToString();
-            if (!string.IsNullOrWhiteSpace(btnTitle) && btnTitle.Equals(ColorVision.Engine.Properties.Resources.AutoTest, StringComparison.Ordinal))
+            if (!string.IsNullOrWhiteSpace(btnTitle) && btnTitle.Equals(ColorVision.Engine.Properties.Resources.ContinuousMeasurement, StringComparison.Ordinal))
             {
                 DService.GetDataAuto((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked ?? false, AutoDark.IsChecked ?? false);
                 btn_autoTest.Content = ColorVision.Engine.Properties.Resources.CancelAutoTest;
@@ -147,7 +147,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             else
             {
                 DService.GetDataAutoStop();
-                btn_autoTest.Content = ColorVision.Engine.Properties.Resources.AutoTest;
+                btn_autoTest.Content = ColorVision.Engine.Properties.Resources.ContinuousMeasurement;
             }
         }
         private void Button_Click_Init_Dark(object sender, RoutedEventArgs e)
