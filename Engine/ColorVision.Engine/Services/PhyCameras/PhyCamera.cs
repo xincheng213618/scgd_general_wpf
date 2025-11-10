@@ -80,6 +80,9 @@ namespace ColorVision.Engine.Services.PhyCameras
         [CommandDisplay("LoadRestorePoint", Order = 99999)]
         public RelayCommand LoadResotreCommand { get; set; }
 
+        [CommandDisplay("EditFilterWheelConfig", Order = 103)]
+        public RelayCommand FilterWheelEditCommand { get; set; }
+
 
         public ImageSource? QRIcon { get => _QRIcon; set { _QRIcon = value; OnPropertyChanged(); } }
         private ImageSource? _QRIcon;
@@ -136,6 +139,17 @@ namespace ColorVision.Engine.Services.PhyCameras
             OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code ?? string.Empty)));
             CreatResotreCommand = new RelayCommand(a => CreatResotre());
             LoadResotreCommand = new RelayCommand(a => LoadResotre());
+
+            FilterWheelEditCommand = new RelayCommand(a =>
+            {
+                EditFilterWheelConfig window = new EditFilterWheelConfig(Config.FilterWheelConfig);
+                window.Owner = Application.Current.GetActiveWindow();
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                if (window.ShowDialog() == true)
+                {
+                    SaveConfig();
+                }
+            }, a => AccessControl.Check(PermissionMode.Administrator));
 
         }
 
