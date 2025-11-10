@@ -187,15 +187,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             MsgRecord msgRecord= PublishAsyncClient(msg);
             return msgRecord;
         }
-        public bool Close()
+        public MsgRecord Close()
         {
             MsgSend msg = new()
             {
                 EventName = "Close",
             };
-
-            PublishAsyncClient(msg);
-            return true;
+            return PublishAsyncClient(msg);
         }
         public MsgRecord SelfAdaptionInitDark()
         {

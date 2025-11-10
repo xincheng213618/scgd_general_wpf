@@ -2194,7 +2194,7 @@
     <value>보폭 스윙 범위</value>
   </data>
   <data name="StepSwingRangeDiscription" xml:space="preserve">
-    <value>두 번째 단계 경로입니다. 실제 두 번째 단계 경로는 forwardparam *입니다.</value>
+    <value>두 번째 단계 경로입니다. 실제 두 번째 단계 경로는 forwardparam *입니다</value>
   </data>
   <data name="StepReductionFactor" xml:space="preserve">
     <value>단계 크기 감소 계수</value>

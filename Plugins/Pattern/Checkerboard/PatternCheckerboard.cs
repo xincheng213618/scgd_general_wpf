@@ -14,6 +14,8 @@ namespace Pattern.Checkerboard
     }
     public class PatternCheckerboardConfig:ViewModelBase,IConfig
     {
+
+
         public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _MainBrush = Brushes.White;
 
@@ -34,6 +36,10 @@ namespace Pattern.Checkerboard
 
         public string MainBrushTag { get; set; } = "W";
         public string AltBrushTag { get; set; } = "K";
+
+        [DisplayName("视场背景")]
+        public SolidColorBrush BackGroundBrush { get => _BackGroundBrush; set { _BackGroundBrush = value; OnPropertyChanged(); } }
+        private SolidColorBrush _BackGroundBrush = Brushes.Black;
 
         public double FieldOfViewX { get => _FieldOfViewX; set { _FieldOfViewX = value; OnPropertyChanged(); } }
         private double _FieldOfViewX = 1.0;
@@ -61,7 +67,7 @@ namespace Pattern.Checkerboard
         public override Mat Gen(int height, int width)
         {
             // 1. 创建底图
-            var mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
+            var mat = new Mat(height, width, MatType.CV_8UC3, Config.BackGroundBrush.ToScalar());
 
             // 2. 计算视场中心区域
             double fovx = Math.Max(0, Math.Min(Config.FieldOfViewX, 1.0));
