@@ -2421,4 +2421,7 @@
   <data name="LightBar" xml:space="preserve">
     <value>bande LED</value>
   </data>
+  <data name="Spectrometer" xml:space="preserve">
+    <value>Spectromètre</value>
+  </data>
 </root>

@@ -2421,4 +2421,7 @@
   <data name="LightBar" xml:space="preserve">
     <value>燈條</value>
   </data>
+  <data name="Spectrometer" xml:space="preserve">
+    <value>光譜儀</value>
+  </data>
 </root>

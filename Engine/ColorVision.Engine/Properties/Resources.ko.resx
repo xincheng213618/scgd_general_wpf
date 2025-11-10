@@ -2421,4 +2421,7 @@
   <data name="LightBar" xml:space="preserve">
     <value>LED 스트립</value>
   </data>
+  <data name="Spectrometer" xml:space="preserve">
+    <value>분광계</value>
+  </data>
 </root>

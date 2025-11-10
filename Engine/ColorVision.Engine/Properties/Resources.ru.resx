@@ -2422,4 +2422,7 @@
   <data name="LightBar" xml:space="preserve">
     <value>светодиодная лента</value>
   </data>
+  <data name="Spectrometer" xml:space="preserve">
+    <value>Спектрометр</value>
+  </data>
 </root>
