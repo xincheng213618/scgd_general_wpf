@@ -1818,9 +1818,6 @@
   <data name="ExecutionFailed" xml:space="preserve">
     <value>L'exécution a échoué</value>
   </data>
-  <data name="执行失败" xml:space="preserve">
-    <value>L'exécution a échoué</value>
-  </data>
   <data name="Opening" xml:space="preserve">
     <value>Ouverture</value>
   </data>
@@ -2372,5 +2369,56 @@
   </data>
   <data name="RestartWindowsService" xml:space="preserve">
     <value>Redémarrer le service Windows</value>
+  </data>
+  <data name="SelectExportFileLocation" xml:space="preserve">
+    <value>Sélectionnez l'emplacement du fichier d'exportation</value>
+  </data>
+  <data name="DataRetentionDays" xml:space="preserve">
+    <value>jours de conservation des données</value>
+  </data>
+  <data name="DataRetentionHours" xml:space="preserve">
+    <value>Durée de conservation des données</value>
+  </data>
+  <data name="ClearDatabaseOnly" xml:space="preserve">
+    <value>Effacer uniquement la base de données</value>
+  </data>
+  <data name="ConfigArchivedModel_删除本地文件" xml:space="preserve">
+    <value>Supprimer les fichiers locaux</value>
+  </data>
+  <data name="DeleteLocalFiles" xml:space="preserve">
+    <value>Supprimer les fichiers locaux</value>
+  </data>
+  <data name="DataBaseConfig" xml:space="preserve">
+    <value>Configuration de la base de données</value>
+  </data>
+  <data name="RESTAddress" xml:space="preserve">
+    <value>Adresse REST</value>
+  </data>
+  <data name="ServerMonitorConfig" xml:space="preserve">
+    <value>configuration de surveillance du service</value>
+  </data>
+  <data name="MqttConfigId" xml:space="preserve">
+    <value>ID de configuration MQTT</value>
+  </data>
+  <data name="TenantId" xml:space="preserve">
+    <value>Identifiant du locataire</value>
+  </data>
+  <data name="DefaultSavePath" xml:space="preserve">
+    <value>Chemin de sauvegarde par défaut</value>
+  </data>
+  <data name="IvlCameraProcessing" xml:space="preserve">
+    <value>Traitement de la caméra IVL</value>
+  </data>
+  <data name="ProcessAndExportCameraDataFromIvlBatchOnly" xml:space="preserve">
+    <value>Traiter uniquement les données de la caméra issues des lots IVL et les exporter.</value>
+  </data>
+  <data name="IvlSpectralProcessing" xml:space="preserve">
+    <value>Traitement spectral IVL</value>
+  </data>
+  <data name="ProcessAndExportSpectrumDataFromIvlBatchOnly" xml:space="preserve">
+    <value>Traiter uniquement les données Spectrum des lots IVL et les exporter</value>
+  </data>
+  <data name="LightBar" xml:space="preserve">
+    <value>bande LED</value>
   </data>
 </root>

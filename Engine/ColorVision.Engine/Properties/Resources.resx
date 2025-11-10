@@ -166,7 +166,7 @@
     <value>话题</value>
   </data>
   <data name="Timeout" xml:space="preserve">
-    <value>超时</value>
+    <value>超时(ms)</value>
   </data>
   <data name="TimeLeft" xml:space="preserve">
     <value>剩余时间：</value>
@@ -2218,7 +2218,7 @@
     <value>最低评价值</value>
   </data>
   <data name="TimeoutDuration" xml:space="preserve">
-    <value>超时时间</value>
+    <value>超时时间(ms)</value>
   </data>
   <data name="RestoreMysqlAutoFocusTemplateSettings" xml:space="preserve">
     <value>恢复Mysql AutoFocus模板设置</value>
@@ -2331,9 +2331,6 @@
   <data name="FileNotFound" xml:space="preserve">
     <value>找不到文件</value>
   </data>
-  <data name="执行失败" xml:space="preserve">
-    <value>执行失败</value>
-  </data>
   <data name="ResetDatabasePrompt" xml:space="preserve">
     <value>是否重置数据库</value>
   </data>
@@ -2372,5 +2369,56 @@
   </data>
   <data name="RestartWindowsService" xml:space="preserve">
     <value>重启WindowsService</value>
+  </data>
+  <data name="SelectExportFileLocation" xml:space="preserve">
+    <value>选择导出文件位置</value>
+  </data>
+  <data name="DataRetentionDays" xml:space="preserve">
+    <value>数据保存天数</value>
+  </data>
+  <data name="DataRetentionHours" xml:space="preserve">
+    <value>数据保存小时数</value>
+  </data>
+  <data name="ClearDatabaseOnly" xml:space="preserve">
+    <value>仅清除数据库</value>
+  </data>
+  <data name="ConfigArchivedModel_删除本地文件" xml:space="preserve">
+    <value>删除本地文件</value>
+  </data>
+  <data name="DeleteLocalFiles" xml:space="preserve">
+    <value>删除本地文件</value>
+  </data>
+  <data name="DataBaseConfig" xml:space="preserve">
+    <value>数据库配置</value>
+  </data>
+  <data name="RESTAddress" xml:space="preserve">
+    <value>REST地址</value>
+  </data>
+  <data name="ServerMonitorConfig" xml:space="preserve">
+    <value>服务监控配置</value>
+  </data>
+  <data name="MqttConfigId" xml:space="preserve">
+    <value>MQTT配置ID</value>
+  </data>
+  <data name="TenantId" xml:space="preserve">
+    <value>租户ID</value>
+  </data>
+  <data name="DefaultSavePath" xml:space="preserve">
+    <value>默认保存路径</value>
+  </data>
+  <data name="IvlCameraProcessing" xml:space="preserve">
+    <value>IVL相机处理</value>
+  </data>
+  <data name="ProcessAndExportCameraDataFromIvlBatchOnly" xml:space="preserve">
+    <value>仅处理IVL批次中的Camera数据并导出</value>
+  </data>
+  <data name="IvlSpectralProcessing" xml:space="preserve">
+    <value>IVL光谱处理</value>
+  </data>
+  <data name="ProcessAndExportSpectrumDataFromIvlBatchOnly" xml:space="preserve">
+    <value>仅处理IVL批次中的Spectrum数据并导出</value>
+  </data>
+  <data name="LightBar" xml:space="preserve">
+    <value>灯条</value>
   </data>
 </root>

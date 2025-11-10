@@ -1818,9 +1818,6 @@
   <data name="ExecutionFailed" xml:space="preserve">
     <value>執行失敗</value>
   </data>
-  <data name="执行失败" xml:space="preserve">
-    <value>"執行失敗</value>
-  </data>
   <data name="Opening" xml:space="preserve">
     <value>打開中</value>
   </data>
@@ -2372,5 +2369,56 @@
   </data>
   <data name="RestartWindowsService" xml:space="preserve">
     <value>重新啟動WindowsService</value>
+  </data>
+  <data name="SelectExportFileLocation" xml:space="preserve">
+    <value>選擇匯出檔案位置</value>
+  </data>
+  <data name="DataRetentionDays" xml:space="preserve">
+    <value>資料保存天數</value>
+  </data>
+  <data name="DataRetentionHours" xml:space="preserve">
+    <value>資料保存小時數</value>
+  </data>
+  <data name="ClearDatabaseOnly" xml:space="preserve">
+    <value>僅清除資料庫</value>
+  </data>
+  <data name="ConfigArchivedModel_删除本地文件" xml:space="preserve">
+    <value>刪除本機文件</value>
+  </data>
+  <data name="DeleteLocalFiles" xml:space="preserve">
+    <value>刪除本機文件</value>
+  </data>
+  <data name="DataBaseConfig" xml:space="preserve">
+    <value>資料庫配置</value>
+  </data>
+  <data name="RESTAddress" xml:space="preserve">
+    <value>REST地址</value>
+  </data>
+  <data name="ServerMonitorConfig" xml:space="preserve">
+    <value>服務監控配置</value>
+  </data>
+  <data name="MqttConfigId" xml:space="preserve">
+    <value>MQTT配置ID</value>
+  </data>
+  <data name="TenantId" xml:space="preserve">
+    <value>租戶ID</value>
+  </data>
+  <data name="DefaultSavePath" xml:space="preserve">
+    <value>預設儲存路徑</value>
+  </data>
+  <data name="IvlCameraProcessing" xml:space="preserve">
+    <value>IVL相機處理</value>
+  </data>
+  <data name="ProcessAndExportCameraDataFromIvlBatchOnly" xml:space="preserve">
+    <value>僅處理IVL批次中的Camera資料並匯出</value>
+  </data>
+  <data name="IvlSpectralProcessing" xml:space="preserve">
+    <value>IVL光譜處理</value>
+  </data>
+  <data name="ProcessAndExportSpectrumDataFromIvlBatchOnly" xml:space="preserve">
+    <value>僅處理IVL批次中的Spectrum資料並匯出</value>
+  </data>
+  <data name="LightBar" xml:space="preserve">
+    <value>燈條</value>
   </data>
 </root>

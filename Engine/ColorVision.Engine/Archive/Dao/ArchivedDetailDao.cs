@@ -70,7 +70,7 @@ namespace ColorVision.Engine.Archive.Dao
                     fullName = Path.Combine(configArchivedModel.Path + "\\" + filepath, fileName);
                     if (!File.Exists(fullName))
                     {
-                        MessageBox.Show("找不到文件");
+                        MessageBox.Show(ColorVision.Engine.Properties.Resources.FileNotFound);
                         return;
                     }
 
@@ -79,7 +79,7 @@ namespace ColorVision.Engine.Archive.Dao
                     {
                         saveFileDialog.FileName = fileName;
                         saveFileDialog.Filter = "All files (*.tif)|*.*";
-                        saveFileDialog.Title = "选择导出文件位置";
+                        saveFileDialog.Title = ColorVision.Engine.Properties.Resources.SelectExportFileLocation;
                         saveFileDialog.FileName = fileName;
                         if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                         {
@@ -93,7 +93,7 @@ namespace ColorVision.Engine.Archive.Dao
                     using (System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog())
                     {
                         saveFileDialog.Filter = "All files (*.json)|*.*";
-                        saveFileDialog.Title = "选择导出文件位置";
+                        saveFileDialog.Title = ColorVision.Engine.Properties.Resources.SelectExportFileLocation;
                         saveFileDialog.FileName = Guid + ".json";
                         if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                         {
@@ -166,7 +166,7 @@ namespace ColorVision.Engine.Archive.Dao
         [SugarColumn(ColumnName = "guid",IsPrimaryKey = true)]
         [DisplayName("Guid")]
         public string Guid { get; set; }
-        [SugarColumn(ColumnName ="p_guid"),DisplayName("名称")]
+        [SugarColumn(ColumnName ="p_guid"),DisplayName("Name")]
         public string PGuid { get; set; }
         [SugarColumn(ColumnName ="detail_type"), DisplayName("detail_type")]
         public string DetailType { get; set; }
@@ -174,12 +174,12 @@ namespace ColorVision.Engine.Archive.Dao
         public int? ZIndex { get; set; }
         [SugarColumn(ColumnName ="output_value"),DisplayName("Data")]
         public string OutputValue { get; set; }
-        [SugarColumn(ColumnName ="device_code"), DisplayName("设备名称")]
+        [SugarColumn(ColumnName ="device_code"), DisplayName("DeviceName")]
         public string DeviceCode { get; set; }
         [SugarColumn(ColumnName ="device_cfg")]
         public string DeviceCfg { get; set; }
 
-        [SugarColumn(ColumnName ="input_cfg"),DisplayName("输入参数")]
+        [SugarColumn(ColumnName ="input_cfg"),DisplayName("ParamInput")]
         public string InputCfg { get; set; }
 
     }

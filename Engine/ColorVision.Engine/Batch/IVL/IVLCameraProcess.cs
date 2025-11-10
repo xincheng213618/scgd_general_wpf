@@ -10,7 +10,7 @@ using System.IO;
 namespace ColorVision.Engine.Batch.IVL
 {
 
-    [BatchProcess("IVL相机处理", "仅处理IVL批次中的Camera数据并导出")]
+    [BatchProcess("IvlCameraProcessing", "ProcessAndExportCameraDataFromIvlBatchOnly")]
     public class IVLCameraProcess : IBatchProcess
     {
         private static readonly ILog log = LogManager.GetLogger(nameof(IVLProcess));

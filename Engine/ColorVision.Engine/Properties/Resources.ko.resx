@@ -1818,9 +1818,6 @@
   <data name="ExecutionFailed" xml:space="preserve">
     <value>실행에 실패했습니다</value>
   </data>
-  <data name="执行失败" xml:space="preserve">
-    <value>실행에 실패했습니다</value>
-  </data>
   <data name="Opening" xml:space="preserve">
     <value>열기</value>
   </data>
@@ -2372,5 +2369,56 @@
   </data>
   <data name="RestartWindowsService" xml:space="preserve">
     <value>WindowsService를 다시 시작하세요</value>
+  </data>
+  <data name="SelectExportFileLocation" xml:space="preserve">
+    <value>내보내기 파일 위치를 선택하세요</value>
+  </data>
+  <data name="DataRetentionDays" xml:space="preserve">
+    <value>데이터 보존 기간</value>
+  </data>
+  <data name="DataRetentionHours" xml:space="preserve">
+    <value>데이터 보존 시간</value>
+  </data>
+  <data name="ClearDatabaseOnly" xml:space="preserve">
+    <value>데이터베이스만 지우기</value>
+  </data>
+  <data name="ConfigArchivedModel_删除本地文件" xml:space="preserve">
+    <value>로컬 파일 삭제</value>
+  </data>
+  <data name="DeleteLocalFiles" xml:space="preserve">
+    <value>로컬 파일 삭제</value>
+  </data>
+  <data name="DataBaseConfig" xml:space="preserve">
+    <value>데이터베이스 구성</value>
+  </data>
+  <data name="RESTAddress" xml:space="preserve">
+    <value>REST 주소</value>
+  </data>
+  <data name="ServerMonitorConfig" xml:space="preserve">
+    <value>서비스 모니터링 구성</value>
+  </data>
+  <data name="MqttConfigId" xml:space="preserve">
+    <value>MQTT 구성 ID</value>
+  </data>
+  <data name="TenantId" xml:space="preserve">
+    <value>세입자 ID</value>
+  </data>
+  <data name="DefaultSavePath" xml:space="preserve">
+    <value>기본 저장 경로</value>
+  </data>
+  <data name="IvlCameraProcessing" xml:space="preserve">
+    <value>IVL 카메라 처리</value>
+  </data>
+  <data name="ProcessAndExportCameraDataFromIvlBatchOnly" xml:space="preserve">
+    <value>IVL 배치에서 카메라 데이터만 처리하고 내보냅니다.</value>
+  </data>
+  <data name="IvlSpectralProcessing" xml:space="preserve">
+    <value>IVL 스펙트럼 처리</value>
+  </data>
+  <data name="ProcessAndExportSpectrumDataFromIvlBatchOnly" xml:space="preserve">
+    <value>IVL 배치에서 스펙트럼 데이터만 처리하고 내보냅니다.</value>
+  </data>
+  <data name="LightBar" xml:space="preserve">
+    <value>LED 스트립</value>
   </data>
 </root>

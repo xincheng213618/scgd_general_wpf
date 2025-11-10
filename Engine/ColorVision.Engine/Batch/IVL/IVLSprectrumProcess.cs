@@ -13,7 +13,7 @@ using System.Linq;
 
 namespace ColorVision.Engine.Batch.IVL
 {
-    [BatchProcess("IVL光谱处理", "仅处理IVL批次中的Spectrum数据并导出")]
+    [BatchProcess("IvlSpectralProcessing", "ProcessAndExportSpectrumDataFromIvlBatchOnly")]
     public class IVLSprectrumProcess : IBatchProcess
     {
         private static readonly ILog log = LogManager.GetLogger(nameof(IVLProcess));
