@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.Menus;
+using System.Collections.Generic;
 
 namespace ColorVision.UI.Languages
 {
