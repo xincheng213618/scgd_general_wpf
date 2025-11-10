@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using ColorVision.UI;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
@@ -22,6 +23,8 @@ namespace Pattern.Checkerboard
             this.DataContext = Config;
             cmbSizeMode.ItemsSource = from e1 in Enum.GetValues(typeof(CheckerboardSizeMode)).Cast<CheckerboardSizeMode>()
                                       select new KeyValuePair<CheckerboardSizeMode, string>(e1, e1.ToString());
+            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(Config));
+
         }
         private void BtnPickMainColor_Click(object sender, RoutedEventArgs e)
         {
