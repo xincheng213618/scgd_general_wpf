@@ -54,6 +54,12 @@ namespace ColorVision.Engine.Batch.IVL
                 DB.Dispose();
 
                 string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
+                if (!Directory.Exists(config.SavePath))
+                {
+                    Directory.CreateDirectory(config.SavePath);
+                }
+
                 string filePath = Path.Combine(config.SavePath, $"Camera_IVL_{timeStr}.csv");
                 var rows = new List<string> { "Time,Meas_id,PoiName,Voltage(V),Current(mA),Lv(cd/m2),X,Y,Z,cx,cy,u',v',CCT(K),Dominant Wavelength" };
 

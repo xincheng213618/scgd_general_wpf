@@ -51,9 +51,6 @@ namespace ColorVision.Engine.Templates.Flow
         public bool IsShowNickName { get => _IsShowNickName; set { _IsShowNickName = value; OnPropertyChanged(); } }
         private bool _IsShowNickName;
 
-        [DisplayName("IsShowLargeFlow")]
-        public bool IsShowLargeFlow { get => _IsShowLargeFlow; set { _IsShowLargeFlow = value; OnPropertyChanged(); } }
-        private bool _IsShowLargeFlow;
 
         public int LastSelectFlow { get => _LastSelectFlow; set { _LastSelectFlow = value; OnPropertyChanged(); } }
         private int _LastSelectFlow;

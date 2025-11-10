@@ -1,4 +1,5 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.Engine.Messages;
+using ColorVision.UI;
 using CVCommCore;
 using System;
 using System.Collections.Generic;
@@ -117,7 +118,18 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 if (int.TryParse(TextPort.Text,out int port))
                 {
                     var msgRecord = DService.SetPort(port);
-                    ServicesHelper.SendCommand(button, msgRecord);
+                    msgRecord.MsgRecordStateChanged += (e) =>
+                    {
+                        if (e == MsgRecordState.Success)
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.Success, "ColorVision");
+                        }
+                        else
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.执行失败, "ColorVision");
+                        }
+                    };
+
                 }
             }
         }
