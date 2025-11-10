@@ -284,46 +284,16 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
         private void Button2_Click(object sender, RoutedEventArgs e)
         {
-            if (listView1.SelectedIndex < 0)
-            {
-                MessageBox1.Show(ColorVision.Engine.Properties.Resources.SelectDataFirst);
-                return;
-            }
-            var selectedItems = listView1.SelectedItems;
+            ViewResults.Clear();
 
-            if (selectedItems.Count <= 1)
-            {
-                ViewResults.Clear();
-            }
-            else
-            {
+            wpfplot1.Plot.Clear();
+            wpfplot1.Refresh();
 
-                var selectedItemsCopy = new List<object>();
+            wpfplot2.Plot.Clear();
+            wpfplot2.Refresh();
 
-                foreach (var item in selectedItems)
-                {
-                    selectedItemsCopy.Add(item);
-                }
-
-                foreach (var item in selectedItemsCopy)
-                {
-                    if (item is ViewResultSMU result)
-                    {
-                        ViewResults.Remove(result);
-                    }
-                }
-            }
-
-            if (ViewResults.Count > 0)
-            {
-                listView1.SelectedIndex = 0;
-            }
-            else
-            {
-                wpfplot1.Plot.Clear();
-                wpfplot1.Refresh();
-            }
             ReDrawPlot();
+
         }
 
         private void ToolBar1_Loaded(object sender, RoutedEventArgs e)

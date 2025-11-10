@@ -19,8 +19,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
             new HoleMap { HoleIndex = 2, HoleName = "ND100" },
             new HoleMap { HoleIndex = 3, HoleName = "ND1000" },
             new HoleMap { HoleIndex = 4, HoleName = "EMPTY" },
-        };
-
+        };   
             }
         }
 
