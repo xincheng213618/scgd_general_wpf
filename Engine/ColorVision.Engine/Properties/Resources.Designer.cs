@@ -2275,6 +2275,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 编辑滤光轮配置 的本地化字符串。
+        /// </summary>
+        public static string EditFilterWheelConfig {
+            get {
+                return ResourceManager.GetString("EditFilterWheelConfig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 编辑第三方算法模板 的本地化字符串。
         /// </summary>
         public static string EditThirdPartyAlgorithmTemplate {
