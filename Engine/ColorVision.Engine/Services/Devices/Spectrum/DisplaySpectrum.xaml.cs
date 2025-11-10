@@ -196,5 +196,22 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
             };
         }
+
+        private void GetNDport_Click(object sender, RoutedEventArgs e)
+        {
+            MsgRecord msgRecord = DService.GetPort();
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+                if (e == MsgRecordState.Success)
+                {
+                    int port = msgRecord.MsgReturn.Data.Port;
+                    Device.DisplaySpectrumConfig.PortNum = port;
+                }
+                else
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
+                }
+            };
+        }
     }
 }

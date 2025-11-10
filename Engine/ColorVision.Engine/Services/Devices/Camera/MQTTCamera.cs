@@ -365,7 +365,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Params.Add("Func", Func);
             return PublishAsyncClient(msg);
         }
-
+        public MsgRecord GetPort()
+        {
+            MsgSend msg = new()
+            {
+                EventName = "GetPort",
+            };
+            return PublishAsyncClient(msg);
+        }
 
 
         public MsgRecord GetData(double[] expTime, CalibrationParam param, AutoExpTimeParam autoExpTimeParam,ParamBase HDRparamBase)

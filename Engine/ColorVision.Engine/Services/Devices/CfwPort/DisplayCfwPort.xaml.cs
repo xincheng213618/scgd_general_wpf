@@ -147,5 +147,23 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 ServicesHelper.SendCommand(button, msgRecord);
             }
         }
+
+        private void GetPort_Click(object sender, RoutedEventArgs e)
+        {
+            MsgRecord msgRecord = DService.GetPort();
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+                if (e == MsgRecordState.Success)
+                {
+                    int port = msgRecord.MsgReturn.Data.Port;
+                    TextPort.Text = port.ToString();
+                }
+                else
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
+                }
+            };
+
+        }
     }
 }

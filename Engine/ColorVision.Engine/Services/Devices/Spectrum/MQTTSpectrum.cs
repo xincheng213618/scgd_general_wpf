@@ -219,6 +219,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             Params.Add("PortNum", Device.DisplaySpectrumConfig.PortNum);
             return PublishAsyncClient(msg);
         }
+        public MsgRecord GetPort()
+        {
+            MsgSend msg = new()
+            {
+                EventName = "GetPort",
+            };
+            return PublishAsyncClient(msg);
+        }
 
 
         public MsgRecord InitDark(float IntTime, int AveNum)
