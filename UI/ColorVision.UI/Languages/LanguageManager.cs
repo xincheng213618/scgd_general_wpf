@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using ColorVision.Themes.Controls;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Windows;
@@ -101,7 +102,7 @@ namespace ColorVision.UI.Languages
         {
             if (Thread.CurrentThread.CurrentUICulture.Name != lang)
             {
-                if (MessageBox.Show(Properties.Resources.LanguageResartSign, DefalutProcessName, MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                if (MessageBox1.Show(Properties.Resources.LanguageResartSign, DefalutProcessName, MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                 {
                     Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(lang);
                     LanguageConfig.Instance.UICulture = lang;

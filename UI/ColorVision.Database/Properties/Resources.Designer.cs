@@ -70,6 +70,15 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
+        ///   查找类似 通信协议 的本地化字符串。
+        /// </summary>
+        public static string CommunicationProtocol {
+            get {
+                return ResourceManager.GetString("CommunicationProtocol", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 连接名 的本地化字符串。
         /// </summary>
         public static string ConnectionName {
