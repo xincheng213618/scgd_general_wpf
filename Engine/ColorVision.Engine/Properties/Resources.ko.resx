@@ -1242,9 +1242,6 @@
   <data name="SingleTest" xml:space="preserve">
     <value>단일 테스트</value>
   </data>
-  <data name="AutoTest" xml:space="preserve">
-    <value>자동화된 테스트</value>
-  </data>
   <data name="SingleZeroCalibration" xml:space="preserve">
     <value>단일 제로화</value>
   </data>
@@ -2426,5 +2423,8 @@
   </data>
   <data name="EditFilterWheelConfig" xml:space="preserve">
     <value>필터 휠 구성 편집</value>
+  </data>
+  <data name="ContinuousMeasurement" xml:space="preserve">
+    <value>연속 측정</value>
   </data>
 </root>
