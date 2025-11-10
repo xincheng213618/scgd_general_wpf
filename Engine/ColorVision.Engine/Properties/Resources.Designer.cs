@@ -3580,6 +3580,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 灯条 的本地化字符串。
+        /// </summary>
+        public static string LightBar {
+            get {
+                return ResourceManager.GetString("LightBar", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 灯条检测V2 的本地化字符串。
         /// </summary>
         public static string LightBarDetectionV2 {
@@ -6980,13 +6989,5 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("WorkflowTemplate", resourceCulture);
             }
         }
-        public static string LightBar
-        {
-            get
-            {
-                return ResourceManager.GetString("LightBar", resourceCulture);
-            }
-        }
-        
     }
 }
