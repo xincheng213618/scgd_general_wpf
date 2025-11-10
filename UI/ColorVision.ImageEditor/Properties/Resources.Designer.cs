@@ -70,6 +70,15 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
+        ///   查找类似 应用当前图片 的本地化字符串。
+        /// </summary>
+        public static string Apply {
+            get {
+                return ResourceManager.GetString("Apply", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 位图缩放模式 的本地化字符串。
         /// </summary>
         public static string BitmapScalingMode {
@@ -84,6 +93,15 @@ namespace ColorVision.ImageEditor.Properties {
         public static string Clear {
             get {
                 return ResourceManager.GetString("Clear", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 伪彩色 的本地化字符串。
+        /// </summary>
+        public static string ColormapTypes {
+            get {
+                return ResourceManager.GetString("ColormapTypes", resourceCulture);
             }
         }
         
@@ -151,6 +169,33 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
+        ///   查找类似 自动刷新 的本地化字符串。
+        /// </summary>
+        public static string IsLayoutUpdated {
+            get {
+                return ResourceManager.GetString("IsLayoutUpdated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显示消息 的本地化字符串。
+        /// </summary>
+        public static string IsShowMsg {
+            get {
+                return ResourceManager.GetString("IsShowMsg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显示文字 的本地化字符串。
+        /// </summary>
+        public static string IsShowText {
+            get {
+                return ResourceManager.GetString("IsShowText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 线上 的本地化字符串。
         /// </summary>
         public static string LineOn {
@@ -192,6 +237,15 @@ namespace ColorVision.ImageEditor.Properties {
         public static string Relative {
             get {
                 return ResourceManager.GetString("Relative", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重新加载 的本地化字符串。
+        /// </summary>
+        public static string Reload {
+            get {
+                return ResourceManager.GetString("Reload", resourceCulture);
             }
         }
         

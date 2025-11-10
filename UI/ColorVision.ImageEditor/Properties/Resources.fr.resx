@@ -192,4 +192,22 @@
   <data name="Relative" xml:space="preserve">
     <value>valeur relative</value>
   </data>
+  <data name="IsShowMsg" xml:space="preserve">
+    <value>Afficher le message</value>
+  </data>
+  <data name="IsLayoutUpdated" xml:space="preserve">
+    <value>Actualisation automatique</value>
+  </data>
+  <data name="IsShowText" xml:space="preserve">
+    <value>Afficher le texte</value>
+  </data>
+  <data name="ColormapTypes" xml:space="preserve">
+    <value>fausse couleur</value>
+  </data>
+  <data name="Reload" xml:space="preserve">
+    <value>Recharger</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Appliquer l'image actuelle</value>
+  </data>
 </root>

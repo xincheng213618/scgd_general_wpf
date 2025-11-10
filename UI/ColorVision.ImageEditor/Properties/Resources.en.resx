@@ -139,7 +139,7 @@
     <value>_Open</value>
   </data>
   <data name="Clear" xml:space="preserve">
-    <value>_Close</value>
+    <value>Clear</value>
   </data>
   <data name="Rotate" xml:space="preserve">
     <value>Rotate</value>
@@ -166,30 +166,48 @@
     <value>screenshot</value>
   </data>
   <data name="BitmapScalingMode" xml:space="preserve">
-    <value>Bitmap scaling mode</value>
+    <value>BitmapScalingMode</value>
   </data>
   <data name="Invert" xml:space="preserve">
     <value>Invert</value>
   </data>
   <data name="SectionalDrawing" xml:space="preserve">
-    <value>Cross-section</value>
+    <value>SectionalDrawing</value>
   </data>
   <data name="ImageAlgorithm" xml:space="preserve">
-    <value>Image Algorithm</value>
+    <value>ImageAlgorithm</value>
   </data>
   <data name="LineOn" xml:space="preserve">
-    <value>on-line</value>
+    <value>LineOn</value>
   </data>
   <data name="Internal" xml:space="preserve">
-    <value>Incision</value>
+    <value>Internal</value>
   </data>
   <data name="External" xml:space="preserve">
-    <value>external incision</value>
+    <value>External</value>
   </data>
   <data name="Absolute" xml:space="preserve">
-    <value>absolute value</value>
+    <value>Absolute</value>
   </data>
   <data name="Relative" xml:space="preserve">
-    <value>relative value</value>
+    <value>Relative</value>
+  </data>
+  <data name="ColormapTypes" xml:space="preserve">
+    <value>ColormapTypes</value>
+  </data>
+  <data name="IsShowText" xml:space="preserve">
+    <value>IsShowText</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="Reload" xml:space="preserve">
+    <value>Reload</value>
+  </data>
+  <data name="IsLayoutUpdated" xml:space="preserve">
+    <value>IsLayoutUpdated</value>
+  </data>
+  <data name="IsShowMsg" xml:space="preserve">
+    <value>Display message</value>
   </data>
 </root>

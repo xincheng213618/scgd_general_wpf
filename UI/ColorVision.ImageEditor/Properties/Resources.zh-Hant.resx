@@ -192,4 +192,22 @@
   <data name="Relative" xml:space="preserve">
     <value>相對值</value>
   </data>
+  <data name="IsShowMsg" xml:space="preserve">
+    <value>顯示訊息</value>
+  </data>
+  <data name="IsLayoutUpdated" xml:space="preserve">
+    <value>自動重新整理</value>
+  </data>
+  <data name="IsShowText" xml:space="preserve">
+    <value>顯示文字</value>
+  </data>
+  <data name="ColormapTypes" xml:space="preserve">
+    <value>偽彩色</value>
+  </data>
+  <data name="Reload" xml:space="preserve">
+    <value>重新載入</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>應用目前圖片</value>
+  </data>
 </root>

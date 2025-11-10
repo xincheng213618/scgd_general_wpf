@@ -192,4 +192,22 @@
   <data name="Relative" xml:space="preserve">
     <value>относительная ценность</value>
   </data>
+  <data name="IsShowMsg" xml:space="preserve">
+    <value>Показать сообщение</value>
+  </data>
+  <data name="IsLayoutUpdated" xml:space="preserve">
+    <value>Автоматическое обновление</value>
+  </data>
+  <data name="IsShowText" xml:space="preserve">
+    <value>Отображение текста</value>
+  </data>
+  <data name="ColormapTypes" xml:space="preserve">
+    <value>Ложный цвет</value>
+  </data>
+  <data name="Reload" xml:space="preserve">
+    <value>Перезагрузить</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Применить текущее изображение</value>
+  </data>
 </root>
