@@ -1,0 +1,9 @@
+{
+  "manifest_version": 1,
+  "Id": "ProjectStarKey",
+  "name": "ProjectStarKey",
+  "version": "1.0",
+  "description": "",
+  "dllpath": "ProjectStarKey.dll",
+  "requires": "1.3.14.27"
+}

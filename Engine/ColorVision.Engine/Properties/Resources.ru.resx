@@ -2427,7 +2427,4 @@
   <data name="ContinuousMeasurement" xml:space="preserve">
     <value>Непрерывное измерение</value>
   </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>Язык(Л)</value>
-  </data>
 </root>

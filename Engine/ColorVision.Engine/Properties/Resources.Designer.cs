@@ -3949,15 +3949,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 语言(_Language) 的本地化字符串。
-        /// </summary>
-        public static string MenuLanguage {
-            get {
-                return ResourceManager.GetString("MenuLanguage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 登录账号(_L) 的本地化字符串。
         /// </summary>
         public static string MenuLogin {

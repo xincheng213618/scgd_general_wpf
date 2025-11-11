@@ -2427,7 +2427,4 @@
   <data name="ContinuousMeasurement" xml:space="preserve">
     <value>연속 측정</value>
   </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>언어(_L)</value>
-  </data>
 </root>
