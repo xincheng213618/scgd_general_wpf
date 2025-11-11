@@ -2451,4 +2451,10 @@
   <data name="TrueIsVoltageSource_FalseIsCurrentSource" xml:space="preserve">
     <value>`true` indique une source de tension, `false` indique une source de courant.</value>
   </data>
+  <data name="MeasureType" xml:space="preserve">
+    <value>Type de mesure</value>
+  </data>
+  <data name="VoltageSourceCurrentSourceSelection" xml:space="preserve">
+    <value>sélection de la source de tension et de la source de courant</value>
+  </data>
 </root>

@@ -2451,4 +2451,10 @@
   <data name="TrueIsVoltageSource_FalseIsCurrentSource" xml:space="preserve">
     <value>`true` は電圧源を示し、 `false` は電流源を示します。</value>
   </data>
+  <data name="MeasureType" xml:space="preserve">
+    <value>測定タイプ</value>
+  </data>
+  <data name="VoltageSourceCurrentSourceSelection" xml:space="preserve">
+    <value>電圧源、電流源の選択</value>
+  </data>
 </root>

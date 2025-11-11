@@ -2451,4 +2451,10 @@
   <data name="TrueIsVoltageSource_FalseIsCurrentSource" xml:space="preserve">
     <value>true是電壓源，false是電流源</value>
   </data>
+  <data name="MeasureType" xml:space="preserve">
+    <value>測量類型</value>
+  </data>
+  <data name="VoltageSourceCurrentSourceSelection" xml:space="preserve">
+    <value>電壓源,電流源選擇</value>
+  </data>
 </root>

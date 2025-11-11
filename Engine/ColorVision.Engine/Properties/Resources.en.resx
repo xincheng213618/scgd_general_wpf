@@ -2451,4 +2451,10 @@
   <data name="TrueIsVoltageSource_FalseIsCurrentSource" xml:space="preserve">
     <value>`true` indicates a voltage source, `false` indicates a current source.</value>
   </data>
+  <data name="MeasureType" xml:space="preserve">
+    <value>Measurement type</value>
+  </data>
+  <data name="VoltageSourceCurrentSourceSelection" xml:space="preserve">
+    <value>Voltage source, current source selection</value>
+  </data>
 </root>

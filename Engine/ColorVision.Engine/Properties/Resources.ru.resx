@@ -2451,4 +2451,10 @@
   <data name="TrueIsVoltageSource_FalseIsCurrentSource" xml:space="preserve">
     <value>`true` указывает на источник напряжения, `false` указывает на источник тока.</value>
   </data>
+  <data name="MeasureType" xml:space="preserve">
+    <value>Тип измерения</value>
+  </data>
+  <data name="VoltageSourceCurrentSourceSelection" xml:space="preserve">
+    <value>Выбор источника напряжения, источника тока</value>
+  </data>
 </root>

@@ -24,7 +24,11 @@ namespace ColorVision.Engine.Services.Devices.SMU
         }
     }
 
-
+    public enum SMUMeasureType
+    {
+        VoltageSource = 0,
+        CurrentSource = 1
+    }
     public class SMUParam : ParamModBase
     {
 
@@ -55,14 +59,18 @@ namespace ColorVision.Engine.Services.Devices.SMU
             set { SetProperty(ref _LmtVal, value, "LimitValue"); }
             get => GetValue(_LmtVal, "LimitValue");
         }
-        [DisplayName("IsVoltageSource")]
         [LocalizedDisplayName(typeof(Resources), "IsVoltageSource"), LocalizedDescription(typeof(Resources), "TrueIsVoltageSource_FalseIsCurrentSource")]
         public bool IsSourceV
         {
             set { SetProperty(ref _IsSourceV, value); }
             get => GetValue(_IsSourceV);
         }
-
+        [LocalizedDisplayName(typeof(Resources), "MeasureType"), LocalizedDescription(typeof(Resources), "VoltageSourceCurrentSourceSelection")]
+        public SMUMeasureType MeasureType
+        {
+            get => IsSourceV ? SMUMeasureType.VoltageSource : SMUMeasureType.CurrentSource;
+            set => IsSourceV = value == SMUMeasureType.VoltageSource;
+        }
         private double _StartMeasureVal;
         private double _StopMeasureVal;
         private double _LmtVal;
