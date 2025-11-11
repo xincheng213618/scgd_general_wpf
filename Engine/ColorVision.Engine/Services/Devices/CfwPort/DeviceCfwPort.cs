@@ -12,6 +12,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
     public class DeviceCfwPort : DeviceService<ConfigCfwPort>
     {
         public MQTTCfwPort DService { get; set; }
+        public IDisPlayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayCameraConfig<IDisPlayConfigBase>(Config.Code);
 
         public FilterWheelConfig FilterWheelConfig
         {

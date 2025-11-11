@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
@@ -28,32 +29,11 @@ using System.Windows.Threading;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
-    public class DisplayCameraLocalConfig : IConfig
-    {
-        public static DisplayCameraLocalConfig Instance => ConfigService.Instance.GetRequiredService<DisplayCameraLocalConfig>();
 
-        public Dictionary<string, DisplayCameraConfig> keyValuePairs { get; set; } = new Dictionary<string, DisplayCameraConfig>();
 
-        public DisplayCameraConfig GetDisplayCameraConfig(string key)
-        {
-            if (keyValuePairs.TryGetValue(key, out DisplayCameraConfig config))
-            {
-                return config;
-            }
-            else
-            {
-                config = new DisplayCameraConfig();
-                keyValuePairs.Add(key, config);
-                return config;
-            }
-        }
-
-    }
-
-    public class DisplayCameraConfig:IConfig
+    public class DisplayCameraConfig: IDisPlayConfigBase
     {
         public double TakePictureDelay { get; set; }
-
         public int CalibrationTemplateIndex { get; set; }
         public int ExpTimeParamTemplateIndex { get; set; }
         public int ExpTimeParamTemplate1Index { get; set; }
@@ -75,8 +55,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayCamera));
         public DeviceCamera Device { get; set; }
         public MQTTCamera DService { get => Device.DService; }
-
-        public DisplayCameraConfig DisplayCameraConfig  => DisplayCameraLocalConfig.Instance.GetDisplayCameraConfig(Device.Config.Code);
+        public DisplayCameraConfig DisplayCameraConfig => Device.DisplayConfig;
 
         public ViewCamera View { get; set; }
         public string DisPlayName => Device.Config.Name;
@@ -119,23 +98,23 @@ namespace ColorVision.Engine.Services.Devices.Camera
             UpdateTemplate();
             Device.ConfigChanged += (s, e) => UpdateTemplate();
 
-            ComboxCalibrationTemplate.DataContext = DisplayCameraConfig;
+            ComboxCalibrationTemplate.DataContext = Device.DisplayConfig;
             PhyCameraManager.GetInstance().Loaded += (s, e) => UpdateTemplate();
             ComboxAutoExpTimeParamTemplate.ItemsSource = TemplateAutoExpTime.Params;
             ComboxAutoExpTimeParamTemplate.SelectedIndex = 0;
-            ComboxAutoExpTimeParamTemplate.DataContext = DisplayCameraConfig;
+            ComboxAutoExpTimeParamTemplate.DataContext = Device.DisplayConfig;
 
             ComboxAutoExpTimeParamTemplate1.ItemsSource = TemplateAutoExpTime.Params.CreateEmpty();
             ComboxAutoExpTimeParamTemplate1.SelectedIndex = 0;
-            ComboxAutoExpTimeParamTemplate1.DataContext = DisplayCameraConfig;
+            ComboxAutoExpTimeParamTemplate1.DataContext = Device.DisplayConfig;
 
             ComboxAutoFocus.ItemsSource = TemplateAutoFocus.Params;
             ComboxAutoFocus.SelectedIndex = 0;
-            ComboxAutoFocus.DataContext = DisplayCameraConfig;
+            ComboxAutoFocus.DataContext = Device.DisplayConfig;
 
             ComboBoxHDRTemplate.ItemsSource = TemplateHDR.Params.CreateEmpty();
             ComboBoxHDRTemplate.SelectedIndex = 0;
-            ComboBoxHDRTemplate.DataContext = DisplayCameraConfig;
+            ComboBoxHDRTemplate.DataContext = Device.DisplayConfig;
 
             CBFilp.ItemsSource = from e1 in Enum.GetValues(typeof(CVImageFlipMode)).Cast<CVImageFlipMode>()
                                               select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());

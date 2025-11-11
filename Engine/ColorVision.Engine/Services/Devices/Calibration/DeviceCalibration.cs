@@ -22,6 +22,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         public MQTTCalibration DService { get; set; }
 
+        public DisplayCalibrationConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayCameraConfig<DisplayCalibrationConfig>(Config.Code);
+
         public PhyCamera? PhyCamera { get => PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode); }
 
         public ViewCalibration View{ get; set; }

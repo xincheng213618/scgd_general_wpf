@@ -8,6 +8,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
     public class DeviceSensor : DeviceService<ConfigSensor>
     {
         public MQTTSensor DService { get; set; }
+        public IDisPlayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayCameraConfig<IDisPlayConfigBase>(Config.Code);
 
         public DeviceSensor(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
