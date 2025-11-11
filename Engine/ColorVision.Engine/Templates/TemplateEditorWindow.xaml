@@ -4,7 +4,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Templates"
-        DataContext="{Binding RelativeSource={RelativeSource Self}}"
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         xmlns:hc="https://handyorg.github.io/handycontrol"
@@ -88,9 +87,9 @@
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
                     <ContextMenu x:Key="ContextMenuItem">
                         <MenuItem Header="{x:Static properties:Resources.MenuDelete}" Command="ApplicationCommands.Delete" />
-                        <MenuItem Header="{x:Static properties:Resources.MenuRename}" Command="{x:Static commands:Commands.ReName}" Tag="{Binding .}" />
+                        <MenuItem Header="{x:Static properties:Resources.MenuRename}" Command="{x:Static commands:Commands.ReName}"  />
                         <MenuItem Header="{x:Static properties:Resources.CreateCopy}"  Click="Button_CreateCopy_Click" Tag="{Binding .}"  />
-                        <MenuItem Header="{x:Static properties:Resources.CreateSample}"  Click="CreateTemplate_Click" Tag="{Binding .}"  />
+                        <MenuItem Header="{x:Static properties:Resources.CreateSample}"   Click="CreateTemplate_Click" Tag="{Binding .}"  />
                     </ContextMenu>
                 </ListView.Resources>
                 <ListView.ItemContainerStyle>
