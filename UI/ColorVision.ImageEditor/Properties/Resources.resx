@@ -172,37 +172,22 @@
   <data name="Relative" xml:space="preserve">
     <value>相对值</value>
   </data>
-  <data name="AutoLevelsAdjustment" xml:space="preserve">
-    <value>自动色阶调整</value>
+  <data name="IsShowMsg" xml:space="preserve">
+    <value>显示消息</value>
   </data>
-  <data name="WhiteBalanceAdjustment" xml:space="preserve">
-    <value> "白平衡调整</value>
+  <data name="IsLayoutUpdated" xml:space="preserve">
+    <value>自动刷新</value>
   </data>
-  <data name="GammaCorrection" xml:space="preserve">
-    <value>伽马校正</value>
+  <data name="IsShowText" xml:space="preserve">
+    <value>显示文字</value>
   </data>
-  <data name="LuminanceContrastAdjustment" xml:space="preserve">
-    <value>亮度对比度调整</value>
+  <data name="ColormapTypes" xml:space="preserve">
+    <value>伪彩色</value>
   </data>
-  <data name="ThresholdProcessing" xml:space="preserve">
-    <value>阈值处理</value>
+  <data name="Reload" xml:space="preserve">
+    <value>重新加载</value>
   </data>
-  <data name="MoireRemove" xml:space="preserve">
-    <value>去除摩尔纹</value>
-  </data>
-  <data name="Sharpening" xml:space="preserve">
-    <value>锐化</value>
-  </data>
-  <data name="GaussianBlur" xml:space="preserve">
-    <value>高斯模糊</value>
-  </data>
-  <data name="MedianFilter" xml:space="preserve">
-    <value>中值滤波</value>
-  </data>
-  <data name="Canny" xml:space="preserve">
-    <value>边缘检测 (Canny)</value>
-  </data>
-  <data name="HistogramEqualization" xml:space="preserve">
-    <value>直方图均衡化</value>
+  <data name="Apply" xml:space="preserve">
+    <value>应用当前图片</value>
   </data>
 </root>

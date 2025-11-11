@@ -192,37 +192,22 @@
   <data name="Relative" xml:space="preserve">
     <value>valeur relative</value>
   </data>
-  <data name="AutoLevelsAdjustment" xml:space="preserve">
-    <value>Réglage automatique des niveaux</value>
+  <data name="IsShowMsg" xml:space="preserve">
+    <value>Afficher le message</value>
   </data>
-  <data name="WhiteBalanceAdjustment" xml:space="preserve">
-    <value>Réglage de la balance des blancs</value>
+  <data name="IsLayoutUpdated" xml:space="preserve">
+    <value>Actualisation automatique</value>
   </data>
-  <data name="GammaCorrection" xml:space="preserve">
-    <value>Correction gamma</value>
+  <data name="IsShowText" xml:space="preserve">
+    <value>Afficher le texte</value>
   </data>
-  <data name="LuminanceContrastAdjustment" xml:space="preserve">
-    <value>Réglage de la luminosité et du contraste</value>
+  <data name="ColormapTypes" xml:space="preserve">
+    <value>fausse couleur</value>
   </data>
-  <data name="ThresholdProcessing" xml:space="preserve">
-    <value>Traitement au seuil</value>
+  <data name="Reload" xml:space="preserve">
+    <value>Recharger</value>
   </data>
-  <data name="MoireRemove" xml:space="preserve">
-    <value>Supprimer les motifs moirés</value>
-  </data>
-  <data name="Sharpening" xml:space="preserve">
-    <value>Affûter</value>
-  </data>
-  <data name="GaussianBlur" xml:space="preserve">
-    <value>Flou gaussien</value>
-  </data>
-  <data name="MedianFilter" xml:space="preserve">
-    <value>Filtrage médian</value>
-  </data>
-  <data name="Canny" xml:space="preserve">
-    <value>Détection des contours (Canny)</value>
-  </data>
-  <data name="HistogramEqualization" xml:space="preserve">
-    <value>Égalisation de l'histogramme</value>
+  <data name="Apply" xml:space="preserve">
+    <value>Appliquer l'image actuelle</value>
   </data>
 </root>
