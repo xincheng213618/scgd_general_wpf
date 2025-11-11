@@ -210,4 +210,37 @@
   <data name="IsShowMsg" xml:space="preserve">
     <value>Display message</value>
   </data>
+  <data name="AutoLevelsAdjustment" xml:space="preserve">
+    <value>Automatic Levels Adjustment</value>
+  </data>
+  <data name="WhiteBalanceAdjustment" xml:space="preserve">
+    <value>White balance adjustment</value>
+  </data>
+  <data name="GammaCorrection" xml:space="preserve">
+    <value>Gamma correction</value>
+  </data>
+  <data name="LuminanceContrastAdjustment" xml:space="preserve">
+    <value>Luminance and contrast adjustment</value>
+  </data>
+  <data name="ThresholdProcessing" xml:space="preserve">
+    <value>Threshold processing</value>
+  </data>
+  <data name="MoireRemove" xml:space="preserve">
+    <value>Remove moiré patterns</value>
+  </data>
+  <data name="Sharpening" xml:space="preserve">
+    <value>Sharpen</value>
+  </data>
+  <data name="GaussianBlur" xml:space="preserve">
+    <value>Gaussian blur</value>
+  </data>
+  <data name="MedianFilter" xml:space="preserve">
+    <value>Median filtering</value>
+  </data>
+  <data name="Canny" xml:space="preserve">
+    <value>Edge detection (Canny)</value>
+  </data>
+  <data name="HistogramEqualization" xml:space="preserve">
+    <value>Histogram equalization</value>
+  </data>
 </root>

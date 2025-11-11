@@ -2430,4 +2430,31 @@
   <data name="MenuLanguage" xml:space="preserve">
     <value>語言(_L）</value>
   </data>
+  <data name="StartMeasurementValue_V_mA" xml:space="preserve">
+    <value>開始測量值(V/mA)</value>
+  </data>
+  <data name="EndMeasurementValue_V_mA" xml:space="preserve">
+    <value>結束測量值(V/mA)</value>
+  </data>
+  <data name="VoltageSourceUnit_V_CurrentSourceUnit_mA" xml:space="preserve">
+    <value>電壓源單位V,電流源單位mA</value>
+  </data>
+  <data name="LimitVal" xml:space="preserve">
+    <value>限值(V/mA)</value>
+  </data>
+  <data name="SourceMeterProtectionLimit_VoltageUnitV_CurrentUnitmA" xml:space="preserve">
+    <value>源表保護的限值,電壓源單位V,電流源單位mA</value>
+  </data>
+  <data name="IsVoltageSource" xml:space="preserve">
+    <value>是否為電壓源</value>
+  </data>
+  <data name="TrueIsVoltageSource_FalseIsCurrentSource" xml:space="preserve">
+    <value>true是電壓源，false是電流源</value>
+  </data>
+  <data name="MeasureType" xml:space="preserve">
+    <value>測量類型</value>
+  </data>
+  <data name="VoltageSourceCurrentSourceSelection" xml:space="preserve">
+    <value>電壓源,電流源選擇</value>
+  </data>
 </root>
