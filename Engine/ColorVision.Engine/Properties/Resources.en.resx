@@ -631,7 +631,7 @@
     <value>Copy configuration file</value>
   </data>
   <data name="ConnectionName" xml:space="preserve">
-    <value>Connection Name</value>
+    <value>ConnectionName</value>
   </data>
   <data name="ConfirmUpdate" xml:space="preserve">
     <value>Update or not</value>
@@ -931,7 +931,7 @@
     <value>Heartbeat Time(ms)</value>
   </data>
   <data name="DeviceAutoConnect" xml:space="preserve">
-    <value>Automatic device connection</value>
+    <value>DeviceAutoConnect</value>
   </data>
   <data name="ApplySettings" xml:space="preserve">
     <value>Apply Settings</value>
@@ -1129,7 +1129,7 @@
     <value>Please configure SN first.</value>
   </data>
   <data name="Connect" xml:space="preserve">
-    <value>connect</value>
+    <value>Connect</value>
   </data>
   <data name="StartExecition" xml:space="preserve">
     <value>Start execution</value>
@@ -1918,7 +1918,7 @@
     <value>Enable ND?</value>
   </data>
   <data name="ConnectType" xml:space="preserve">
-    <value>Connection method</value>
+    <value>ConnectType</value>
   </data>
   <data name="Saturation" xml:space="preserve">
     <value>Saturation</value>
