@@ -2457,4 +2457,10 @@
   <data name="VoltageSourceCurrentSourceSelection" xml:space="preserve">
     <value>電壓源,電流源選擇</value>
   </data>
+  <data name="EnableExposure" xml:space="preserve">
+    <value>曝光使能</value>
+  </data>
+  <data name="EnableFocus" xml:space="preserve">
+    <value>對焦使能</value>
+  </data>
 </root>
