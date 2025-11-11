@@ -73,8 +73,11 @@ namespace Pattern.NineDot
         }
         private double _MarginRatioY = 0.1;
 
-        public string MainBrushTag { get; set; } = "K";
-        public string AltBrushTag { get; set; } = "W";
+        public string MainBrushTag { get => _MainBrushTag; set { _MainBrushTag = value; OnPropertyChanged(); } }
+        private string _MainBrushTag = "K";
+        
+        public string AltBrushTag { get => _AltBrushTag; set { _AltBrushTag = value; OnPropertyChanged(); } }
+        private string _AltBrushTag = "W";
 
         public SolidSizeMode SizeMode { get => _SizeMode; set { _SizeMode = value; OnPropertyChanged(); } }
         private SolidSizeMode _SizeMode = SolidSizeMode.ByFieldOfView;
@@ -99,7 +102,23 @@ namespace Pattern.NineDot
             string shape = !Config.UseRectangle
                 ? $"Circle_{Config.Radius}"
                 : $"Rect_{Config.RectWidth}x{Config.RectHeight}";
-            return $"Distortion_{Config.MainBrushTag}{Config.AltBrushTag}_{Config.Rows}x{Config.Cols}_{shape}";
+            string baseName = $"Distortion_{Config.MainBrushTag}{Config.AltBrushTag}_{Config.Rows}x{Config.Cols}_{shape}";
+            
+            // Add FOV/Pixel suffix
+            if (Config.SizeMode == SolidSizeMode.ByPixelSize)
+            {
+                baseName += $"_Pixel_{Config.PixelWidth}x{Config.PixelHeight}";
+            }
+            else // ByFieldOfView
+            {
+                // Only add suffix if not full FOV
+                if (Config.FieldOfViewX != 1.0 || Config.FieldOfViewY != 1.0)
+                {
+                    baseName += $"_FOV_{Config.FieldOfViewX:0.##}x{Config.FieldOfViewY:0.##}";
+                }
+            }
+            
+            return baseName;
         }
         public static List<Point> GetBilinearGridPoints(List<Point> quad, int rows, int cols)
         {

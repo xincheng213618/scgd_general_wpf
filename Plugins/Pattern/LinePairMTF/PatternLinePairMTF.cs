@@ -87,6 +87,7 @@ namespace Pattern.LinePairMTF
 
         public string LineBrushTag { get => _LineBrushTag; set { _LineBrushTag = value; OnPropertyChanged(); } }
         private string _LineBrushTag = "K";
+        
         public string BackgroundBrushTag { get => _BackgroundBrushTag; set { _BackgroundBrushTag = value; OnPropertyChanged(); } }
         private string _BackgroundBrushTag = "W";
 
@@ -114,8 +115,24 @@ namespace Pattern.LinePairMTF
 
         public override string GetTemplateName()
         {
-            return Config.ChartType.ToString() + "_" + Config.LineBrushTag + Config.BackgroundBrushTag +
+            string baseName = Config.ChartType.ToString() + "_" + Config.LineBrushTag + Config.BackgroundBrushTag +
                 $"_{Config.LineThickness}_{Config.LineLength}";
+            
+            // Add FOV/Pixel suffix
+            if (Config.SizeMode == SolidSizeMode.ByPixelSize)
+            {
+                baseName += $"_Pixel_{Config.PixelWidth}x{Config.PixelHeight}";
+            }
+            else // ByFieldOfView
+            {
+                // Only add suffix if not full FOV
+                if (Config.FieldOfViewX != 1.0 || Config.FieldOfViewY != 1.0)
+                {
+                    baseName += $"_FOV_{Config.FieldOfViewX:0.##}x{Config.FieldOfViewY:0.##}";
+                }
+            }
+            
+            return baseName;
         }
 
         public override Mat Gen(int height, int width)
