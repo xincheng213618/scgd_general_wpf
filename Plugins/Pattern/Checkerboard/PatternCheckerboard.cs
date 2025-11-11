@@ -41,8 +41,11 @@ namespace Pattern.Checkerboard
         public CheckerboardSizeMode SizeMode { get => _SizeMode; set { _SizeMode = value; OnPropertyChanged(); } }
         private CheckerboardSizeMode _SizeMode = CheckerboardSizeMode.ByGridCount;
 
-        public string MainBrushTag { get; set; } = "W";
-        public string AltBrushTag { get; set; } = "K";
+        public string MainBrushTag { get => _MainBrushTag; set { _MainBrushTag = value; OnPropertyChanged(); } }
+        private string _MainBrushTag = "W";
+        
+        public string AltBrushTag { get => _AltBrushTag; set { _AltBrushTag = value; OnPropertyChanged(); } }
+        private string _AltBrushTag = "K";
 
         [DisplayName("视场背景")]
         public SolidColorBrush BackGroundBrush { get => _BackGroundBrush; set { _BackGroundBrush = value; OnPropertyChanged(); } }
@@ -77,7 +80,23 @@ namespace Pattern.Checkerboard
             {
                 str = $"{Config.CellW}x{Config.CellH}";
             }
-            return "Checkerboard" + "_" + Config.MainBrushTag + Config.AltBrushTag + "_" + str;
+            string baseName = "Checkerboard" + "_" + Config.MainBrushTag + Config.AltBrushTag + "_" + str;
+            
+            // Add FOV/Pixel suffix
+            if (Config.FovSizeMode == SolidSizeMode.ByPixelSize)
+            {
+                baseName += $"_Pixel_{Config.PixelWidth}x{Config.PixelHeight}";
+            }
+            else // ByFieldOfView
+            {
+                // Only add suffix if not full FOV
+                if (Config.FieldOfViewX != 1.0 || Config.FieldOfViewY != 1.0)
+                {
+                    baseName += $"_FOV_{Config.FieldOfViewX:0.##}x{Config.FieldOfViewY:0.##}";
+                }
+            }
+            
+            return baseName;
         }
         public override Mat Gen(int height, int width)
         {

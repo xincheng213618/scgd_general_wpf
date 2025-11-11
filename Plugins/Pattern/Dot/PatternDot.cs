@@ -82,7 +82,23 @@ namespace Pattern.Dot
         {
             var shape = !Config.UseRectangle ? "Circle" : "Rect";
             var size = !Config.UseRectangle ? Config.Radius.ToString() : $"{Config.RectWidth}x{Config.RectHeight}";
-            return $"DotMatrix_{shape}_{size}";
+            string baseName = $"DotMatrix_{shape}_{size}";
+            
+            // Add FOV/Pixel suffix
+            if (Config.SizeMode == SolidSizeMode.ByPixelSize)
+            {
+                baseName += $"_Pixel_{Config.PixelWidth}x{Config.PixelHeight}";
+            }
+            else // ByFieldOfView
+            {
+                // Only add suffix if not full FOV
+                if (Config.FieldOfViewX != 1.0 || Config.FieldOfViewY != 1.0)
+                {
+                    baseName += $"_FOV_{Config.FieldOfViewX:0.##}x{Config.FieldOfViewY:0.##}";
+                }
+            }
+            
+            return baseName;
         }
         public override Mat Gen(int height, int width)
         {
