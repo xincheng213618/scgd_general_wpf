@@ -42,13 +42,7 @@ namespace Pattern.LinePairMTF
         public double Angle { get => _Angle; set { _Angle = value; OnPropertyChanged(); } }
         private double _Angle = 45.0; // 默认45度
 
-        public SolidSizeMode SizeMode { get => _SizeMode; set { _SizeMode = value; OnPropertyChanged(); } }
-        private SolidSizeMode _SizeMode = SolidSizeMode.ByFieldOfView;
 
-        public int PixelWidth { get => _PixelWidth; set { _PixelWidth = value; OnPropertyChanged(); } }
-        private int _PixelWidth = 100;
-        public int PixelHeight { get => _PixelHeight; set { _PixelHeight = value; OnPropertyChanged(); } }
-        private int _PixelHeight = 100;
 
         [PropertyEditorType(UpdateSourceTrigger = UpdateSourceTrigger.LostFocus)]
         public string FieldXJson
@@ -96,6 +90,13 @@ namespace Pattern.LinePairMTF
         public string BackgroundBrushTag { get => _BackgroundBrushTag; set { _BackgroundBrushTag = value; OnPropertyChanged(); } }
         private string _BackgroundBrushTag = "W";
 
+        public SolidSizeMode SizeMode { get => _SizeMode; set { _SizeMode = value; OnPropertyChanged(); } }
+        private SolidSizeMode _SizeMode = SolidSizeMode.ByFieldOfView;
+
+        public int PixelWidth { get => _PixelWidth; set { _PixelWidth = value; OnPropertyChanged(); } }
+        private int _PixelWidth = 100;
+        public int PixelHeight { get => _PixelHeight; set { _PixelHeight = value; OnPropertyChanged(); } }
+        private int _PixelHeight = 100;
         public double FieldOfViewX { get => _FieldOfViewX; set { _FieldOfViewX = value; OnPropertyChanged(); } }
         private double _FieldOfViewX = 1.0;
         public double FieldOfViewY { get => _FieldOfViewY; set { _FieldOfViewY = value; OnPropertyChanged(); } }
