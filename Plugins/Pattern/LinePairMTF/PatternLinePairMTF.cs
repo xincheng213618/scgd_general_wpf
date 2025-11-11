@@ -15,6 +15,13 @@ namespace Pattern.LinePairMTF
         RotatedRect, // 斜方块
         BMW           // 宝马图
     }
+
+    public enum SolidSizeMode
+    {
+        ByFieldOfView,
+        ByPixelSize
+    }
+
     public class PatternLinePairMTFConfig : ViewModelBase, IConfig
     {
         public SolidColorBrush LineBrush { get => _LineBrush; set { _LineBrush = value; OnPropertyChanged(); } }
@@ -34,6 +41,14 @@ namespace Pattern.LinePairMTF
         private int _LineLength = 40;
         public double Angle { get => _Angle; set { _Angle = value; OnPropertyChanged(); } }
         private double _Angle = 45.0; // 默认45度
+
+        public SolidSizeMode SizeMode { get => _SizeMode; set { _SizeMode = value; OnPropertyChanged(); } }
+        private SolidSizeMode _SizeMode = SolidSizeMode.ByFieldOfView;
+
+        public int PixelWidth { get => _PixelWidth; set { _PixelWidth = value; OnPropertyChanged(); } }
+        private int _PixelWidth = 100;
+        public int PixelHeight { get => _PixelHeight; set { _PixelHeight = value; OnPropertyChanged(); } }
+        private int _PixelHeight = 100;
 
         [PropertyEditorType(UpdateSourceTrigger = UpdateSourceTrigger.LostFocus)]
         public string FieldXJson
@@ -104,17 +119,86 @@ namespace Pattern.LinePairMTF
 
         public override Mat Gen(int height, int width)
         {
+            int fovWidth, fovHeight;
+
+            // Calculate dimensions based on size mode
+            if (Config.SizeMode == SolidSizeMode.ByPixelSize)
+            {
+                // Use pixel-based dimensions
+                fovWidth = Math.Min(Config.PixelWidth, width);
+                fovHeight = Math.Min(Config.PixelHeight, height);
+            }
+            else // ByFieldOfView
+            {
+                // Use field-of-view coefficients
+                double fovx = Math.Max(0, Math.Min(Config.FieldOfViewX, 1.0));
+                double fovy = Math.Max(0, Math.Min(Config.FieldOfViewY, 1.0));
+
+                fovWidth = (int)(width * fovx);
+                fovHeight = (int)(height * fovy);
+            }
+
+            // If dimensions match the entire image, generate pattern directly
+            if (fovWidth == width && fovHeight == height)
+            {
+                Mat checker = new Mat(fovHeight, fovWidth, MatType.CV_8UC3, Config.BackgroundBrush.ToScalar());
+
+            int cent_x = fovWidth / 2;
+            int cent_y = fovHeight / 2;
+
+            var fieldX = Config.FieldX;
+            var fieldY = Config.FieldY;
+            int count = Math.Min(fieldX.Count, fieldY.Count);
+
+            for (int i = 0; i < count; i++)
+            {
+                double fx = fieldX[i];
+                double fy = fieldY[i];
+
+                int x1 = (int)(cent_x - cent_x * fx);
+                int y1 = (int)(cent_y - cent_y * fy);
+                int x2 = (int)(cent_x + cent_x * fx);
+                int y2 = (int)(cent_y - cent_y * fy);
+                int x3 = (int)(cent_x - cent_x * fx);
+                int y3 = (int)(cent_y + cent_y * fy);
+                int x4 = (int)(cent_x + cent_x * fx);
+                int y4 = (int)(cent_y + cent_y * fy);
+                if (Config.ChartType == ChartType.FourLinePair)
+                {
+                    DrawFourLinePair(checker, fovWidth, fovHeight, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x1, y1);
+
+                    DrawFourLinePair(checker, fovWidth, fovHeight, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x2, y2);
+
+                    DrawFourLinePair(checker, fovWidth, fovHeight, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x3, y3);
+
+                    DrawFourLinePair(checker, fovWidth, fovHeight, Config.LineLength, Config.LineThickness, Config.LineBrush.ToScalar(), x4, y4);
+
+                }
+                else if (Config.ChartType == ChartType.RotatedRect)
+                {
+                    // 以RotatedRect为例
+                    DrawRotatedRect(checker, x1, y1, Config.LineLength, Config.LineThickness, Config.Angle, Config.LineBrush.ToScalar());
+                    DrawRotatedRect(checker, x2, y2, Config.LineLength, Config.LineThickness, Config.Angle, Config.LineBrush.ToScalar());
+                    DrawRotatedRect(checker, x3, y3, Config.LineLength, Config.LineThickness, Config.Angle, Config.LineBrush.ToScalar());
+                    DrawRotatedRect(checker, x4, y4, Config.LineLength, Config.LineThickness, Config.Angle, Config.LineBrush.ToScalar());
+                }
+                else if (Config.ChartType == ChartType.BMW)
+                {
+                    DrawBMW(checker, x1, y1, Config.LineLength, Config.Angle, Config.LineBrush.ToScalar());
+                    DrawBMW(checker, x2, y2, Config.LineLength, Config.Angle, Config.LineBrush.ToScalar());
+                    DrawBMW(checker, x3, y3, Config.LineLength, Config.Angle, Config.LineBrush.ToScalar());
+                    DrawBMW(checker, x4, y4, Config.LineLength, Config.Angle, Config.LineBrush.ToScalar());
+                }
+            }
+
+            return checker;
+        }
+        else
+        {
+            // Create background mat
             var mat = new Mat(height, width, MatType.CV_8UC3, Config.BackgroundBrush.ToScalar());
-
-            double fovx = Math.Max(0, Math.Min(Config.FieldOfViewX, 1.0));
-            double fovy = Math.Max(0, Math.Min(Config.FieldOfViewY, 1.0));
-
-            int fovWidth = (int)(width * fovx);
-            int fovHeight = (int)(height * fovy);
             int startX = (width - fovWidth) / 2;
             int startY = (height - fovHeight) / 2;
-
-
 
             Mat checker = new Mat(fovHeight, fovWidth, MatType.CV_8UC3, Config.BackgroundBrush.ToScalar());
 
@@ -169,6 +253,7 @@ namespace Pattern.LinePairMTF
             checker.CopyTo(mat[new Rect(startX, startY, fovWidth, fovHeight)]);
             checker.Dispose();
             return mat;
+        }
         }
 
         // 斜方块

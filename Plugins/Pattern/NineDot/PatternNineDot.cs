@@ -15,6 +15,12 @@ namespace Pattern.NineDot
         Circumscribed   // 外切
     }
 
+    public enum SolidSizeMode
+    {
+        ByFieldOfView,
+        ByPixelSize
+    }
+
     public class PatternNineDotConfig:ViewModelBase,IConfig
     {
         public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; OnPropertyChanged(); } }
@@ -70,11 +76,18 @@ namespace Pattern.NineDot
         public string MainBrushTag { get; set; } = "K";
         public string AltBrushTag { get; set; } = "W";
 
+        public SolidSizeMode SizeMode { get => _SizeMode; set { _SizeMode = value; OnPropertyChanged(); } }
+        private SolidSizeMode _SizeMode = SolidSizeMode.ByFieldOfView;
 
         public double FieldOfViewX { get => _FieldOfViewX; set { _FieldOfViewX = value; OnPropertyChanged(); } }
         private double _FieldOfViewX = 1.0;
         public double FieldOfViewY { get => _FieldOfViewY; set { _FieldOfViewY = value; OnPropertyChanged(); } }
         private double _FieldOfViewY = 1.0;
+
+        public int PixelWidth { get => _PixelWidth; set { _PixelWidth = value; OnPropertyChanged(); } }
+        private int _PixelWidth = 100;
+        public int PixelHeight { get => _PixelHeight; set { _PixelHeight = value; OnPropertyChanged(); } }
+        private int _PixelHeight = 100;
     }
 
     [DisplayName("九点")]
@@ -110,19 +123,26 @@ namespace Pattern.NineDot
         }
         public override Mat Gen(int height, int width)
         {
-            // 创建底图
-            Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
+            int fovWidth, fovHeight;
 
-            // 2. 计算视场中心区域
-            double fovx = Math.Max(0, Math.Min(Config.FieldOfViewX, 1.0));
-            double fovy = Math.Max(0, Math.Min(Config.FieldOfViewY, 1.0));
+            // Calculate dimensions based on size mode
+            if (Config.SizeMode == SolidSizeMode.ByPixelSize)
+            {
+                // Use pixel-based dimensions
+                fovWidth = Math.Min(Config.PixelWidth, width);
+                fovHeight = Math.Min(Config.PixelHeight, height);
+            }
+            else // ByFieldOfView
+            {
+                // Use field-of-view coefficients
+                double fovx = Math.Max(0, Math.Min(Config.FieldOfViewX, 1.0));
+                double fovy = Math.Max(0, Math.Min(Config.FieldOfViewY, 1.0));
 
-            int fovWidth = (int)(width * fovx);
-            int fovHeight = (int)(height * fovy);
-            int startX = (width - fovWidth) / 2;
-            int startY = (height - fovHeight) / 2;
+                fovWidth = (int)(width * fovx);
+                fovHeight = (int)(height * fovy);
+            }
 
-
+            // Generate nine dot pattern
             Mat ninedot = new Mat(fovHeight, fovWidth, MatType.CV_8UC3, Config.MainBrush.ToScalar());
             Scalar color = Config.AltBrush.ToScalar();
             int rectW = Config.RectWidth;
@@ -179,11 +199,23 @@ namespace Pattern.NineDot
                     Cv2.Rectangle(ninedot, new Rect(pt.X - rectW / 2, pt.Y - rectH / 2, rectW, rectH), color, -1);
             }
 
-            // 合成到主图中心
-            ninedot.CopyTo(mat[new Rect(startX, startY, fovWidth, fovHeight)]);
-            ninedot.Dispose();
+            // If dimensions match the entire image, return directly
+            if (fovWidth == width && fovHeight == height)
+            {
+                return ninedot;
+            }
+            else
+            {
+                // Create background mat and paste ninedot in center
+                Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
+                int startX = (width - fovWidth) / 2;
+                int startY = (height - fovHeight) / 2;
 
-            return mat;
+                ninedot.CopyTo(mat[new Rect(startX, startY, fovWidth, fovHeight)]);
+                ninedot.Dispose();
+
+                return mat;
+            }
 
         }
 
