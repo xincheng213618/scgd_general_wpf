@@ -2430,4 +2430,22 @@
   <data name="MenuLanguage" xml:space="preserve">
     <value>语言(_Language)</value>
   </data>
+  <data name="StartMeasurementValue_V_mA" xml:space="preserve">
+    <value>开始测量值(V/mA)</value>
+  </data>
+  <data name="EndMeasurementValue_V_mA" xml:space="preserve">
+    <value>结束测量值(V/mA)</value>
+  </data>
+  <data name="VoltageSourceUnit_V_CurrentSourceUnit_mA" xml:space="preserve">
+    <value>电压源单位V,电流源单位mA</value>
+  </data>
+  <data name="LimitVal" xml:space="preserve">
+    <value>限值(V/mA)</value>
+  </data>
+  <data name="SourceMeterProtectionLimit_VoltageUnitV_CurrentUnitmA" xml:space="preserve">
+    <value>源表保护的限值,电压源单位V,电流源单位mA</value>
+  </data>
+  <data name="IsVoltageSource" xml:space="preserve">
+    <value>是否是电压源</value>
+  </data>
 </root>

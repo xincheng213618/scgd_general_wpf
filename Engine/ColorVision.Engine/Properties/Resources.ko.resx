@@ -2430,4 +2430,22 @@
   <data name="MenuLanguage" xml:space="preserve">
     <value>언어(_L)</value>
   </data>
+  <data name="StartMeasurementValue_V_mA" xml:space="preserve">
+    <value>초기 측정값(V/mA)</value>
+  </data>
+  <data name="EndMeasurementValue_V_mA" xml:space="preserve">
+    <value>측정 종료 값(V/mA)</value>
+  </data>
+  <data name="VoltageSourceUnit_V_CurrentSourceUnit_mA" xml:space="preserve">
+    <value>전압원은 볼트(V)로 측정되고, 전류원은 mA로 측정됩니다.</value>
+  </data>
+  <data name="LimitVal" xml:space="preserve">
+    <value>한계(V/mA)</value>
+  </data>
+  <data name="SourceMeterProtectionLimit_VoltageUnitV_CurrentUnitmA" xml:space="preserve">
+    <value>전원 보호에 대한 한계; 전압원 단위: V; 전류원 단위: mA.</value>
+  </data>
+  <data name="IsVoltageSource" xml:space="preserve">
+    <value>전압원인가요?</value>
+  </data>
 </root>
