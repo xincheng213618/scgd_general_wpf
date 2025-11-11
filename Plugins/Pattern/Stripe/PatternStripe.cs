@@ -12,6 +12,13 @@ namespace Pattern.Stripe
         ByGridCount,
         ByCellSize
     }
+
+    public enum SolidSizeMode
+    {
+        ByFieldOfView,
+        ByPixelSize
+    }
+
     public class PatternStripeConfig:ViewModelBase,IConfig
     {
         public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; OnPropertyChanged(); } }
@@ -41,10 +48,18 @@ namespace Pattern.Stripe
         public string MainBrushTag { get; set; } = "K";
         public string AltBrushTag { get; set; } = "W";
 
+        public SolidSizeMode SizeMode { get => _SizeMode; set { _SizeMode = value; OnPropertyChanged(); } }
+        private SolidSizeMode _SizeMode = SolidSizeMode.ByFieldOfView;
+
         public double FieldOfViewX { get => _FieldOfViewX; set { _FieldOfViewX = value; OnPropertyChanged(); } }
         private double _FieldOfViewX = 1.0;
         public double FieldOfViewY { get => _FieldOfViewY; set { _FieldOfViewY = value; OnPropertyChanged(); } }
         private double _FieldOfViewY = 1.0;
+
+        public int PixelWidth { get => _PixelWidth; set { _PixelWidth = value; OnPropertyChanged(); } }
+        private int _PixelWidth = 100;
+        public int PixelHeight { get => _PixelHeight; set { _PixelHeight = value; OnPropertyChanged(); } }
+        private int _PixelHeight = 100;
 
     }
 
@@ -64,20 +79,26 @@ namespace Pattern.Stripe
 
         public override Mat Gen(int height, int width)
         {
-            // 1. 创建底图
-            Mat mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
+            int fovWidth, fovHeight;
 
-            // 2. 计算视场中心区域
-            double fovx = Math.Max(0, Math.Min(Config.FieldOfViewX, 1.0));
-            double fovy = Math.Max(0, Math.Min(Config.FieldOfViewY, 1.0));
+            // Calculate dimensions based on size mode
+            if (Config.SizeMode == SolidSizeMode.ByPixelSize)
+            {
+                // Use pixel-based dimensions
+                fovWidth = Math.Min(Config.PixelWidth, width);
+                fovHeight = Math.Min(Config.PixelHeight, height);
+            }
+            else // ByFieldOfView
+            {
+                // Use field-of-view coefficients
+                double fovx = Math.Max(0, Math.Min(Config.FieldOfViewX, 1.0));
+                double fovy = Math.Max(0, Math.Min(Config.FieldOfViewY, 1.0));
 
-            int fovWidth = (int)(width * fovx);
-            int fovHeight = (int)(height * fovy);
+                fovWidth = (int)(width * fovx);
+                fovHeight = (int)(height * fovy);
+            }
 
-            int startX = (width - fovWidth) / 2;
-            int startY = (height - fovHeight) / 2;
-
-            // 3. 生成条纹小图
+            // Generate stripe pattern
             Mat stripe = new Mat(fovHeight, fovWidth, MatType.CV_8UC3, Config.MainBrush.ToScalar());
 
             if (Config.IsHorizontal)
@@ -109,10 +130,22 @@ namespace Pattern.Stripe
                 }
             }
 
-            // 4. 贴到底图中心
-            stripe.CopyTo(mat[new Rect(startX, startY, fovWidth, fovHeight)]);
-            stripe.Dispose();
-            return mat;
+            // If dimensions match the entire image, return directly
+            if (fovWidth == width && fovHeight == height)
+            {
+                return stripe;
+            }
+            else
+            {
+                // Create background mat and paste stripe in center
+                var mat = new Mat(height, width, MatType.CV_8UC3, Config.MainBrush.ToScalar());
+                int startX = (width - fovWidth) / 2;
+                int startY = (height - fovHeight) / 2;
+
+                stripe.CopyTo(mat[new Rect(startX, startY, fovWidth, fovHeight)]);
+                stripe.Dispose();
+                return mat;
+            }
         }
     }
 }
