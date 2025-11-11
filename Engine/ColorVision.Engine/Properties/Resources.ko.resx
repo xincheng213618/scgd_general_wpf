@@ -2457,4 +2457,10 @@
   <data name="VoltageSourceCurrentSourceSelection" xml:space="preserve">
     <value>전압원, 전류원 선택</value>
   </data>
+  <data name="EnableExposure" xml:space="preserve">
+    <value>노출 활성화</value>
+  </data>
+  <data name="EnableFocus" xml:space="preserve">
+    <value>포커스 활성화</value>
+  </data>
 </root>

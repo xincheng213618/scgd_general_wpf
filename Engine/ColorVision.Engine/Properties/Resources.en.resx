@@ -2457,4 +2457,10 @@
   <data name="VoltageSourceCurrentSourceSelection" xml:space="preserve">
     <value>Voltage source, current source selection</value>
   </data>
+  <data name="EnableExposure" xml:space="preserve">
+    <value>Exposure Enable</value>
+  </data>
+  <data name="EnableFocus" xml:space="preserve">
+    <value>Focus enable</value>
+  </data>
 </root>
