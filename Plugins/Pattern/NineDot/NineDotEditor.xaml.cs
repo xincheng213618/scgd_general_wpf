@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using ColorVision.UI;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
@@ -20,7 +21,8 @@ namespace Pattern.NineDot
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
-            CbDotFitType.ItemsSource = Enum.GetValues(typeof(DotFitType)); 
+            CbDotFitType.ItemsSource = Enum.GetValues(typeof(DotFitType));
+            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(Config));
         }
         private void BtnPickMainColor_Click(object sender, RoutedEventArgs e)
         {

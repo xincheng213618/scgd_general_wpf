@@ -20,7 +20,8 @@ namespace Pattern.Solid
         public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _MainBrush = Brushes.White;
 
-        public string Tag { get; set; } = "W";
+        public string Tag { get => _Tag; set { _Tag = value; OnPropertyChanged(); } }
+        private string _Tag = "W";
 
         [DisplayName("视场背景")]
         public SolidColorBrush BackGroundBrush { get => _BackGroundBrush; set { _BackGroundBrush = value; OnPropertyChanged(); } }
@@ -48,7 +49,23 @@ namespace Pattern.Solid
 
         public override string GetTemplateName()
         {
-            return "Solid" + "_" + Config.Tag;
+            string baseName = "Solid" + "_" + Config.Tag;
+            
+            // Add FOV/Pixel suffix
+            if (Config.SizeMode == SolidSizeMode.ByPixelSize)
+            {
+                baseName += $"_Pixel_{Config.PixelWidth}x{Config.PixelHeight}";
+            }
+            else // ByFieldOfView
+            {
+                // Only add suffix if not full FOV
+                if (Config.FieldOfViewX != 1.0 || Config.FieldOfViewY != 1.0)
+                {
+                    baseName += $"_FOV_{Config.FieldOfViewX:0.##}x{Config.FieldOfViewY:0.##}";
+                }
+            }
+            
+            return baseName;
         }
 
         public override Mat Gen(int height, int width)

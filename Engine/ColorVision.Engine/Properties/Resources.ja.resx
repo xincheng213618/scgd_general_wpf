@@ -2427,4 +2427,40 @@
   <data name="ContinuousMeasurement" xml:space="preserve">
     <value>連続測定</value>
   </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>言語(_L)</value>
+  </data>
+  <data name="StartMeasurementValue_V_mA" xml:space="preserve">
+    <value>初期測定値（V/mA）</value>
+  </data>
+  <data name="EndMeasurementValue_V_mA" xml:space="preserve">
+    <value>終了測定値（V/mA）</value>
+  </data>
+  <data name="VoltageSourceUnit_V_CurrentSourceUnit_mA" xml:space="preserve">
+    <value>電圧源はボルト (V) 単位で測定され、電流源は mA 単位で測定されます。</value>
+  </data>
+  <data name="LimitVal" xml:space="preserve">
+    <value>限界（V/mA）</value>
+  </data>
+  <data name="SourceMeterProtectionLimit_VoltageUnitV_CurrentUnitmA" xml:space="preserve">
+    <value>電源保護の制限。電圧源単位: V、電流源単位: mA。</value>
+  </data>
+  <data name="IsVoltageSource" xml:space="preserve">
+    <value>それは電圧源ですか?</value>
+  </data>
+  <data name="TrueIsVoltageSource_FalseIsCurrentSource" xml:space="preserve">
+    <value>`true` は電圧源を示し、 `false` は電流源を示します。</value>
+  </data>
+  <data name="MeasureType" xml:space="preserve">
+    <value>測定タイプ</value>
+  </data>
+  <data name="VoltageSourceCurrentSourceSelection" xml:space="preserve">
+    <value>電圧源、電流源の選択</value>
+  </data>
+  <data name="EnableExposure" xml:space="preserve">
+    <value>露出を有効にする</value>
+  </data>
+  <data name="EnableFocus" xml:space="preserve">
+    <value>フォーカスを有効にする</value>
+  </data>
 </root>

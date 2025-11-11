@@ -2427,4 +2427,40 @@
   <data name="ContinuousMeasurement" xml:space="preserve">
     <value>Mesure continue</value>
   </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>Langue(L)</value>
+  </data>
+  <data name="StartMeasurementValue_V_mA" xml:space="preserve">
+    <value>Valeur de mesure initiale (V/mA)</value>
+  </data>
+  <data name="EndMeasurementValue_V_mA" xml:space="preserve">
+    <value>Valeur de mesure finale (V/mA)</value>
+  </data>
+  <data name="VoltageSourceUnit_V_CurrentSourceUnit_mA" xml:space="preserve">
+    <value>La source de tension est mesurée en volts (V), la source de courant en mA.</value>
+  </data>
+  <data name="LimitVal" xml:space="preserve">
+    <value>Limite (V/mA)</value>
+  </data>
+  <data name="SourceMeterProtectionLimit_VoltageUnitV_CurrentUnitmA" xml:space="preserve">
+    <value>Limites de protection de la source ; unité de tension de la source : V ; unité de courant de la source : mA.</value>
+  </data>
+  <data name="IsVoltageSource" xml:space="preserve">
+    <value>S'agit-il d'une source de tension ?</value>
+  </data>
+  <data name="TrueIsVoltageSource_FalseIsCurrentSource" xml:space="preserve">
+    <value>`true` indique une source de tension, `false` indique une source de courant.</value>
+  </data>
+  <data name="MeasureType" xml:space="preserve">
+    <value>Type de mesure</value>
+  </data>
+  <data name="VoltageSourceCurrentSourceSelection" xml:space="preserve">
+    <value>sélection de la source de tension et de la source de courant</value>
+  </data>
+  <data name="EnableExposure" xml:space="preserve">
+    <value>Activation de l'exposition</value>
+  </data>
+  <data name="EnableFocus" xml:space="preserve">
+    <value>Activer la mise au point</value>
+  </data>
 </root>

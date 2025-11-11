@@ -1738,7 +1738,7 @@
     <value>Finish</value>
   </data>
   <data name="PointCount" xml:space="preserve">
-    <value>Points</value>
+    <value>PointCount</value>
   </data>
   <data name="Network" xml:space="preserve">
     <value>network</value>
@@ -2426,5 +2426,41 @@
   </data>
   <data name="ContinuousMeasurement" xml:space="preserve">
     <value>Cont. Meas</value>
+  </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>_Language</value>
+  </data>
+  <data name="StartMeasurementValue_V_mA" xml:space="preserve">
+    <value>Initial measurement value (V/mA)</value>
+  </data>
+  <data name="EndMeasurementValue_V_mA" xml:space="preserve">
+    <value>End measurement value (V/mA)</value>
+  </data>
+  <data name="VoltageSourceUnit_V_CurrentSourceUnit_mA" xml:space="preserve">
+    <value>Voltage source is measured in volts (V), current source in mA.</value>
+  </data>
+  <data name="LimitVal" xml:space="preserve">
+    <value>Limit (V/mA)</value>
+  </data>
+  <data name="SourceMeterProtectionLimit_VoltageUnitV_CurrentUnitmA" xml:space="preserve">
+    <value>Limits for source protection; voltage source unit: V; current source unit: mA.</value>
+  </data>
+  <data name="IsVoltageSource" xml:space="preserve">
+    <value>Is Voltage Source</value>
+  </data>
+  <data name="TrueIsVoltageSource_FalseIsCurrentSource" xml:space="preserve">
+    <value>`true` indicates a voltage source, `false` indicates a current source.</value>
+  </data>
+  <data name="MeasureType" xml:space="preserve">
+    <value>Measurement type</value>
+  </data>
+  <data name="VoltageSourceCurrentSourceSelection" xml:space="preserve">
+    <value>Voltage source, current source selection</value>
+  </data>
+  <data name="EnableExposure" xml:space="preserve">
+    <value>Exposure Enable</value>
+  </data>
+  <data name="EnableFocus" xml:space="preserve">
+    <value>Focus enable</value>
   </data>
 </root>

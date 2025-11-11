@@ -2383,6 +2383,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 曝光使能 的本地化字符串。
+        /// </summary>
+        public static string EnableExposure {
+            get {
+                return ResourceManager.GetString("EnableExposure", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 对焦使能 的本地化字符串。
+        /// </summary>
+        public static string EnableFocus {
+            get {
+                return ResourceManager.GetString("EnableFocus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 启用串口发送 的本地化字符串。
         /// </summary>
         public static string EnableSerialPort {
@@ -2397,6 +2415,15 @@ namespace ColorVision.Engine.Properties {
         public static string End {
             get {
                 return ResourceManager.GetString("End", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 结束测量值(V/mA) 的本地化字符串。
+        /// </summary>
+        public static string EndMeasurementValue_V_mA {
+            get {
+                return ResourceManager.GetString("EndMeasurementValue_V_mA", resourceCulture);
             }
         }
         
@@ -3427,6 +3454,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 是否是电压源 的本地化字符串。
+        /// </summary>
+        public static string IsVoltageSource {
+            get {
+                return ResourceManager.GetString("IsVoltageSource", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 IVL相机处理 的本地化字符串。
         /// </summary>
         public static string IvlCameraProcessing {
@@ -3603,6 +3639,15 @@ namespace ColorVision.Engine.Properties {
         public static string LimitStart {
             get {
                 return ResourceManager.GetString("LimitStart", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 限值(V/mA) 的本地化字符串。
+        /// </summary>
+        public static string LimitVal {
+            get {
+                return ResourceManager.GetString("LimitVal", resourceCulture);
             }
         }
         
@@ -3801,6 +3846,15 @@ namespace ColorVision.Engine.Properties {
         public static string MeasurementType {
             get {
                 return ResourceManager.GetString("MeasurementType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 测量类型 的本地化字符串。
+        /// </summary>
+        public static string MeasureType {
+            get {
+                return ResourceManager.GetString("MeasureType", resourceCulture);
             }
         }
         
@@ -6046,6 +6100,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 源表保护的限值,电压源单位V,电流源单位mA 的本地化字符串。
+        /// </summary>
+        public static string SourceMeterProtectionLimit_VoltageUnitV_CurrentUnitmA {
+            get {
+                return ResourceManager.GetString("SourceMeterProtectionLimit_VoltageUnitV_CurrentUnitmA", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 源值 的本地化字符串。
         /// </summary>
         public static string SourceValue {
@@ -6123,6 +6186,15 @@ namespace ColorVision.Engine.Properties {
         public static string StartIntegrationTime_Ms {
             get {
                 return ResourceManager.GetString("StartIntegrationTime_Ms", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 开始测量值(V/mA) 的本地化字符串。
+        /// </summary>
+        public static string StartMeasurementValue_V_mA {
+            get {
+                return ResourceManager.GetString("StartMeasurementValue_V_mA", resourceCulture);
             }
         }
         
@@ -6586,6 +6658,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 true是电压源，false是电流源 的本地化字符串。
+        /// </summary>
+        public static string TrueIsVoltageSource_FalseIsCurrentSource {
+            get {
+                return ResourceManager.GetString("TrueIsVoltageSource_FalseIsCurrentSource", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 无法实例化进程类型 的本地化字符串。
         /// </summary>
         public static string UnableToInstantiateProcessType {
@@ -6888,6 +6969,24 @@ namespace ColorVision.Engine.Properties {
         public static string VoltageCurve {
             get {
                 return ResourceManager.GetString("VoltageCurve", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 电压源,电流源选择 的本地化字符串。
+        /// </summary>
+        public static string VoltageSourceCurrentSourceSelection {
+            get {
+                return ResourceManager.GetString("VoltageSourceCurrentSourceSelection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 电压源单位V,电流源单位mA 的本地化字符串。
+        /// </summary>
+        public static string VoltageSourceUnit_V_CurrentSourceUnit_mA {
+            get {
+                return ResourceManager.GetString("VoltageSourceUnit_V_CurrentSourceUnit_mA", resourceCulture);
             }
         }
         

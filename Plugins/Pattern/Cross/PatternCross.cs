@@ -104,7 +104,7 @@ namespace Pattern.Cross
         public override UserControl GetPatternEditor() => new CrossEditor(Config);
         public override string GetTemplateName()
         {
-            return "Cross" + "_" + Config.MainBrushTag + Config.AltBrushTag + $"_{Config.HorizontalWidth}x{Config.VerticalWidth}";
+            return "Cross" + "_" + Config.MainBrushTag + Config.AltBrushTag + $"_{Config.HorizontalWidth}x{Config.VerticalWidth}_{Config.HorizontalLength}x{Config.VerticalLength}";
         }
         public override Mat Gen(int height, int width)
         {
