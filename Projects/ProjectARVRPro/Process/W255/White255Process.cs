@@ -48,7 +48,8 @@ namespace ProjectARVRPro.Process.W255
                             poi.u *= fixConfig.CenterCIE1976ChromaticCoordinatesu;
                             poi.v *= fixConfig.CenterCIE1976ChromaticCoordinatesv;
                             testResult.ViewPoixyuvDatas.Add(poi);
-
+                            testResult.PoixyuvDatas.Add(new PoixyuvData() { Id =poi.Id,Name =poi.Name,X =poi.X,Y=poi.Y,Z=poi.Z,x =poi.x,y =poi.y,u =poi.u,v =poi.v,CCT =poi.CCT,Wave =poi.Wave});
+                            
                             if (item.PoiName == "P_9")
                             {
                                 testResult.CenterLunimance = new ObjectiveTestItem
