@@ -210,4 +210,37 @@
   <data name="Apply" xml:space="preserve">
     <value>Применить текущее изображение</value>
   </data>
+  <data name="AutoLevelsAdjustment" xml:space="preserve">
+    <value>Автоматическая регулировка уровней</value>
+  </data>
+  <data name="WhiteBalanceAdjustment" xml:space="preserve">
+    <value>Регулировка баланса белого</value>
+  </data>
+  <data name="GammaCorrection" xml:space="preserve">
+    <value>Гамма-коррекция</value>
+  </data>
+  <data name="LuminanceContrastAdjustment" xml:space="preserve">
+    <value>Регулировка яркости и контрастности</value>
+  </data>
+  <data name="ThresholdProcessing" xml:space="preserve">
+    <value>Пороговая обработка</value>
+  </data>
+  <data name="MoireRemove" xml:space="preserve">
+    <value>Удалить муаровые узоры</value>
+  </data>
+  <data name="Sharpening" xml:space="preserve">
+    <value>Резкость</value>
+  </data>
+  <data name="GaussianBlur" xml:space="preserve">
+    <value>размытие по Гауссу</value>
+  </data>
+  <data name="MedianFilter" xml:space="preserve">
+    <value>Медианная фильтрация</value>
+  </data>
+  <data name="Canny" xml:space="preserve">
+    <value>Обнаружение краев (Кэнни)</value>
+  </data>
+  <data name="HistogramEqualization" xml:space="preserve">
+    <value>Выравнивание гистограммы</value>
+  </data>
 </root>

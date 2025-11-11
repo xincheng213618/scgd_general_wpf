@@ -210,4 +210,37 @@
   <data name="Apply" xml:space="preserve">
     <value>현재 이미지 적용</value>
   </data>
+  <data name="AutoLevelsAdjustment" xml:space="preserve">
+    <value>자동 레벨 조정</value>
+  </data>
+  <data name="WhiteBalanceAdjustment" xml:space="preserve">
+    <value>화이트 밸런스 조정</value>
+  </data>
+  <data name="GammaCorrection" xml:space="preserve">
+    <value>감마 보정</value>
+  </data>
+  <data name="LuminanceContrastAdjustment" xml:space="preserve">
+    <value>밝기 및 대비 조정</value>
+  </data>
+  <data name="ThresholdProcessing" xml:space="preserve">
+    <value>임계값 처리</value>
+  </data>
+  <data name="MoireRemove" xml:space="preserve">
+    <value>모아레 패턴 제거</value>
+  </data>
+  <data name="Sharpening" xml:space="preserve">
+    <value>갈다</value>
+  </data>
+  <data name="GaussianBlur" xml:space="preserve">
+    <value>가우시안 블러</value>
+  </data>
+  <data name="MedianFilter" xml:space="preserve">
+    <value>중앙값 필터링</value>
+  </data>
+  <data name="Canny" xml:space="preserve">
+    <value>에지 감지(Canny)</value>
+  </data>
+  <data name="HistogramEqualization" xml:space="preserve">
+    <value>히스토그램 평활화</value>
+  </data>
 </root>

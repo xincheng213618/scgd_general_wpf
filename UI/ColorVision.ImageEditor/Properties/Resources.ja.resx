@@ -225,4 +225,22 @@
   <data name="HistogramEqualization" xml:space="preserve">
     <value>ヒストグラム均等化</value>
   </data>
+  <data name="ColormapTypes" xml:space="preserve">
+    <value>偽色</value>
+  </data>
+  <data name="IsShowText" xml:space="preserve">
+    <value>表示テキスト</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>現在の画像を適用</value>
+  </data>
+  <data name="Reload" xml:space="preserve">
+    <value>リロード</value>
+  </data>
+  <data name="IsLayoutUpdated" xml:space="preserve">
+    <value>自動更新</value>
+  </data>
+  <data name="IsShowMsg" xml:space="preserve">
+    <value>メッセージを表示</value>
+  </data>
 </root>

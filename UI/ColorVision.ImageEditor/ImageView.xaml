@@ -8,6 +8,7 @@
              xmlns:converters="clr-namespace:ColorVision.ImageEditor.Converters"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:properties ="clr-namespace:ColorVision.ImageEditor.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:ImageViewModel}"
              d:DesignHeight="600" d:DesignWidth="1000" Initialized="UserControl_Initialized" AllowDrop="True" FocusVisualStyle="{x:Null}">
