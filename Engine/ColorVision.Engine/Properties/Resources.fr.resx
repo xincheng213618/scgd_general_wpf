@@ -1554,7 +1554,7 @@
   <data name="DefaultCanvas" xml:space="preserve">
     <value>Canevas par défaut</value>
   </data>
-  <data name="ImgImport" xml:space="preserve">
+  <data name="ImageImport" xml:space="preserve">
     <value>Importation d'images</value>
   </data>
   <data name="ImportLatestImages" xml:space="preserve">
@@ -2426,9 +2426,6 @@
   </data>
   <data name="ContinuousMeasurement" xml:space="preserve">
     <value>Mesure continue</value>
-  </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>Langue(L)</value>
   </data>
   <data name="StartMeasurementValue_V_mA" xml:space="preserve">
     <value>Valeur de mesure initiale (V/mA)</value>

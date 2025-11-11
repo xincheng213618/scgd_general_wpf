@@ -3229,6 +3229,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 图像导入 的本地化字符串。
+        /// </summary>
+        public static string ImageImport {
+            get {
+                return ResourceManager.GetString("ImageImport", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 图像信息 的本地化字符串。
         /// </summary>
         public static string ImageInfo {
@@ -3261,15 +3270,6 @@ namespace ColorVision.Engine.Properties {
         public static string ImageStitchingTemplateManagement {
             get {
                 return ResourceManager.GetString("ImageStitchingTemplateManagement", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 图像导入 的本地化字符串。
-        /// </summary>
-        public static string ImgImport {
-            get {
-                return ResourceManager.GetString("ImgImport", resourceCulture);
             }
         }
         

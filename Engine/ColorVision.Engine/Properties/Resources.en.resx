@@ -496,13 +496,13 @@
     <value>Import</value>
   </data>
   <data name="ImageSource" xml:space="preserve">
-    <value>Image source</value>
+    <value>ImageSource</value>
   </data>
   <data name="ImageInfo" xml:space="preserve">
     <value>ImageInfo</value>
   </data>
   <data name="ImageFile" xml:space="preserve">
-    <value>Image File</value>
+    <value>ImageFile</value>
   </data>
   <data name="Host" xml:space="preserve">
     <value>Host</value>
@@ -859,7 +859,7 @@
     <value>Point Of Interest Templete</value>
   </data>
   <data name="PointOfInterestAlgorithmTemplateSettings" xml:space="preserve">
-    <value>Point of Interst Algorithm template settings</value>
+    <value>Point Of Interst Algorithm template settings</value>
   </data>
   <data name="Service" xml:space="preserve">
     <value>Service</value>
@@ -880,7 +880,7 @@
     <value>Save current exposure and other parameters</value>
   </data>
   <data name="AverageTimes" xml:space="preserve">
-    <value>Average times</value>
+    <value>AverageTimes</value>
   </data>
   <data name="Flip" xml:space="preserve">
     <value>Flip</value>
@@ -901,7 +901,7 @@
     <value>Autofocus</value>
   </data>
   <data name="Move" xml:space="preserve">
-    <value>move</value>
+    <value>Move</value>
   </data>
   <data name="AbsolutePosition" xml:space="preserve">
     <value>Absolute position</value>
@@ -1180,7 +1180,7 @@
     <value>Power off</value>
   </data>
   <data name="Up" xml:space="preserve">
-    <value>superior</value>
+    <value>Up</value>
   </data>
   <data name="Down" xml:space="preserve">
     <value>Down</value>
@@ -1554,8 +1554,8 @@
   <data name="DefaultCanvas" xml:space="preserve">
     <value>Default Canvas</value>
   </data>
-  <data name="ImgImport" xml:space="preserve">
-    <value>Image import</value>
+  <data name="ImageImport" xml:space="preserve">
+    <value>ImageImport</value>
   </data>
   <data name="ImportLatestImages" xml:space="preserve">
     <value>Import the latest images</value>
@@ -1702,7 +1702,7 @@
     <value>Relatively</value>
   </data>
   <data name="Wavelength" xml:space="preserve">
-    <value>wavelength</value>
+    <value>Wavelength</value>
   </data>
   <data name="RelativeSpectrum" xml:space="preserve">
     <value>relative spectrum</value>
@@ -1717,10 +1717,10 @@
     <value>Voltage</value>
   </data>
   <data name="HalfBandwidth" xml:space="preserve">
-    <value>Half-wavewidth</value>
+    <value>FWHM</value>
   </data>
   <data name="SourceValue" xml:space="preserve">
-    <value>Source value</value>
+    <value>SourceValue</value>
   </data>
   <data name="LimitValue" xml:space="preserve">
     <value>Limit</value>
@@ -1765,10 +1765,10 @@
     <value>voltage curve</value>
   </data>
   <data name="RelativeSpectrumCurve" xml:space="preserve">
-    <value>Relative spectral curve</value>
+    <value>RelativeSpectrumCurve</value>
   </data>
   <data name="AbsoluteSpectrumCurve" xml:space="preserve">
-    <value>Absolute spectral curve</value>
+    <value>AbsoluteSpectrumCurve</value>
   </data>
   <data name="WavelengthNm" xml:space="preserve">
     <value>Wavelength [nm]</value>
@@ -1795,10 +1795,10 @@
     <value>CCT(K)</value>
   </data>
   <data name="Ld" xml:space="preserve">
-    <value>Dominant wavelength Ld(nm)</value>
+    <value>Dominant Wavelength Ld(nm)</value>
   </data>
   <data name="ColorPurityPercent" xml:space="preserve">
-    <value>Color purity (%)</value>
+    <value>ColorPurity (%)</value>
   </data>
   <data name="Lp" xml:space="preserve">
     <value>Peak wavelength Lp (nm)</value>
@@ -1870,7 +1870,7 @@
     <value>Failed to open</value>
   </data>
   <data name="ImageFlip" xml:space="preserve">
-    <value>Image Flip</value>
+    <value>ImageFlip</value>
   </data>
   <data name="ParameterTemplate" xml:space="preserve">
     <value>Parameter template</value>
@@ -2026,7 +2026,7 @@
     <value>JND Template Management</value>
   </data>
   <data name="ImageEdit" xml:space="preserve">
-    <value>Graphic editing</value>
+    <value>ImageEdit</value>
   </data>
   <data name="VerifyJson" xml:space="preserve">
     <value>Validate JSON</value>
@@ -2299,7 +2299,7 @@
     <value>File failed to open</value>
   </data>
   <data name="Compress" xml:space="preserve">
-    <value>compression</value>
+    <value>Compress</value>
   </data>
   <data name="MqttConfig" xml:space="preserve">
     <value>Mqtt configuration</value>
@@ -2314,7 +2314,7 @@
     <value>The folder path cannot be empty.</value>
   </data>
   <data name="Hint" xml:space="preserve">
-    <value>hint</value>
+    <value>Hint</value>
   </data>
   <data name="CurrentlySupportsCvRawImages" xml:space="preserve">
     <value>Currently supports CVRAW images.</value>
@@ -2335,34 +2335,34 @@
     <value>Related items</value>
   </data>
   <data name="Debug" xml:space="preserve">
-    <value>debug</value>
+    <value>Debug</value>
   </data>
   <data name="ToggleList" xml:space="preserve">
-    <value>Toggle list</value>
+    <value>ToggleList</value>
   </data>
   <data name="CmdSendAlready" xml:space="preserve">
     <value>Command has been sent</value>
   </data>
   <data name="License" xml:space="preserve">
-    <value>license</value>
+    <value>License</value>
   </data>
   <data name="ModifyLicense" xml:space="preserve">
-    <value>Modify license</value>
+    <value>ModifyLicense</value>
   </data>
   <data name="ConfigurePhysicalCameraBeforeCalibration" xml:space="preserve">
     <value>Before using the calibration, please configure the corresponding physical camera.</value>
   </data>
   <data name="CacheSize" xml:space="preserve">
-    <value>Cache size</value>
+    <value>CacheSize</value>
   </data>
   <data name="IntegrationStartTime" xml:space="preserve">
-    <value>Integral start time</value>
+    <value>IntegrationStartTime</value>
   </data>
   <data name="IntervalTime" xml:space="preserve">
-    <value>Interval time</value>
+    <value>IntervalTime</value>
   </data>
   <data name="Step" xml:space="preserve">
-    <value>Steps</value>
+    <value>Step</value>
   </data>
   <data name="RestartWindowsService" xml:space="preserve">
     <value>Restart WindowsService</value>
@@ -2371,25 +2371,25 @@
     <value>Select the export file location</value>
   </data>
   <data name="DataRetentionDays" xml:space="preserve">
-    <value>Data retention days</value>
+    <value>DataRetentionDays</value>
   </data>
   <data name="DataRetentionHours" xml:space="preserve">
-    <value>Data retention hours</value>
+    <value>DataRetentionHours</value>
   </data>
   <data name="ClearDatabaseOnly" xml:space="preserve">
     <value>Clear the database only</value>
   </data>
   <data name="ConfigArchivedModel_删除本地文件" xml:space="preserve">
-    <value>Delete local files</value>
+    <value>DeleteLocalFiles</value>
   </data>
   <data name="DeleteLocalFiles" xml:space="preserve">
-    <value>Delete local files</value>
+    <value>DeleteLocalFiles</value>
   </data>
   <data name="DataBaseConfig" xml:space="preserve">
     <value>Database configuration</value>
   </data>
   <data name="RESTAddress" xml:space="preserve">
-    <value>REST address</value>
+    <value>RESTAddress</value>
   </data>
   <data name="ServerMonitorConfig" xml:space="preserve">
     <value>Service monitoring configuration</value>
@@ -2398,13 +2398,13 @@
     <value>MQTT Configuration ID</value>
   </data>
   <data name="TenantId" xml:space="preserve">
-    <value>Tenant ID</value>
+    <value>TenantId</value>
   </data>
   <data name="DefaultSavePath" xml:space="preserve">
-    <value>Default save path</value>
+    <value>DefaultSavePath</value>
   </data>
   <data name="IvlCameraProcessing" xml:space="preserve">
-    <value>IVL camera processing</value>
+    <value>IvlCameraProcessing</value>
   </data>
   <data name="ProcessAndExportCameraDataFromIvlBatchOnly" xml:space="preserve">
     <value>Process only Camera data from IVL batches and export it.</value>
@@ -2416,19 +2416,16 @@
     <value>Process only Spectrum data from IVL batches and export</value>
   </data>
   <data name="LightBar" xml:space="preserve">
-    <value>LED strip</value>
+    <value>LightBar</value>
   </data>
   <data name="Spectrometer" xml:space="preserve">
     <value>Spectrometer</value>
   </data>
   <data name="EditFilterWheelConfig" xml:space="preserve">
-    <value>Edit filter wheel configuration</value>
+    <value>EditFilterWheelConfig</value>
   </data>
   <data name="ContinuousMeasurement" xml:space="preserve">
-    <value>Cont. Meas</value>
-  </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>_Language</value>
+    <value>ContinuousMeasurement</value>
   </data>
   <data name="StartMeasurementValue_V_mA" xml:space="preserve">
     <value>Initial measurement value (V/mA)</value>
@@ -2452,15 +2449,15 @@
     <value>`true` indicates a voltage source, `false` indicates a current source.</value>
   </data>
   <data name="MeasureType" xml:space="preserve">
-    <value>Measurement type</value>
+    <value>MeasureType</value>
   </data>
   <data name="VoltageSourceCurrentSourceSelection" xml:space="preserve">
     <value>Voltage source, current source selection</value>
   </data>
   <data name="EnableExposure" xml:space="preserve">
-    <value>Exposure Enable</value>
+    <value>EnableExposure</value>
   </data>
   <data name="EnableFocus" xml:space="preserve">
-    <value>Focus enable</value>
+    <value>EnableFocus</value>
   </data>
 </root>

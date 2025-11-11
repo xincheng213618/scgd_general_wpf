@@ -1554,7 +1554,7 @@
   <data name="DefaultCanvas" xml:space="preserve">
     <value>Холст по умолчанию</value>
   </data>
-  <data name="ImgImport" xml:space="preserve">
+  <data name="ImageImport" xml:space="preserve">
     <value>Импорт изображений</value>
   </data>
   <data name="ImportLatestImages" xml:space="preserve">
@@ -2122,7 +2122,7 @@
     <value>набор точек</value>
   </data>
   <data name="EditDefaultComplianceDictionary" xml:space="preserve">
-    <value>Редактировать словарь соответствия по умолчанию</value>
+    <value>Редактировать словарь соответствия по умолчани</value>
   </data>
   <data name="CalibrationToolNotFound_DownloadPrompt" xml:space="preserve">
     <value>Не можете найти инструмент генерации калибровок. Хотите загрузить его онлайн?</value>
@@ -2426,9 +2426,6 @@
   </data>
   <data name="ContinuousMeasurement" xml:space="preserve">
     <value>Непрерывное измерение</value>
-  </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>Язык(Л)</value>
   </data>
   <data name="StartMeasurementValue_V_mA" xml:space="preserve">
     <value>Начальное значение измерения (В/мА)</value>

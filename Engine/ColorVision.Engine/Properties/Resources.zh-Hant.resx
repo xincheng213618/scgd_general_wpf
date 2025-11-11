@@ -1554,7 +1554,7 @@
   <data name="DefaultCanvas" xml:space="preserve">
     <value>預設畫布</value>
   </data>
-  <data name="ImgImport" xml:space="preserve">
+  <data name="ImageImport" xml:space="preserve">
     <value>影像導入</value>
   </data>
   <data name="ImportLatestImages" xml:space="preserve">
@@ -2426,9 +2426,6 @@
   </data>
   <data name="ContinuousMeasurement" xml:space="preserve">
     <value>連續測量</value>
-  </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>語言(_L）</value>
   </data>
   <data name="StartMeasurementValue_V_mA" xml:space="preserve">
     <value>開始測量值(V/mA)</value>
