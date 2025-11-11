@@ -8,7 +8,7 @@
              d:DataContext="{d:DesignInstance local:PatternStripeConfig}"
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <Grid>
-        <StackPanel VerticalAlignment="Top">
+        <StackPanel  x:Name="StackPanelInfo" VerticalAlignment="Top">
             <StackPanel Orientation="Horizontal"  Margin="0,0,0,5">
                 <Button Content="背景色" Width="55" Margin="0,0,5,0" Click="BtnPickMainColor_Click"/>
                 <Rectangle x:Name="rectMainColor" Width="25" Height="25" Stroke="Black" Fill="{Binding MainBrush}" Margin="0,0,5,0"/>
@@ -37,14 +37,9 @@
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5"  Visibility="{Binding IsHorizontal ,Converter={StaticResource bool2VisibilityConverter1}}">
                 <TextBlock Width="45" Text="Period" Margin="0,0,5,0"/>
-                <TextBox Width="70" Text="{Binding VerticalSpacing}" Margin="0,0,5,0"/>
+                <TextBox Width="70" Text="{Binding VerticalSpacing}"/>
                 <TextBlock Width="80" Text="LineThickness" Margin="0,0,5,0"/>
                 <TextBox Width="70" Text="{Binding VerticalWidth}" Margin="0,0,5,0"/>
-            </StackPanel>
-            <StackPanel  Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBlock Text="FieldOfView" Margin="0,0,5,0"/>
-                <TextBox  Width="100" Text="{Binding FieldOfViewX}" Margin="0,0,5,0"/>
-                <TextBox  Width="100" Text="{Binding FieldOfViewY}" Margin="0,0,5,0"/>
             </StackPanel>
         </StackPanel>
 
