@@ -2383,6 +2383,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 曝光使能 的本地化字符串。
+        /// </summary>
+        public static string EnableExposure {
+            get {
+                return ResourceManager.GetString("EnableExposure", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 对焦使能 的本地化字符串。
+        /// </summary>
+        public static string EnableFocus {
+            get {
+                return ResourceManager.GetString("EnableFocus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 启用串口发送 的本地化字符串。
         /// </summary>
         public static string EnableSerialPort {
