@@ -107,12 +107,12 @@ namespace ColorVision.Engine.Templates.Flow
 
             MeasureBatchManagerCommand = new RelayCommand(a=> MeasureBatchManager());
 
-            ContextMenu.Items.Add(new MenuItem() { Header = "流程结果查询", Command = MeasureBatchManagerCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = "属性", Command = Config.EditCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.Inquire, Command = MeasureBatchManagerCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.Property, Command = Config.EditCommand });
             FlowEngineControl = new FlowEngineControl(false);
 
             View = new ViewFlow(FlowEngineControl);
-            View.View.Title = $"流程窗口 ";
+            View.View.Title = ColorVision.Engine.Properties.Resources.Flow;
         }
 
         public void MeasureBatchManager()
@@ -122,7 +122,7 @@ namespace ColorVision.Engine.Templates.Flow
             MeasureBatchManagerPage batchDataHistory = new MeasureBatchManagerPage(frame);
             frame.Navigate(batchDataHistory);
 
-            Window window = new Window() { Title = "流程结果查询", Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Height = 720, Width = 1280 };
+            Window window = new Window() { Title = ColorVision.Engine.Properties.Resources.Inquire, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Height = 720, Width = 1280 };
             window.Content = frame;
             window.Show();
         }

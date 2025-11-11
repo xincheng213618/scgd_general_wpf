@@ -199,7 +199,7 @@
     <value>Submit</value>
   </data>
   <data name="StopProcess" xml:space="preserve">
-    <value>Stop Process</value>
+    <value>Stop</value>
   </data>
   <data name="Status" xml:space="preserve">
     <value>Status</value>
@@ -1135,7 +1135,7 @@
     <value>Start execution</value>
   </data>
   <data name="StopExecution" xml:space="preserve">
-    <value>Stop execution</value>
+    <value>Stop</value>
   </data>
   <data name="CaptureImage" xml:space="preserve">
     <value>CaptureImage</value>
@@ -2206,7 +2206,7 @@
     <value>First step</value>
   </data>
   <data name="StopStepSize" xml:space="preserve">
-    <value>Stop step</value>
+    <value>StopStepSize</value>
   </data>
   <data name="Deprecated" xml:space="preserve">
     <value>Deprecated</value>

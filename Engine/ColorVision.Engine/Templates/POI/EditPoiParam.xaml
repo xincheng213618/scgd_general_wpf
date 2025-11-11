@@ -54,7 +54,7 @@
                     </DockPanel>
                     <StackPanel  Orientation="Horizontal" Margin="0,2">
                         <Button  Content="{x:Static properties:Resources.DefaultCanvas}" DockPanel.Dock="Right" Click="CreateImage_Click"  Style="{StaticResource ButtonDefault.Small}" Margin="2,0" />
-                        <Button x:Name="button1" Content="{x:Static properties:Resources.ImgImport}" HorizontalAlignment="Left"   Style="{StaticResource ButtonDefault.Small}"  Click="Button1_Click" Margin="2,0"/>
+                        <Button x:Name="button1" Content="{x:Static properties:Resources.ImageImport}" HorizontalAlignment="Left"   Style="{StaticResource ButtonDefault.Small}"  Click="Button1_Click" Margin="2,0"/>
                         <Button x:Name="button4" Content="{x:Static properties:Resources.ImportLatestImages}" Click="Service_Click"  Style="{StaticResource ButtonDefault.Small}" Margin="2,0" />
                         <Button x:Name="button5" Content="{x:Static properties:Resources.CaptureImage}" Click="TakePhoto_Click"  Style="{StaticResource ButtonDefault.Small}" Margin="2,0" />
                     </StackPanel>

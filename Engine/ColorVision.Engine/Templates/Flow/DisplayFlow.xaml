@@ -90,7 +90,7 @@
                     <TextBlock Text="Ready" Visibility="{Binding Config.IsReady,Converter={StaticResource bool2VisibilityConverter}}"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Height="35">
                         <Button Content="{x:Static properties:Resources.ExecutionProcess}"  x:Name="ButtonRun" FontWeight="Bold" FontSize="16" Click="Button_FlowRun_Click" />
-                        <Button Content="{x:Static properties:Resources.StopProcess}"  x:Name="ButtonStop" Background="Red" FontWeight="Bold" Visibility="Collapsed" FontSize="16" Click="Button_FlowStop_Click" />
+                        <Button Content="{x:Static properties:Resources.StopProcess}"  x:Name="ButtonStop"  FontWeight="Bold" Visibility="Collapsed" FontSize="16" Click="Button_FlowStop_Click" />
                     </StackPanel>
                 </Grid>
 
