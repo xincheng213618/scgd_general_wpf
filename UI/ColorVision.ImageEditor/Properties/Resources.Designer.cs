@@ -19,7 +19,7 @@ namespace ColorVision.ImageEditor.Properties {
     // 类通过类似于 ResGen 或 Visual Studio 的工具自动生成的。
     // 若要添加或移除成员，请编辑 .ResX 文件，然后重新运行 ResGen
     // (以 /str 作为命令选项)，或重新生成 VS 项目。
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -70,11 +70,29 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
+        ///   查找类似 自动色阶调整 的本地化字符串。
+        /// </summary>
+        public static string AutoLevelsAdjustment {
+            get {
+                return ResourceManager.GetString("AutoLevelsAdjustment", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 位图缩放模式 的本地化字符串。
         /// </summary>
         public static string BitmapScalingMode {
             get {
                 return ResourceManager.GetString("BitmapScalingMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 边缘检测 (Canny) 的本地化字符串。
+        /// </summary>
+        public static string Canny {
+            get {
+                return ResourceManager.GetString("Canny", resourceCulture);
             }
         }
         
@@ -124,6 +142,33 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
+        ///   查找类似 伽马校正 的本地化字符串。
+        /// </summary>
+        public static string GammaCorrection {
+            get {
+                return ResourceManager.GetString("GammaCorrection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 高斯模糊 的本地化字符串。
+        /// </summary>
+        public static string GaussianBlur {
+            get {
+                return ResourceManager.GetString("GaussianBlur", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 直方图均衡化 的本地化字符串。
+        /// </summary>
+        public static string HistogramEqualization {
+            get {
+                return ResourceManager.GetString("HistogramEqualization", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 图像算法 的本地化字符串。
         /// </summary>
         public static string ImageAlgorithm {
@@ -156,6 +201,33 @@ namespace ColorVision.ImageEditor.Properties {
         public static string LineOn {
             get {
                 return ResourceManager.GetString("LineOn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 亮度对比度调整 的本地化字符串。
+        /// </summary>
+        public static string LuminanceContrastAdjustment {
+            get {
+                return ResourceManager.GetString("LuminanceContrastAdjustment", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 中值滤波 的本地化字符串。
+        /// </summary>
+        public static string MedianFilter {
+            get {
+                return ResourceManager.GetString("MedianFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 去除摩尔纹 的本地化字符串。
+        /// </summary>
+        public static string MoireRemove {
+            get {
+                return ResourceManager.GetString("MoireRemove", resourceCulture);
             }
         }
         
@@ -237,6 +309,33 @@ namespace ColorVision.ImageEditor.Properties {
         public static string SectionalDrawing {
             get {
                 return ResourceManager.GetString("SectionalDrawing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 锐化 的本地化字符串。
+        /// </summary>
+        public static string Sharpening {
+            get {
+                return ResourceManager.GetString("Sharpening", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 阈值处理 的本地化字符串。
+        /// </summary>
+        public static string ThresholdProcessing {
+            get {
+                return ResourceManager.GetString("ThresholdProcessing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似  &quot;白平衡调整 的本地化字符串。
+        /// </summary>
+        public static string WhiteBalanceAdjustment {
+            get {
+                return ResourceManager.GetString("WhiteBalanceAdjustment", resourceCulture);
             }
         }
         

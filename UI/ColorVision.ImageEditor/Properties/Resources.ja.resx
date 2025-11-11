@@ -192,4 +192,37 @@
   <data name="Relative" xml:space="preserve">
     <value>相対価値</value>
   </data>
+  <data name="AutoLevelsAdjustment" xml:space="preserve">
+    <value>自動レベル調整</value>
+  </data>
+  <data name="WhiteBalanceAdjustment" xml:space="preserve">
+    <value>ホワイトバランス調整</value>
+  </data>
+  <data name="GammaCorrection" xml:space="preserve">
+    <value>ガンマ補正</value>
+  </data>
+  <data name="LuminanceContrastAdjustment" xml:space="preserve">
+    <value>明るさとコントラストの調整</value>
+  </data>
+  <data name="ThresholdProcessing" xml:space="preserve">
+    <value>閾値処理</value>
+  </data>
+  <data name="MoireRemove" xml:space="preserve">
+    <value>モアレパターンを除去する</value>
+  </data>
+  <data name="Sharpening" xml:space="preserve">
+    <value>シャープ</value>
+  </data>
+  <data name="GaussianBlur" xml:space="preserve">
+    <value>ガウスぼかし</value>
+  </data>
+  <data name="MedianFilter" xml:space="preserve">
+    <value>中央値フィルタリング</value>
+  </data>
+  <data name="Canny" xml:space="preserve">
+    <value>エッジ検出（Canny）</value>
+  </data>
+  <data name="HistogramEqualization" xml:space="preserve">
+    <value>ヒストグラム均等化</value>
+  </data>
 </root>
