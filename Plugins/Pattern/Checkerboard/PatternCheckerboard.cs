@@ -150,7 +150,7 @@ namespace Pattern.Checkerboard
                     double w = (x == gridX - 1) ? fovWidth - cellStartX : cellW;
                     double h = (y == gridY - 1) ? fovHeight - cellStartY : cellH;
                     if ((x + y) % 2 == 1)
-                        Cv2.Rectangle(checker, new Rect((int)cellStartX, (int)cellStartY, (int)w, (int)h), Config.AltBrush.ToScalar(), -1);
+                        Cv2.Rectangle(checker, new Rect((int)cellStartX, (int)cellStartY, (int)Math.Ceiling(w), (int)Math.Ceiling(h)), Config.AltBrush.ToScalar(), -1);
                 }
             }
 
