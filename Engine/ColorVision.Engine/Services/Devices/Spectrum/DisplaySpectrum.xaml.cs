@@ -111,12 +111,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 if (!btnTitle.Equals(ColorVision.Engine.Properties.Resources.Close, StringComparison.Ordinal))
                 {
                     btn_connect.Content = ColorVision.Engine.Properties.Resources.Opening;
-                    DService.Open();
+                    MsgRecord msgRecord = DService.Open();
+
                 }
                 else
                 {
                     btn_connect.Content = ColorVision.Engine.Properties.Resources.Closing;
-                    DService.Close();
+                    MsgRecord msgRecord = DService.Close();
                 }
             }
         }

@@ -70,11 +70,11 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 自动色阶调整 的本地化字符串。
+        ///   查找类似 应用当前图片 的本地化字符串。
         /// </summary>
-        public static string AutoLevelsAdjustment {
+        public static string Apply {
             get {
-                return ResourceManager.GetString("AutoLevelsAdjustment", resourceCulture);
+                return ResourceManager.GetString("Apply", resourceCulture);
             }
         }
         
@@ -88,20 +88,20 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 边缘检测 (Canny) 的本地化字符串。
-        /// </summary>
-        public static string Canny {
-            get {
-                return ResourceManager.GetString("Canny", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 清空(_C) 的本地化字符串。
         /// </summary>
         public static string Clear {
             get {
                 return ResourceManager.GetString("Clear", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 伪彩色 的本地化字符串。
+        /// </summary>
+        public static string ColormapTypes {
+            get {
+                return ResourceManager.GetString("ColormapTypes", resourceCulture);
             }
         }
         
@@ -142,33 +142,6 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 伽马校正 的本地化字符串。
-        /// </summary>
-        public static string GammaCorrection {
-            get {
-                return ResourceManager.GetString("GammaCorrection", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 高斯模糊 的本地化字符串。
-        /// </summary>
-        public static string GaussianBlur {
-            get {
-                return ResourceManager.GetString("GaussianBlur", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 直方图均衡化 的本地化字符串。
-        /// </summary>
-        public static string HistogramEqualization {
-            get {
-                return ResourceManager.GetString("HistogramEqualization", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 图像算法 的本地化字符串。
         /// </summary>
         public static string ImageAlgorithm {
@@ -196,38 +169,38 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
+        ///   查找类似 自动刷新 的本地化字符串。
+        /// </summary>
+        public static string IsLayoutUpdated {
+            get {
+                return ResourceManager.GetString("IsLayoutUpdated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显示消息 的本地化字符串。
+        /// </summary>
+        public static string IsShowMsg {
+            get {
+                return ResourceManager.GetString("IsShowMsg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显示文字 的本地化字符串。
+        /// </summary>
+        public static string IsShowText {
+            get {
+                return ResourceManager.GetString("IsShowText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 线上 的本地化字符串。
         /// </summary>
         public static string LineOn {
             get {
                 return ResourceManager.GetString("LineOn", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 亮度对比度调整 的本地化字符串。
-        /// </summary>
-        public static string LuminanceContrastAdjustment {
-            get {
-                return ResourceManager.GetString("LuminanceContrastAdjustment", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 中值滤波 的本地化字符串。
-        /// </summary>
-        public static string MedianFilter {
-            get {
-                return ResourceManager.GetString("MedianFilter", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 去除摩尔纹 的本地化字符串。
-        /// </summary>
-        public static string MoireRemove {
-            get {
-                return ResourceManager.GetString("MoireRemove", resourceCulture);
             }
         }
         
@@ -264,6 +237,15 @@ namespace ColorVision.ImageEditor.Properties {
         public static string Relative {
             get {
                 return ResourceManager.GetString("Relative", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重新加载 的本地化字符串。
+        /// </summary>
+        public static string Reload {
+            get {
+                return ResourceManager.GetString("Reload", resourceCulture);
             }
         }
         
@@ -309,33 +291,6 @@ namespace ColorVision.ImageEditor.Properties {
         public static string SectionalDrawing {
             get {
                 return ResourceManager.GetString("SectionalDrawing", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 锐化 的本地化字符串。
-        /// </summary>
-        public static string Sharpening {
-            get {
-                return ResourceManager.GetString("Sharpening", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 阈值处理 的本地化字符串。
-        /// </summary>
-        public static string ThresholdProcessing {
-            get {
-                return ResourceManager.GetString("ThresholdProcessing", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似  &quot;白平衡调整 的本地化字符串。
-        /// </summary>
-        public static string WhiteBalanceAdjustment {
-            get {
-                return ResourceManager.GetString("WhiteBalanceAdjustment", resourceCulture);
             }
         }
         

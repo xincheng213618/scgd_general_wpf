@@ -32,7 +32,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             List<int> ports = new List<int>();
 
             CombPort.ItemsSource = Device.FilterWheelConfig.HoleMapping;
-            CombPort.DisplayMemberPath ="HoldName";
+            CombPort.DisplayMemberPath = "HoleName";
 
             void UpdateUI(DeviceStatusType status)
             {

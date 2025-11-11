@@ -2191,7 +2191,7 @@
     <value>ストライドスイング範囲</value>
   </data>
   <data name="StepSwingRangeDiscription" xml:space="preserve">
-    <value>2番目のステップのパス。実際の2番目のステップのパスは forwardparam * です。</value>
+    <value>2番目のステップのパス。実際の2番目のステップのパスは forwardparam * です</value>
   </data>
   <data name="StepReductionFactor" xml:space="preserve">
     <value>ステップサイズ削減係数</value>
@@ -2426,5 +2426,8 @@
   </data>
   <data name="ContinuousMeasurement" xml:space="preserve">
     <value>連続測定</value>
+  </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>言語(_L)</value>
   </data>
 </root>

@@ -97,55 +97,16 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="EnableDatabase" xml:space="preserve">
-    <value>启用数据库</value>
+  <data name="CommunicationProtocol" xml:space="preserve">
+    <value>通信协议</value>
   </data>
-  <data name="MysqlConnection" xml:space="preserve">
-    <value>Mysql连接</value>
-  </data>
-  <data name="MysqlConnectionConfiguration" xml:space="preserve">
-    <value>Mysql连接配置</value>
-  </data>
-  <data name="Delete" xml:space="preserve">
-    <value>删除</value>
-  </data>
-  <data name="CreateNewConfigurationFile" xml:space="preserve">
-    <value>新建配置文件</value>
-  </data>
-  <data name="Host" xml:space="preserve">
-    <value>主机</value>
-  </data>
-  <data name="Port" xml:space="preserve">
+  <data name="ServerPort" xml:space="preserve">
     <value>端口</value>
   </data>
-  <data name="CopyConfigurationFile" xml:space="preserve">
-    <value>复制配置文件</value>
+  <data name="IPAddress" xml:space="preserve">
+    <value>IP地址</value>
   </data>
-  <data name="ConnectionName" xml:space="preserve">
-    <value>连接名</value>
-  </data>
-  <data name="UserName" xml:space="preserve">
-    <value>用户</value>
-  </data>
-  <data name="Password" xml:space="preserve">
-    <value>密码</value>
-  </data>
-  <data name="Database" xml:space="preserve">
-    <value>数据库名称</value>
-  </data>
-  <data name="TesConnection" xml:space="preserve">
-    <value>测试连接</value>
-  </data>
-  <data name="OK" xml:space="preserve">
-    <value>确定</value>
-  </data>
-  <data name="Cancel" xml:space="preserve">
-    <value>取消</value>
-  </data>
-  <data name="LogDatabase" xml:space="preserve">
-    <value>日志数据库</value>
-  </data>
-  <data name="刷新" xml:space="preserve">
-    <value>刷新"&gt;</value>
+  <data name="IsServerEnabled" xml:space="preserve">
+    <value>服务器启用状态</value>
   </data>
 </root>

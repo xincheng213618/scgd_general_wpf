@@ -8,7 +8,7 @@
              d:DataContext="{d:DesignInstance local:PatternCheckerboardConfig}"
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <Grid>
-        <StackPanel VerticalAlignment="Top">
+        <StackPanel x:Name="StackPanelInfo" VerticalAlignment="Top">
             <StackPanel Orientation="Horizontal"  Margin="0,0,0,5">
                 <Button Content="主色" Width="55" Margin="0,0,5,0" Click="BtnPickMainColor_Click"/>
                 <Rectangle x:Name="rectMainColor" Width="25" Height="25" Stroke="Black" Fill="{Binding MainBrush}" Margin="0,0,5,0"/>

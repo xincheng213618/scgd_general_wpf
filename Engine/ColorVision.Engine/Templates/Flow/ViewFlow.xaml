@@ -37,10 +37,10 @@
             <Border Grid.Row="0"    Margin="0,5,0,5" >
                 <StackPanel Margin="0">
                     <UniformGrid  Columns="6" Margin="0,0,0,5">
-                        <Button Command="{Binding SaveCommand}" Height="25" Width="25"  Margin="0,0,5,0" Padding="2">
-                            <Image Source="{DynamicResource DrawingImageSave}" Height="15" />
+                        <Button Command="{Binding SaveCommand}" Height="30" Width="30"  Margin="0,0,5,0" Padding="2">
+                            <Image Source="{DynamicResource DrawingImageSave}" Height="20" />
                         </Button>
-                        <Button Command="{Binding RefreshCommand}" Padding="2" Height="25" Width="25"   Margin="0,0,5,0" >
+                        <Button Command="{Binding RefreshCommand}" Padding="2" Height="30" Width="30"   Margin="0,0,5,0" >
                             <Button.Triggers>
                                 <EventTrigger RoutedEvent="Button.Click">
                                     <BeginStoryboard>
@@ -50,16 +50,16 @@
                                     </BeginStoryboard>
                                 </EventTrigger>
                             </Button.Triggers>
-                            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"  Foreground="{DynamicResource GlobalTextBrush}" FontSize="12"  ToolTip="刷新">
+                            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"  Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"  ToolTip="{x:Static properties:Resources.Refresh}">
                                 <TextBlock.RenderTransform>
                                     <RotateTransform x:Name="rotateTransform1" CenterX="6" CenterY="6"/>
                                 </TextBlock.RenderTransform>
                             </TextBlock>
                         </Button>
-                        <Button Command="{Binding AutoSizeCommand}"  Margin="0,0,5,0"  Padding="2" Height="25" Width="25"  >
+                        <Button Command="{Binding AutoSizeCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
                             <Image  Source="{DynamicResource DrawingImageexpend}"/>
                         </Button>
-                        <Button Command="{Binding AutoAlignmentCommand}"  Margin="0,0,5,0"  Padding="2" Height="25" Width="25"  >
+                        <Button Command="{Binding AutoAlignmentCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
                             <Button.Triggers>
                                 <EventTrigger RoutedEvent="Button.Click">
                                     <BeginStoryboard>
@@ -75,10 +75,10 @@
                                 </Image.RenderTransform>
                             </Image>
                         </Button>
-                        <Button Command="{Binding ClearCommand}"  Margin="0,0,5,0"  Padding="2" Height="25" Width="25"  >
+                        <Button Command="{Binding ClearCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
                             <Image  Source="{DynamicResource DrawingImageClear}"/>
                         </Button>
-                        <Button Command="{Binding OpenFlowTemplateCommand}"  Margin="0,0,5,0"  Padding="2" Height="25" Width="25"  >
+                        <Button Command="{Binding OpenFlowTemplateCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
                             <Image  Source="{DynamicResource DIExpand}"/>
                         </Button>
                     </UniformGrid>
@@ -91,7 +91,6 @@
                     </StackPanel>
                     <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
                         <Button Content="{x:Static properties:Resources.ParsingManagement}" Click="Button_Click_1"/>
-                        <Button Content="{x:Static properties:Resources.Parsing}" Click="BatchProcess_Click"/>
                     </StackPanel>
                     <ProgressBar x:Name="ProgressBar1" Maximum="100"/>
                     <TextBox x:FieldModifier="public"  x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Height="105" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" Margin="0,0,0,5" />

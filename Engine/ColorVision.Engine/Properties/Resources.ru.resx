@@ -583,8 +583,7 @@
     <value>Идентификация оборудования</value>
   </data>
   <data name="DeviceCode" xml:space="preserve">
-    <value>熄灭
-</value>
+    <value>熄灭</value>
   </data>
   <data name="DeviceCameraSign1" xml:space="preserve">
     <value>Устройство не в сети. Сначала настройте идентификатор камеры.</value>
@@ -2192,7 +2191,7 @@
     <value>диапазон колебаний шага</value>
   </data>
   <data name="StepSwingRangeDiscription" xml:space="preserve">
-    <value>Путь второго шага. Фактический путь второго шага — forwardparam *</value>
+    <value>Путь второго шага. Фактический путь второго шага — forwardparam</value>
   </data>
   <data name="StepReductionFactor" xml:space="preserve">
     <value>Коэффициент уменьшения размера шага</value>
@@ -2427,5 +2426,8 @@
   </data>
   <data name="ContinuousMeasurement" xml:space="preserve">
     <value>Непрерывное измерение</value>
+  </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>Язык(Л)</value>
   </data>
 </root>

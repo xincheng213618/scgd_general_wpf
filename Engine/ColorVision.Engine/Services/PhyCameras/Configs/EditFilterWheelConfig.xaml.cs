@@ -23,7 +23,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
                 WorkingCopy.Add(new HoleMap 
                 { 
                     HoleIndex = item.HoleIndex, 
-                    HoldName = item.HoldName 
+                    HoleName = item.HoleName 
                 });
             }
             
@@ -49,7 +49,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
             var newHoleMap = new HoleMap 
             { 
                 HoleIndex = maxIndex + 1, 
-                HoldName = $"Hole{maxIndex + 1}" 
+                HoleName = $"Hole{maxIndex + 1}" 
             };
             WorkingCopy.Add(newHoleMap);
         }
@@ -75,7 +75,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
                 FilterWheelConfig.HoleMapping.Add(new HoleMap 
                 { 
                     HoleIndex = item.HoleIndex, 
-                    HoldName = item.HoldName 
+                    HoleName = item.HoleName 
                 });
             }
             

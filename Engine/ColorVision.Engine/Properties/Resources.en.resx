@@ -2191,7 +2191,7 @@
     <value>stride swing range</value>
   </data>
   <data name="StepSwingRangeDiscription" xml:space="preserve">
-    <value>The second step path. The actual second step path is forwardparam *</value>
+    <value>The second step path. The actual second step path is forwardparam </value>
   </data>
   <data name="StepReductionFactor" xml:space="preserve">
     <value>Step size reduction factor</value>
@@ -2426,5 +2426,8 @@
   </data>
   <data name="ContinuousMeasurement" xml:space="preserve">
     <value>Cont. Meas</value>
+  </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>_Language</value>
   </data>
 </root>

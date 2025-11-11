@@ -117,130 +117,16 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Zoom" xml:space="preserve">
-    <value>Zoom</value>
+  <data name="CommunicationProtocol" xml:space="preserve">
+    <value>通信プロトコル</value>
   </data>
-  <data name="ZoomIn" xml:space="preserve">
-    <value>ZoomIn</value>
+  <data name="ServerPort" xml:space="preserve">
+    <value>ポート</value>
   </data>
-  <data name="ZoomOut" xml:space="preserve">
-    <value>ZoomOut</value>
+  <data name="IPAddress" xml:space="preserve">
+    <value>IPアドレス</value>
   </data>
-  <data name="ZoomNone" xml:space="preserve">
-    <value>Original</value>
-  </data>
-  <data name="ZoomUniform" xml:space="preserve">
-    <value>Uniform</value>
-  </data>
-  <data name="Property" xml:space="preserve">
-    <value>P_roperty</value>
-  </data>
-  <data name="Open" xml:space="preserve">
-    <value>_Open</value>
-  </data>
-  <data name="Clear" xml:space="preserve">
-    <value>Clear</value>
-  </data>
-  <data name="Rotate" xml:space="preserve">
-    <value>Rotate</value>
-  </data>
-  <data name="RotateLeft" xml:space="preserve">
-    <value>RotateLeft</value>
-  </data>
-  <data name="RotateRight" xml:space="preserve">
-    <value>RotateRight</value>
-  </data>
-  <data name="FlipHorizontal" xml:space="preserve">
-    <value>Flip_Horizontal</value>
-  </data>
-  <data name="FlipVertical" xml:space="preserve">
-    <value>Flip_Vertical</value>
-  </data>
-  <data name="FullScreen" xml:space="preserve">
-    <value>Fullscreen</value>
-  </data>
-  <data name="Print" xml:space="preserve">
-    <value>Print</value>
-  </data>
-  <data name="SaveAsImage" xml:space="preserve">
-    <value>screenshot</value>
-  </data>
-  <data name="BitmapScalingMode" xml:space="preserve">
-    <value>BitmapScalingMode</value>
-  </data>
-  <data name="Invert" xml:space="preserve">
-    <value>Invert</value>
-  </data>
-  <data name="SectionalDrawing" xml:space="preserve">
-    <value>SectionalDrawing</value>
-  </data>
-  <data name="ImageAlgorithm" xml:space="preserve">
-    <value>ImageAlgorithm</value>
-  </data>
-  <data name="LineOn" xml:space="preserve">
-    <value>LineOn</value>
-  </data>
-  <data name="Internal" xml:space="preserve">
-    <value>Internal</value>
-  </data>
-  <data name="External" xml:space="preserve">
-    <value>External</value>
-  </data>
-  <data name="Absolute" xml:space="preserve">
-    <value>Absolute</value>
-  </data>
-  <data name="Relative" xml:space="preserve">
-    <value>Relative</value>
-  </data>
-  <data name="ColormapTypes" xml:space="preserve">
-    <value>ColormapTypes</value>
-  </data>
-  <data name="IsShowText" xml:space="preserve">
-    <value>IsShowText</value>
-  </data>
-  <data name="Apply" xml:space="preserve">
-    <value>Apply</value>
-  </data>
-  <data name="Reload" xml:space="preserve">
-    <value>Reload</value>
-  </data>
-  <data name="IsLayoutUpdated" xml:space="preserve">
-    <value>IsLayoutUpdated</value>
-  </data>
-  <data name="IsShowMsg" xml:space="preserve">
-    <value>Display message</value>
-  </data>
-  <data name="AutoLevelsAdjustment" xml:space="preserve">
-    <value>Automatic Levels Adjustment</value>
-  </data>
-  <data name="WhiteBalanceAdjustment" xml:space="preserve">
-    <value>White balance adjustment</value>
-  </data>
-  <data name="GammaCorrection" xml:space="preserve">
-    <value>Gamma correction</value>
-  </data>
-  <data name="LuminanceContrastAdjustment" xml:space="preserve">
-    <value>Luminance and contrast adjustment</value>
-  </data>
-  <data name="ThresholdProcessing" xml:space="preserve">
-    <value>Threshold processing</value>
-  </data>
-  <data name="MoireRemove" xml:space="preserve">
-    <value>Remove moiré patterns</value>
-  </data>
-  <data name="Sharpening" xml:space="preserve">
-    <value>Sharpen</value>
-  </data>
-  <data name="GaussianBlur" xml:space="preserve">
-    <value>Gaussian blur</value>
-  </data>
-  <data name="MedianFilter" xml:space="preserve">
-    <value>Median filtering</value>
-  </data>
-  <data name="Canny" xml:space="preserve">
-    <value>Edge detection (Canny)</value>
-  </data>
-  <data name="HistogramEqualization" xml:space="preserve">
-    <value>Histogram equalization</value>
+  <data name="IsServerEnabled" xml:space="preserve">
+    <value>サーバーが有効</value>
   </data>
 </root>
