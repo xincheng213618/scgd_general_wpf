@@ -1,12 +1,13 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Utilities;
 using cvColorVision;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Text;
 using System.ComponentModel.DataAnnotations;
-
+using System.Text;
+using ColorVision.Engine.Properties;
 namespace ColorVision.Engine.Services.Devices.SMU
 {
 
@@ -30,32 +31,32 @@ namespace ColorVision.Engine.Services.Devices.SMU
         public SMUParam() { }
 
         public SMUParam(ModMasterModel modMaster, List<ModDetailModel> sxDetail) : base(modMaster, sxDetail) { }
-        [Display(Name = "StartMeasurementValue_V_mA", ResourceType = typeof(Properties.Resources))]
-        //[DisplayName("StartMeasurementValue_V_mA"),Description("VoltageSourceUnit_V_CurrentSourceUnit_mA")]
+        [LocalizedDisplayName(typeof(Resources), "StartMeasurementValue_V_mA"), LocalizedDescription(typeof(Resources), "VoltageSourceUnit_V_CurrentSourceUnit_mA")]
         public double StartMeasureVal
         {
             set { SetProperty(ref _StartMeasureVal, value, "BeginValue"); }
             get => GetValue(_StartMeasureVal, "BeginValue");
         }
-        [DisplayName("EndMeasurementValue_V_mA"),Description("VoltageSourceUnit_V_CurrentSourceUnit_mA")]
+        [LocalizedDisplayName(typeof(Resources), "EndMeasurementValue_V_mA"), LocalizedDescription(typeof(Resources), "VoltageSourceUnit_V_CurrentSourceUnit_mA")]
         public double StopMeasureVal
         {
             set { SetProperty(ref _StopMeasureVal, value, "EndValue"); }
             get => GetValue(_StopMeasureVal, "EndValue");
         }
-        [DisplayName("PointCount")]
+        [LocalizedDisplayName(typeof(Resources), "PointCount"), LocalizedDescription(typeof(Resources), "PointCount")]
         public int Number
         {
             set { SetProperty(ref _Number, value, "Points"); }
             get => GetValue(_Number, "Points");
         }
-        [DisplayName("LimitVal"), Description("SourceMeterProtectionLimit_VoltageUnitV_CurrentUnitmA")]
+        [LocalizedDisplayName(typeof(Resources), "LimitVal"), LocalizedDescription(typeof(Resources), "SourceMeterProtectionLimit_VoltageUnitV_CurrentUnitmA")]
         public double LmtVal
         {
             set { SetProperty(ref _LmtVal, value, "LimitValue"); }
             get => GetValue(_LmtVal, "LimitValue");
         }
         [DisplayName("IsVoltageSource")]
+        [LocalizedDisplayName(typeof(Resources), "IsVoltageSource"), LocalizedDescription(typeof(Resources), "TrueIsVoltageSource_FalseIsCurrentSource")]
         public bool IsSourceV
         {
             set { SetProperty(ref _IsSourceV, value); }

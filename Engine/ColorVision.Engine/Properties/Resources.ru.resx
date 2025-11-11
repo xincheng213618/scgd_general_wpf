@@ -2448,4 +2448,7 @@
   <data name="IsVoltageSource" xml:space="preserve">
     <value>Это источник напряжения?</value>
   </data>
+  <data name="TrueIsVoltageSource_FalseIsCurrentSource" xml:space="preserve">
+    <value>`true` указывает на источник напряжения, `false` указывает на источник тока.</value>
+  </data>
 </root>

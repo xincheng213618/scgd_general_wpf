@@ -2448,4 +2448,7 @@
   <data name="IsVoltageSource" xml:space="preserve">
     <value>是否是电压源</value>
   </data>
+  <data name="TrueIsVoltageSource_FalseIsCurrentSource" xml:space="preserve">
+    <value>true是电压源，false是电流源</value>
+  </data>
 </root>

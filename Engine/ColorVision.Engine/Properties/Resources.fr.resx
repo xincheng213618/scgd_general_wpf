@@ -2448,4 +2448,7 @@
   <data name="IsVoltageSource" xml:space="preserve">
     <value>S'agit-il d'une source de tension ?</value>
   </data>
+  <data name="TrueIsVoltageSource_FalseIsCurrentSource" xml:space="preserve">
+    <value>`true` indique une source de tension, `false` indique une source de courant.</value>
+  </data>
 </root>

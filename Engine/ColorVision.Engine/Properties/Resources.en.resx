@@ -1738,7 +1738,7 @@
     <value>Finish</value>
   </data>
   <data name="PointCount" xml:space="preserve">
-    <value>Points</value>
+    <value>PointCount</value>
   </data>
   <data name="Network" xml:space="preserve">
     <value>network</value>
@@ -2447,5 +2447,8 @@
   </data>
   <data name="IsVoltageSource" xml:space="preserve">
     <value>Is Voltage Source</value>
+  </data>
+  <data name="TrueIsVoltageSource_FalseIsCurrentSource" xml:space="preserve">
+    <value>`true` indicates a voltage source, `false` indicates a current source.</value>
   </data>
 </root>
