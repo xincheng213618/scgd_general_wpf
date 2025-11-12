@@ -1,8 +1,10 @@
-﻿using ColorVision.Themes;
+﻿using ProjectStarKey;
+using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Languages;
 using System.Reflection;
+using System.Threading;
 using System.Windows;
 
 namespace ProjectStarKey
@@ -31,6 +33,10 @@ namespace ProjectStarKey
             LogConfig.Instance.SetLog();
             this.ApplyTheme(ThemeManager.Current.AppsTheme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
+            MVSViewWindow basicDemoWindow = new MVSViewWindow();
+            basicDemoWindow.Show();
+
+
         }
     }
 
