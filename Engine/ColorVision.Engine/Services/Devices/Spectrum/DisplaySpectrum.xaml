@@ -89,6 +89,14 @@
                             </UniformGrid>
                             <DockPanel>
                                 <Button x:Name="btn_oneInitDark" Content="{x:Static properties:Resources.SingleZeroCalibration}"  Margin="2" Click="Button_Click_Init_Dark"/>
+                                <!-- 半透明遮罩层 -->
+                                <Rectangle x:Name="Overlay" Fill="#7F000000" Visibility="Collapsed"/>
+                                <Border x:Name="LoadingPanel" Background="White" CornerRadius="5" Padding="20" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Vertical">
+                                        <ProgressBar IsIndeterminate="True" Width="200" Height="20"/>
+                                        <TextBlock Text="{x:Static properties:Resources.Processing}" Margin="0,10,0,0" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
                                 <Button Content="{x:Static properties:Resources.AdaptiveZeroCalibration}"  Margin="2" Command="{Binding SelfAdaptionInitDarkCommand}"/>
                                 <Button Grid.Column="1" Margin="5,0,5,0" HorizontalAlignment="Left" Command="{Binding SelfAdaptionInitDarkSettingCommand}" Padding="2" Height="21" Width="21" >
                                     <Button.Triggers>

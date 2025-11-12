@@ -31,6 +31,23 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             DataContext = Device;
 
+            //增加进度显示
+            Device.SelfAdaptionInitDarkStarted += () =>
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Overlay.Visibility=Visibility.Visible;
+                    LoadingPanel.Visibility=Visibility.Visible;
+                });
+            };
+            Device.SelfAdaptionInitDarkCompleted += () =>
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Overlay.Visibility = Visibility.Collapsed;
+                    LoadingPanel.Visibility = Visibility.Collapsed;
+                });
+            };
             this.AddViewConfig(View,ComboxView);
 
             this.ContextMenu = new ContextMenu();
@@ -90,6 +107,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             DService.DeviceStatusChanged += UpdateUI;
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
+        }
+
+        private void Device_SelfAdaptionInitDarkStarted()
+        {
+            throw new NotImplementedException();
         }
 
         public event RoutedEventHandler Selected;

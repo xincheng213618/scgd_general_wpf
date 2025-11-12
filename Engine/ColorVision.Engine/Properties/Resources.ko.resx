@@ -2460,4 +2460,22 @@
   <data name="EnableFocus" xml:space="preserve">
     <value>포커스 활성화</value>
   </data>
+  <data name="RegistryCenterNotConnected" xml:space="preserve">
+    <value>등록 센터가 연결되지 않았습니다.</value>
+  </data>
+  <data name="TokenEmpty_RefreshingToken_PleaseRetry" xml:space="preserve">
+    <value>토큰이 비어 있습니다. 토큰을 새로 고치는 중입니다. 다시 시도해 주세요.</value>
+  </data>
+  <data name="WorkflowStartNodeNotFound_RunFailed" xml:space="preserve">
+    <value>프로세스 시작 노드를 찾을 수 없어 프로세스 실행에 실패했습니다.</value>
+  </data>
+  <data name="ExecutionCancelled" xml:space="preserve">
+    <value>실행이 취소되었습니다.</value>
+  </data>
+  <data name="FlowWindows" xml:space="preserve">
+    <value>프로세스 창</value>
+  </data>
+  <data name="Processing" xml:space="preserve">
+    <value>처리 중...</value>
+  </data>
 </root>

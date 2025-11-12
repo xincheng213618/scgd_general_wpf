@@ -2460,4 +2460,22 @@
   <data name="EnableFocus" xml:space="preserve">
     <value>Activer la mise au point</value>
   </data>
+  <data name="RegistryCenterNotConnected" xml:space="preserve">
+    <value>Le centre d'inscription n'est pas connecté.</value>
+  </data>
+  <data name="TokenEmpty_RefreshingToken_PleaseRetry" xml:space="preserve">
+    <value>Le jeton est vide. Actualisation du jeton en cours, veuillez réessayer.</value>
+  </data>
+  <data name="WorkflowStartNodeNotFound_RunFailed" xml:space="preserve">
+    <value>Le nœud de démarrage du processus est introuvable et le processus n'a pas pu s'exécuter.</value>
+  </data>
+  <data name="ExecutionCancelled" xml:space="preserve">
+    <value>L'exécution a été annulée.</value>
+  </data>
+  <data name="FlowWindows" xml:space="preserve">
+    <value>Fenêtre de processus</value>
+  </data>
+  <data name="Processing" xml:space="preserve">
+    <value>Traitement...</value>
+  </data>
 </root>

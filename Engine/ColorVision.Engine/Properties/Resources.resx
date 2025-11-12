@@ -2460,4 +2460,22 @@
   <data name="EnableFocus" xml:space="preserve">
     <value>对焦使能</value>
   </data>
+  <data name="RegistryCenterNotConnected" xml:space="preserve">
+    <value>注册中心没有连接</value>
+  </data>
+  <data name="TokenEmpty_RefreshingToken_PleaseRetry" xml:space="preserve">
+    <value>Token为空，正在刷新token,请重试</value>
+  </data>
+  <data name="WorkflowStartNodeNotFound_RunFailed" xml:space="preserve">
+    <value>找不到流程启动结点，运行失败</value>
+  </data>
+  <data name="ExecutionCancelled" xml:space="preserve">
+    <value>已经取消执行</value>
+  </data>
+  <data name="FlowWindows" xml:space="preserve">
+    <value>流程窗口</value>
+  </data>
+  <data name="Processing" xml:space="preserve">
+    <value>处理中...</value>
+  </data>
 </root>

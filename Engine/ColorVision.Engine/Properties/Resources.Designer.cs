@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Properties {
     // 类通过类似于 ResGen 或 Visual Studio 的工具自动生成的。
     // 若要添加或移除成员，请编辑 .ResX 文件，然后重新运行 ResGen
     // (以 /str 作为命令选项)，或重新生成 VS 项目。
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -2500,6 +2500,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 已经取消执行 的本地化字符串。
+        /// </summary>
+        public static string ExecutionCancelled {
+            get {
+                return ResourceManager.GetString("ExecutionCancelled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 执行结束 的本地化字符串。
         /// </summary>
         public static string ExecutionComplete {
@@ -2838,6 +2847,15 @@ namespace ColorVision.Engine.Properties {
         public static string FlowTemplate {
             get {
                 return ResourceManager.GetString("FlowTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 流程窗口 的本地化字符串。
+        /// </summary>
+        public static string FlowWindows {
+            get {
+                return ResourceManager.GetString("FlowWindows", resourceCulture);
             }
         }
         
@@ -5056,6 +5074,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 处理中... 的本地化字符串。
+        /// </summary>
+        public static string Processing {
+            get {
+                return ResourceManager.GetString("Processing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 产品宣传手册 的本地化字符串。
         /// </summary>
         public static string ProductBrochure {
@@ -5241,6 +5268,15 @@ namespace ColorVision.Engine.Properties {
         public static string RegistryCenterConfig {
             get {
                 return ResourceManager.GetString("RegistryCenterConfig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 注册中心没有连接 的本地化字符串。
+        /// </summary>
+        public static string RegistryCenterNotConnected {
+            get {
+                return ResourceManager.GetString("RegistryCenterNotConnected", resourceCulture);
             }
         }
         
@@ -6613,6 +6649,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 Token为空，正在刷新token,请重试 的本地化字符串。
+        /// </summary>
+        public static string TokenEmpty_RefreshingToken_PleaseRetry {
+            get {
+                return ResourceManager.GetString("TokenEmpty_RefreshingToken_PleaseRetry", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 话题 的本地化字符串。
         /// </summary>
         public static string Topic {
@@ -7077,6 +7122,15 @@ namespace ColorVision.Engine.Properties {
         public static string WorkflowEngineTemplateManagement {
             get {
                 return ResourceManager.GetString("WorkflowEngineTemplateManagement", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 找不到流程启动结点，运行失败 的本地化字符串。
+        /// </summary>
+        public static string WorkflowStartNodeNotFound_RunFailed {
+            get {
+                return ResourceManager.GetString("WorkflowStartNodeNotFound_RunFailed", resourceCulture);
             }
         }
         
