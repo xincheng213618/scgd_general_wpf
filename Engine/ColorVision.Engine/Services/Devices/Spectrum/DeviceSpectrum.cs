@@ -90,11 +90,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             SelfAdaptionInitDarkStarted?.Invoke();
             msgRecord.MsgRecordStateChanged +=(e) =>
             {
+                SelfAdaptionInitDarkCompleted?.Invoke();
                 if (msgRecord.MsgReturn != null)
-                {
-                    SelfAdaptionInitDarkCompleted?.Invoke();
-                    MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.ExcAdaptiveZeroCali + e.ToString(),"ColorVison");
-                }
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExcAdaptiveZeroCali + e.ToString(), "ColorVison");
             };
         }
 

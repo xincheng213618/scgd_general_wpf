@@ -83,10 +83,10 @@
                         </StackPanel>
 
                         <StackPanel Margin="0,0,0,5">
-                            <UniformGrid Columns="3">
+                            <StackPanel  Orientation="Horizontal">
                                 <Button x:Name="btn_oneTest" Content="{x:Static properties:Resources.SingleTest}"  Margin="2" Click="Button_Click_OneTest"/>
                                 <Button x:Name="btn_autoTest" Content="{x:Static properties:Resources.ContinuousMeasurement}"  Margin="2" Click="Button_Click_AutoTest"/>
-                            </UniformGrid>
+                            </StackPanel>
                             <DockPanel>
                                 <Button x:Name="btn_oneInitDark" Content="{x:Static properties:Resources.SingleZeroCalibration}"  Margin="2" Click="Button_Click_Init_Dark"/>
                                 <!-- 半透明遮罩层 -->
