@@ -2463,4 +2463,22 @@
   <data name="EnableFocus" xml:space="preserve">
     <value>Focus enable</value>
   </data>
+  <data name="RegistryCenterNotConnected" xml:space="preserve">
+    <value>The registration center is not connected.</value>
+  </data>
+  <data name="TokenEmpty_RefreshingToken_PleaseRetry" xml:space="preserve">
+    <value>The token is empty. Refreshing the token, please try again.</value>
+  </data>
+  <data name="WorkflowStartNodeNotFound_RunFailed" xml:space="preserve">
+    <value>The process startup node could not be found, and the process failed to run.</value>
+  </data>
+  <data name="ExecutionCancelled" xml:space="preserve">
+    <value>The execution has been cancelled.</value>
+  </data>
+  <data name="FlowWindows" xml:space="preserve">
+    <value>Process Window</value>
+  </data>
+  <data name="Processing" xml:space="preserve">
+    <value>Processing...</value>
+  </data>
 </root>

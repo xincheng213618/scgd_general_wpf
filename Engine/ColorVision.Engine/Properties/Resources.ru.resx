@@ -2463,4 +2463,22 @@
   <data name="EnableFocus" xml:space="preserve">
     <value>Включить фокус</value>
   </data>
+  <data name="RegistryCenterNotConnected" xml:space="preserve">
+    <value>Центр регистрации не подключен.</value>
+  </data>
+  <data name="TokenEmpty_RefreshingToken_PleaseRetry" xml:space="preserve">
+    <value>Токен пуст. Обновляю токен. Попробуйте ещё раз.</value>
+  </data>
+  <data name="WorkflowStartNodeNotFound_RunFailed" xml:space="preserve">
+    <value>Не удалось найти узел запуска процесса, и процесс не удалось запустить.</value>
+  </data>
+  <data name="ExecutionCancelled" xml:space="preserve">
+    <value>Казнь отменена.</value>
+  </data>
+  <data name="FlowWindows" xml:space="preserve">
+    <value>Окно процесса</value>
+  </data>
+  <data name="Processing" xml:space="preserve">
+    <value>Обработка...</value>
+  </data>
 </root>

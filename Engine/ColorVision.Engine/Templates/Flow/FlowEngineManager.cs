@@ -112,7 +112,7 @@ namespace ColorVision.Engine.Templates.Flow
             FlowEngineControl = new FlowEngineControl(false);
 
             View = new ViewFlow(FlowEngineControl);
-            View.View.Title = $"流程窗口 ";
+            View.View.Title = ColorVision.Engine.Properties.Resources.FlowWindows;
         }
 
         public void MeasureBatchManager()

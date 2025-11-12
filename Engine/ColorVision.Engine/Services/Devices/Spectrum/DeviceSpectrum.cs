@@ -52,8 +52,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         [CommandDisplay("EmissionSP100Set")]
         public RelayCommand EmissionSP100SettingCommand { get; set; }
-
-
+        public event Action SelfAdaptionInitDarkStarted;
+        public event Action SelfAdaptionInitDarkCompleted;
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTSpectrum(this);
@@ -84,10 +84,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public void SelfAdaptionInitDark()
         {
             MsgRecord msgRecord = DService.SelfAdaptionInitDark();
+            SelfAdaptionInitDarkStarted?.Invoke();
             msgRecord.MsgRecordStateChanged +=(e) =>
             {
                 if (msgRecord.MsgReturn != null)
                 {
+                    SelfAdaptionInitDarkCompleted?.Invoke();
                     MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.ExcAdaptiveZeroCali + e.ToString(),"ColorVison");
                 }
             };

@@ -2463,4 +2463,22 @@
   <data name="EnableFocus" xml:space="preserve">
     <value>フォーカスを有効にする</value>
   </data>
+  <data name="RegistryCenterNotConnected" xml:space="preserve">
+    <value>登録センターに接続できません。</value>
+  </data>
+  <data name="TokenEmpty_RefreshingToken_PleaseRetry" xml:space="preserve">
+    <value>トークンが空です。トークンを更新しています。もう一度お試しください。</value>
+  </data>
+  <data name="WorkflowStartNodeNotFound_RunFailed" xml:space="preserve">
+    <value>プロセス起動ノードが見つからず、プロセスの実行に失敗しました。</value>
+  </data>
+  <data name="ExecutionCancelled" xml:space="preserve">
+    <value>実行はキャンセルされました。</value>
+  </data>
+  <data name="FlowWindows" xml:space="preserve">
+    <value>プロセスウィンドウ</value>
+  </data>
+  <data name="Processing" xml:space="preserve">
+    <value>処理...</value>
+  </data>
 </root>
