@@ -368,7 +368,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private  void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
-            DisPlayManager.GetInstance().DisableAllDisPlayControl();
+            //DisPlayManager.GetInstance().DisableAllDisPlayControl();
             RunFlow();
         }
         string FlowName;
