@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public DisplaySpectrumConfig DisplaySpectrumConfig { get; set; } = new DisplaySpectrumConfig();
         public MQTTSpectrum DService { get; set; }
         public ViewSpectrum View { get; set; }
-        public IDisPlayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayCameraConfig<IDisPlayConfigBase>(Config.Code);
+        public IDisPlayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisPlayConfigBase>(Config.Code);
 
         public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; } = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();
         public RelayCommand RefreshDeviceIdCommand { get; set; }

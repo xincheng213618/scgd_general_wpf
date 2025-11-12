@@ -37,7 +37,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public MQTTCamera DService { get; set; }
         public RelayCommand FetchLatestTemperatureCommand { get; set; }
         public RelayCommand DisPlaySaveCommand { get; set; }
-        public DisplayCameraConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayCameraConfig<DisplayCameraConfig>(Config.Code);
+        public DisplayCameraConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplayCameraConfig>(Config.Code);
 
 
         public DeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)

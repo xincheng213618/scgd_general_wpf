@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Services.Devices.Motor
     public class DeviceMotor : DeviceService<ConfigMotor>,IIcon
     {
         public MQTTMotor DService { get; set; }
-        public IDisPlayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayCameraConfig<IDisPlayConfigBase>(Config.Code);
+        public IDisPlayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisPlayConfigBase>(Config.Code);
 
         public DeviceMotor(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {

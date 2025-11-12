@@ -45,7 +45,7 @@ namespace ColorVision.Engine.Services
         [JsonIgnore]
         public Dictionary<string, IDisPlayConfig> Configs { get; set; } = new Dictionary<string, IDisPlayConfig>();
 
-        public T GetDisplayCameraConfig<T>(string key) where T : IDisPlayConfig, new()
+        public T GetDisplayConfig<T>(string key) where T : IDisPlayConfig, new()
         {
             var type = typeof(T);
             if (Configs.TryGetValue(key, out IDisPlayConfig config))
@@ -71,7 +71,7 @@ namespace ColorVision.Engine.Services
                         Configs[key] = defaultConfig;
                     }
                 }
-                return GetDisplayCameraConfig<T>(key);
+                return GetDisplayConfig<T>(key);
             }
         }
     }

@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         public MQTTAlgorithm DService { get; set; }
         public AlgorithmView View { get; set; }
 
-        public DisplayAlgorithmConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayCameraConfig<DisplayAlgorithmConfig>(Config.Code);
+        public DisplayAlgorithmConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplayAlgorithmConfig>(Config.Code);
 
         public DeviceAlgorithm(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {

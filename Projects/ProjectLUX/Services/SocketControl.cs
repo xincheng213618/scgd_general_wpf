@@ -70,7 +70,8 @@ namespace ProjectLUX.Services
                             var rows = new List<string> { "Test_Screen,Test_item,Test_Value,unit,lower_limit,upper_limit,Test_Result" };
                             VIDTestResult vIDTestResult = new VIDTestResult();
                             DeviceCamera deviceCamera = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().FirstOrDefault();
-                            DisplayCameraConfig displayCameraConfig = DisplayConfigManager.Instance.GetDisplayCameraConfig(deviceCamera.Config.Code);
+                            DisplayCameraConfig displayCameraConfig = DisplayConfigManager.Instance.GetDisplayConfig<DisplayCameraConfig>(deviceCamera.Config.Code);
+
                             MsgRecord msgRecord = deviceCamera.DService.AutoFocus(TemplateAutoFocus.Params[displayCameraConfig.AutoFocusTemplateIndex].Value);
    
                             //MsgRecord msgRecord = deviceCamera.DService.GetPosition();

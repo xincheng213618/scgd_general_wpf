@@ -17,7 +17,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         public MQTTSMU DService { get; set; }
 
         public ViewSMU View { get; set; }
-        public IDisPlayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayCameraConfig<IDisPlayConfigBase>(Config.Code);
+        public IDisPlayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisPlayConfigBase>(Config.Code);
 
         public DeviceSMU(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {

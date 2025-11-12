@@ -9,7 +9,7 @@ namespace ColorVision.Engine.Services.Devices.FlowDevice
     public class DeviceFlowDevice : DeviceService<ConfigFlowDevice>
     {
         public MQTTFlowDevice DService { get; set; }
-        public IDisPlayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayCameraConfig<IDisPlayConfigBase>(Config.Code);
+        public IDisPlayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisPlayConfigBase>(Config.Code);
 
         public DeviceFlowDevice(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
