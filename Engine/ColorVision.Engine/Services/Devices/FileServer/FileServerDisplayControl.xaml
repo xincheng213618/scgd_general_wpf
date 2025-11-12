@@ -33,17 +33,17 @@
                         </BeginStoryboard>
                     </EventTrigger>
                 </Button.Triggers>
-                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontWeight="Bold"  FontSize="12" ToolTip="刷新">
+                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontWeight="Bold"  FontSize="12" ToolTip="{x:Static properties:Resources.Refresh}">
                     <TextBlock.RenderTransform>
                         <RotateTransform x:Name="rotateTransform1" CenterX="6" CenterY="6"/>
                     </TextBlock.RenderTransform>
                 </TextBlock>
             </Button>
 
-            <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding IsDisplayOpen}" />
+            <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding DisplayConfig.IsDisplayOpen}" />
         </DockPanel>
 
-        <Border x:Name="DisPlayBorder"  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
+        <Border x:Name="DisPlayBorder"  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel >
                 <DockPanel Margin="2">
                     <Button Content="{x:Static properties:Resources.Refresh}" Click="Button_Click_Refresh" />

@@ -1,4 +1,6 @@
 using ColorVision.Database;
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
@@ -51,10 +53,14 @@ namespace ColorVision.Engine.Batch.IVL
                     csvBuilder.Append(',');
             }
             csvBuilder.AppendLine();
+
+            int index = 1;
+
             foreach (var result in ViewResultSpectrums)
             {
                 csvBuilder.Append(result.CreateTime + ",");
-                csvBuilder.Append(result.Id + ",");
+                csvBuilder.Append(index + ",");
+                index++;
                 csvBuilder.Append(result.V + ",");
                 csvBuilder.Append(result.I + ",");
                 csvBuilder.Append(result.Lv + ",");
@@ -139,11 +145,11 @@ namespace ColorVision.Engine.Batch.IVL
                     if (testResult.SMUResultModels.Count > z)
                     {
                         var SMUResultModel = testResult.SMUResultModels[z];
-                        rows.Add($"{DateTimeNow},{i},{testResult.PoixyuvDatas[i].POIPointResultModel.PoiName},{SMUResultModel.VResult},{SMUResultModel.IResult},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
+                        rows.Add($"{DateTimeNow},{i + 1},{testResult.PoixyuvDatas[i].POIPointResultModel.PoiName},{SMUResultModel.VResult},{SMUResultModel.IResult},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
                     }
                     else
                     {
-                        rows.Add($"{DateTimeNow},{i},{testResult.PoixyuvDatas[i].POIPointResultModel.PoiName},,,{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
+                        rows.Add($"{DateTimeNow},{i + 1},{testResult.PoixyuvDatas[i].POIPointResultModel.PoiName},,,{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
 
                     }
                 }
@@ -206,8 +212,15 @@ namespace ColorVision.Engine.Batch.IVL
                         }
                     });
                 }
-                
+
                 //ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
+
+                var DeviceSMUs = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList();
+                if (DeviceSMUs.Count > 0)
+                {
+                    DeviceSMUs[0].Config.V = null;
+                    DeviceSMUs[0].Config.I = null;
+                }
                 return true;
             }
             catch (Exception ex)

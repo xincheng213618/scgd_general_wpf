@@ -93,13 +93,16 @@ namespace ColorVision.Engine.Templates.Flow
             InitializeComponent();
             CommandBindings.Add(new CommandBinding(EngineCommands.StartExecutionCommand, (s, e) => RunFlow(), (s, e) =>
             {
+               
                 if (flowControl != null)
                     e.CanExecute = !flowControl.IsFlowRun;
             }));
             CommandBindings.Add(new CommandBinding(EngineCommands.StopExecutionCommand, (s, e) => StopFlow(), (s, e) =>
             {
+               
                 if (flowControl != null)
                     e.CanExecute = flowControl.IsFlowRun;
+                
             })); 
         }
 
@@ -365,6 +368,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private  void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
+            //DisPlayManager.GetInstance().DisableAllDisPlayControl();
             RunFlow();
         }
         string FlowName;
@@ -378,7 +382,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             if (!MqttRCService.GetInstance().IsConnect)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(),"注册中心没有连接");
+                MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.RegistryCenterNotConnected);
                 return;
             }
 
@@ -390,8 +394,8 @@ namespace ColorVision.Engine.Templates.Flow
             if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
             {
                 MqttRCService.GetInstance().QueryServices();
-                View.logTextBox.Text = $"Token为空，正在刷新token,请重试";
-                MessageBox.Show(Application.Current.GetActiveWindow(), "Token为空，正在刷新token,请重试");
+                View.logTextBox.Text = ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry;
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
                 return;
             }
             View.logTextBox.Text = $"IsReady{View.FlowEngineControl.IsReady}";
@@ -410,7 +414,7 @@ namespace ColorVision.Engine.Templates.Flow
             string startNode = View.FlowEngineControl.GetStartNodeName();
             if (string.IsNullOrWhiteSpace(startNode))
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到流程启动结点，运行失败", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), ColorVision.Engine.Properties.Resources.WorkflowStartNodeNotFound_RunFailed, "ColorVision");
                 return;
             }
 
@@ -447,6 +451,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void Button_FlowStop_Click(object sender, RoutedEventArgs e)
         {
+            DisPlayManager.GetInstance().EnableAllDisPlayControl();
             StopFlow();
         }
 
@@ -462,7 +467,7 @@ namespace ColorVision.Engine.Templates.Flow
             FlowEngineManager.Batch.TotalTime = (int)stopwatch.ElapsedMilliseconds;
             MySqlControl.GetInstance().DB.Updateable(FlowEngineManager.Batch);
 
-            View.logTextBox.Text = "已经取消执行";
+            View.logTextBox.Text = ColorVision.Engine.Properties.Resources.ExecutionCancelled;
 
         }
 

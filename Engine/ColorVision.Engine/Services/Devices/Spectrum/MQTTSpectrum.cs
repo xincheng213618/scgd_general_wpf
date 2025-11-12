@@ -187,15 +187,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             MsgRecord msgRecord= PublishAsyncClient(msg);
             return msgRecord;
         }
-        public bool Close()
+        public MsgRecord Close()
         {
             MsgSend msg = new()
             {
                 EventName = "Close",
             };
-
-            PublishAsyncClient(msg);
-            return true;
+            return PublishAsyncClient(msg);
         }
         public MsgRecord SelfAdaptionInitDark()
         {
@@ -217,6 +215,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 Params = Params
             };
             Params.Add("PortNum", Device.DisplaySpectrumConfig.PortNum);
+            return PublishAsyncClient(msg);
+        }
+        public MsgRecord GetPort()
+        {
+            MsgSend msg = new()
+            {
+                EventName = "GetPort",
+            };
             return PublishAsyncClient(msg);
         }
 

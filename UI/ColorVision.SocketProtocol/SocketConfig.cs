@@ -16,21 +16,21 @@ namespace ColorVision.SocketProtocol
 
         public event EventHandler<bool> ServerEnabledChanged;
 
-        [DisplayName("服务器启用状态")]
+        [DisplayName("IsServerEnabled")]
         public bool IsServerEnabled  { get => _IsServerEnabled; set { _IsServerEnabled = value; OnPropertyChanged(); ServerEnabledChanged?.Invoke(this, _IsServerEnabled); } }
         private bool _IsServerEnabled;
 
         /// <summary>
         /// IP地址
         /// </summary>
-        [DisplayName("IP地址")]
+        [DisplayName("IPAddress")]
         public string IPAddress { get => _IPAddress; set { _IPAddress = value; OnPropertyChanged(); } }
         private string _IPAddress = "0.0.0.0";
 
         /// <summary>
         /// 端口地址
         /// </summary>
-        [DisplayName("端口")]
+        [DisplayName("ServerPort")]
         public int ServerPort
         {
             get => _ServerPort; 

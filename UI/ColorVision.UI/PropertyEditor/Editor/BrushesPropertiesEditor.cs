@@ -2,6 +2,7 @@
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Media;
 
 namespace System.ComponentModel
@@ -59,8 +60,13 @@ namespace System.ComponentModel
                 window.Closed += (_, __) => colorPicker.Dispose();
                 window.Show();
             };
-
-            var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);
+            
+            var binding = new Binding(property.Name)
+            {
+                Source = obj,
+                Mode = BindingMode.OneWay,
+                UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged
+            };
             button.SetBinding(Control.BackgroundProperty, binding);
 
             DockPanel.SetDock(button, Dock.Right);

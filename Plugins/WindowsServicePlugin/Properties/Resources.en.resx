@@ -156,4 +156,19 @@
   <data name="DumpFileSettings" xml:space="preserve">
     <value>Dump file settings</value>
   </data>
+  <data name="ActivateWindows" xml:space="preserve">
+    <value>Activate Windows</value>
+  </data>
+  <data name="RestartService" xml:space="preserve">
+    <value>Restart service</value>
+  </data>
+  <data name="RestartServiceSucess" xml:space="preserve">
+    <value>Service restart successful</value>
+  </data>
+  <data name="ServiceRestartFailed_PleaseRestartManually" xml:space="preserve">
+    <value>If restarting the service fails, please restart the service manually.</value>
+  </data>
+  <data name="UpdateService" xml:space="preserve">
+    <value>Update service</value>
+  </data>
 </root>

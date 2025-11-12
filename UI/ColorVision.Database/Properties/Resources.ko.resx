@@ -162,4 +162,7 @@
   <data name="Cancel" xml:space="preserve">
     <value>취소</value>
   </data>
+  <data name="LogDatabase" xml:space="preserve">
+    <value>로그 데이터베이스</value>
+  </data>
 </root>

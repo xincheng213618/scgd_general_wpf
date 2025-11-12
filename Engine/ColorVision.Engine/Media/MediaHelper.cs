@@ -158,7 +158,7 @@ namespace ColorVision.Engine.Media
             catch (Exception ex)
             {
                 log.Error(ex);
-                MessageBox1.Show(Application.Current.GetActiveWindow(), $"打开文件失败:{ex.Message} ", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.OpenFileFailed+$":{ex.Message} ", "ColorVision");
                 return null;
             }
             finally

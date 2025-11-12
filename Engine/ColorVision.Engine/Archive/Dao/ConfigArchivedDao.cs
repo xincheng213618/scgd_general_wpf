@@ -9,31 +9,31 @@ using System.Text.RegularExpressions;
 namespace ColorVision.Engine.Archive.Dao
 {
 
-    [DisplayName("归档配置"),SugarTable("t_scgd_sys_config_archived")]
+    [DisplayName("ArchiveConfiguration"),SugarTable("t_scgd_sys_config_archived")]
     public class ConfigArchivedModel : ViewModelBase, IEntity
     {
         [SugarColumn(ColumnName ="id"), Browsable(false)]
         public int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }
         private int _Id;
-        [SugarColumn(ColumnName ="path"), DisplayName("数据目录"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
+        [SugarColumn(ColumnName ="path"), DisplayName("DataDirectory"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string Path { get => Regex.Replace(_Path, @"(?<!\\)\\(?!\\)", @"\\"); set { _Path = value; OnPropertyChanged(); } }
         private string _Path;
         [SugarColumn(ColumnName ="cron_expression"), DisplayName("Cron表达式"), PropertyEditorType(typeof(CronExpressionPropertiesEditor))]
         public string CronExpression { get => _CronExpression; set { _CronExpression = value; OnPropertyChanged(); } }
         private string _CronExpression;
-        [SugarColumn(ColumnName ="data_save_days"), DisplayName("数据保存天数"),]
+        [SugarColumn(ColumnName ="data_save_days"), DisplayName("DataRetentionDays"),]
         public int DataSaveDays { get => _DataSaveDays; set { _DataSaveDays = value; OnPropertyChanged(); } }
         private int _DataSaveDays;
 
-        [SugarColumn(ColumnName ="data_save_hours"), DisplayName("数据保存小时数"),]
+        [SugarColumn(ColumnName ="data_save_hours"), DisplayName("DataRetentionHours"),]
         public int DataSaveHours { get => _DataSaveHours; set { _DataSaveHours = value; OnPropertyChanged(); } }
         private int _DataSaveHours;
 
-        [SugarColumn(ColumnName ="excluding_images"), DisplayName("仅清除数据库")]
+        [SugarColumn(ColumnName ="excluding_images"), DisplayName("ClearDatabaseOnly")]
         public bool Excludingimages { get => _Excludingimages; set { _Excludingimages = value; OnPropertyChanged(); } }
         private bool _Excludingimages;
 
-        [SugarColumn(ColumnName ="del_local_file"), DisplayName("删除本地文件"),]
+        [SugarColumn(ColumnName ="del_local_file"), DisplayName("DeleteLocalFiles"),]
         public bool DellocalFile { get => _DellocalFile; set { _DellocalFile = value; OnPropertyChanged(); } }
         private bool _DellocalFile;
 
@@ -64,7 +64,7 @@ namespace ColorVision.Engine.Archive.Dao
     }
 
 
-    [DisplayName("数据库配置"),SugarTable("t_scgd_sys_globle_cfg")]
+    [DisplayName("DataBaseConfig"),SugarTable("t_scgd_sys_globle_cfg")]
     public class GlobleCfgdModel : ViewModelBase, IEntity
     {
         [SugarColumn(ColumnName ="id"), Browsable(false)]
@@ -76,7 +76,7 @@ namespace ColorVision.Engine.Archive.Dao
         private string _Code;
 
 
-        [SugarColumn(ColumnName ="name"), DisplayName("名称")]
+        [SugarColumn(ColumnName ="name"), DisplayName("Name")]
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name;
 

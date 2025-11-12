@@ -162,4 +162,7 @@
   <data name="Cancel" xml:space="preserve">
     <value>Отмена</value>
   </data>
+  <data name="LogDatabase" xml:space="preserve">
+    <value>База данных журналов</value>
+  </data>
 </root>

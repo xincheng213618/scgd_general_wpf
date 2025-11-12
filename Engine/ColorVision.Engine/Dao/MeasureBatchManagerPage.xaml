@@ -4,9 +4,10 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              d:DataContext="{d:DesignInstance local:MeasureBatchManager}"
              mc:Ignorable="d" 
-             Title="综合查询"  d:DesignHeight="450" Background="{DynamicResource SecondaryRegionBrush}" d:DesignWidth="800" Loaded="Page_Loaded" Initialized="UserControl_Initialized">
+             Title="{x:Static properties:Resources.IntegratedQuery}"  d:DesignHeight="450" Background="{DynamicResource SecondaryRegionBrush}" d:DesignWidth="800" Loaded="Page_Loaded" Initialized="UserControl_Initialized">
     <Page.Resources>
         <Style TargetType="TextBlock" >
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
@@ -24,12 +25,12 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <DockPanel>
-                    <Button  Content="高级搜索" DockPanel.Dock="Right" Command="{Binding GenericQueryCommand}"  Margin="5,0,0,0"/>
-                    <Button  Content="搜索" DockPanel.Dock="Right" Click="Query_Click" Margin="5,0,0,0"/>
+                    <Button  Content="{x:Static properties:Resources.AdvanceSearch}" DockPanel.Dock="Right" Command="{Binding GenericQueryCommand}"  Margin="5,0,0,0"/>
+                    <Button  Content="{x:Static properties:Resources.Search}" DockPanel.Dock="Right" Click="Query_Click" Margin="5,0,0,0"/>
                     <TextBox x:Name="SearchBox" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="0"  VerticalContentAlignment="Center"  VerticalAlignment="Center" Text="" TextChanged="SearchBox_TextChanged"  InputMethod.IsInputMethodEnabled="True"  KeyDown="KeyEnter"  />
                 </DockPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <Button  Content="全部归档" DockPanel.Dock="Right" Click="Save_Click" Margin="5,0,0,0"/>
+                    <Button  Content="{x:Static properties:Resources.ArchiveAll}" DockPanel.Dock="Right" Click="Save_Click" Margin="5,0,0,0"/>
                     <Button Command="{Binding Config.EditCommand}"  Padding="2" Height="30" Width="30"  Margin="5,0,0,0">
                         <Button.Triggers>
                             <EventTrigger RoutedEvent="Button.Click">
@@ -72,14 +73,14 @@
                                     <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn  Header="序号" >
+                            <GridViewColumn  Header="{x:Static properties:Resources.SerialNumber1}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewBatchResult}"  >
                                         <TextBlock Text="{Binding MeasureBatchModel.Id}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="批次号">
+                            <GridViewColumn  Header="{x:Static properties:Resources.BatchNumber}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewBatchResult}"  >
                                         <TextBlock Text="{Binding MeasureBatchModel.Name}"/>
@@ -121,19 +122,19 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="测量时间" Width="150">
+                            <GridViewColumn  Header="{x:Static properties:Resources.CreateTime}" Width="150">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewBatchResult}"  >
                                         <TextBlock Text="{Binding MeasureBatchModel.CreateDate, StringFormat=yyyy/MM/dd hh:mm:ss}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="归档" Width="100">
+                            <GridViewColumn  Header="{x:Static properties:Resources.Archive}" Width="100">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewBatchResult}">
                                         <Grid>
                                             <TextBlock Text="{Binding MeasureBatchModel.ArchiveStatus}"/>
-                                            <Button Content="归档" Click="Arch_Click"  Tag="{Binding .}"/>
+                                            <Button Content="{x:Static properties:Resources.Archive}" Click="Arch_Click"  Tag="{Binding .}"/>
                                         </Grid>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>

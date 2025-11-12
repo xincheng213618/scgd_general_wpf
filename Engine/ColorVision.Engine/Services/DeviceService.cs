@@ -66,10 +66,6 @@ namespace ColorVision.Engine.Services
             throw new NotImplementedException();
         }
 
-        public bool IsDisplayOpen { get => _IsDisplayOpen; set { _IsDisplayOpen = value; OnPropertyChanged(); } }
-        private bool _IsDisplayOpen = true;
-
-
         public virtual UserControl GetDisplayControl()
         {
             return new UserControl();

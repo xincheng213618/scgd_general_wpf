@@ -9,8 +9,7 @@ namespace ColorVision.SocketProtocol
             return new List<ConfigSettingMetadata> {
                             new ConfigSettingMetadata
                             {
-                                Name = "通信协议",
-                                Description = "通用协议配置",
+                                Name = ColorVision.SocketProtocol.Properties.Resources.CommunicationProtocol,
                                 Order =1,
                                 Type = ConfigSettingType.Class,
                                 Source = SocketConfig.Instance

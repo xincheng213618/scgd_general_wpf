@@ -37,7 +37,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 OwnerGuid = "Algorithms", 
                 GuidId = "InvertImage", 
                 Order = 1, 
-                Header = "反相", 
+                Header = ColorVision.ImageEditor.Properties.Resources.Invert, 
                 Command = invertCommand 
             });
 
@@ -55,7 +55,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 OwnerGuid = "Algorithms", 
                 GuidId = "AutoLevelsAdjust", 
                 Order = 2, 
-                Header = "自动色阶调整", 
+                Header = ColorVision.ImageEditor.Properties.Resources.AutoLevelsAdjustment, 
                 Command = autoLevelsCommand 
             });
 
@@ -87,7 +87,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 OwnerGuid = "Algorithms", 
                 GuidId = "WhiteBalance", 
                 Order = 3, 
-                Header = "白平衡调整", 
+                Header =ColorVision.ImageEditor.Properties.Resources.WhiteBalanceAdjustment, 
                 Command = whiteBalanceCommand 
             });
 
@@ -108,7 +108,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 OwnerGuid = "Algorithms", 
                 GuidId = "GammaCorrection", 
                 Order = 4, 
-                Header = "伽马校正", 
+                Header = ColorVision.ImageEditor.Properties.Resources.GammaCorrection, 
                 Command = gammaCorrectionCommand 
             });
 
@@ -129,7 +129,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 OwnerGuid = "Algorithms", 
                 GuidId = "BrightnessContrast", 
                 Order = 5, 
-                Header = "亮度对比度调整", 
+                Header = ColorVision.ImageEditor.Properties.Resources.LuminanceContrastAdjustment, 
                 Command = brightnessContrastCommand 
             });
 
@@ -150,7 +150,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 OwnerGuid = "Algorithms", 
                 GuidId = "Threshold", 
                 Order = 6, 
-                Header = "阈值处理", 
+                Header = ColorVision.ImageEditor.Properties.Resources.ThresholdProcessing, 
                 Command = thresholdCommand 
             });
 
@@ -168,7 +168,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 OwnerGuid = "Algorithms", 
                 GuidId = "RemoveMoire", 
                 Order = 7, 
-                Header = "去除摩尔纹", 
+                Header = ColorVision.ImageEditor.Properties.Resources.MoireRemove, 
                 Command = removeMoireCommand 
             });
 
@@ -186,7 +186,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 OwnerGuid = "Algorithms", 
                 GuidId = "Sharpen", 
                 Order = 8, 
-                Header = "锐化", 
+                Header = ColorVision.ImageEditor.Properties.Resources.Sharpening, 
                 Command = sharpenCommand 
             });
 
@@ -207,7 +207,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 OwnerGuid = "Algorithms", 
                 GuidId = "GaussianBlur", 
                 Order = 9, 
-                Header = "高斯模糊", 
+                Header = ColorVision.ImageEditor.Properties.Resources.GaussianBlur, 
                 Command = gaussianBlurCommand 
             });
 
@@ -228,7 +228,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 OwnerGuid = "Algorithms", 
                 GuidId = "MedianBlur", 
                 Order = 10, 
-                Header = "中值滤波", 
+                Header = ColorVision.ImageEditor.Properties.Resources.MedianFilter, 
                 Command = medianBlurCommand 
             });
 
@@ -249,7 +249,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 OwnerGuid = "Algorithms", 
                 GuidId = "EdgeDetection", 
                 Order = 11, 
-                Header = "边缘检测 (Canny)", 
+                Header = ColorVision.ImageEditor.Properties.Resources.Canny, 
                 Command = edgeDetectionCommand 
             });
 
@@ -267,7 +267,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 OwnerGuid = "Algorithms", 
                 GuidId = "HistogramEqualization", 
                 Order = 12, 
-                Header = "直方图均衡化", 
+                Header = ColorVision.ImageEditor.Properties.Resources.HistogramEqualization, 
                 Command = histogramEqualizationCommand 
             });
 

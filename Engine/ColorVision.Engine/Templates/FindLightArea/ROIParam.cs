@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Templates.FindLightArea
         {
         }
 
-        [Category("ROI"), Description("阈值")]
+        [Category("ROI"), Description("Threshold")]
         public int Threshold { get => GetValue(_Threshold); set { SetProperty(ref _Threshold, value); } }
         private int _Threshold = 1;
         [Category("ROI"), Description("Times")]

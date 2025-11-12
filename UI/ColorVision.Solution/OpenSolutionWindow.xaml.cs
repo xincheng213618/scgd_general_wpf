@@ -20,7 +20,7 @@ namespace ColorVision.Solution
 
         public override int Order => 1;
 
-        public override string Header => "项目/解决方案(_P)...";
+        public override string Header => ColorVision.UI.Properties.Resources.ProjectSolution_P;
 
         public override void Execute()
         {
@@ -139,7 +139,7 @@ namespace ColorVision.Solution
                     if (filteredResults.Count == 0)
                     {
                         SearchNoneText.Visibility = Visibility.Visible;
-                        SearchNoneText.Text = "未找到" + textBox.Text + "相关项目";
+                        SearchNoneText.Text = ColorVision.Solution.Properties.Resources.NoFound+" " + textBox.Text +" "+ ColorVision.Solution.Properties.Resources.RelateItem;
                     }
                 }
             }
@@ -161,7 +161,7 @@ namespace ColorVision.Solution
         {
             CopyCommand = new RelayCommand(a => { if (FullName != null) Common.NativeMethods.Clipboard.SetText(FullName); } , a => FullName!=null);
 
-            MenuItem menuItem = new MenuItem() { Header ="复制路径" ,Command = CopyCommand };
+            MenuItem menuItem = new MenuItem() { Header =ColorVision.Solution.Properties.Resources.CopyPath ,Command = CopyCommand };
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(menuItem);
         }

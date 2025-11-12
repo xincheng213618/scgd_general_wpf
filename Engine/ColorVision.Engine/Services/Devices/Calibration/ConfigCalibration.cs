@@ -1,11 +1,15 @@
 ﻿using ColorVision.Engine.Cache;
+using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Calibration
 {
     public class ConfigCalibration: DeviceServiceConfig, IFileServerCfg
     {
+
+        [PropertyEditorType(typeof(TextSNPropertiesEditor))]
         public string? CameraCode { get => _CameraCode; set { _CameraCode = value; OnPropertyChanged(); } }
         private string? _CameraCode;
+
         public string CameraID { get => _CameraID; set { _CameraID = value; OnPropertyChanged(); } }
         private string _CameraID;
 

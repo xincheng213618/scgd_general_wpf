@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.PhyCameras.Configs
 {
+
     public class CFWPORT : ViewModelBase
     {
         public CFWPORT()

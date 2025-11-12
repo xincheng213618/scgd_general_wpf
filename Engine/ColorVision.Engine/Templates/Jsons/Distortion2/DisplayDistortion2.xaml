@@ -12,7 +12,7 @@
         <StackPanel>
             <DockPanel Margin="0,2">
                 <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="RunTemplate_Click" />
-                <TextBlock Text="畸变" Width="60"/>
+                <TextBlock Text="{x:Static properties:Resources.Distortion}" Width="60"/>
                 <ComboBox x:Name="ComboxTemplate"  SelectedIndex="{Binding TemplateSelectedIndex}" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key" />
                 <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -23,7 +23,7 @@
             <TabControl BorderThickness="0" Background="Transparent">
                 <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" IsSelected="{Binding IsLocalFile}" >
                     <StackPanel Orientation="Horizontal" Margin="0,2">
-                        <TextBlock Text="文件" Margin="0,0,10,0" Width="40"/>
+                        <TextBlock Text="{x:Static properties:Resources.File}" Margin="0,0,10,0" Width="40"/>
                         <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}"  Width="150" Text="{Binding ImageFilePath}" Margin="0,0,2,0" HorizontalAlignment="Left" />
                         <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open_File" />
                         <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_OpenLocal_Click" />

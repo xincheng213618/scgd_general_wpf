@@ -19,7 +19,7 @@ namespace ColorVision.UI.Properties {
     // 类通过类似于 ResGen 或 Visual Studio 的工具自动生成的。
     // 若要添加或移除成员，请编辑 .ResX 文件，然后重新运行 ResGen
     // (以 /str 作为命令选项)，或重新生成 VS 项目。
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -511,24 +511,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 是否启用CUDA 的本地化字符串。
-        /// </summary>
-        public static string EnableCUDA {
-            get {
-                return ResourceManager.GetString("EnableCUDA", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 是否启用定时备份 的本地化字符串。
-        /// </summary>
-        public static string EnableScheduledBackup {
-            get {
-                return ResourceManager.GetString("EnableScheduledBackup", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 发生错误 的本地化字符串。
         /// </summary>
         public static string ErrorOccurred {
@@ -934,6 +916,24 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似  &quot;消息日志窗口 的本地化字符串。
+        /// </summary>
+        public static string MsgList {
+            get {
+                return ResourceManager.GetString("MsgList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Mysql工具 的本地化字符串。
+        /// </summary>
+        public static string MysqlTool {
+            get {
+                return ResourceManager.GetString("MysqlTool", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 没有配置本地的log4输出 的本地化字符串。
         /// </summary>
         public static string NoLocalLog4Output {
@@ -1060,6 +1060,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 项目/解决方案(_P)... 的本地化字符串。
+        /// </summary>
+        public static string ProjectSolution_P {
+            get {
+                return ResourceManager.GetString("ProjectSolution_P", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似   rem Robocopy 0-7 视为成功 的本地化字符串。
         /// </summary>
         public static string RemRobocopySuccess {
@@ -1150,29 +1159,20 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 智能排序 (升序) 的本地化字符串。
-        /// </summary>
-        public static string SmartSortAscending {
-            get {
-                return ResourceManager.GetString("SmartSortAscending", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 智能排序 (降序) 的本地化字符串。
-        /// </summary>
-        public static string SmartSortDescending {
-            get {
-                return ResourceManager.GetString("SmartSortDescending", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 缓冲区大小 的本地化字符串。
         /// </summary>
         public static string SocketBufferSize {
             get {
                 return ResourceManager.GetString("SocketBufferSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Socket管理窗口 的本地化字符串。
+        /// </summary>
+        public static string SocketManagementWindow {
+            get {
+                return ResourceManager.GetString("SocketManagementWindow", resourceCulture);
             }
         }
         

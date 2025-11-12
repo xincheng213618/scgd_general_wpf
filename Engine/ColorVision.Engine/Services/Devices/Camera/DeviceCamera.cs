@@ -37,6 +37,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public MQTTCamera DService { get; set; }
         public RelayCommand FetchLatestTemperatureCommand { get; set; }
         public RelayCommand DisPlaySaveCommand { get; set; }
+        public DisplayCameraConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplayCameraConfig>(Config.Code);
 
 
         public DeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
@@ -83,7 +84,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (PhyCamera == null)
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ConfigurePhysicalCameraBeforeCalibration, "ColorVision");
                 return;
             }
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)

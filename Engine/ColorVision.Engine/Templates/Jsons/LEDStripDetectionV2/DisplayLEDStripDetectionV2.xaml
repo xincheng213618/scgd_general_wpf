@@ -19,7 +19,7 @@
                 </Grid>
             </DockPanel>
             <DockPanel Margin="0,2">
-                <TextBlock Text="灯条" Width="60"/>
+                <TextBlock Text="{x:Static properties:Resources.LightBar}" Width="60"/>
                 <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="RunTemplate_Click" />
                 <ComboBox x:Name="ComboxTemplate"  SelectedIndex="{Binding TemplateSelectedIndex}" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key" />
                 <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
@@ -29,14 +29,14 @@
             </DockPanel>
             <DockPanel Margin="0,2">
                 <ToggleButton  HorizontalAlignment="Left"  Margin="0,0,2,0" Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding IsInversion}"/>
-                <TextBlock HorizontalAlignment="Left" Text="图像翻转"/>
+                <TextBlock HorizontalAlignment="Left" Text="{x:Static properties:Resources.ImageFlip}"/>
             </DockPanel>
 
 
             <TabControl BorderThickness="0" Background="Transparent">
                 <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" IsSelected="{Binding IsLocalFile}" >
                     <StackPanel Orientation="Horizontal" Margin="0,2">
-                        <TextBlock Text="文件" Margin="0,0,10,0" Width="40"/>
+                        <TextBlock Text="{x:Static properties:Resources.File}" Margin="0,0,10,0" Width="40"/>
                         <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}"  Width="150" Text="{Binding ImageFilePath}" Margin="0,0,2,0" HorizontalAlignment="Left" />
                         <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open_File" />
                         <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_OpenLocal_Click" />

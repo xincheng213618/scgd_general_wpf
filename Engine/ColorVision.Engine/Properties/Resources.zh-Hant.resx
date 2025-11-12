@@ -1242,9 +1242,6 @@
   <data name="SingleTest" xml:space="preserve">
     <value>單次測試</value>
   </data>
-  <data name="AutoTest" xml:space="preserve">
-    <value>自動測試</value>
-  </data>
   <data name="SingleZeroCalibration" xml:space="preserve">
     <value>單次校零</value>
   </data>
@@ -1557,7 +1554,7 @@
   <data name="DefaultCanvas" xml:space="preserve">
     <value>預設畫布</value>
   </data>
-  <data name="ImgImport" xml:space="preserve">
+  <data name="ImageImport" xml:space="preserve">
     <value>影像導入</value>
   </data>
   <data name="ImportLatestImages" xml:space="preserve">
@@ -1692,17 +1689,17 @@
   <data name="DataBasicPath" xml:space="preserve">
     <value>資料基礎路徑</value>
   </data>
-  <data name="Absolute" xml:space="preserve">
-    <value>絕對</value>
-  </data>
-  <data name="Relative" xml:space="preserve">
-    <value>相對</value>
-  </data>
   <data name="singleChannel" xml:space="preserve">
     <value>單通道</value>
   </data>
   <data name="threeChannels" xml:space="preserve">
     <value>三通道</value>
+  </data>
+  <data name="Absolute" xml:space="preserve">
+    <value>絕對</value>
+  </data>
+  <data name="Relative" xml:space="preserve">
+    <value>相對</value>
   </data>
   <data name="Wavelength" xml:space="preserve">
     <value>波長</value>
@@ -1817,9 +1814,6 @@
   </data>
   <data name="ExecutionFailed" xml:space="preserve">
     <value>執行失敗</value>
-  </data>
-  <data name="执行失败" xml:space="preserve">
-    <value>"執行失敗</value>
   </data>
   <data name="Opening" xml:space="preserve">
     <value>打開中</value>
@@ -2114,5 +2108,374 @@
   </data>
   <data name="Lv" xml:space="preserve">
     <value>亮度Lv(cd/m2)</value>
+  </data>
+  <data name="MsgLogWin" xml:space="preserve">
+    <value>訊息日誌視窗</value>
+  </data>
+  <data name="PhySpectrum" xml:space="preserve">
+    <value>物理光譜儀</value>
+  </data>
+  <data name="ComplyPoint" xml:space="preserve">
+    <value>點</value>
+  </data>
+  <data name="ComplyPointList_" xml:space="preserve">
+    <value>點集</value>
+  </data>
+  <data name="EditDefaultComplianceDictionary" xml:space="preserve">
+    <value>"編輯預設合規字典</value>
+  </data>
+  <data name="CalibrationToolNotFound_DownloadPrompt" xml:space="preserve">
+    <value>找不到校正產生工具，是否在線上下載</value>
+  </data>
+  <data name="DownloadCalibrationTool" xml:space="preserve">
+    <value>下載校正產生工具</value>
+  </data>
+  <data name="SelectUpzipDirectry" xml:space="preserve">
+    <value>請選擇解壓縮目錄</value>
+  </data>
+  <data name="LedDataFIle" xml:space="preserve">
+    <value>燈珠數據文件</value>
+  </data>
+  <data name="LedDataFileNotFound" xml:space="preserve">
+    <value>找不到燈珠數據文件</value>
+  </data>
+  <data name="ImageFileNotFound" xml:space="preserve">
+    <value>找不到圖像文件</value>
+  </data>
+  <data name="ImageFileIsnotCVCIE" xml:space="preserve">
+    <value>影像檔不是CVCIE</value>
+  </data>
+  <data name="ImageFileOpenFailed" xml:space="preserve">
+    <value>圖像檔案開啟失敗</value>
+  </data>
+  <data name="SSCOMTool" xml:space="preserve">
+    <value>SSCOM串口調試助手</value>
+  </data>
+  <data name="CalibrationFileCorrectionTool" xml:space="preserve">
+    <value>校正文件修正工具</value>
+  </data>
+  <data name="AlgorithmView" xml:space="preserve">
+    <value>演算法視圖</value>
+  </data>
+  <data name="StartTimeMs" xml:space="preserve">
+    <value>開始時間(ms)</value>
+  </data>
+  <data name="FrequencySyncHz" xml:space="preserve">
+    <value>頻率同步(hz)</value>
+  </data>
+  <data name="SaturationPercent" xml:space="preserve">
+    <value>飽和度(%)</value>
+  </data>
+  <data name="ADMax" xml:space="preserve">
+    <value>AD最大值</value>
+  </data>
+  <data name="MaxPercent" xml:space="preserve">
+    <value>最大值百分比</value>
+  </data>
+  <data name="SaturationDifference" xml:space="preserve">
+    <value>飽和度差值</value>
+  </data>
+  <data name="MaxExposureTimeMs" xml:space="preserve">
+    <value>最大曝光時間(ms)</value>
+  </data>
+  <data name="MinExposureTimeMs" xml:space="preserve">
+    <value>最小曝光時間(ms)</value>
+  </data>
+  <data name="BurstThresholdMs" xml:space="preserve">
+    <value>burst閾值(ms)</value>
+  </data>
+  <data name="EvaluationFunctionType" xml:space="preserve">
+    <value>評價函數類型</value>
+  </data>
+  <data name="StepSwingRange" xml:space="preserve">
+    <value>步徑擺盪範圍</value>
+  </data>
+  <data name="StepSwingRangeDiscription" xml:space="preserve">
+    <value>第二次的步徑 實際第二次步徑為 forwardparam *</value>
+  </data>
+  <data name="StepReductionFactor" xml:space="preserve">
+    <value>步徑每次縮減係數</value>
+  </data>
+  <data name="SecondStepFactor" xml:space="preserve">
+    <value>第二次的步徑係數</value>
+  </data>
+  <data name="CurrentStepSize" xml:space="preserve">
+    <value>目前使用步徑</value>
+  </data>
+  <data name="InitialStepSize" xml:space="preserve">
+    <value>第一次的步徑</value>
+  </data>
+  <data name="StopStepSize" xml:space="preserve">
+    <value>停止步徑</value>
+  </data>
+  <data name="Deprecated" xml:space="preserve">
+    <value>已棄用</value>
+  </data>
+  <data name="MinEvaluationValue" xml:space="preserve">
+    <value>最低評價值</value>
+  </data>
+  <data name="TimeoutDuration" xml:space="preserve">
+    <value>超時時間</value>
+  </data>
+  <data name="RestoreMysqlAutoFocusTemplateSettings" xml:space="preserve">
+    <value>恢復Mysql AutoFocus模板設置</value>
+  </data>
+  <data name="RestoreMysqlCameraRunParamTemplateSettings" xml:space="preserve">
+    <value>恢復MysqlCameraRunParam模板設置</value>
+  </data>
+  <data name="ParamInput" xml:space="preserve">
+    <value>輸入參數</value>
+  </data>
+  <data name="SaveToLoacal" xml:space="preserve">
+    <value>儲存到本地</value>
+  </data>
+  <data name="ArchiveDate" xml:space="preserve">
+    <value>歸檔日期</value>
+  </data>
+  <data name="CreationDate" xml:space="preserve">
+    <value>建立日期</value>
+  </data>
+  <data name="ProcessHandlingConfig" xml:space="preserve">
+    <value>流程處理配置</value>
+  </data>
+  <data name="UpdateProcessMeta" xml:space="preserve">
+    <value>更新 ProcessMeta</value>
+  </data>
+  <data name="WorkflowTemplate" xml:space="preserve">
+    <value>流程範本:</value>
+  </data>
+  <data name="DeleteSelected" xml:space="preserve">
+    <value>刪除選取</value>
+  </data>
+  <data name="DoubleClickToRename_CurrentlySavedInMemoryOnly" xml:space="preserve">
+    <value>(雙擊可重新命名, 目前僅記憶體保存)</value>
+  </data>
+  <data name="HandleClass" xml:space="preserve">
+    <value>處理類別</value>
+  </data>
+  <data name="Description" xml:space="preserve">
+    <value>描述</value>
+  </data>
+  <data name="DuplicateName" xml:space="preserve">
+    <value>名稱重複</value>
+  </data>
+  <data name="UnableToInstantiateProcessType" xml:space="preserve">
+    <value>無法實例化進程類型</value>
+  </data>
+  <data name="NoServicesRequireCachePathConfiguration" xml:space="preserve">
+    <value>沒有服務需要配置快取路徑</value>
+  </data>
+  <data name="BulkEdit" xml:space="preserve">
+    <value>統一編輯</value>
+  </data>
+  <data name="ArchiveAll" xml:space="preserve">
+    <value>全部歸檔</value>
+  </data>
+  <data name="BatchResults" xml:space="preserve">
+    <value>批次結果</value>
+  </data>
+  <data name="Integer" xml:space="preserve">
+    <value>整數</value>
+  </data>
+  <data name="Float" xml:space="preserve">
+    <value>浮點</value>
+  </data>
+  <data name="Bool" xml:space="preserve">
+    <value>布林</value>
+  </data>
+  <data name="String" xml:space="preserve">
+    <value>字串</value>
+  </data>
+  <data name="Enum" xml:space="preserve">
+    <value>列舉</value>
+  </data>
+  <data name="ConfigePOINeed" xml:space="preserve">
+    <value>需要配置關注點</value>
+  </data>
+  <data name="ExportTo" xml:space="preserve">
+    <value>導出為</value>
+  </data>
+  <data name="OpenFileFailed" xml:space="preserve">
+    <value>開啟檔案失敗</value>
+  </data>
+  <data name="Compress" xml:space="preserve">
+    <value>壓縮</value>
+  </data>
+  <data name="MqttConfig" xml:space="preserve">
+    <value>Mqtt配置</value>
+  </data>
+  <data name="ConfigureMqttConnection_DefaultsToLocalOptional" xml:space="preserve">
+    <value>配置Mqtt連接，預設為本地連接，可以不進行配置</value>
+  </data>
+  <data name="SelectSaveLocation" xml:space="preserve">
+    <value>選擇要儲存到得位置</value>
+  </data>
+  <data name="FolderPathCannotBeEmpty" xml:space="preserve">
+    <value>資料夾路徑不能為空</value>
+  </data>
+  <data name="Hint" xml:space="preserve">
+    <value>提示</value>
+  </data>
+  <data name="CurrentlySupportsCvRawImages" xml:space="preserve">
+    <value>目前支援CVRAW影像</value>
+  </data>
+  <data name="OriginalFileNotFound" xml:space="preserve">
+    <value>找不到原始文件</value>
+  </data>
+  <data name="ExportSupportsCieFilesOnly" xml:space="preserve">
+    <value>匯出僅支援CIE文件</value>
+  </data>
+  <data name="FileNotFound" xml:space="preserve">
+    <value>找不到文件</value>
+  </data>
+  <data name="ResetDatabasePrompt" xml:space="preserve">
+    <value>是否重置資料庫</value>
+  </data>
+  <data name="RelatedItems" xml:space="preserve">
+    <value>相關項</value>
+  </data>
+  <data name="Debug" xml:space="preserve">
+    <value>偵錯</value>
+  </data>
+  <data name="ToggleList" xml:space="preserve">
+    <value>切換列表</value>
+  </data>
+  <data name="CmdSendAlready" xml:space="preserve">
+    <value>命令已經發送</value>
+  </data>
+  <data name="License" xml:space="preserve">
+    <value>許可證</value>
+  </data>
+  <data name="ModifyLicense" xml:space="preserve">
+    <value>修改許可證</value>
+  </data>
+  <data name="ConfigurePhysicalCameraBeforeCalibration" xml:space="preserve">
+    <value>使用校正前，請先配置對映的實體相機</value>
+  </data>
+  <data name="CacheSize" xml:space="preserve">
+    <value>快取大小</value>
+  </data>
+  <data name="IntegrationStartTime" xml:space="preserve">
+    <value>積分起始時間</value>
+  </data>
+  <data name="IntervalTime" xml:space="preserve">
+    <value>間隔時間</value>
+  </data>
+  <data name="Step" xml:space="preserve">
+    <value>步數</value>
+  </data>
+  <data name="RestartWindowsService" xml:space="preserve">
+    <value>重新啟動WindowsService</value>
+  </data>
+  <data name="SelectExportFileLocation" xml:space="preserve">
+    <value>選擇匯出檔案位置</value>
+  </data>
+  <data name="DataRetentionDays" xml:space="preserve">
+    <value>資料保存天數</value>
+  </data>
+  <data name="DataRetentionHours" xml:space="preserve">
+    <value>資料保存小時數</value>
+  </data>
+  <data name="ClearDatabaseOnly" xml:space="preserve">
+    <value>僅清除資料庫</value>
+  </data>
+  <data name="ConfigArchivedModel_删除本地文件" xml:space="preserve">
+    <value>刪除本機文件</value>
+  </data>
+  <data name="DeleteLocalFiles" xml:space="preserve">
+    <value>刪除本機文件</value>
+  </data>
+  <data name="DataBaseConfig" xml:space="preserve">
+    <value>資料庫配置</value>
+  </data>
+  <data name="RESTAddress" xml:space="preserve">
+    <value>REST地址</value>
+  </data>
+  <data name="ServerMonitorConfig" xml:space="preserve">
+    <value>服務監控配置</value>
+  </data>
+  <data name="MqttConfigId" xml:space="preserve">
+    <value>MQTT配置ID</value>
+  </data>
+  <data name="TenantId" xml:space="preserve">
+    <value>租戶ID</value>
+  </data>
+  <data name="DefaultSavePath" xml:space="preserve">
+    <value>預設儲存路徑</value>
+  </data>
+  <data name="IvlCameraProcessing" xml:space="preserve">
+    <value>IVL相機處理</value>
+  </data>
+  <data name="ProcessAndExportCameraDataFromIvlBatchOnly" xml:space="preserve">
+    <value>僅處理IVL批次中的Camera資料並匯出</value>
+  </data>
+  <data name="IvlSpectralProcessing" xml:space="preserve">
+    <value>IVL光譜處理</value>
+  </data>
+  <data name="ProcessAndExportSpectrumDataFromIvlBatchOnly" xml:space="preserve">
+    <value>僅處理IVL批次中的Spectrum資料並匯出</value>
+  </data>
+  <data name="LightBar" xml:space="preserve">
+    <value>燈條</value>
+  </data>
+  <data name="Spectrometer" xml:space="preserve">
+    <value>光譜儀</value>
+  </data>
+  <data name="EditFilterWheelConfig" xml:space="preserve">
+    <value>編輯濾光輪配置</value>
+  </data>
+  <data name="ContinuousMeasurement" xml:space="preserve">
+    <value>連續測量</value>
+  </data>
+  <data name="StartMeasurementValue_V_mA" xml:space="preserve">
+    <value>開始測量值(V/mA)</value>
+  </data>
+  <data name="EndMeasurementValue_V_mA" xml:space="preserve">
+    <value>結束測量值(V/mA)</value>
+  </data>
+  <data name="VoltageSourceUnit_V_CurrentSourceUnit_mA" xml:space="preserve">
+    <value>電壓源單位V,電流源單位mA</value>
+  </data>
+  <data name="LimitVal" xml:space="preserve">
+    <value>限值(V/mA)</value>
+  </data>
+  <data name="SourceMeterProtectionLimit_VoltageUnitV_CurrentUnitmA" xml:space="preserve">
+    <value>源表保護的限值,電壓源單位V,電流源單位mA</value>
+  </data>
+  <data name="IsVoltageSource" xml:space="preserve">
+    <value>是否為電壓源</value>
+  </data>
+  <data name="TrueIsVoltageSource_FalseIsCurrentSource" xml:space="preserve">
+    <value>true是電壓源，false是電流源</value>
+  </data>
+  <data name="MeasureType" xml:space="preserve">
+    <value>測量類型</value>
+  </data>
+  <data name="VoltageSourceCurrentSourceSelection" xml:space="preserve">
+    <value>電壓源,電流源選擇</value>
+  </data>
+  <data name="EnableExposure" xml:space="preserve">
+    <value>曝光使能</value>
+  </data>
+  <data name="EnableFocus" xml:space="preserve">
+    <value>對焦使能</value>
+  </data>
+  <data name="RegistryCenterNotConnected" xml:space="preserve">
+    <value>註冊中心沒有連接</value>
+  </data>
+  <data name="TokenEmpty_RefreshingToken_PleaseRetry" xml:space="preserve">
+    <value>Token為空，正在刷新token,請重試</value>
+  </data>
+  <data name="WorkflowStartNodeNotFound_RunFailed" xml:space="preserve">
+    <value>找不到流程啟動結點，運作失敗</value>
+  </data>
+  <data name="ExecutionCancelled" xml:space="preserve">
+    <value>已經取消執行</value>
+  </data>
+  <data name="FlowWindows" xml:space="preserve">
+    <value>流程視窗</value>
+  </data>
+  <data name="Processing" xml:space="preserve">
+    <value>處理中...</value>
   </data>
 </root>

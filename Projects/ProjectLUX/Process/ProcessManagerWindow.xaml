@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ProjectLUX.Process"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ProcessManager}"
-        Title="流程处理配置" Height="450" Width="820" Initialized="Window_Initialized">
+        Title="流程处理配置" Height="450" Width="820" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <local:TypeNameConverter x:Key="TypeNameConverter"/>
     </Window.Resources>

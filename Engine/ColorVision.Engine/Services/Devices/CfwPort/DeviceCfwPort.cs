@@ -1,15 +1,36 @@
-﻿using System.Windows;
-using System.Windows.Controls;
-using ColorVision.Common.MVVM;
-using ColorVision.UI.Authorizations;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Extension;
+using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.PhyCameras.Configs;
+using ColorVision.UI.Authorizations;
+using System.Linq;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.CfwPort
 {
     public class DeviceCfwPort : DeviceService<ConfigCfwPort>
     {
         public MQTTCfwPort DService { get; set; }
+        public IDisPlayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisPlayConfigBase>(Config.Code);
 
+        public FilterWheelConfig FilterWheelConfig
+        {
+            get 
+            {
+                var phycamera =  PhyCameraManager.GetInstance().PhyCameras.FirstOrDefault(a => a.Code == Config.SN);
+                if (phycamera != null)
+                {
+                    return phycamera.Config.FilterWheelConfig;
+                }
+                else
+                {
+                    var filterWheelConfig = new FilterWheelConfig();
+                    return filterWheelConfig;
+                }
+
+            } 
+        }
         public DeviceCfwPort(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTCfwPort(Config);

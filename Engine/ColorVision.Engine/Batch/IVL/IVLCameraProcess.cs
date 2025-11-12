@@ -1,4 +1,6 @@
 using ColorVision.Database;
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using log4net;
@@ -6,11 +8,12 @@ using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace ColorVision.Engine.Batch.IVL
 {
 
-    [BatchProcess("IVL相机处理", "仅处理IVL批次中的Camera数据并导出")]
+    [BatchProcess("IvlCameraProcessing", "ProcessAndExportCameraDataFromIvlBatchOnly")]
     public class IVLCameraProcess : IBatchProcess
     {
         private static readonly ILog log = LogManager.GetLogger(nameof(IVLProcess));
@@ -72,11 +75,11 @@ namespace ColorVision.Engine.Batch.IVL
                     if (testResult.SMUResultModels.Count > z )
                     {
                         var SMUResultModel = testResult.SMUResultModels[z];
-                        rows.Add($"{DateTimeNow},{i},{testResult.PoixyuvDatas[i].POIPointResultModel.PoiName},{SMUResultModel.VResult},{SMUResultModel.IResult},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
+                        rows.Add($"{DateTimeNow},{i + 1 },{testResult.PoixyuvDatas[i].POIPointResultModel.PoiName},{SMUResultModel.VResult},{SMUResultModel.IResult},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
                     }
                     else
                     {
-                        rows.Add($"{DateTimeNow},{i},{testResult.PoixyuvDatas[i].POIPointResultModel.PoiName},,,{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
+                        rows.Add($"{DateTimeNow},{i + 1 },{testResult.PoixyuvDatas[i].POIPointResultModel.PoiName},,,{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
 
                     }
                 }
@@ -99,6 +102,12 @@ namespace ColorVision.Engine.Batch.IVL
                     });
                 }
 
+                var DeviceSMUs = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList();
+                if (DeviceSMUs.Count > 0)
+                {
+                    DeviceSMUs[0].Config.V = null;
+                    DeviceSMUs[0].Config.I = null;
+                }
                 //ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
                 return true;
             }

@@ -14,6 +14,8 @@ namespace ColorVision.Engine.Services.Devices.PG
     {
         public MQTTPG DService { get; set; }
 
+        public IDisPlayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisPlayConfigBase>(Config.Code);
+
         [CommandDisplayAttribute("PgTemplateConfig",Order =100)]
         public RelayCommand EditPGTemplateCommand { get; set; }
 

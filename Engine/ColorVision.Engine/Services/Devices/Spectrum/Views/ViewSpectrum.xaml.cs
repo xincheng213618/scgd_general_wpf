@@ -68,7 +68,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             wpfplot1.Plot.Axes.Bottom.Max = 1000;
             wpfplot1.Plot.Axes.Left.Min = 0;
             wpfplot1.Plot.Axes.Left.Max = 1;
-
             string titleAbsolute = ColorVision.Engine.Properties.Resources.AbsoluteSpectrumCurve;
             wpfplot2.Plot.XLabel(ColorVision.Engine.Properties.Resources.WavelengthNm);
             wpfplot2.Plot.YLabel(ColorVision.Engine.Properties.Resources.AbsoluteSpectrum);

@@ -16,8 +16,8 @@ namespace ColorVision.Engine.MQTT
             {
                 new ConfigSettingMetadata
                 {
-                    Name = "启用MQTT",
-                    Description = "启用MQTT",
+                    Name = "Start MQTT",
+                    Description = "Start MQTT",
                     Order =1,
                     Type = ConfigSettingType.Bool,
                     Group ="Engine",
@@ -26,8 +26,8 @@ namespace ColorVision.Engine.MQTT
                 },
                 new ConfigSettingMetadata
                 {
-                    Name = "MQTT超时",
-                    Description = "超时时间",
+                    Name = "MQTT TimeOut",
+                    Description = "TimeOut",
                     Group ="Engine",
                     Order =1,
                     Type = ConfigSettingType.Text,
@@ -47,8 +47,8 @@ namespace ColorVision.Engine.MQTT
             {
                 new StatusBarMeta()
                 {
-                    Name = "启用MQTT",
-                    Description = "启用MQTT",
+                    Name = "Start MQTT",
+                    Description = "Start MQTT",
                     Order =2,
                     BindingName ="MQTTControl.IsConnect",
                     VisibilityBindingName = nameof(MQTTSetting.IsUseMQTT),

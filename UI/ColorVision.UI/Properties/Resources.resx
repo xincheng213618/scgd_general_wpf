@@ -508,4 +508,16 @@
   <data name="DumpFileSettings" xml:space="preserve">
     <value>归档文件设置</value>
   </data>
+  <data name="ProjectSolution_P" xml:space="preserve">
+    <value>项目/解决方案(_P)...</value>
+  </data>
+  <data name="MysqlTool" xml:space="preserve">
+    <value>Mysql工具</value>
+  </data>
+  <data name="MsgList" xml:space="preserve">
+    <value> "消息日志窗口</value>
+  </data>
+  <data name="SocketManagementWindow" xml:space="preserve">
+    <value>Socket管理窗口</value>
+  </data>
 </root>

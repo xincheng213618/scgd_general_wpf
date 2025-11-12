@@ -18,13 +18,13 @@ namespace ColorVision.Engine.Templates.Validate
     {
         public override string OwnerGuid => nameof(ExportComply);
         public override int Order => 2;
-        public override string Header => "点";
+        public override string Header => ColorVision.Engine.Properties.Resources.ComplyPoint;
     }
     public class ExportComplyPointList : MenuItemBase
     {
         public override string OwnerGuid => nameof(ExportComply);
         public override int Order => 2;
-        public override string Header => "点集";
+        public override string Header => ColorVision.Engine.Properties.Resources.ComplyPointList_;
     }
 
     public class MenuItemProviderSensor : IMenuItemProvider

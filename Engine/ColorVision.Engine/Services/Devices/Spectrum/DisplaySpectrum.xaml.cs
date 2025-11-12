@@ -31,6 +31,23 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             DataContext = Device;
 
+            //增加进度显示
+            Device.SelfAdaptionInitDarkStarted += () =>
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Overlay.Visibility=Visibility.Visible;
+                    LoadingPanel.Visibility=Visibility.Visible;
+                });
+            };
+            Device.SelfAdaptionInitDarkCompleted += () =>
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Overlay.Visibility = Visibility.Collapsed;
+                    LoadingPanel.Visibility = Visibility.Collapsed;
+                });
+            };
             this.AddViewConfig(View,ComboxView);
 
             this.ContextMenu = new ContextMenu();
@@ -50,7 +67,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
 
                 HideAllButtons();
-                btn_autoTest.Content = ColorVision.Engine.Properties.Resources.AutoTest;
+                btn_autoTest.Content = ColorVision.Engine.Properties.Resources.ContinuousMeasurement;
                 switch (status)
                 {
 
@@ -92,6 +109,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             this.ApplyChangedSelectedColor(DisPlayBorder);
         }
 
+        private void Device_SelfAdaptionInitDarkStarted()
+        {
+            throw new NotImplementedException();
+        }
+
         public event RoutedEventHandler Selected;
         public event RoutedEventHandler Unselected;
         public event EventHandler SelectChanged;
@@ -111,12 +133,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 if (!btnTitle.Equals(ColorVision.Engine.Properties.Resources.Close, StringComparison.Ordinal))
                 {
                     btn_connect.Content = ColorVision.Engine.Properties.Resources.Opening;
-                    DService.Open();
+                    MsgRecord msgRecord = DService.Open();
+
                 }
                 else
                 {
                     btn_connect.Content = ColorVision.Engine.Properties.Resources.Closing;
-                    DService.Close();
+                    MsgRecord msgRecord = DService.Close();
                 }
             }
         }
@@ -138,7 +161,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void Button_Click_AutoTest(object sender, RoutedEventArgs e)
         {
             string btnTitle = btn_autoTest.Content.ToString();
-            if (!string.IsNullOrWhiteSpace(btnTitle) && btnTitle.Equals(ColorVision.Engine.Properties.Resources.AutoTest, StringComparison.Ordinal))
+            if (!string.IsNullOrWhiteSpace(btnTitle) && btnTitle.Equals(ColorVision.Engine.Properties.Resources.ContinuousMeasurement, StringComparison.Ordinal))
             {
                 DService.GetDataAuto((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked ?? false, AutoDark.IsChecked ?? false);
                 btn_autoTest.Content = ColorVision.Engine.Properties.Resources.CancelAutoTest;
@@ -146,7 +169,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             else
             {
                 DService.GetDataAutoStop();
-                btn_autoTest.Content = ColorVision.Engine.Properties.Resources.AutoTest;
+                btn_autoTest.Content = ColorVision.Engine.Properties.Resources.ContinuousMeasurement;
             }
         }
         private void Button_Click_Init_Dark(object sender, RoutedEventArgs e)
@@ -192,9 +215,31 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.执行失败, "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
                 }
             };
+        }
+
+        private void GetNDport_Click(object sender, RoutedEventArgs e)
+        {
+            MsgRecord msgRecord = DService.GetPort();
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+                if (e == MsgRecordState.Success)
+                {
+                    int port = msgRecord.MsgReturn.Data.Port;
+                    Device.DisplaySpectrumConfig.PortNum = port;
+                }
+                else
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
+                }
+            };
+        }
+
+        private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
         }
     }
 }

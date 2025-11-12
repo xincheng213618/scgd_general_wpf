@@ -177,4 +177,70 @@
   <data name="ImageAlgorithm" xml:space="preserve">
     <value>Алгоритм изображения</value>
   </data>
+  <data name="LineOn" xml:space="preserve">
+    <value>онлайн</value>
+  </data>
+  <data name="Internal" xml:space="preserve">
+    <value>Разрез</value>
+  </data>
+  <data name="External" xml:space="preserve">
+    <value>внешний разрез</value>
+  </data>
+  <data name="Absolute" xml:space="preserve">
+    <value>абсолютное значение</value>
+  </data>
+  <data name="Relative" xml:space="preserve">
+    <value>относительная ценность</value>
+  </data>
+  <data name="IsShowMsg" xml:space="preserve">
+    <value>Показать сообщение</value>
+  </data>
+  <data name="IsLayoutUpdated" xml:space="preserve">
+    <value>Автоматическое обновление</value>
+  </data>
+  <data name="IsShowText" xml:space="preserve">
+    <value>Отображение текста</value>
+  </data>
+  <data name="ColormapTypes" xml:space="preserve">
+    <value>Ложный цвет</value>
+  </data>
+  <data name="Reload" xml:space="preserve">
+    <value>Перезагрузить</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Применить текущее изображение</value>
+  </data>
+  <data name="AutoLevelsAdjustment" xml:space="preserve">
+    <value>Автоматическая регулировка уровней</value>
+  </data>
+  <data name="WhiteBalanceAdjustment" xml:space="preserve">
+    <value>Регулировка баланса белого</value>
+  </data>
+  <data name="GammaCorrection" xml:space="preserve">
+    <value>Гамма-коррекция</value>
+  </data>
+  <data name="LuminanceContrastAdjustment" xml:space="preserve">
+    <value>Регулировка яркости и контрастности</value>
+  </data>
+  <data name="ThresholdProcessing" xml:space="preserve">
+    <value>Пороговая обработка</value>
+  </data>
+  <data name="MoireRemove" xml:space="preserve">
+    <value>Удалить муаровые узоры</value>
+  </data>
+  <data name="Sharpening" xml:space="preserve">
+    <value>Резкость</value>
+  </data>
+  <data name="GaussianBlur" xml:space="preserve">
+    <value>размытие по Гауссу</value>
+  </data>
+  <data name="MedianFilter" xml:space="preserve">
+    <value>Медианная фильтрация</value>
+  </data>
+  <data name="Canny" xml:space="preserve">
+    <value>Обнаружение краев (Кэнни)</value>
+  </data>
+  <data name="HistogramEqualization" xml:space="preserve">
+    <value>Выравнивание гистограммы</value>
+  </data>
 </root>

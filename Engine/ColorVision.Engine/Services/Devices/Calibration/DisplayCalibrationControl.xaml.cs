@@ -19,7 +19,10 @@ using System.IO;
 
 namespace ColorVision.Engine.Services.Devices.Calibration
 {
+    public class DisplayCalibrationConfig : IDisPlayConfigBase
+    {
 
+    }
 
     /// <summary>
     /// DisplaySMUControl.xaml 的交互逻辑

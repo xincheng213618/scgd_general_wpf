@@ -9,6 +9,7 @@ namespace Pattern.Ring
 {
     public class PatternRingConfig:ViewModelBase,IConfig
     {
+
         public SolidColorBrush MainBrush { get => _MainBrush; set { _MainBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _MainBrush = Brushes.Black;
 

@@ -469,4 +469,16 @@
   <data name="DumpFileSettings" xml:space="preserve">
     <value>アーカイブファイルの設定</value>
   </data>
+  <data name="ProjectSolution_P" xml:space="preserve">
+    <value>プロジェクト/ソリューション (P)...</value>
+  </data>
+  <data name="MysqlTool" xml:space="preserve">
+    <value>MySQLツール</value>
+  </data>
+  <data name="MsgList" xml:space="preserve">
+    <value>メッセージログウィンドウ</value>
+  </data>
+  <data name="SocketManagementWindow" xml:space="preserve">
+    <value>ソケット管理ウィンドウ</value>
+  </data>
 </root>

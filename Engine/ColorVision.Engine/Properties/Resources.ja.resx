@@ -1242,9 +1242,6 @@
   <data name="SingleTest" xml:space="preserve">
     <value>単一テスト</value>
   </data>
-  <data name="AutoTest" xml:space="preserve">
-    <value>自動テスト</value>
-  </data>
   <data name="SingleZeroCalibration" xml:space="preserve">
     <value>シングルゼロ</value>
   </data>
@@ -1557,7 +1554,7 @@
   <data name="DefaultCanvas" xml:space="preserve">
     <value>デフォルトのキャンバス</value>
   </data>
-  <data name="ImgImport" xml:space="preserve">
+  <data name="ImageImport" xml:space="preserve">
     <value>画像のインポート</value>
   </data>
   <data name="ImportLatestImages" xml:space="preserve">
@@ -1692,17 +1689,17 @@
   <data name="DataBasicPath" xml:space="preserve">
     <value>データベースパス</value>
   </data>
-  <data name="Absolute" xml:space="preserve">
-    <value>絶対</value>
-  </data>
-  <data name="Relative" xml:space="preserve">
-    <value>比較的</value>
-  </data>
   <data name="singleChannel" xml:space="preserve">
     <value>シングルチャンネル</value>
   </data>
   <data name="threeChannels" xml:space="preserve">
     <value>3チャンネル</value>
+  </data>
+  <data name="Absolute" xml:space="preserve">
+    <value>絶対</value>
+  </data>
+  <data name="Relative" xml:space="preserve">
+    <value>比較的</value>
   </data>
   <data name="Wavelength" xml:space="preserve">
     <value>波長</value>
@@ -1816,9 +1813,6 @@
     <value>実行が完了しました</value>
   </data>
   <data name="ExecutionFailed" xml:space="preserve">
-    <value>実行に失敗しました</value>
-  </data>
-  <data name="执行失败" xml:space="preserve">
     <value>実行に失敗しました</value>
   </data>
   <data name="Opening" xml:space="preserve">
@@ -2114,5 +2108,374 @@
   </data>
   <data name="Lv" xml:space="preserve">
     <value>明るさLv（cd/m2）</value>
+  </data>
+  <data name="MsgLogWin" xml:space="preserve">
+    <value>メッセージログウィンドウ</value>
+  </data>
+  <data name="PhySpectrum" xml:space="preserve">
+    <value>物理分光計</value>
+  </data>
+  <data name="ComplyPoint" xml:space="preserve">
+    <value>ポイント</value>
+  </data>
+  <data name="ComplyPointList_" xml:space="preserve">
+    <value>ドットセット</value>
+  </data>
+  <data name="EditDefaultComplianceDictionary" xml:space="preserve">
+    <value>デフォルトのコンプライアンス辞書を編集する</value>
+  </data>
+  <data name="CalibrationToolNotFound_DownloadPrompt" xml:space="preserve">
+    <value>キャリブレーション生成ツールが見つかりません。オンラインでダウンロードしますか?</value>
+  </data>
+  <data name="DownloadCalibrationTool" xml:space="preserve">
+    <value>キャリブレーション生成ツールをダウンロード</value>
+  </data>
+  <data name="SelectUpzipDirectry" xml:space="preserve">
+    <value>解凍ディレクトリを選択してください。</value>
+  </data>
+  <data name="LedDataFIle" xml:space="preserve">
+    <value>LEDデータファイル</value>
+  </data>
+  <data name="LedDataFileNotFound" xml:space="preserve">
+    <value>LEDデータファイルが見つかりません</value>
+  </data>
+  <data name="ImageFileNotFound" xml:space="preserve">
+    <value>画像ファイルが見つかりません</value>
+  </data>
+  <data name="ImageFileIsnotCVCIE" xml:space="preserve">
+    <value>画像ファイルは CVCIE ファイルではありません。</value>
+  </data>
+  <data name="ImageFileOpenFailed" xml:space="preserve">
+    <value>画像ファイルを開けませんでした</value>
+  </data>
+  <data name="SSCOMTool" xml:space="preserve">
+    <value>SSCOM シリアルポートデバッグアシスタント</value>
+  </data>
+  <data name="CalibrationFileCorrectionTool" xml:space="preserve">
+    <value>修正ファイル修復ツール</value>
+  </data>
+  <data name="AlgorithmView" xml:space="preserve">
+    <value>アルゴリズムビュー</value>
+  </data>
+  <data name="StartTimeMs" xml:space="preserve">
+    <value>開始時間（ミリ秒）</value>
+  </data>
+  <data name="FrequencySyncHz" xml:space="preserve">
+    <value>周波数同期（Hz）</value>
+  </data>
+  <data name="SaturationPercent" xml:space="preserve">
+    <value>彩度（％）</value>
+  </data>
+  <data name="ADMax" xml:space="preserve">
+    <value>最大AD</value>
+  </data>
+  <data name="MaxPercent" xml:space="preserve">
+    <value>最大パーセンテージ</value>
+  </data>
+  <data name="SaturationDifference" xml:space="preserve">
+    <value>彩度差</value>
+  </data>
+  <data name="MaxExposureTimeMs" xml:space="preserve">
+    <value>最大露光時間（ミリ秒）</value>
+  </data>
+  <data name="MinExposureTimeMs" xml:space="preserve">
+    <value>最小露光時間（ミリ秒）</value>
+  </data>
+  <data name="BurstThresholdMs" xml:space="preserve">
+    <value>バースト閾値（ミリ秒）</value>
+  </data>
+  <data name="EvaluationFunctionType" xml:space="preserve">
+    <value>評価関数の種類</value>
+  </data>
+  <data name="StepSwingRange" xml:space="preserve">
+    <value>ストライドスイング範囲</value>
+  </data>
+  <data name="StepSwingRangeDiscription" xml:space="preserve">
+    <value>2番目のステップのパス。実際の2番目のステップのパスは forwardparam * です</value>
+  </data>
+  <data name="StepReductionFactor" xml:space="preserve">
+    <value>ステップサイズ削減係数</value>
+  </data>
+  <data name="SecondStepFactor" xml:space="preserve">
+    <value>2段階目の係数</value>
+  </data>
+  <data name="CurrentStepSize" xml:space="preserve">
+    <value>現在ステップパスを使用しています</value>
+  </data>
+  <data name="InitialStepSize" xml:space="preserve">
+    <value>最初のステップ</value>
+  </data>
+  <data name="StopStepSize" xml:space="preserve">
+    <value>停止ステップ</value>
+  </data>
+  <data name="Deprecated" xml:space="preserve">
+    <value>非推奨</value>
+  </data>
+  <data name="MinEvaluationValue" xml:space="preserve">
+    <value>最低評価</value>
+  </data>
+  <data name="TimeoutDuration" xml:space="preserve">
+    <value>タイムアウト</value>
+  </data>
+  <data name="RestoreMysqlAutoFocusTemplateSettings" xml:space="preserve">
+    <value>MySQL AutoFocus テンプレートの設定を復元する</value>
+  </data>
+  <data name="RestoreMysqlCameraRunParamTemplateSettings" xml:space="preserve">
+    <value>MysqlCameraRunParam テンプレートの設定を復元する</value>
+  </data>
+  <data name="ParamInput" xml:space="preserve">
+    <value>入力パラメータ</value>
+  </data>
+  <data name="SaveToLoacal" xml:space="preserve">
+    <value>ローカルに保存</value>
+  </data>
+  <data name="ArchiveDate" xml:space="preserve">
+    <value>アーカイブ日</value>
+  </data>
+  <data name="CreationDate" xml:space="preserve">
+    <value>作成日</value>
+  </data>
+  <data name="ProcessHandlingConfig" xml:space="preserve">
+    <value>処理構成</value>
+  </data>
+  <data name="UpdateProcessMeta" xml:space="preserve">
+    <value>プロセスメタの更新</value>
+  </data>
+  <data name="WorkflowTemplate" xml:space="preserve">
+    <value>プロセステンプレート:</value>
+  </data>
+  <data name="DeleteSelected" xml:space="preserve">
+    <value>選択した項目を削除</value>
+  </data>
+  <data name="DoubleClickToRename_CurrentlySavedInMemoryOnly" xml:space="preserve">
+    <value>(名前を変更するにはダブルクリックします。現在はメモリにのみ保存されます)</value>
+  </data>
+  <data name="HandleClass" xml:space="preserve">
+    <value>処理クラス</value>
+  </data>
+  <data name="Description" xml:space="preserve">
+    <value>説明する</value>
+  </data>
+  <data name="DuplicateName" xml:space="preserve">
+    <value>重複した名前</value>
+  </data>
+  <data name="UnableToInstantiateProcessType" xml:space="preserve">
+    <value>プロセスタイプをインスタンス化できません</value>
+  </data>
+  <data name="NoServicesRequireCachePathConfiguration" xml:space="preserve">
+    <value>キャッシュ パスを構成する必要があるサービスはありません。</value>
+  </data>
+  <data name="BulkEdit" xml:space="preserve">
+    <value>統合編集</value>
+  </data>
+  <data name="ArchiveAll" xml:space="preserve">
+    <value>すべてのアーカイブ</value>
+  </data>
+  <data name="BatchResults" xml:space="preserve">
+    <value>バッチ結果</value>
+  </data>
+  <data name="Integer" xml:space="preserve">
+    <value>整数</value>
+  </data>
+  <data name="Float" xml:space="preserve">
+    <value>浮動小数点</value>
+  </data>
+  <data name="Bool" xml:space="preserve">
+    <value>ブール値</value>
+  </data>
+  <data name="String" xml:space="preserve">
+    <value>弦</value>
+  </data>
+  <data name="Enum" xml:space="preserve">
+    <value>列挙する</value>
+  </data>
+  <data name="ConfigePOINeed" xml:space="preserve">
+    <value>注意ポイントを設定する必要があります</value>
+  </data>
+  <data name="ExportTo" xml:space="preserve">
+    <value>エクスポート形式</value>
+  </data>
+  <data name="OpenFileFailed" xml:space="preserve">
+    <value>ファイルを開けませんでした</value>
+  </data>
+  <data name="Compress" xml:space="preserve">
+    <value>圧縮</value>
+  </data>
+  <data name="MqttConfig" xml:space="preserve">
+    <value>MQTT設定</value>
+  </data>
+  <data name="ConfigureMqttConnection_DefaultsToLocalOptional" xml:space="preserve">
+    <value>MQTT 接続を構成します。デフォルトはローカル接続であり、構成しないままにすることができます。</value>
+  </data>
+  <data name="SelectSaveLocation" xml:space="preserve">
+    <value>保存する場所を選択します。</value>
+  </data>
+  <data name="FolderPathCannotBeEmpty" xml:space="preserve">
+    <value>フォルダー パスを空にすることはできません。</value>
+  </data>
+  <data name="Hint" xml:space="preserve">
+    <value>ヒント</value>
+  </data>
+  <data name="CurrentlySupportsCvRawImages" xml:space="preserve">
+    <value>現在、CVRAW 画像をサポートしています。</value>
+  </data>
+  <data name="OriginalFileNotFound" xml:space="preserve">
+    <value>元のファイルが見つかりません</value>
+  </data>
+  <data name="ExportSupportsCieFilesOnly" xml:space="preserve">
+    <value>エクスポートはCIEファイルのみサポートされます</value>
+  </data>
+  <data name="FileNotFound" xml:space="preserve">
+    <value>ファイルが見つかりません</value>
+  </data>
+  <data name="ResetDatabasePrompt" xml:space="preserve">
+    <value>データベースをリセットしますか?</value>
+  </data>
+  <data name="RelatedItems" xml:space="preserve">
+    <value>関連商品</value>
+  </data>
+  <data name="Debug" xml:space="preserve">
+    <value>デバッグ</value>
+  </data>
+  <data name="ToggleList" xml:space="preserve">
+    <value>リストを切り替える</value>
+  </data>
+  <data name="CmdSendAlready" xml:space="preserve">
+    <value>コマンドが送信されました</value>
+  </data>
+  <data name="License" xml:space="preserve">
+    <value>ライセンス</value>
+  </data>
+  <data name="ModifyLicense" xml:space="preserve">
+    <value>ライセンスの変更</value>
+  </data>
+  <data name="ConfigurePhysicalCameraBeforeCalibration" xml:space="preserve">
+    <value>キャリブレーションを使用する前に、対応する物理カメラを設定してください。</value>
+  </data>
+  <data name="CacheSize" xml:space="preserve">
+    <value>キャッシュサイズ</value>
+  </data>
+  <data name="IntegrationStartTime" xml:space="preserve">
+    <value>積分開始時間</value>
+  </data>
+  <data name="IntervalTime" xml:space="preserve">
+    <value>インターバル時間</value>
+  </data>
+  <data name="Step" xml:space="preserve">
+    <value>手順</value>
+  </data>
+  <data name="RestartWindowsService" xml:space="preserve">
+    <value>Windowsサービスを再起動する</value>
+  </data>
+  <data name="SelectExportFileLocation" xml:space="preserve">
+    <value>エクスポートファイルの場所を選択する</value>
+  </data>
+  <data name="DataRetentionDays" xml:space="preserve">
+    <value>データ保持日数</value>
+  </data>
+  <data name="DataRetentionHours" xml:space="preserve">
+    <value>データ保持時間</value>
+  </data>
+  <data name="ClearDatabaseOnly" xml:space="preserve">
+    <value>データベースのみをクリアする</value>
+  </data>
+  <data name="ConfigArchivedModel_删除本地文件" xml:space="preserve">
+    <value>ローカルファイルを削除する</value>
+  </data>
+  <data name="DeleteLocalFiles" xml:space="preserve">
+    <value>ローカルファイルを削除する</value>
+  </data>
+  <data name="DataBaseConfig" xml:space="preserve">
+    <value>データベース構成</value>
+  </data>
+  <data name="RESTAddress" xml:space="preserve">
+    <value>RESTアドレス</value>
+  </data>
+  <data name="ServerMonitorConfig" xml:space="preserve">
+    <value>サービス監視構成</value>
+  </data>
+  <data name="MqttConfigId" xml:space="preserve">
+    <value>MQTT構成ID</value>
+  </data>
+  <data name="TenantId" xml:space="preserve">
+    <value>テナントID</value>
+  </data>
+  <data name="DefaultSavePath" xml:space="preserve">
+    <value>デフォルトの保存パス</value>
+  </data>
+  <data name="IvlCameraProcessing" xml:space="preserve">
+    <value>IVLカメラ処理</value>
+  </data>
+  <data name="ProcessAndExportCameraDataFromIvlBatchOnly" xml:space="preserve">
+    <value>IVL バッチからのカメラ データのみを処理してエクスポートします。</value>
+  </data>
+  <data name="IvlSpectralProcessing" xml:space="preserve">
+    <value>IVLスペクトル処理</value>
+  </data>
+  <data name="ProcessAndExportSpectrumDataFromIvlBatchOnly" xml:space="preserve">
+    <value>IVLバッチからスペクトルデータのみを処理してエクスポートする</value>
+  </data>
+  <data name="LightBar" xml:space="preserve">
+    <value>LEDストリップ</value>
+  </data>
+  <data name="Spectrometer" xml:space="preserve">
+    <value>分光計</value>
+  </data>
+  <data name="EditFilterWheelConfig" xml:space="preserve">
+    <value>フィルターホイールの設定を編集する</value>
+  </data>
+  <data name="ContinuousMeasurement" xml:space="preserve">
+    <value>連続測定</value>
+  </data>
+  <data name="StartMeasurementValue_V_mA" xml:space="preserve">
+    <value>初期測定値（V/mA）</value>
+  </data>
+  <data name="EndMeasurementValue_V_mA" xml:space="preserve">
+    <value>終了測定値（V/mA）</value>
+  </data>
+  <data name="VoltageSourceUnit_V_CurrentSourceUnit_mA" xml:space="preserve">
+    <value>電圧源はボルト (V) 単位で測定され、電流源は mA 単位で測定されます。</value>
+  </data>
+  <data name="LimitVal" xml:space="preserve">
+    <value>限界（V/mA）</value>
+  </data>
+  <data name="SourceMeterProtectionLimit_VoltageUnitV_CurrentUnitmA" xml:space="preserve">
+    <value>電源保護の制限。電圧源単位: V、電流源単位: mA。</value>
+  </data>
+  <data name="IsVoltageSource" xml:space="preserve">
+    <value>それは電圧源ですか?</value>
+  </data>
+  <data name="TrueIsVoltageSource_FalseIsCurrentSource" xml:space="preserve">
+    <value>`true` は電圧源を示し、 `false` は電流源を示します。</value>
+  </data>
+  <data name="MeasureType" xml:space="preserve">
+    <value>測定タイプ</value>
+  </data>
+  <data name="VoltageSourceCurrentSourceSelection" xml:space="preserve">
+    <value>電圧源、電流源の選択</value>
+  </data>
+  <data name="EnableExposure" xml:space="preserve">
+    <value>露出を有効にする</value>
+  </data>
+  <data name="EnableFocus" xml:space="preserve">
+    <value>フォーカスを有効にする</value>
+  </data>
+  <data name="RegistryCenterNotConnected" xml:space="preserve">
+    <value>登録センターに接続できません。</value>
+  </data>
+  <data name="TokenEmpty_RefreshingToken_PleaseRetry" xml:space="preserve">
+    <value>トークンが空です。トークンを更新しています。もう一度お試しください。</value>
+  </data>
+  <data name="WorkflowStartNodeNotFound_RunFailed" xml:space="preserve">
+    <value>プロセス起動ノードが見つからず、プロセスの実行に失敗しました。</value>
+  </data>
+  <data name="ExecutionCancelled" xml:space="preserve">
+    <value>実行はキャンセルされました。</value>
+  </data>
+  <data name="FlowWindows" xml:space="preserve">
+    <value>プロセスウィンドウ</value>
+  </data>
+  <data name="Processing" xml:space="preserve">
+    <value>処理...</value>
   </data>
 </root>

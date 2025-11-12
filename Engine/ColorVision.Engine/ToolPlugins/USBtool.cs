@@ -17,7 +17,7 @@ namespace ColorVision.Engine.ToolPlugins
     public class SSCOMTool : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => "SSCOM串口调试助手";
+        public override string Header => ColorVision.Engine.Properties.Resources.SSCOMTool;
         public override int Order => 100;
         public override void Execute()
         {
@@ -29,7 +29,7 @@ namespace ColorVision.Engine.ToolPlugins
     {
 
         public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => "校正文件修正工具";
+        public override string Header => ColorVision.Engine.Properties.Resources.CalibrationFileCorrectionTool;
         public override int Order => 100;
         public override void Execute()
         {

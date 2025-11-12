@@ -73,7 +73,7 @@ namespace ColorVision.UI
 
             LoadConfigs(ConfigFilePath);
 
-            Task.Delay(30000).ContinueWith(t =>
+            Task.Delay(3000).ContinueWith(t =>
             {
                 if (Options.EnableBackup)
                 {
@@ -84,11 +84,8 @@ namespace ColorVision.UI
 
             AppDomain.CurrentDomain.ProcessExit += (s, e) =>
             {
-                if (DateTime.Now - InitDateTime > TimeSpan.FromSeconds(10))
-                {
-                    if (IsAutoSave)
-                        SaveConfigs(ConfigFilePath);
-                }
+                if (IsAutoSave)
+                    SaveConfigs(ConfigFilePath);
             };
         }
 

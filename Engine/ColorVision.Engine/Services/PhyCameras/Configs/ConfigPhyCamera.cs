@@ -10,79 +10,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
     /// </summary>
     public class ConfigPhyCamera : ViewModelBase
     {
-        public bool UpdateCameraModeAndIBM(CameraType eCamType)
-        {
-            switch (eCamType)
-            {
-                case CameraType.CV_Q:
-                    CameraMode = CameraMode.CV_MODE;
-                    CameraModel = CameraModel.QHY_USB;
-                    break;
-                case CameraType.LV_Q:
-                    CameraMode = CameraMode.LV_MODE;
-                    CameraModel = CameraModel.QHY_USB;
-                    break;
-                case CameraType.BV_Q:
-                    CameraMode = CameraMode.BV_MODE;
-                    CameraModel = CameraModel.QHY_USB;
-                    break;
-                case CameraType.MIL_CL:
-                    CameraMode = CameraMode.LV_MODE;
-                    CameraModel = CameraModel.MIL_CL_CARD;
-                    break;
-                case CameraType.MIL_CXP:
-                    CameraMode = CameraMode.LV_MODE;
-                    CameraModel = CameraModel.MIL_CXP_CARD;
-                    break;
-                case CameraType.BV_H:
-                    CameraMode = CameraMode.BV_MODE;
-                    CameraModel = CameraModel.HK_USB;
-                    break;
-                case CameraType.LV_H:
-                    CameraMode = CameraMode.LV_MODE;
-                    CameraModel = CameraModel.HK_USB;
-                    break;
-                case CameraType.HK_CXP:
-                    CameraMode = CameraMode.LV_MODE;
-                    CameraModel = CameraModel.HK_CARD;
-                    break;
-                case CameraType.LV_MIL_CL:
-                    CameraMode = CameraMode.LV_MODE;
-                    CameraModel = CameraModel.MIL_CL_CARD;
-                    break;
-                case CameraType.CV_MIL_CL:
-                    CameraMode = CameraMode.CV_MODE;
-                    CameraModel = CameraModel.MIL_CL_CARD;
-                    break;
-                case CameraType.BV_MIL_CXP:
-                    CameraMode = CameraMode.BV_MODE;
-                    CameraModel = CameraModel.MIL_CXP_CARD;
-                    break;
-                case CameraType.BV_HK_CARD:
-                    CameraMode = CameraMode.BV_MODE;
-                    CameraModel = CameraModel.QHY_USB;
-                    break;
-                case CameraType.LV_HK_CARD:
-                    CameraMode = CameraMode.LV_MODE;
-                    CameraModel = CameraModel.HK_CARD;
-                    break;
-                case CameraType.CV_HK_CARD:
-                    CameraMode = CameraMode.CV_MODE;
-                    CameraModel = CameraModel.HK_CARD;
-                    break;
-                case CameraType.CV_HK_USB:
-                    CameraMode = CameraMode.CV_MODE;
-                    CameraModel = CameraModel.HK_USB;
-                    break;
-                case CameraType.CameraType_Total:
-                    // BatchProcess CameraType_Total case if needed
-                    break;
-                default:
-                    // BatchProcess default case if needed
-                    break;
-            }
-            return false;
-        }
+
         public string CameraID { get => _CameraID; set { _CameraID = value; OnPropertyChanged(); } }
         private string _CameraID;
         public string Code { get => _Code; set { _Code = value; OnPropertyChanged(); } }
@@ -112,6 +40,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         private FileSeviceConfig _FileServerCfg = new FileSeviceConfig();
 
         public CameraParameterLimit CameraParameterLimit { get; set; } = new CameraParameterLimit();
+
+        public FilterWheelConfig FilterWheelConfig { get; set; } = new FilterWheelConfig();
 
     }
 

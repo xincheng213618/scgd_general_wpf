@@ -139,4 +139,16 @@
   <data name="ActivateWindows" xml:space="preserve">
     <value>激活Windows</value>
   </data>
+  <data name="RestartService" xml:space="preserve">
+    <value>重启服务</value>
+  </data>
+  <data name="RestartServiceSucess" xml:space="preserve">
+    <value>重启服务成功</value>
+  </data>
+  <data name="ServiceRestartFailed_PleaseRestartManually" xml:space="preserve">
+    <value>重启服务失败请手动重启服务</value>
+  </data>
+  <data name="UpdateService" xml:space="preserve">
+    <value>更新服务</value>
+  </data>
 </root>

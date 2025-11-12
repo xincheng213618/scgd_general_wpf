@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.UI;
 using CVCommCore;
 using System;
@@ -24,18 +25,14 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             Device = device;
             InitializeComponent();
         }
-
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
             this.ApplyChangedSelectedColor(DisPlayBorder);
-
             List<int> ports = new List<int>();
-            for (int i = 0; i < Device.Config.Ports; i++)
-            {
-                ports.Add(i);
-            }
-            TextPort.ItemsSource = ports;
+
+            CombPort.ItemsSource = Device.FilterWheelConfig.HoleMapping;
+            CombPort.DisplayMemberPath = "HoleName";
 
             void UpdateUI(DeviceStatusType status)
             {
@@ -113,24 +110,20 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
         }
         private void SetPort_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
+            if (sender is Button button && CombPort.SelectedValue is HoleMap holeMap)
             {
-                if (int.TryParse(TextPort.Text,out int port))
+                var msgRecord = DService.SetPort(holeMap.HoleIndex);
+                msgRecord.MsgRecordStateChanged += (e) =>
                 {
-                    var msgRecord = DService.SetPort(port);
-                    msgRecord.MsgRecordStateChanged += (e) =>
+                    if (e == MsgRecordState.Success)
                     {
-                        if (e == MsgRecordState.Success)
-                        {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.Success, "ColorVision");
-                        }
-                        else
-                        {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.执行失败, "ColorVision");
-                        }
-                    };
-
-                }
+                        MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.Success, "ColorVision");
+                    }
+                    else
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
+                    }
+                };
             }
         }
 
@@ -146,6 +139,24 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 var msgRecord = DService.Open();
                 ServicesHelper.SendCommand(button, msgRecord);
             }
+        }
+
+        private void GetPort_Click(object sender, RoutedEventArgs e)
+        {
+            MsgRecord msgRecord = DService.GetPort();
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+                if (e == MsgRecordState.Success)
+                {
+                    int port = msgRecord.MsgReturn.Data.Port;
+                    CombPort.SelectedIndex = port;
+                }
+                else
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
+                }
+            };
+
         }
     }
 }

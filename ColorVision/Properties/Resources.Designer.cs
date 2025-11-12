@@ -151,7 +151,7 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似  &quot;清除安装包缓存 的本地化字符串。
+        ///   查找类似 清除安装包缓存 的本地化字符串。
         /// </summary>
         public static string ClearPackageCache {
             get {
@@ -358,7 +358,7 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 ReinstallCurrentVersion 的本地化字符串。
+        ///   查找类似 重新安装当前版本 的本地化字符串。
         /// </summary>
         public static string MenuUpdateReInstall_重新安装当前版本 {
             get {

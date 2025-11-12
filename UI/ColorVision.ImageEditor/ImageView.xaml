@@ -8,6 +8,7 @@
              xmlns:converters="clr-namespace:ColorVision.ImageEditor.Converters"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:properties="clr-namespace:ColorVision.ImageEditor.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:ImageViewModel}"
              d:DesignHeight="600" d:DesignWidth="1000" Initialized="UserControl_Initialized" AllowDrop="True" FocusVisualStyle="{x:Null}">
@@ -150,15 +151,15 @@
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,0,0,5">
                                 <ui:ToggleSwitch IsChecked="{Binding Config.IsLayoutUpdated}" DockPanel.Dock="Right" />
-                                <TextBlock Text="自动刷新" Width="100" HorizontalAlignment="Left"/>
+                                <TextBlock Text="{x:Static properties:Resources.IsLayoutUpdated}" Width="100" HorizontalAlignment="Left"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
                                 <ui:ToggleSwitch IsChecked="{Binding Config.IsShowText}" DockPanel.Dock="Right" />
-                                <TextBlock Text="显示文字" Width="100" HorizontalAlignment="Left"/>
+                                <TextBlock Text="{x:Static properties:Resources.IsShowText}" Width="100" HorizontalAlignment="Left"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
                                 <ui:ToggleSwitch IsChecked="{Binding Config.IsShowMsg}" DockPanel.Dock="Right" />
-                                <TextBlock Text="显示消息" Width="100" HorizontalAlignment="Left"/>
+                                <TextBlock Text="{x:Static properties:Resources.IsShowMsg}" Width="100" HorizontalAlignment="Left"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
                                 <TextBlock Text="MaxZoom" Width="100"/>
@@ -169,7 +170,7 @@
                                 <TextBox  Text="{Binding MinZoom}" />
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
-                                <TextBlock Text="伪彩色" Width="100"/>
+                                <TextBlock Text="{x:Static properties:Resources.ColormapTypes}" Width="100"/>
                                 <ComboBox x:Name="ComColormapTypes" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" Text="{Binding  Config.ColormapTypes}" DisplayMemberPath="Key"/>
                             </DockPanel>
                         </StackPanel>
@@ -190,8 +191,8 @@
                 </StackPanel>
             </ScrollViewer>
             <StackPanel VerticalAlignment="Bottom" Grid.Row="1" Margin="5"  Orientation="Horizontal">
-                <Button Content="应用当前图片" Click="Apply_Click"  Margin="0,0,10,0"/>
-                <Button Content="重新加载" Click="Reload_Click" />
+                <Button Content="{x:Static properties:Resources.Apply}" Click="Apply_Click"  Margin="0,0,10,0"/>
+                <Button Content="{x:Static properties:Resources.Reload}" Click="Reload_Click" />
             </StackPanel>
 
         </Grid>

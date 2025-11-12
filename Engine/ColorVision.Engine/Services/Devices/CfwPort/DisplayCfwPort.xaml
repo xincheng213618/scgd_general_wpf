@@ -8,7 +8,7 @@
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceCfwPort}"
-             d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
+             d:DesignHeight="450" d:DesignWidth="300" Width="300" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -35,21 +35,19 @@
                         </BeginStoryboard>
                     </EventTrigger>
                 </Button.Triggers>
-                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontWeight="Bold"  FontSize="12" ToolTip="刷新">
+                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontWeight="Bold"  FontSize="12" ToolTip="{x:Static properties:Resources.Refresh}">
                     <TextBlock.RenderTransform>
                         <RotateTransform x:Name="rotateTransform1" CenterX="6" CenterY="6"/>
-                    </TextBlock.RenderTransform>
+                    </TextBlock.RenderTransform> 
                 </TextBlock>
             </Button>
 
             <Grid>
-                <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding IsDisplayOpen}" />
-                <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="4,0,0,0">
-                    <Image Source="{Binding Icon}"/>
-                </Grid>
+                <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding DisplayConfig.IsDisplayOpen}" />
+                <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding DisplayConfig.IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="4,0,0,0"/>
             </Grid>     
         </DockPanel>
-        <Border x:Name="DisPlayBorder"  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
+        <Border x:Name="DisPlayBorder"  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel   Margin="5" >
                 <DockPanel x:Name="TextBlockUnknow" Margin="0,0,0,3" >
                     <TextBlock  Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
@@ -66,8 +64,9 @@
                 <Button  x:Name="ButtonClose" Margin="0,2" Content="{x:Static properties:Resources.Close}"  Click="Close_Click" Visibility="Collapsed"/>
                 <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,3">
                     <DockPanel Margin="0,2">
+                        <Button DockPanel.Dock="Right" Content="GetPort"  Click="GetPort_Click" />
                         <Button DockPanel.Dock="Right" Content="SetPort"  Click="SetPort_Click" />
-                        <hc:ComboBox  x:Name="TextPort"  Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}"  IsEditable="True" AutoComplete ="True" hc:InfoElement.ShowClearButton="True"/>
+                        <hc:ComboBox  x:Name="CombPort"  Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}"  IsEditable="True" AutoComplete ="True" hc:InfoElement.ShowClearButton="True"/>
                     </DockPanel>
                 </StackPanel>
 

@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using ColorVision.Themes;
+using System.Windows;
 
 namespace ProjectLUX.Process
 {
@@ -11,6 +12,7 @@ namespace ProjectLUX.Process
         public ProcessManagerWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)

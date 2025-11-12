@@ -9,7 +9,7 @@ namespace ScreenRecorder
         public override string OwnerGuid => "Tool";
         public override string GuidId => "ScreenRecorder";
         public override int Order => 500;
-        public override string Header => "录制视频";
+        public override string Header => ScreenRecorder.Properties.Resources.ScreenRecorder;
 
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()

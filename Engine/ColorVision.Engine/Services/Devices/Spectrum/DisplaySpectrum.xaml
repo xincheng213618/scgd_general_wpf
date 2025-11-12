@@ -36,16 +36,16 @@
                         </BeginStoryboard>
                     </EventTrigger>
                 </Button.Triggers>
-                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontWeight="Bold"  FontSize="12" ToolTip="刷新">
+                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontWeight="Bold"  FontSize="12" ToolTip="{x:Static properties:Resources.Refresh}">
                     <TextBlock.RenderTransform>
                         <RotateTransform x:Name="rotateTransform1" CenterX="6" CenterY="6"/>
                     </TextBlock.RenderTransform>
                 </TextBlock>
             </Button>
-
-            <ToggleButton x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding IsDisplayOpen}" />
+            <ToggleButton x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding DisplayConfig.IsDisplayOpen}" />
+            <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="4,0,0,0"/>
         </DockPanel>
-        <Border x:Name="DisPlayBorder"  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
+        <Border x:Name="DisPlayBorder"  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel Margin="5">
                 <TextBlock x:Name="TextBlockUnknow" Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
                 <Button x:Name="TextBlockOffLine" Margin="0,0,0,3" Content="OffLine" Click="Button_Click_Open"/>
@@ -83,12 +83,20 @@
                         </StackPanel>
 
                         <StackPanel Margin="0,0,0,5">
-                            <UniformGrid Columns="3">
+                            <StackPanel  Orientation="Horizontal">
                                 <Button x:Name="btn_oneTest" Content="{x:Static properties:Resources.SingleTest}"  Margin="2" Click="Button_Click_OneTest"/>
-                                <Button x:Name="btn_autoTest" Content="{x:Static properties:Resources.AutoTest}"  Margin="2" Click="Button_Click_AutoTest"/>
-                                <Button x:Name="btn_oneInitDark" Content="{x:Static properties:Resources.SingleZeroCalibration}"  Margin="2" Click="Button_Click_Init_Dark"/>
-                            </UniformGrid>
+                                <Button x:Name="btn_autoTest" Content="{x:Static properties:Resources.ContinuousMeasurement}"  Margin="2" Click="Button_Click_AutoTest"/>
+                            </StackPanel>
                             <DockPanel>
+                                <Button x:Name="btn_oneInitDark" Content="{x:Static properties:Resources.SingleZeroCalibration}"  Margin="2" Click="Button_Click_Init_Dark"/>
+                                <!-- 半透明遮罩层 -->
+                                <Rectangle x:Name="Overlay" Fill="#7F000000" Visibility="Collapsed"/>
+                                <Border x:Name="LoadingPanel" Background="White" CornerRadius="5" Padding="20" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Vertical">
+                                        <ProgressBar IsIndeterminate="True" Width="200" Height="20"/>
+                                        <TextBlock Text="{x:Static properties:Resources.Processing}" Margin="0,10,0,0" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
                                 <Button Content="{x:Static properties:Resources.AdaptiveZeroCalibration}"  Margin="2" Command="{Binding SelfAdaptionInitDarkCommand}"/>
                                 <Button Grid.Column="1" Margin="5,0,5,0" HorizontalAlignment="Left" Command="{Binding SelfAdaptionInitDarkSettingCommand}" Padding="2" Height="21" Width="21" >
                                     <Button.Triggers>
@@ -109,6 +117,7 @@
 
                             </DockPanel>
                             <DockPanel Margin="0,2" Visibility="{Binding Config.IsWithND,Converter={StaticResource bool2VisibilityConverter}}">
+                                <Button  DockPanel.Dock="Right" Content="Get"  Click="GetNDport_Click" />
                                 <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resources.ChangeNDPort}"  Click="NDport_Click" />
                                 <TextBlock Text="NDPort" />
                                 <TextBox Text="{Binding DisplaySpectrumConfig.PortNum}"  BorderThickness="0,0,0,1" Margin="5,0"/>

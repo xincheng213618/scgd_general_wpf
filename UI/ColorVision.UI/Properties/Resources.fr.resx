@@ -469,4 +469,16 @@
   <data name="DumpFileSettings" xml:space="preserve">
     <value>Paramètres des fichiers d'archive</value>
   </data>
+  <data name="ProjectSolution_P" xml:space="preserve">
+    <value>Projet/Solution (P)...</value>
+  </data>
+  <data name="MysqlTool" xml:space="preserve">
+    <value>Outils MySQL</value>
+  </data>
+  <data name="MsgList" xml:space="preserve">
+    <value>Fenêtre de journalisation des messages</value>
+  </data>
+  <data name="SocketManagementWindow" xml:space="preserve">
+    <value>Fenêtre de gestion des sockets</value>
+  </data>
 </root>

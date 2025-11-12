@@ -142,6 +142,24 @@ namespace WindowsServicePlugin.Properties {
         }
         
         /// <summary>
+        ///   查找类似 重启服务 的本地化字符串。
+        /// </summary>
+        public static string RestartService {
+            get {
+                return ResourceManager.GetString("RestartService", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重启服务成功 的本地化字符串。
+        /// </summary>
+        public static string RestartServiceSucess {
+            get {
+                return ResourceManager.GetString("RestartServiceSucess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 服务 的本地化字符串。
         /// </summary>
         public static string Service {
@@ -160,11 +178,29 @@ namespace WindowsServicePlugin.Properties {
         }
         
         /// <summary>
+        ///   查找类似 重启服务失败请手动重启服务 的本地化字符串。
+        /// </summary>
+        public static string ServiceRestartFailed_PleaseRestartManually {
+            get {
+                return ResourceManager.GetString("ServiceRestartFailed_PleaseRestartManually", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 光谱仪日志 的本地化字符串。
         /// </summary>
         public static string SpectrometerLog {
             get {
                 return ResourceManager.GetString("SpectrometerLog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新服务 的本地化字符串。
+        /// </summary>
+        public static string UpdateService {
+            get {
+                return ResourceManager.GetString("UpdateService", resourceCulture);
             }
         }
         

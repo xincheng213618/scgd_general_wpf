@@ -193,12 +193,12 @@ namespace ColorVision.Engine.Services
 
                     System.Windows.Forms.FolderBrowserDialog dialog = new();
                     dialog.UseDescriptionForTitle = true;
-                    dialog.Description = "选择要保存到得位置";
+                    dialog.Description = ColorVision.Engine.Properties.Resources.SelectSaveLocation;
                     if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                     {
                         if (string.IsNullOrEmpty(dialog.SelectedPath))
                         {
-                            MessageBox.Show("文件夹路径不能为空", "提示");
+                            MessageBox.Show(ColorVision.Engine.Properties.Resources.FolderPathCannotBeEmpty, ColorVision.Engine.Properties.Resources.Hint);
                             return;
                         }
                         string savePath = dialog.SelectedPath;
@@ -217,12 +217,12 @@ namespace ColorVision.Engine.Services
                 }
                 else
                 {
-                    MessageBox1.Show(WindowHelpers.GetActiveWindow(), "目前支持CVRAW图像", "ColorVision");
+                    MessageBox1.Show(WindowHelpers.GetActiveWindow(), ColorVision.Engine.Properties.Resources.CurrentlySupportsCvRawImages, "ColorVision");
                 }
             }
             else
             {
-                MessageBox1.Show(WindowHelpers.GetActiveWindow(), "找不到原始文件", "ColorVision");
+                MessageBox1.Show(WindowHelpers.GetActiveWindow(),ColorVision.Engine.Properties.Resources.OriginalFileNotFound, "ColorVision");
             }
         }
 
@@ -234,7 +234,7 @@ namespace ColorVision.Engine.Services
             {
                 if (!CVFileUtil.IsCIEFile(FilePath))
                 {
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "导出仅支持CIE文件", "ColorVision");
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExportSupportsCieFilesOnly, "ColorVision");
                     return;
                 }
                 ExportCVCIE exportCVCIE = new ExportCVCIE(FilePath);

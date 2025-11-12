@@ -156,4 +156,19 @@
   <data name="DumpFileSettings" xml:space="preserve">
     <value>Настройки файла дампа</value>
   </data>
+  <data name="ActivateWindows" xml:space="preserve">
+    <value>Активировать Windows</value>
+  </data>
+  <data name="RestartService" xml:space="preserve">
+    <value>Перезапустить службу</value>
+  </data>
+  <data name="RestartServiceSucess" xml:space="preserve">
+    <value>Перезапуск службы успешен</value>
+  </data>
+  <data name="ServiceRestartFailed_PleaseRestartManually" xml:space="preserve">
+    <value>Если перезапуск службы не удался, перезапустите ее вручную.</value>
+  </data>
+  <data name="UpdateService" xml:space="preserve">
+    <value>Обновление сервиса</value>
+  </data>
 </root>

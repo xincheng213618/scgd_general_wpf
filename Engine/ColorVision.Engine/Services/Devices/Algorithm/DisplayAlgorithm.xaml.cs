@@ -20,17 +20,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         public string Group { get; set; }
     }
 
-    public class DisplayAlgorithmConfig:ViewModelBase,IConfig
+    public class DisplayAlgorithmConfig: IDisPlayConfigBase
     {
-        public static DisplayAlgorithmConfig Instance => ConfigService.Instance.GetRequiredService<DisplayAlgorithmConfig>();
-
         public string LastSelectTemplate { get => _LastSelectTemplate; set { _LastSelectTemplate = value; OnPropertyChanged(); } }
         private string _LastSelectTemplate = "POI";
 
-
         public string LastSelectGroup { get => _LastSelectGroup; set { _LastSelectGroup = value; OnPropertyChanged(); } }
         private string _LastSelectGroup = "All";
-
     }
 
 
@@ -104,7 +100,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             groups.AddRange(algorithmMetas.Select(a => a.Group).Distinct().Where(g => !string.IsNullOrWhiteSpace(g) && g != allAlgorithmsGroup));
 
             CB_AlgorithmTypes.ItemsSource = groups;
-            CB_AlgorithmTypes.SelectedItem = DisplayAlgorithmConfig.Instance.LastSelectGroup;
+            CB_AlgorithmTypes.SelectedItem = Device.DisplayConfig.LastSelectGroup;
 
             // 按分组和排序展示算法
             var filteredAlgorithms = algorithmMetas
@@ -133,7 +129,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                         }
                     }
 
-                    DisplayAlgorithmConfig.Instance.LastSelectTemplate = meta.Name;
+                    Device.DisplayConfig.LastSelectTemplate = meta.Name;
                     CB_StackPanel.Children.Clear();
                     CB_StackPanel.Children.Add(algorithm.GetUserControl());
 
@@ -156,7 +152,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             {
                 if (CB_AlgorithmTypes.SelectedItem is string selectedGroup)
                 {
-                    DisplayAlgorithmConfig.Instance.LastSelectGroup = selectedGroup;
+                    Device.DisplayConfig.LastSelectGroup = selectedGroup;
                     List<DisplayAlgorithmMeta> filteredAlgorithms;
                     if (selectedGroup == allAlgorithmsGroup)
                     {
@@ -176,7 +172,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     CB_Algorithms.DisplayMemberPath = "Name";
 
                     var lastSelectedAlgorithm = filteredAlgorithms
-                        .FirstOrDefault(a => a.Name == DisplayAlgorithmConfig.Instance.LastSelectTemplate);
+                        .FirstOrDefault(a => a.Name == Device.DisplayConfig.LastSelectTemplate);
 
                     if (lastSelectedAlgorithm != null)
                     {

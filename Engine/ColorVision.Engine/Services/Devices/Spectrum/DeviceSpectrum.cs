@@ -1,6 +1,9 @@
 ﻿#pragma warning disable CS8601,CS8604
 using ColorVision.Common.MVVM;
+using ColorVision.Database;
+using ColorVision.Engine.Extension;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Services.PhyCameras.Dao;
@@ -20,8 +23,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.Database;
-using ColorVision.Engine.Extension;
 
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
@@ -37,6 +38,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public DisplaySpectrumConfig DisplaySpectrumConfig { get; set; } = new DisplaySpectrumConfig();
         public MQTTSpectrum DService { get; set; }
         public ViewSpectrum View { get; set; }
+        public IDisPlayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisPlayConfigBase>(Config.Code);
+
         public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; } = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();
         public RelayCommand RefreshDeviceIdCommand { get; set; }
 
@@ -52,8 +55,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         [CommandDisplay("EmissionSP100Set")]
         public RelayCommand EmissionSP100SettingCommand { get; set; }
-
-
+        public event Action SelfAdaptionInitDarkStarted;
+        public event Action SelfAdaptionInitDarkCompleted;
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTSpectrum(this);
@@ -84,12 +87,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public void SelfAdaptionInitDark()
         {
             MsgRecord msgRecord = DService.SelfAdaptionInitDark();
+            SelfAdaptionInitDarkStarted?.Invoke();
             msgRecord.MsgRecordStateChanged +=(e) =>
             {
+                SelfAdaptionInitDarkCompleted?.Invoke();
                 if (msgRecord.MsgReturn != null)
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.ExcAdaptiveZeroCali + e.ToString(),"ColorVison");
-                }
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExcAdaptiveZeroCali + e.ToString(), "ColorVison");
             };
         }
 

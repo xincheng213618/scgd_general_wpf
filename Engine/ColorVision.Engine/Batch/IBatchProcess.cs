@@ -8,6 +8,11 @@
         /// <param name="ctx">The batch context to process. Cannot be null.</param>
         /// <returns>true if the batch was processed successfully; otherwise, false.</returns>
         public bool Process(IBatchContext ctx);
+
+        public object? GetConfig()
+        {
+            return null;
+        }
     }
 
 }

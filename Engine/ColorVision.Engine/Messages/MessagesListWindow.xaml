@@ -138,15 +138,15 @@
                 <Grid Grid.Row="0"  Margin="0,0,0,5">
                     <TextBox Text="{Binding MsgSend,Mode=OneWay}"  IsReadOnly="True" BorderThickness="1"  ScrollViewer.VerticalScrollBarVisibility="Auto"/>
                     <StackPanel HorizontalAlignment="Right" Margin="5">
-                        <Button Content="复制" Click="Button_Click_1" Margin="0,0,0,5"/>
-                        <Button Content="压缩"  Click="Button_Click_2"/>
+                        <Button Content="{x:Static properties:Resources.Copy}" Click="Button_Click_1" Margin="0,0,0,5"/>
+                        <Button Content="{x:Static properties:Resources.Compress}"  Click="Button_Click_2"/>
                     </StackPanel>
                 </Grid>
                 <Grid Grid.Row="1">
                     <TextBox Text="{Binding MsgReturn,Mode=OneWay}" IsReadOnly="True" BorderThickness="1" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
                     <StackPanel HorizontalAlignment="Right" Margin="5">
-                        <Button Content="复制" Click="Button_Click_3" Margin="0,0,0,5"/>
-                        <Button Content="压缩"  Click="Button_Click_4"/>
+                        <Button Content="{x:Static properties:Resources.Copy}" Click="Button_Click_3" Margin="0,0,0,5"/>
+                        <Button Content="{x:Static properties:Resources.Compress}"  Click="Button_Click_4"/>
                     </StackPanel>
                 </Grid>
                

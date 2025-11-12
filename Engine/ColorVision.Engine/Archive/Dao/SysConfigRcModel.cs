@@ -17,13 +17,13 @@ namespace ColorVision.Engine.Sys.Dao
         [DisplayName("Code")]
         public string Code { get; set; }
 
-        [SugarColumn(ColumnName ="name"), DisplayName("RC名称")]
+        [SugarColumn(ColumnName ="name"), DisplayName("RCName")]
         public string Name { get; set; }
 
         [SugarColumn(ColumnName ="platform")]
         public string Platform { get; set; }
 
-        [SugarColumn(ColumnName ="rest_address"), DisplayName("REST地址")]
+        [SugarColumn(ColumnName ="rest_address"), DisplayName("RESTAddress")]
         public string RestAddress { get; set; }
 
         [SugarColumn(ColumnName ="version")]
@@ -35,13 +35,13 @@ namespace ColorVision.Engine.Sys.Dao
         [SugarColumn(ColumnName ="admin_authorization")]
         public string AdminAuthorization { get; set; }
 
-        [SugarColumn(ColumnName ="monitor_id"), DisplayName("服务监控配置")]
+        [SugarColumn(ColumnName ="monitor_id"), DisplayName("ServerMonitorConfig")]
         public int? MonitorId { get; set; }
 
-        [SugarColumn(ColumnName ="archived_id"), DisplayName("归档配置")]
+        [SugarColumn(ColumnName ="archived_id"), DisplayName("ArchiveConfiguration")]
         public int? ArchivedId { get; set; }
 
-        [SugarColumn(ColumnName ="mqtt_cfg_id"), DisplayName("MQTT配置ID")]
+        [SugarColumn(ColumnName ="mqtt_cfg_id"), DisplayName("MqttConfigId")]
         public int? MqttCfgId { get; set; }
 
         [SugarColumn(ColumnName ="mqtt_is_server")]
@@ -53,10 +53,10 @@ namespace ColorVision.Engine.Sys.Dao
         [SugarColumn(ColumnName ="is_delete")]
         public bool IsDelete { get; set; }
 
-        [SugarColumn(ColumnName ="tenant_id"), DisplayName("租户ID")]
+        [SugarColumn(ColumnName ="tenant_id"), DisplayName("TenantId")]
         public int? TenantId { get; set; }
 
-        [SugarColumn(ColumnName ="create_date"), DisplayName("创建日期")]
+        [SugarColumn(ColumnName ="create_date"), DisplayName("CreationDate")]
         public DateTime CreateDate { get; set; } = DateTime.Now;
 
         [SugarColumn(ColumnName ="remark")]

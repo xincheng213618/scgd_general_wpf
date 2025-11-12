@@ -177,4 +177,70 @@
   <data name="ImageAlgorithm" xml:space="preserve">
     <value>影像演算法</value>
   </data>
+  <data name="LineOn" xml:space="preserve">
+    <value>線上</value>
+  </data>
+  <data name="Internal" xml:space="preserve">
+    <value>內切</value>
+  </data>
+  <data name="External" xml:space="preserve">
+    <value>外切</value>
+  </data>
+  <data name="Absolute" xml:space="preserve">
+    <value>絕對值</value>
+  </data>
+  <data name="Relative" xml:space="preserve">
+    <value>相對值</value>
+  </data>
+  <data name="IsShowMsg" xml:space="preserve">
+    <value>顯示訊息</value>
+  </data>
+  <data name="IsLayoutUpdated" xml:space="preserve">
+    <value>自動重新整理</value>
+  </data>
+  <data name="IsShowText" xml:space="preserve">
+    <value>顯示文字</value>
+  </data>
+  <data name="ColormapTypes" xml:space="preserve">
+    <value>偽彩色</value>
+  </data>
+  <data name="Reload" xml:space="preserve">
+    <value>重新載入</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>應用目前圖片</value>
+  </data>
+  <data name="AutoLevelsAdjustment" xml:space="preserve">
+    <value>自動色階調整</value>
+  </data>
+  <data name="WhiteBalanceAdjustment" xml:space="preserve">
+    <value>白平衡調整</value>
+  </data>
+  <data name="GammaCorrection" xml:space="preserve">
+    <value>伽瑪校正</value>
+  </data>
+  <data name="LuminanceContrastAdjustment" xml:space="preserve">
+    <value>亮度對比調整</value>
+  </data>
+  <data name="ThresholdProcessing" xml:space="preserve">
+    <value>閾值處理</value>
+  </data>
+  <data name="MoireRemove" xml:space="preserve">
+    <value>去除摩爾紋</value>
+  </data>
+  <data name="Sharpening" xml:space="preserve">
+    <value>銳化</value>
+  </data>
+  <data name="GaussianBlur" xml:space="preserve">
+    <value>高斯模糊</value>
+  </data>
+  <data name="MedianFilter" xml:space="preserve">
+    <value>中值濾波</value>
+  </data>
+  <data name="Canny" xml:space="preserve">
+    <value>邊緣偵測 (Canny)</value>
+  </data>
+  <data name="HistogramEqualization" xml:space="preserve">
+    <value>直方圖均衡化</value>
+  </data>
 </root>
