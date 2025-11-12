@@ -8,7 +8,7 @@ on:
     paths:
       - 'docs/**'
       - 'package.json'
-      - '.github/workflows/pages.yml'
+      - '.github/workflows/deploy.yml'
   
   # Allow manual trigger
   workflow_dispatch:
