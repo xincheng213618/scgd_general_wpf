@@ -203,28 +203,6 @@ namespace ColorVision.Engine.Templates.POI
 
 
 
-        private void Button_UpdateVisualLayout_Click(object sender, RoutedEventArgs e)
-        {
-            UpdateVisualLayout();
-        }
-        private void UpdateVisualLayout()
-        {
-            foreach (var item in DefaultPoint)
-            {
-                if (item is DVDatumCircle visualDatumCircle)
-                {
-                    visualDatumCircle.Attribute.Radius = 5 / Zoombox1.ContentMatrix.M11;
-                }
-            }
-
-            if (drawingVisualDatum != null && drawingVisualDatum is IDrawingVisualDatum Datum)
-            {
-                Datum.Pen.Thickness = 1 / Zoombox1.ContentMatrix.M11;
-                Datum.Render();
-            }
-        }
-
-
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
