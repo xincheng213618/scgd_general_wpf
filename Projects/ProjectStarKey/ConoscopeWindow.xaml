@@ -31,6 +31,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <!-- Model Selection Section -->
@@ -53,36 +54,50 @@
                     </StackPanel>
                 </GroupBox>
 
-                <!-- Camera Control Section -->
-                <GroupBox Grid.Row="1" Header="相机控制" Margin="0,0,0,10">
+                <!-- Observation Camera Section (VA60 only) -->
+                <GroupBox x:Name="ObservationCameraPanel" Grid.Row="1" Header="观察相机 (视频模式)" Margin="0,0,0,10">
                     <StackPanel Margin="10">
-                        <UniformGrid Columns="2" Margin="0,0,0,5">
-                            <!-- Observation Camera Button (VA60 only) -->
-                            <Button x:Name="btnOpenObservationCamera" 
-                                    Content="打开观察相机"
-                                    Click="btnOpenObservationCamera_Click"
-                                    Margin="0,0,5,0"
-                                    Visibility="Visible"
-                                    Height="30"/>
-                            
-                            <!-- Measurement Camera Button -->
-                            <Button x:Name="btnOpenMeasurementCamera" 
-                                    Content="打开测量相机"
-                                    Click="btnOpenMeasurementCamera_Click"
-                                    Margin="5,0,0,0"
-                                    Height="30"/>
-                        </UniformGrid>
+                        <DockPanel Margin="0,0,0,10">
+                            <TextBlock Text="选择相机:" VerticalAlignment="Center" Width="80"/>
+                            <ComboBox x:Name="cbObservationCamera" 
+                                      SelectionChanged="cbObservationCamera_SelectionChanged"/>
+                        </DockPanel>
+                        <Button x:Name="btnOpenObservationCamera" 
+                                Content="打开观察相机"
+                                Click="btnOpenObservationCamera_Click"
+                                Height="30"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Measurement Camera Section -->
+                <GroupBox Grid.Row="2" Header="测量相机控制" Margin="0,0,0,10">
+                    <StackPanel Margin="10">
+                        <DockPanel Margin="0,0,0,10">
+                            <TextBlock Text="选择相机:" VerticalAlignment="Center" Width="80"/>
+                            <ComboBox x:Name="cbMeasurementCamera" 
+                                      SelectionChanged="cbMeasurementCamera_SelectionChanged"/>
+                        </DockPanel>
+                        
+                        <DockPanel Margin="0,0,0,10">
+                            <TextBlock Text="校正模板:" VerticalAlignment="Center" Width="80"/>
+                            <ComboBox x:Name="cbCalibration"/>
+                        </DockPanel>
+                        
+                        <Button x:Name="btnOpenMeasurementCamera" 
+                                Content="获取图像"
+                                Click="btnOpenMeasurementCamera_Click"
+                                Margin="0,0,0,5"
+                                Height="30"/>
                         
                         <Button x:Name="btnCalibration" 
                                 Content="测量相机校正"
                                 Click="btnCalibration_Click"
-                                Margin="0,5,0,0"
                                 Height="30"/>
                     </StackPanel>
                 </GroupBox>
 
                 <!-- Status Section -->
-                <GroupBox Grid.Row="2" Header="状态信息" Margin="0,0,0,10">
+                <GroupBox Grid.Row="3" Header="状态信息" Margin="0,0,0,10">
                     <StackPanel Margin="10">
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="当前型号:" Width="100" VerticalAlignment="Center"/>
