@@ -32,6 +32,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <!-- Model Selection Section -->
@@ -107,8 +108,87 @@
                     </StackPanel>
                 </GroupBox>
 
+                <!-- Image Filter Section -->
+                <GroupBox Grid.Row="3" Header="图像滤波" Margin="0,0,0,10">
+                    <StackPanel Margin="10">
+                        <DockPanel Margin="0,0,0,10">
+                            <TextBlock Text="滤波类型:" VerticalAlignment="Center" Width="80"/>
+                            <ComboBox x:Name="cbFilterType" 
+                                      SelectionChanged="cbFilterType_SelectionChanged"
+                                      SelectedIndex="0">
+                                <ComboBoxItem Content="无滤波"/>
+                                <ComboBoxItem Content="低通滤波"/>
+                                <ComboBoxItem Content="移动平均"/>
+                                <ComboBoxItem Content="高斯滤波"/>
+                                <ComboBoxItem Content="中值滤波"/>
+                                <ComboBoxItem Content="双边滤波"/>
+                            </ComboBox>
+                        </DockPanel>
+                        
+                        <!-- Kernel Size Parameter -->
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="核大小:" VerticalAlignment="Center" Width="80"/>
+                            <TextBlock Text="{Binding ElementName=sliderKernelSize, Path=Value}" 
+                                       Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
+                            <Slider x:Name="sliderKernelSize" 
+                                    Minimum="1" Maximum="31" Value="5" 
+                                    TickFrequency="2" IsSnapToTickEnabled="True"
+                                    Margin="5,0,0,0"/>
+                        </DockPanel>
+                        
+                        <!-- Sigma Parameter (for Gaussian) -->
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="σ (Sigma):" VerticalAlignment="Center" Width="80"/>
+                            <TextBlock Text="{Binding ElementName=sliderSigma, Path=Value, StringFormat=F1}" 
+                                       Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
+                            <Slider x:Name="sliderSigma" 
+                                    Minimum="0.1" Maximum="10" Value="1.0" 
+                                    TickFrequency="0.1" IsSnapToTickEnabled="True"
+                                    Margin="5,0,0,0" IsEnabled="False"/>
+                        </DockPanel>
+                        
+                        <!-- D Parameter (for Bilateral) -->
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="d:" VerticalAlignment="Center" Width="80"/>
+                            <TextBlock Text="{Binding ElementName=sliderD, Path=Value}" 
+                                       Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
+                            <Slider x:Name="sliderD" 
+                                    Minimum="1" Maximum="15" Value="5" 
+                                    TickFrequency="1" IsSnapToTickEnabled="True"
+                                    Margin="5,0,0,0" IsEnabled="False"/>
+                        </DockPanel>
+                        
+                        <!-- Sigma Color Parameter (for Bilateral) -->
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="σColor:" VerticalAlignment="Center" Width="80"/>
+                            <TextBlock Text="{Binding ElementName=sliderSigmaColor, Path=Value, StringFormat=F0}" 
+                                       Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
+                            <Slider x:Name="sliderSigmaColor" 
+                                    Minimum="1" Maximum="200" Value="75" 
+                                    TickFrequency="1" IsSnapToTickEnabled="True"
+                                    Margin="5,0,0,0" IsEnabled="False"/>
+                        </DockPanel>
+                        
+                        <!-- Sigma Space Parameter (for Bilateral) -->
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="σSpace:" VerticalAlignment="Center" Width="80"/>
+                            <TextBlock Text="{Binding ElementName=sliderSigmaSpace, Path=Value, StringFormat=F0}" 
+                                       Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
+                            <Slider x:Name="sliderSigmaSpace" 
+                                    Minimum="1" Maximum="200" Value="75" 
+                                    TickFrequency="1" IsSnapToTickEnabled="True"
+                                    Margin="5,0,0,0" IsEnabled="False"/>
+                        </DockPanel>
+                        
+                        <Button x:Name="btnApplyFilter" 
+                                Content="应用滤波"
+                                Click="btnApplyFilter_Click"
+                                Height="30"/>
+                    </StackPanel>
+                </GroupBox>
+
                 <!-- Status Section -->
-                <GroupBox Grid.Row="3" Header="状态信息" Margin="0,0,0,10">
+                <GroupBox Grid.Row="4" Header="状态信息" Margin="0,0,0,10">
                     <StackPanel Margin="10">
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="当前型号:" Width="100" VerticalAlignment="Center"/>

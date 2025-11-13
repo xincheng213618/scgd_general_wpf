@@ -1,23 +1,23 @@
 ﻿using ColorVision.Database;
-using ColorVision.Engine;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
-using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.ImageEditor;
-using ColorVision.Themes.Controls;
 using ColorVision.UI.LogImp;
 using ColorVision.UI.Menus;
 using log4net;
+using OpenCvSharp;
+using OpenCvSharp.WpfExtensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ProjectStarKey
 {
@@ -35,6 +35,42 @@ namespace ProjectStarKey
         /// VA80: 一台测量相机（需要校正）
         /// </summary>
         VA80
+    }
+
+    /// <summary>
+    /// 图像滤波类型枚举
+    /// </summary>
+    public enum ImageFilterType
+    {
+        /// <summary>
+        /// 无滤波
+        /// </summary>
+        None,
+        
+        /// <summary>
+        /// 低通滤波（均值滤波）
+        /// </summary>
+        LowPass,
+        
+        /// <summary>
+        /// 移动平均滤波（方框滤波）
+        /// </summary>
+        MovingAverage,
+        
+        /// <summary>
+        /// 高斯滤波
+        /// </summary>
+        Gaussian,
+        
+        /// <summary>
+        /// 中值滤波
+        /// </summary>
+        Median,
+        
+        /// <summary>
+        /// 双边滤波
+        /// </summary>
+        Bilateral
     }
 
     public class MenuConoscopeWindow : MenuItemBase
@@ -281,6 +317,141 @@ namespace ProjectStarKey
             log.Info("校正功能将在后续版本中实现");
             MessageBox.Show("校正功能将在后续版本中实现。\n\n这里将实现测量相机的常规校正流程。", 
                 "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void cbFilterType_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (cbFilterType == null) return;
+            
+            var selectedFilter = (ImageFilterType)cbFilterType.SelectedIndex;
+            
+            // Update parameter visibility based on filter type
+            if (sliderKernelSize != null && sliderSigma != null && sliderD != null && sliderSigmaColor != null && sliderSigmaSpace != null)
+            {
+                switch (selectedFilter)
+                {
+                    case ImageFilterType.None:
+                        sliderKernelSize.IsEnabled = false;
+                        sliderSigma.IsEnabled = false;
+                        sliderD.IsEnabled = false;
+                        sliderSigmaColor.IsEnabled = false;
+                        sliderSigmaSpace.IsEnabled = false;
+                        break;
+                    case ImageFilterType.LowPass:
+                    case ImageFilterType.MovingAverage:
+                    case ImageFilterType.Median:
+                        sliderKernelSize.IsEnabled = true;
+                        sliderSigma.IsEnabled = false;
+                        sliderD.IsEnabled = false;
+                        sliderSigmaColor.IsEnabled = false;
+                        sliderSigmaSpace.IsEnabled = false;
+                        break;
+                    case ImageFilterType.Gaussian:
+                        sliderKernelSize.IsEnabled = true;
+                        sliderSigma.IsEnabled = true;
+                        sliderD.IsEnabled = false;
+                        sliderSigmaColor.IsEnabled = false;
+                        sliderSigmaSpace.IsEnabled = false;
+                        break;
+                    case ImageFilterType.Bilateral:
+                        sliderKernelSize.IsEnabled = false;
+                        sliderSigma.IsEnabled = false;
+                        sliderD.IsEnabled = true;
+                        sliderSigmaColor.IsEnabled = true;
+                        sliderSigmaSpace.IsEnabled = true;
+                        break;
+                }
+            }
+        }
+
+        private void btnApplyFilter_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (ImageView.ImageSource == null)
+                {
+                    MessageBox.Show("请先获取图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                var filterType = (ImageFilterType)cbFilterType.SelectedIndex;
+                if (filterType == ImageFilterType.None)
+                {
+                    log.Info("未选择滤波类型");
+                    return;
+                }
+
+                log.Info($"开始应用滤波: {filterType}");
+
+                // Convert WPF BitmapSource to OpenCV Mat
+                BitmapSource bitmapSource = ImageView.ImageSource as BitmapSource;
+                if (bitmapSource == null)
+                {
+                    MessageBox.Show("图像格式不支持", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                Mat srcMat = BitmapSourceConverter.ToMat(bitmapSource);
+                Mat dstMat = new Mat();
+
+                int kernelSize = (int)sliderKernelSize.Value;
+                double sigma = sliderSigma.Value;
+                int d = (int)sliderD.Value;
+                double sigmaColor = sliderSigmaColor.Value;
+                double sigmaSpace = sliderSigmaSpace.Value;
+
+                // Ensure kernel size is odd
+                if (kernelSize % 2 == 0) kernelSize++;
+
+                // Apply selected filter
+                switch (filterType)
+                {
+                    case ImageFilterType.LowPass:
+                        // 低通滤波（均值滤波）
+                        Cv2.Blur(srcMat, dstMat, new OpenCvSharp.Size(kernelSize, kernelSize));
+                        log.Info($"应用低通滤波，核大小: {kernelSize}");
+                        break;
+
+                    case ImageFilterType.MovingAverage:
+                        // 移动平均滤波（方框滤波）
+                        Cv2.BoxFilter(srcMat, dstMat, srcMat.Type(), new OpenCvSharp.Size(kernelSize, kernelSize));
+                        log.Info($"应用移动平均滤波，核大小: {kernelSize}");
+                        break;
+
+                    case ImageFilterType.Gaussian:
+                        // 高斯滤波
+                        Cv2.GaussianBlur(srcMat, dstMat, new OpenCvSharp.Size(kernelSize, kernelSize), sigma);
+                        log.Info($"应用高斯滤波，核大小: {kernelSize}, σ: {sigma}");
+                        break;
+
+                    case ImageFilterType.Median:
+                        // 中值滤波
+                        Cv2.MedianBlur(srcMat, dstMat, kernelSize);
+                        log.Info($"应用中值滤波，核大小: {kernelSize}");
+                        break;
+
+                    case ImageFilterType.Bilateral:
+                        // 双边滤波
+                        Cv2.BilateralFilter(srcMat, dstMat, d, sigmaColor, sigmaSpace);
+                        log.Info($"应用双边滤波，d: {d}, σColor: {sigmaColor}, σSpace: {sigmaSpace}");
+                        break;
+                }
+
+                // Convert back to WPF BitmapSource
+                BitmapSource filteredImage = BitmapSourceConverter.ToBitmapSource(dstMat);
+                ImageView.SetImageSource(filteredImage);
+
+                srcMat.Dispose();
+                dstMat.Dispose();
+
+                log.Info("滤波应用成功");
+                MessageBox.Show("滤波应用成功", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                log.Error($"应用滤波失败: {ex.Message}", ex);
+                MessageBox.Show($"应用滤波失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         public void Dispose()
